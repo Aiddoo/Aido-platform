@@ -12,6 +12,9 @@ export const memoDraftSchema = llmObject({
         items: z
           .array(llmObject({ title: z.string() }))
           .describe("Explicit sub-steps only; [] for a single action."),
+        duplicateOfTodoId: llmInteger()
+          .nullable()
+          .describe("Id of the same to-do in context.upcomingTodos, or null."),
       }),
     )
     .describe("Independent to-dos in memo order, only the first 8. Never group them."),

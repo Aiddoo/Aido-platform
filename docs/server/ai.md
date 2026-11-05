@@ -6,6 +6,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 - LLM은 언어 해석만 한다. 파싱 v2의 모델 출력은 날짜가 아니라 일정 표현(`TodoDraft`)이고, 날짜·요일·시각은 순수 함수 `domain/services/parsing/resolve-todo-schedule.ts`가 사용자 시간대 기준으로 계산한다.
 - 스키마는 세 단계다. LLM 스키마(관대, 길이·개수 제한 없음, 아래 업체 공통 규칙) → 서버 정규화 → `@aido/api` 공개 계약으로 최종 검증. 공개 계약은 optional 칸(`meta.promptVersion`, parse-memo의 `meta.omittedTodoCount`, `featureQuota`, `repeat`)만 더했다.
+- parse-memo는 빠른 계획·녹음 정리와 같은 맥락(`planningContext`, 다가오는 할 일 30개)을 받아 겹침을 판정한다. 모델이 고른 id는 준 목록 안의 것만 남기고, 못 골랐으면 `findDuplicateTodoId`가 제목과 날짜로 다시 찾아 응답의 선택 칸 `duplicateOfTodoId`에 싣는다.
 - parse-memo는 할 일을 합치지 않는다. 입력 순서대로 앞의 5개까지 만들고 나머지 수를 `meta.omittedTodoCount`로 알린다(메모 원문은 그대로 남는다). 서브투두도 합치지 않고 앞의 5개만 둔다.
 - 긴 메모가 `maxOutputTokens`를 넘어 TRUNCATED가 되지 않도록 v2 모델은 할 일을 앞의 8개까지만 쓰고, 메모 전체 할 일 수를 LLM schema의 `totalTaskCount`(모르면 null)로 함께 낸다. `totalTaskCount`는 schema에서 `todos` 뒤에 둔다(앞에 두면 사고 토큰이 적은 응답에서 과대 집계가 잦았다). 남은 수는 `max(totalTaskCount, 받은 할 일 수) − 5`이고, 모델이 전체 수를 null로 두면 받은 할 일 수로 센다.
 - 일정 계산은 사용자가 말한 날짜·시각을 우선한다. 날짜 없이 말한 때("아침에")가 오늘 이미 지났으면 다음 날 그 때로 넘기고, "오늘 아침"처럼 오늘을 말했는데 지났으면 오늘 종일로 둔다(지난 기본 시각을 만들지 않는다). 숫자 시각("오늘 오전 9시")은 지났어도 그대로 둔다. 상대 시각(`relativeMinutes`)은 1분 이상이고 날짜가 없거나 오늘일 때만 쓰며, 0이나 "내일"과 함께 온 값은 무시한다.
@@ -86,7 +87,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ### 입력 상한·킬 스위치·비용 예산
 
 - 모든 작업은 `AiSdkGenerator.generate` 맨 앞을 지난다. 순서: user 턴 글자 수 > `maxInputChars`면 업체 호출 없이 `BAD_REQUEST`(AI_1302) + `ai.generation.input-rejected` error 로그 → 킬 스위치·예산 판단(`domain/policies/generation/ai-spend.policy.ts` `decideAiSpend`) → 합치기 → bulkhead → 업체 체인. 요청은 `taskClass`·`userId`·`maxInputChars`를 싣는다. 분류와 입력 상한은 `PromptDefinition`이 정하고 `generateWithPrompt(…, { agreedConsentVersion, userId })`가 채운다.
-- `maxInputChars`(user 턴, 계약 길이·맥락 상한 최대치 실측에 여유): parse-todo 5,000(최대 약 3,700) · parse-memo 10,000(약 8,200) · quick-plan 12,000(약 9,800) · voice-note-digest 100,000(40,000자 전사를 문장 600개로 나눈 최대 약 94,000) · report·suggestion 16,000.
+- `maxInputChars`(user 턴, 계약 길이·맥락 상한 최대치 실측에 여유): parse-todo 5,000(최대 약 3,700) · parse-memo 15,000(약 13,800) · quick-plan 12,000(약 9,800) · voice-note-digest 100,000(40,000자 전사를 문장 600개로 나눈 최대 약 94,000) · report·suggestion 16,000.
 - 킬 스위치 `AI_GENERATION_MODE`: `off`면 모든 생성, `interactive-only`면 리포트·제안만 `HALTED`(AI_1301)로 멈춘다.
 - 예산: 추정 비용(micro-USD)을 `OutboundUsage`(meter `ai.spend`, subject `*`·사용자 id, UTC 일 `2026-11-05`·월 `2026-11`)에 요청이 끝날 때 전역 일·전역 월·사용자 일 세 행으로 한 번 더한다(`ai-spend.guard.ts`). 판단은 메모리 스냅샷(재시작·날짜가 바뀌면 DB에서 다시 읽음, 사용자 1만 명 LRU)으로 한다. 전역 일 $3·월 $30 이상이면 전부, 배경 작업은 일 $2·월 $20 이상이면 `HALTED`, 사용자 일 $0.25 이상이면 `USER_SPEND_LIMITED`(AI_1310)다. ADMIN은 사용자 일 예산에서만 빠지고(`isExemptFromUserSpendLimit`, 초과한 사용자만 등급을 읽는다) 사용량 기록·전역 예산·킬 스위치·입력 상한은 같다. 사용자 행은 계정 영구 삭제 때 함께 지운다. 진행 중인 호출은 끝난 뒤 더해지므로 상한은 그만큼 넘을 수 있다. 경고·배경·중단 기준선을 처음 넘긴 요청 하나가 기간당 한 번 `ai.spend.threshold-reached` 경보를 올린다(원자적 누적값 비교). 계량 오류는 로그만 남기고 생성을 막지 않는다.
 - 추정 비용은 보수적이다: 단가를 모르는 모델은 최고 단가로 `maxOutputTokens`까지 쓴 것으로, 사용량 없이 시간 초과로 끝난 호출은 입력 글자 수를 토큰 수로 보고 입력 비용을 더한다. 응답·로그의 `estimatedCostMicroUsd`는 지금처럼 토큰 기준(모르면 null)이다.

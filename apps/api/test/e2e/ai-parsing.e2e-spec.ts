@@ -151,4 +151,37 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     });
     expect(await usage()).toBe(1);
   });
+
+  it("메모 나누기는 이미 있는 같은 제목·날짜의 할 일을 겹침으로 알린다", async () => {
+    // Given
+    const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    const created = await request(ctx.app.getHttpServer())
+      .post("/v1/todos")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Timezone", "Asia/Seoul")
+      .send({ title: "치과 예약", categoryId, startDate: "2030-03-05" });
+    fakeAiGenerator.setRawResponse({
+      todos: [
+        {
+          intent: "TASK",
+          title: "치과예약",
+          date: { kind: "CALENDAR_DATE", year: 2030, month: 3, day: 5 },
+          time: null,
+          repeat: { pattern: "NONE" },
+          items: [],
+        },
+      ],
+    });
+
+    // When
+    const response = await request(ctx.app.getHttpServer())
+      .post("/v1/ai/parse-memo")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Timezone", "Asia/Seoul")
+      .send({ content: "치과예약 2030년 3월 5일", categoryId });
+
+    // Then
+    expect(response.status).toBe(200);
+    expect(response.body.data.data.todos[0].duplicateOfTodoId).toBe(created.body.data.todo.id);
+  });
 });

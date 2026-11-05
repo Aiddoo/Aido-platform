@@ -1,14 +1,11 @@
 import type { ActionPlan, ActionPlanMeta, PlannedAction } from "@aido/api";
 
-import type {
-  GeneratedActionPlan,
-  PlanGenerationMeta,
-} from "#api/modules/ai-assistance/ai-assistance-planning.public";
-
 import {
   type ExistingTodo,
   findDuplicateTodoId,
-} from "../../../domain/policies/plans/action-plan-dedupe.policy.js";
+  type GeneratedActionPlan,
+  type PlanGenerationMeta,
+} from "#api/modules/ai-assistance/ai-assistance-planning.public";
 
 /** 계획 응답. 행동 key는 응답마다 앱이 선택·편집 상태를 묶는 값이라 순서로 만든다. */
 export function toActionPlanView(

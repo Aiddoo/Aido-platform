@@ -1,6 +1,7 @@
 import { languagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
 import { securityRules } from "../../kit/security-rules.js";
+import { PLANNING_RULES_EN } from "../../planning/planning-rules.js";
 import { SCHEDULE_RULES_EN } from "../schedule/schedule-rules.js";
 import { PARSE_MEMO_EXAMPLES_EN } from "./examples.en.js";
 
@@ -28,7 +29,7 @@ export const PARSE_MEMO_SYSTEM_EN = composeSystem({
 You only interpret language. The server computes dates, weekdays, and times, so never calculate a date yourself; record only the kind of expression and its numbers.`,
   security: securityRules("en", {
     dataTags: ["context", "user_input"],
-    rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION"],
+    rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION", "KNOWN_IDS_ONLY"],
   }),
   languagePolicy: languagePolicy("en", ["TITLES_AS_SPOKEN"]),
   outputContract:
@@ -40,6 +41,7 @@ You only interpret language. The server computes dates, weekdays, and times, so 
     SCHEDULE_RULES_EN.time,
     SCHEDULE_RULES_EN.repeat,
     SCHEDULE_RULES_EN.category,
+    PLANNING_RULES_EN.duplicate,
   ],
   examples: PARSE_MEMO_EXAMPLES_EN,
 });

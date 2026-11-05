@@ -11698,6 +11698,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "minimum": 0,
                     "type": "integer",
                   },
+                  "duplicateOfTodoId": {
+                    "description": "이미 있는 같은 할 일의 ID (없으면 null). 1.15.0 이전 서버 응답에는 없다",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "nullable": true,
+                    "type": "integer",
+                  },
                   "endDate": {
                     "description": "종료 날짜 (YYYY-MM-DD, 단일 날짜는 null)",
                     "format": "date",

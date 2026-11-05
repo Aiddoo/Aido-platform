@@ -1,7 +1,6 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   resolveTodoSchedule,
@@ -28,6 +27,7 @@ import {
   type PromptDefinition,
   type PromptGeneration,
 } from "../../prompts/kit/prompt-definition.js";
+import { buildWithinLimit } from "../../prompts/planning/planning-context.js";
 import { quickPlanPrompt } from "../../prompts/planning/quick-plan/index.js";
 import { voiceNoteDigestPrompt } from "../../prompts/planning/voice-note-digest/index.js";
 import { describeParsingFailure } from "../parsing/ai-parsing-error-code.js";
@@ -62,21 +62,6 @@ function toGeneratedPlan(plan: NormalizedActionPlan, clock: ScheduleClock): Gene
     memo: plan.memo,
     omittedTodoCount: plan.omittedTodoCount,
   };
-}
-
-/**
- * 맥락은 줄일 수 있지만 말한 내용은 줄일 수 없다. 저장된 제목의 이스케이프로 입력 상한을 넘으면 겹침 후보를
- * 빼고 만든다(겹침은 서버 정책이 다시 판정한다). 그래도 넘으면 생성기가 업체를 부르지 않고 거절한다.
- */
-function buildWithinLimit<I extends { readonly upcomingTodos: readonly unknown[] }, O, R, C>(
-  definition: PromptDefinition<I, O, R, C>,
-  input: I,
-  locale: SupportedLocale,
-): BuiltPrompt {
-  const built = definition.build(input, locale);
-  return built.prompt.length <= definition.maxInputChars
-    ? built
-    : definition.build({ ...input, upcomingTodos: [] }, locale);
 }
 
 function normalizeContext(input: QuickPlanGenerationInput | VoiceNoteDigestGenerationInput) {

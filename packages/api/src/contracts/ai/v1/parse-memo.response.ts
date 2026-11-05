@@ -47,6 +47,13 @@ export const parsedMemoTodoSchema = z.object({
     .max(AI_PARSE_LIMITS.MEMO_MAX_ITEMS)
     .default([])
     .describe(`서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개)`),
+  duplicateOfTodoId: z
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .optional()
+    .describe("이미 있는 같은 할 일의 ID (없으면 null). 1.15.0 이전 서버 응답에는 없다"),
 });
 
 export type ParsedMemoTodo = z.infer<typeof parsedMemoTodoSchema>;

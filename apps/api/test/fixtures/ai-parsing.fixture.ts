@@ -5,6 +5,7 @@ import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import { StubAiDataSharingConsent } from "#test/mocks/ports/ai-assistance.stub";
 import {
   StubAiUserCategoryReader,
+  StubUpcomingTodoReader,
   StubUserLocalePreferenceReader,
 } from "#test/mocks/ports/ai-parsing.stub";
 import type { InMemoryQuotaUser } from "#test/mocks/ports/quota-ledger.stub";
@@ -21,6 +22,7 @@ export function createAiParsingFixture(input: Partial<InMemoryQuotaUser> = {}) {
     quota: ledgerFixture.ledger,
     logger: mock<ApplicationLogger>(),
     categoryReader,
+    upcomingTodoReader: new StubUpcomingTodoReader(),
     generator: new FakeAiGenerator(),
     consentReader: new StubAiDataSharingConsent(),
     localePreferenceReader: new StubUserLocalePreferenceReader(),

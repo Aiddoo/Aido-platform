@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
+import { readPromptBlock } from "#test/fixtures/ai-prompt.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
@@ -47,6 +48,82 @@ describe("ParseMemo", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe("이미 있는 할 일과 겹침", () => {
+    const upcoming = [
+      { id: 41, title: "치과 예약", startDate: "2026-10-29", isRepeating: false },
+      { id: 42, title: "영어 단어 30개", startDate: "2026-10-28", isRepeating: true },
+    ];
+    const tomorrow = { date: { kind: "OFFSET_DAYS", amount: 1 } };
+
+    it.each([
+      {
+        why: "모델이 고른 목록 안의 id를 쓴다",
+        todo: draftTodo("완전히 다른 제목", { duplicateOfTodoId: 41 }),
+        expected: 41,
+      },
+      {
+        why: "모델이 못 골라도 띄어쓰기만 다른 제목과 같은 날이면 찾는다",
+        todo: draftTodo("치과예약", tomorrow),
+        expected: 41,
+      },
+      {
+        why: "제목이 같아도 다른 날이면 겹치지 않는다",
+        todo: draftTodo("치과 예약"),
+        expected: null,
+      },
+      {
+        why: "진행 중인 반복 할 일은 날짜가 달라도 겹친다",
+        todo: draftTodo("영어 단어 30개", tomorrow),
+        expected: 42,
+      },
+      {
+        why: "목록에 없는 id는 버린다",
+        todo: draftTodo("우유 사기", { duplicateOfTodoId: 999 }),
+        expected: null,
+      },
+    ])("$why", async ({ todo, expected }) => {
+      // Given
+      const fixture = createFixture();
+      fixture.upcomingTodoReader.todos = upcoming;
+      fixture.generator.setRawResponse({ todos: [todo] });
+      // When
+      const result = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(result.data.todos[0]?.duplicateOfTodoId).toBe(expected);
+    });
+
+    it("빠른 계획과 같은 맥락으로 다가오는 할 일을 프롬프트에 싣는다", async () => {
+      // Given
+      const fixture = createFixture();
+      fixture.upcomingTodoReader.todos = upcoming;
+      fixture.generator.setRawResponse({ todos: [draftTodo("우유 사기")] });
+      // When
+      await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(
+        readPromptBlock(fixture.generator.getLastRequest()?.prompt ?? "", "context"),
+      ).toMatchObject({
+        upcomingTodos: [
+          { id: 41, title: "치과 예약", date: "2026-10-29", repeating: false },
+          { id: 42, title: "영어 단어 30개", date: "2026-10-28", repeating: true },
+        ],
+      });
+    });
+
+    it("실행할 행동이 없는 메모는 제목이 같아도 겹침으로 표시하지 않는다", async () => {
+      // Given
+      const fixture = createFixture();
+      fixture.upcomingTodoReader.todos = [
+        { id: 43, title: "입력 확인 필요", startDate: "2026-10-28", isRepeating: true },
+      ];
+      fixture.generator.setRawResponse({ todos: [draftTodo("", { intent: "NO_ACTION" })] });
+      // When
+      const result = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(result.data.todos[0]?.duplicateOfTodoId).toBeNull();
+    });
   });
 
   it("성공한 요청은 사용량 한 회를 유지하고 데이터와 모델 정보를 반환한다", async () => {

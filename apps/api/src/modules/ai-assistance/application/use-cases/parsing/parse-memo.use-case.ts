@@ -14,10 +14,12 @@ import {
 } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
+import type { UpcomingTodoReaderPort } from "../../ports/parsing/upcoming-todo-reader.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
 import { parseMemoPrompt } from "../../prompts/parsing/parse-memo/index.js";
+import { buildWithinLimit } from "../../prompts/planning/planning-context.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { settleChargedGeneration } from "../../services/parsing/charged-generation.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
@@ -67,6 +69,7 @@ interface ParseMemoDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
+  readonly upcomingTodoReader: Pick<UpcomingTodoReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
@@ -117,9 +120,13 @@ export class ParseMemo {
     const definition = parseMemoPrompt;
     const at = now();
 
-    const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const built = definition.build(
-      { content, timezone, now: at, categories: userCategories },
+    const [userCategories, upcomingTodos] = await Promise.all([
+      this.#dependencies.categoryReader.findByUserId(userId),
+      this.#dependencies.upcomingTodoReader.findByUserId(userId, timezone),
+    ]);
+    const built = buildWithinLimit(
+      definition,
+      { content, timezone, now: at, categories: userCategories, upcomingTodos },
       locale,
     );
     const logBase = {
@@ -142,6 +149,7 @@ export class ParseMemo {
           locale,
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           defaultCategoryId: categoryId,
+          upcomingTodos,
         },
         { agreedConsentVersion: agreedVersion, userId, signal: input.signal },
       );

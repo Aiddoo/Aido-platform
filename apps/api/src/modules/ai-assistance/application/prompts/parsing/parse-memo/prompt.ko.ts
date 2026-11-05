@@ -1,6 +1,7 @@
 import { languagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
 import { securityRules } from "../../kit/security-rules.js";
+import { PLANNING_RULES_KO } from "../../planning/planning-rules.js";
 import { SCHEDULE_RULES_KO } from "../schedule/schedule-rules.js";
 import { PARSE_MEMO_EXAMPLES_KO } from "./examples.ko.js";
 
@@ -28,7 +29,7 @@ export const PARSE_MEMO_SYSTEM_KO = composeSystem({
 너는 문장의 뜻만 해석한다. 날짜·요일·시각 계산은 서버가 하므로 날짜를 직접 계산하지 말고, 표현의 종류와 숫자만 기록한다.`,
   security: securityRules("ko", {
     dataTags: ["context", "user_input"],
-    rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION"],
+    rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION", "KNOWN_IDS_ONLY"],
   }),
   languagePolicy: languagePolicy("ko", ["TITLES_AS_SPOKEN"]),
   outputContract: "user_input의 memo에서 할 일을 메모에 적힌 순서대로 찾아 스키마에 맞게 반환한다.",
@@ -39,6 +40,7 @@ export const PARSE_MEMO_SYSTEM_KO = composeSystem({
     SCHEDULE_RULES_KO.time,
     SCHEDULE_RULES_KO.repeat,
     SCHEDULE_RULES_KO.category,
+    PLANNING_RULES_KO.duplicate,
   ],
   examples: PARSE_MEMO_EXAMPLES_KO,
 });
