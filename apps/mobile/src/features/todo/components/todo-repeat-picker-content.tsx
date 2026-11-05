@@ -445,10 +445,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
         {/* 글자가 커지면 칩을 아래로 내리지 않고 기간 문구가 왼쪽 안에서 줄을 바꾼다 */}
         <HStack gap={4} align="center" className="flex-1 flex-wrap">
           <Text size="b3" tone="neutral" shade={7}>
-            {t('picker.repeatPeriod')}
-          </Text>
-          <Text size="b3" tone="neutral" shade={6}>
-            •
+            {t('picker.repeatPeriod')} <Text shade={6}>•</Text>
           </Text>
           {match(endType)
             .with('NEVER', () => (
