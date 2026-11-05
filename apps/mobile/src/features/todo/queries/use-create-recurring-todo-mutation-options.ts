@@ -20,7 +20,7 @@ import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 export interface CreateRecurringTodoParams {
   input: RepeatingTodoDraft;
-  source: 'manual' | 'ai';
+  source: 'manual';
 }
 
 export const useCreateRecurringTodoMutationOptions = () => {
@@ -44,7 +44,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
         source,
-        creation_entry: source === 'ai' ? 'ai_parse' : 'recurring',
+        creation_entry: 'recurring',
         is_recurring: true,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,

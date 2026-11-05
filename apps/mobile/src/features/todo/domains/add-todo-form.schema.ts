@@ -5,7 +5,7 @@ import { todoRepeatSchema } from './todo-repeat.model';
 
 const { title, categoryId, scheduledTime, isAllDay, visibility } = createTodoSchema.shape;
 
-const todoSourceSchema = z.enum(['manual', 'ai']).default('manual');
+const todoSourceSchema = z.literal('manual').default('manual');
 
 export const addTodoFormSchema = z.object({
   title,
