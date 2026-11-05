@@ -65,8 +65,8 @@ function toSupportFailure(
 ): SubscriptionSupportFailure {
   return {
     titleKey: FAILURE_TITLE_KEYS[target],
-    descriptionKey: toDescriptionKey(SubscriptionFailurePolicy.causeOf(error)),
-    diagnosticCode: SubscriptionFailurePolicy.diagnosticCodeOf(error),
+    descriptionKey: toDescriptionKey(SubscriptionFailurePolicy.getFailureCause(error)),
+    diagnosticCode: SubscriptionFailurePolicy.getDiagnosticCode(error),
   };
 }
 
@@ -83,7 +83,7 @@ export function toSubscriptionActionFailure(
   target: SubscriptionActionTarget,
   error: unknown,
 ): SubscriptionActionFailure {
-  return match(SubscriptionFailurePolicy.causeOf(error))
+  return match(SubscriptionFailurePolicy.getFailureCause(error))
     .with('purchaseCancelled', () => ({ type: 'cancelled' as const }))
     .with('paymentPending', () => ({ type: 'paymentPending' as const }))
     .with('network', 'server', 'store', 'purchaseFailed', 'restoreFailed', () => ({

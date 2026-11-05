@@ -3,8 +3,8 @@ import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@
 import { SubscriptionFailurePolicy } from './subscription-failure.model';
 import { SubscriptionErrors } from './subscription.error';
 
-describe('SubscriptionFailurePolicy.causeOf', () => {
-  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.causeOf>]>([
+describe('SubscriptionFailurePolicy.getFailureCause', () => {
+  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getFailureCause>]>([
     ['기기 연결이 끊겨 내 정보를 받지 못하면', new NetworkError(), 'network'],
     ['내 정보 요청이 시간 초과되면', new TimeoutError(), 'network'],
     ['스토어에 연결하지 못하면', SubscriptionErrors.network('10'), 'network'],
@@ -20,11 +20,11 @@ describe('SubscriptionFailurePolicy.causeOf', () => {
     ['결제가 실패하면', SubscriptionErrors.purchaseFailed('2'), 'purchaseFailed'],
     ['복원이 실패하면', SubscriptionErrors.restoreFailed('7'), 'restoreFailed'],
   ])('%s 원인은 %s다', (_case, error, expected) => {
-    expect(SubscriptionFailurePolicy.causeOf(error)).toBe(expected);
+    expect(SubscriptionFailurePolicy.getFailureCause(error)).toBe(expected);
   });
 });
 
-describe('SubscriptionFailurePolicy.diagnosticCodeOf', () => {
+describe('SubscriptionFailurePolicy.getDiagnosticCode', () => {
   it.each<[string, unknown, string]>([
     [
       '스토어 코드가 있으면 괄호로 붙인다',
@@ -43,12 +43,12 @@ describe('SubscriptionFailurePolicy.diagnosticCodeOf', () => {
     ['응답 계약 불일치', new ParseError('사용자에게 보이면 안 되는 상세'), 'INVALID_RESPONSE'],
     ['모르는 값', { token: 'secret' }, 'UNKNOWN'],
   ])('%s', (_case, error, expected) => {
-    expect(SubscriptionFailurePolicy.diagnosticCodeOf(error)).toBe(expected);
+    expect(SubscriptionFailurePolicy.getDiagnosticCode(error)).toBe(expected);
   });
 });
 
-describe('SubscriptionFailurePolicy.storeUnavailableOf', () => {
-  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.storeUnavailableOf>]>([
+describe('SubscriptionFailurePolicy.getStoreUnavailable', () => {
+  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getStoreUnavailable>]>([
     [
       'SDK가 초기화되지 않았으면 설정 문제로 본다',
       SubscriptionErrors.storeUnavailable(),
@@ -73,7 +73,7 @@ describe('SubscriptionFailurePolicy.storeUnavailableOf', () => {
     ['서버 오류는 스토어 상태가 아니다', new ServerError(503), null],
   ])('%s', (_case, error, expected) => {
     // When
-    const result = SubscriptionFailurePolicy.storeUnavailableOf(error);
+    const result = SubscriptionFailurePolicy.getStoreUnavailable(error);
 
     // Then
     expect(result).toEqual(expected);

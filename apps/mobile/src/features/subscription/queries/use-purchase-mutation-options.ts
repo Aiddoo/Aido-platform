@@ -62,7 +62,7 @@ export const usePurchaseMutationOptions = () => {
         // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
         .with({ type: 'contactSupport' }, async (failure) => {
           haptics.notify('error');
-          const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.causeOf(error));
+          const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
           if (reason != null) {
             trackEvent('purchase_failed', { reason });
           }
