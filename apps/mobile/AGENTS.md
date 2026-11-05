@@ -96,7 +96,7 @@ features/{feature}/   # 단수 kebab-case
 APP_ENV                      # development | preview | production
 EXPO_PUBLIC_API_URL          # API 서버 URL
 EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable, 관측)
-EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry 강제 활성화. 'true'일 때만
+EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry SDK만 켠다. 'true'일 때만. JS 어댑터는 운영 빌드에서만 Sentry다
 
 # 빌드 (EAS Secrets)
 GOOGLE_SERVICES_JSON         # Firebase Android (Base64), Analytics
