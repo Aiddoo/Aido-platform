@@ -36,7 +36,7 @@ describe('TodoRepeatPolicy', () => {
       const biweekly = createWeekly({ interval: 2 });
 
       // When
-      const kinds = [weekdays, everyDay, biweekly].map(TodoRepeatPolicy.getKind);
+      const kinds = [weekdays, everyDay, biweekly].map(TodoRepeatPolicy.getRepeatKind);
 
       // Then
       expect(kinds).toEqual(['WEEKDAYS', 'DAILY', 'BIWEEKLY']);
@@ -49,7 +49,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = createMonthly(15);
 
       // When
-      const moved = TodoRepeatPolicy.withStartDate(repeat, '2026-11-15', '2026-12-31');
+      const moved = TodoRepeatPolicy.withRepeatStartDate(repeat, '2026-11-15', '2026-12-31');
 
       // Then
       expect(moved).toMatchObject({ frequency: 'MONTHLY', monthDay: 31 });
@@ -61,8 +61,8 @@ describe('TodoRepeatPolicy', () => {
       const custom = createWeekly({ weekdays: ['MON', 'FRI'] });
 
       // When
-      const movedDefault = TodoRepeatPolicy.withStartDate(byDefault, MONDAY, WEDNESDAY);
-      const movedCustom = TodoRepeatPolicy.withStartDate(custom, MONDAY, WEDNESDAY);
+      const movedDefault = TodoRepeatPolicy.withRepeatStartDate(byDefault, MONDAY, WEDNESDAY);
+      const movedCustom = TodoRepeatPolicy.withRepeatStartDate(custom, MONDAY, WEDNESDAY);
 
       // Then
       expect(movedDefault).toMatchObject({ weekdays: ['WED'] });
@@ -74,7 +74,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = withUntil(createWeekly(), '2026-11-10');
 
       // When
-      const moved = TodoRepeatPolicy.withStartDate(repeat, MONDAY, '2026-11-20');
+      const moved = TodoRepeatPolicy.withRepeatStartDate(repeat, MONDAY, '2026-11-20');
 
       // Then
       expect(moved.end).toEqual({ type: 'UNTIL', date: '2026-11-20' });
@@ -88,7 +88,9 @@ describe('TodoRepeatPolicy', () => {
       const day29 = createMonthly(29);
 
       // When
-      const results = [day28, day29].map((repeat) => TodoRepeatPolicy.isMonthDayClamped(repeat));
+      const results = [day28, day29].map((repeat) =>
+        TodoRepeatPolicy.isRepeatMonthDayClamped(repeat),
+      );
 
       // Then
       expect(results).toEqual([false, true]);
@@ -101,8 +103,8 @@ describe('TodoRepeatPolicy', () => {
       const until = '2026-12-31';
 
       // When
-      const empty = TodoRepeatPolicy.createWeeklyUntil([], until);
-      const weekly = TodoRepeatPolicy.createWeeklyUntil(['WED', 'MON'], until);
+      const empty = TodoRepeatPolicy.createWeeklyUntilRepeat([], until);
+      const weekly = TodoRepeatPolicy.createWeeklyUntilRepeat(['WED', 'MON'], until);
 
       // Then
       expect(empty).toBeNull();
@@ -123,7 +125,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = createWeekly({ weekdays: ['SAT', 'SUN'] });
 
       // When
-      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, WEDNESDAY, {
+      const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, WEDNESDAY, {
         from: '2026-11-01',
         to: '2026-11-15',
       });
@@ -137,7 +139,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = todoRepeatSchema.parse({ frequency: 'DAILY', end: { type: 'NEVER' } });
 
       // When
-      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, WEDNESDAY, {
+      const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, WEDNESDAY, {
         from: '2026-11-01',
         to: '2026-11-06',
       });
@@ -151,7 +153,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = createWeekly({ interval: 2, weekdays: ['MON', 'FRI'] });
 
       // When
-      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, WEDNESDAY, NOVEMBER);
+      const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, WEDNESDAY, NOVEMBER);
 
       // Then
       expect(dates).toEqual(['2026-11-06', '2026-11-16', '2026-11-20', '2026-11-30']);
@@ -166,7 +168,7 @@ describe('TodoRepeatPolicy', () => {
       });
 
       // When
-      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, '2026-10-31', {
+      const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, '2026-10-31', {
         from: '2026-10-01',
         to: '2027-03-01',
       });
@@ -180,7 +182,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = withUntil(createWeekly({ weekdays: ['MON'] }), '2026-11-16');
 
       // When
-      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, MONDAY, NOVEMBER);
+      const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, MONDAY, NOVEMBER);
 
       // Then
       expect(dates).toEqual(['2026-11-02', '2026-11-09', '2026-11-16']);
@@ -191,7 +193,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = withCount(createWeekly({ weekdays: ['MON'] }), 3);
 
       // When
-      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, '2026-11-23', {
+      const dates = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, '2026-11-23', {
         from: '2026-11-30',
         to: '2026-12-31',
       });
@@ -207,7 +209,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = createWeekly({ weekdays: ['SAT', 'SUN'] });
 
       // When
-      const first = TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, WEDNESDAY);
+      const first = TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, WEDNESDAY);
 
       // Then
       expect(first).toBe('2026-11-07');
@@ -218,7 +220,7 @@ describe('TodoRepeatPolicy', () => {
       const repeat = withUntil(createWeekly({ weekdays: ['SAT'] }), '2026-11-06');
 
       // When
-      const first = TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, WEDNESDAY);
+      const first = TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, WEDNESDAY);
 
       // Then
       expect(first).toBeNull();
@@ -233,7 +235,7 @@ describe('TodoRepeatPolicy', () => {
 
       // When
       const results = [counted, forever].map((repeat) =>
-        TodoRepeatPolicy.getLastOccurrenceDateKey(repeat, MONDAY),
+        TodoRepeatPolicy.getLastRepeatOccurrenceDateKey(repeat, MONDAY),
       );
 
       // Then
@@ -284,7 +286,7 @@ describe('getEditScopeDecision', () => {
     [{ isSeries: true, isDateOnly: false }, 'ask'],
   ] as const)('%j → %s', (input, expected) => {
     // When
-    const decision = TodoRepeatPolicy.getEditScopeDecision(input);
+    const decision = TodoRepeatPolicy.getTodoEditScopeDecision(input);
 
     // Then
     expect(decision).toBe(expected);
@@ -300,7 +302,7 @@ describe('isBeyondHorizon', () => {
     ['2027-02-04', true],
   ])('오늘 + 90일까지는 미리 만든다: %s → %s', (dateKey, expected) => {
     // When
-    const result = TodoRepeatPolicy.isBeyondHorizon(dateKey, TODAY);
+    const result = TodoRepeatPolicy.isBeyondRepeatHorizon(dateKey, TODAY);
 
     // Then
     expect(result).toBe(expected);
@@ -312,7 +314,7 @@ describe('isBeyondHorizon', () => {
     ['2027-03-01', true],
   ])('달의 마지막 날이 넘어가면 그 달은 넘어간 달이다: %s → %s', (dateKey, expected) => {
     // When
-    const result = TodoRepeatPolicy.isMonthBeyondHorizon(dateKey, TODAY);
+    const result = TodoRepeatPolicy.isMonthBeyondRepeatHorizon(dateKey, TODAY);
 
     // Then
     expect(result).toBe(expected);
@@ -363,7 +365,7 @@ describe('TodoRepeatPolicy 회차별 동작', () => {
   ])('$name', ({ occurrence, hasRule, canChangeRepeat, deleteScopes }) => {
     // When
     const result = {
-      hasRule: TodoRepeatPolicy.hasRule(occurrence),
+      hasRule: TodoRepeatPolicy.hasRepeatRule(occurrence),
       canChangeRepeat: TodoRepeatPolicy.canChangeRepeat(occurrence),
       deleteScopes: TodoRepeatPolicy.getDeleteScopes(occurrence),
     };

@@ -62,7 +62,7 @@ export function withTodoRepeatFormStartDate(
     return next;
   }
 
-  const adjusted = TodoRepeatPolicy.withStartDate(
+  const adjusted = TodoRepeatPolicy.withRepeatStartDate(
     repeat,
     toDeviceDateKey(values.startDate),
     toDeviceDateKey(nextStartDate),

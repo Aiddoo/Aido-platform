@@ -277,7 +277,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
         />
       }
       middle={
-        formattedTime != null || TodoPolicy.isRecurring(todo) ? (
+        formattedTime != null || TodoPolicy.isRecurringTodo(todo) ? (
           <TodoScheduleLine todo={todo} timeLabel={formattedTime} />
         ) : undefined
       }

@@ -29,7 +29,7 @@ export function useGetHasUpcomingRepeatQueryOptions() {
           signal,
         ),
       );
-      return todos.some(TodoPolicy.isRecurring);
+      return todos.some(TodoPolicy.isRecurringTodo);
     },
     throwOnError: false,
   });

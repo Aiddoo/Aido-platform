@@ -217,8 +217,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             return;
           }
           const scope = await match(
-            TodoRepeatPolicy.getEditScopeDecision({
-              isSeries: TodoRepeatPolicy.hasRule({ ...todo, repeat: initialValues.repeat }),
+            TodoRepeatPolicy.getTodoEditScopeDecision({
+              isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: initialValues.repeat }),
               repeat: changes.repeat,
               isDateOnly: hasOnlyDateChanges(changes),
             }),
@@ -331,11 +331,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           if (pickerResult) {
             const { startDate, repeat } = methods.getValues();
             // 반복 회차의 날짜 이동은 이 회차에만 적용되므로 규칙은 그대로 둔다
-            const isSeriesOccurrence = props.mode === 'edit' && TodoPolicy.isRecurring(props.todo);
+            const isSeriesOccurrence =
+              props.mode === 'edit' && TodoPolicy.isRecurringTodo(props.todo);
             if (repeat != null && !isSeriesOccurrence) {
               methods.setValue(
                 'repeat',
-                TodoRepeatPolicy.withStartDate(
+                TodoRepeatPolicy.withRepeatStartDate(
                   repeat,
                   toDeviceDateKey(startDate),
                   toDeviceDateKey(pickerResult),

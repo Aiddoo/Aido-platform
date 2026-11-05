@@ -20,7 +20,7 @@ export function formatRepeatCadence(
   const days =
     repeat.frequency === 'WEEKLY' ? formatDaysOfWeek(repeat.weekdays, weekdaySeparator) : '';
 
-  return match(TodoRepeatPolicy.getKind(repeat))
+  return match(TodoRepeatPolicy.getRepeatKind(repeat))
     .with('DAILY', () => t('todo:repeat.summary.DAILY'))
     .with('WEEKDAYS', () => t('todo:repeat.summary.WEEKDAYS'))
     .with('WEEKENDS', () => t('todo:repeat.summary.WEEKENDS'))

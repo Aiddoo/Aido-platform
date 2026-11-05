@@ -153,10 +153,10 @@ export function hasUpcomingTimedTodo(
 }
 
 export const TodoPolicy = {
-  isRecurring: isRecurringTodo,
+  isRecurringTodo,
   isOptimisticTodo,
   withDailyCompletionFromTodos,
   hasSubTodos,
-  completesAll: completesAllTodos,
+  completesAllTodos,
   hasUpcomingTimedTodo,
 } as const;

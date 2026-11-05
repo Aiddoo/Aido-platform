@@ -336,7 +336,7 @@ function getFirstOccurrenceKey(values: TodoRepeatFormValues): string | null {
   const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
   return repeat == null
     ? null
-    : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
+    : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
 }
 
 function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
@@ -355,14 +355,14 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
     repeat == null || firstWeekDate == null || lastWeekDate == null
       ? null
       : new Set(
-          TodoRepeatPolicy.getOccurrenceDateKeys(repeat, startDateKey, {
+          TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, startDateKey, {
             from: toDeviceDateKey(firstWeekDate),
             to: toDeviceDateKey(lastWeekDate),
           }),
         );
   const lastOccurrenceKey =
     endType === 'COUNT' && repeat != null
-      ? TodoRepeatPolicy.getLastOccurrenceDateKey(repeat, startDateKey)
+      ? TodoRepeatPolicy.getLastRepeatOccurrenceDateKey(repeat, startDateKey)
       : null;
   const endDate = match(endType)
     .with('UNTIL', () => untilDate)
@@ -448,7 +448,10 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
       const repeat = toTodoRepeat(values);
       return repeat == null
         ? null
-        : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
+        : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
+            repeat,
+            toDeviceDateKey(values.startDate),
+          );
     },
   });
   const dateFormatContext = useDateFormatContext();
@@ -458,7 +461,7 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
     control,
     compute: (values) => {
       const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
-      return repeat != null && TodoRepeatPolicy.isMonthDayClamped(repeat);
+      return repeat != null && TodoRepeatPolicy.isRepeatMonthDayClamped(repeat);
     },
   });
   const periodStart = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);

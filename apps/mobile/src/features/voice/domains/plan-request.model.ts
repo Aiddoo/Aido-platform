@@ -40,6 +40,6 @@ export function getPlanRequestAfterFailure<TInput>(
 }
 
 export const PlanRequestPolicy = {
-  prepare: preparePlanRequest,
-  getAfterFailure: getPlanRequestAfterFailure,
+  preparePlanRequest,
+  getPlanRequestAfterFailure,
 } as const;

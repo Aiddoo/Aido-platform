@@ -155,7 +155,7 @@ export function withStartDate(todo: PlannedTodo, startDate: Date): PlannedTodo {
     return {
       ...todo,
       startDate,
-      repeat: TodoRepeatPolicy.withStartDate(
+      repeat: TodoRepeatPolicy.withRepeatStartDate(
         todo.repeat,
         toDeviceDateKey(todo.startDate),
         toDeviceDateKey(startDate),

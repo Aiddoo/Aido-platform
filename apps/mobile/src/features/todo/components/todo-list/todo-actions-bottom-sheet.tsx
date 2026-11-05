@@ -132,7 +132,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   };
 
   const handleDelete = async () => {
-    if (!TodoPolicy.isRecurring(todo)) {
+    if (!TodoPolicy.isRecurringTodo(todo)) {
       deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
       return;
     }
@@ -278,7 +278,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
           />
         </PressableFeedback>
 
-        {TodoRepeatPolicy.hasRule(todo) && (
+        {TodoRepeatPolicy.hasRepeatRule(todo) && (
           <PressableFeedback
             onPress={handleStopRepeat}
             isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}

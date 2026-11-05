@@ -54,7 +54,7 @@ describe('getPlanRequestAfterFailure', () => {
     const error = new ApiError('AI_1318', '오류', 422);
 
     // When
-    const next = PlanRequestPolicy.getAfterFailure(previous, error);
+    const next = PlanRequestPolicy.getPlanRequestAfterFailure(previous, error);
 
     // Then
     expect(next).toBeNull();
@@ -65,7 +65,7 @@ describe('getPlanRequestAfterFailure', () => {
     const error = new ApiError('AI_1314', '처리 중', 409);
 
     // When
-    const next = PlanRequestPolicy.getAfterFailure(previous, error);
+    const next = PlanRequestPolicy.getPlanRequestAfterFailure(previous, error);
 
     // Then
     expect(next).toBe(previous);

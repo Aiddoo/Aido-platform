@@ -175,7 +175,7 @@ export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
   const { repeat } = todo;
-  const isRepeating = TodoPolicy.isRecurring(todo);
+  const isRepeating = TodoPolicy.isRecurringTodo(todo);
   const ruleLabel = repeat == null ? t('chip.repeat') : formatRepeatCadence(repeat);
   const spokenRule =
     repeat == null

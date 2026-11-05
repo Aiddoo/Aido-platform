@@ -91,8 +91,10 @@ export function getTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeat
   if (repeat == null) {
     return 'until-required';
   }
-  return TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate)) ==
-    null
+  return TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
+    repeat,
+    toDeviceDateKey(values.startDate),
+  ) == null
     ? 'no-occurrence'
     : null;
 }
