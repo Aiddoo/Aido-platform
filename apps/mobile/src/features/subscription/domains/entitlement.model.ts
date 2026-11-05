@@ -58,11 +58,6 @@ export type QuotaResetNotice =
   | { type: 'tomorrow' }
   | { type: 'date'; date: Date };
 
-/** 유효한 스토어 구독·보상 기간이 있는지(유료 효력). 기능을 열지 판단할 때는 hasFullAccess를 쓴다 */
-export function isPremium(snapshot: EntitlementSnapshot): boolean {
-  return snapshot.isPremium;
-}
-
 /** 프리미엄 기능을 모두 쓸 수 있는지. 관리자는 구독이 없어도 모든 기능을 쓴다 */
 export function hasFullAccess(snapshot: EntitlementSnapshot): boolean {
   return snapshot.tier !== 'FREE';
@@ -115,11 +110,6 @@ export function getRemainingCount(snapshot: EntitlementSnapshot, feature: Entitl
 /** 한 번 쓸 수 있는 최대 길이(초). 길이 제한이 없으면 null이다 */
 export function getMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.perUse?.maxSeconds ?? null;
-}
-
-/** 프리미엄의 넉넉한 한도(공정 사용 상한)를 쓰는 중인지 */
-export function isFairUse(snapshot: EntitlementSnapshot, feature: EntitlementFeature): boolean {
-  return findFeatureQuota(snapshot, feature)?.isFairUse === true;
 }
 
 export function getQuotaStatus(
@@ -181,7 +171,6 @@ export function withFeatureQuota(
 }
 
 export const EntitlementPolicy = {
-  isPremium,
   hasFullAccess,
   findFeatureQuota,
   isFeatureLocked,
@@ -189,7 +178,6 @@ export const EntitlementPolicy = {
   getLimit,
   getRemainingCount,
   getMaxSeconds,
-  isFairUse,
   getQuotaStatus,
   getResetNotice,
   getFreeLimit,
