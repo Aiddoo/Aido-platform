@@ -149,7 +149,7 @@ export function TodoTimePickerContent({
 
         <Flex px={4} justify="center" align="center">
           <Text size="b3" shade={5}>
-            {t('picker.reminderInfo')}
+            {t(localIsAllDay ? 'picker.reminderInfoAllDay' : 'picker.reminderInfo')}
           </Text>
         </Flex>
       </VStack>

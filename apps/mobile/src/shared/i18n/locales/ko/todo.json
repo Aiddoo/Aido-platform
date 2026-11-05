@@ -80,6 +80,7 @@
     "time": "시간",
     "selectTime": "시간 선택",
     "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요",
+    "reminderInfoAllDay": "ⓘ 종일 할 일은 알림을 보내지 않아요",
     "repeatPeriod": "반복 기간",
     "selectPeriod": "기간을 선택해주세요",
     "periodNever": "{{date}}부터 계속",

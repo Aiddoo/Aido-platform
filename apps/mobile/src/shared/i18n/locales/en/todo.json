@@ -82,6 +82,7 @@
     "time": "Time",
     "selectTime": "Choose a time",
     "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
+    "reminderInfoAllDay": "ⓘ All-day to-dos don't send reminders",
     "repeatPeriod": "Repeat period",
     "selectPeriod": "Please choose a period",
     "periodNever": "From {{date}}, ongoing",
