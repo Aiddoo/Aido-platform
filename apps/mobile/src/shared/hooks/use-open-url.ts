@@ -2,10 +2,22 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import { errorMessageOf } from '@src/shared/errors';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 
 import { OPEN_URL_LOG_EVENT } from './open-url-log-events';
 import { useSingleTap } from './use-single-tap';
+
+export function useOpenAppSettings() {
+  const logger = useLogger();
+
+  return useCallback(
+    () =>
+      Linking.openSettings().catch((error: unknown) =>
+        logger.warn(OPEN_URL_LOG_EVENT.SETTINGS_OPEN_FAILED, { error: errorMessageOf(error) }),
+      ),
+    [logger],
+  );
+}
 
 /**
  * 약관·공지 같은 웹 문서를 앱 안 브라우저로 연다.

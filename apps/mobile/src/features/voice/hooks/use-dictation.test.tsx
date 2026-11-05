@@ -30,7 +30,12 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
-      { di: { speechRecognizer } },
+      {
+        di: {
+          speechRecognizer,
+          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        },
+      },
     );
     await act(async () =>
       speechRecognizer.emit({
@@ -62,7 +67,12 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe onEnd={onEnd} />
       </OverlayProvider>,
-      { di: { speechRecognizer } },
+      {
+        di: {
+          speechRecognizer,
+          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        },
+      },
     );
     await fireEvent.press(screen.getByTestId('mic'));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -84,7 +94,12 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe onEnd={onEnd} />
       </OverlayProvider>,
-      { di: { speechRecognizer } },
+      {
+        di: {
+          speechRecognizer,
+          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        },
+      },
     );
     await fireEvent.press(screen.getByTestId('mic'));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -104,7 +119,12 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
-      { di: { speechRecognizer } },
+      {
+        di: {
+          speechRecognizer,
+          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        },
+      },
     );
     await fireEvent.press(screen.getByTestId('mic'));
 
