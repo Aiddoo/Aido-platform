@@ -25,6 +25,7 @@
     }
   },
   "listening": {
+    "prompt": "Go ahead, we're listening",
     "cancel": "Cancel",
     "done": "Done",
     "resume": "Keep talking",

@@ -96,6 +96,18 @@ export function getTimelineLevel(
   return index >= 0 ? (levels[index] ?? null) : null;
 }
 
+/** 지난 프레임의 값에서 음량 쪽으로 한 프레임 나아간 값. 커질 때와 잦아들 때 따라가는 시간이 다르다 */
+export function followLevel(
+  current: number,
+  target: number,
+  elapsedMs: number,
+  { attackMs, releaseMs }: { attackMs: number; releaseMs: number },
+): number {
+  'worklet';
+  const followMs = target > current ? attackMs : releaseMs;
+  return current + (target - current) * (1 - Math.exp(-elapsedMs / followMs));
+}
+
 /** 전체 길이를 `count`칸으로 줄여 스크러버에 맞춘다. 칸마다 구간의 가장 큰 값이다 */
 export function resampleLevels(levels: readonly number[], count: number): number[] {
   if (count <= 0 || levels.length === 0) {

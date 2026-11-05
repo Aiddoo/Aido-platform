@@ -58,30 +58,26 @@ export const VOICE_GRADIENT_COLORS = {
 
 export const VOICE_ORB = {
   /** 원 반지름(R)에 대한 크기 비율. 음량에 따라 이 범위에서만 변한다 */
-  minRadiusRatio: 0.54,
-  maxRadiusRatio: 0.66,
-  /** 음량을 따라가는 속도. 클수록 빠르게 반응한다 */
-  smoothing: 0.08,
-  ringCount: 2,
-  ringPeriodMs: 2_600,
+  minRadiusRatio: 0.4,
+  maxRadiusRatio: 0.62,
+  /** 소리가 커질 때와 잦아들 때 음량을 따라가는 시간. 잦아들 때가 길어 말이 멈추면 천천히 가라앉는다 */
+  attackMs: 70,
+  releaseMs: 520,
+  /** 말소리 크기가 가장 클 때 고리가 한 번 퍼지는 시간 */
+  ringPeriodMs: 1_100,
   ringGrowRatio: 0.55,
-  /** 정지 상태(모션 줄이기·계획 중) 원 크기 */
-  restRadiusRatio: 0.58,
-} as const;
-
-export const VOICE_WAVEFORM = {
-  barCount: 48,
-  barWidth: 3,
-  barGap: 3,
-  height: 36,
-  /** 샘플을 흘려보내는 간격 */
-  sampleIntervalMs: 50,
-  minBarRatio: 0.08,
+  /** 조용할 때 원 밝기 */
+  quietOpacity: 0.72,
 } as const;
 
 export const VOICE_EDGE_GLOW = {
-  strokeWidth: 3,
-  blur: 10,
+  /** 빛이 시트 바깥으로 번지는 정도. 캔버스는 이 값의 3배만큼 시트보다 크다 */
+  blur: 14,
+  /** 시트 테두리에 붙는 또렷한 선 굵기 */
+  rimWidth: 1.5,
+  /** 말소리 크기가 가장 클 때 한 바퀴 도는 시간 */
   rotationPeriodMs: 5_000,
   minOpacity: 0.35,
+  attackMs: 90,
+  releaseMs: 700,
 } as const;

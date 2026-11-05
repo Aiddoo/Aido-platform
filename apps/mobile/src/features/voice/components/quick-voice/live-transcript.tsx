@@ -17,6 +17,10 @@ const splitWords = (text: string) => text.split(' ').filter((word) => word.lengt
 
 interface LiveTranscriptProps {
   transcript: VoiceTranscript;
+  /** 글자가 없을 때 글자 자리에 보이는 안내 */
+  placeholder?: string;
+  /** 이미 본 글자를 다시 보일 때는 등장 효과를 끈다 */
+  isWordFadeEnabled?: boolean;
 }
 
 /**
@@ -24,21 +28,33 @@ interface LiveTranscriptProps {
  * Android에는 한글을 단어 단위로 줄바꿈하는 Text prop이 없다(`lineBreakStrategyIOS`는 iOS 전용, RN은
  * `LineBreakConfig`를 노출하지 않는다). 그래서 단어마다 따로 그려 음절 사이에서 끊기지 않게 한다.
  */
-export function LiveTranscript({ transcript }: LiveTranscriptProps) {
+export function LiveTranscript({
+  transcript,
+  placeholder,
+  isWordFadeEnabled = true,
+}: LiveTranscriptProps) {
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const isReducedMotion = useReducedMotion();
   const finalWords = splitWords(getFinalText(transcript));
   const interimWords = splitWords(getInterimText(transcript));
-  const isAnimated = !isReducedMotion && finalWords.length <= MAX_ANIMATED_WORDS;
+  const isAnimated =
+    isWordFadeEnabled && !isReducedMotion && finalWords.length <= MAX_ANIMATED_WORDS;
+  const isEmpty = finalWords.length === 0 && interimWords.length === 0;
 
   return (
     <ScrollView
       ref={scrollRef}
       onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
       showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
       testID="live-transcript"
     >
       <Box className="flex-row flex-wrap">
+        {isEmpty && placeholder != null && (
+          <Text size="t2" weight="semibold" shade={4} lineBreakStrategyIOS="hangul-word">
+            {placeholder}
+          </Text>
+        )}
         {finalWords.map((word, index) =>
           isAnimated ? (
             <Animated.View key={`${index}-${word}`} entering={FadeIn.duration(WORD_FADE_MS)}>

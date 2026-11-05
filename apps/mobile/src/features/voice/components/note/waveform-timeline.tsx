@@ -1,9 +1,11 @@
 import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
+import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
+import type { SpeechEvent } from '@src/core/ports/speech-recognizer';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useCallback, useRef } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
   Easing,
@@ -13,7 +15,11 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import {
+  SPEECH_LEVEL_THRESHOLD,
+  WAVEFORM_BAR,
+  WAVEFORM_NO_VOLUME_GAP_MS,
+} from '../../constants/voice-note.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import {
@@ -29,6 +35,7 @@ const BAR_VERTICAL_SHARE = 0.8;
 const FLAG = { poleWidth: 2, top: 2, width: 8, height: 8, heightShare: 0.2 } as const;
 const IDLE_DASH_HEIGHT = 2;
 const RADIUS = WAVEFORM_BAR.width / 2;
+const NO_FLAGS: readonly number[] = [];
 
 export interface LiveWaveform {
   /** 재생선 왼쪽에 그릴 최근 칸(오래된 순). 길이는 `WAVEFORM_BAR.maxLiveBars`를 넘지 않는다 */
@@ -118,13 +125,13 @@ function addLevelBars(
 interface WaveformTimelineProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
   waveform: LiveWaveform;
   /** 깃발이 꽂힌 칸. `getBarIndexAt`으로 구한 전체 칸 번호다 */
-  flagIndexes: readonly number[];
+  flagIndexes?: readonly number[];
 }
 
 /** 가운데 고정 재생선을 지나 왼쪽으로 흐르는 파형. 말한 구간은 main, 조용한 구간은 gray, 중요 표시는 깃발이다 */
 export function WaveformTimeline({
   waveform,
-  flagIndexes,
+  flagIndexes = NO_FLAGS,
   className,
   ...boxProps
 }: WaveformTimelineProps) {
@@ -218,4 +225,41 @@ export function WaveformTimeline({
       />
     </Box>
   );
+}
+
+interface RecognizerWaveformProps extends Omit<WaveformTimelineProps, 'waveform'> {
+  /** 듣지 않을 때는 음량을 받지 않아 파형이 멈춘다 */
+  isActive: boolean;
+}
+
+/** 인식기 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
+export function RecognizerWaveform({ isActive, ...timelineProps }: RecognizerWaveformProps) {
+  const speechRecognizer = useSpeechRecognizer();
+  const waveform = useLiveWaveform();
+  const { pushLevel } = waveform;
+
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    let lastVolumeAt = Date.now();
+    const unsubscribe = speechRecognizer.subscribe((event: SpeechEvent) => {
+      if (event.type === 'volume') {
+        lastVolumeAt = Date.now();
+        pushLevel(event.level);
+      }
+    });
+    const silenceTimer = setInterval(() => {
+      if (Date.now() - lastVolumeAt >= WAVEFORM_NO_VOLUME_GAP_MS) {
+        pushLevel(0);
+      }
+    }, WAVEFORM_BAR.intervalMs / 2);
+
+    return () => {
+      unsubscribe();
+      clearInterval(silenceTimer);
+    };
+  }, [isActive, pushLevel, speechRecognizer]);
+
+  return <WaveformTimeline {...timelineProps} waveform={waveform} />;
 }

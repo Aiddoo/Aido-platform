@@ -1,5 +1,4 @@
-import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
-import type { SpeechEvent, SpeechLocale } from '@src/core/ports/speech-recognizer';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
@@ -14,10 +13,7 @@ import { SentenceCaptionList } from '@src/features/voice/components/note/sentenc
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
 import { VoiceNoteMarkControl } from '@src/features/voice/components/note/voice-note-mark-control';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
-import {
-  useLiveWaveform,
-  WaveformTimeline,
-} from '@src/features/voice/components/note/waveform-timeline';
+import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { RecognitionLanguageToggle } from '@src/features/voice/components/quick-voice/recognition-language-toggle';
 import { VOICE_CLOCK_TICK_MS } from '@src/features/voice/constants/voice.constants';
 import {
@@ -189,9 +185,10 @@ function VoiceNoteRecordScreen() {
     />
   );
   const waveform = (
-    <RecordingWaveform
+    <RecognizerWaveform
       isActive={state.status === 'listening'}
-      bookmarksMs={recording.bookmarksMs}
+      flagIndexes={recording.bookmarksMs.map(getBarIndexAt)}
+      className="self-stretch"
     />
   );
   const captions = (
@@ -369,38 +366,6 @@ function RecordingClock({
       elapsedMs={VoiceCapturePolicy.getElapsedMs(state, now)}
       limitMs={limitMs}
       label={label}
-    />
-  );
-}
-
-/** 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
-function RecordingWaveform({
-  isActive,
-  bookmarksMs,
-}: {
-  isActive: boolean;
-  bookmarksMs: readonly number[];
-}) {
-  const speechRecognizer = useSpeechRecognizer();
-  const waveform = useLiveWaveform();
-  const { pushLevel } = waveform;
-
-  useEffect(() => {
-    if (!isActive) {
-      return;
-    }
-    return speechRecognizer.subscribe((event: SpeechEvent) => {
-      if (event.type === 'volume') {
-        pushLevel(event.level);
-      }
-    });
-  }, [isActive, pushLevel, speechRecognizer]);
-
-  return (
-    <WaveformTimeline
-      waveform={waveform}
-      flagIndexes={bookmarksMs.map(getBarIndexAt)}
-      className="self-stretch"
     />
   );
 }

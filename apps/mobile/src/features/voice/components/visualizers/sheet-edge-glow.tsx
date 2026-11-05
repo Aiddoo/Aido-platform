@@ -1,88 +1,114 @@
-import { BlurMask, Canvas, RoundedRect, SweepGradient, vec } from '@shopify/react-native-skia';
-import { Box } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import type { ComponentProps } from 'react';
+import {
+  BlurMask,
+  Canvas,
+  Group,
+  RoundedRect,
+  SweepGradient,
+  vec,
+} from '@shopify/react-native-skia';
+import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { SHEET_RADIUS } from '@src/shared/ui';
 import { useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
-import {
+import Animated, {
+  FadeIn,
+  FadeOut,
   type SharedValue,
   useDerivedValue,
-  useFrameCallback,
-  useReducedMotion,
   useSharedValue,
 } from 'react-native-reanimated';
 
 import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../../constants/voice.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
+import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
+import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
+import { followLevel } from '../../utils/view-models/waveform.view-model';
 
-const SHEET_RADIUS = 32;
-const FULL_TURN = 360;
+const BLEED = VOICE_EDGE_GLOW.blur * 3;
+const FULL_TURN_RADIANS = Math.PI * 2;
 
-interface SheetEdgeGlowProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
+interface SheetEdgeGlowProps {
   level: SharedValue<number>;
-  /** 듣지 않을 때는 프레임 콜백을 꺼 마지막 모양을 그대로 둔다 */
-  isActive: boolean;
 }
 
-/** 듣는 동안 시트 테두리를 따라 천천히 도는 빛. 밝기는 음량을 따르고 소리가 없으면 옅어진다 */
-export function SheetEdgeGlow({ level, isActive, className, ...boxProps }: SheetEdgeGlowProps) {
-  const isReducedMotion = useReducedMotion();
+/**
+ * 시트 테두리 바깥으로 번지는 빛. `KeyboardBottomSheet`의 `backgroundDecoration`으로 시트 면 뒤에 깔려 내용과 겹치지 않는다.
+ * 듣는 동안에만 마운트한다. 밝기와 도는 속도는 실제 음량만 따라서 조용하면 멈춰 옅어진다.
+ */
+export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
+  const isReducedMotion = useReduceMotion();
   const mainColor = useSkiaColor('text-main');
+  const densityScale = useSkiaDensityScale();
   const [size, setSize] = useState({ width: 0, height: 0 });
   const angle = useSharedValue(0);
   const smoothed = useSharedValue(0);
 
-  useFrameCallback((frame) => {
-    smoothed.set(smoothed.get() + (level.get() - smoothed.get()) * 0.08);
-    const turned = (frame.timeSincePreviousFrame ?? 0) / VOICE_EDGE_GLOW.rotationPeriodMs;
-    angle.set((angle.get() + turned * FULL_TURN) % FULL_TURN);
-  }, isActive && !isReducedMotion);
+  useVoiceFrameCallback((frame) => {
+    'worklet';
+    const elapsed = frame.timeSincePreviousFrame ?? 0;
+    const next = followLevel(smoothed.get(), level.get(), elapsed, VOICE_EDGE_GLOW);
+    smoothed.set(next);
+    angle.set(
+      (angle.get() + (elapsed / VOICE_EDGE_GLOW.rotationPeriodMs) * FULL_TURN_RADIANS * next) %
+        FULL_TURN_RADIANS,
+    );
+  }, !isReducedMotion);
 
   const opacity = useDerivedValue(
     () => VOICE_EDGE_GLOW.minOpacity + (1 - VOICE_EDGE_GLOW.minOpacity) * smoothed.get(),
   );
-  const rotation = useDerivedValue(() => [{ rotate: (angle.get() * Math.PI) / 180 }]);
+  const rotation = useDerivedValue(() => [{ rotate: angle.get() }]);
+  const width = Math.max(0, size.width - BLEED * 2);
+  const height = Math.max(0, size.height - BLEED * 2);
   const center = vec(size.width / 2, size.height / 2);
-  const inset = VOICE_EDGE_GLOW.strokeWidth;
+  const gradient = (
+    <SweepGradient
+      c={center}
+      colors={[
+        mainColor,
+        VOICE_GRADIENT_COLORS.glowApricot,
+        VOICE_GRADIENT_COLORS.glowRose,
+        VOICE_GRADIENT_COLORS.glowCream,
+        mainColor,
+      ]}
+      origin={center}
+      transform={rotation}
+    />
+  );
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
   };
 
-  // Skia Canvas는 onLayout을 받지 않아 감싼 Box에서 크기를 잰다
+  // Skia Canvas는 onLayout을 받지 않고 Box는 등장·퇴장 애니메이션이 없어 Animated.View에서 크기를 잰다
   return (
-    <Box
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(150)}
       pointerEvents="none"
-      className={cn('absolute inset-0', className)}
       onLayout={handleLayout}
-      {...boxProps}
+      style={{ position: 'absolute', top: -BLEED, right: -BLEED, bottom: -BLEED, left: -BLEED }}
+      testID="sheet-edge-glow"
     >
       <Canvas style={{ flex: 1 }}>
-        <RoundedRect
-          x={inset}
-          y={inset}
-          width={Math.max(0, size.width - inset * 2)}
-          height={Math.max(0, size.height - inset * 2)}
-          r={SHEET_RADIUS}
-          style="stroke"
-          strokeWidth={VOICE_EDGE_GLOW.strokeWidth}
-          opacity={opacity}
-        >
-          <SweepGradient
-            c={center}
-            colors={[
-              mainColor,
-              VOICE_GRADIENT_COLORS.glowApricot,
-              VOICE_GRADIENT_COLORS.glowRose,
-              VOICE_GRADIENT_COLORS.glowCream,
-              mainColor,
-            ]}
-            origin={center}
-            transform={rotation}
-          />
-          <BlurMask blur={VOICE_EDGE_GLOW.blur} style="solid" />
-        </RoundedRect>
+        <Group transform={[{ scale: densityScale }]} opacity={opacity}>
+          <RoundedRect x={BLEED} y={BLEED} width={width} height={height} r={SHEET_RADIUS}>
+            {gradient}
+            <BlurMask blur={VOICE_EDGE_GLOW.blur} style="outer" />
+          </RoundedRect>
+          <RoundedRect
+            x={BLEED}
+            y={BLEED}
+            width={width}
+            height={height}
+            r={SHEET_RADIUS}
+            style="stroke"
+            strokeWidth={VOICE_EDGE_GLOW.rimWidth}
+          >
+            {gradient}
+          </RoundedRect>
+        </Group>
       </Canvas>
-    </Box>
+    </Animated.View>
   );
 }
