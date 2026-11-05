@@ -163,12 +163,13 @@
 - **Facade 별칭**: `XPolicy`의 키와 함수 이름이 다른 곳 80곳(`isStale: isReportStale`).
 - **RN `Image`**: `react-native`의 `Image`를 import하는 앱 파일 15개.
 - **테스트 주석**: 규칙과 다른 GWT 주석. `// Given - 설명`·`// Given: 설명` 꼴 1,693건(서버 1,540, 앱 153), `// When / Then` 합본 566건(서버 397, 앱 169). 기존 테스트를 일괄 교체하지 않으므로 손댈 때 고친다.
-- **RRULE**: 지금 코드에는 RRULE이 없다. 반복 규칙은 `TodoSeries` 필드로 저장한다.
+- **RRULE**: 반복 규칙을 표준 RRULE 형식으로 옮기는 일. 지금은 `TodoSeries` 필드로 저장한다.
 - **Reanimated `.value =`**: `.get()`·`.set()`으로 바꾸지 않은 16곳(6개 파일).
 - **RN `Pressable`**: `react-native` import 17개(앱 코드 4, 테스트 13).
 - **빈 catch**: `.catch(noop)` 17곳과 빈 화살표 `.catch` 14곳, 합쳐 31곳. 실패가 다른 곳에 보고되는지 확인한다.
 - **감싼 fallback**: `fallback={(props) => …}`로 감싼 시트·상세 pane 15곳(시트 13, 상세 pane 2).
 - **`memo-list`**: 메모 탭 목록은 무한 조회를 `.map`으로 그린다. `FlashList`를 적용하지 않았다.
+- **`TodoList`**: 할 일 목록도 `.map`으로 그린다. 하루 할 일이 많을 때의 탭 이동 수치를 Release로 잰 뒤 `FlashList` 적용을 정한다.
 - **옛 포트 이름**: 서버 날씨 포트의 `KmaForecastTiming` 등 공급자 이름이 남았다.
 - **미사용 export**: 1.15.0 이전부터 있던 것은 지우지 않았다.
 - **왼쪽 메뉴 28pt 차이**: 딥링크로 첫 시작하면 내 정보 왼쪽 메뉴의 위 여백이 탭에서 들어올 때와 28pt 다르다.
