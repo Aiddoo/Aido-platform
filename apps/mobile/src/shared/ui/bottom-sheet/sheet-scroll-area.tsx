@@ -4,6 +4,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
 
+import { cn } from '../../utils/cn';
 import { Box } from '../box';
 
 const FADE_HEIGHT = 32;
@@ -20,7 +21,13 @@ export function hasContentBelow({ viewportHeight, contentHeight, offsetY }: Shee
   return viewportHeight > 0 && contentHeight - viewportHeight - offsetY > 1;
 }
 
-function SheetScrollFade() {
+interface SheetScrollFadeProps {
+  /** 내용이 잘리는 쪽 */
+  edge?: 'top' | 'bottom';
+}
+
+/** 시트 안 스크롤 영역에서 내용이 잘리는 쪽을 시트 면 색으로 흐리게 덮는다 */
+export function SheetScrollFade({ edge = 'bottom' }: SheetScrollFadeProps) {
   const { backgroundColor } = useResolveClassNames('bg-white dark:bg-gray-1');
   const color = typeof backgroundColor === 'string' ? backgroundColor : undefined;
 
@@ -28,14 +35,14 @@ function SheetScrollFade() {
     <Box
       pointerEvents="none"
       testID="sheet-scroll-fade"
-      className="absolute inset-x-0 bottom-0"
+      className={cn('absolute inset-x-0', edge === 'bottom' ? 'bottom-0' : 'top-0')}
       style={{ height: FADE_HEIGHT }}
     >
       <Svg width="100%" height="100%">
         <Defs>
           <LinearGradient id={FADE_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity={0} />
-            <Stop offset="1" stopColor={color} stopOpacity={1} />
+            <Stop offset="0" stopColor={color} stopOpacity={edge === 'bottom' ? 0 : 1} />
+            <Stop offset="1" stopColor={color} stopOpacity={edge === 'bottom' ? 1 : 0} />
           </LinearGradient>
         </Defs>
         <Rect width="100%" height="100%" fill={`url(#${FADE_GRADIENT_ID})`} />

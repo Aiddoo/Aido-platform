@@ -8,3 +8,4 @@ export { useDialogPortalTarget } from './sheet-route-portal-host';
 export { SHEET_CONTENT_PADDING, SHEET_DETACHED_MARGIN, SHEET_RADIUS } from './constants';
 export { useSheetLayout } from './use-sheet-layout';
 export { useSheetRoute } from './use-sheet-route';
+export { SheetScrollFade } from './sheet-scroll-area';

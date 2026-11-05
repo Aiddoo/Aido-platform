@@ -1,6 +1,7 @@
-import { Box, Text } from '@src/shared/ui';
-import { type ComponentRef, useRef } from 'react';
-import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView } from 'react-native';
+import { Box, SheetScrollFade, Text } from '@src/shared/ui';
+import { type ComponentRef, useRef, useState } from 'react';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 
 import {
@@ -39,6 +40,8 @@ export function LiveTranscript({
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const isReducedMotion = useReducedMotion();
   const isFollowingRef = useRef(true);
+  const [isTopHidden, setIsTopHidden] = useState(false);
+  const [isBottomHidden, setIsBottomHidden] = useState(false);
   const finalText = getFinalText(transcript);
   const finalWords = splitWords(finalText);
   const interimWords = splitWords(getInterimText(transcript));
@@ -53,58 +56,67 @@ export function LiveTranscript({
   };
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      onContentSizeChange={() => {
-        if (isFollowingRef.current) {
-          scrollRef.current?.scrollToEnd({ animated: false });
-        }
-      }}
-      onScrollBeginDrag={() => {
-        isFollowingRef.current = false;
-      }}
-      onScrollEndDrag={followIfAtEnd}
-      onMomentumScrollEnd={followIfAtEnd}
-      showsVerticalScrollIndicator={false}
-      nestedScrollEnabled
-      testID="live-transcript"
-    >
-      <Box className="flex-row flex-wrap">
-        {isEmpty && placeholder != null && (
-          <Text size="t2" weight="semibold" shade={4} lineBreakStrategyIOS="hangul-word">
-            {placeholder}
-          </Text>
-        )}
-        {finalWords.map((word, index) =>
-          isAnimated ? (
-            <Animated.View key={`${index}-${word}`} entering={FadeIn.duration(WORD_FADE_MS)}>
-              <Text size="t2" weight="semibold" lineBreakStrategyIOS="hangul-word">
+    <Box flex={1}>
+      <ScrollView
+        ref={scrollRef}
+        onContentSizeChange={() => {
+          if (isFollowingRef.current) {
+            scrollRef.current?.scrollToEnd({ animated: false });
+          }
+        }}
+        scrollEventThrottle={16}
+        onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
+          setIsTopHidden(contentOffset.y > 0);
+          setIsBottomHidden(contentOffset.y + layoutMeasurement.height < contentSize.height - 1);
+        }}
+        onScrollBeginDrag={() => {
+          isFollowingRef.current = false;
+        }}
+        onScrollEndDrag={followIfAtEnd}
+        onMomentumScrollEnd={followIfAtEnd}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        testID="live-transcript"
+      >
+        <Box className="flex-row flex-wrap">
+          {isEmpty && placeholder != null && (
+            <Text size="t2" weight="semibold" shade={4} lineBreakStrategyIOS="hangul-word">
+              {placeholder}
+            </Text>
+          )}
+          {finalWords.map((word, index) =>
+            isAnimated ? (
+              <Animated.View key={`${index}-${word}`} entering={FadeIn.duration(WORD_FADE_MS)}>
+                <Text size="t2" weight="semibold" lineBreakStrategyIOS="hangul-word">
+                  {`${word} `}
+                </Text>
+              </Animated.View>
+            ) : (
+              <Text
+                key={`${index}-${word}`}
+                size="t2"
+                weight="semibold"
+                lineBreakStrategyIOS="hangul-word"
+              >
                 {`${word} `}
               </Text>
-            </Animated.View>
-          ) : (
+            ),
+          )}
+          {interimWords.map((word, index) => (
             <Text
-              key={`${index}-${word}`}
+              key={`interim-${index}-${word}`}
               size="t2"
               weight="semibold"
+              shade={5}
               lineBreakStrategyIOS="hangul-word"
             >
               {`${word} `}
             </Text>
-          ),
-        )}
-        {interimWords.map((word, index) => (
-          <Text
-            key={`interim-${index}-${word}`}
-            size="t2"
-            weight="semibold"
-            shade={5}
-            lineBreakStrategyIOS="hangul-word"
-          >
-            {`${word} `}
-          </Text>
-        ))}
-      </Box>
-    </ScrollView>
+          ))}
+        </Box>
+      </ScrollView>
+      {isTopHidden && <SheetScrollFade edge="top" />}
+      {isBottomHidden && <SheetScrollFade />}
+    </Box>
   );
 }

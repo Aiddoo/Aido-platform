@@ -13,6 +13,7 @@ export {
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,
   SheetRouteScreen,
+  SheetScrollFade,
   useDialogPortalTarget,
   useKeyboardSheetBodyMaxHeight,
   useSheetLayout,
