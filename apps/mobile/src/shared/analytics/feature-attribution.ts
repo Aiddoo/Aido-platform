@@ -1,9 +1,12 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { getErrorMessage } from '@src/shared/errors';
+import { logger } from '@src/shared/infra/logger/global-logger';
 import { FEATURE_KEYS, type FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { DAY_MS } from '@src/shared/utils/date-format';
 import { z } from 'zod';
 
+import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
 import { track } from './track';
 
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
@@ -102,9 +105,12 @@ export function trackAttributedFeatureSuccess(
       feature: consumed.feature,
     });
     return true;
-  } catch {
+  } catch (error) {
     // 분석과 로컬 귀속은 best-effort다. 실제 기능 성공 후 캐시 갱신,
     // 토스트, 화면 전환 같은 사용자 흐름을 절대 중단시키지 않는다.
+    logger.warn(FEATURE_ATTRIBUTION_LOG_EVENT.SUCCESS_TRACK_FAILED, {
+      error: getErrorMessage(error),
+    });
     return false;
   }
 }

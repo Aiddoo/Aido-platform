@@ -234,6 +234,7 @@ function useChangeSort() {
   const queryClient = useQueryClient();
   const service = useTodoCommentService();
   const { trackEvent } = useTrack();
+  const logger = useLogger();
   const [isPending, setIsPending] = useState(false);
 
   const run = (sort: TodoCommentSort, commit: () => void) => {
@@ -247,7 +248,9 @@ function useChangeSort() {
         commit();
         trackEvent('todo_comment_sorted', { todo_id: todoId, sort });
       })
-      .catch(() => undefined);
+      .catch((error) =>
+        logger.warn(TODO_COMMENT_LOG_EVENT.SORT_CHANGE_FAILED, { error: getErrorMessage(error) }),
+      );
   };
 
   return { isPending, run };

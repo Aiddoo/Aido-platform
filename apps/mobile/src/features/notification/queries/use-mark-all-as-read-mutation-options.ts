@@ -19,7 +19,11 @@ export const useMarkAllAsReadMutationOptions = () => {
   // 배지는 겉모습이다 — 일부 안드로이드 런처에서 이 네이티브 호출이 거부하는데,
   // 그것 때문에 읽음 처리가 통째로 실패하면 안 된다.
   const clearBadgeQuietly = () => {
-    notificationService.clearBadge().catch(() => undefined);
+    notificationService
+      .clearBadge()
+      .catch((error) =>
+        logger.warn(NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED, { error: getErrorMessage(error) }),
+      );
   };
 
   return mutationOptions({
