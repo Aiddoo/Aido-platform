@@ -21,6 +21,7 @@ import {
   RefreshIcon,
   Result,
   Text,
+  WordWrapText,
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
@@ -315,15 +316,9 @@ FriendStrip.Hint = function Hint({ userId }: { userId: string }) {
         style={{ left: caretLeft, width: HINT_CARET_SIZE, height: HINT_CARET_SIZE }}
       />
       <HStack gap={8} align="center" className="rounded-xl bg-gray-2 py-1.5 pl-3 pr-1.5">
-        <Text
-          size="b4"
-          shade={7}
-          lineBreakStrategyIOS="hangul-word"
-          textBreakStrategy="highQuality"
-          className="flex-1 shrink"
-        >
+        <WordWrapText size="b4" shade={7} className="flex-1 shrink">
           {isInviteAvailable ? t('friendStrip.emptyInviteHint') : t('friendStrip.emptySearchHint')}
-        </Text>
+        </WordWrapText>
         <PressableFeedback
           testID="friend-strip-hint-dismiss"
           accessibilityRole="button"

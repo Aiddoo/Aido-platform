@@ -6,6 +6,7 @@ import { HStack } from '@src/shared/ui/h-stack';
 import { READABLE_CONTENT_MAX_WIDTH } from '@src/shared/ui/readable-content';
 import { H4, Text } from '@src/shared/ui/text';
 import { VStack } from '@src/shared/ui/v-stack';
+import { WordWrapText } from '@src/shared/ui/word-wrap-text';
 import { Dialog } from 'heroui-native';
 import { cloneElement, isValidElement, type ReactNode } from 'react';
 
@@ -77,9 +78,15 @@ ConfirmDialog.Title = function Title({ children }: { children: ReactNode }) {
 ConfirmDialog.Description = function Description({ children }: { children: ReactNode }) {
   return (
     <Dialog.Description>
-      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
-        {children}
-      </Text>
+      {typeof children === 'string' ? (
+        <WordWrapText size="b3" shade={6}>
+          {children}
+        </WordWrapText>
+      ) : (
+        <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+          {children}
+        </Text>
+      )}
     </Dialog.Description>
   );
 };

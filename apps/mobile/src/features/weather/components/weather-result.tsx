@@ -52,7 +52,13 @@ export function WeatherResult({
       )}
       {children != null && <VStack className="mt-7 w-full gap-2">{children}</VStack>}
       {footnote != null && (
-        <Text size="b4" align="center" className="mt-4 text-on-sky/60">
+        <Text
+          size="b4"
+          align="center"
+          className="mt-4 text-on-sky/60"
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
           {footnote}
         </Text>
       )}

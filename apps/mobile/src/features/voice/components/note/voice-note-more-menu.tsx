@@ -1,7 +1,7 @@
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { MoreIcon, useConfirmDialog } from '@src/shared/ui';
+import { MenuActionItem, MoreIcon, TrashIcon, useConfirmDialog } from '@src/shared/ui';
 import { Menu, PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
@@ -62,9 +62,13 @@ export function VoiceNoteMoreMenu({ onDeleted }: VoiceNoteMoreMenuProps) {
           width={VOICE_NOTE_MENU_WIDTH}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          <Menu.Item variant="danger" onPress={handleDelete} testID="voice-note-delete">
-            <Menu.ItemTitle>{t('result.delete')}</Menu.ItemTitle>
-          </Menu.Item>
+          <MenuActionItem
+            variant="danger"
+            icon={TrashIcon}
+            title={t('result.delete')}
+            onPress={handleDelete}
+            testID="voice-note-delete"
+          />
         </Menu.Content>
       </Menu.Portal>
     </Menu>
