@@ -8,7 +8,6 @@ import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
-import { Pressable } from 'react-native';
 
 import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
@@ -61,7 +60,7 @@ export function ProfileCard() {
             <Text size="b4" shade={6}>
               {formatUserHashtag(user.userTag)}
             </Text>
-            <Pressable
+            <PressableFeedback
               hitSlop={8}
               onPress={(event) => {
                 event.stopPropagation();
@@ -74,7 +73,7 @@ export function ProfileCard() {
                 height={fontScaledSize(12)}
                 colorClassName="text-gray-5"
               />
-            </Pressable>
+            </PressableFeedback>
           </HStack>
         </VStack>
 
