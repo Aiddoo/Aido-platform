@@ -25,12 +25,15 @@ import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import type { ComponentRef } from 'react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+
+/** 이메일 칸에 있을 때 아래 비밀번호 칸까지 버튼 위에 보여 바로 누를 수 있게 조금 더 올린다 */
+const NEXT_FIELD_OFFSET = 52;
 
 function EmailLoginScreen() {
   const { showBoundary } = useErrorBoundary();
@@ -39,6 +42,7 @@ function EmailLoginScreen() {
 
   const { t } = useTranslation('auth');
   const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const [viewportHeight, setViewportHeight] = useState(0);
 
   const formMethods = useForm({
     resolver: zodResolver(emailLoginFormSchema),
@@ -71,17 +75,18 @@ function EmailLoginScreen() {
         />
         <ReadableContent flex={1}>
           <KeyboardAwareScrollView
-            bottomOffset={KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: 40,
-              flexGrow: 1,
-              justifyContent: 'center',
-            }}
+            bottomOffset={KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET + NEXT_FIELD_OFFSET}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
           >
-            <StyledSafeAreaView edges={['left', 'right']} className="grow justify-center">
+            {/* 스크롤 내용 전체를 가운데 두면 키보드 높이만큼 끼는 여백에 칸이 함께 밀려 스크롤 계산이 어긋난다. 화면 높이만 가운데 둔다 */}
+            <StyledSafeAreaView
+              edges={['left', 'right']}
+              className="justify-center pb-10"
+              style={{ minHeight: viewportHeight }}
+            >
               <H3 align="center">{t('emailLogin.title')}</H3>
 
               <Spacing size={60} />
