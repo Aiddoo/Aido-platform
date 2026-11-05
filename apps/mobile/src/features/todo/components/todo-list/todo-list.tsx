@@ -81,7 +81,6 @@ export function TodoList() {
 
   return (
     <Box gap={16}>
-      {canReorderTodos && <ReorderCoachmark kind="todo" />}
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
           <CategoryHeader
@@ -93,6 +92,8 @@ export function TodoList() {
           <TodoReorderableList items={group.todos} updatedAt={dataUpdatedAt} />
         </Box>
       ))}
+      {/* 목록 위에 나타나면 행이 통째로 밀려 누르려던 곳이 움직인다. 나타나고 닫혀도 행은 그 자리다 */}
+      {canReorderTodos && <ReorderCoachmark kind="todo" />}
     </Box>
   );
 }
