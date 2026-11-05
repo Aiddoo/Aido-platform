@@ -1,7 +1,10 @@
 export const VOICE_NOTE_RETENTION_DAYS = 30;
 
-/** 초안이 가리키지 않는 녹음 파일(지운 초안의 뒤늦은 파일)을 남겨 두는 날 수 */
-export const VOICE_RECORDING_ORPHAN_RETENTION_DAYS = 1;
+/**
+ * 초안이 가리키지 않는 녹음 파일을 남겨 두는 시간. 글자 없이 실패한 채 앱을 끄면 이런 파일이 남는다.
+ * 이어지는 녹음이 쓰는 중인 파일만 건드리지 않으면 되어 길게 둘 이유가 없다
+ */
+export const VOICE_RECORDING_ORPHAN_RETENTION_MS = 60 * 60 * 1_000;
 
 /** 확정 문장이 이어서 들어올 때 초안 쓰기를 모으는 시간 */
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;

@@ -101,7 +101,7 @@ describe('VoiceNoteStorageService', () => {
       return { files, service };
     };
 
-    test('전체 용량과 메모별 용량을 최근 순으로 알려 준다', () => {
+    test('메모에 속한 녹음만 합쳐 전체 용량과 메모별 용량을 최근 순으로 알려 준다', () => {
       // Given
       const { service } = setUp();
 
@@ -109,7 +109,7 @@ describe('VoiceNoteStorageService', () => {
       const usage = service.getRecordingUsage('user-1');
 
       // Then
-      expect(usage.totalBytes).toBe(3_800);
+      expect(usage.totalBytes).toBe(3_500);
       expect(usage.notes.map(({ note, bytes }) => [note.draftId, bytes])).toEqual([
         ['b', 2_000],
         ['a', 1_500],

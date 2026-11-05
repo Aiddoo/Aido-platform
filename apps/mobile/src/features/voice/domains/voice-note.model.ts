@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import {
   VOICE_NOTE_RETENTION_DAYS,
-  VOICE_RECORDING_ORPHAN_RETENTION_DAYS,
+  VOICE_RECORDING_ORPHAN_RETENTION_MS,
 } from '../constants/voice-note.constants';
 import {
   type PlanReviewDraft,
@@ -318,14 +318,12 @@ export function isExpired(note: VoiceNote, now: Date): boolean {
   return now.getTime() - note.createdAt.getTime() >= RETENTION_MS;
 }
 
-const ORPHAN_RETENTION_MS = VOICE_RECORDING_ORPHAN_RETENTION_DAYS * DAY_MS;
-
-/**
- * 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 지운 초안의 뒤늦은 파일이라 오래 둘 이유가 없다.
- * 수정 시각을 모르면 기한이 지난 것으로 본다
- */
+/** 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다 */
 export function isRecordingFileExpired(modifiedAt: Date | null, now: Date): boolean {
-  return modifiedAt == null || now.getTime() - modifiedAt.getTime() >= ORPHAN_RETENTION_MS;
+  return (
+    modifiedAt == null ||
+    now.getTime() - modifiedAt.getTime() >= VOICE_RECORDING_ORPHAN_RETENTION_MS
+  );
 }
 
 export const VoiceNotePolicy = {

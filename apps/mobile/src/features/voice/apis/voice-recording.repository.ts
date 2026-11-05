@@ -25,7 +25,6 @@ export interface VoiceRecordingRepository {
   save(input: SaveRecordingInput): Promise<string | null>;
   findUri(accountId: string, fileName: string): string | undefined;
   remove(accountId: string, fileName: string): void;
-  getTotalSizeBytes(accountId: string): number;
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
   /** 이 계정의 녹음 파일을 모두 지운다 */
@@ -103,9 +102,6 @@ export function createVoiceRecordingRepository(
     },
 
     remove: (accountId, fileName) => removeSafely(ownerDirectory(accountId), fileName),
-
-    getTotalSizeBytes: (accountId) =>
-      listSafely(ownerDirectory(accountId)).reduce((total, file) => total + file.sizeBytes, 0),
 
     getFileSizes: (accountId) =>
       Object.fromEntries(

@@ -71,28 +71,14 @@ describe('VoiceRecordingRepository', () => {
     });
   });
 
-  test('계정 폴더의 파일 크기를 모두 더한다', () => {
-    // Given
-    const { files, repository } = createRepository();
-    files.addFile(OWNER_DIRECTORY, 'a.wav', { sizeBytes: 1_000 });
-    files.addFile(OWNER_DIRECTORY, 'b.wav', { sizeBytes: 2_500 });
-    files.addFile(['voice-notes', 'user-2'], 'c.wav', { sizeBytes: 9_999 });
-
-    // When
-    const total = repository.getTotalSizeBytes('user-1');
-
-    // Then
-    expect(total).toBe(3_500);
-  });
-
-  test('초안이 가리키지 않고 하루가 지난 파일만 지운다', () => {
+  test('초안이 가리키지 않고 한 시간이 지난 파일만 지운다', () => {
     // Given
     const { files, repository } = createRepository();
     const old = new Date('2026-11-01T00:00:00.000Z');
     files.addFile(OWNER_DIRECTORY, 'orphan-old.wav', { modifiedAt: old });
     files.addFile(OWNER_DIRECTORY, 'referenced-old.wav', { modifiedAt: old });
     files.addFile(OWNER_DIRECTORY, 'orphan-new.wav', {
-      modifiedAt: new Date(NOW.getTime() - 60 * 60 * 1_000),
+      modifiedAt: new Date(NOW.getTime() - 10 * 60 * 1_000),
     });
 
     // When

@@ -24,7 +24,10 @@ import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fact
 const ACCOUNT_ID = 'user-1';
 const OWNER_DIRECTORY = ['voice-notes', ACCOUNT_ID];
 
-async function renderScreen({ hasRecording = true }: { hasRecording?: boolean } = {}) {
+async function renderScreen({
+  hasRecording = true,
+  hasOrphanFile = false,
+}: { hasRecording?: boolean; hasOrphanFile?: boolean } = {}) {
   const files = createLocalFileSystemFake();
   const logger = { warn: jest.fn() };
   const storage = new VoiceNoteStorageService(
@@ -40,6 +43,9 @@ async function renderScreen({ hasRecording = true }: { hasRecording?: boolean } 
         recordings: [{ fileName: 'draft-1-0.wav', startMs: 0 }],
       }),
     );
+  }
+  if (hasOrphanFile) {
+    files.addFile(OWNER_DIRECTORY, 'failed-0.wav', { sizeBytes: 4_096 });
   }
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -89,6 +95,19 @@ describe('녹음 저장 공간', () => {
 
     // Then
     expect(empty).toBeTruthy();
+    expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
+  });
+
+  test('메모에 속하지 않은 파일만 있으면 용량도 0이고 비어 있다고 알린다', async () => {
+    // Given
+    await renderScreen({ hasRecording: false, hasOrphanFile: true });
+
+    // When
+    const empty = await screen.findByTestId('voice-storage-empty');
+
+    // Then
+    expect(empty).toBeTruthy();
+    expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0KB');
     expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
   });
 

@@ -1,10 +1,11 @@
-import { orderBy, partition } from 'es-toolkit';
+import { orderBy, partition, sumBy } from 'es-toolkit';
 
 import { type VoiceNote, VoiceNotePolicy, withoutRecordings } from '../domains/voice-note.model';
 import type { VoiceNoteDraftRepository } from './voice-note-draft.repository';
 import type { VoiceRecordingRepository } from './voice-recording.repository';
 
 export interface VoiceNoteRecordingUsage {
+  /** 아래 메모들의 녹음 크기 합. 메모에 속하지 않은 파일은 사용자가 볼 수도 지울 수도 없어 넣지 않는다 */
   totalBytes: number;
   /** 녹음이 있는 메모(최근 순)와 그 크기 */
   notes: { note: VoiceNote; bytes: number }[];
@@ -42,7 +43,7 @@ export class VoiceNoteStorageService {
       .map((note) => ({ note, bytes: VoiceNotePolicy.getRecordingSizeBytes(note, sizes) }));
 
     return {
-      totalBytes: this.recordings.getTotalSizeBytes(accountId),
+      totalBytes: sumBy(notes, ({ bytes }) => bytes),
       notes: orderBy(notes, [({ note }) => note.createdAt.getTime()], ['desc']),
     };
   };

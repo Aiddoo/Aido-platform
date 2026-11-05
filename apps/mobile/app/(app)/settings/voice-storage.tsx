@@ -114,7 +114,7 @@ function VoiceStorageScreen() {
         </SettingsCard>
       )}
 
-      {usage.totalBytes > 0 && (
+      {usage.notes.length > 0 && (
         <Button
           variant="weak"
           color="danger"
