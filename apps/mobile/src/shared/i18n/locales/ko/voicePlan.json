@@ -2,6 +2,7 @@
   "plan": {
     "title": "할 일 {{count}}개로 나눴어요",
     "titleMemoOnly": "메모로 정리했어요",
+    "titleAlreadyAdded": "이미 있는 할 일이에요",
     "hint": "추가할 것만 오른쪽에서 골라주세요. 누르면 고칠 수 있어요.",
     "omitted": "할 일 {{count}}개는 여기에 담지 못했어요.",
     "empty": "할 일을 찾지 못했어요",
@@ -9,6 +10,7 @@
     "select": "{{title}} 추가하기",
     "memoCaption": "메모로 저장해요",
     "apply": "할 일 {{count}}개 추가",
+    "applyNothing": "할 일 추가",
     "applyMemo": "메모 저장"
   },
   "applied": {

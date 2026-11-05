@@ -44,6 +44,7 @@ import {
   useFormState,
   useWatch,
 } from 'react-hook-form';
+import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy, preparePlanRequest } from '../../domains/plan-request.model';
 import {
@@ -130,6 +131,7 @@ export function PlanReview({
   const selection = toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
+  const headline = VoicePlanPolicy.getPlanHeadline(plan, selection);
 
   const handleApply = handleSubmit((values) => {
     const selected = VoicePlanPolicy.sortPlanActionsByGroup(
@@ -195,9 +197,11 @@ export function PlanReview({
       <VStack gap={16}>
         <VStack gap={4}>
           <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
-            {todoCount === 0
-              ? t('voicePlan:plan.titleMemoOnly')
-              : t('voicePlan:plan.title', { count: todoCount })}
+            {match(headline)
+              .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
+              .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
+              .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
+              .exhaustive()}
           </Text>
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
             {t('voicePlan:plan.hint')}
@@ -239,9 +243,10 @@ export function PlanReview({
               onPress={() => handleApply()}
               testID="plan-review-apply"
             >
-              {todoCount === 0
-                ? t('voicePlan:plan.applyMemo')
-                : t('voicePlan:plan.apply', { count: todoCount })}
+              {match({ todoCount, canApply })
+                .with({ canApply: false }, () => t('voicePlan:plan.applyNothing'))
+                .with({ todoCount: 0 }, () => t('voicePlan:plan.applyMemo'))
+                .otherwise(() => t('voicePlan:plan.apply', { count: todoCount }))}
             </Button>
           </Box>
         </HStack>

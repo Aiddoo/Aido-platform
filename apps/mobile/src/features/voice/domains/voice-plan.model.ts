@@ -118,6 +118,32 @@ export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).length > 0;
 }
 
+export type PlanHeadline =
+  | { kind: 'todos'; count: number }
+  | { kind: 'memo' }
+  | { kind: 'already-added' };
+
+/**
+ * 계획 머리글에 무엇을 말할지. 고른 할 일이 있으면 그 수, 메모만 고르면 메모다.
+ * 아무것도 고르지 않았을 때 할 일이 전부 겹치면 이미 있는 것이고, 사용자가 끈 것이면 나눈 수를 그대로 둔다.
+ */
+export function getPlanHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
+  const selectedTodoCount = countSelectedTodos(plan, selection);
+  if (selectedTodoCount > 0) {
+    return { kind: 'todos', count: selectedTodoCount };
+  }
+  if (getSelectedActions(plan, selection).length > 0) {
+    return { kind: 'memo' };
+  }
+  const todos = plan.actions.filter(isTodoAction);
+  if (todos.length === 0) {
+    return { kind: 'memo' };
+  }
+  return todos.every(isDuplicateAction)
+    ? { kind: 'already-added' }
+    : { kind: 'todos', count: todos.length };
+}
+
 /** 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다 */
 export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
   return { ...todo, repeat, endDate: repeat == null ? todo.endDate : null };
@@ -204,6 +230,7 @@ export const VoicePlanPolicy = {
   getSelectedActions,
   countSelectedTodos,
   canApplyPlan,
+  getPlanHeadline,
   getPlanActionGroups,
   sortPlanActionsByGroup,
 } as const;

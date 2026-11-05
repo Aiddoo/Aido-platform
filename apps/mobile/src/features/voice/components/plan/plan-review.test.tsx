@@ -140,6 +140,20 @@ async function renderPlan(
 }
 
 describe('PlanReview', () => {
+  test('할 일이 전부 이미 있으면 메모로 정리했다고 말하지 않고 버튼도 메모 저장이 아니다', async () => {
+    // Given
+    const plan = { ...PLAN, actions: [createTodoAction({ duplicateOfTodoId: 9 })] };
+
+    // When
+    await renderPlan(plan);
+
+    // Then
+    expect(await screen.findByText('이미 있는 할 일이에요')).toBeTruthy();
+    expect(screen.queryByText('메모로 정리했어요')).toBeNull();
+    expect(screen.getByText('할 일 추가')).toBeTruthy();
+    expect(screen.queryByText('메모 저장')).toBeNull();
+  });
+
   test('반복은 같은 요약 문구로 보이고 고른 카드 수가 버튼에 나타난다', async () => {
     // Given & When
     await renderPlan();
