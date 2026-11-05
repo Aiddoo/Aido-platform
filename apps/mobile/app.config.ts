@@ -301,6 +301,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       './plugins/withGradleJvmArgs',
       // @react-native-kakao 모듈의 compileSdk 33을 앱 compileSdk로 맞춘다 (release AAR metadata 검사)
       './plugins/withKakaoAndroidCompileSdk',
+      ...(isDevelopment ? [] : ['./plugins/withoutDevLauncherLocalNetwork']),
       [
         'expo-localization',
         {
