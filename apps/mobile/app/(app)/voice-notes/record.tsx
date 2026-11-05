@@ -13,6 +13,7 @@ import { RecordingTimer } from '@src/features/voice/components/note/recording-ti
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
 import { VoiceNoteMarkControl } from '@src/features/voice/components/note/voice-note-mark-control';
+import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import {
   useLiveWaveform,
   WaveformTimeline,
@@ -51,7 +52,7 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
 import { Suspense, useEffect, useEffectEvent, useState } from 'react';
-import { ActivityIndicator, BackHandler } from 'react-native';
+import { BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 /** Android는 Activity가 사라진 뒤 풀면 거절한다. 켜둘 화면이 이미 없으니 알릴 일이 아니다 */
@@ -408,7 +409,7 @@ export default function VoiceNoteRecordRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <QueryErrorBoundary>
-        <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+        <Suspense fallback={<VoiceNoteScreenLoading />}>
           <VoiceNoteRecordScreen />
         </Suspense>
       </QueryErrorBoundary>

@@ -13,6 +13,7 @@ import { getInvitePreviewQueryOptions } from '@src/features/invite/queries/get-i
 import { inviteCardHref } from '@src/features/invite/utils/navigation/invite-href';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -28,7 +29,7 @@ import {
   StyledSafeAreaView,
   Text,
 } from '@src/shared/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
@@ -46,6 +47,7 @@ function InviteCodeEntryScreen() {
   const { t } = useTranslation('invite');
   const { showBoundary } = useErrorBoundary();
   const { trackEvent } = useTrack();
+  const toast = useAppToast();
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
@@ -93,9 +95,19 @@ function InviteCodeEntryScreen() {
       return;
     }
 
+    // 오프라인이면 조회가 연결될 때까지 멈춰 버튼이 돌기만 한다. 입력한 코드를 둔 채 바로 알린다
+    if (!onlineManager.isOnline()) {
+      toast.warning(t('errors.offline'));
+      return;
+    }
+
     try {
       // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
-      await queryClient.fetchQuery(getInvitePreviewQueryOptions(inviteService, { inviteCode }));
+      await queryClient.fetchQuery({
+        ...getInvitePreviewQueryOptions(inviteService, { inviteCode }),
+        // 보내는 사이 연결이 끊겨도 멈추지 않고 실패해 오류 경계가 맡는다
+        networkMode: 'always',
+      });
       // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않는다
       if (!navigation.isFocused()) {
         return;

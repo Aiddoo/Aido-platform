@@ -111,6 +111,10 @@
     "summarize": "여기까지 정리",
     "premium": "한 번에 {{minutes}}분까지 녹음할 수 있어요. 여기까지 남겨둘게요."
   },
+  "offlineScreen": {
+    "title": "인터넷에 연결되면 이어서 할 수 있어요",
+    "description": "연결되면 자동으로 다시 불러와요"
+  },
   "offlineModel": {
     "title": "말을 글자로 바꾸는 파일을 받을까요?",
     "description": "받아두면 기기 안에서 글자로 바꿔요. 받지 않으면 인터넷을 써서 바꿔요.",

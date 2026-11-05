@@ -9,6 +9,7 @@ import { SentenceCaptionList } from '@src/features/voice/components/note/sentenc
 import { VoiceNoteDigestButton } from '@src/features/voice/components/note/voice-note-digest-button';
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
 import { VoiceNotePlayerBar } from '@src/features/voice/components/note/voice-note-player-bar';
+import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import {
   type PlanReviewFormValues,
@@ -526,7 +527,7 @@ export default function VoiceNoteRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <QueryErrorBoundary resetKeys={[params.data.draftId]}>
-        <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+        <Suspense fallback={<VoiceNoteScreenLoading />}>
           <VoiceNoteScreen key={params.data.draftId} />
         </Suspense>
       </QueryErrorBoundary>

@@ -54,7 +54,8 @@
     "enterCode": "코드 직접 입력하기"
   },
   "errors": {
-    "invalidCode": "초대 코드는 영문과 숫자 6자리예요"
+    "invalidCode": "초대 코드는 영문과 숫자 6자리예요",
+    "offline": "인터넷에 연결되면 초대 코드를 확인할 수 있어요"
   },
   "myInvite": {
     "title": "친구 초대",

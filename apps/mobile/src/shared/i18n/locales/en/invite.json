@@ -58,7 +58,8 @@
     "enterCode": "Enter code instead"
   },
   "errors": {
-    "invalidCode": "Invite codes are 6 characters (letters and numbers)"
+    "invalidCode": "Invite codes are 6 characters (letters and numbers)",
+    "offline": "You can check the invite code once you're online"
   },
   "myInvite": {
     "title": "Invite friends",

@@ -112,6 +112,10 @@
     "summarize": "Summarize now",
     "premium": "You can record up to {{minutes}} minutes at a time. We've kept what we heard."
   },
+  "offlineScreen": {
+    "title": "You can pick this up once you're online",
+    "description": "We'll load it automatically when you're connected"
+  },
   "offlineModel": {
     "title": "Download speech-to-text?",
     "description": "It turns speech into text on your device. Without it, we use the internet.",
