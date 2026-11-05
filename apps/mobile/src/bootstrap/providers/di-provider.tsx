@@ -23,6 +23,8 @@ import { MemoService } from '@src/features/memo/apis/memo.service';
 import { ModerationService } from '@src/features/moderation/apis/moderation.service';
 import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
+import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
+import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
@@ -98,6 +100,7 @@ import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
@@ -259,6 +262,10 @@ export function DIProvider({
       deviceIdService,
       authHttpClient,
       logger,
+      getDeviceTimezone,
+    );
+    const deviceTimezoneService = new DeviceTimezoneService(
+      createDeviceTimezoneRepository(mmkvSyncStorage),
     );
     const pushPromptService = new PushPromptService(createPushPromptRepository(mmkvSyncStorage));
     const marketingPushPromptService = new MarketingPushPromptService(
@@ -359,6 +366,7 @@ export function DIProvider({
       todoCategoryService,
       notificationService,
       pushDeviceService,
+      deviceTimezoneService,
       pushPromptService,
       marketingPushPromptService,
       todoNudgeService,

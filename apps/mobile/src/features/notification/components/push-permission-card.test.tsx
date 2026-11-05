@@ -61,6 +61,7 @@ async function renderCard(
         { get: async () => 'ios_device-123' },
         httpClient,
         silentLogger,
+        () => 'Asia/Seoul',
       ),
       preferenceService: new PreferenceService(httpClient),
       userService: new UserService(httpClient),

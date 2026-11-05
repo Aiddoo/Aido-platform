@@ -22,6 +22,7 @@ import { type ResolvedAuthStatus, resolveInitialAuthStatus } from './auth-boot';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
 import {
   useAnalytics,
+  useDeviceTimezoneService,
   useDraftService,
   useErrorReporter,
   useQueryCacheStorage,
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const draftService = useDraftService();
   const queryCacheStorage = useQueryCacheStorage();
   const voiceNoteStorageService = useVoiceNoteStorageService();
+  const deviceTimezoneService = useDeviceTimezoneService();
 
   const [status, setStatusState] = useState<AuthStatus>('loading');
 
@@ -193,9 +195,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (isUserInitiatedSignOutRef.current) {
         draftService.removeAll();
         voiceNoteStorageService.removeAll();
+        deviceTimezoneService.clear();
       }
     }
-  }, [status, queryClient, draftService, queryCacheStorage, voiceNoteStorageService]);
+  }, [
+    status,
+    queryClient,
+    draftService,
+    queryCacheStorage,
+    voiceNoteStorageService,
+    deviceTimezoneService,
+  ]);
 
   return <AuthContext.Provider value={{ status, setStatus }}>{children}</AuthContext.Provider>;
 }

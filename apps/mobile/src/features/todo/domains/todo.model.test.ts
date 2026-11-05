@@ -127,3 +127,25 @@ describe('TodoPolicy.withDailyCompletionFromTodos', () => {
     expect(counted.completions[1]?.totalTodos).toBe(1);
   });
 });
+
+describe('TodoPolicy.hasUpcomingTimedTodo', () => {
+  const now = { dateKey: '2026-11-05', time: '12:00' };
+
+  it.each([
+    ['내일 시간 있는 할 일', { startDate: '2026-11-06', localTime: '09:00' }, true],
+    ['오늘 아직 지나지 않은 시각', { startDate: '2026-11-05', localTime: '12:30' }, true],
+    ['오늘 이미 지난 시각', { startDate: '2026-11-05', localTime: '11:59' }, false],
+    ['어제 시각', { startDate: '2026-11-04', localTime: '23:00' }, false],
+    ['종일 할 일', { startDate: '2026-11-06', localTime: null }, false],
+    ['완료한 할 일', { startDate: '2026-11-06', localTime: '09:00', completed: true }, false],
+  ])('%s', (_name, overrides, expected) => {
+    // Given
+    const todos = [createParentTodo({ completed: false, ...overrides })];
+
+    // When
+    const result = TodoPolicy.hasUpcomingTimedTodo(todos, now);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

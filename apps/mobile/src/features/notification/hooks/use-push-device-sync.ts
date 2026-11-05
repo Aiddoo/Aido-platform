@@ -12,10 +12,21 @@ import type { NotificationAuthStatus } from '../utils/navigation/notification-re
 const APP_ACTIVE_SYNC_DELAY_MS = 1_000;
 
 /**
- * 로그인한 기기의 알림 권한·토큰을 서버와 맞춘다. 권한만 있으면 토큰이 빠진 채로 남지 않게
- * 로그인 확인 직후·앱 복귀·토큰 변경·언어 변경 때 보고한다. 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다.
+ * 로그인한 기기의 알림 권한·토큰과 시간대를 서버와 맞춘다. 권한만 있으면 토큰이 빠진 채로 남지 않게
+ * 로그인 확인 직후·앱 복귀·푸시 탭·토큰 변경·언어 변경·시간대 변경 때 보고한다.
+ * 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다.
  */
-export function usePushDeviceSync({ authStatus }: { authStatus: NotificationAuthStatus }) {
+export function usePushDeviceSync({
+  authStatus,
+  deviceTimeZone,
+  onReported,
+}: {
+  authStatus: NotificationAuthStatus;
+  /** 앞에 떠 있는 채로 시간대가 바뀌면 복귀 이벤트가 없어 이 값으로 알아챈다 */
+  deviceTimeZone?: string;
+  /** 보고가 성공하면 부른다. 값이 같아 요청을 건너뛴 때도 부른다 */
+  onReported?: () => void;
+}) {
   const pushDeviceService = usePushDeviceService();
   const { mutateAsync: reportPushDevice } = useMutation(useReportPushDeviceMutationOptions());
   const isAuthenticated = authStatus === 'authenticated';
@@ -36,6 +47,7 @@ export function usePushDeviceSync({ authStatus }: { authStatus: NotificationAuth
       }
       isReporting = true;
       reportPushDevice({ force })
+        .then(() => onReported?.())
         .catch(noop)
         .finally(() => {
           isReporting = false;
@@ -58,6 +70,8 @@ export function usePushDeviceSync({ authStatus }: { authStatus: NotificationAuth
       }
     });
     const removeTokenListener = pushDeviceService.addTokenListener(() => sync(false));
+    // 앞에 떠 있는 동안 누른 푸시는 복귀 이벤트 없이 온다. 꺼진 상태에서 누른 푸시는 위의 첫 보고가 맡는다
+    const removeResponseListener = pushDeviceService.addResponseListener(syncOnActive);
     i18n.on('languageChanged', handleLanguageChanged);
 
     return () => {
@@ -65,7 +79,8 @@ export function usePushDeviceSync({ authStatus }: { authStatus: NotificationAuth
       appStateSubscription.remove();
       syncOnActive.cancel();
       removeTokenListener();
+      removeResponseListener();
       i18n.off('languageChanged', handleLanguageChanged);
     };
-  }, [isAuthenticated, pushDeviceService, reportPushDevice]);
+  }, [deviceTimeZone, isAuthenticated, onReported, pushDeviceService, reportPushDevice]);
 }

@@ -135,10 +135,25 @@ export function withDailyCompletionFromTodos(
   };
 }
 
+/** 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다 */
+export function hasUpcomingTimedTodo(
+  todos: readonly Todo[],
+  now: { dateKey: string; time: string },
+): boolean {
+  return todos.some(
+    (todo) =>
+      !todo.completed &&
+      todo.localTime != null &&
+      (todo.startDate > now.dateKey ||
+        (todo.startDate === now.dateKey && todo.localTime > now.time)),
+  );
+}
+
 export const TodoPolicy = {
   isRecurring: isRecurringTodo,
   isOptimisticTodo,
   withDailyCompletionFromTodos,
   hasSubTodos,
   completesAll: completesAllTodos,
+  hasUpcomingTimedTodo,
 } as const;

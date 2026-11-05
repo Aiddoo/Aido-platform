@@ -19,4 +19,5 @@ export const NOTIFICATION_LOG_EVENT = {
   PUSH_PERMISSION_REQUESTED: 'notification.push-permission.requested',
   PUSH_PERMISSION_REQUEST_FAILED: 'notification.push-permission.request-failed',
   PUSH_PERMISSION_SETTINGS_OPEN_FAILED: 'notification.push-permission.settings-open-failed',
+  TIMEZONE_NOTICE_SKIPPED: 'notification.timezone-notice.skipped',
 } as const;

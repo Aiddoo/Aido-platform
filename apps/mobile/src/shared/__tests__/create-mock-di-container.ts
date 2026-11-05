@@ -1,4 +1,6 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
+import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
+import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 
 import { createHapticsStub } from './create-haptics-stub';
@@ -22,6 +24,10 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
       record: jest.fn(),
       consume: jest.fn().mockReturnValue(null),
     },
+    // 로그아웃 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
+    deviceTimezoneService: new DeviceTimezoneService(
+      createDeviceTimezoneRepository(createMemorySyncStorage()),
+    ),
     // 햅틱은 꾸밈이라 저장·실패 흐름 테스트마다 넣지 않아도 되게 아무것도 하지 않는 stub을 둔다
     haptics: createHapticsStub(),
     // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
@@ -162,6 +168,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get pushDeviceService() {
       return dependency('pushDeviceService');
+    },
+    get deviceTimezoneService() {
+      return dependency('deviceTimezoneService');
     },
     get pushPromptService() {
       return dependency('pushPromptService');

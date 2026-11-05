@@ -26,6 +26,7 @@ import type { InviteShareService } from '@src/features/invite/apis/invite-share.
 import type { InviteService } from '@src/features/invite/apis/invite.service';
 import type { MemoService } from '@src/features/memo/apis/memo.service';
 import type { ModerationService } from '@src/features/moderation/apis/moderation.service';
+import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import type { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
@@ -111,6 +112,7 @@ export interface DIContainer {
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
   pushDeviceService: PushDeviceService;
+  deviceTimezoneService: DeviceTimezoneService;
   pushPromptService: PushPromptService;
   marketingPushPromptService: MarketingPushPromptService;
   todoNudgeService: TodoNudgeService;
@@ -193,6 +195,7 @@ export const useTodoCommentService = () => useDI().todoCommentService;
 export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
 export const usePushDeviceService = () => useDI().pushDeviceService;
+export const useDeviceTimezoneService = () => useDI().deviceTimezoneService;
 export const usePushPromptService = () => useDI().pushPromptService;
 export const useMarketingPushPromptService = () => useDI().marketingPushPromptService;
 export const useTodoNudgeService = () => useDI().todoNudgeService;

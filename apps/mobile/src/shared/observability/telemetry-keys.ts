@@ -15,6 +15,7 @@ import type { CoachmarkKind } from '@src/features/feature-discovery/apis/coachma
 import type { InviteLinkSource } from '@src/features/invite/domains/invite-redemption.model';
 import type { InviteShareChannel } from '@src/features/invite/domains/invite-share.model';
 import type { RedeemFailureReason } from '@src/features/invite/domains/invite.error';
+import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';
 import type { SubscriptionView } from '@src/features/subscription/hooks/use-subscription-view-param';
 import type { PremiumGateAnalyticsFeature } from '@src/features/subscription/utils/analytics/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/subscription/utils/analytics/purchase-failed-reason';
@@ -290,6 +291,11 @@ export type LocalDateChangeTrigger = 'midnight_timer' | 'foreground' | 'calendar
 export interface LifecycleEventMap {
   local_day_changed: {
     trigger: LocalDateChangeTrigger;
+  };
+  /** 시간대 이름·도시는 보내지 않고 바뀐 폭만 보낸다. 여행 빈도와 기기 예약 전환 판단에 쓴다. */
+  device_timezone_changed: {
+    offset_bucket: TimezoneOffsetBucket;
+    notice_shown: boolean;
   };
 }
 

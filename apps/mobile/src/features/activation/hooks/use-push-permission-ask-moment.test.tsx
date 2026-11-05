@@ -62,6 +62,7 @@ function setup(permissionStatus: 'undetermined' | 'granted' | 'denied' = 'undete
     { get: async () => 'ios_device-123' },
     httpClient,
     silentLogger,
+    () => 'Asia/Seoul',
   );
   const container = createMockDIContainer({ pushDeviceService, logger: silentLogger });
   const queryClient = createTestQueryClient();

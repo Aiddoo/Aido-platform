@@ -6,10 +6,12 @@ import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-n
 import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
 import { useNotificationResponseProcessor } from '@src/features/notification/hooks/use-notification-response-processor';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
+import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useReducer } from 'react';
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
@@ -31,8 +33,11 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   const handleNotificationResponse = useNotificationResponseHandler();
   const handleForegroundNotification = useForegroundNotificationSync({ isAuthenticated });
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
+  const accountId = isAuthenticated ? (me?.id ?? null) : null;
+  const { currentTimeZone } = useLocalDate();
+  const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
   const processResponse = useNotificationResponseProcessor({
-    accountId: isAuthenticated ? (me?.id ?? null) : null,
+    accountId,
     authStatus: status,
     handleNotificationResponse,
   });
@@ -40,7 +45,12 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   useColdStartNotificationResponse({ processResponse });
   useNativeNotificationListeners({ processResponse, handleForegroundNotification });
   useMarketingNotificationCategory();
-  usePushDeviceSync({ authStatus: status });
+  usePushDeviceSync({
+    authStatus: status,
+    deviceTimeZone: currentTimeZone,
+    onReported: markReported,
+  });
+  useTimezoneChangeNotice({ accountId, reportCount });
   useNotificationBadgeSync(status);
 
   return children;

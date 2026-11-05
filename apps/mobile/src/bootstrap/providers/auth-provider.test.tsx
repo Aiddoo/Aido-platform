@@ -1,5 +1,7 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
+import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { UserService } from '@src/features/user/apis/user.service';
@@ -32,6 +34,9 @@ import {
   type QueryCacheStorage,
 } from './query-cache-persistence';
 
+const SEOUL_TIMEZONE = { timeZone: 'Asia/Seoul', offsetMinutes: 540 };
+const NEW_YORK_TIMEZONE = { timeZone: 'America/New_York', offsetMinutes: -240 };
+
 const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
   captureException: jest.fn(),
   captureMessage: jest.fn(),
@@ -57,6 +62,7 @@ describe('AuthProvider', () => {
   let queryClient: QueryClient;
   let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
+  let deviceTimezoneService: DeviceTimezoneService;
   let unsubscribes: Array<() => void>;
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
 
@@ -68,6 +74,9 @@ describe('AuthProvider', () => {
     queryClient = createTestQueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
+    deviceTimezoneService = new DeviceTimezoneService(
+      createDeviceTimezoneRepository(createMemorySyncStorage()),
+    );
     unsubscribes = [];
     mountedProviders = [];
   });
@@ -107,6 +116,7 @@ describe('AuthProvider', () => {
           widgetSyncService,
           draftService,
           queryCacheStorage,
+          deviceTimezoneService,
         })}
       >
         <QueryClientProvider client={queryClient}>
@@ -361,6 +371,36 @@ describe('AuthProvider', () => {
       // Then
       await expectStatus('unauthenticated');
       expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
+    });
+
+    it('로그아웃하면 마지막 기기 시간대를 지운다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+      deviceTimezoneService.record('user-1', SEOUL_TIMEZONE);
+
+      // When
+      await fireEvent.press(screen.getByTestId('logout'));
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(deviceTimezoneService.record('user-1', NEW_YORK_TIMEZONE)).toBeNull();
+    });
+
+    it('세션이 만료되면 마지막 기기 시간대를 남겨 같은 사용자가 다시 로그인해도 변경을 알아챈다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+      deviceTimezoneService.record('user-1', SEOUL_TIMEZONE);
+
+      // When
+      await act(() => emitSessionExpired({ reason: 'tokens-missing' }));
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(deviceTimezoneService.record('user-1', NEW_YORK_TIMEZONE)).not.toBeNull();
     });
 
     it('로그아웃하면 기기에 저장한 조회 캐시를 지워 다음 사용자에게 복원되지 않게 한다', async () => {

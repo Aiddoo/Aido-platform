@@ -21,6 +21,7 @@ import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-
 interface ReportedPushDevice {
   deviceId: string;
   input: ReportPushDeviceInput;
+  timeZone: string;
   device: PushDevice;
 }
 
@@ -29,6 +30,7 @@ export class PushDeviceService {
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
+  readonly #getTimeZone: () => string;
   #lastReported: ReportedPushDevice | null = null;
   #reportInFlight: Promise<unknown> | null = null;
 
@@ -37,11 +39,13 @@ export class PushDeviceService {
     deviceIdService: Pick<DeviceIdService, 'get'>,
     httpClient: HttpClient,
     logger: Logger,
+    getTimeZone: () => string,
   ) {
     this.#gateway = gateway;
     this.#deviceIdService = deviceIdService;
     this.#httpClient = httpClient;
     this.#logger = logger;
+    this.#getTimeZone = getTimeZone;
   }
 
   readPermission = async (): Promise<PushPermission> =>
@@ -72,6 +76,7 @@ export class PushDeviceService {
 
   /**
    * 이 기기의 권한과 토큰을 서버에 알린다. 이번 세션에 같은 값을 이미 보냈으면 요청하지 않는다.
+   * 서버는 시간대를 요청 헤더에서 읽으므로 기기 시간대가 바뀌어도 다시 보낸다.
    * 웹은 푸시 기기가 아니라 보내지 않고 null을 돌려준다.
    */
   report = async ({ force = false }: { force?: boolean } = {}): Promise<
@@ -86,12 +91,20 @@ export class PushDeviceService {
     const token = isDeliveryAllowed(permission) ? await this.#issueToken() : null;
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
+    const timeZone = this.#getTimeZone();
 
     const lastReported = this.#lastReported;
     if (
       !force &&
       lastReported != null &&
-      isEqual({ deviceId, input }, { deviceId: lastReported.deviceId, input: lastReported.input })
+      isEqual(
+        { deviceId, input, timeZone },
+        {
+          deviceId: lastReported.deviceId,
+          input: lastReported.input,
+          timeZone: lastReported.timeZone,
+        },
+      )
     ) {
       return ok(lastReported.device);
     }
@@ -115,7 +128,7 @@ export class PushDeviceService {
     }
 
     const device = toPushDevice(parsed.data);
-    this.#lastReported = { deviceId, input, device };
+    this.#lastReported = { deviceId, input, timeZone, device };
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORTED, {
       ...permission,
       hasToken: token != null,
@@ -143,6 +156,9 @@ export class PushDeviceService {
 
   addTokenListener = (listener: () => void): (() => void) =>
     this.#gateway.addTokenListener(listener);
+
+  addResponseListener = (listener: () => void): (() => void) =>
+    this.#gateway.addResponseListener(listener);
 
   openSettings = (): Promise<void> => this.#gateway.openSettings();
 

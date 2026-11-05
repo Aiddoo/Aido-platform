@@ -12,7 +12,7 @@ import { PushDeviceService } from './push-device.service';
 
 const DEVICE_ID = 'ios_device-123';
 
-function setup(gateway = createPushNotificationGatewayStub()) {
+function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () => 'Asia/Seoul') {
   const httpClient = createMockHttpClient();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const logger: jest.Mocked<Logger> = {
@@ -26,11 +26,46 @@ function setup(gateway = createPushNotificationGatewayStub()) {
     { get: async () => DEVICE_ID },
     httpClient,
     logger,
+    getTimeZone,
   );
   return { service, gateway, httpClient, logger };
 }
 
 describe('PushDeviceService.report', () => {
+  it('값이 같아도 기기 시간대가 바뀌면 서버가 헤더를 읽도록 다시 보낸다', async () => {
+    // Given
+    let timeZone = 'Asia/Seoul';
+    const { service, httpClient } = setup(undefined, () => timeZone);
+    await service.report();
+    timeZone = 'America/New_York';
+
+    // When
+    await service.report();
+    await service.report();
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('시간대 보고가 실패하면 다음 복귀 때 다시 보낸다', async () => {
+    // Given
+    let timeZone = 'Asia/Seoul';
+    const { service, httpClient } = setup(undefined, () => timeZone);
+    await service.report();
+    timeZone = 'America/New_York';
+    httpClient.put.mockResolvedValueOnce({
+      ok: false,
+      error: createNotificationApiError(),
+    });
+    await service.report();
+
+    // When
+    await service.report();
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(3);
+  });
+
   it('허용된 기기는 권한과 토큰을 기기 경로로 보고하고 토큰은 로그에 남기지 않는다', async () => {
     // Given
     const { service, httpClient, logger } = setup();
