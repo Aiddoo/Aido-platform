@@ -45,7 +45,7 @@
     "marketingPushDescription": "Receive recommendations and return reminders by push",
     "aiDataSharing": {
       "label": "AI data sharing",
-      "description": "Sends what you type and your speech turned into text to Anthropic, Google, and OpenAI to organize it into to-dos and summarize it. If your device can't turn speech into text itself, Apple or Google speech recognition may do it. Audio files aren't sent to Aido's servers.",
+      "description": "AI features send what you enter to Anthropic, Google, and OpenAI for processing. Speech is turned into text on your device or by Apple or Google speech recognition. Audio files aren't sent to Aido's servers.",
       "descriptionGoogleOnly": "Sends what you type to Google Gemini to organize it into to-dos",
       "agreedOn": "Agreed on {{date}}",
       "withdrawTitle": "Withdraw consent?",
