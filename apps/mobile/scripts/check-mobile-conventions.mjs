@@ -134,7 +134,6 @@ const SDK_BOUNDARY_HOOKS = new Map([
 ]);
 // 규칙을 넣기 전부터 있던 위반. 출시 후 첫 스택에서 모두 옮겨 비운다. 새 위반을 여기 더하지 않는다.
 const SDK_IMPORT_ALLOWLIST = new Map([
-  ['apps/mobile/app/(app)/voice-notes/[draftId].tsx', ['expo-crypto']],
   ['apps/mobile/app/_layout.tsx', ['expo-updates']],
   ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
   ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],

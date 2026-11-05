@@ -1,35 +1,26 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
 import { DigestScanPreview } from '@src/features/voice/components/note/digest-scan-preview';
 import { KeyPointList } from '@src/features/voice/components/note/key-point-list';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import { VoiceNoteDigestButton } from '@src/features/voice/components/note/voice-note-digest-button';
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
+import { VoiceNoteMoreMenu } from '@src/features/voice/components/note/voice-note-more-menu';
+import { VoiceNotePlanTodos } from '@src/features/voice/components/note/voice-note-plan-todos';
 import { VoiceNotePlayerBar } from '@src/features/voice/components/note/voice-note-player-bar';
+import { VoiceNoteSaveMemoButton } from '@src/features/voice/components/note/voice-note-save-memo-button';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
-import {
-  type PlanReviewFormValues,
-  planReviewFormSchema,
-  toVoicePlanFromDraft,
-} from '@src/features/voice/domains/plan-review-form.schema';
 import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
-import { voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
-import {
-  canRetryPlanFailure,
-  isPlanKeyConflictError,
-} from '@src/features/voice/domains/voice.error';
+import { canRetryPlanFailure } from '@src/features/voice/domains/voice.error';
+import { useCurrentVoiceNote } from '@src/features/voice/hooks/use-current-voice-note';
 import {
   useVoiceNoteDigest,
   type VoiceNoteDigestFailure,
 } from '@src/features/voice/hooks/use-voice-note-digest';
 import {
-  useVoiceNoteParams,
   useVoiceNoteTab,
+  type VoiceNoteTab,
   voiceNoteParamsSchema,
   voiceNoteTabSchema,
 } from '@src/features/voice/hooks/use-voice-note-params';
@@ -38,8 +29,6 @@ import {
   useVoiceNotePlayer,
   type VoiceNotePlayer,
 } from '@src/features/voice/hooks/use-voice-note-player';
-import { useVoiceNote } from '@src/features/voice/hooks/use-voice-notes';
-import { useApplyActionPlanMutationOptions } from '@src/features/voice/queries/use-apply-action-plan-mutation-options';
 import { getDurationBucket } from '@src/features/voice/utils/analytics/duration-bucket';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import {
@@ -47,37 +36,27 @@ import {
   getFlagBarIndexes,
 } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { useTrack } from '@src/shared/analytics';
-import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  Button,
-  CheckmarkIcon,
   HStack,
-  MemoIcon,
-  MoreIcon,
   QueryErrorBoundary,
   READABLE_CONTENT_MAX_WIDTH,
   Result,
   ScreenScrollShadow,
   StyledSafeAreaView,
   Text,
-  useConfirmDialog,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
-import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { randomUUID } from 'expo-crypto';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Menu, PressableFeedback, Spinner, Tabs } from 'heroui-native';
-import { Suspense, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Tabs } from 'heroui-native';
+import { type ComponentProps, Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -85,15 +64,7 @@ import { match } from 'ts-pattern';
 /** 정리 중 미리보기에 보여 줄 앞부분 문장 수. 전체를 그릴 이유가 없다 */
 const SCAN_PREVIEW_SENTENCES = 12;
 
-/** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */
-const UNUSED_CATEGORY_ID = 0;
-
-const PLAN_REVIEW_CLASS_NAME = 'flex-1 pb-3';
-
-const HEADER_PILL_ICON_SIZE = 16;
-/** 32 높이의 머리글 버튼을 44로 넓힌다 */
-const HEADER_PILL_HIT_SLOP = 6;
-const VOICE_NOTE_MENU_WIDTH = 180;
+const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
 
 const closeScreen = () => {
   if (router.canGoBack()) {
@@ -102,12 +73,6 @@ const closeScreen = () => {
     router.replace('/memo');
   }
 };
-
-function useCurrentVoiceNote() {
-  const { draftId } = useVoiceNoteParams();
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  return { accountId: me.id, draftId, note: useVoiceNote(me.id, draftId) };
-}
 
 function VoiceNoteScreen() {
   const { t } = useTranslation('voiceNote');
@@ -144,7 +109,7 @@ function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
       <VoiceNoteHeader
         title={t('digest.readyTitle')}
         onClose={closeScreen}
-        right={<VoiceNoteMoreMenu />}
+        right={<VoiceNoteMoreMenu onDeleted={closeScreen} />}
       />
       <SentenceCaptionList sentences={note.sentences} className="min-h-24 flex-1" />
       {failure != null && <VoiceNoteDigest.Failure failure={failure} />}
@@ -200,37 +165,11 @@ VoiceNoteDigest.Failure = function Failure({ failure }: { failure: VoiceNoteDige
 
 /** 정리 뒤: 제목·재생 줄 아래로 요약·할 일·전문을 고른다. 넓은 화면은 할 일 칸이 옆에 늘 보인다 */
 function VoiceNoteResult({ note }: { note: VoiceNote }) {
-  const { t } = useTranslation('voiceNote');
-  const { accountId } = useCurrentVoiceNote();
   const [tab, setTab] = useVoiceNoteTab();
-  const { recordings } = useVoiceNoteStorageService();
   const isCompact = useWindowSizeClass() === 'compact';
-  const dateFormatContext = useDateFormatContext();
-  const [parts] = useState(() =>
-    note.recordings.flatMap(({ fileName, startMs }) => {
-      const uri = recordings.findUri(accountId, fileName);
-      return uri == null ? [] : [{ uri, startMs }];
-    }),
-  );
-  const player = useVoiceNotePlayer({ parts, durationMs: note.durationMs });
-  useOnScreenBlur(() => {
-    if (player.getPlayback().isPlaying) {
-      player.togglePlay().catch(noop);
-    }
-  });
+  const { player, canPlay } = useVoiceNoteResultPlayer(note);
   // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
   const [levels] = useState(() => createSpeechLevels(note.sentences, note.durationMs));
-  const markCount = VoiceNotePolicy.getMarkCount(note);
-  const date = formatDateLabel(note.createdAt, 'monthDay', dateFormatContext);
-  const duration = formatMediaTime(note.durationMs);
-  const canPlay = parts.length > 0;
-  const todos = (
-    <QueryErrorBoundary>
-      <Suspense fallback={<PlanReview.Loading className={PLAN_REVIEW_CLASS_NAME} />}>
-        <VoiceNoteResult.Todos note={note} />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
   const selectedTab = !isCompact && tab === 'todos' ? 'summary' : tab;
 
   return (
@@ -239,21 +178,12 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
         onClose={closeScreen}
         right={
           <HStack gap={12} align="center" className="shrink">
-            <VoiceNoteResult.SaveMemo note={note} />
-            <VoiceNoteMoreMenu />
+            <VoiceNoteSaveMemoButton note={note} />
+            <VoiceNoteMoreMenu onDeleted={closeScreen} />
           </HStack>
         }
       />
-      <VStack gap={4}>
-        <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
-          {VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle')}
-        </Text>
-        <Text size="e1" shade={6} className="tabular-nums">
-          {markCount > 0
-            ? t('result.metaMarks', { date, duration, amount: markCount })
-            : t('result.meta', { date, duration })}
-        </Text>
-      </VStack>
+      <VoiceNoteResult.Title note={note} />
       <VoiceNotePlayerBar
         player={player}
         levels={levels}
@@ -262,38 +192,13 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
       />
       <HStack flex={1} gap={20}>
         <VStack flex={1} gap={12}>
-          <Tabs
-            value={selectedTab}
-            onValueChange={(next) => {
-              const parsed = voiceNoteTabSchema.safeParse(next);
-              if (parsed.success) {
-                setTab(parsed.data);
-              }
-            }}
-          >
-            <Tabs.List>
-              <Tabs.Indicator />
-              <Tabs.Trigger value="summary" testID="voice-note-tab-summary">
-                <Tabs.Label numberOfLines={1}>{t('result.tabs.summary')}</Tabs.Label>
-              </Tabs.Trigger>
-              {isCompact && (
-                <Tabs.Trigger value="todos" testID="voice-note-tab-todos">
-                  <Tabs.Label numberOfLines={1}>
-                    {t('result.tabs.todos', { amount: VoiceNotePolicy.getPlannedTodoCount(note) })}
-                  </Tabs.Label>
-                </Tabs.Trigger>
-              )}
-              <Tabs.Trigger value="transcript" testID="voice-note-tab-transcript">
-                <Tabs.Label numberOfLines={1}>{t('result.tabs.transcript')}</Tabs.Label>
-              </Tabs.Trigger>
-            </Tabs.List>
-          </Tabs>
+          <VoiceNoteResult.TabList note={note} value={selectedTab} onValueChange={setTab} />
           <Animated.View entering={FadeIn.duration(200)} key={selectedTab} style={{ flex: 1 }}>
             {match(selectedTab)
               .with('summary', () => (
                 <VoiceNoteResult.Summary note={note} player={player} canPlay={canPlay} />
               ))
-              .with('todos', () => todos)
+              .with('todos', () => <VoiceNoteResult.Todos note={note} />)
               .with('transcript', () => (
                 <VoiceNoteResult.Transcript note={note} player={player} canPlay={canPlay} />
               ))
@@ -302,13 +207,114 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
         </VStack>
         {!isCompact && (
           <Box flex={1} style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}>
-            {todos}
+            <VoiceNoteResult.Todos note={note} />
           </Box>
         )}
       </HStack>
     </VStack>
   );
 }
+
+/** 기기에 남은 녹음 조각으로 만든 플레이어. 화면을 벗어나면 재생을 멈춘다 */
+function useVoiceNoteResultPlayer(note: VoiceNote) {
+  const { accountId } = useCurrentVoiceNote();
+  const { recordings } = useVoiceNoteStorageService();
+  const [parts] = useState(() =>
+    note.recordings.flatMap(({ fileName, startMs }) => {
+      const uri = recordings.findUri(accountId, fileName);
+      return uri == null ? [] : [{ uri, startMs }];
+    }),
+  );
+  const player = useVoiceNotePlayer({ parts, durationMs: note.durationMs });
+
+  useOnScreenBlur(() => {
+    if (player.getPlayback().isPlaying) {
+      player.togglePlay().catch(noop);
+    }
+  });
+
+  return { player, canPlay: parts.length > 0 };
+}
+
+VoiceNoteResult.Title = function Title({ note }: { note: VoiceNote }) {
+  const { t } = useTranslation('voiceNote');
+  const dateFormatContext = useDateFormatContext();
+  const markCount = VoiceNotePolicy.getMarkCount(note);
+  const date = formatDateLabel(note.createdAt, 'monthDay', dateFormatContext);
+  const duration = formatMediaTime(note.durationMs);
+
+  return (
+    <VStack gap={4}>
+      <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
+        {VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle')}
+      </Text>
+      <Text size="e1" shade={6} className="tabular-nums">
+        {markCount > 0
+          ? t('result.metaMarks', { date, duration, amount: markCount })
+          : t('result.meta', { date, duration })}
+      </Text>
+    </VStack>
+  );
+};
+
+interface VoiceNoteResultTabListProps extends Omit<
+  ComponentProps<typeof Tabs>,
+  'value' | 'onValueChange' | 'children'
+> {
+  note: VoiceNote;
+  value: VoiceNoteTab;
+  onValueChange: (tab: VoiceNoteTab) => void;
+}
+
+VoiceNoteResult.TabList = function TabList({
+  note,
+  value,
+  onValueChange,
+  ...tabsProps
+}: VoiceNoteResultTabListProps) {
+  const { t } = useTranslation('voiceNote');
+  const isCompact = useWindowSizeClass() === 'compact';
+
+  return (
+    <Tabs
+      {...tabsProps}
+      value={value}
+      onValueChange={(next) => {
+        const parsed = voiceNoteTabSchema.safeParse(next);
+        if (parsed.success) {
+          onValueChange(parsed.data);
+        }
+      }}
+    >
+      <Tabs.List>
+        <Tabs.Indicator />
+        <Tabs.Trigger value="summary" testID="voice-note-tab-summary">
+          <Tabs.Label numberOfLines={1}>{t('result.tabs.summary')}</Tabs.Label>
+        </Tabs.Trigger>
+        {isCompact && (
+          <Tabs.Trigger value="todos" testID="voice-note-tab-todos">
+            <Tabs.Label numberOfLines={1}>
+              {t('result.tabs.todos', { amount: VoiceNotePolicy.getPlannedTodoCount(note) })}
+            </Tabs.Label>
+          </Tabs.Trigger>
+        )}
+        <Tabs.Trigger value="transcript" testID="voice-note-tab-transcript">
+          <Tabs.Label numberOfLines={1}>{t('result.tabs.transcript')}</Tabs.Label>
+        </Tabs.Trigger>
+      </Tabs.List>
+    </Tabs>
+  );
+};
+
+VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
+  return (
+    <QueryErrorBoundary>
+      <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
+        <VoiceNotePlanTodos note={note} className={PLAN_TODOS_CLASS_NAME} />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+};
 
 interface VoiceNoteResultPlaybackProps {
   note: VoiceNote;
@@ -398,256 +404,6 @@ VoiceNoteResult.Transcript = function Transcript({
     />
   );
 };
-
-/** 할 일 칸. 고친 카드는 초안에 함께 남아 앱을 다시 켜도 그대로다 */
-VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
-  const { t } = useTranslation('voiceNote');
-  const { accountId, draftId } = useCurrentVoiceNote();
-  const { drafts } = useVoiceNoteStorageService();
-  const [{ data: categoriesResult }] = useSuspenseQueries({
-    queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
-  });
-  const fallbackCategoryId = categoriesResult.categories[0]?.id;
-  const form = useForm<PlanReviewFormValues>({
-    resolver: zodResolver(planReviewFormSchema),
-    defaultValues: note.planDraft?.form ?? { actions: [] },
-    mode: 'onChange',
-  });
-
-  useFormDraftAutosave(form.subscribe, {
-    initialValues: { actions: [] },
-    saveDraft: (values) => {
-      const latest = drafts.find(accountId, draftId);
-      if (latest?.planDraft != null) {
-        drafts.save(
-          accountId,
-          VoiceNotePolicy.withPlanDraft(latest, {
-            omittedTodoCount: latest.planDraft.omittedTodoCount,
-            form: values,
-          }),
-        );
-      }
-    },
-    clearDraft: noop,
-  });
-
-  return match(VoiceNotePolicy.getPlanStatus(note))
-    .with({ status: 'applied' }, () => (
-      <Result
-        title={
-          VoiceNotePolicy.hasAppliedOnlyMemo(note) ? t('result.appliedMemo') : t('result.applied')
-        }
-        testID="voice-note-applied"
-      />
-    ))
-    .with({ status: 'no-todos' }, () => (
-      <Result title={t('result.noTodos')} testID="voice-note-no-todos" />
-    ))
-    .with({ status: 'lost' }, () => (
-      <Result title={t('result.planLost')} testID="voice-note-plan-lost" />
-    ))
-    .with({ status: 'reviewable' }, ({ planDraft }) =>
-      fallbackCategoryId == null ? (
-        <Result title={t('result.noTodos')} />
-      ) : (
-        <PlanReview
-          className={PLAN_REVIEW_CLASS_NAME}
-          form={form}
-          plan={toVoicePlanFromDraft(
-            {
-              planId: voicePlanIdSchema.parse(draftId),
-              source: 'voice-note',
-              sourceMemoId: null,
-            },
-            planDraft,
-          )}
-          fallbackCategoryId={fallbackCategoryId}
-          requestStore={{
-            find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
-            save: (request) => {
-              const latest = drafts.find(accountId, draftId);
-              if (latest != null) {
-                drafts.save(accountId, VoiceNotePolicy.withPlanApplyRequest(latest, request));
-              }
-            },
-          }}
-          onSaved={({ todoCount }) => {
-            const latest = drafts.find(accountId, draftId);
-            if (latest != null) {
-              drafts.save(accountId, VoiceNotePolicy.withAppliedAt(latest, new Date(), todoCount));
-            }
-          }}
-        />
-      ),
-    )
-    .exhaustive();
-};
-
-/** 정리한 내용을 메모 한 장으로 저장한다. 저장했으면 다시 저장하지 않게 같은 자리에 저장했다고만 보인다 */
-VoiceNoteResult.SaveMemo = function SaveMemo({ note }: { note: VoiceNote }) {
-  const { t } = useTranslation('voiceNote');
-  const { accountId, draftId } = useCurrentVoiceNote();
-  const { drafts } = useVoiceNoteStorageService();
-  const mutation = useMutation(
-    useApplyActionPlanMutationOptions({
-      onSaved: () => {
-        const latest = drafts.find(accountId, draftId);
-        if (latest != null) {
-          drafts.save(accountId, VoiceNotePolicy.withMemoSavedAt(latest, new Date()));
-        }
-      },
-    }),
-  );
-  const memo = VoiceNotePolicy.createDigestMemo(note);
-
-  if (note.memoSavedAt != null) {
-    return (
-      <HStack
-        gap={4}
-        align="center"
-        className="h-8 shrink rounded-full bg-gray-9/5 px-3 dark:bg-gray-9/20"
-        testID="voice-note-memo-saved"
-      >
-        <CheckmarkIcon
-          width={HEADER_PILL_ICON_SIZE}
-          height={HEADER_PILL_ICON_SIZE}
-          colorClassName="text-gray-7"
-        />
-        <Text size="b4" weight="medium" shade={7} maxLines={1} className="shrink">
-          {t('result.memoSaved')}
-        </Text>
-      </HStack>
-    );
-  }
-  if (memo == null) {
-    return null;
-  }
-
-  const saveMemoRequest = (idempotencyKey: string | null) => {
-    const latest = drafts.find(accountId, draftId);
-    if (latest != null) {
-      drafts.save(
-        accountId,
-        VoiceNotePolicy.withMemoSaveRequest(
-          latest,
-          idempotencyKey == null ? null : { idempotencyKey },
-        ),
-      );
-    }
-  };
-
-  const handleSave = () => {
-    // 응답을 놓친 뒤 다시 눌러도 같은 키라 메모가 두 장이 되지 않는다
-    const idempotencyKey = note.memoSaveRequest?.idempotencyKey ?? randomUUID();
-    saveMemoRequest(idempotencyKey);
-    mutation.mutate(
-      {
-        source: 'voice-note',
-        sourceMemoId: null,
-        actions: [memo],
-        fallbackCategoryId: UNUSED_CATEGORY_ID,
-        skippedCount: 0,
-        idempotencyKey,
-      },
-      {
-        onError: (error) => {
-          if (isPlanKeyConflictError(error)) {
-            saveMemoRequest(null);
-          }
-        },
-      },
-    );
-  };
-
-  return (
-    <Button
-      size="small"
-      variant="weak"
-      display="inline"
-      radius="full"
-      hitSlop={HEADER_PILL_HIT_SLOP}
-      accessibilityLabel={t('result.saveMemo')}
-      isDisabled={mutation.isPending}
-      onPress={handleSave}
-      className="shrink"
-      testID="voice-note-save-memo"
-    >
-      <HStack gap={4} align="center" className="shrink">
-        {/* isLoading은 글자를 스피너로 바꿔 폭이 줄어든다. 글자를 두고 아이콘 자리만 바꾼다 */}
-        {mutation.isPending ? (
-          <Spinner size="sm" color="default" />
-        ) : (
-          <MemoIcon
-            width={HEADER_PILL_ICON_SIZE}
-            height={HEADER_PILL_ICON_SIZE}
-            colorClassName="text-main"
-          />
-        )}
-        <Text size="b4" weight="semibold" tone="brand" maxLines={1} className="shrink">
-          {t('result.saveMemo')}
-        </Text>
-      </HStack>
-    </Button>
-  );
-};
-
-/** 머리글 ⋯. X와 같은 크기·터치 영역으로 오른쪽 끝선에 맞춘다 */
-function VoiceNoteMoreMenu() {
-  const { t } = useTranslation('voiceNote');
-  const { accountId, draftId } = useCurrentVoiceNote();
-  const storage = useVoiceNoteStorageService();
-  const confirmDialog = useConfirmDialog();
-  const fontScaledSize = useFontScaledSize();
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleDelete = async () => {
-    const isConfirmed = await confirmDialog.open({
-      title: t('result.deleteTitle'),
-      description: t('result.deleteDescription'),
-      confirmLabel: t('result.deleteConfirm'),
-      confirmColor: 'danger',
-      cancelLabel: t('result.deleteCancel'),
-    });
-    if (isConfirmed) {
-      storage.discard(accountId, draftId);
-      closeScreen();
-    }
-  };
-
-  return (
-    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Menu.Trigger asChild>
-        <PressableFeedback
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel={t('result.more')}
-          accessibilityState={{ expanded: isOpen }}
-          testID="voice-note-more"
-        >
-          <MoreIcon
-            width={fontScaledSize(22)}
-            height={fontScaledSize(22)}
-            colorClassName="text-gray-7"
-          />
-        </PressableFeedback>
-      </Menu.Trigger>
-      <Menu.Portal disableFullWindowOverlay={false}>
-        <Menu.Overlay />
-        <Menu.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          width={VOICE_NOTE_MENU_WIDTH}
-          className="rounded-2xl border border-gray-2 bg-gray-1"
-        >
-          <Menu.Item variant="danger" onPress={handleDelete} testID="voice-note-delete">
-            <Menu.ItemTitle>{t('result.delete')}</Menu.ItemTitle>
-          </Menu.Item>
-        </Menu.Content>
-      </Menu.Portal>
-    </Menu>
-  );
-}
 
 export default function VoiceNoteRoute() {
   const params = voiceNoteParamsSchema.safeParse(useLocalSearchParams());

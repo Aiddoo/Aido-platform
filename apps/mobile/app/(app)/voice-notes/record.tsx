@@ -1,10 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
-import { toPremiumBenefitAmounts } from '@src/features/subscription/utils/view-models/plan-benefit.view-model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import {
   RECORD_CONTROL_ICON_SIZE,
@@ -27,6 +23,8 @@ import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphon
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
+import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note-record-exit';
+import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { errorMessageOf } from '@src/shared/errors/to-error';
@@ -45,14 +43,12 @@ import {
   StopIcon,
   StyledSafeAreaView,
   Text,
-  useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Suspense, useEffect, useEffectEvent } from 'react';
-import { BackHandler } from 'react-native';
+import { type ComponentProps, Suspense, useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 
 const MARK_HINT_HEIGHT = 124;
@@ -61,21 +57,11 @@ function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
   useKeepScreenAwake();
   const isCompact = useWindowSizeClass() === 'compact';
-  const fontScaledSize = useFontScaledSize();
-  const [isMarkHintPending] = useMyPendingCoachmark('voice-note-mark');
   const toast = useAppToast();
-  const logger = useLogger();
-  const confirmDialog = useConfirmDialog();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
-  const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
+  const { maxSeconds, limitMs, notifyLimit } = useVoiceNoteRecordLimit();
   const getSpeechContext = useSpeechContext();
-  const [locale, setLocale] = useRecognitionLanguage();
-  const ensureMicrophonePermission = useMicrophonePermission();
-  const maxSeconds =
-    snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
-  const limitMs = maxSeconds == null ? null : maxSeconds * 1_000;
-
+  const [locale] = useRecognitionLanguage();
   const { draftId: seedDraftId, entry } = useVoiceNoteRecordParams();
 
   const recording = useVoiceNoteRecording({
@@ -84,27 +70,7 @@ function VoiceNoteRecordScreen() {
     seedDraftId,
     entry,
     maxSeconds,
-    onLimitReached: () => {
-      const minutes = Math.round((maxSeconds ?? 0) / 60);
-      const { hasText } = recording;
-      if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
-        if (hasText) {
-          toast.warning(t('limit.premium', { minutes }));
-        }
-        recording.finish();
-        return;
-      }
-      const { voiceNoteMinutes: premiumMinutes } = toPremiumBenefitAmounts();
-      gate.showLimit({
-        title: t('limit.title', { minutes }),
-        description: hasText
-          ? t('limit.description', { premiumMinutes })
-          : t('limit.descriptionEmpty', { premiumMinutes }),
-        alternativeAction: hasText
-          ? { label: t('limit.summarize'), onPress: () => recording.finish() }
-          : undefined,
-      });
-    },
+    onLimitReached: () => notifyLimit(recording),
     onFinished: (draftId) => router.replace(voiceNoteHref(draftId)),
     onEmpty: () => {
       toast.warning(t('record.empty'));
@@ -112,6 +78,7 @@ function VoiceNoteRecordScreen() {
     },
   });
   useOnScreenBlur(recording.interrupt);
+  const { requestClose, requestFinish } = useVoiceNoteRecordExit(recording);
   const { state } = recording;
 
   useEffect(() => {
@@ -121,94 +88,18 @@ function VoiceNoteRecordScreen() {
     // 화면이 열릴 때 한 번만 듣기를 시작한다
   }, []);
 
-  const handleClose = async () => {
-    if (VoiceCapturePolicy.isWrappingUp(state)) {
-      return;
-    }
-    if (!recording.hasText) {
-      recording.discard();
-      router.back();
-      return;
-    }
-    // 듣기를 시작하기 전이면 끝낼 것이 없다. 넘겨받은 글자는 메모 탭의 초안에 그대로 있다
-    if (state.status === 'idle') {
-      router.back();
-      return;
-    }
-    const shouldFinish = await confirmDialog.open({
-      title: t('record.leaveTitle'),
-      description: t('record.leaveDescription'),
-      confirmLabel: t('record.leaveConfirm'),
-      cancelLabel: t('record.leaveCancel'),
-    });
-    if (shouldFinish) {
-      recording.finish();
-    }
-  };
-
-  /** 들은 내용이 없으면 끝낼 게 없어 이유를 알리고 묻는다. 묻는 동안 말이 들어왔으면 그 내용으로 정리한다 */
-  const handleFinishPress = async () => {
-    if (VoiceCapturePolicy.canFinish(state)) {
-      recording.finish();
-      return;
-    }
-    const shouldFinish = await confirmDialog.open({
-      title: t('record.finishEmptyTitle'),
-      description: t('record.finishEmptyDescription'),
-      confirmLabel: t('record.leaveConfirm'),
-      cancelLabel: t('record.leaveCancel'),
-    });
-    if (shouldFinish) {
-      recording.finish();
-    }
-  };
-
-  /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
-  const handleLocaleChange = async (next: SpeechLocale) => {
-    if (await ensureMicrophonePermission('note', next)) {
-      setLocale(next);
-      await recording.changeLocale(next);
-    }
-  };
-
-  /** 닫기와 끝내기는 다시 누르면 되니 알리지 않고 진단만 남긴다 */
-  const logActionFailure = (action: 'close' | 'finish') => (error: unknown) => {
-    logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_ACTION_FAILED, {
-      action,
-      error: errorMessageOf(error),
-    });
-  };
-  const requestClose = () => {
-    handleClose().catch(logActionFailure('close'));
-  };
-  const requestFinish = () => {
-    handleFinishPress().catch(logActionFailure('finish'));
-  };
-
-  const closeOnBackPress = useEffectEvent(() => {
-    requestClose();
-    return true;
-  });
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', closeOnBackPress);
-    return () => subscription.remove();
-  }, []);
-
-  const timer = <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />;
+  const clock = <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />;
   const waveform = (
-    <VoiceNoteRecordScreen.Waveform
+    <RecognizerWaveform
       isActive={state.status === 'listening'}
       bookmarksMs={recording.bookmarksMs}
+      className="self-stretch"
     />
   );
   const captions = (
-    <SentenceCaptionList
+    <VoiceNoteRecordScreen.Captions
       sentences={recording.sentences}
       interimText={recording.interimText}
-      isLive
-      // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
-      contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
-      className="min-h-24 flex-1"
     />
   );
   const footer = (
@@ -243,24 +134,12 @@ function VoiceNoteRecordScreen() {
       <VoiceNoteHeader
         title={t('record.title')}
         onClose={requestClose}
-        right={
-          <RecognitionLanguageToggle
-            value={locale}
-            onValueChange={(next) => {
-              handleLocaleChange(next).catch((error: unknown) => {
-                logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
-                  error: errorMessageOf(error),
-                });
-                toast.error(t('record.languageChangeFailed'));
-              });
-            }}
-          />
-        }
+        right={<VoiceNoteRecordScreen.LanguageToggle onLocaleChange={recording.changeLocale} />}
       />
       {isCompact ? (
         <>
           <VStack align="center" className={cn(state.status === 'paused' && 'opacity-60')}>
-            {timer}
+            {clock}
           </VStack>
           {waveform}
           {captions}
@@ -269,7 +148,7 @@ function VoiceNoteRecordScreen() {
       ) : (
         <HStack flex={1} gap={20}>
           <VStack flex={1} gap={12} justify="center" align="center">
-            {timer}
+            {clock}
             {waveform}
             {footer}
           </VStack>
@@ -279,6 +158,40 @@ function VoiceNoteRecordScreen() {
     </VStack>
   );
 }
+
+/** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+VoiceNoteRecordScreen.LanguageToggle = function LanguageToggle({
+  onLocaleChange,
+}: {
+  onLocaleChange: (next: SpeechLocale) => Promise<void>;
+}) {
+  const { t } = useTranslation('voiceNote');
+  const toast = useAppToast();
+  const logger = useLogger();
+  const [locale, setLocale] = useRecognitionLanguage();
+  const ensureMicrophonePermission = useMicrophonePermission();
+
+  const handleLocaleChange = async (next: SpeechLocale) => {
+    if (await ensureMicrophonePermission('note', next)) {
+      setLocale(next);
+      await onLocaleChange(next);
+    }
+  };
+
+  return (
+    <RecognitionLanguageToggle
+      value={locale}
+      onValueChange={(next) => {
+        handleLocaleChange(next).catch((error: unknown) => {
+          logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
+            error: errorMessageOf(error),
+          });
+          toast.error(t('record.languageChangeFailed'));
+        });
+      }}
+    />
+  );
+};
 
 /** 1초마다 시계만 다시 그린다. 자막과 조작 줄은 건드리지 않는다 */
 VoiceNoteRecordScreen.Clock = function Clock({
@@ -300,15 +213,21 @@ VoiceNoteRecordScreen.Clock = function Clock({
   );
 };
 
-VoiceNoteRecordScreen.Waveform = function Waveform({
-  isActive,
-  bookmarksMs,
-}: {
-  isActive: boolean;
-  bookmarksMs: readonly number[];
-}) {
+VoiceNoteRecordScreen.Captions = function Captions(
+  props: Pick<ComponentProps<typeof SentenceCaptionList>, 'sentences' | 'interimText'>,
+) {
+  const isCompact = useWindowSizeClass() === 'compact';
+  const fontScaledSize = useFontScaledSize();
+  const [isMarkHintPending] = useMyPendingCoachmark('voice-note-mark');
+
   return (
-    <RecognizerWaveform isActive={isActive} bookmarksMs={bookmarksMs} className="self-stretch" />
+    <SentenceCaptionList
+      {...props}
+      isLive
+      // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
+      contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
+      className="min-h-24 flex-1"
+    />
   );
 };
 
