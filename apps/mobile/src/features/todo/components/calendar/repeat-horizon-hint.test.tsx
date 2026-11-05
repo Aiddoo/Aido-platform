@@ -3,14 +3,15 @@ import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { UserService } from '@src/features/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
   createMockAnalytics,
   createMockHttpClient,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
+import { createTestQueryClient, renderUi } from '@src/shared/__tests__/render-ui';
+import { ok, unwrap } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
@@ -47,6 +48,11 @@ async function renderHint({
   );
   const userHttpClient = createMockHttpClient();
   userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+  const userService = new UserService(userHttpClient);
+  // 내 정보가 오면 CoachmarkPopover가 대상을 Popover 안으로 옮겨 다시 마운트한다.
+  // 그 전에 찾은 줄은 떨어져 나가 눌러도 아무 일이 없으므로, 앱처럼 캐시에 넣고 시작한다.
+  const queryClient = createTestQueryClient();
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userService.getCurrentUser()));
   const coachmarkService = new CoachmarkService(
     createCoachmarkRepository(createMemorySyncStorage()),
   );
@@ -67,8 +73,9 @@ async function renderHint({
         analytics,
         errorReporter: createErrorReporterStub(),
         todoService: new TodoService(httpClient),
-        userService: new UserService(userHttpClient),
+        userService,
       },
+      queryClient,
     },
   );
 
