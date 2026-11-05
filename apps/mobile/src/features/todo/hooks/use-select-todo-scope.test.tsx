@@ -137,7 +137,7 @@ describe('useSelectTodoEditScopeInOverlay', () => {
     expect(screen.getByTestId('title', { includeHiddenElements: true }).props.value).toBe('장보기');
   });
 
-  test('뒤로 가면 null로 끝나고 닫힌 뒤 입력으로 돌아가게 알린다', async () => {
+  test('뒤로 가면 null로 끝나고 닫히기 시작할 때 입력으로 돌아가게 알린다', async () => {
     // Given
     const { onSettled, onBack } = await renderKeyboardSheet();
 

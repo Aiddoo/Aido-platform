@@ -76,7 +76,8 @@ export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
 /**
  * 키보드를 쓰는 입력 시트에서 수정 범위를 묻는다. 안에서 내용을 갈아 끼우면 화면 폭 시트가 남고 키보드가 내려가는 동안
  * 높이가 튀어서, 날짜·반복 선택처럼 떠 있는 시트를 위에 올린다. 아래 폼은 그대로라 입력값이 남는다.
- * 뒤로 가거나 바깥을 눌러 닫으면 null이고, 닫힘이 끝난 뒤 onBack을 부른다.
+ * 뒤로 가거나 바깥을 눌러 닫으면 null이고, 닫히기 시작할 때 onBack을 부른다. 다른 피커처럼 키보드와 아래 시트가 함께 올라오고,
+ * 닫히는 사이 범위 시트를 다시 열어도 늦게 올라온 키보드가 그 시트를 가리지 않는다.
  */
 export function useSelectTodoEditScopeInOverlay({ onBack }: { onBack: () => void }) {
   const overlay = useOverlay();
@@ -92,12 +93,12 @@ export function useSelectTodoEditScopeInOverlay({ onBack }: { onBack: () => void
       <ModalBottomSheet
         isOpen={isOpen}
         onOpenChange={() => close(null)}
-        onExit={() => {
-          exit();
+        onCloseStart={() => {
           if (selectedScope == null) {
             onBack();
           }
         }}
+        onExit={exit}
       >
         <TodoScopeSelectContent
           action="edit"
