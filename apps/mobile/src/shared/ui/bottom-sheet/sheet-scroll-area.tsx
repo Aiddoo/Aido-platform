@@ -5,7 +5,7 @@ import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useResolveClassNames } from 'uniwind';
 
-const FADE_HEIGHT = 32;
+import { SCROLL_FADE_HEIGHT } from '../screen-scroll-shadow/screen-scroll-shadow';
 
 type SheetScrollShadowProps = Omit<
   ComponentProps<typeof ScrollShadow>,
@@ -21,7 +21,7 @@ export function SheetScrollShadow(props: SheetScrollShadowProps) {
       {...props}
       LinearGradientComponent={LinearGradient}
       color={typeof backgroundColor === 'string' ? backgroundColor : undefined}
-      size={FADE_HEIGHT}
+      size={SCROLL_FADE_HEIGHT}
     />
   );
 }

@@ -3,7 +3,8 @@ import { ScrollShadow } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
-const FADE_HEIGHT = 32;
+/** 화면·시트 스크롤의 흐림 길이. 두 표면이 같은 값을 쓴다 */
+export const SCROLL_FADE_HEIGHT = 32;
 
 type ScreenScrollShadowProps = Omit<
   ComponentProps<typeof ScrollShadow>,
@@ -19,7 +20,7 @@ export function ScreenScrollShadow(props: ScreenScrollShadowProps) {
       {...props}
       LinearGradientComponent={LinearGradient}
       color={typeof backgroundColor === 'string' ? backgroundColor : undefined}
-      size={FADE_HEIGHT}
+      size={SCROLL_FADE_HEIGHT}
     />
   );
 }
