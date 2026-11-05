@@ -138,7 +138,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/app/_layout.tsx', ['expo-updates']],
   ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
   ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],
-  ['apps/mobile/src/bootstrap/providers/notification-provider.tsx', ['expo-notifications']],
   ['apps/mobile/src/bootstrap/providers/query-provider.tsx', ['expo-application', 'expo-updates']],
   ['apps/mobile/src/features/ai/queries/use-parse-memo-mutation-options.ts', ['expo-crypto']],
   [
@@ -160,10 +159,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
     'apps/mobile/src/features/todo-comment/components/todo-comment-composer/todo-comment-form.tsx',
     ['expo-crypto'],
   ],
-  ['apps/mobile/src/features/todo/hooks/use-add-todo-quick-voice.ts', ['expo-crypto']],
-  ['apps/mobile/src/features/voice/components/plan/plan-review.tsx', ['expo-crypto']],
-  ['apps/mobile/src/features/voice/hooks/use-voice-note-digest.ts', ['expo-crypto']],
-  ['apps/mobile/src/features/voice/hooks/use-voice-note-recording.ts', ['expo-crypto']],
   ['apps/mobile/src/features/weather/components/weather-hero.tsx', ['expo-localization']],
   [
     'apps/mobile/src/features/weather/components/weather-scene/weather-scene-canvas.tsx',

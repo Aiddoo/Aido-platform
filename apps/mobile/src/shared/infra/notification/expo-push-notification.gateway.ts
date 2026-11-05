@@ -42,6 +42,18 @@ function toPushNotificationResponse(
   };
 }
 
+/** 앱이 켜져 있어도 알림을 보이게 한다. 첫 알림을 놓치지 않게 앱이 그려지기 전에 부른다 */
+export function registerForegroundNotificationPresentation() {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
+
 export const expoPushNotificationGateway: PushNotificationGateway = {
   getPermission: async () => toPushPermissionResponse(await Notifications.getPermissionsAsync()),
   requestPermission: async () =>

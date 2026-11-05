@@ -1,10 +1,9 @@
-import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useIdGenerator, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { isNotChargedError } from '@src/features/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useMutation } from '@tanstack/react-query';
-import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
@@ -24,6 +23,7 @@ export interface VoiceNoteDigestFailure {
  */
 export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; draftId: string }) {
   const { drafts } = useVoiceNoteStorageService();
+  const idGenerator = useIdGenerator();
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const aiConsent = useAiDataSharingConsentGate();
   const mutation = useMutation(useCreateVoiceNoteDigestMutationOptions());
@@ -64,7 +64,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
           ? null
           : { fingerprint: JSON.stringify(input), input, ...note.digestRequest },
       input,
-      createIdempotencyKey: randomUUID,
+      createIdempotencyKey: idGenerator.create,
     });
     saveRequest(request);
 

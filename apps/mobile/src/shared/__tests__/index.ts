@@ -1,5 +1,6 @@
 export { createErrorReporterStub } from './create-error-reporter-stub';
 export { createHapticsStub } from './create-haptics-stub';
+export { createIdGeneratorStub } from './create-id-generator-stub';
 export { createLocalFileSystemFake } from './create-local-file-system-fake';
 export { createMockAnalytics } from './create-mock-analytics';
 export { createMockDIContainer } from './create-mock-di-container';

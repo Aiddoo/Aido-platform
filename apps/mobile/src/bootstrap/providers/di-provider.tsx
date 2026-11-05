@@ -78,6 +78,7 @@ import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { createRefreshTokensRequest } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
+import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
 import { createKakaoShareClient } from '@src/shared/infra/kakao/kakao-share.client';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
 import {
@@ -329,6 +330,7 @@ export function DIProvider({
       analytics,
       errorReporter,
       haptics: expoHapticsGateway,
+      idGenerator: expoIdGenerator,
       speechRecognizer: expoSpeechRecognizerGateway,
       purchasesGateway: revenueCatPurchasesGateway,
       pushNotificationGateway: expoPushNotificationGateway,
