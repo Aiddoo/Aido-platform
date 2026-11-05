@@ -13,6 +13,10 @@ export function voiceNoteRecordHref({ draftId, entry }: VoiceNoteRecordHrefOptio
   } as const;
 }
 
+export function voiceNoteListHref() {
+  return '/voice-notes' as const;
+}
+
 export function voiceNoteHref(draftId: string) {
   return { pathname: '/voice-notes/[draftId]', params: { draftId } } as const;
 }
