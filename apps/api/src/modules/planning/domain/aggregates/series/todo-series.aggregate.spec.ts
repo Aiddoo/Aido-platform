@@ -1,6 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 
+import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
+
 import { RepeatRule } from "../../value-objects/series/repeat-rule.vo.js";
 import { TodoSeries, type TodoSeriesStartInput } from "./todo-series.aggregate.js";
 
@@ -177,6 +179,30 @@ describe("TodoSeries — 반복 할 일", () => {
       // Then
       expect(stopped).toBe(true);
     });
+
+    it.each([
+      { name: "매일 계속", rule: RepeatRule.daily({ type: "NEVER" }) },
+      { name: "횟수 종료", rule: RepeatRule.daily({ type: "COUNT", count: 5 }) },
+      { name: "날짜 종료", rule: RepeatRule.daily({ type: "UNTIL", date: "2026-12-31" }) },
+    ])(
+      "$name: 첫 회차 앞에서 끝내도 종료일이 시작일보다 앞서지 않고 두 번째는 false다",
+      ({ rule }) => {
+        // Given
+        const series = start({ rule });
+        const dayBeforeStart = addDaysToDateKey(series.getStartDate(), -1);
+        // When
+        const first = series.stopAfter(dayBeforeStart);
+        const second = series.stopAfter(dayBeforeStart);
+        // Then
+        expect(first).toBe(true);
+        expect(second).toBe(false);
+        expect(series.getRule().toSpec().end).toEqual({
+          type: "UNTIL",
+          date: series.getStartDate(),
+        });
+        expect(series.getNextOccurrenceDate()).toBeNull();
+      },
+    );
 
     it("마지막 회차 뒤에서는 끝낼 게 없다", () => {
       // Given

@@ -34,7 +34,7 @@ interface DeleteTodoDependencies {
   >;
   readonly seriesRepository: Pick<
     TodoSeriesRepositoryPort,
-    "lockForUpdate" | "update" | "lockFamilyIds" | "deleteMany"
+    "lockForUpdate" | "update" | "lockFamilyIds" | "lockFollowingSegments" | "deleteMany"
   >;
   readonly seriesEffects: Pick<TodoSeriesEditEffects, "publish">;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
@@ -109,7 +109,6 @@ export class DeleteTodo {
       if (series != null && series.getUserId() !== userId) {
         throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
       }
-      const pivot = toDateString(occurrenceDate);
       const deletedTodoIds = await match(scope)
         .with("ALL", async () => {
           // 이후 수정으로 나뉜 앞 구간까지 사용자에게는 하나의 반복 할 일이다.
@@ -127,14 +126,19 @@ export class DeleteTodo {
           return ids;
         })
         .with("THIS_AND_FOLLOWING", async () => {
+          const pivot = toDateString(occurrenceDate);
+          const following =
+            series == null ? [] : await seriesRepository.lockFollowingSegments(series);
           const ids = await todoRepository.deleteOccurrences({
             userId,
-            seriesIds: [seriesId],
+            seriesIds: [seriesId, ...following.map((segment) => segment.getId())],
             fromDate: pivot,
             includeCompleted: false,
           });
-          if (series?.stopAfter(addDaysToDateKey(pivot, -1)) === true) {
-            await seriesRepository.update(series);
+          for (const segment of series == null ? [] : [series, ...following]) {
+            if (segment.stopAfter(addDaysToDateKey(pivot, -1))) {
+              await seriesRepository.update(segment);
+            }
           }
           return ids;
         })

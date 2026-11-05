@@ -136,19 +136,29 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     return rows.map((row) => ({ todoId: row.id, scheduledTime: row.scheduledTime }));
   }
 
-  async findOccurrencesFrom(seriesId: string, fromDate: string): Promise<readonly OccurrenceRow[]> {
+  async findOccurrencesFrom(
+    seriesIds: readonly string[],
+    fromDate: string,
+  ): Promise<readonly OccurrenceRow[]> {
     const rows = await this.db
       .select({
         todoId: todo.id,
+        seriesId: todo.seriesId,
         occurrenceDate: todo.occurrenceDate,
         startDate: todo.startDate,
         completed: todo.completed,
       })
       .from(todo)
-      .where(and(eq(todo.seriesId, seriesId), gte(todo.occurrenceDate, parseDateOnly(fromDate))))
+      .where(
+        and(
+          inArray(todo.seriesId, [...seriesIds]),
+          gte(todo.occurrenceDate, parseDateOnly(fromDate)),
+        ),
+      )
       .orderBy(asc(todo.occurrenceDate));
     return rows.map((row) => ({
       todoId: row.todoId,
+      seriesId: requireRecord(row.seriesId),
       occurrenceDate: toDateString(requireRecord(row.occurrenceDate)),
       startDate: toDateString(row.startDate),
       completed: row.completed,

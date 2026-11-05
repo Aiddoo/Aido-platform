@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, isNotNull, lte, ne } from "drizzle-orm";
 import { match } from "ts-pattern";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -120,6 +120,23 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       .orderBy(asc(todoSeries.id))
       .for("update");
     return rows.map((row) => row.id);
+  }
+
+  async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
+    const rows = await this.db
+      .select()
+      .from(todoSeries)
+      .where(
+        and(
+          eq(todoSeries.userId, series.getUserId()),
+          eq(todoSeries.originSeriesId, series.getOriginSeriesId()),
+          gte(todoSeries.startDate, parseDateOnly(series.getStartDate())),
+          ne(todoSeries.id, series.getId()),
+        ),
+      )
+      .orderBy(asc(todoSeries.id))
+      .for("update");
+    return rows.map(toDomain);
   }
 
   async deleteMany(ids: readonly string[]): Promise<void> {

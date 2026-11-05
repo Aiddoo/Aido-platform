@@ -29,6 +29,9 @@ export interface TodoSeriesRepositoryPort {
   /** 분할로 이어진 규칙을 모두 잠그고 id를 돌려준다. 원본 id가 같은 규칙이 한 묶음이다. */
   lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]>;
 
+  /** 같은 원본에서 이 구간 뒤로 나뉜 구간을 잠그고 읽는다. "이후 모두"가 닿는 범위다. */
+  lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]>;
+
   deleteMany(ids: readonly string[]): Promise<void>;
 
   countActiveByUserId(userId: string): Promise<number>;

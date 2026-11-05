@@ -16,6 +16,7 @@ export interface TodoOccurrencePlan extends TodoCreationPlan {
 
 export interface OccurrenceRow {
   readonly todoId: number;
+  readonly seriesId: string;
   readonly occurrenceDate: string;
   readonly startDate: string;
   readonly completed: boolean;
@@ -101,8 +102,11 @@ export interface TodoRepositoryPort {
     checklist: readonly { title: string }[],
   ): Promise<readonly CreatedOccurrence[]>;
 
-  /** fromDate 이후(포함) 회차. 옮긴 회차도 원래 회차 날짜로 찾는다. */
-  findOccurrencesFrom(seriesId: string, fromDate: string): Promise<readonly OccurrenceRow[]>;
+  /** fromDate 이후(포함) 회차를 회차 날짜 순으로. 옮긴 회차도 원래 회차 날짜로 찾는다. */
+  findOccurrencesFrom(
+    seriesIds: readonly string[],
+    fromDate: string,
+  ): Promise<readonly OccurrenceRow[]>;
 
   /** fromDate 이후(포함) 미완료 회차의 내용을 함께 고친다. 완료한 회차는 기록이라 두지 않는다. */
   updateFollowingOccurrences(

@@ -26,14 +26,17 @@ export interface StoppedSeries {
 
 interface StopTodoSeriesDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "deleteOccurrences">;
-  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update">;
+  readonly seriesRepository: Pick<
+    TodoSeriesRepositoryPort,
+    "lockForUpdate" | "lockFollowingSegments" | "update"
+  >;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
   readonly effects: Pick<TodoSeriesEditEffects, "publish">;
   readonly mutationLock: MutationLockPort;
   readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-/** 이 회차 뒤로 반복을 끝낸다. 이 회차와 완료한 회차는 남고 뒤의 미완료 회차만 지운다. */
+/** 이 회차 뒤로 반복을 끝낸다. 나뉜 뒤 구간까지 끝내고, 이 회차와 완료한 회차는 남고 뒤의 미완료 회차만 지운다. */
 export class StopTodoSeries {
   readonly #dependencies: StopTodoSeriesDependencies;
 
@@ -64,13 +67,17 @@ export class StopTodoSeries {
       throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
     }
     const lastDate = toDateString(occurrenceDate);
-    if (!series.stopAfter(lastDate)) {
+    const following = await seriesRepository.lockFollowingSegments(series);
+    const stopped = [series, ...following].filter((segment) => segment.stopAfter(lastDate));
+    if (stopped.length === 0) {
       throw new ApplicationException(ErrorCode.TODO_0846, { seriesId });
     }
-    await seriesRepository.update(series);
+    for (const segment of stopped) {
+      await seriesRepository.update(segment);
+    }
     const deletedTodoIds = await todoRepository.deleteOccurrences({
       userId,
-      seriesIds: [seriesId],
+      seriesIds: [seriesId, ...following.map((segment) => segment.getId())],
       fromDate: addDaysToDateKey(lastDate, 1),
       includeCompleted: false,
     });

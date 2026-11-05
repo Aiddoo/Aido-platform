@@ -128,16 +128,21 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     return created;
   }
 
-  async findOccurrencesFrom(seriesId: string, fromDate: string): Promise<readonly OccurrenceRow[]> {
+  async findOccurrencesFrom(
+    seriesIds: readonly string[],
+    fromDate: string,
+  ): Promise<readonly OccurrenceRow[]> {
     return [...this.records.values()]
       .filter(
         (record) =>
-          record.seriesId === seriesId &&
+          record.seriesId != null &&
+          seriesIds.includes(record.seriesId) &&
           record.occurrenceDate !== null &&
           toDateString(record.occurrenceDate) >= fromDate,
       )
       .map((record) => ({
         todoId: record.id,
+        seriesId: record.seriesId ?? "",
         occurrenceDate: toDateString(record.occurrenceDate ?? record.startDate),
         startDate: toDateString(record.startDate),
         completed: record.completed,
@@ -149,7 +154,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     fromDate: string,
     patch: OccurrencePatch,
   ): Promise<void> {
-    for (const row of await this.findOccurrencesFrom(seriesId, fromDate)) {
+    for (const row of await this.findOccurrencesFrom([seriesId], fromDate)) {
       if (!row.completed) {
         Object.assign(this.#record(row.todoId), omitBy(patch, isUndefined));
       }
@@ -194,13 +199,17 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     readonly fromDate?: string;
     readonly includeCompleted: boolean;
   }): Promise<readonly number[]> {
-    const ids: number[] = [];
-    for (const seriesId of query.seriesIds) {
-      const rows = await this.findOccurrencesFrom(seriesId, query.fromDate ?? "0000-01-01");
-      ids.push(
-        ...rows.filter((row) => query.includeCompleted || !row.completed).map((row) => row.todoId),
-      );
-    }
+    const { fromDate } = query;
+    const ids = [...this.records.values()]
+      .filter(
+        (record) =>
+          record.seriesId != null &&
+          query.seriesIds.includes(record.seriesId) &&
+          (query.includeCompleted || !record.completed) &&
+          (fromDate == null ||
+            (record.occurrenceDate != null && toDateString(record.occurrenceDate) >= fromDate)),
+      )
+      .map((record) => record.id);
     await this.deleteMany(ids);
     return ids;
   }
@@ -388,6 +397,17 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
         (series) => series.getUserId() === userId && series.getOriginSeriesId() === originSeriesId,
       )
       .map((series) => series.getId());
+  }
+  async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
+    return [...this.store.values()]
+      .filter(
+        (segment) =>
+          segment.getUserId() === series.getUserId() &&
+          segment.getOriginSeriesId() === series.getOriginSeriesId() &&
+          segment.getStartDate() >= series.getStartDate() &&
+          segment.getId() !== series.getId(),
+      )
+      .map((segment) => this.#copy(segment));
   }
   async deleteMany(ids: readonly string[]): Promise<void> {
     for (const id of ids) {

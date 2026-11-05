@@ -203,14 +203,16 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   /**
    * date 뒤로 회차를 만들지 않는다. 더 끝낼 게 없으면 false다.
    * 규칙이 이미 date 안에서 끝나도 커서가 뒤처져 있으면 아직 만들 회차가 남은 것이라 커서를 닫는다.
+   * 첫 회차부터 끝내도 종료일이 시작일보다 앞서지 않게 시작일로 맞춘다. 응답의 끝 날짜가 앱에 그대로 보인다.
    */
   stopAfter(date: string): boolean {
-    const ruleEnded = this.#isEndedAfter(date);
+    const lastDate = date < this.props.startDate ? this.props.startDate : date;
+    const ruleEnded = this.#isEndedAfter(lastDate);
     if (ruleEnded && this.props.nextOccurrenceDate == null) {
       return false;
     }
     if (!ruleEnded) {
-      this.props.rule = this.props.rule.endingBefore(addDaysToDateKey(date, 1));
+      this.props.rule = this.props.rule.endingBefore(addDaysToDateKey(lastDate, 1));
     }
     this.props.nextOccurrenceDate = null;
     return true;
@@ -275,6 +277,21 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       changed = true;
     }
     return changed;
+  }
+
+  /** other에 맞추려면 바꿔야 할 값만 돌려준다. 같은 값은 비워 회차별로 고친 내용을 덮지 않는다. */
+  detailsToMatch(other: TodoSeries): Omit<TodoSeriesChanges, "rule" | "checklistTemplate"> {
+    const { title, categoryId, visibility, scheduledLocalTime, timezone } = other.props;
+    const isTimeSame =
+      scheduledLocalTime === this.props.scheduledLocalTime &&
+      (scheduledLocalTime == null || timezone === this.props.timezone);
+    return {
+      title: title === this.props.title ? undefined : title,
+      categoryId: categoryId === this.props.categoryId ? undefined : categoryId,
+      visibility: visibility === this.props.visibility ? undefined : visibility,
+      scheduledLocalTime: isTimeSame ? undefined : scheduledLocalTime,
+      timezone: isTimeSame || scheduledLocalTime == null ? undefined : timezone,
+    };
   }
 
   /** 시작일은 그대로 두고 규칙만 바꿔 처음부터 다시 센다. 이미 만든 날짜는 저장 때 건너뛴다. */

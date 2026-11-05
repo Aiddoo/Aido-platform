@@ -33,6 +33,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { createTestClient } from "#test/setup/database-context";
@@ -733,6 +734,376 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         expect(await client.$count(todo, and(eq(todo.id, todos[0]?.id ?? 0)))).toBe(1);
       },
     );
+  });
+
+  describe("나뉜 반복의 앞 구간에서 이후 모두", () => {
+    const WEEKLY_TUE: TodoRepeat = {
+      frequency: "WEEKLY",
+      interval: 1,
+      weekdays: ["TUE"],
+      end: { type: "NEVER" },
+    };
+    const remove = (id: number, scope: "THIS_AND_FOLLOWING" | "ALL" = "THIS_AND_FOLLOWING") =>
+      context.module.get(DeleteTodo).execute({ id, userId, scope });
+
+    /** 매일 반복의 넷째 회차부터 매주 월요일로 나눈다. 앞 구간은 11-02~11-04, 뒤 구간은 11-09부터다. */
+    async function startSplit(scheduledTime: string | null = null) {
+      const { seriesId, todos } = await start(DAILY_NEVER, scheduledTime);
+      const pivot = await following({ id: todos[3]?.id ?? 0, repeat: WEEKLY_MON });
+      const laterSeriesId = pivot.recurrenceGroupId ?? "";
+      return {
+        seriesId,
+        laterSeriesId,
+        earlier: await rowsOf(seriesId),
+        later: await rowsOf(laterSeriesId),
+      };
+    }
+
+    describe("삭제", () => {
+      it("뒤 구간의 미완료 회차까지 지우고 뒤 구간 규칙도 끝낸다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        expect(later.length).toBeGreaterThan(5);
+        // When
+        await remove(earlier[1]?.id ?? 0);
+        // Then
+        expect((await rowsOf(seriesId)).map((row) => row.id)).toEqual([earlier[0]?.id]);
+        expect(await rowsOf(laterSeriesId)).toEqual([]);
+        expect((await seriesRow(laterSeriesId))?.nextOccurrenceDate).toBeNull();
+        expect((await seriesRow(seriesId))?.nextOccurrenceDate).toBeNull();
+      });
+
+      it("지운 뒤에는 회차 채우기가 뒤 구간을 되살리지 않는다", async () => {
+        // Given
+        const { laterSeriesId, earlier } = await startSplit();
+        await remove(earlier[1]?.id ?? 0);
+        // When
+        vi.setSystemTime(new Date("2027-03-01T00:00:00.000Z"));
+        await context.module.get(MaterializeDueTodoSeries).execute();
+        // Then
+        expect(await rowsOf(laterSeriesId)).toEqual([]);
+      });
+
+      it("뒤 구간의 완료 회차는 남기고 규칙 값이 나빠지지 않는다", async () => {
+        // Given
+        const { laterSeriesId, earlier, later } = await startSplit();
+        await complete(later[2]?.id ?? 0);
+        // When
+        await remove(earlier[1]?.id ?? 0);
+        // Then
+        expect((await rowsOf(laterSeriesId)).map((row) => row.id)).toEqual([later[2]?.id]);
+        const rule = await seriesRow(laterSeriesId);
+        expect(rule?.nextOccurrenceDate).toBeNull();
+        expect(dateOf(rule?.repeatUntil)).toBe(dateOf(rule?.startDate));
+      });
+
+      it("두 번 나뉘어도 맨 앞에서 지우면 모든 뒤 구간에 닿는다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        const second = await following({ id: later[1]?.id ?? 0, repeat: WEEKLY_TUE });
+        const lastSeriesId = second.recurrenceGroupId ?? "";
+        expect((await rowsOf(lastSeriesId)).length).toBeGreaterThan(0);
+        // When
+        await remove(earlier[0]?.id ?? 0);
+        // Then
+        expect(await rowsOf(seriesId)).toEqual([]);
+        expect(await rowsOf(laterSeriesId)).toEqual([]);
+        expect(await rowsOf(lastSeriesId)).toEqual([]);
+        expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(3);
+        expect(
+          await client.query.todoSeries.findMany({
+            where: { userId, nextOccurrenceDate: { isNotNull: true } },
+          }),
+        ).toEqual([]);
+      });
+
+      it("뒤 구간에서 지우면 앞 구간은 그대로다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        // When
+        await remove(later[1]?.id ?? 0);
+        // Then
+        expect((await rowsOf(seriesId)).map((row) => row.id)).toEqual(earlier.map((row) => row.id));
+        expect((await rowsOf(laterSeriesId)).map((row) => row.id)).toEqual([later[0]?.id]);
+      });
+
+      it("뒤 구간 회차의 시간 예약까지 취소한다", async () => {
+        // Given
+        const { earlier, later } = await startSplit("09:00");
+        const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
+        runtime.cancelCalls.length = 0;
+        // When
+        await remove(earlier[1]?.id ?? 0);
+        // Then
+        const keys = runtime.cancelCalls.map((call) => call.idempotencyKey);
+        expect(keys).toContain(`reminder_${later[0]?.id}_60min`);
+        expect(keys).toContain(`reminder_${earlier[1]?.id}_60min`);
+      });
+
+      it("반복 끝내기도 뒤 구간까지 끝내고 앞 구간이 이미 끝나 있어도 거절하지 않는다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        await complete(later[1]?.id ?? 0);
+        // When
+        await stop(earlier[2]?.id ?? 0);
+        const second = stop(earlier[2]?.id ?? 0);
+        // Then
+        await expect(second).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0846 });
+        expect((await rowsOf(seriesId)).map((row) => row.id)).toEqual(earlier.map((row) => row.id));
+        expect((await rowsOf(laterSeriesId)).map((row) => row.id)).toEqual([later[1]?.id]);
+        expect((await seriesRow(laterSeriesId))?.nextOccurrenceDate).toBeNull();
+      });
+    });
+
+    describe("규칙이 그대로인 수정", () => {
+      it("제목·공개는 뒤 구간 회차와 규칙에 함께 적용하고 완료 회차는 그대로다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        await complete(later[1]?.id ?? 0);
+        // When
+        await following({ id: earlier[1]?.id ?? 0, title: "새 제목", visibility: "PRIVATE" });
+        // Then
+        const rows = await rowsOf(laterSeriesId);
+        expect(rows[0]).toMatchObject({ title: "새 제목", visibility: "PRIVATE" });
+        expect(rows[1]).toMatchObject({ id: later[1]?.id, title: "원래 제목" });
+        expect(await seriesRow(laterSeriesId)).toMatchObject({
+          title: "새 제목",
+          visibility: "PRIVATE",
+          id: laterSeriesId,
+        });
+        expect((await rowsOf(seriesId))[0]?.title).toBe("원래 제목");
+        expect((await seriesRow(laterSeriesId))?.nextOccurrenceDate).not.toBeNull();
+      });
+
+      it("뒤 구간에서 새로 만드는 회차도 새 제목이다", async () => {
+        // Given
+        const { laterSeriesId, earlier } = await startSplit();
+        await following({ id: earlier[1]?.id ?? 0, title: "새 제목" });
+        // When
+        vi.setSystemTime(new Date("2027-03-01T00:00:00.000Z"));
+        await context.module.get(MaterializeDueTodoSeries).execute();
+        // Then
+        const rows = await rowsOf(laterSeriesId);
+        expect(rows.at(-1)?.title).toBe("새 제목");
+      });
+
+      it("시간은 뒤 구간도 요청 시간대로 다시 계산하고 예약을 다시 잡는다", async () => {
+        // Given
+        const { laterSeriesId, earlier, later } = await startSplit("09:00");
+        const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
+        runtime.cancelCalls.length = 0;
+        // When
+        await context.module.get(UpdateFollowingTodos).execute({
+          id: earlier[1]?.id ?? 0,
+          userId,
+          timezone: "Asia/Seoul",
+          scheduledTime: "10:00",
+          isAllDay: false,
+        });
+        // Then
+        const rows = await rowsOf(laterSeriesId);
+        expect(rows[0]?.scheduledTime).toEqual(
+          parseLocalDateTime(dateOf(rows[0]?.startDate) ?? "", "10:00", "Asia/Seoul"),
+        );
+        expect(await seriesRow(laterSeriesId)).toMatchObject({
+          scheduledLocalTime: "10:00",
+          timezone: "Asia/Seoul",
+        });
+        const keys = runtime.cancelCalls.map((call) => call.idempotencyKey);
+        expect(keys).toContain(`reminder_${later[0]?.id}_60min`);
+      });
+
+      it("카테고리와 체크리스트도 뒤 구간 규칙까지 옮긴다", async () => {
+        // Given
+        const { laterSeriesId, earlier } = await startSplit();
+        const [other] = await client
+          .insert(todoCategory)
+          .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+          .returning();
+        // When
+        await following({
+          id: earlier[1]?.id ?? 0,
+          categoryId: other?.id,
+          checklist: [{ title: "새 항목" }],
+        });
+        // Then
+        expect(await seriesRow(laterSeriesId)).toMatchObject({
+          categoryId: other?.id,
+          checklistTemplate: [{ title: "새 항목" }],
+        });
+        expect((await rowsOf(laterSeriesId))[0]?.categoryId).toBe(other?.id);
+      });
+
+      it("옮길 카테고리가 가득이면 TODO_0811이고 어느 구간도 바뀌지 않는다", async () => {
+        // Given
+        const { laterSeriesId, earlier } = await startSplit();
+        const [other] = await client
+          .insert(todoCategory)
+          .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+          .returning();
+        await client.insert(todo).values(
+          Array.from({ length: TODO_LIMITS.MAX_PER_CATEGORY }, (_, index) => ({
+            ...omit(TodoFixture.create({ userId, categoryId: other?.id ?? 0, sortOrder: index }), [
+              "id",
+            ]),
+            completed: false,
+            seriesId: null,
+            occurrenceDate: null,
+          })),
+        );
+        // When
+        const outcome = following({ id: earlier[1]?.id ?? 0, categoryId: other?.id, title: "x" });
+        // Then
+        await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
+        expect((await seriesRow(laterSeriesId))?.title).toBe("원래 제목");
+      });
+
+      it("이 할 일만 지운 뒤 구간 회차가 되살아나지 않는다", async () => {
+        // Given
+        const { laterSeriesId, earlier, later } = await startSplit();
+        await context.module.get(DeleteTodo).execute({ id: later[1]?.id ?? 0, userId });
+        // When
+        await following({ id: earlier[1]?.id ?? 0, title: "새 제목" });
+        // Then
+        expect((await rowsOf(laterSeriesId)).map((row) => row.id)).not.toContain(later[1]?.id);
+        expect(
+          (await rowsOf(laterSeriesId)).map((row) => dateOf(row.occurrenceDate)),
+        ).not.toContain(dateOf(later[1]?.occurrenceDate));
+      });
+
+      it("뒤 구간에서 고치면 앞 구간은 그대로다", async () => {
+        // Given
+        const { seriesId, later } = await startSplit();
+        // When
+        await following({ id: later[0]?.id ?? 0, title: "새 제목" });
+        // Then
+        expect((await seriesRow(seriesId))?.title).toBe("원래 제목");
+        expect((await rowsOf(seriesId)).every((row) => row.title === "원래 제목")).toBe(true);
+      });
+    });
+
+    describe("규칙 변경", () => {
+      it("뒤 구간을 끝내고 새 규칙 하나로 합치며 맞는 회차의 id·댓글을 지킨다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        await client.insert(todoComment).values({
+          todoId: later[0]?.id ?? 0,
+          authorId: userId,
+          content: "댓글",
+          clientRequestId: randomUUID(),
+          requestFingerprint: "series-merge",
+        });
+        // When
+        const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
+        // Then
+        const mergedId = edited.recurrenceGroupId ?? "";
+        expect([seriesId, laterSeriesId]).not.toContain(mergedId);
+        const merged = await rowsOf(mergedId);
+        expect(merged.map((row) => row.id)).toContain(later[0]?.id);
+        expect(await rowsOf(laterSeriesId)).toEqual([]);
+        expect((await seriesRow(laterSeriesId))?.nextOccurrenceDate).toBeNull();
+        expect(await client.$count(todoComment, eq(todoComment.todoId, later[0]?.id ?? 0))).toBe(1);
+        expect(
+          await client.query.todoSeries.findMany({
+            where: { userId, nextOccurrenceDate: { isNotNull: true } },
+          }),
+        ).toHaveLength(1);
+      });
+
+      it("맞지 않는 뒤 구간 회차는 지우고 완료 회차는 남긴다", async () => {
+        // Given
+        const { laterSeriesId, earlier, later } = await startSplit();
+        await complete(later[1]?.id ?? 0);
+        // When
+        const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_TUE });
+        // Then
+        expect(await rowsOf(laterSeriesId).then((rows) => rows.map((row) => row.id))).toEqual([
+          later[1]?.id,
+        ]);
+        const merged = await rowsOf(edited.recurrenceGroupId ?? "");
+        expect(merged.map((row) => row.id)).not.toContain(later[0]?.id);
+        const dates = merged.map((row) => dateOf(row.occurrenceDate));
+        expect(new Set(dates).size).toBe(dates.length);
+      });
+
+      it("같은 날짜에 구간마다 행이 있어도 유니크 위반 없이 한 행만 남긴다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        const sameDate = later[0]?.occurrenceDate;
+        await client.insert(todo).values({
+          ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 99 }), ["id"]),
+          title: "앞 구간의 완료 회차",
+          seriesId,
+          occurrenceDate: sameDate,
+          startDate: sameDate ?? AT,
+          completed: true,
+          completedAt: AT,
+        });
+        // When
+        const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
+        // Then
+        const merged = await rowsOf(edited.recurrenceGroupId ?? "");
+        const onDate = merged.filter((row) => dateOf(row.occurrenceDate) === dateOf(sameDate));
+        expect(onDate.map((row) => row.title)).toEqual(["앞 구간의 완료 회차"]);
+        expect(await rowsOf(laterSeriesId)).toEqual([]);
+      });
+
+      it("앞 구간과 값이 다른 뒤 구간 회차는 합친 규칙의 값으로 맞춘다", async () => {
+        // Given
+        const { earlier, later } = await startSplit();
+        await following({ id: later[0]?.id ?? 0, title: "뒤 구간 제목" });
+        // When
+        const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
+        // Then
+        const merged = await rowsOf(edited.recurrenceGroupId ?? "");
+        expect(new Set(merged.map((row) => row.title))).toEqual(new Set(["원래 제목"]));
+      });
+
+      it("앞 구간의 첫 회차에서 바꾸면 그 규칙에 합친다", async () => {
+        // Given
+        const { seriesId, laterSeriesId, earlier, later } = await startSplit();
+        // When
+        const edited = await following({ id: earlier[0]?.id ?? 0, repeat: WEEKLY_MON });
+        // Then
+        expect(edited.recurrenceGroupId).toBe(seriesId);
+        expect(await rowsOf(laterSeriesId)).toEqual([]);
+        expect((await rowsOf(seriesId)).map((row) => row.id)).toContain(later[0]?.id);
+        expect((await seriesRow(seriesId))?.nextOccurrenceDate).not.toBeNull();
+      });
+
+      it("합치면 진행 중 규칙 수가 늘지 않아 상한에 걸리지 않는다", async () => {
+        // Given
+        const { earlier } = await startSplit();
+        await seedActiveSeries(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER - 1);
+        // When
+        const edited = await following({ id: earlier[0]?.id ?? 0, repeat: WEEKLY_TUE });
+        // Then
+        expect(edited.recurrenceGroupId).toBeTruthy();
+        expect(
+          await client.$count(
+            todoSeries,
+            and(eq(todoSeries.userId, userId), sql`${todoSeries.nextOccurrenceDate} IS NOT NULL`),
+          ),
+        ).toBe(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER);
+      });
+    });
+  });
+
+  describe("첫 회차부터 끝낸 규칙", () => {
+    it("이후 삭제를 첫 회차에서 해도 종료일이 시작일보다 앞서지 않는다", async () => {
+      // Given
+      const { seriesId, todos } = await start();
+      await complete(todos[2]?.id ?? 0);
+      // When
+      await context.module
+        .get(DeleteTodo)
+        .execute({ id: todos[0]?.id ?? 0, userId, scope: "THIS_AND_FOLLOWING" });
+      // Then
+      const rule = await seriesRow(seriesId);
+      expect(rule?.nextOccurrenceDate).toBeNull();
+      expect(dateOf(rule?.repeatUntil)).toBe(dateOf(rule?.startDate));
+      expect((await rowsOf(seriesId)).map((row) => row.id)).toEqual([todos[2]?.id]);
+    });
   });
 
   describe("단일 → 반복 전환", () => {
