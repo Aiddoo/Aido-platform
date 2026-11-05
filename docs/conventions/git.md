@@ -2,7 +2,7 @@
 
 ## 커밋
 
-- Conventional Commits(`pnpm commit` 권장), 설명은 한국어다. type은 [commitlint](../../commitlint.config.ts)의 `feat`·`fix`·`docs`·`refactor`·`perf`·`test`·`ci`·`chore`다. scope는 `server`·`mobile`·`api`(공유 계약)를 쓰고, 저장소 전체면 생략한다.
+- Conventional Commits(`pnpm commit` 권장), 설명은 한국어다. 본문 줄은 100자 이하다(commitlint). type은 [commitlint](../../commitlint.config.ts)의 `feat`·`fix`·`docs`·`refactor`·`perf`·`test`·`ci`·`chore`다. scope는 `server`·`mobile`·`api`(공유 계약)를 쓰고, 저장소 전체면 생략한다.
 - 제목은 사용자나 코드가 무엇이 달라지는지를 문장으로 쓴다(`fix(mobile): 자정이 지나도 위젯이 앱을 열기 전에 새 날짜를 표시한다`). 본문에는 문제·원인·변경과 실제 실행한 검증을 쓴다.
 - Git 훅은 [lefthook](../../lefthook.yml)이 관리하고 `pnpm install`의 `prepare`가 설치한다. 테스트는 GitHub Actions에서 돌리지 않고 이 훅에서만 실행한다.
   - pre-commit: staged 파일에 `oxlint --fix`·`oxfmt --write`를 적용해 다시 stage한 뒤, `turbo run typecheck test build`(캐시 사용)와 CI 정책 테스트(`scripts/ci/*.mjs` 변경 시)를 병렬로 실행한다.

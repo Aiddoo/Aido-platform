@@ -4,13 +4,14 @@
 
 ## 1. 계약
 
-| 경우 | 형태                                                      | 정본                                                                                                                           |
-| ---- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 성공 | `{ success: true, data, timestamp }`                      | `successEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts)) + 기능별 `contracts/<feature>/*.response.ts` |
-| 목록 | `data` 안의 기능별 schema + 공용 cursor 정보              | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)               |
-| 실패 | `{ success: false, error: { code, message }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                |
+| 경우 | 형태                                                                | 정본                                                                                                                           |
+| ---- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 성공 | `{ success: true, data, timestamp }`                                | `successEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts)) + 기능별 `contracts/<feature>/*.response.ts` |
+| 목록 | `data` 안의 기능별 schema + 공용 cursor 정보                        | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)               |
+| 실패 | `{ success: false, error: { code, message, details? }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                |
 
-- 실패 본문의 의미는 `error.code`뿐이다. 앱은 `message`나 HTTP 상태 문자열로 분기하지 않는다. `details`는 운영에서 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(한도, `charged`). 앱은 이 값을 스키마로 읽고, 그 밖의 `details`는 개발 환경 진단용이라 운영 응답에 없다.
+- 실패의 의미는 `error.code`로 정한다. 앱은 `message`로 분기하지 않는다. HTTP 상태로 분기하는 곳은 아래 `ErrorCode`가 없는 경우뿐이다.
+- `details`는 코드별 계약이다. 운영에는 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(`featureQuota`, `charged`, 반복 오류 상세 등). 앱은 등록된 값을 공유 스키마로 읽는다. 등록하지 않은 코드의 `details`는 개발 환경 진단용이라 운영 응답에 없다. 스키마와 맞지 않는 값은 운영에서 빠지므로 코드별 details를 바꾸면 등록 스키마도 함께 바꾼다.
 - `ErrorCode`는 [errors.ts](../../packages/api/src/errors/errors.ts)의 도메인 범위(`SYS 0001-0099`, `AUTH 0100-0199`, … `INVITE 2100-2199`)에서 다음 번호를 쓴다. 새 도메인은 빈 범위를 정해 같은 파일 머리 주석에 적는다. 문자열 코드를 하드코딩하지 않는다.
 - `@RawResponse` endpoint(AppConfig의 `feature-discovery`·`app-version`)만 envelope 없이 raw union을 돌려준다. 새 raw 응답은 만들지 않는다.
 
@@ -19,7 +20,7 @@
 - Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다(`apps/api/src/shared/domain/exceptions`). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
 - 코드마다 `Errors[code].message`는 Swagger와 서버 기본 문구로 쓰는 **합니다체**다(`서버 내부 오류가 발생했습니다.`). endpoint는 던질 수 있는 코드마다 `@ApiErrorResponse({ errorCode })`를 붙인다.
 - `ErrorCode`가 없는 Nest `HttpException`(검증 파이프·없는 route·405·throttler)은 `GlobalExceptionFilter`가 상태로 정한다: 4xx → `SYS_0002`, 429·5xx → `SYS_0001`. 카탈로그에 상태별 공통 코드가 없고 출시 앱은 모르는 코드를 `SYS_0001`로 바꾸므로 이 경우를 위한 새 코드를 만들지 않는다. 앱은 이 경우 HTTP 상태(404·429)로만 분기한다.
-- 5xx만 Sentry로 보낸다. 요청에는 `request_id` 태그가 붙고 IP는 보내지 않는다. 로그에는 `errorCode`·`errorType`만 남기고 원문 message·공급자 오류를 넣지 않는다([로깅](../../apps/api/.claude/logging-guide.md)).
+- 5xx만 Sentry 예외로 보낸다([로깅](../../apps/api/.claude/logging-guide.md)).
 
 ## 3. 모바일
 
