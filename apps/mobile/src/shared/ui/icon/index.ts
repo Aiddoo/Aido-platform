@@ -1,5 +1,6 @@
 export { createStyledIcon, type StyledIcon as StyledIconType } from './create-styled-icon';
 export {
+  AiIcon,
   AppleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,

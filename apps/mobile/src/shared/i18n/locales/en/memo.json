@@ -22,6 +22,7 @@
     "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",
     "unpin": "Unpin memo",
+    "aiParse": "Split into to-dos with AI",
     "convertToTodo": "Convert to to-do",
     "more": "More",
     "aiParsing": "Turning into to-dos",

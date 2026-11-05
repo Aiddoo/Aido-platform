@@ -6,6 +6,7 @@ import {
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/use-feature-discovery-hub';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
+import { QuotaSummary } from '@src/features/subscription/components/quota-summary';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { useTranslation } from '@src/shared/i18n';
 import { SettingNavigation, Spacing } from '@src/shared/ui';
@@ -86,6 +87,7 @@ export function MyPageMenu() {
 
       <Spacing size={12} />
 
+      <QuotaSummary mb={12} />
       <SettingNavigation label={t('mypage.sections.subscription')}>
         <MyPageMenuItem label={t('mypage.items.aiReports')} pathname="/reports" />
         <MyPageMenuItem label={t('mypage.items.appIcon')} pathname="/settings/app-icon" />

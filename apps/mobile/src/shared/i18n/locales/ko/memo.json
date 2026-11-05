@@ -22,6 +22,7 @@
     "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",
     "unpin": "메모 고정 해제",
+    "aiParse": "AI로 할 일 나누기",
     "convertToTodo": "할 일로 바꾸기",
     "more": "더 보기",
     "aiParsing": "할 일로 나누는 중이에요",

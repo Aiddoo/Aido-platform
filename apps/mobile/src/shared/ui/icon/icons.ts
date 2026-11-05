@@ -1,3 +1,4 @@
+import AiIconSvg from '@assets/icons/ic_ai.svg';
 import AppleIconSvg from '@assets/icons/ic_apple.svg';
 import ArrowLeftIconSvg from '@assets/icons/ic_arrow_left.svg';
 import ArrowRightIconSvg from '@assets/icons/ic_arrow_right.svg';
@@ -68,6 +69,7 @@ import WeatherRainIconSvg from '@assets/icons/ic_weather_rain.svg';
 import { createStyledIcon } from './create-styled-icon';
 
 // 래핑된 아이콘 컴포넌트들
+export const AiIcon = createStyledIcon(AiIconSvg);
 export const AppleIcon = createStyledIcon(AppleIconSvg);
 export const ArrowLeftIcon = createStyledIcon(ArrowLeftIconSvg);
 export const ArrowRightIcon = createStyledIcon(ArrowRightIconSvg);

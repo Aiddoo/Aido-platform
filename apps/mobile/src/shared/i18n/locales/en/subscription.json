@@ -194,6 +194,10 @@
     "notCharged": "This didn't count"
   },
   "quota": {
+    "summaryTitle": "AI uses left this month",
+    "aiParse": "AI to-dos",
+    "aiParseHint": "Shared by speaking to add and splitting memos",
+    "voiceNote": "Voice note summaries",
     "remaining": "{{amount}} left",
     "usedUpMonth": "Used up this month",
     "usedUpDay": "Used up today"

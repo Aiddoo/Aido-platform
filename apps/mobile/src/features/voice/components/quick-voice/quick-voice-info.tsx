@@ -5,7 +5,7 @@ import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queri
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { HintPopoverContent, HStack, InfoIcon, MicIcon, Text, VStack } from '@src/shared/ui';
+import { AiIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
 import { toDateFormatLocale } from '@src/shared/utils/date-format';
 import { formatCount } from '@src/shared/utils/format';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +33,11 @@ export function QuickVoiceInfo() {
             accessibilityLabel={t('info.label')}
           >
             <HStack gap={4} align="center">
+              <AiIcon
+                width={fontScaledSize(14)}
+                height={fontScaledSize(14)}
+                colorClassName="text-main"
+              />
               <Text size="e2" weight="medium" shade={6} maxLines={1} className="shrink">
                 {t('info.label')}
               </Text>
@@ -44,7 +49,7 @@ export function QuickVoiceInfo() {
             </HStack>
           </PressableFeedback>
         </Popover.Trigger>
-        <HintPopoverContent icon={MicIcon} title={t('info.title')}>
+        <HintPopoverContent icon={AiIcon} title={t('info.title')}>
           <QuickVoiceInfo.Contents
             remaining={
               snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')

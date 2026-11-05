@@ -45,6 +45,7 @@ export { HStack } from './h-stack';
 export { HintPopoverContent, type HintPopoverContentProps } from './hint-popover';
 export { IconRadioItem, type IconRadioItemProps } from './icon-radio-item';
 export {
+  AiIcon,
   AppleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,

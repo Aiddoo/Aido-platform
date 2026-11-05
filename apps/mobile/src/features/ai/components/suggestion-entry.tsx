@@ -1,11 +1,10 @@
-import MagicIcon from '@assets/icons/ic_magic.svg';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { AiIcon, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -102,7 +101,7 @@ function InfoCard({ label, ...props }: InfoCardProps) {
   return (
     <PressableFeedback className="rounded-xl bg-gray-1 px-4" {...props}>
       <ListRow
-        left={<MagicIcon width={24} height={24} />}
+        left={<AiIcon width={24} height={24} colorClassName="text-main" />}
         contents={
           <ListRow.Texts
             type="1RowTypeA"

@@ -1,7 +1,7 @@
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, Text, VStack } from '@src/shared/ui';
+import { AiIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
@@ -33,9 +33,12 @@ export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigest
         {label}
       </Button>
       {cost != null && (
-        <Text size="e1" shade={6} align="center" maxLines={1} testID="voice-note-digest-cost">
-          {cost}
-        </Text>
+        <HStack gap={4} align="center" justify="center">
+          <AiIcon width={14} height={14} colorClassName="text-main" />
+          <Text size="e1" shade={6} maxLines={1} testID="voice-note-digest-cost">
+            {cost}
+          </Text>
+        </HStack>
       )}
     </VStack>
   );

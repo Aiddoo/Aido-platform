@@ -4,6 +4,7 @@ import { useDraftService, useHaptics } from '@src/bootstrap/providers/di-context
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { useQuotaStatus } from '@src/features/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
@@ -18,6 +19,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  AiIcon,
   Box,
   ConfirmDialog,
   DocsIcon,
@@ -121,6 +123,7 @@ MemoDetailPane.Empty = function Empty() {
 };
 
 function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
+  const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const haptics = useHaptics();
   const reportUnexpectedError = useReportUnexpectedError('memo');
   const goBack = useSingleTap(router.back);
@@ -296,19 +299,25 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
               </Stack.Toolbar.Button>
               <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('memo:detail.more')}>
                 <Stack.Toolbar.MenuAction
+                  icon={MEMO_TOOLBAR_ICON.ai}
                   disabled={aiParse.isDisabled}
-                  subtitle={aiParse.isParsing ? t('memo:detail.aiParsing') : undefined}
+                  subtitle={aiParse.isParsing ? t('memo:detail.aiParsing') : (aiQuota ?? undefined)}
                   onPress={aiParse.handlePress}
                 >
-                  {t('memo:titles.aiReview')}
+                  {t('memo:detail.aiParse')}
                 </Stack.Toolbar.MenuAction>
                 <Stack.Toolbar.MenuAction
+                  icon={MEMO_TOOLBAR_ICON.convertToTodo}
                   disabled={convertToTodo.isDisabled}
                   onPress={convertToTodo.handlePress}
                 >
                   {t('memo:detail.convertToTodo')}
                 </Stack.Toolbar.MenuAction>
-                <Stack.Toolbar.MenuAction destructive onPress={() => setIsDeleteDialogOpen(true)}>
+                <Stack.Toolbar.MenuAction
+                  icon={MEMO_TOOLBAR_ICON.delete}
+                  destructive
+                  onPress={() => setIsDeleteDialogOpen(true)}
+                >
                   {t('common:actions.delete')}
                 </Stack.Toolbar.MenuAction>
               </Stack.Toolbar.Menu>
@@ -353,6 +362,7 @@ interface MemoMoreMenuProps {
 function MemoMoreMenu({ aiParse, convertToTodo, onDelete }: MemoMoreMenuProps) {
   const { t } = useTranslation(['memo', 'common']);
   const [isOpen, setIsOpen] = useState(false);
+  const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
@@ -378,7 +388,11 @@ function MemoMoreMenu({ aiParse, convertToTodo, onDelete }: MemoMoreMenuProps) {
             isDisabled={aiParse.isDisabled}
             onPress={aiParse.handlePress}
           >
-            <Menu.ItemTitle>{t('memo:titles.aiReview')}</Menu.ItemTitle>
+            <AiIcon width={18} height={18} colorClassName="text-main" />
+            <VStack flex={1}>
+              <Menu.ItemTitle>{t('memo:detail.aiParse')}</Menu.ItemTitle>
+              {aiQuota != null && <Menu.ItemDescription>{aiQuota}</Menu.ItemDescription>}
+            </VStack>
           </Menu.Item>
           <Menu.Item
             testID="memo-convert-to-todo"

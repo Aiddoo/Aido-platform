@@ -191,6 +191,10 @@
     "notCharged": "횟수는 차감되지 않았어요"
   },
   "quota": {
+    "summaryTitle": "이번 달 남은 AI 횟수",
+    "aiParse": "AI 할 일 만들기",
+    "aiParseHint": "말로 할 일 만들기와 메모 나누기에 함께 써요",
+    "voiceNote": "말로 메모 정리",
     "remaining": "{{amount}}번 남음",
     "usedUpMonth": "이번 달 다 씀",
     "usedUpDay": "오늘 다 씀"
