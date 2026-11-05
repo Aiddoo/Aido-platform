@@ -14,6 +14,7 @@ import {
 import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/todo/apis/todo-series.mapper';
 import type { TodoRepeat } from '@src/features/todo/domains/todo-repeat.model';
+import { diffDateKeysInDays } from '@src/shared/utils/date-key';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -117,22 +118,31 @@ export function toQuickPlanResult(
   };
 }
 
-const isParsedMemoRepeating = (todo: ParsedMemoTodo) =>
-  todo.repeat != null || todo.recurrence != null;
+/** 출시된 서버는 "이번 주말 X"를 토·일 + 그 주 일요일까지로 준다. 끝이 다음 날까지인 반복은 한 번으로 본다 */
+function isSingleWeekend(repeat: TodoRepeat, startDate: string): boolean {
+  return (
+    repeat.frequency === 'WEEKLY' &&
+    repeat.weekdays?.includes('SAT') === true &&
+    repeat.weekdays.includes('SUN') &&
+    repeat.end.type === 'UNTIL' &&
+    diffDateKeysInDays(startDate, repeat.end.date) <= 1
+  );
+}
 
 /** 1.15.0 서버는 `repeat`을 주고, 이전 서버는 요일+종료일(`recurrence`)만 준다 */
-function toParsedMemoRepeat({ repeat, recurrence }: ParsedMemoTodo): TodoRepeat | null {
-  if (repeat != null) {
-    return toRepeat(repeat);
-  }
-  return recurrence == null
-    ? null
-    : {
-        frequency: 'WEEKLY',
-        interval: 1,
-        weekdays: recurrence.daysOfWeek,
-        end: { type: 'UNTIL', date: recurrence.endDate },
-      };
+function toParsedMemoRepeat({ repeat, recurrence, startDate }: ParsedMemoTodo): TodoRepeat | null {
+  const parsed: TodoRepeat | null =
+    repeat != null
+      ? toRepeat(repeat)
+      : recurrence == null
+        ? null
+        : {
+            frequency: 'WEEKLY',
+            interval: 1,
+            weekdays: recurrence.daysOfWeek,
+            end: { type: 'UNTIL', date: recurrence.endDate },
+          };
+  return parsed != null && isSingleWeekend(parsed, startDate) ? null : parsed;
 }
 
 /** 메모 정리 응답(`parse-memo`)도 같은 계획으로 만든다 */
@@ -142,7 +152,7 @@ export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse
     actionId: `memo-todo-${index}`,
     title: todo.title,
     startDate: todo.startDate,
-    endDate: isParsedMemoRepeating(todo) ? null : todo.endDate,
+    endDate: todo.repeat != null || todo.recurrence != null ? null : todo.endDate,
     scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
     repeat: toParsedMemoRepeat(todo),
     visibility: null,

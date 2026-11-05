@@ -55,6 +55,43 @@ describe('toVoicePlan', () => {
 });
 
 describe('toVoicePlanFromParsedMemo', () => {
+  test('이번 주말(토·일 + 그 주 일요일까지)은 반복이 아니라 토요일 한 번이다', () => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({
+      ...todo,
+      startDate: '2026-11-07',
+      endDate: '2026-11-08',
+      isRecurring: true,
+      recurrence: { daysOfWeek: ['SAT', 'SUN'], endDate: '2026-11-08' },
+    }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({ startDate: '2026-11-07', endDate: null, repeat: null });
+  });
+
+  test('주말 반복의 끝이 더 뒤면 그대로 반복이다', () => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({
+      ...todo,
+      startDate: '2026-11-07',
+      isRecurring: true,
+      recurrence: { daysOfWeek: ['SAT', 'SUN'], endDate: '2026-11-29' },
+    }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({
+      repeat: { weekdays: ['SAT', 'SUN'], end: { type: 'UNTIL', date: '2026-11-29' } },
+    });
+  });
+
   test('종일 일정은 시간을 비우고 반복에는 종료일을 두지 않는다', () => {
     // Given
     const dto = createParseMemoResponseDto();
