@@ -157,7 +157,8 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
 
       <CalendarWeekdayHeader />
 
-      <VStack>
+      {/* 달마다 4~6주라 6주 높이(48 × 6)를 미리 잡아 달을 넘겨도 시트 높이가 변하지 않게 한다 */}
+      <VStack className="h-[288px]">
         {weeks.map((week, weekIndex) => (
           // 주 순서는 고정되어 index가 안정적인 key다.
           <HStack key={weekIndex} px={8}>

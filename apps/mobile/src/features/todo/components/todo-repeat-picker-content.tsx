@@ -575,7 +575,8 @@ const RepeatCalendar = ({
 
       <CalendarWeekdayHeader />
 
-      <VStack>
+      {/* 달마다 4~6주라 6주 높이(48 × 6)를 미리 잡아 달을 넘겨도 시트 높이가 변하지 않게 한다 */}
+      <VStack className="h-[288px]">
         {weeks.map((week, weekIndex) => {
           const days = week.map((date) => {
             const isVisible = isSameMonth(date, displayMonth);
