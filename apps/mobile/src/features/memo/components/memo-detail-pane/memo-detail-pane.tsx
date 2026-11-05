@@ -12,7 +12,7 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { isConnectivityError } from '@src/shared/errors';
+import { isApiError, isConnectivityError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -27,7 +27,9 @@ import {
   ConfirmDialog,
   DocsIcon,
   HStack,
+  QueryErrorActions,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   Flex,
   MoreIcon,
   Result,
@@ -38,6 +40,7 @@ import {
   TextArea,
   TextSkeleton,
   useOverlay,
+  useStackBackToolbar,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
@@ -69,6 +72,7 @@ import {
 } from './memo-detail-actions';
 
 const MEMO_MORE_MENU_WIDTH = 220;
+const MEMO_NOT_FOUND_STATUS = 404;
 
 interface MemoDetailPaneProps {
   /** `screen`은 `/memo/[memoId]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
@@ -81,7 +85,12 @@ export function MemoDetailPane({ presentation }: MemoDetailPaneProps) {
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
-      <QueryErrorBoundary resetKeys={[memoId]}>
+      <QueryErrorBoundary
+        resetKeys={[memoId]}
+        fallback={(fallbackProps) => (
+          <MemoDetailPane.Error {...fallbackProps} presentation={presentation} />
+        )}
+      >
         <Suspense fallback={<MemoDetailPane.Loading presentation={presentation} />}>
           <MemoDetailContent presentation={presentation} />
         </Suspense>
@@ -106,6 +115,53 @@ MemoDetailPane.Loading = function Loading({ presentation }: MemoDetailPaneProps)
         <TextSkeleton size="b2" className="w-2/3" />
       </VStack>
     </VStack>
+  );
+};
+
+/** 서버는 지운 메모와 볼 권한이 없는 메모를 404로 답한다. 전체 화면은 어느 실패든 돌아갈 길을 남긴다 */
+MemoDetailPane.Error = function ErrorFallback({
+  error,
+  reset,
+  presentation,
+}: QueryErrorFallbackProps & MemoDetailPaneProps) {
+  const { t } = useTranslation(['memo', 'common']);
+  const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
+  const goBack = useSingleTap(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/memo');
+  });
+  const [_selectedMemoId, setSelectedMemoId] = useSelectedMemo();
+  const isUnavailable = isApiError(error) && error.status === MEMO_NOT_FOUND_STATUS;
+
+  return (
+    <>
+      {presentation === 'screen' && backToolbar}
+      <Box className="flex-1 px-8">
+        {isUnavailable ? (
+          <Result
+            icon={<DocsIcon width={72} height={72} />}
+            title={t('memo:detail.unavailableTitle')}
+            description={t('memo:detail.unavailableDescription')}
+            button={
+              <Result.Button
+                onPress={presentation === 'screen' ? goBack : () => setSelectedMemoId(undefined)}
+              >
+                {t('common:actions.goBack')}
+              </Result.Button>
+            }
+          />
+        ) : (
+          <Result
+            title={t('common:errorBoundary.title')}
+            description={t('common:errorBoundary.description')}
+            button={<QueryErrorActions onRetry={reset} />}
+          />
+        )}
+      </Box>
+    </>
   );
 };
 
