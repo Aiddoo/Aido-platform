@@ -1,7 +1,6 @@
 /** 월간 quota 기간은 출시 앱 AI 사용량(/v1/ai/usage)과 같은 KST 달력 월이다. 계약이라 바꾸지 않는다. */
 export const QUOTA_TIMEZONE = "Asia/Seoul";
 
-/** 사용자 행동 한 번이 쓰는 횟수 */
 export const QUOTA_CHARGE_AMOUNT = 1;
 
 /**

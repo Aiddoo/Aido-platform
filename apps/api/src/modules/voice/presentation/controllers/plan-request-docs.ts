@@ -2,7 +2,6 @@ import { IDEMPOTENCY_KEY_HEADER, IDEMPOTENCY_KEY_MAX_LENGTH } from "@aido/api/vo
 import { applyDecorators } from "@nestjs/common";
 import { ApiHeader } from "@nestjs/swagger";
 
-/** 계획 API 공통 헤더 문서 */
 export const ApiIdempotencyKeyHeader = () =>
   ApiHeader({
     name: IDEMPOTENCY_KEY_HEADER,

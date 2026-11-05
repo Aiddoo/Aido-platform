@@ -7,7 +7,6 @@ import type { NotificationChannel } from "../../ports/notifications/admin-notifi
 import { type AdminNotifierPort } from "../../ports/notifications/admin-notifier.port.js";
 import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
 
-/** 일시 실패라 큐가 다시 시도해야 하는 발송 */
 export class AdminNotificationRetryableError extends Error {
   constructor(readonly channel: NotificationChannel) {
     super(`Admin notification delivery failed: ${channel}`);
