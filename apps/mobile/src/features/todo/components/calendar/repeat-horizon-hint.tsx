@@ -1,5 +1,4 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
-import { useCoachmarkSettle } from '@src/features/feature-discovery/hooks/use-coachmark-settle';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { InfoIcon, RepeatIcon } from '@src/shared/ui';
@@ -19,7 +18,6 @@ export function RepeatHorizonHint() {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const selectedDateKey = useFeedDateKey();
-  const isSettled = useCoachmarkSettle();
   const { data: hasUpcomingRepeat = false } = useQuery(useGetHasUpcomingRepeatQueryOptions());
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
@@ -32,7 +30,7 @@ export function RepeatHorizonHint() {
       placement="bottom"
       align="start"
       avoidCollisions
-      isEnabled={isInfoOpen || (isSettled && hasUpcomingRepeat)}
+      isEnabled={isInfoOpen || hasUpcomingRepeat}
       isForced={isInfoOpen}
       isPassThrough={!isInfoOpen}
       onDismiss={() => setIsInfoOpen(false)}

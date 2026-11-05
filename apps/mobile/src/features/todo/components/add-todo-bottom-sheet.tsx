@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
-import { useCoachmarkSettle } from '@src/features/feature-discovery/hooks/use-coachmark-settle';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
@@ -206,7 +205,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const voice = useAddTodoQuickVoice({ methods, onExit });
   const isVoiceHintRequested = props.mode === 'create' && props.isVoiceHintForced === true;
   const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
-  const isSheetSettled = useCoachmarkSettle();
 
   const handleSubmitTodo = methods.handleSubmit(async (values) => {
     try {
@@ -556,7 +554,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                       kind="voice-quick-start"
                       title={tVoice('coach.quickStart.title')}
                       description={tVoice('coach.quickStart.description')}
-                      isEnabled={isSheetSettled}
                       isForced={isVoiceHintForced}
                       onDismiss={() => setIsVoiceHintForced(false)}
                     >

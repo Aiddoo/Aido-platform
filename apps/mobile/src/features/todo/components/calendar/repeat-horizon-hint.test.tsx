@@ -140,7 +140,7 @@ describe('RepeatHorizonHint', () => {
     await fireEvent.press(await screen.findByTestId('repeat-horizon-hint'));
 
     // Then
-    expect(await screen.findByText(INFO_TITLE)).toBeTruthy();
+    expect(await screen.findByText(INFO_TITLE, {}, { timeout: 2_000 })).toBeTruthy();
     expect(
       screen.getByText('반복이 끝난 건 아니에요. 날짜가 가까워지면 자동으로 생겨요.'),
     ).toBeTruthy();

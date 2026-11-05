@@ -1,5 +1,4 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
-import { useCoachmarkSettle } from '@src/features/feature-discovery/hooks/use-coachmark-settle';
 import { usePendingCoachmark } from '@src/features/feature-discovery/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -48,7 +47,6 @@ export function VoiceNoteMarkControl({
   const fontScaledSize = useFontScaledSize();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const [isHintPending] = usePendingCoachmark({ accountId: me.id, kind: 'voice-note-mark' });
-  const isSettled = useCoachmarkSettle();
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const title = t('coach.mark.title');
   const description = t('coach.mark.description');
@@ -107,7 +105,7 @@ export function VoiceNoteMarkControl({
         description={description}
         icon={FlagIcon}
         align="center"
-        isEnabled={isSettled && isListening}
+        isEnabled={isListening}
         isPassThrough
         isTargetDisabled={!isListening}
       >

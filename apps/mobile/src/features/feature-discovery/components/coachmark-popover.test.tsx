@@ -11,7 +11,10 @@ import {
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
 import { Text } from '@src/shared/ui';
-import { screen, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
+import { useIsFocused } from 'expo-router';
+import { PressableFeedback } from 'heroui-native';
+import { View } from 'react-native';
 
 import { CoachmarkPopover } from './coachmark-popover';
 
@@ -39,7 +42,120 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
   return { analytics };
 }
 
+/** 말풍선은 포커스 뒤 450ms를 기다렸다가 연다 */
+const POPOVER_WAIT = { timeout: 2_000 };
+
+async function renderCoachmarkOnHiddenTab() {
+  jest.mocked(useIsFocused).mockReturnValue(false);
+  const httpClient = createMockHttpClient();
+  httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+  const coachmarkService = new CoachmarkService(
+    createCoachmarkRepository(createMemorySyncStorage()),
+  );
+  const analytics = createMockAnalytics();
+  const coachmark = () => (
+    <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
+      <PressableFeedback testID="target" />
+    </CoachmarkPopover>
+  );
+  const { rerender } = await renderUi(coachmark(), {
+    di: { coachmarkService, analytics, userService: new UserService(httpClient) },
+  });
+
+  return {
+    analytics,
+    isPending: () =>
+      coachmarkService.isPending({
+        accountId: createCurrentUserDto().userId,
+        kind: 'voice-note-start',
+      }),
+    changeFocus: async (isFocused: boolean) => {
+      jest.mocked(useIsFocused).mockReturnValue(isFocused);
+      await rerender(coachmark());
+    },
+  };
+}
+
 describe('CoachmarkPopover', () => {
+  describe('탭이나 화면의 포커스', () => {
+    beforeEach(() => {
+      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
+        if (typeof callback === 'function') {
+          callback(0, 0, 44, 44, 16, 300);
+        }
+      });
+    });
+
+    afterEach(() => {
+      jest.mocked(useIsFocused).mockReturnValue(true);
+    });
+
+    it('포커스가 없는 탭에서는 열지 않고 소비하지 않는다', async () => {
+      // Given
+      const { analytics, isPending } = await renderCoachmarkOnHiddenTab();
+
+      // When
+      await act(async () => {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 600);
+        });
+      });
+
+      // Then
+      expect(screen.queryByTestId('hint-popover')).toBeNull();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
+      expect(isPending()).toBe(true);
+    });
+
+    it('포커스를 얻으면 자리를 잰 뒤에 연다', async () => {
+      // Given
+      const { analytics, changeFocus } = await renderCoachmarkOnHiddenTab();
+
+      // When
+      await changeFocus(true);
+
+      // Then
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
+        kind: 'voice-note-start',
+      });
+    });
+
+    it('열린 뒤 포커스를 잃으면 닫히지만 끝난 것으로 남기지 않는다', async () => {
+      // Given
+      const { analytics, changeFocus, isPending } = await renderCoachmarkOnHiddenTab();
+      await changeFocus(true);
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+
+      // When
+      await changeFocus(false);
+
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'coachmark_dismissed',
+        expect.anything(),
+      );
+      expect(isPending()).toBe(true);
+    });
+
+    it('닫아서 소비하지 않았으면 탭으로 돌아왔을 때 다시 연다', async () => {
+      // Given
+      const { changeFocus } = await renderCoachmarkOnHiddenTab();
+      await changeFocus(true);
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+      await changeFocus(false);
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+
+      // When
+      await changeFocus(true);
+
+      // Then
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+    });
+  });
+
   it('이미 본 안내도 기능 소개에서 왔으면 다시 열고 노출을 남긴다', async () => {
     // Given
     const httpClient = createMockHttpClient();

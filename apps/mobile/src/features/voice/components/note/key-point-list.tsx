@@ -1,5 +1,4 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
-import { useCoachmarkSettle } from '@src/features/feature-discovery/hooks/use-coachmark-settle';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FlagIcon, HStack, PlayIcon, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -115,7 +114,6 @@ function KeyPointItem({
 /** 칩이 터치를 받으면 포인트 재생이 막혀 안내는 자리만 재고 터치는 행으로 넘긴다 */
 function KeyPointTimeCoachmark({ children }: { children: ReactElement }) {
   const { t } = useTranslation('voiceNote');
-  const isSettled = useCoachmarkSettle();
 
   return (
     <Box pointerEvents="none">
@@ -127,7 +125,6 @@ function KeyPointTimeCoachmark({ children }: { children: ReactElement }) {
         placement="bottom"
         align="start"
         avoidCollisions
-        isEnabled={isSettled}
       >
         {children}
       </CoachmarkPopover>
