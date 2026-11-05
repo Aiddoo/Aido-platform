@@ -52,12 +52,16 @@ export default function WeatherLayout() {
             hidden={!canRefresh}
             disabled={isRefreshing}
             onPress={() => refetchWeather(queryClient)}
-          />
+          >
+            {t('attribution.refresh')}
+          </Stack.Toolbar.Button>
           <Stack.Toolbar.Button
             icon={ALERT_SETTINGS_ICON}
             accessibilityLabel={t('titles.settings')}
             onPress={() => push('/settings/notifications/weather')}
-          />
+          >
+            {t('titles.settings')}
+          </Stack.Toolbar.Button>
         </Stack.Toolbar>
       </Stack.Screen>
       <Stack.Screen name="reschedule" options={SHEET_ROUTE_SCREEN_OPTIONS} />

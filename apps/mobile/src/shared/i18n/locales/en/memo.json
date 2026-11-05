@@ -21,12 +21,14 @@
     "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",
     "unpin": "Unpin memo",
-    "convertToTodo": "Turn into to-dos",
+    "convertToTodo": "Convert to to-do",
+    "more": "More",
+    "aiParsing": "Turning into to-dos",
     "deleteConfirmTitle": "Delete this memo?",
     "deleteConfirmDescription": "This can't be undone"
   },
   "toasts": {
-    "convertedOne": "Turned your memo into to-dos",
+    "convertedOne": "Converted your memo to a to-do",
     "deleted": "Memo deleted",
     "retryLater": "Please try again later",
     "reorderFailed": "Couldn't change the order",

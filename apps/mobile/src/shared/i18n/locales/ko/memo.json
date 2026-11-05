@@ -21,12 +21,14 @@
     "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",
     "unpin": "메모 고정 해제",
-    "convertToTodo": "할 일로 나누기",
+    "convertToTodo": "할 일로 바꾸기",
+    "more": "더 보기",
+    "aiParsing": "할 일로 나누는 중이에요",
     "deleteConfirmTitle": "메모를 삭제할까요?",
     "deleteConfirmDescription": "삭제하면 되돌릴 수 없어요"
   },
   "toasts": {
-    "convertedOne": "메모를 할 일로 나눴어요",
+    "convertedOne": "메모를 할 일로 바꿨어요",
     "deleted": "메모를 삭제했어요",
     "retryLater": "잠시 후 다시 시도해주세요",
     "reorderFailed": "순서를 바꾸지 못했어요",

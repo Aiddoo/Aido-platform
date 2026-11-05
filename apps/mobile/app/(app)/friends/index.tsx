@@ -56,7 +56,9 @@ export default function FriendsScreen() {
           icon={SEARCH_ICON}
           accessibilityLabel={t('search.title')}
           onPress={() => push('/friends/search')}
-        />
+        >
+          {t('search.title')}
+        </Stack.Toolbar.Button>
         <Stack.Toolbar.Button
           hidden={view !== TabView.friends}
           icon={isEditMode ? DONE_ICON : EDIT_ICON}

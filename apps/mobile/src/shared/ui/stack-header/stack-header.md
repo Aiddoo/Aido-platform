@@ -62,6 +62,7 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
 </Stack.Toolbar>
 ```
 
+- 버튼이 많으면 iOS가 좁은 창에서 시스템 넘침 메뉴로 접는다. 자주 쓰는 버튼만 두고 나머지는 `Stack.Toolbar.Menu` + `Stack.Toolbar.MenuAction`(글자는 자식, 삭제는 `destructive`)에 넣는다. 아이콘 버튼도 라벨을 자식으로 주면 바에는 아이콘만 보이고 넘쳤을 때 글자가 나온다.
 - 아이콘: iOS는 SF Symbol 이름, Android는 `@expo/material-symbols/{name}.xml`을 `process.env.EXPO_OS`로 고릅니다.
 - 글자 버튼(완료·편집·저장)은 라벨을 자식으로 둡니다. Android 툴바는 라벨을 그리지 않으므로 Android에만 아이콘을 줍니다.
 - `AdaptivePane` 안의 pane은 Stack 화면이 아니므로 `Stack.Toolbar`를 쓰지 않습니다(바깥 화면 헤더에 붙는다).

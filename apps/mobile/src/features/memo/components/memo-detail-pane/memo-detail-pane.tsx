@@ -8,6 +8,7 @@ import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queri
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
@@ -23,11 +24,12 @@ import {
   HStack,
   QueryErrorBoundary,
   Flex,
+  MoreIcon,
   Result,
-  RobotIcon,
-  CheckboxIcon,
   STACK_BACK_ICON,
+  STACK_MORE_ICON,
   StyledSafeAreaView,
+  Text,
   TextArea,
   TextSkeleton,
   useOverlay,
@@ -36,11 +38,12 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
-import { Separator } from 'heroui-native';
+import { Menu, Separator, Spinner } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { ActivityIndicator, Keyboard } from 'react-native';
+import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
 import type { MemoItem } from '../../domains/memo.model';
@@ -56,10 +59,11 @@ import { memoAiReviewHref } from '../../utils/navigation/memo-href';
 import {
   MEMO_TOOLBAR_ICON,
   MemoActionButton,
-  MemoDeleteButton,
   MemoPinButton,
   MemoSaveButton,
 } from './memo-detail-actions';
+
+const MEMO_MORE_MENU_WIDTH = 220;
 
 interface MemoDetailPaneProps {
   /** `screen`은 `/memo/[memoId]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
@@ -244,27 +248,6 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                 isDisabled={isTogglePinPending}
                 onPress={handleTogglePin}
               />
-              <MemoActionButton
-                testID="memo-ai-review"
-                onPress={aiParse.handlePress}
-                accessibilityLabel={t('memo:titles.aiReview')}
-                isDisabled={aiParse.isDisabled}
-                icon={
-                  aiParse.isLoading ? (
-                    <ActivityIndicator size="small" />
-                  ) : (
-                    <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
-                  )
-                }
-              />
-              <MemoActionButton
-                testID="memo-convert-to-todo"
-                onPress={convertToTodo.handlePress}
-                accessibilityLabel={t('memo:detail.convertToTodo')}
-                isDisabled={convertToTodo.isDisabled}
-                icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
-              />
-              <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
               {isEditing && (
                 <MemoSaveButton
                   isHighlighted={isDirty && isValid}
@@ -272,6 +255,11 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                   onPress={() => handleSave()}
                 />
               )}
+              <MemoMoreMenu
+                aiParse={aiParse}
+                convertToTodo={convertToTodo}
+                onDelete={() => setIsDeleteDialogOpen(true)}
+              />
             </HStack>
             <Separator />
           </Box>
@@ -292,24 +280,9 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                 tintColor={memo.isPinned ? pinnedTint : undefined}
                 disabled={isTogglePinPending}
                 onPress={handleTogglePin}
-              />
-              <Stack.Toolbar.Button
-                icon={MEMO_TOOLBAR_ICON.aiParse}
-                accessibilityLabel={t('memo:titles.aiReview')}
-                disabled={aiParse.isDisabled}
-                onPress={aiParse.handlePress}
-              />
-              <Stack.Toolbar.Button
-                icon={MEMO_TOOLBAR_ICON.convertToTodo}
-                accessibilityLabel={t('memo:detail.convertToTodo')}
-                disabled={convertToTodo.isDisabled}
-                onPress={convertToTodo.handlePress}
-              />
-              <Stack.Toolbar.Button
-                icon={MEMO_TOOLBAR_ICON.delete}
-                accessibilityLabel={t('common:actions.delete')}
-                onPress={() => setIsDeleteDialogOpen(true)}
-              />
+              >
+                {t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+              </Stack.Toolbar.Button>
               <Stack.Toolbar.Button
                 hidden={!isEditing}
                 icon={MEMO_TOOLBAR_ICON.save}
@@ -318,11 +291,32 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                 tintColor={saveTint}
                 disabled={!isValid || isUpdatePending}
                 onPress={() => handleSave()}
-              />
+              >
+                {t('common:actions.save')}
+              </Stack.Toolbar.Button>
+              <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('memo:detail.more')}>
+                <Stack.Toolbar.MenuAction
+                  disabled={aiParse.isDisabled}
+                  subtitle={aiParse.isParsing ? t('memo:detail.aiParsing') : undefined}
+                  onPress={aiParse.handlePress}
+                >
+                  {t('memo:titles.aiReview')}
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  disabled={convertToTodo.isDisabled}
+                  onPress={convertToTodo.handlePress}
+                >
+                  {t('memo:detail.convertToTodo')}
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction destructive onPress={() => setIsDeleteDialogOpen(true)}>
+                  {t('common:actions.delete')}
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
             </Stack.Toolbar>
           </>
         )}
         <VStack className="flex-1 bg-white">
+          {aiParse.isParsing && <MemoAiParsingBadge />}
           <Box className="flex-1" px={16} py={12}>
             <FormField control={control} name="content">
               {({ value, onChange }) => (
@@ -346,6 +340,79 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
         onConfirm={handleDelete}
       />
     </FormProvider>
+  );
+}
+
+interface MemoMoreMenuProps {
+  aiParse: Pick<ReturnType<typeof useAiParseAction>, 'handlePress' | 'isDisabled'>;
+  convertToTodo: Pick<ReturnType<typeof useConvertToTodoAction>, 'handlePress' | 'isDisabled'>;
+  onDelete: () => void;
+}
+
+/** 펼친 메모 탭의 ⋯. 항목과 순서는 Stack 화면의 네이티브 메뉴와 같다 */
+function MemoMoreMenu({ aiParse, convertToTodo, onDelete }: MemoMoreMenuProps) {
+  const { t } = useTranslation(['memo', 'common']);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Menu.Trigger asChild>
+        <MemoActionButton
+          testID="memo-more"
+          accessibilityLabel={t('memo:detail.more')}
+          accessibilityState={{ expanded: isOpen }}
+          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
+        />
+      </Menu.Trigger>
+      <Menu.Portal disableFullWindowOverlay={false}>
+        <Menu.Overlay />
+        <Menu.Content
+          presentation="popover"
+          placement="bottom"
+          align="end"
+          width={MEMO_MORE_MENU_WIDTH}
+          className="rounded-2xl border border-gray-2 bg-gray-1"
+        >
+          <Menu.Item
+            testID="memo-ai-review"
+            isDisabled={aiParse.isDisabled}
+            onPress={aiParse.handlePress}
+          >
+            <Menu.ItemTitle>{t('memo:titles.aiReview')}</Menu.ItemTitle>
+          </Menu.Item>
+          <Menu.Item
+            testID="memo-convert-to-todo"
+            isDisabled={convertToTodo.isDisabled}
+            onPress={convertToTodo.handlePress}
+          >
+            <Menu.ItemTitle>{t('memo:detail.convertToTodo')}</Menu.ItemTitle>
+          </Menu.Item>
+          <Menu.Item variant="danger" onPress={onDelete}>
+            <Menu.ItemTitle>{t('common:actions.delete')}</Menu.ItemTitle>
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu>
+  );
+}
+
+/** 메뉴는 누르면 닫혀 진행이 안 보인다. 본문이 밀리지 않게 위에 띄워 알린다 */
+function MemoAiParsingBadge() {
+  const { t } = useTranslation('memo');
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(ANIMATION.duration.normal)}
+      className="absolute top-3 z-10 self-center"
+      pointerEvents="none"
+    >
+      <HStack gap={8} align="center" className="rounded-full bg-gray-2 px-3 py-2">
+        <Spinner size="sm" color="default" />
+        <Text size="e1" shade={8}>
+          {t('detail.aiParsing')}
+        </Text>
+      </HStack>
+    </Animated.View>
   );
 }
 
@@ -446,7 +513,7 @@ function useAiParseAction({ memo, userId }: { memo: MemoItem; userId: string }) 
   return {
     handlePress,
     isDisabled: defaultCategoryId == null || entitlementsQuery.isLoading || parseMutation.isPending,
-    isLoading: entitlementsQuery.isLoading || parseMutation.isPending,
+    isParsing: parseMutation.isPending,
   };
 }
 

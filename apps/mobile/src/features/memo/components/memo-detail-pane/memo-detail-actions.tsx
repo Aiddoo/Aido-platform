@@ -1,10 +1,7 @@
 import Check from '@expo/material-symbols/check.xml';
-import CheckBox from '@expo/material-symbols/check_box.xml';
-import Delete from '@expo/material-symbols/delete.xml';
 import Keep from '@expo/material-symbols/keep.xml';
-import SmartToy from '@expo/material-symbols/smart_toy.xml';
 import { useTranslation } from '@src/shared/i18n';
-import { CheckmarkIcon, PinFilledIcon, PinIcon, TrashIcon } from '@src/shared/ui';
+import { CheckmarkIcon, PinFilledIcon, PinIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -13,9 +10,6 @@ import type { ComponentProps, ReactNode } from 'react';
 export const MEMO_TOOLBAR_ICON = {
   pin: process.env.EXPO_OS === 'ios' ? 'pin' : Keep,
   pinned: process.env.EXPO_OS === 'ios' ? 'pin.fill' : Keep,
-  aiParse: process.env.EXPO_OS === 'ios' ? 'sparkles' : SmartToy,
-  convertToTodo: process.env.EXPO_OS === 'ios' ? 'checkmark.square' : CheckBox,
-  delete: process.env.EXPO_OS === 'ios' ? 'trash' : Delete,
   save: process.env.EXPO_OS === 'ios' ? 'checkmark' : Check,
 } as const;
 
@@ -56,18 +50,6 @@ export function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
           <PinIcon width={20} height={20} colorClassName="text-gray-9" />
         )
       }
-      {...props}
-    />
-  );
-}
-
-export function MemoDeleteButton(props: MemoActionProps) {
-  const { t } = useTranslation('common');
-
-  return (
-    <MemoActionButton
-      accessibilityLabel={t('actions.delete')}
-      icon={<TrashIcon width={20} height={20} colorClassName="text-gray-9" />}
       {...props}
     />
   );
