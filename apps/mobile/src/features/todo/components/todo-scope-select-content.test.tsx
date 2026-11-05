@@ -77,7 +77,7 @@ describe('TodoScopeSelectContent', () => {
     expect(onChange).toHaveBeenCalledWith('ALL');
   });
 
-  test('규칙 없는 묶음의 삭제는 이후 범위 없이 이 할 일만과 모든 반복 할 일을 보여준다', async () => {
+  test('규칙 없는 묶음의 삭제는 이후 범위 없이 이 할 일만과 이 반복 전체를 보여준다', async () => {
     // Given
     const onChange = jest.fn();
     await renderScope(
@@ -90,7 +90,7 @@ describe('TodoScopeSelectContent', () => {
     );
 
     // When
-    await fireEvent.press(screen.getByLabelText('모든 반복 할 일'));
+    await fireEvent.press(screen.getByLabelText('이 반복 전체'));
 
     // Then
     expect(screen.queryByLabelText('이 할 일과 이후 할 일')).toBeNull();
