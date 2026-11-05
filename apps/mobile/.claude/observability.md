@@ -60,6 +60,7 @@ track(analytics, 'session_expired', { reason });
 | `weather_briefing_shown`           | `kind`: `rainy`·`stormy`·`snowy`·`hot`·`rain_later`·`clear`·`tomorrow_morning`·`dry`·`no_scheduled_todos` | 브리핑이 처음 보였을 때                              |
 | `weather_location_registered`      | `result`: `located`·`denied`·`unavailable`                                                                | 날씨 화면에서 위치 확인이 처음 끝났을 때             |
 | `weather_report_failed`            | `cause`: `no_location`·`provider_unavailable`·`offline`·`other`                                           | 리포트 실패 화면(위치 등록 대기 중 로딩은 제외)      |
+| `device_timezone_changed`          | `offset_bucket`: `same`·`under_3h`·`3h_to_8h`·`8h_plus` · `notice_shown`(bool)                            | 시간대 변경을 서버에 알린 뒤 한 번. 이름·도시는 없음 |
 | `offline_banner_shown`             | –                                                                                                         | 오프라인 전환마다(`connectOnlineManager`)            |
 | `todo_comment_created`             | `todo_id` · `is_reply` · `chain_size`                                                                     | 댓글·답글 게시 성공(mutation `onSuccess`)            |
 | `todo_comment_deleted`             | `todo_id` · `is_reply`                                                                                    | 삭제 성공                                            |

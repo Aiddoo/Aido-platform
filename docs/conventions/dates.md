@@ -26,7 +26,7 @@
   | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`                 | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
   | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`           | AI 파싱·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
   | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음         | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
-  | 벽시계 해석           | `@Timezone({ preserveIfMissing: true })` + `TodoTimezoneResolver`  | 저장값 → `Asia/Seoul` | 할 일 생성·수정·일정 변경·완료 되돌리기·메모 변환·계획 적용(5절)                             |
+  | 벽시계 해석           | `@Timezone({ preserveIfMissing: true })` + `TodoTimezoneResolver`  | 저장값 → `Asia/Seoul` | 할 일 생성·수정·일정 변경·메모 변환·계획 적용(5절)                                           |
 
   응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 셋 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `localDateInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다. 한 instant의 사용자 달력 날짜(`YYYY-MM-DD`)는 `localDateInTimezone(date, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`, 도메인 현재 시각은 `now()`다.
 
@@ -67,11 +67,13 @@
 | 순간 계산      | `resolveScheduledInstant(날짜, 벽시계, 시간대)`(`TodoSchedule`) 하나뿐이다. 생성·수정·회차·재계산이 모두 쓴다                                                                              |
 | 시간대         | 요청 `X-Timezone` → 저장된 사용자 시간대 → `Asia/Seoul`(`TodoTimezoneResolver`). 저장된 `UTC`는 진짜 UTC로 본다                                                                            |
 | 시간대 변경    | 저장값이 실제로 바뀌면 같은 트랜잭션에서 `todo-timezone-rebase.v1`을 넣는다(자가 치유·토큰 등록·설정 변경). 구간(60초)마다 사용자당 작업 하나이고 실행 때 최신 저장값을 읽는다             |
-| 재계산         | 미완료이고 어제(새 시간대 기준) 이후 시작인 시간 일정의 순간만 다시 쓰고 알림을 다시 예약한다. 순간이 그대로면 쓰지 않는다. 규칙의 시간대도 바꾼다                                         |
-| 그대로 두는 것 | 완료·지난 할 일의 순간. 완료를 되돌리면 그때 다시 계산한다. 할 일의 벽시계와 `updatedAt`                                                                                                   |
+| 재계산         | 시간 있는 모든 할 일의 순간을 다시 쓴다(완료·지난 할 일 포함). 순간이 그대로면 쓰지 않는다. 규칙의 시간대도 바꾼다                                                                         |
+| 알림 예약      | 완료 전이고 앞으로 울릴 회차만 다시 잡는다. 이미 지난 단계는 건너뛰고 바로 보내지 않는다. 완료를 되돌리면 지금 순간으로 다시 잡는다                                                        |
+| 그대로 두는 것 | 할 일의 벽시계와 `updatedAt`                                                                                                                                                               |
+| 기준 기기      | 앱을 앞에 띄운 기기의 마지막 요청이다. 앱은 시작·복귀·푸시 탭 때 푸시 기기 보고로 시간대를 바로 알린다                                                                                     |
 | 알림 중복      | 할 일 + 단계 + 회차(날짜 + 벽시계)마다 한 번이다. 시간대가 바뀌어도 회차는 그대로고, 날짜나 시간을 고치면 새 회차라 다시 울린다([규칙 표](../server/todo-floating-time.md#알림-중복-방지)) |
 | 표시           | 어느 화면이든 벽시계 그대로다. 친구도 작성자의 벽시계를 본다                                                                                                                               |
 | 서머타임       | 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤로 밀린 순간에 알림이 울린다. 표시는 고른 시각이다                                                                                                  |
 | 그대로인 것    | "오늘"과 일간 한도는 기기 시간대, 월간 한도는 KST 달력 월                                                                                                                                  |
 
-한계: 서버는 앱 요청 전까지 시간대를 모른다. 비행기에서 내려 앱을 열기 전까지 알림은 옛 시간대로 울린다. 푸시를 받기만 해서는 시간대가 바뀌지 않는다.
+한계: 서버는 앱 요청 전까지 시간대를 모른다. 비행기에서 내려 앱을 열기 전까지 알림은 옛 시간대로 울린다. 푸시를 받기만 해서는 시간대가 바뀌지 않는다. 백그라운드 보고와 기기 예약을 고르지 않은 이유는 [서버 문서](../server/todo-floating-time.md#한계)에 있다.
