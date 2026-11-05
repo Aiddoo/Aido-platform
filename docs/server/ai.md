@@ -23,8 +23,8 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | parse-memo        | `prompts/parsing/parse-memo`         | `parse-memo@6`        |
 | report            | `prompts/reports/report`             | `report@3`            |
 | suggestion        | `prompts/suggestions/suggestion`     | `suggestion@3`        |
-| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@6`        |
-| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@6` |
+| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@7`        |
+| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@7` |
 
 - 작업 폴더는 `prompt.ko.ts`·`prompt.en.ts`(고정 system), `examples.ko.ts`·`examples.en.ts`, `schema.ts`(LLM schema), `index.ts`(정의·입력 타입)다. 파싱·계획이 함께 쓰는 일정 표현 schema·규칙·기준 시각은 `prompts/parsing/schedule`, 계획 공통 규칙·맥락은 `prompts/planning`에 있다.
 - 캐시 친화 순서: system은 `<role>` `<security>` `<language_policy>` `<output_contract>` `<rules>` `<examples>`(사용자 값 없음, 업체 어댑터가 Claude `cacheControl`을 건다) → user 턴은 동적 `<context>`(기준 시각·요일·시간대, 카테고리 id·이름, 계획은 다가오는 할 일 30개) → 맨 끝에 사용자 입력 블록(`<user_input>`·`<transcript>`·`<report_data>`·`<suggestion_data>`). 과제 지시는 `<output_contract>`에 있어 입력 뒤에 지시가 오지 않는다.
