@@ -336,6 +336,34 @@ describe('VoiceCapturePolicy', () => {
     expect(results).toEqual([false, true]);
   });
 
+  it('듣기를 마무리하거나 정리하는 중에만 마무리 중으로 본다', () => {
+    // Given
+    const states = [
+      createCaptureState({ status: 'finalizing' }),
+      createCaptureState({ status: 'planning' }),
+      createCaptureState({ status: 'paused', cause: 'app-background' }),
+    ];
+
+    // When
+    const results = states.map(VoiceCapturePolicy.isWrappingUp);
+
+    // Then
+    expect(results).toEqual([true, true, false]);
+  });
+
+  it('한 번에 들을 수 있는 길이를 다 썼으면 이어 듣기를 권하지 않는다', () => {
+    // Given
+    const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 180_000 });
+
+    // When
+    const results = [180_000, 180_001, null].map((limitMs) =>
+      VoiceCapturePolicy.canResumeWithinLimit(paused, limitMs),
+    );
+
+    // Then
+    expect(results).toEqual([false, true, true]);
+  });
+
   it('말이 2.5초 멈추고 글자가 있을 때만 자동으로 마무리한다', () => {
     // Given
     const spoken = createCaptureState({

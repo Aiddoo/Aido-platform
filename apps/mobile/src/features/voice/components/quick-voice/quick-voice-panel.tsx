@@ -12,7 +12,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Skeleton } from 'heroui-native';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useWindowDimensions } from 'react-native';
 import Animated, {
@@ -31,7 +31,6 @@ import { match } from 'ts-pattern';
 import {
   AUTO_FINISH_SILENCE_MS,
   LISTENING_PANEL_HEIGHT,
-  VOICE_CLOCK_TICK_MS,
   VOICE_ORB,
 } from '../../constants/voice.constants';
 import {
@@ -45,6 +44,7 @@ import {
   type VoiceCaptureState,
 } from '../../domains/voice-capture.model';
 import { isTranscriptEmpty } from '../../domains/voice-transcript.model';
+import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { VoiceNoteHeader } from '../note/voice-note-header';
 import { RecognizerWaveform } from '../note/waveform-timeline';
@@ -394,22 +394,18 @@ function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProp
 }
 
 function ListeningClock({ state }: { state: VoiceCaptureState }) {
-  const [now, setNow] = useState(() => Date.now());
-  const isListening = state.status === 'listening';
-
-  useEffect(() => {
-    if (!isListening) {
-      return;
-    }
-    const timer = setInterval(() => setNow(Date.now()), VOICE_CLOCK_TICK_MS);
-    return () => clearInterval(timer);
-  }, [isListening]);
+  const elapsedMs = useCaptureElapsedMs(state);
 
   return (
     <HStack gap={8} align="center">
-      <Box className={cn('size-2 rounded-full', isListening ? 'bg-main' : 'bg-gray-4')} />
+      <Box
+        className={cn(
+          'size-2 rounded-full',
+          state.status === 'listening' ? 'bg-main' : 'bg-gray-4',
+        )}
+      />
       <Text size="b4" weight="semibold" shade={7} className="tabular-nums">
-        {formatMediaTime(VoiceCapturePolicy.getElapsedMs(state, now))}
+        {formatMediaTime(elapsedMs)}
       </Text>
     </HStack>
   );
