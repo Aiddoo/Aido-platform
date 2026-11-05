@@ -30,12 +30,11 @@ jest.mock('expo-crypto', () => {
     },
   };
 });
-// 이 mock은 CommonJS라 __esModule 표시가 없다. 그대로 두면 default import가
-// 모듈 객체 전체로 잡혀 "Element type is invalid: got object"로 죽는다.
-jest.mock('@gorhom/bottom-sheet', () => ({
-  __esModule: true,
-  ...require('@gorhom/bottom-sheet/mock'),
-}));
+// 공식 mock은 CommonJS라 __esModule 표시가 없다. 그대로 두면 default import가
+// 모듈 객체 전체로 잡혀 "Element type is invalid: got object"로 죽어 감싼 모듈을 쓴다.
+jest.mock('@gorhom/bottom-sheet', () =>
+  require('./src/shared/__tests__/mocks/gorhom-bottom-sheet'),
+);
 jest.mock('react-native-keyboard-controller', () =>
   require('./src/shared/__tests__/mocks/react-native-keyboard-controller'),
 );

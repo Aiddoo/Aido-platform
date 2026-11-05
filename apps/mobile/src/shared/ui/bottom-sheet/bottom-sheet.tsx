@@ -108,13 +108,18 @@ export const BottomSheet = ({
     }
   };
 
+  // 열리는 도중에 닫히면 gorhom은 index가 -1 그대로라 onChange를 부르지 않고 onClose만 부른다.
+  // 닫힘을 onClose로 받아야 route 시트가 투명한 모달로 남아 터치를 막는 일이 없다
+  const handleSheetClose = () => {
+    if (!hasNotifiedCloseRef.current) {
+      hasNotifiedCloseRef.current = true;
+      onOpenChange(false);
+    }
+    isClosingRef.current = false;
+  };
+
   const handleSheetChange = (index: number) => {
     if (index === SHEET_INDEX.CLOSED) {
-      if (!hasNotifiedCloseRef.current) {
-        hasNotifiedCloseRef.current = true;
-        onOpenChange(false);
-      }
-      isClosingRef.current = false;
       return;
     }
 
@@ -192,6 +197,7 @@ export const BottomSheet = ({
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
+      onClose={handleSheetClose}
       footerComponent={footer == null ? undefined : renderFooter}
     >
       <BottomSheetScrollView
