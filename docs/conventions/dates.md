@@ -4,14 +4,15 @@
 
 ## 1. 값의 종류
 
-| 값          | 저장·전송                                         | 예                                        |
-| ----------- | ------------------------------------------------- | ----------------------------------------- |
-| 순간        | DB `timestamp(3)`(UTC), API ISO datetime/epoch ms | `createdAt`, `expiresAt`, 리마인더 시각   |
-| 달력 날짜   | DB `date`(UTC 자정 `Date`), API `YYYY-MM-DD`      | 할 일 `startDate`, 피드 `date`            |
-| 벽시계 시각 | API `HH:mm`(`timeOfDaySchema`)                    | 할 일 `scheduledTime` 입력, 리마인더 시각 |
-| 시간대      | IANA 이름(`Asia/Seoul`)                           | `X-Timezone`, `UserPreference.timezone`   |
-| 표시 언어   | `ko` / `en`                                       | `Accept-Language`, 앱 언어 설정           |
+| 값          | 저장·전송                                         | 예                                               |
+| ----------- | ------------------------------------------------- | ------------------------------------------------ |
+| 순간        | DB `timestamp(3)`(UTC), API ISO datetime/epoch ms | `createdAt`, `expiresAt`, 리마인더 시각          |
+| 달력 날짜   | DB `date`(UTC 자정 `Date`), API `YYYY-MM-DD`      | 할 일 `startDate`, 피드 `date`                   |
+| 벽시계 시각 | DB `varchar(5)`, API `HH:mm`(`timeOfDaySchema`)   | 할 일 `scheduledLocalTime`, 설정의 리마인더 시각 |
+| 시간대      | IANA 이름(`Asia/Seoul`)                           | `X-Timezone`, `UserPreference.timezone`          |
+| 표시 언어   | `ko` / `en`                                       | `Accept-Language`, 앱 언어 설정                  |
 
+- **할 일 시간은 떠 있는 시각이다.** 진실은 달력 날짜 + 벽시계이고 어디서든 그 시각이다. `Todo.scheduledTime`(순간)은 `날짜 + 벽시계 + 사용자 현재 시간대`로 만든 파생값으로 알림과 출시 앱 호환에 쓴다([5절](#5-떠-있는-시각)).
 - 달력 날짜를 process 시간대의 `Date`로 바꾼 뒤 요일·자정을 계산하지 않는다. 날짜 산술은 `YYYY-MM-DD` key로 한다.
 - 서버 process(Docker `ENV TZ=UTC`·CI `TZ: UTC`)와 PostgreSQL 세션(`TimeZone=UTC`)은 UTC로 고정한다. 그래도 코드는 process 시간대에 의존하지 않는다. 사용자 시간대가 필요하면 `dayjs.tz(…, timezone)`, 시간대가 없는 달력 계산은 `dayjs.utc(…)`를 쓴다.
 - dayjs plugin은 `apps/api/src/shared/domain/date/dayjs.setup.ts` 한 곳에서만 등록한다.
@@ -20,11 +21,12 @@
 
 - **서버**: 앱 헤더는 요청마다 한 번 `RequestClient`(`apps/api/src/platform/http/request-client`)로 정규화한다. Controller는 `@Headers("x-timezone")`로 직접 읽지 않고 `@Timezone()`·`@Locale()`·`@AppVersion()`·`@CurrentRequestClient()`를 쓴다([서버 코드 기준](../../apps/api/.claude/api-conventions.md#요청-헤더와-throttle)). `timezone`은 런타임이 지원하는 IANA 이름이거나 null이다. 헤더가 없거나 잘못됐을 때의 규칙은 `request-timezone.ts`의 두 함수뿐이고, 엔드포인트마다 아래 규칙 하나를 쓴다.
 
-  | 규칙                  | 함수·데코레이터                                                    | 헤더 없음·오류 | 쓰는 곳                                                                                      |
-  | --------------------- | ------------------------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
-  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`          | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
-  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`    | AI 파싱·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
-  | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음  | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
+  | 규칙                  | 함수·데코레이터                                                    | 헤더 없음·오류        | 쓰는 곳                                                                                      |
+  | --------------------- | ------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------------------- |
+  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`                 | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
+  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`           | AI 파싱·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
+  | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음         | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
+  | 벽시계 해석           | `@Timezone({ preserveIfMissing: true })` + `TodoTimezoneResolver`  | 저장값 → `Asia/Seoul` | 할 일 생성·수정·일정 변경·완료 되돌리기·메모 변환·계획 적용(5절)                             |
 
   응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 셋 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `localDateInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다. 한 instant의 사용자 달력 날짜(`YYYY-MM-DD`)는 `localDateInTimezone(date, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`, 도메인 현재 시각은 `now()`다.
 
@@ -35,12 +37,13 @@
 - 푸시 문구(`series-paused` 포함)는 저장된 `UserPreference.locale`이다. 앱이 언어를 바꿀 때 보고한다.
 - 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다(dayjs 전역 locale로 주 시작을 바꾸는 경로 포함).
 - 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 파싱 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. `/v1/auth/me`의 `entitlements.*.resetsAt`이 같은 규칙의 다음 초기화 instant다.
-- 반복 할 일의 시간을 고치면 고른 시각을 요청의 `X-Timezone`으로 해석하고 규칙의 시간대도 그 값으로 저장한다. 반복을 만들 때도 같다. 이관에서 사용자 시간대가 없거나 잘못되면 `Asia/Seoul`이고 저장된 `UTC`는 유지한다.
+- 반복 할 일의 시간을 고치면 고른 시각을 요청 시간대(없으면 저장값)로 해석하고 규칙의 시간대도 그 값으로 저장한다. 반복을 만들 때도 같다. 이관에서 사용자 시간대가 없거나 잘못되면 `Asia/Seoul`이고 저장된 `UTC`는 유지한다.
 - 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 일요일 시작 규칙 하나(`apps/mobile/src/shared/utils/calendar-week.ts`)이고, 서버 리포트 기간은 각 기능의 명시한 규칙(ISO 주 등)을 쓴다. 같은 화면에서 두 주 규칙을 섞지 않는다.
 
 ## 3. 표시
 
-- 모바일 표시는 한 모듈 `apps/mobile/src/shared/utils/date-format.ts`가 한다. 모든 helper는 `DateFormatContext { locale, timeZone }`를 인자로 받고 `Intl.DateTimeFormat`에 둘을 명시한다. 달력 날짜는 `formatDateKeyLabel`, 순간은 `formatDateLabel`이다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
+- 모바일 표시는 한 모듈 `apps/mobile/src/shared/utils/date-format.ts`가 한다. 모든 helper는 `DateFormatContext { locale, timeZone }`를 인자로 받고 `Intl.DateTimeFormat`에 둘을 명시한다. 달력 날짜는 `formatDateKeyLabel`, 순간은 `formatDateLabel`, 벽시계는 `formatTimeOfDay`다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
+- 할 일 시각은 앱 모델의 `Todo.localTime`(`HH:mm`) 하나만 표시·수정 기본값에 쓴다. 매퍼 `toTodo`가 `scheduledLocalTime`을 옮기고, 키가 없는 응답(옛 서버·옛 캐시)만 `scheduledTime`을 기기 시간대로 바꾼다. 화면에서 순간을 시각으로 바꾸지 않는다.
 - 서버가 만드는 문구(푸시·이메일·AI)는 사용자 locale과 시간대를 함께 넘겨 만든다.
 
 ## 4. 테스트할 경계
@@ -53,3 +56,21 @@
 - ISO 53주가 있는 해(2026, 2032), 일요일 시작 주와 ISO 주가 갈리는 날
 
 서버 테스트의 시간 고정은 [Unit 테스트](../../apps/api/.claude/unit-test.md#날짜와-timer)를 따른다.
+
+## 5. 떠 있는 시각
+
+한국에서 만든 오전 10시는 미국에서도 오전 10시이고 알림도 현지 10시에 울린다.
+
+| 항목           | 규칙                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 저장           | `Todo.startDate` + `Todo.scheduledLocalTime`이 진실이다. `scheduledTime`은 파생값이고 종일이면 둘 다 없다                                                                      |
+| 순간 계산      | `resolveScheduledInstant(날짜, 벽시계, 시간대)`(`TodoSchedule`) 하나뿐이다. 생성·수정·회차·재계산이 모두 쓴다                                                                  |
+| 시간대         | 요청 `X-Timezone` → 저장된 사용자 시간대 → `Asia/Seoul`(`TodoTimezoneResolver`). 저장된 `UTC`는 진짜 UTC로 본다                                                                |
+| 시간대 변경    | 저장값이 실제로 바뀌면 같은 트랜잭션에서 `todo-timezone-rebase.v1`을 넣는다(자가 치유·토큰 등록·설정 변경). 구간(60초)마다 사용자당 작업 하나이고 실행 때 최신 저장값을 읽는다 |
+| 재계산         | 미완료이고 어제(새 시간대 기준) 이후 시작인 시간 일정의 순간만 다시 쓰고 알림을 다시 예약한다. 순간이 그대로면 쓰지 않는다. 규칙의 시간대도 바꾼다                             |
+| 그대로 두는 것 | 완료·지난 할 일의 순간. 완료를 되돌리면 그때 다시 계산한다. 할 일의 벽시계와 `updatedAt`                                                                                       |
+| 표시           | 어느 화면이든 벽시계 그대로다. 친구도 작성자의 벽시계를 본다                                                                                                                   |
+| 서머타임       | 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤로 밀린 순간에 알림이 울린다. 표시는 고른 시각이다                                                                                      |
+| 그대로인 것    | "오늘"과 일간 한도는 기기 시간대, 월간 한도는 KST 달력 월                                                                                                                      |
+
+한계: 서버는 앱 요청 전까지 시간대를 모른다. 비행기에서 내려 앱을 열기 전까지 알림은 옛 시간대로 울린다. 푸시를 받기만 해서는 시간대가 바뀌지 않는다.
