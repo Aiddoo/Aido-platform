@@ -3,6 +3,7 @@ import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-intera
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/todo/hooks/use-todo-sheet-params';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -25,11 +26,12 @@ import {
   type SheetRouteExit,
   SunIcon,
   TrashIcon,
+  useConfirmDialog,
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
 import { isDateToday } from '@src/shared/utils/date';
-import { formatDateKey } from '@src/shared/utils/date-format';
+import { formatDateKey, formatDateKeyCompactRange } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -84,7 +86,7 @@ interface TodoActionsContentProps {
 }
 
 TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsContentProps) {
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation(['todo', 'common']);
   const today = useToday();
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
@@ -95,6 +97,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectDeleteScope } = scopeSelector;
+  const confirmDialog = useConfirmDialog();
+  const dateFormatContext = useDateFormatContext();
 
   useEffect(() => {
     if (todo == null) {
@@ -132,8 +136,26 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
     );
   };
 
+  const confirmDeleteMultiDayTodo = () =>
+    confirmDialog.open({
+      title: t('multiDayDelete.title'),
+      description: t('multiDayDelete.description', {
+        period: formatDateKeyCompactRange(
+          todo.startDate,
+          todo.endDate ?? todo.startDate,
+          dateFormatContext,
+        ),
+      }),
+      cancelLabel: t('common:actions.cancel'),
+      confirmLabel: t('multiDayDelete.confirm'),
+      confirmColor: 'danger',
+    });
+
   const handleDelete = async () => {
     if (!TodoPolicy.isRecurringTodo(todo)) {
+      if (TodoPolicy.isMultiDayTodo(todo) && !(await confirmDeleteMultiDayTodo())) {
+        return;
+      }
       deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
       return;
     }

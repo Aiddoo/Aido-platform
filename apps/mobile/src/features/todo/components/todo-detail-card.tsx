@@ -16,14 +16,14 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
 
-import type { TodoDetails } from '../domains/todo.model';
+import { TodoPolicy, type TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
 import { todoThanksSheetHref } from '../utils/navigation/todo-sheet-href';
@@ -59,7 +59,9 @@ function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
           {ownerName}
         </Text>
         <Text size="e1" shade={5}>
-          {formatDateKeyLabel(detail.todo.startDate, 'fullDate', dateFormatContext)}
+          {detail.todo.endDate == null || !TodoPolicy.isMultiDayTodo(detail.todo)
+            ? formatDateKeyLabel(detail.todo.startDate, 'fullDate', dateFormatContext)
+            : formatDateKeyRange(detail.todo.startDate, detail.todo.endDate, dateFormatContext)}
         </Text>
       </VStack>
     </HStack>

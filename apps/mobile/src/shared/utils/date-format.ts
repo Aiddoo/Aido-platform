@@ -151,6 +151,24 @@ export function formatDateKeyRange(
   return `${formatDateKeyLabel(startDateKey, kind, context)} ~ ${formatDateKeyLabel(endDateKey, kind, context)}`;
 }
 
+/** 좁은 자리에 쓰는 기간 (ko: "11월 5일~7일", en: "Nov 5~7"). 같은 달이면 끝은 날만, 해가 다르면 연도까지 쓴다. */
+export function formatDateKeyCompactRange(
+  startDateKey: string,
+  endDateKey: string,
+  context: DateFormatContext,
+): string {
+  if (startDateKey.slice(0, 4) !== endDateKey.slice(0, 4)) {
+    return formatDateKeyRange(startDateKey, endDateKey, context);
+  }
+  const endLabel =
+    startDateKey.slice(0, 7) === endDateKey.slice(0, 7)
+      ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(
+          toDateKeyInstant(endDateKey),
+        )
+      : formatDateKeyLabel(endDateKey, 'monthDay', context);
+  return `${formatDateKeyLabel(startDateKey, 'monthDay', context)}~${endLabel}`;
+}
+
 /** 로케일 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM", 24시간제: "18:30"). */
 export function formatClockTime(
   date: Date,

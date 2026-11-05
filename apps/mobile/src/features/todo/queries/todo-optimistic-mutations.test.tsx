@@ -531,7 +531,7 @@ describe('할 일 낙관적 갱신', () => {
     expect(completions()?.totalCompleteDays).toBe(0);
   });
 
-  it('달력 숫자는 서버처럼 시작일이 그날인 할 일만 센다', async () => {
+  it('달력 숫자는 그날 목록처럼 기간 안의 여러 날 할 일도 센다', async () => {
     // Given
     const { httpClient, queryClient, mutations } = await renderMutations();
     queryClient.setQueryData(
@@ -553,7 +553,7 @@ describe('할 일 낙관적 갱신', () => {
     // Then
     expect(
       queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0],
-    ).toEqual(expect.objectContaining({ totalTodos: 1, completedTodos: 1, isComplete: true }));
+    ).toEqual(expect.objectContaining({ totalTodos: 2, completedTodos: 1, isComplete: false }));
     pending.settle();
     await flush();
   });

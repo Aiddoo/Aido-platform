@@ -1,5 +1,6 @@
 import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import { sortBy, uniq } from 'es-toolkit';
+import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/utils/date-key';
+import { range, sortBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
@@ -66,6 +67,14 @@ export const dailyCompletionsResultSchema = z.object({
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
+export const multiDayTodoSpanSchema = z.object({
+  startDate: dateSchema,
+  endDate: dateSchema,
+  completed: z.boolean(),
+  categoryColor: z.string(),
+});
+export type MultiDayTodoSpan = z.infer<typeof multiDayTodoSpanSchema>;
+
 export const todoSummarySchema = z.object({
   date: z.string(),
   totalTodos: z.int().min(0),
@@ -104,6 +113,21 @@ export function isRecurringTodo(todo: Todo): boolean {
   return todo.recurrenceGroupId != null;
 }
 
+/** 여러 날에 걸친 할 일은 하나라서 어느 날에서 지워도 전부 지워진다 */
+export function isMultiDayTodo(todo: Pick<Todo, 'startDate' | 'endDate'>): boolean {
+  return todo.endDate != null && todo.endDate !== todo.startDate;
+}
+
+/** 날짜를 옮겨도 기간 길이는 그대로다. 하루짜리는 null */
+export function getShiftedEndDate(
+  todo: Pick<Todo, 'startDate' | 'endDate'>,
+  startDate: string,
+): string | null {
+  return todo.endDate == null
+    ? null
+    : addDaysToDateKey(startDate, diffDateKeysInDays(todo.startDate, todo.endDate));
+}
+
 /** 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다 */
 export function isOptimisticTodo(todo: Pick<Todo, 'id'>): boolean {
   return todo.id < 0;
@@ -124,10 +148,70 @@ export function completesAllTodos(todos: readonly Todo[], completedTodoId: numbe
   );
 }
 
+function createDailyCompletionSummary(
+  summary: Pick<
+    DailyCompletionSummary,
+    'date' | 'totalTodos' | 'completedTodos' | 'categoryColors'
+  >,
+): DailyCompletionSummary {
+  const { totalTodos, completedTodos } = summary;
+  return {
+    ...summary,
+    isComplete: totalTodos === completedTodos,
+    completionRate: Math.round((completedTodos / totalTodos) * 100),
+  };
+}
+
+function withCompletions(
+  result: DailyCompletionsResult,
+  completions: readonly DailyCompletionSummary[],
+): DailyCompletionsResult {
+  const sorted = sortBy(completions, [(completion) => completion.date]);
+  return {
+    ...result,
+    completions: sorted,
+    totalCompleteDays: sorted.filter((completion) => completion.isComplete).length,
+  };
+}
+
 /**
- * 그날 목록으로 달력 요약을 다시 계산한다(서버 buildDailyCompletionsRange와 같은 규칙).
- * 서버는 여러 날 할 일을 시작일에만 세므로 시작일이 그날인 할 일만 센다. 할 일이 없는 날은 요약이 없다.
+ * 서버 요약은 출시 앱이 읽는 대로 여러 날 할 일을 시작일에만 센다.
+ * 그날 목록에 보이는 할 일과 달력 점이 같도록 기간 안의 나머지 날에 더한다.
  */
+export function withMultiDayTodoSpans(
+  result: DailyCompletionsResult,
+  spans: readonly MultiDayTodoSpan[],
+): DailyCompletionsResult {
+  if (spans.length === 0) {
+    return result;
+  }
+  const { startDate: rangeStart, endDate: rangeEnd } = result.dateRange;
+  const byDate = new Map(result.completions.map((completion) => [completion.date, completion]));
+  for (const span of spans) {
+    const firstDay = span.startDate < rangeStart ? rangeStart : addDaysToDateKey(span.startDate, 1);
+    const lastDay = span.endDate > rangeEnd ? rangeEnd : span.endDate;
+    for (const offset of range(Math.max(0, diffDateKeysInDays(firstDay, lastDay) + 1))) {
+      const date = addDaysToDateKey(firstDay, offset);
+      const summary = byDate.get(date);
+      byDate.set(
+        date,
+        createDailyCompletionSummary({
+          date,
+          totalTodos: (summary?.totalTodos ?? 0) + 1,
+          completedTodos: (summary?.completedTodos ?? 0) + (span.completed ? 1 : 0),
+          categoryColors: uniq([...(summary?.categoryColors ?? []), span.categoryColor]),
+        }),
+      );
+    }
+  }
+  return withCompletions(result, [...byDate.values()]);
+}
+
+function isTodoOnDate(todo: Todo, date: string): boolean {
+  return todo.startDate <= date && (todo.endDate ?? todo.startDate) >= date;
+}
+
+/** 그날 목록으로 달력 요약을 다시 계산한다. 여러 날 할 일도 기간 안의 날이면 센다. 할 일이 없는 날은 요약이 없다. */
 export function withDailyCompletionFromTodos(
   result: DailyCompletionsResult,
   date: string,
@@ -136,33 +220,22 @@ export function withDailyCompletionFromTodos(
   if (date < result.dateRange.startDate || date > result.dateRange.endDate) {
     return result;
   }
-  const dayTodos = todos.filter((todo) => todo.startDate === date);
-  const totalTodos = dayTodos.length;
-  const completedTodos = dayTodos.filter((todo) => todo.completed).length;
+  const dayTodos = todos.filter((todo) => isTodoOnDate(todo, date));
   const others = result.completions.filter((completion) => completion.date !== date);
-  const completions =
-    totalTodos === 0
+  return withCompletions(
+    result,
+    dayTodos.length === 0
       ? others
-      : sortBy(
-          [
-            ...others,
-            {
-              date,
-              totalTodos,
-              completedTodos,
-              isComplete: totalTodos === completedTodos,
-              completionRate: Math.round((completedTodos / totalTodos) * 100),
-              categoryColors: uniq(dayTodos.map((todo) => todo.category.color)),
-            },
-          ],
-          [(completion) => completion.date],
-        );
-
-  return {
-    ...result,
-    completions,
-    totalCompleteDays: completions.filter((completion) => completion.isComplete).length,
-  };
+      : [
+          ...others,
+          createDailyCompletionSummary({
+            date,
+            totalTodos: dayTodos.length,
+            completedTodos: dayTodos.filter((todo) => todo.completed).length,
+            categoryColors: uniq(dayTodos.map((todo) => todo.category.color)),
+          }),
+        ],
+  );
 }
 
 /** 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다 */
@@ -181,8 +254,11 @@ export function hasUpcomingTimedTodo(
 
 export const TodoPolicy = {
   isRecurringTodo,
+  isMultiDayTodo,
+  getShiftedEndDate,
   isOptimisticTodo,
   withDailyCompletionFromTodos,
+  withMultiDayTodoSpans,
   hasSubTodos,
   completesAllTodos,
   hasUpcomingTimedTodo,

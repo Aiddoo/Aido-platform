@@ -18,13 +18,14 @@ import {
 import { toHHmm } from '@src/shared/utils/time';
 import { z } from 'zod';
 
-import type {
-  DailyCompletionSummary,
-  DailyCompletionsResult,
-  Todo,
-  TodoDetails,
-  TodoSummary,
-  TodoListResult,
+import {
+  type DailyCompletionSummary,
+  type DailyCompletionsResult,
+  type Todo,
+  type TodoDetails,
+  TodoPolicy,
+  type TodoSummary,
+  type TodoListResult,
 } from '../domains/todo.model';
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat } from './todo-series.mapper';
@@ -96,11 +97,15 @@ export const toDailyCompletionSummary = (
 
 export const toDailyCompletionsResult = (
   dto: DailyCompletionsRangeResponse,
-): DailyCompletionsResult => ({
-  completions: dto.completions.map(toDailyCompletionSummary),
-  totalCompleteDays: dto.totalCompleteDays,
-  dateRange: dto.dateRange,
-});
+): DailyCompletionsResult =>
+  TodoPolicy.withMultiDayTodoSpans(
+    {
+      completions: dto.completions.map(toDailyCompletionSummary),
+      totalCompleteDays: dto.totalCompleteDays,
+      dateRange: dto.dateRange,
+    },
+    dto.multiDayTodos ?? [],
+  );
 
 export const toTodoSummary = (dto: TodoSummaryResponse): TodoSummary => ({
   date: dto.date,
