@@ -12,7 +12,8 @@ import { RepeatHintLine } from '../repeat-hint-line';
 
 /**
  * 달력 아래 3개월 안내. 반복 할 일이 있는 계정이 범위를 처음 넘으면 설명을 한 번 자동으로 열고,
- * 그 뒤에는 줄을 눌러 다시 본다. 자동으로 열려도 달력 넘기기를 막지 않고, 날짜를 옮기면 닫힌다.
+ * 그 뒤에는 줄을 눌러 다시 본다. 자동으로 열려도 달력 넘기기를 막지 않는다. 달을 넘기면 닫히고,
+ * 읽을 틈 없이 넘긴 경우에는 본 것으로 남기지 않아 멈춘 달에서 다시 열린다.
  */
 export function RepeatHorizonHint() {
   const { t } = useTranslation('todo');
