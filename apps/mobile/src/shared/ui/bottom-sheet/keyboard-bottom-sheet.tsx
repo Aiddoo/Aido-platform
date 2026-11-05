@@ -373,11 +373,11 @@ export function useKeyboardSheetBodyMaxHeight(): number {
   const { topInset } = useSheetLayout({ minMargin: 0 });
   const { height: windowHeight } = useWindowDimensions();
 
+  // gorhom의 maxDynamicContentSize는 손잡이까지 포함한 시트 높이라, 내용 높이에서는 손잡이를 한 번 더 뺀다
+  const sheetMaxHeight = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
+
   return (
-    getSheetMaxHeight(windowHeight, topInset, 0) -
-    HANDLE_HEIGHT -
-    CONTENT_PADDING_TOP -
-    getContentBottomPadding(insets.bottom)
+    sheetMaxHeight - HANDLE_HEIGHT - CONTENT_PADDING_TOP - getContentBottomPadding(insets.bottom)
   );
 }
 
