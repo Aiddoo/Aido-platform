@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Text, VStack } from '@src/shared/ui';
+import { Box, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps } from 'react';
 
@@ -43,14 +43,9 @@ export function InviteRewardLines({ className, ...props }: ComponentProps<typeof
               {line.label}
             </Text>
           </Box>
-          <Text
-            size="b3"
-            shade={9}
-            lineBreakStrategyIOS="hangul-word"
-            textBreakStrategy="highQuality"
-          >
+          <WordWrapText size="b3" shade={9}>
             {line.value}
-          </Text>
+          </WordWrapText>
         </VStack>
       ))}
     </VStack>
