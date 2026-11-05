@@ -60,7 +60,6 @@ export const todoCommentPaginationSchema = z.object({
   hasNext: z.boolean(),
   size: z.int().positive(),
 });
-export type TodoCommentPagination = z.infer<typeof todoCommentPaginationSchema>;
 
 export const todoCommentThreadPageSchema = z.object({
   items: z.array(todoCommentThreadSchema),

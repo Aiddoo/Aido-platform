@@ -8,18 +8,17 @@ import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitle
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   ConfirmDialog,
   HStack,
   QueryErrorBoundary,
-  Spacing,
-  StyledSafeAreaView,
+  SettingsCard,
+  SettingsScreenLayout,
   Text,
   useOverlay,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { Platform, ScrollView } from 'react-native';
+import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
 function AppIconScreen() {
@@ -75,41 +74,33 @@ function AppIconScreen() {
 
   return match({ isSupported, isLoading })
     .with({ isSupported: false }, () => (
-      <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-        <ScrollView className="px-4 flex-1">
-          <StyledSafeAreaView edges={['left', 'right']}>
-            <Spacing size={8} />
-            <HStack justify="center" align="center">
-              <Text size="b4" shade={6}>
-                {t('screen.unsupported')}
-              </Text>
-            </HStack>
-          </StyledSafeAreaView>
-        </ScrollView>
-      </StyledSafeAreaView>
+      <SettingsScreenLayout>
+        <HStack justify="center" align="center">
+          <Text size="b4" shade={6}>
+            {t('screen.unsupported')}
+          </Text>
+        </HStack>
+      </SettingsScreenLayout>
     ))
     .with({ isSupported: true, isLoading: true }, () => <AppIconScreen.Loading />)
     .with({ isSupported: true, isLoading: false }, () => (
       <>
-        <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-          <ScrollView className="px-4 flex-1">
-            <StyledSafeAreaView edges={['left', 'right']}>
-              <Spacing size={8} />
-              <Text size="b4" shade={6} className="px-2 pb-2">
-                {t('screen.chooseIcon')}
-              </Text>
+        <SettingsScreenLayout gap={8}>
+          <Text size="b4" shade={6} className="px-2">
+            {t('screen.chooseIcon')}
+          </Text>
 
-              <Box p={16} className="bg-white rounded-2xl">
-                <AppIconPicker
-                  value={currentIcon}
-                  onChange={handleIconPress}
-                  isDisabled={isChanging}
-                  isLocked={(key) => isIconLocked && key !== 'default'}
-                />
-              </Box>
-            </StyledSafeAreaView>
-          </ScrollView>
-        </StyledSafeAreaView>
+          <SettingsCard>
+            <SettingsCard.Content>
+              <AppIconPicker
+                value={currentIcon}
+                onChange={handleIconPress}
+                isDisabled={isChanging}
+                isLocked={(key) => isIconLocked && key !== 'default'}
+              />
+            </SettingsCard.Content>
+          </SettingsCard>
+        </SettingsScreenLayout>
         <AppIconErrorDialog
           isOpen={changeError != null}
           onOpenChange={(isOpen) => {
@@ -126,20 +117,17 @@ function AppIconScreen() {
 AppIconScreen.Loading = function Loading() {
   const { t } = useTranslation('appIcon');
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={8} />
-          <Text size="b4" shade={6} className="px-2 pb-2">
-            {t('screen.chooseIcon')}
-          </Text>
+    <SettingsScreenLayout gap={8}>
+      <Text size="b4" shade={6} className="px-2">
+        {t('screen.chooseIcon')}
+      </Text>
 
-          <Box p={16} className="bg-white rounded-2xl">
-            <AppIconPicker.Loading />
-          </Box>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+      <SettingsCard>
+        <SettingsCard.Content>
+          <AppIconPicker.Loading />
+        </SettingsCard.Content>
+      </SettingsCard>
+    </SettingsScreenLayout>
   );
 };
 

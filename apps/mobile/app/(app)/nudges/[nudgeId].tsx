@@ -33,6 +33,7 @@ import {
   HStack,
   PawIcon,
   QueryErrorBoundary,
+  ReadableContent,
   STACK_MORE_ICON,
   Result,
   StyledSafeAreaView,
@@ -71,101 +72,106 @@ function NudgeDetailScreen() {
   return (
     <>
       {isReceived && <NudgeModerationToolbar nudge={nudge} />}
-      <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-        <VStack gap={24} testID="nudge-detail">
-          <HStack gap={12} align="center">
-            <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
-            <VStack flex={1} gap={4}>
-              <Text size="b3" weight="semibold">
-                {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
-              </Text>
-              <Text size="e1" shade={5}>
-                {formatRelativeTimeLabel(nudge.createdAt, new Date(), dateFormatContext)}
-              </Text>
-            </VStack>
-          </HStack>
-
-          <VStack gap={8}>
-            <Text size="t3" weight="bold">
-              {t('interaction.encouragementTitle')}
-            </Text>
-            {nudge.message != null && (
-              <Text size="b3" shade={6}>
-                {nudge.message}
-              </Text>
-            )}
-          </VStack>
-
-          <Button
-            variant="weak"
-            color="dark"
-            isDisabled={nudge.todoTitle == null}
-            className="p-4"
-            onPress={handleOpenTodo}
-          >
-            <HStack align="center" gap={12} className="w-full">
-              <PawIcon width={28} height={28} colorClassName="text-main" />
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <StyledSafeAreaView edges={['left', 'right']} className="p-6">
+          <VStack gap={24} testID="nudge-detail">
+            <HStack gap={12} align="center">
+              <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
               <VStack flex={1} gap={4}>
-                <Text size="b3" weight="semibold" maxLines={3}>
-                  {nudge.todoTitle ?? t('interaction.unavailableTodo')}
+                <Text size="b3" weight="semibold">
+                  {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
                 </Text>
                 <Text size="e1" shade={5}>
-                  {t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.openTodo')}
+                  {formatRelativeTimeLabel(nudge.createdAt, new Date(), dateFormatContext)}
                 </Text>
               </VStack>
-              <ArrowRightIcon width={18} height={18} colorClassName="text-gray-5" />
             </HStack>
-          </Button>
 
-          {match({
-            status,
-            isReceived,
-            isTodoCompleted: nudge.isTodoCompleted,
-            canReply: NudgeInteractionPolicy.isReplyable(nudge, me.id),
-          })
-            .with({ status: 'UNAVAILABLE' }, () => (
-              <Result
-                title={t('interaction.unavailable')}
-                description={t('interaction.unavailableDescription')}
-              />
-            ))
-            .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
-              <NudgeDetailScreen.ReplyPanel nudge={nudge} />
-            ))
-            .with({ isReceived: true, isTodoCompleted: true }, () => (
-              <VStack gap={12}>
-                {status === 'THANKED' ? (
-                  <NudgeDetailScreen.ThanksStatus />
-                ) : (
-                  <Text size="b3" shade={6}>
-                    {t('interaction.completedThanksHint')}
-                  </Text>
-                )}
-                {status !== 'THANKED' && (
-                  <QueryErrorBoundary resetKeys={[nudge.todoId]} fallback={ThanksSummaryRow.Error}>
-                    <Suspense fallback={<ThanksSummaryRow.Loading />}>
-                      <ThanksSummaryRow
-                        todoId={nudge.todoId}
-                        onThanksPress={handleOpenThanksSheet}
-                      />
-                    </Suspense>
-                  </QueryErrorBoundary>
-                )}
-              </VStack>
-            ))
-            .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
-            .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
-              <Text size="b3" shade={6}>
-                {match(nudge)
-                  .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
-                    t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
-                  )
-                  .with({ isTodoCompleted: true }, () => t('interaction.completed'))
-                  .otherwise(() => t('interaction.waiting'))}
+            <VStack gap={8}>
+              <Text size="t3" weight="bold">
+                {t('interaction.encouragementTitle')}
               </Text>
-            ))
-            .exhaustive()}
-        </VStack>
+              {nudge.message != null && (
+                <Text size="b3" shade={6}>
+                  {nudge.message}
+                </Text>
+              )}
+            </VStack>
+
+            <Button
+              variant="weak"
+              color="dark"
+              isDisabled={nudge.todoTitle == null}
+              className="p-4"
+              onPress={handleOpenTodo}
+            >
+              <HStack align="center" gap={12} className="w-full">
+                <PawIcon width={28} height={28} colorClassName="text-main" />
+                <VStack flex={1} gap={4}>
+                  <Text size="b3" weight="semibold" maxLines={3}>
+                    {nudge.todoTitle ?? t('interaction.unavailableTodo')}
+                  </Text>
+                  <Text size="e1" shade={5}>
+                    {t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.openTodo')}
+                  </Text>
+                </VStack>
+                <ArrowRightIcon width={18} height={18} colorClassName="text-gray-5" />
+              </HStack>
+            </Button>
+
+            {match({
+              status,
+              isReceived,
+              isTodoCompleted: nudge.isTodoCompleted,
+              canReply: NudgeInteractionPolicy.isReplyable(nudge, me.id),
+            })
+              .with({ status: 'UNAVAILABLE' }, () => (
+                <Result
+                  title={t('interaction.unavailable')}
+                  description={t('interaction.unavailableDescription')}
+                />
+              ))
+              .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
+                <NudgeDetailScreen.ReplyPanel nudge={nudge} />
+              ))
+              .with({ isReceived: true, isTodoCompleted: true }, () => (
+                <VStack gap={12}>
+                  {status === 'THANKED' ? (
+                    <NudgeDetailScreen.ThanksStatus />
+                  ) : (
+                    <Text size="b3" shade={6}>
+                      {t('interaction.completedThanksHint')}
+                    </Text>
+                  )}
+                  {status !== 'THANKED' && (
+                    <QueryErrorBoundary
+                      resetKeys={[nudge.todoId]}
+                      fallback={ThanksSummaryRow.Error}
+                    >
+                      <Suspense fallback={<ThanksSummaryRow.Loading />}>
+                        <ThanksSummaryRow
+                          todoId={nudge.todoId}
+                          onThanksPress={handleOpenThanksSheet}
+                        />
+                      </Suspense>
+                    </QueryErrorBoundary>
+                  )}
+                </VStack>
+              ))
+              .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
+              .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
+                <Text size="b3" shade={6}>
+                  {match(nudge)
+                    .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
+                      t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+                    )
+                    .with({ isTodoCompleted: true }, () => t('interaction.completed'))
+                    .otherwise(() => t('interaction.waiting'))}
+                </Text>
+              ))
+              .exhaustive()}
+          </VStack>
+        </StyledSafeAreaView>
       </ScrollView>
     </>
   );
@@ -295,18 +301,20 @@ NudgeDetailScreen.Error = function ErrorState({ error, reset }: QueryErrorFallba
 
 NudgeDetailScreen.Loading = function Loading() {
   return (
-    <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-      <VStack gap={24}>
-        <HStack gap={12} align="center">
-          <Skeleton className="size-12 rounded-full" />
-          <VStack flex={1} gap={4}>
-            <TextSkeleton size="b3" className="w-40" />
-            <TextSkeleton size="e1" className="w-16" />
-          </VStack>
-        </HStack>
-        <TextSkeleton size="t3" className="w-3/4" />
-        <Skeleton className="h-14 w-full rounded-xl" />
-      </VStack>
+    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <StyledSafeAreaView edges={['left', 'right']} className="p-6">
+        <VStack gap={24}>
+          <HStack gap={12} align="center">
+            <Skeleton className="size-12 rounded-full" />
+            <VStack flex={1} gap={4}>
+              <TextSkeleton size="b3" className="w-40" />
+              <TextSkeleton size="e1" className="w-16" />
+            </VStack>
+          </HStack>
+          <TextSkeleton size="t3" className="w-3/4" />
+          <Skeleton className="h-14 w-full rounded-xl" />
+        </VStack>
+      </StyledSafeAreaView>
     </ScrollView>
   );
 };
@@ -316,18 +324,20 @@ export default function NudgeDetailRoute() {
   const { t } = useTranslation('todo');
 
   return (
-    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-background">
-      {params.success ? (
-        <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
-          <Suspense fallback={<NudgeDetailScreen.Loading />}>
-            <NudgeDetailScreen />
-          </Suspense>
-        </QueryErrorBoundary>
-      ) : (
-        <VStack flex={1} p={24}>
-          <Result title={t('interaction.unavailable')} />
-        </VStack>
-      )}
+    <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-background">
+      <ReadableContent flex={1}>
+        {params.success ? (
+          <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
+            <Suspense fallback={<NudgeDetailScreen.Loading />}>
+              <NudgeDetailScreen />
+            </Suspense>
+          </QueryErrorBoundary>
+        ) : (
+          <StyledSafeAreaView edges={['left', 'right']} className="flex-1 p-6">
+            <Result title={t('interaction.unavailable')} />
+          </StyledSafeAreaView>
+        )}
+      </ReadableContent>
     </StyledSafeAreaView>
   );
 }

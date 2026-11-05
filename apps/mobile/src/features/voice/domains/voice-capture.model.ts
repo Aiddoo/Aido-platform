@@ -383,14 +383,6 @@ export function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boo
   return state.status === 'paused' && isOverQuickLimit(state, now);
 }
 
-export function getRemainingSeconds(
-  state: VoiceCaptureState,
-  maxSeconds: number,
-  now: number,
-): number {
-  return Math.max(0, Math.ceil(maxSeconds - getElapsedMs(state, now) / 1_000));
-}
-
 export const VoiceCapturePolicy = {
   isStopAcknowledgement,
   shouldRestartSegment,
@@ -406,5 +398,4 @@ export const VoiceCapturePolicy = {
   isOverQuickLimit,
   shouldOfferVoiceNote,
   getElapsedMs,
-  getRemainingSeconds,
 } as const;

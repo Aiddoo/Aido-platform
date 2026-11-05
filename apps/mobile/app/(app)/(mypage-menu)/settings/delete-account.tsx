@@ -5,13 +5,14 @@ import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
+  FormStepLayout,
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
+  ReadableContent,
   Text,
   useConfirmDialog,
   VStack,
-  FormStepLayout,
-  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -99,11 +100,13 @@ function DeleteAccountScreen() {
 export default function DeleteAccountRoute() {
   return (
     <Box className="flex-1 bg-gray-1">
-      <QueryErrorBoundary>
-        <Suspense fallback={<Box className="flex-1" />}>
-          <DeleteAccountScreen />
-        </Suspense>
-      </QueryErrorBoundary>
+      <ReadableContent flex={1}>
+        <QueryErrorBoundary>
+          <Suspense fallback={<Box className="flex-1" />}>
+            <DeleteAccountScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ReadableContent>
     </Box>
   );
 }

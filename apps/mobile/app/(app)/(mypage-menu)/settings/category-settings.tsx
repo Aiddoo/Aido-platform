@@ -8,6 +8,7 @@ import {
   HStack,
   PlusIcon,
   QueryErrorBoundary,
+  ReadableContent,
   StyledSafeAreaView,
   Text,
   VStack,
@@ -45,47 +46,49 @@ function TodoCategorySettingsScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
-      <VStack gap={8} flex={1} className="px-4">
-        <H3 className="my-4">{t('categorySettings.header')}</H3>
+      <ReadableContent flex={1} className="px-4">
+        <VStack gap={8} flex={1}>
+          <H3 className="my-4">{t('categorySettings.header')}</H3>
 
-        <HStack justify="between" align="center" className="mb-3">
-          <Tabs
-            value={view}
-            onValueChange={(value) => {
-              const parsed = viewSchema.safeParse(value);
-              if (parsed.success) {
-                setView(parsed.data);
-              }
-            }}
-            variant="primary"
-          >
-            <Tabs.List>
-              <Tabs.Indicator />
-              <ViewTab view={View.edit} />
-              <ViewTab view={View.reorder} />
-            </Tabs.List>
-          </Tabs>
+          <HStack justify="between" align="center" className="mb-3">
+            <Tabs
+              value={view}
+              onValueChange={(value) => {
+                const parsed = viewSchema.safeParse(value);
+                if (parsed.success) {
+                  setView(parsed.data);
+                }
+              }}
+              variant="primary"
+            >
+              <Tabs.List>
+                <Tabs.Indicator />
+                <ViewTab view={View.edit} />
+                <ViewTab view={View.reorder} />
+              </Tabs.List>
+            </Tabs>
 
-          <PressableFeedback onPress={() => push(todoCategoryCreateSheetHref())}>
-            <HStack align="center" gap={4}>
-              <PlusIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-main"
-              />
-              <Text size="b3" tone="brand" weight="medium">
-                {t('categorySettings.add')}
-              </Text>
-            </HStack>
-          </PressableFeedback>
-        </HStack>
+            <PressableFeedback onPress={() => push(todoCategoryCreateSheetHref())}>
+              <HStack align="center" gap={4}>
+                <PlusIcon
+                  width={fontScaledSize(18)}
+                  height={fontScaledSize(18)}
+                  colorClassName="text-main"
+                />
+                <Text size="b3" tone="brand" weight="medium">
+                  {t('categorySettings.add')}
+                </Text>
+              </HStack>
+            </PressableFeedback>
+          </HStack>
 
-        <QueryErrorBoundary>
-          <Suspense fallback={<CategoryList.Loading />}>
-            <CategoryList mode={view} />
-          </Suspense>
-        </QueryErrorBoundary>
-      </VStack>
+          <QueryErrorBoundary>
+            <Suspense fallback={<CategoryList.Loading />}>
+              <CategoryList mode={view} />
+            </Suspense>
+          </QueryErrorBoundary>
+        </VStack>
+      </ReadableContent>
     </StyledSafeAreaView>
   );
 }

@@ -424,11 +424,9 @@ describe('VoiceCapturePolicy', () => {
     // When
     const at29s = VoiceCapturePolicy.isOverQuickLimit(listening, NOW + 29_999);
     const at30s = VoiceCapturePolicy.isOverQuickLimit(listening, NOW + 30_000);
-    const remaining = VoiceCapturePolicy.getRemainingSeconds(listening, 90, NOW + 10_500);
 
     // Then
     expect([at29s, at30s]).toEqual([false, true]);
-    expect(remaining).toBe(20);
   });
 
   describe('멈춘 인식기 판단', () => {

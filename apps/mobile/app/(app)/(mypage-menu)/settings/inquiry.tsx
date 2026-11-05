@@ -8,17 +8,18 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
+  Box,
   H3,
   HStack,
   IconRadioItem,
   KeyboardAdaptiveButton,
+  QueryErrorBoundary,
+  ReadableContent,
   Spacing,
+  StyledSafeAreaView,
   Text,
   TextArea,
   VStack,
-  QueryErrorBoundary,
-  StyledSafeAreaView,
-  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { formatCount } from '@src/shared/utils/format';
@@ -160,8 +161,12 @@ function InquiryScreen() {
 /** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
 export default function InquiryRoute() {
   return (
-    <QueryErrorBoundary>
-      <InquiryScreen />
-    </QueryErrorBoundary>
+    <Box className="flex-1 bg-gray-1">
+      <ReadableContent flex={1}>
+        <QueryErrorBoundary>
+          <InquiryScreen />
+        </QueryErrorBoundary>
+      </ReadableContent>
+    </Box>
   );
 }

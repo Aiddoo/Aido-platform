@@ -18,6 +18,8 @@
     "placeholder": "Write down your ideas freely..."
   },
   "detail": {
+    "unavailableTitle": "This memo isn't available right now",
+    "unavailableDescription": "It may have been deleted",
     "emptyTitle": "No memo selected",
     "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",

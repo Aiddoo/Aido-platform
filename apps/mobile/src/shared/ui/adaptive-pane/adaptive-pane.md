@@ -25,6 +25,17 @@ import { AdaptivePane } from '@src/shared/ui';
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
 - 두 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 남아 있는 pane은 다시 마운트되지 않아 스크롤·입력·내비게이터 상태가 유지된다.
 
+## 내 정보 메뉴 (왼쪽 메뉴 + 오른쪽 내비게이터)
+
+- 라우트 그룹 `app/(app)/(mypage-menu)`가 `friends`·`achievements`·`reports`·`settings`를 URL 변경 없이 묶고, `_layout`에서 `AdaptivePane primary={<MyPagePane />} secondary={<Stack />} compactPane="secondary"`로 쓴다. 접힌 화면은 왼쪽 메뉴 없이 기존처럼 push다.
+- 내 정보 탭도 같은 `MyPagePane`을 두 칸 왼쪽에 그린다. 탭에서 들어갈 때 넓은 화면은 애니메이션을 끄고, `useMyPagePaneLayout`이 두 pane의 스크롤과 위 여백을 맞춰 왼쪽이 움직이지 않는다.
+- 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 메뉴 화면 안에서는 상세만 교체(더 들어간 화면은 먼저 걷어 냄)해 뒤로 가기에 쌓이지 않는다.
+- 탭 바는 탭 화면에만 있다. 넓은 화면의 메뉴 화면에서 탭으로 돌아갈 때는 첫 화면의 뒤로 가기를 쓴다.
+
+## 왜 Expo `SplitView`를 쓰지 않는가
+
+expo-router 58.0.30·react-native-screens 4.30.1 기준(2026-11 확인). `SplitView`는 다른 네이티브 내비게이터 안에 둘 수 없어(throw) 루트를 Slot으로 바꿔야 하고, 왼쪽 칸은 라우트가 아니다. 접힌 화면에서 `RNSSplitNavigationController`의 뒤로 가기가 모든 화면에 추가로 떠서(react-native-screens #4858, 일반 iPhone에서도 재현) 쓰지 않는다. Expo UI `ArrangementView`는 iOS 27.1 미만과 Android에 없어 이 컴포넌트를 대체하지 못한다.
+
 ## 상세 pane 헤더
 
 pane은 Stack 화면이 아니어서 네이티브 헤더가 없고, 꼭대기 바를 피처가 JS로 그린다(할 일 `TodoCommentTitleBar`, 메모 상세 pane 버튼 줄).

@@ -1,4 +1,3 @@
-import type { TODO_REPEAT_END_TYPES } from '@aido/api/vocabulary';
 import {
   DAY_OF_WEEK_MAP,
   DAYS_OF_WEEK,
@@ -38,8 +37,6 @@ export const TODO_REPEAT_KINDS = [
   'MONTHLY',
 ] as const;
 export type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
-
-export type TodoRepeatEndType = (typeof TODO_REPEAT_END_TYPES)[number];
 
 export const todoRepeatEndSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('NEVER') }),
@@ -115,20 +112,6 @@ export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
         .otherwise(() => 'WEEKLY'),
     )
     .exhaustive();
-}
-
-export function createWeeklyUntilRepeat(
-  weekdays: readonly DayOfWeek[],
-  untilDate: string,
-): TodoRepeat | null {
-  return weekdays.length === 0
-    ? null
-    : {
-        frequency: 'WEEKLY',
-        interval: 1,
-        weekdays: sortWeekdays(weekdays),
-        end: { type: 'UNTIL', date: untilDate },
-      };
 }
 
 export function withRepeatEnd(repeat: TodoRepeat, end: TodoRepeatEnd): TodoRepeat {
@@ -353,7 +336,6 @@ export function shouldShowRepeatHorizonHint(
 
 export const TodoRepeatPolicy = {
   getRepeatKind,
-  createWeeklyUntilRepeat,
   hasSameRepeat,
   isBeyondRepeatHorizon,
   isMonthBeyondRepeatHorizon,

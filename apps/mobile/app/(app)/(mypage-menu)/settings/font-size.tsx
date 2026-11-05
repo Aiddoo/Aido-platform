@@ -2,10 +2,10 @@ import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { type FontScale, isFontScale } from '@src/shared/preferences/font-scale.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { StyledSafeAreaView, Box } from '@src/shared/ui';
+import { Box, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { SCALED_FONT_STYLES } from '@src/shared/utils/font-scale';
 import { Radio, RadioGroup } from 'heroui-native';
-import { Text as RNText, ScrollView } from 'react-native';
+import { Text as RNText } from 'react-native';
 
 function FontSizeSettingsScreen() {
   const { fontScale, setFontScale } = useFontScale();
@@ -21,23 +21,21 @@ function FontSizeSettingsScreen() {
   };
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <RadioGroup
-            value={fontScale}
-            onValueChange={handleChange}
-            className="bg-white rounded-2xl overflow-hidden gap-0"
-          >
-            <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
-            <FontScaleRadioItem value="small" label={t('fontSize.small')} />
-            <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
-            <FontScaleRadioItem value="large" label={t('fontSize.large')} />
-            <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
-          </RadioGroup>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+    <SettingsScreenLayout>
+      <SettingsCard>
+        <RadioGroup value={fontScale} onValueChange={handleChange} className="gap-0">
+          <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
+          <SettingsCard.Separator />
+          <FontScaleRadioItem value="small" label={t('fontSize.small')} />
+          <SettingsCard.Separator />
+          <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
+          <SettingsCard.Separator />
+          <FontScaleRadioItem value="large" label={t('fontSize.large')} />
+          <SettingsCard.Separator />
+          <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
+        </RadioGroup>
+      </SettingsCard>
+    </SettingsScreenLayout>
   );
 }
 

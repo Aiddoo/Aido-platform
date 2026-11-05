@@ -169,7 +169,6 @@ export const useErrorReporter = () => useDI().errorReporter;
 export const useHaptics = () => useDI().haptics;
 export const useIdGenerator = () => useDI().idGenerator;
 export const useSpeechRecognizer = () => useDI().speechRecognizer;
-export const usePurchasesGateway = () => useDI().purchasesGateway;
 export const usePushNotificationGateway = () => useDI().pushNotificationGateway;
 export const useDraftService = () => useDI().draftService;
 export const useQueryCacheStorage = () => useDI().queryCacheStorage;

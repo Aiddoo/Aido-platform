@@ -115,26 +115,6 @@ describe('TodoRepeatPolicy', () => {
     });
   });
 
-  describe('createWeeklyUntil', () => {
-    test('요일이 없으면 반복이 아니고, 있으면 날짜 종료 매주로 만든다', () => {
-      // Given
-      const until = '2026-12-31';
-
-      // When
-      const empty = TodoRepeatPolicy.createWeeklyUntilRepeat([], until);
-      const weekly = TodoRepeatPolicy.createWeeklyUntilRepeat(['WED', 'MON'], until);
-
-      // Then
-      expect(empty).toBeNull();
-      expect(weekly).toEqual({
-        frequency: 'WEEKLY',
-        interval: 1,
-        weekdays: ['MON', 'WED'],
-        end: { type: 'UNTIL', date: until },
-      });
-    });
-  });
-
   describe('getOccurrenceDateKeys', () => {
     const NOVEMBER = { from: '2026-11-01', to: '2026-11-30' };
 

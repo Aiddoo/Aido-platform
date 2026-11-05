@@ -11,17 +11,9 @@ import {
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  QueryErrorBoundary,
-  SettingsCard,
-  Spacing,
-  StyledSafeAreaView,
-  VStack,
-} from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
-import { ScrollView } from 'react-native';
 
 function WeatherSettingsScreen() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -31,53 +23,57 @@ function WeatherSettingsScreen() {
   const pushDisabled = PreferencePolicy.isPushDisabled(preference) || updateMutation.isPending;
 
   return (
-    <VStack gap={24}>
-      <SettingsCard>
-        <SettingsCard.Toggle
-          label={t('settings.weatherLabel')}
-          description={
-            PreferencePolicy.isPushDisabled(preference)
-              ? t('auth:preference.enablePushFirst')
-              : t('settings.weatherDescription')
-          }
-          isSelected={PreferencePolicy.isWeatherEnabled(preference)}
-          onSelectedChange={(enabled) =>
-            updateMutation.mutate({
-              weatherMorningEnabled: enabled,
-              weatherEveningEnabled: enabled,
-              trackAs: 'weatherEnabled',
-            })
-          }
-          isDisabled={pushDisabled}
-        />
-        <Separator className="bg-gray-2" />
+    <SettingsCard>
+      <SettingsCard.Toggle
+        label={t('settings.weatherLabel')}
+        description={
+          PreferencePolicy.isPushDisabled(preference)
+            ? t('auth:preference.enablePushFirst')
+            : t('settings.weatherDescription')
+        }
+        isSelected={PreferencePolicy.isWeatherEnabled(preference)}
+        onSelectedChange={(enabled) =>
+          updateMutation.mutate({
+            weatherMorningEnabled: enabled,
+            weatherEveningEnabled: enabled,
+            trackAs: 'weatherEnabled',
+          })
+        }
+        isDisabled={pushDisabled}
+      />
+      <SettingsCard.Separator />
+      <SettingsCard.Content>
         <WeatherTimeInput
           label={t('settings.weatherMorningLabel')}
           description={t('settings.weatherMorningDescription')}
           period="morning"
         />
-        <Separator className="bg-gray-2" />
+      </SettingsCard.Content>
+      <SettingsCard.Separator />
+      <SettingsCard.Content>
         <WeatherTimeInput
           label={t('settings.weatherEveningLabel')}
           description={t('settings.weatherEveningDescription')}
           period="evening"
         />
-      </SettingsCard>
-    </VStack>
+      </SettingsCard.Content>
+    </SettingsCard>
   );
 }
 
 WeatherSettingsScreen.Loading = function Loading() {
   return (
-    <VStack gap={24}>
-      <SettingsCard>
-        <SettingsCard.ToggleSkeleton hasDescription />
-        <Separator className="bg-gray-2" />
+    <SettingsCard>
+      <SettingsCard.ToggleSkeleton hasDescription />
+      <SettingsCard.Separator />
+      <SettingsCard.Content>
         <TimeRowSkeleton />
-        <Separator className="bg-gray-2" />
+      </SettingsCard.Content>
+      <SettingsCard.Separator />
+      <SettingsCard.Content>
         <TimeRowSkeleton />
-      </SettingsCard>
-    </VStack>
+      </SettingsCard.Content>
+    </SettingsCard>
   );
 };
 
@@ -134,17 +130,12 @@ function WeatherTimeInput({
 
 export default function WeatherSettingsRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={20} />
-          <QueryErrorBoundary>
-            <Suspense fallback={<WeatherSettingsScreen.Loading />}>
-              <WeatherSettingsScreen />
-            </Suspense>
-          </QueryErrorBoundary>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+    <SettingsScreenLayout>
+      <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <Suspense fallback={<WeatherSettingsScreen.Loading />}>
+          <WeatherSettingsScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </SettingsScreenLayout>
   );
 }

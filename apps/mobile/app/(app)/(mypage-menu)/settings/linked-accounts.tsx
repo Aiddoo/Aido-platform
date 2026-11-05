@@ -6,6 +6,7 @@ import { getProviderState } from '@src/features/auth/utils/get-provider-state';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AppleIcon,
+  Box,
   Button,
   ConfirmDialog,
   GoogleIcon,
@@ -14,41 +15,34 @@ import {
   ListRow,
   NaverIcon,
   QueryErrorBoundary,
-  Spacing,
-  StyledSafeAreaView,
+  SettingsCard,
+  SettingsScreenLayout,
   Text,
   VStack,
-  Box,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
+import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
-import { Platform, ScrollView } from 'react-native';
+import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
 function LinkedAccountsScreen() {
   const { t } = useTranslation('auth');
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={20} />
+    <SettingsScreenLayout gap={8}>
+      <Text size="b4" shade={6} className="px-2">
+        {t('linkedAccounts.description')}
+      </Text>
 
-          <Text size="b4" shade={6} className="px-2 pb-2">
-            {t('linkedAccounts.description')}
-          </Text>
-
-          <QueryErrorBoundary>
-            <Suspense fallback={<LinkedAccountsList.Loading />}>
-              <LinkedAccountsList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+      <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <Suspense fallback={<LinkedAccountsList.Loading />}>
+          <LinkedAccountsList />
+        </Suspense>
+      </QueryErrorBoundary>
+    </SettingsScreenLayout>
   );
 }
 
@@ -70,7 +64,7 @@ function LinkedAccountsList() {
     variables: unlinkingProvider,
   } = useMutation(useUnlinkAccountMutationOptions());
 
-  const stateOf = (provider: OAuthProvider, slug: OAuthProviderSlug) =>
+  const getProviderRowState = (provider: OAuthProvider, slug: OAuthProviderSlug) =>
     getProviderState({
       accounts: linkedAccounts.accounts,
       provider,
@@ -106,33 +100,33 @@ function LinkedAccountsList() {
 
   return (
     <>
-      <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
+      <SettingsCard>
         <ProviderListRow
           provider="KAKAO"
           slug="kakao"
           icon={<KakaoIcon width={18} height={18} />}
           iconClassName="bg-yellow-300"
           label={t('providers.KAKAO')}
-          {...stateOf('KAKAO', 'kakao')}
+          {...getProviderRowState('KAKAO', 'kakao')}
           canUnlink={linkedAccounts.canUnlink}
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
-        <Separator className="mx-4 bg-gray-2" />
+        <SettingsCard.Separator />
         <ProviderListRow
           provider="GOOGLE"
           slug="google"
           icon={<GoogleIcon width={18} height={18} />}
           iconClassName="bg-white border border-gray-2"
           label={t('providers.GOOGLE')}
-          {...stateOf('GOOGLE', 'google')}
+          {...getProviderRowState('GOOGLE', 'google')}
           canUnlink={linkedAccounts.canUnlink}
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
         {Platform.OS === 'ios' && (
           <>
-            <Separator className="mx-4 bg-gray-2" />
+            <SettingsCard.Separator />
             <ProviderListRow
               provider="APPLE"
               slug="apple"
@@ -141,26 +135,26 @@ function LinkedAccountsList() {
               }
               iconClassName="bg-apple-button dark:bg-apple-button-dark"
               label={t('providers.APPLE')}
-              {...stateOf('APPLE', 'apple')}
+              {...getProviderRowState('APPLE', 'apple')}
               canUnlink={linkedAccounts.canUnlink}
               onLink={handleLink}
               onUnlinkRequest={handleUnlinkRequest}
             />
           </>
         )}
-        <Separator className="mx-4 bg-gray-2" />
+        <SettingsCard.Separator />
         <ProviderListRow
           provider="NAVER"
           slug="naver"
           icon={<NaverIcon width={18} height={18} colorClassName="text-white" />}
           iconClassName="bg-success"
           label={t('providers.NAVER')}
-          {...stateOf('NAVER', 'naver')}
+          {...getProviderRowState('NAVER', 'naver')}
           canUnlink={linkedAccounts.canUnlink}
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
-      </VStack>
+      </SettingsCard>
 
       <UnlinkConfirmDialog
         targetLabel={unlinkTarget?.label}
@@ -210,16 +204,16 @@ function UnlinkConfirmDialog({ targetLabel, onConfirm, onClose }: UnlinkConfirmD
 
 LinkedAccountsList.Loading = function Loading() {
   return (
-    <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
+    <SettingsCard>
       <SkeletonGroup isLoading isSkeletonOnly>
         {times(PROVIDER_ROW_COUNT, (index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
-            {index < PROVIDER_ROW_COUNT - 1 && <Separator className="mx-4 bg-gray-2" />}
+            {index < PROVIDER_ROW_COUNT - 1 && <SettingsCard.Separator />}
           </Fragment>
         ))}
       </SkeletonGroup>
-    </VStack>
+    </SettingsCard>
   );
 };
 

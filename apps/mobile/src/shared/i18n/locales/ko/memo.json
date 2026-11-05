@@ -18,6 +18,8 @@
     "placeholder": "아이디어를 자유롭게 적어보세요..."
   },
   "detail": {
+    "unavailableTitle": "지금은 볼 수 없는 메모예요",
+    "unavailableDescription": "메모가 삭제됐을 수 있어요",
     "emptyTitle": "선택한 메모가 없어요",
     "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",

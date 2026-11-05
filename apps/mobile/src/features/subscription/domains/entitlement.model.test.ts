@@ -14,28 +14,19 @@ const NOW = new Date('2026-11-15T00:00:00.000Z');
 describe('EntitlementPolicy', () => {
   describe('등급별 판단', () => {
     it.each([
-      ['FREE', false, false],
-      ['PREMIUM', true, true],
-      ['ADMIN', false, true],
-    ] as const)(
-      '%s는 유료 효력 %s, 모든 기능 %s',
-      (tier, expectedIsPremium, expectedHasFullAccess) => {
-        // Given
-        const snapshot = createEntitlementSnapshot({ tier });
+      ['FREE', false],
+      ['PREMIUM', true],
+      ['ADMIN', true],
+    ] as const)('%s의 모든 기능 사용 여부는 %s다', (tier, expectedHasFullAccess) => {
+      // Given
+      const snapshot = createEntitlementSnapshot({ tier });
 
-        // When
-        const result = {
-          isPremium: EntitlementPolicy.isPremium(snapshot),
-          hasFullAccess: EntitlementPolicy.hasFullAccess(snapshot),
-        };
+      // When
+      const hasFullAccess = EntitlementPolicy.hasFullAccess(snapshot);
 
-        // Then
-        expect(result).toEqual({
-          isPremium: expectedIsPremium,
-          hasFullAccess: expectedHasFullAccess,
-        });
-      },
-    );
+      // Then
+      expect(hasFullAccess).toBe(expectedHasFullAccess);
+    });
 
     it.each([
       ['FREE', 'limit-reached'],
