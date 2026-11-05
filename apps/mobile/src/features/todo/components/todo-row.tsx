@@ -135,6 +135,7 @@ export function TodoLabel({ isChecked, children, ...props }: TodoLabelProps) {
       weight="medium"
       strikethrough={isChecked}
       shade={isChecked ? 5 : undefined}
+      lineBreakStrategyIOS="hangul-word"
       {...props}
     >
       {children}
