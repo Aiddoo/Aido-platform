@@ -12,6 +12,7 @@ import {
   PawIcon,
   Text,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { Trans } from 'react-i18next';
 import { Image } from 'react-native';
@@ -131,9 +132,9 @@ function PreviewTodoRow({
         </HStack>
       }
       bottom={
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+        <WordWrapText size="b4" shade={6}>
           {detail}
-        </Text>
+        </WordWrapText>
       }
     />
   );
@@ -186,9 +187,9 @@ function FactRow({ title, description }: { title: string; description: string })
         <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
           {title}
         </Text>
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+        <WordWrapText size="b4" shade={6}>
           {description}
-        </Text>
+        </WordWrapText>
       </VStack>
     </HStack>
   );
