@@ -117,11 +117,11 @@
     "description": "We'll load it automatically when you're connected"
   },
   "offlineModel": {
-    "title": "Download speech-to-text?",
-    "description": "It turns speech into text on your device. Without it, we use the internet.",
+    "title": "Download speech recognition?",
+    "description": "Turn speech into text without internet. If you skip this, it still works when you're online.",
     "confirm": "Download",
     "cancel": "Not now",
-    "scheduled": "Using the internet until the download finishes"
+    "scheduled": "You'll need internet until the download finishes"
   },
   "result": {
     "defaultTitle": "Voice note",
