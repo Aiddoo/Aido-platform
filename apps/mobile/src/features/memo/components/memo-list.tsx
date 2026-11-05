@@ -1,4 +1,6 @@
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
+import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -17,7 +19,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -30,12 +32,15 @@ import { distributeMemosIntoColumns, getMemoColumnCount } from '../utils/memo-li
 export function MemoList() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
+  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const hasVoiceNotes = useVoiceNotes(me.id).length > 0;
   const windowSizeClass = useWindowSizeClass();
   const dateFormatContext = useDateFormatContext();
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
-    return <MemoList.Empty />;
+    // 말로 남긴 메모가 위에 있으면 메모가 없다고 말하지 않는다
+    return hasVoiceNotes ? null : <MemoList.Empty />;
   }
 
   const columns = distributeMemosIntoColumns(memos, getMemoColumnCount(windowSizeClass));
