@@ -154,4 +154,20 @@ describe('QuickVoicePanel.Failed', () => {
     // Then
     expect(screen.getByText(/들은 내용은 남겨뒀어요/)).toBeTruthy();
   });
+
+  test('입력 칸에 친 글자를 그대로 뒀으면 들은 글자가 칸에 있다고 말하지 않는다', async () => {
+    // When
+    await renderUi(
+      <QuickVoicePanel.Failed
+        state={planningFailed}
+        isTypedTextKept
+        onResume={jest.fn()}
+        onRetryPlanning={jest.fn()}
+      />,
+    );
+
+    // Then
+    expect(screen.getByText(/입력 칸에 옮기지 않았어요/)).toBeTruthy();
+    expect(screen.queryByText(/직접 고쳐주세요/)).toBeNull();
+  });
 });

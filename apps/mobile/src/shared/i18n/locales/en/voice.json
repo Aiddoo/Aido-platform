@@ -39,10 +39,16 @@
   },
   "review": {
     "restart": "Say it again",
-    "typeInstead": "Type instead"
+    "typeInstead": "Type instead",
+    "leaveTitle": "Close this plan?",
+    "leaveDescription": "You won't be able to see this plan again.",
+    "leaveDescriptionCharged": "You won't be able to see this plan again, and the use won't be returned.",
+    "leaveConfirm": "Close",
+    "leaveCancel": "Keep choosing"
   },
   "failed": {
     "keptText": "We kept what we heard. Keep talking or edit it yourself.",
+    "typedTextKept": "Your text stays as typed. What we heard wasn't added to it.",
     "nothingHeard": "We haven't heard anything yet. Keep talking or type it yourself.",
     "consentRequired": "AI consent is needed to sort this out. Try again to see the notice.",
     "resume": "Keep talking",

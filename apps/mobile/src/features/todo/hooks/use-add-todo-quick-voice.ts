@@ -66,6 +66,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const startVoiceNote = useVoiceNoteStart();
   /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
   const [isRestarting, setIsRestarting] = useState(false);
+  /** 실패했을 때 입력 칸에 친 글자가 있어 들은 글자를 옮기지 않았다. 고쳐 쓰는 동안 안내가 바뀌지 않게 실패한 때의 판단을 둔다 */
+  const [isTypedTextKept, setIsTypedTextKept] = useState(false);
 
   const onCaptured = async (text: string): Promise<CapturedPlan> => {
     const request = PlanRequestPolicy.preparePlanRequest<CreateQuickPlanInput>({
@@ -106,15 +108,27 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,
     onFailed: (transcript) => {
-      if (methods.getValues('title').trim().length === 0) {
-        methods.setValue('title', VoiceTranscriptPolicy.getTranscriptText(transcript), {
-          shouldDirty: true,
-        });
+      const title = methods.getValues('title').trim();
+      const heardText = VoiceTranscriptPolicy.getTranscriptText(transcript);
+      setIsTypedTextKept(title.length > 0 && title !== heardText);
+      if (title.length === 0) {
+        methods.setValue('title', heardText, { shouldDirty: true });
       }
     },
   });
 
   useEffect(() => () => planAbortRef.current?.abort(), []);
+
+  const moveTranscriptToTitle = () => {
+    methods.setValue(
+      'title',
+      VoiceTranscriptPolicy.mergeHeardTextIntoTitle(
+        methods.getValues('title'),
+        VoiceTranscriptPolicy.getTranscriptText(session.state.transcript),
+      ),
+      { shouldDirty: true },
+    );
+  };
 
   const start = async () => {
     const hasFailed = session.state.status === 'failed';
@@ -130,8 +144,9 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     if (!(await ensureMicrophonePermission('quick', locale))) {
       return;
     }
-    // 실패한 세션에서 다시 누르면 처음부터 듣는다. 들은 글자는 이미 입력 칸에 옮겨 뒀다
+    // 실패한 세션에서 다시 누르면 처음부터 듣는다. 지우기 전에 들은 글자를 입력 칸에 옮겨 둔다
     if (hasFailed) {
+      moveTranscriptToTitle();
       session.cancel();
     }
     await session.begin({ locale, contextualStrings: getSpeechContext() });
@@ -147,12 +162,6 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     } finally {
       setIsRestarting(false);
     }
-  };
-
-  const moveTranscriptToTitle = () => {
-    methods.setValue('title', VoiceTranscriptPolicy.getTranscriptText(session.state.transcript), {
-      shouldDirty: true,
-    });
   };
 
   /** 정리를 기다리다 그만둔다. 글자는 입력 칸에 남기고, 같은 글자를 다시 보내면 같은 키라 두 번 차감되지 않는다 */
@@ -217,6 +226,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   return {
     ...session,
     isConsentRequired,
+    isTypedTextKept,
     locale,
     setLocale: changeLocale,
     start,

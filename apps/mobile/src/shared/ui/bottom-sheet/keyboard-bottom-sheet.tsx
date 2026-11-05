@@ -59,6 +59,8 @@ interface KeyboardBottomSheetProps {
   backgroundDecoration?: ReactNode;
   /** 내용을 끌어 시트를 움직일지. 내용이 안쪽 스크롤을 직접 두면 끄고 손잡이로만 움직이게 한다 */
   isContentPanEnabled?: boolean;
+  /** 바깥 탭과 Android 뒤로 가기에서 할 일. 없으면 시트를 닫는다. 손잡이·내용 끌어내리기는 gorhom이 닫아 여기로 오지 않는다 */
+  onDismissRequest?: () => void;
 }
 
 /**
@@ -77,6 +79,7 @@ export const KeyboardBottomSheet = ({
   footer,
   backgroundDecoration,
   isContentPanEnabled = true,
+  onDismissRequest,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
@@ -130,7 +133,16 @@ export const KeyboardBottomSheet = ({
     }, 500);
   }, []);
 
-  useAndroidSheetBackHandler(isOpen, closeSheet);
+  // 핸들러가 렌더마다 바뀌어도 backdrop 제스처가 다시 만들어지면 backdrop이 다시 마운트되어 누르던 탭을 놓친다
+  const onDismissRequestRef = useRef(onDismissRequest);
+  useLayoutEffect(() => {
+    onDismissRequestRef.current = onDismissRequest;
+  }, [onDismissRequest]);
+  const requestDismiss = useCallback(() => {
+    (onDismissRequestRef.current ?? closeSheet)();
+  }, [closeSheet]);
+
+  useAndroidSheetBackHandler(isOpen, requestDismiss);
 
   const resizeSheet = useCallback(() => {
     if (isClosingRef.current) {
@@ -264,13 +276,13 @@ export const KeyboardBottomSheet = ({
     isClosingRef.current = false;
   };
 
-  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 closeSheet만 실행한다.
+  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 requestDismiss만 실행한다.
   const backdropTapGesture = useMemo(
     () =>
       Gesture.Tap().onEnd(() => {
-        scheduleOnRN(closeSheet);
+        scheduleOnRN(requestDismiss);
       }),
-    [closeSheet],
+    [requestDismiss],
   );
 
   const renderBackdrop = useCallback(
@@ -396,15 +408,18 @@ function SheetFooterSlot() {
 /**
  * gorhom 기본 배경과 같은 면 뒤에 장식을 깐다. 장식이 바뀔 때 배경 컴포넌트가 바뀌어 다시 마운트되지 않도록
  * 컴포넌트는 고정하고 장식만 Context로 넘긴다.
+ *
+ * gorhom이 넘기는 pointerEvents="none"은 일부러 쓰지 않는다. Android Gesture Handler는 제스처도 배경색도 없는 뷰를 지나쳐
+ * 아래 형제 뷰의 제스처까지 내려간다. 내용 제스처를 끈 단계(듣기·정리·고르기)에서 시트 면을 탭하면 뒤 backdrop의 탭이
+ * 함께 불려 시트가 닫혔다(QA: 듣기 X). 이 면이 터치를 받아 backdrop까지 내려가지 않게 한다.
  */
-function DecoratedSheetBackground({ pointerEvents, style }: BottomSheetBackgroundProps) {
+function DecoratedSheetBackground({ style }: BottomSheetBackgroundProps) {
   const decoration = use(SheetDecorationContext);
 
   return (
     <>
       {decoration}
       <View
-        pointerEvents={pointerEvents}
         accessible
         accessibilityRole="adjustable"
         accessibilityLabel="Bottom Sheet"

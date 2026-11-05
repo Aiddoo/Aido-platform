@@ -610,6 +610,62 @@ describe('VoiceCapturePolicy', () => {
     });
   });
 
+  describe('시트의 바깥 탭과 Android 뒤로 가기', () => {
+    const createReview = (actions: unknown[]) =>
+      reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
+        type: 'planned',
+        result: {
+          plan: voicePlanSchema.parse({
+            planId: 'plan-1',
+            source: 'quick-voice',
+            sourceMemoId: null,
+            actions,
+            omittedTodoCount: 0,
+          }),
+          isCharged: true,
+        },
+      });
+
+    it('듣기·정리는 X와 같은 취소이고, 고를 카드가 있으면 묻고, 잃을 것이 없으면 시트에 맡긴다', () => {
+      // Given
+      const memoAction = { type: 'create-memo', actionId: 'm1', title: '', content: '내용' };
+
+      // When
+      const actions = {
+        idle: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'idle' })),
+        failed: VoiceCapturePolicy.getDismissAction(
+          createCaptureState({ status: 'failed', reason: 'planning-failed' }),
+        ),
+        preparing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'preparing' })),
+        listening: VoiceCapturePolicy.getDismissAction(
+          createCaptureState({ status: 'listening', listeningSince: NOW }),
+        ),
+        paused: VoiceCapturePolicy.getDismissAction(
+          createCaptureState({ status: 'paused', cause: 'user' }),
+        ),
+        finalizing: VoiceCapturePolicy.getDismissAction(
+          createCaptureState({ status: 'finalizing' }),
+        ),
+        planning: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'planning' })),
+        emptyReview: VoiceCapturePolicy.getDismissAction(createReview([])),
+        review: VoiceCapturePolicy.getDismissAction(createReview([memoAction])),
+      };
+
+      // Then
+      expect(actions).toEqual({
+        idle: null,
+        failed: null,
+        preparing: 'cancel-capture',
+        listening: 'cancel-capture',
+        paused: 'cancel-capture',
+        finalizing: 'cancel-capture',
+        planning: 'cancel-planning',
+        emptyReview: null,
+        review: 'confirm-discard',
+      });
+    });
+  });
+
   describe('90초 제안', () => {
     const NOW = 1_000_000;
 

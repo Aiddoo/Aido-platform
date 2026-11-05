@@ -19,6 +19,7 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   ActionChip,
   useActionChipIconSize,
+  useConfirmDialog,
   ArrowUpIcon,
   BottomSheetInput,
   BottomSheetTextArea,
@@ -185,6 +186,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const pendingFocusRef = useRef<number | null>(null);
 
   const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
 
   useEffect(() => {
     if (isOpen) {
@@ -333,6 +335,33 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const isFormStep = voice.state.status === 'idle' || voice.state.status === 'failed';
   const title = useWatch({ control: methods.control, name: 'title' });
   const isSubmitDisabled = !title?.trim() || isSubmitting;
+
+  const confirmDiscardPlan = async () => {
+    const isCharged = voice.state.status === 'review' && voice.state.isCharged;
+    const shouldDiscard = await confirmDialog.open({
+      title: tVoice('review.leaveTitle'),
+      description: tVoice(isCharged ? 'review.leaveDescriptionCharged' : 'review.leaveDescription'),
+      confirmLabel: tVoice('review.leaveConfirm'),
+      cancelLabel: tVoice('review.leaveCancel'),
+    });
+    if (shouldDiscard) {
+      onClose();
+    }
+  };
+
+  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+  const handleVoiceDismissRequest =
+    voiceDismissAction == null
+      ? undefined
+      : () => {
+          match(voiceDismissAction)
+            .with('cancel-capture', () => voice.cancel())
+            .with('cancel-planning', () => voice.cancelPlanning())
+            .with('confirm-discard', () => {
+              confirmDiscardPlan().catch(reportUnexpectedError);
+            })
+            .exhaustive();
+        };
 
   const handleDateChipPress = () => {
     Keyboard.dismiss();
@@ -506,6 +535,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           voice.state.status !== 'planning' &&
           voice.state.status !== 'review'
         }
+        onDismissRequest={handleVoiceDismissRequest}
         footer={
           isFormStep ? (
             <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
@@ -600,6 +630,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               <QuickVoicePanel.Failed
                 state={voice.state}
                 isConsentRequired={voice.isConsentRequired}
+                isTypedTextKept={voice.isTypedTextKept}
                 onResume={voice.resume}
                 onRetryPlanning={voice.retryPlanning}
               />

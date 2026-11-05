@@ -7,6 +7,7 @@ import {
   getLowConfidenceWords,
   getTranscriptText,
   isTranscriptEmpty,
+  mergeHeardTextIntoTitle,
   withInterimFinalized,
 } from './voice-transcript.model';
 
@@ -125,6 +126,32 @@ describe('voice-transcript.model', () => {
 
       // Then
       expect(words).toEqual([]);
+    });
+  });
+
+  describe('들은 글자를 입력 칸에 합칠 때', () => {
+    test.each([
+      ['칸이 비었으면 들은 글자', '', '치과 가기', '치과 가기'],
+      ['칸이 공백뿐이면 들은 글자', '   ', '치과 가기', '치과 가기'],
+      ['친 글자가 있으면 그 뒤에 공백으로', '장보기', '치과 가기', '장보기 치과 가기'],
+      ['친 글자 끝의 공백은 겹치지 않게', '장보기  ', ' 치과 가기 ', '장보기 치과 가기'],
+      ['들은 글자가 비었으면 그대로', '장보기 ', '', '장보기 '],
+      ['들은 글자가 공백뿐이면 그대로', '장보기', '  ', '장보기'],
+      ['둘 다 비었으면 그대로', '', '', ''],
+      ['이미 옮긴 글자와 같으면 그대로', '치과 가기', '치과 가기', '치과 가기'],
+      ['칸에 이미 들어 있으면 그대로', '장보기 치과 가기', '치과 가기', '장보기 치과 가기'],
+      [
+        '옮긴 뒤 이어 말해 늘어났으면 늘어난 글자로',
+        '치과 가기',
+        '치과 가기 약국 가기',
+        '치과 가기 약국 가기',
+      ],
+    ])('%s', (_name, title, heardText, expected) => {
+      // When
+      const merged = mergeHeardTextIntoTitle(title, heardText);
+
+      // Then
+      expect(merged).toBe(expected);
     });
   });
 });

@@ -39,10 +39,16 @@
   },
   "review": {
     "restart": "다시 말하기",
-    "typeInstead": "직접 입력"
+    "typeInstead": "직접 입력",
+    "leaveTitle": "이 계획을 닫을까요?",
+    "leaveDescription": "닫으면 이 계획은 다시 볼 수 없어요.",
+    "leaveDescriptionCharged": "닫으면 이 계획은 다시 볼 수 없고, 쓴 횟수도 돌아오지 않아요.",
+    "leaveConfirm": "닫기",
+    "leaveCancel": "계속 고르기"
   },
   "failed": {
     "keptText": "들은 내용은 남겨뒀어요.\n이어서 말하거나 직접 고쳐주세요.",
+    "typedTextKept": "입력한 글자는 그대로 뒀어요.\n들은 내용은 입력 칸에 옮기지 않았어요.",
     "nothingHeard": "아직 들은 내용이 없어요.\n이어서 말하거나 직접 입력해주세요.",
     "consentRequired": "정리하려면 AI 동의가 필요해요.\n다시 정리를 누르면 안내를 볼 수 있어요.",
     "resume": "이어서 말하기",
