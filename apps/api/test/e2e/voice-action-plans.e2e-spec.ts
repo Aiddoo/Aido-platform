@@ -97,6 +97,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     // When
     const planned = await quickPlan(accessToken).expect(200);
     const parsed = quickPlanResponseSchema.parse(planned.body.data);
+    expect(planned.body.data).not.toHaveProperty("meta");
     const actions = parsed.plan.actions.map((action) =>
       action.type === "CREATE_TODO" ? { ...action, categoryId } : action,
     );
@@ -179,6 +180,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       const response = await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(200);
       // Then
       const parsed = voiceNoteDigestResponseSchema.parse(response.body.data);
+      expect(response.body.data).not.toHaveProperty("meta");
       expect(parsed.keyPoints[0]?.startMs).toBe(4_200);
       expect(parsed.featureQuota).toMatchObject({
         feature: "VOICE_NOTE",
@@ -216,6 +218,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         // Then
         const parsedFirst = voiceNoteDigestResponseSchema.parse(first.body.data);
         const parsedSecond = voiceNoteDigestResponseSchema.parse(second.body.data);
+        expect(second.body.data).not.toHaveProperty("meta");
         expect(parsedFirst.plan.actions).toEqual([]);
         expect([parsedFirst.charged, parsedSecond.charged]).toEqual([true, true]);
         expect(parsedSecond.summary).toBe(parsedFirst.summary);

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { ACTION_PLAN_LIMITS } from "../../../vocabulary/ai.constants.js";
 import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
-import { actionPlanMetaSchema, actionPlanSchema } from "./action-plan.common.js";
+import { actionPlanSchema } from "./action-plan.common.js";
 
 export const voiceNoteKeyPointSchema = z.object({
   text: z
@@ -31,7 +31,6 @@ export const voiceNoteDigestResponseSchema = z.object({
     .max(ACTION_PLAN_LIMITS.DIGEST_MAX_KEY_POINTS)
     .describe(`핵심 내용 (최대 ${ACTION_PLAN_LIMITS.DIGEST_MAX_KEY_POINTS}개)`),
   plan: actionPlanSchema,
-  meta: actionPlanMetaSchema,
   featureQuota: featureQuotaSchema
     .nullable()
     .describe("이 요청을 반영한 VOICE_NOTE 한도·사용량. 결과는 주되 한도를 읽지 못했으면 null"),

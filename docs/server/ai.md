@@ -6,6 +6,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 - LLM은 언어 해석만 한다. 파싱 v2의 모델 출력은 날짜가 아니라 일정 표현(`TodoDraft`)이고, 날짜·요일·시각은 순수 함수 `domain/services/parsing/resolve-todo-schedule.ts`가 사용자 시간대 기준으로 계산한다.
 - 스키마는 세 단계다. LLM 스키마(관대, 길이·개수 제한 없음, 아래 업체 공통 규칙) → 서버 정규화 → `@aido/api` 공개 계약으로 최종 검증. 공개 계약은 optional 칸(`meta.promptVersion`, parse-memo의 `meta.omittedTodoCount`, `featureQuota`, `repeat`)만 더했다.
+- 빠른 계획(`POST /v1/quick-plans`)·녹음 정리(`POST /v1/voice-notes/digest`) 응답에는 `meta`가 없다. 앱이 읽지 않는 업체·모델·토큰·프롬프트 버전을 내보내지 않고 서버 로그 `ai.generation.*`에만 남긴다. 출시 앱이 쓰는 `parse-todo`·`parse-memo`의 `meta`는 그대로다.
 - parse-memo는 빠른 계획·녹음 정리와 같은 맥락(`planningContext`, 다가오는 할 일 30개)을 받아 겹침을 판정한다. 모델이 고른 id는 준 목록 안의 것만 남기고, 못 골랐으면 `findDuplicateTodoId`가 제목과 날짜로 다시 찾아 응답의 선택 칸 `duplicateOfTodoId`에 싣는다.
 - parse-memo는 할 일을 합치지 않는다. 입력 순서대로 앞의 5개까지 만들고 나머지 수를 `meta.omittedTodoCount`로 알린다(메모 원문은 그대로 남는다). 서브투두도 합치지 않고 앞의 5개만 둔다.
 - 긴 메모가 `maxOutputTokens`를 넘어 TRUNCATED가 되지 않도록 v2 모델은 할 일을 앞의 8개까지만 쓰고, 메모 전체 할 일 수를 LLM schema의 `totalTaskCount`(모르면 null)로 함께 낸다. `totalTaskCount`는 schema에서 `todos` 뒤에 둔다(앞에 두면 사고 토큰이 적은 응답에서 과대 집계가 잦았다). 남은 수는 `max(totalTaskCount, 받은 할 일 수) − 5`이고, 모델이 전체 수를 null로 두면 받은 할 일 수로 센다.

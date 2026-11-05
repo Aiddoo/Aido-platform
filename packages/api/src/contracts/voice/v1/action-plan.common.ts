@@ -5,7 +5,6 @@ import { ACTION_PLAN_LIMITS } from "../../../vocabulary/ai.constants.js";
 import { MEMO_LIMITS } from "../../../vocabulary/memo.constants.js";
 import { TODO_ITEM_LIMITS } from "../../../vocabulary/todo.constants.js";
 import { PLANNED_ACTION_KEY_MAX_LENGTH } from "../../../vocabulary/voice.constants.js";
-import { tokenUsageSchema } from "../../ai/v1/ai-usage.response.js";
 import { todoRepeatSchema, todoVisibilitySchema } from "../../todo/v1/todo.common.js";
 
 const plannedActionKeySchema = z
@@ -96,14 +95,3 @@ export const actionPlanSchema = z
   .describe("실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다");
 
 export type ActionPlan = z.infer<typeof actionPlanSchema>;
-
-export const actionPlanMetaSchema = z
-  .object({
-    model: z.string().describe("응답한 AI 모델 (예: anthropic:claude-haiku-5-5)"),
-    processingTimeMs: z.number().int().nonnegative().describe("처리 시간 (밀리초)"),
-    tokenUsage: tokenUsageSchema,
-    promptVersion: z.string().describe("응답을 만든 프롬프트 버전 (예: quick-plan@1)"),
-  })
-  .describe("AI 처리 메타데이터");
-
-export type ActionPlanMeta = z.infer<typeof actionPlanMetaSchema>;

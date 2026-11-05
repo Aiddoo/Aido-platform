@@ -43,12 +43,6 @@ const createDigestDto = (overrides: { actions?: unknown[] } = {}) => ({
   summary: '요약이에요',
   keyPoints: [{ text: '핵심', startMs: 12_000 }],
   plan: { actions: overrides.actions ?? [], omittedTodoCount: 0 },
-  meta: {
-    model: 'm',
-    processingTimeMs: 1,
-    tokenUsage: { input: 1, output: 1 },
-    promptVersion: 'voice-note-digest@1',
-  },
   featureQuota: null,
   charged: true,
 });

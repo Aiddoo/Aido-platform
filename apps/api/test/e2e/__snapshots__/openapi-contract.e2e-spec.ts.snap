@@ -13201,53 +13201,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           ],
           "type": "object",
         },
-        "meta": {
-          "description": "AI 처리 메타데이터",
-          "properties": {
-            "model": {
-              "description": "응답한 AI 모델 (예: anthropic:claude-haiku-5-5)",
-              "type": "string",
-            },
-            "processingTimeMs": {
-              "description": "처리 시간 (밀리초)",
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
-            },
-            "promptVersion": {
-              "description": "응답을 만든 프롬프트 버전 (예: quick-plan@1)",
-              "type": "string",
-            },
-            "tokenUsage": {
-              "properties": {
-                "input": {
-                  "description": "입력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-                "output": {
-                  "description": "출력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-              },
-              "required": [
-                "input",
-                "output",
-              ],
-              "type": "object",
-            },
-          },
-          "required": [
-            "model",
-            "processingTimeMs",
-            "tokenUsage",
-            "promptVersion",
-          ],
-          "type": "object",
-        },
         "plan": {
           "description": "실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다",
           "properties": {
@@ -13690,7 +13643,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "plan",
-        "meta",
         "featureQuota",
         "charged",
       ],
@@ -23796,53 +23748,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "maxItems": 5,
           "type": "array",
         },
-        "meta": {
-          "description": "AI 처리 메타데이터",
-          "properties": {
-            "model": {
-              "description": "응답한 AI 모델 (예: anthropic:claude-haiku-5-5)",
-              "type": "string",
-            },
-            "processingTimeMs": {
-              "description": "처리 시간 (밀리초)",
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
-            },
-            "promptVersion": {
-              "description": "응답을 만든 프롬프트 버전 (예: quick-plan@1)",
-              "type": "string",
-            },
-            "tokenUsage": {
-              "properties": {
-                "input": {
-                  "description": "입력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-                "output": {
-                  "description": "출력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-              },
-              "required": [
-                "input",
-                "output",
-              ],
-              "type": "object",
-            },
-          },
-          "required": [
-            "model",
-            "processingTimeMs",
-            "tokenUsage",
-            "promptVersion",
-          ],
-          "type": "object",
-        },
         "plan": {
           "description": "실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다",
           "properties": {
@@ -24298,7 +24203,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "summary",
         "keyPoints",
         "plan",
-        "meta",
         "featureQuota",
         "charged",
       ],

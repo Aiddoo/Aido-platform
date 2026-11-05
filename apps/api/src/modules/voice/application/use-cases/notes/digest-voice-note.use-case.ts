@@ -1,5 +1,6 @@
 import type { VoiceNoteDigestResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { omit } from "es-toolkit";
 
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import {
@@ -27,13 +28,15 @@ import type { PlanResultReplayPort } from "../../ports/plans/plan-result-replay.
 import type { PlanningContextReaderPort } from "../../ports/plans/planning-context.reader.port.js";
 import {
   countPlannedActions,
-  toActionPlanMeta,
   toActionPlanView,
 } from "../../read-models/plans/action-plan.read-model.js";
 import type { ChargedPlanRunner } from "../../services/plans/charged-plan-runner.js";
 import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
-export type VoiceNoteDigestResult = Omit<VoiceNoteDigestResponse, "featureQuota" | "charged">;
+/** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
+export type VoiceNoteDigestResult = Omit<VoiceNoteDigestResponse, "featureQuota" | "charged"> & {
+  readonly model: string;
+};
 
 export interface DigestVoiceNoteInput {
   readonly userId: string;
@@ -102,7 +105,6 @@ export class DigestVoiceNote {
               userId,
               timezone,
               locale,
-              startedAt,
               signal: input.signal,
             }),
         });
@@ -111,11 +113,11 @@ export class DigestVoiceNote {
         ...logFields,
         ...countPlannedActions(result.plan),
         keyPointCount: result.keyPoints.length,
-        model: result.meta.model,
+        model: result.model,
         latencyMs: Date.now() - startedAt,
         quotaCharged: charged,
       });
-      return { ...result, featureQuota, charged };
+      return { ...omit(result, ["model"]), featureQuota, charged };
     } catch (error) {
       this.#dependencies.logger.warn({
         event: VoiceLogEvent.NOTE_DIGEST_FAILED,
@@ -148,12 +150,11 @@ export class DigestVoiceNote {
       readonly userId: string;
       readonly timezone: string;
       readonly locale: SupportedLocale;
-      readonly startedAt: number;
       readonly signal?: AbortSignal;
     },
   ): Promise<ChargedGeneration<VoiceNoteDigestResult>> {
     const { contextReader, generator } = this.#dependencies;
-    const { userId, timezone, locale, startedAt, signal } = request;
+    const { userId, timezone, locale, signal } = request;
     const context = await contextReader.read(userId, timezone);
     const digest = await generator.digestVoiceNote({
       userId,
@@ -174,7 +175,7 @@ export class DigestVoiceNote {
           startMs: transcript.startMsAt(point.sentenceIndex),
         })),
         plan: toActionPlanView(digest.plan, context.upcomingTodos),
-        meta: toActionPlanMeta(digest.meta, Date.now() - startedAt),
+        model: digest.meta.model,
       },
       outcome: resolveChargeOutcome(digest),
     };
