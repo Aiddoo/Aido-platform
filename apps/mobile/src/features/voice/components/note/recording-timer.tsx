@@ -1,16 +1,18 @@
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { clamp } from 'es-toolkit';
 import type { ComponentProps } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { formatMediaTime } from '../../utils/format-media-time';
+import { getRecordingRingLayout } from '../../utils/view-models/recording-timer.view-model';
 
-const RING = { size: 156, strokeWidth: 5, startAngle: -90, fullSweep: 359.99 } as const;
-const DEGREES = 360;
+/** 원은 3시 방향에서 시작하므로 12시부터 차오르게 돌린다 */
+const RING_START_ANGLE = -90;
 
 interface RecordingTimerProps extends Omit<ComponentProps<typeof Box>, 'children'> {
   elapsedMs: number;
@@ -31,23 +33,16 @@ export function RecordingTimer({
   const { t } = useTranslation('voiceNote');
   const trackColor = useSkiaColor('text-gray-2');
   const progressColor = useSkiaColor('text-main');
-  const inset = RING.strokeWidth / 2;
-  const bounds = Skia.XYWHRect(
-    inset,
-    inset,
-    RING.size - RING.strokeWidth,
-    RING.size - RING.strokeWidth,
-  );
+  const { height: windowHeight } = useWindowDimensions();
+  const ring = getRecordingRingLayout(windowHeight);
+  const center = ring.size / 2;
+  const timeMinimumFontScale = useMinimumFontScale('h1');
+  const labelMinimumFontScale = useMinimumFontScale('b4');
   const progress = limitMs != null && limitMs > 0 ? clamp(elapsedMs / limitMs, 0, 1) : 0;
   // 남은 시간은 올림한다. 시작하자마자 한 칸 줄어 보이거나 0:00에 아직 듣는 일이 없게 한다
   const remainingMs =
     limitMs == null ? null : Math.ceil(Math.max(0, limitMs - elapsedMs) / 1_000) * 1_000;
   const remainingTime = remainingMs == null ? null : formatMediaTime(remainingMs);
-
-  const track = Skia.PathBuilder.Make().addArc(bounds, RING.startAngle, RING.fullSweep).build();
-  const arc = Skia.PathBuilder.Make()
-    .addArc(bounds, RING.startAngle, Math.min(progress * DEGREES, RING.fullSweep))
-    .build();
 
   return (
     <Box
@@ -58,26 +53,58 @@ export function RecordingTimer({
           : t('timer.a11y', { elapsed: formatMediaTime(elapsedMs), remaining: remainingTime })
       }
       className={cn('items-center justify-center', className)}
-      style={{ width: RING.size, height: RING.size }}
+      style={{ width: ring.size, height: ring.size }}
       {...boxProps}
     >
-      <Canvas style={StyleSheet.absoluteFill}>
-        <Path path={track} style="stroke" strokeWidth={RING.strokeWidth} color={trackColor} />
+      {/* Android의 Skia는 앱을 켤 때의 화면 배율을 계속 쓴다. 켜 둔 채 디스플레이 크기를 바꾸면 링만 커져 잘리므로 SVG로 그린다 */}
+      <Svg width={ring.size} height={ring.size} style={StyleSheet.absoluteFill}>
+        <Circle
+          cx={center}
+          cy={center}
+          r={ring.radius}
+          fill="none"
+          stroke={trackColor}
+          strokeWidth={ring.strokeWidth}
+        />
         {progress > 0 && (
-          <Path
-            path={arc}
-            style="stroke"
-            strokeWidth={RING.strokeWidth}
-            strokeCap="round"
-            color={progressColor}
+          <Circle
+            cx={center}
+            cy={center}
+            r={ring.radius}
+            fill="none"
+            stroke={progressColor}
+            strokeWidth={ring.strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={[progress * ring.circumference, ring.circumference]}
+            rotation={RING_START_ANGLE}
+            origin={`${center}, ${center}`}
+            testID="recording-timer-progress"
           />
         )}
-      </Canvas>
-      <Text size="h1" weight="bold" align="center" className="tabular-nums">
+      </Svg>
+      <Text
+        size="h1"
+        weight="bold"
+        align="center"
+        maxLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={timeMinimumFontScale}
+        className="tabular-nums"
+        style={{ width: ring.textWidth }}
+      >
         {formatMediaTime(elapsedMs)}
       </Text>
       {(label != null || remainingTime != null) && (
-        <Text size="b4" shade={6} align="center" maxLines={1} className="tabular-nums">
+        <Text
+          size="b4"
+          shade={6}
+          align="center"
+          maxLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={labelMinimumFontScale}
+          className="tabular-nums"
+          style={{ width: ring.textWidth }}
+        >
           {label ?? t('timer.remaining', { time: remainingTime })}
         </Text>
       )}

@@ -15,6 +15,7 @@ import {
 
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
+import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import {
   appendLevelSample,
   appendTimelineBar,
@@ -134,7 +135,8 @@ export function WaveformTimeline({
   const layout = useSharedValue({ width: 0, height: 0 });
   const { bars, barCount, shift } = waveform;
 
-  const transform = useDerivedValue(() => [{ translateX: shift.get() }]);
+  const densityScale = useSkiaDensityScale();
+  const transform = useDerivedValue(() => [{ scale: densityScale }, { translateX: shift.get() }]);
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     layout.set({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
