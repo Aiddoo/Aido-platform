@@ -66,6 +66,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const startVoiceNote = useVoiceNoteStart();
   /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
   const [isRestarting, setIsRestarting] = useState(false);
+  /** 실패했을 때 입력 칸에 친 글자가 있어 들은 글자를 옮기지 않았다. 고쳐 쓰는 동안 안내가 바뀌지 않게 실패한 때의 판단을 둔다 */
+  const [isTypedTextKept, setIsTypedTextKept] = useState(false);
 
   const onCaptured = async (text: string): Promise<CapturedPlan> => {
     const request = PlanRequestPolicy.preparePlanRequest<CreateQuickPlanInput>({
@@ -106,10 +108,11 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,
     onFailed: (transcript) => {
-      if (methods.getValues('title').trim().length === 0) {
-        methods.setValue('title', VoiceTranscriptPolicy.getTranscriptText(transcript), {
-          shouldDirty: true,
-        });
+      const title = methods.getValues('title').trim();
+      const heardText = VoiceTranscriptPolicy.getTranscriptText(transcript);
+      setIsTypedTextKept(title.length > 0 && title !== heardText);
+      if (title.length === 0) {
+        methods.setValue('title', heardText, { shouldDirty: true });
       }
     },
   });
@@ -217,6 +220,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   return {
     ...session,
     isConsentRequired,
+    isTypedTextKept,
     locale,
     setLocale: changeLocale,
     start,

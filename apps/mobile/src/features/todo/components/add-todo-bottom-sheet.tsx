@@ -630,6 +630,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               <QuickVoicePanel.Failed
                 state={voice.state}
                 isConsentRequired={voice.isConsentRequired}
+                isTypedTextKept={voice.isTypedTextKept}
                 onResume={voice.resume}
                 onRetryPlanning={voice.retryPlanning}
               />

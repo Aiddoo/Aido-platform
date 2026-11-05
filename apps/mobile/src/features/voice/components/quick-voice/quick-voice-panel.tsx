@@ -292,12 +292,15 @@ QuickVoicePanel.Review = function Review({
 QuickVoicePanel.Failed = function Failed({
   state,
   isConsentRequired = false,
+  isTypedTextKept = false,
   onResume,
   onRetryPlanning,
 }: {
   state: VoiceCaptureState;
   /** 정리가 AI 동의 때문에 막혔다. 다시 정리하면 동의 안내가 뜬다 */
   isConsentRequired?: boolean;
+  /** 입력 칸에 친 글자를 그대로 두고 들은 글자는 옮기지 않았다 */
+  isTypedTextKept?: boolean;
   onResume: () => void;
   onRetryPlanning: () => void;
 }) {
@@ -325,6 +328,10 @@ QuickVoicePanel.Failed = function Failed({
           .when(
             ({ transcript }) => isTranscriptEmpty(transcript),
             () => t('failed.nothingHeard'),
+          )
+          .when(
+            () => isTypedTextKept,
+            () => t('failed.typedTextKept'),
           )
           .otherwise(() => t('failed.keptText'))}
       </Text>
