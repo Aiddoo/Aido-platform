@@ -101,8 +101,7 @@ export class DeleteTodo {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
       const seriesId = todo.getSeriesId();
-      const occurrenceDate = todo.getOccurrenceDate();
-      if (seriesId == null || occurrenceDate == null) {
+      if (seriesId == null) {
         throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
       }
       const series = await seriesRepository.lockForUpdate(seriesId);
@@ -126,6 +125,11 @@ export class DeleteTodo {
           return ids;
         })
         .with("THIS_AND_FOLLOWING", async () => {
+          // 규칙이 없는 묶음은 회차 날짜도 없어 "이후"의 기준이 없다.
+          const occurrenceDate = todo.getOccurrenceDate();
+          if (occurrenceDate == null) {
+            throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
+          }
           const pivot = toDateString(occurrenceDate);
           const following =
             series == null ? [] : await seriesRepository.lockFollowingSegments(series);

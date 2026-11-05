@@ -987,7 +987,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // Given
         const { seriesId, laterSeriesId, earlier, later } = await startSplit();
         await client.insert(todoComment).values({
-          todoId: later[0]?.id ?? 0,
+          todoId: later[1]?.id ?? 0,
           authorId: userId,
           content: "댓글",
           clientRequestId: randomUUID(),
@@ -999,10 +999,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const mergedId = edited.recurrenceGroupId ?? "";
         expect([seriesId, laterSeriesId]).not.toContain(mergedId);
         const merged = await rowsOf(mergedId);
-        expect(merged.map((row) => row.id)).toContain(later[0]?.id);
+        expect(merged.map((row) => row.id)).toContain(later[1]?.id);
         expect(await rowsOf(laterSeriesId)).toEqual([]);
         expect((await seriesRow(laterSeriesId))?.nextOccurrenceDate).toBeNull();
-        expect(await client.$count(todoComment, eq(todoComment.todoId, later[0]?.id ?? 0))).toBe(1);
+        expect(await client.$count(todoComment, eq(todoComment.todoId, later[1]?.id ?? 0))).toBe(1);
         expect(
           await client.query.todoSeries.findMany({
             where: { userId, nextOccurrenceDate: { isNotNull: true } },
@@ -1086,6 +1086,45 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           ),
         ).toBe(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER);
       });
+    });
+  });
+
+  describe("규칙 없는 묶음 (1.14.2로 되돌린 동안 생긴 것)", () => {
+    async function seedRulelessGroup(groupId: string) {
+      return client
+        .insert(todo)
+        .values(
+          ["2026-11-02", "2026-11-03", "2026-11-04"].map((date, index) => ({
+            ...omit(TodoFixture.create({ userId, categoryId, sortOrder: index }), ["id"]),
+            seriesId: groupId,
+            occurrenceDate: null,
+            startDate: new Date(`${date}T00:00:00.000Z`),
+          })),
+        )
+        .returning();
+    }
+
+    it("모든 반복 삭제는 그 묶음만 지운다", async () => {
+      // Given
+      const rows = await seedRulelessGroup("orphan");
+      const other = await seedRulelessGroup("other-orphan");
+      // When
+      await context.module.get(DeleteTodo).execute({ id: rows[1]?.id ?? 0, userId, scope: "ALL" });
+      // Then
+      expect(await rowsOf("orphan")).toEqual([]);
+      expect(await client.$count(todo, eq(todo.seriesId, "other-orphan"))).toBe(other.length);
+    });
+
+    it("이후 삭제는 기준이 없어 TODO_0844이고 아무것도 지우지 않는다", async () => {
+      // Given
+      const rows = await seedRulelessGroup("orphan");
+      // When
+      const outcome = context.module
+        .get(DeleteTodo)
+        .execute({ id: rows[1]?.id ?? 0, userId, scope: "THIS_AND_FOLLOWING" });
+      // Then
+      await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0844 });
+      expect(await client.$count(todo, eq(todo.seriesId, "orphan"))).toBe(3);
     });
   });
 

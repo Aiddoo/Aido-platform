@@ -11,7 +11,7 @@ import request from "supertest";
 
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import { createEntityId } from "#api/platform/database/entity-id";
-import { memo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
+import { memo, todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import {
@@ -401,6 +401,57 @@ describe("반복 할 일 생성 E2E", () => {
       expect(removed.status).toBe(200);
       expect(following.status).toBe(404);
       expect(following.body.error.code).toBe(ErrorCode.TODO_0841);
+    });
+  });
+
+  describe("규칙 없는 묶음 (1.14.2로 되돌린 동안 생긴 것)", () => {
+    async function seedRuleless() {
+      const created = await post("/v1/todos", {
+        title: "옛 묶음",
+        categoryId,
+        startDate: dateAfter(1),
+        repeat: { frequency: "DAILY", end: { type: "COUNT", count: 3 } },
+      }).expect(201);
+      const seriesId = createTodoResponseSchema.parse(created.body.data).series?.id ?? "";
+      const client = ctx.testDatabase.getClient();
+      await client.delete(todoSeries).where(eq(todoSeries.id, seriesId));
+      await client.update(todo).set({ occurrenceDate: null }).where(eq(todo.seriesId, seriesId));
+      const rows = await client.query.todo.findMany({ where: { seriesId } });
+      return { seriesId, ids: rows.map((row) => row.id) };
+    }
+
+    function remove(id: number, scope?: string) {
+      return request(ctx.app.getHttpServer())
+        .delete(`/v1/todos/${id}`)
+        .query(scope == null ? {} : { scope })
+        .set("Authorization", `Bearer ${accessToken}`);
+    }
+
+    it("scope=ALL은 200이고 그 묶음만 지운다", async () => {
+      // Given
+      const { seriesId, ids } = await seedRuleless();
+      const other = await seedRuleless();
+      // When
+      const response = await remove(ids[1] ?? 0, "ALL");
+      // Then
+      expect(response.status).toBe(200);
+      const client = ctx.testDatabase.getClient();
+      expect(await client.query.todo.findMany({ where: { seriesId } })).toEqual([]);
+      expect(
+        await client.query.todo.findMany({ where: { seriesId: other.seriesId } }),
+      ).toHaveLength(3);
+    });
+
+    it("scope=THIS_AND_FOLLOWING은 TODO_0844이고 이 할 일만은 지운다", async () => {
+      // Given
+      const { ids } = await seedRuleless();
+      // When
+      const following = await remove(ids[0] ?? 0, "THIS_AND_FOLLOWING");
+      const thisOnly = await remove(ids[0] ?? 0, "THIS_ONLY");
+      // Then
+      expect(following.status).toBe(400);
+      expect(following.body.error.code).toBe(ErrorCode.TODO_0844);
+      expect(thisOnly.status).toBe(200);
     });
   });
 
