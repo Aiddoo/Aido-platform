@@ -6,6 +6,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 - LLM은 언어 해석만 한다. 파싱 v2의 모델 출력은 날짜가 아니라 일정 표현(`TodoDraft`)이고, 날짜·요일·시각은 순수 함수 `domain/services/parsing/resolve-todo-schedule.ts`가 사용자 시간대 기준으로 계산한다.
 - 스키마는 세 단계다. LLM 스키마(관대, 길이·개수 제한 없음, 아래 업체 공통 규칙) → 서버 정규화 → `@aido/api` 공개 계약으로 최종 검증. 공개 계약은 optional 칸(`meta.promptVersion`, parse-memo의 `meta.omittedTodoCount`, `featureQuota`, `repeat`)만 더했다.
+- parse-memo는 빠른 계획·녹음 정리와 같은 맥락(`planningContext`, 다가오는 할 일 30개)을 받아 겹침을 판정한다. 모델이 고른 id는 준 목록 안의 것만 남기고, 못 골랐으면 `findDuplicateTodoId`가 제목과 날짜로 다시 찾아 응답의 선택 칸 `duplicateOfTodoId`에 싣는다.
 - parse-memo는 할 일을 합치지 않는다. 입력 순서대로 앞의 5개까지 만들고 나머지 수를 `meta.omittedTodoCount`로 알린다(메모 원문은 그대로 남는다). 서브투두도 합치지 않고 앞의 5개만 둔다.
 - 긴 메모가 `maxOutputTokens`를 넘어 TRUNCATED가 되지 않도록 v2 모델은 할 일을 앞의 8개까지만 쓰고, 메모 전체 할 일 수를 LLM schema의 `totalTaskCount`(모르면 null)로 함께 낸다. `totalTaskCount`는 schema에서 `todos` 뒤에 둔다(앞에 두면 사고 토큰이 적은 응답에서 과대 집계가 잦았다). 남은 수는 `max(totalTaskCount, 받은 할 일 수) − 5`이고, 모델이 전체 수를 null로 두면 받은 할 일 수로 센다.
 - 일정 계산은 사용자가 말한 날짜·시각을 우선한다. 날짜 없이 말한 때("아침에")가 오늘 이미 지났으면 다음 날 그 때로 넘기고, "오늘 아침"처럼 오늘을 말했는데 지났으면 오늘 종일로 둔다(지난 기본 시각을 만들지 않는다). 숫자 시각("오늘 오전 9시")은 지났어도 그대로 둔다. 상대 시각(`relativeMinutes`)은 1분 이상이고 날짜가 없거나 오늘일 때만 쓰며, 0이나 "내일"과 함께 온 값은 무시한다.
@@ -17,12 +18,12 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 | 작업              | 폴더                                 | 버전                  |
 | ----------------- | ------------------------------------ | --------------------- |
-| parse-todo        | `prompts/parsing/parse-todo`         | `parse-todo@5`        |
-| parse-memo        | `prompts/parsing/parse-memo`         | `parse-memo@5`        |
+| parse-todo        | `prompts/parsing/parse-todo`         | `parse-todo@6`        |
+| parse-memo        | `prompts/parsing/parse-memo`         | `parse-memo@6`        |
 | report            | `prompts/reports/report`             | `report@3`            |
 | suggestion        | `prompts/suggestions/suggestion`     | `suggestion@3`        |
-| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@4`        |
-| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@4` |
+| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@5`        |
+| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@5` |
 
 - 작업 폴더는 `prompt.ko.ts`·`prompt.en.ts`(고정 system), `examples.ko.ts`·`examples.en.ts`, `schema.ts`(LLM schema), `index.ts`(정의·입력 타입)다. 파싱·계획이 함께 쓰는 일정 표현 schema·규칙·기준 시각은 `prompts/parsing/schedule`, 계획 공통 규칙·맥락은 `prompts/planning`에 있다.
 - 캐시 친화 순서: system은 `<role>` `<security>` `<language_policy>` `<output_contract>` `<rules>` `<examples>`(사용자 값 없음, 업체 어댑터가 Claude `cacheControl`을 건다) → user 턴은 동적 `<context>`(기준 시각·요일·시간대, 카테고리 id·이름, 계획은 다가오는 할 일 30개) → 맨 끝에 사용자 입력 블록(`<user_input>`·`<transcript>`·`<report_data>`·`<suggestion_data>`). 과제 지시는 `<output_contract>`에 있어 입력 뒤에 지시가 오지 않는다.
@@ -43,8 +44,8 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ### 계획(quick-plan·voice-note-digest) 출력
 
-- 모델 출력은 `todos`(title, categoryId|null, date·endDate·time 일정 표현, repeat 표현, visibility `PRIVATE`|null, items, duplicateOfTodoId|null)와 `memo`(title, content 또는 null)다. 공개 계획 모양은 정규화(`NormalizedActionPlan`) 뒤에 만든다. 기한("금요일까지")은 date NONE + endDate, 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. 녹음 정리는 앱 언어의 title·summary·keyPoints(`{ text, sentenceIndex|null }`)를 더한다. 모델은 날짜·시각을 계산하지 않고 표현만 낸다.
-- 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
+- 모델 출력은 `todos`(title, categoryId|null, date·endDate·time 일정 표현, repeat 표현, visibility `PRIVATE`|null, items, duplicateOfTodoId|null)와 `memo`(title, content 또는 null)다. 공개 계획 모양은 정규화(`NormalizedActionPlan`) 뒤에 만든다. 기한("금요일까지")은 date NONE + endDate, 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. 녹음 정리는 앱 언어의 title·summary·keyPoints(`{ text, sentenceIndex|null }`)를 더한다. 말한 언어가 달라도 이 셋은 앱 언어이고, 할 일 제목·항목과 메모만 말한 언어다. 모델은 날짜·시각을 계산하지 않고 표현만 낸다.
+- 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 시작일보다 뒤가 아닌 끝은 반복이 되지 않으므로 말하지 않은 것으로 보고 버린다(`REPEAT_END_NOT_AFTER_START`, 출시 앱용 `recurrence`는 기본 +4주). "30분 운동"처럼 한 번에 걸리는 시간은 제목에 남기고 반복 기간으로 쓰지 않으며, "이번"·"다음" 없는 "주말에"는 `WEEKENDS`다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
 - 정규화(`application/services/planning/action-plan.normalizer.ts`): 할 일 앞의 `ACTION_PLAN_LIMITS.MAX_TODOS`(10)개·메모 1개, 하위 항목 `TODO_ITEM_LIMITS.MAX_PER_TODO`, 제목 200자, 모르는 카테고리·겹침 id → null, 반복이면 기간(endDate)을 버린다. 핵심 포인트는 5개, 문장 번호는 준 문장 범위 안의 값만 남긴다. 계획·요약·핵심 포인트가 모두 비면 빈 결과(`isEmptyActionPlan`·`isEmptyVoiceNoteDigest`)로 호출부가 환불한다.
 
 ### 계획 생성과 적용(voice)
@@ -86,7 +87,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ### 입력 상한·킬 스위치·비용 예산
 
 - 모든 작업은 `AiSdkGenerator.generate` 맨 앞을 지난다. 순서: user 턴 글자 수 > `maxInputChars`면 업체 호출 없이 `BAD_REQUEST`(AI_1302) + `ai.generation.input-rejected` error 로그 → 킬 스위치·예산 판단(`domain/policies/generation/ai-spend.policy.ts` `decideAiSpend`) → 합치기 → bulkhead → 업체 체인. 요청은 `taskClass`·`userId`·`maxInputChars`를 싣는다. 분류와 입력 상한은 `PromptDefinition`이 정하고 `generateWithPrompt(…, { agreedConsentVersion, userId })`가 채운다.
-- `maxInputChars`(user 턴, 계약 길이·맥락 상한 최대치 실측에 여유): parse-todo 5,000(최대 약 3,700) · parse-memo 10,000(약 8,200) · quick-plan 12,000(약 9,800) · voice-note-digest 100,000(40,000자 전사를 문장 600개로 나눈 최대 약 94,000) · report·suggestion 16,000.
+- `maxInputChars`(user 턴, 계약 길이·맥락 상한 최대치 실측에 여유): parse-todo 5,000(최대 약 3,700) · parse-memo 15,000(약 13,800) · quick-plan 12,000(약 9,800) · voice-note-digest 100,000(40,000자 전사를 문장 600개로 나눈 최대 약 94,000) · report·suggestion 16,000.
 - 킬 스위치 `AI_GENERATION_MODE`: `off`면 모든 생성, `interactive-only`면 리포트·제안만 `HALTED`(AI_1301)로 멈춘다.
 - 예산: 추정 비용(micro-USD)을 `OutboundUsage`(meter `ai.spend`, subject `*`·사용자 id, UTC 일 `2026-11-05`·월 `2026-11`)에 요청이 끝날 때 전역 일·전역 월·사용자 일 세 행으로 한 번 더한다(`ai-spend.guard.ts`). 판단은 메모리 스냅샷(재시작·날짜가 바뀌면 DB에서 다시 읽음, 사용자 1만 명 LRU)으로 한다. 전역 일 $3·월 $30 이상이면 전부, 배경 작업은 일 $2·월 $20 이상이면 `HALTED`, 사용자 일 $0.25 이상이면 `USER_SPEND_LIMITED`(AI_1310)다. ADMIN은 사용자 일 예산에서만 빠지고(`isExemptFromUserSpendLimit`, 초과한 사용자만 등급을 읽는다) 사용량 기록·전역 예산·킬 스위치·입력 상한은 같다. 사용자 행은 계정 영구 삭제 때 함께 지운다. 진행 중인 호출은 끝난 뒤 더해지므로 상한은 그만큼 넘을 수 있다. 경고·배경·중단 기준선을 처음 넘긴 요청 하나가 기간당 한 번 `ai.spend.threshold-reached` 경보를 올린다(원자적 누적값 비교). 계량 오류는 로그만 남기고 생성을 막지 않는다.
 - 추정 비용은 보수적이다: 단가를 모르는 모델은 최고 단가로 `maxOutputTokens`까지 쓴 것으로, 사용량 없이 시간 초과로 끝난 호출은 입력 글자 수를 토큰 수로 보고 입력 비용을 더한다. 응답·로그의 `estimatedCostMicroUsd`는 지금처럼 토큰 기준(모르면 null)이다.
@@ -141,7 +142,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 - 결정 규칙 golden 26건과 흔들린 표현(relativeMinutes 0, 오늘 지난 때)(서울·LA 같은 순간)과 경계(자정·DST·윤일·월말·연말): `resolve-todo-schedule.spec.ts`.
 - golden 데이터: `apps/api/test/fixtures/ai-golden/{parse-todo,quick-plan,voice-note-digest}.{ko,en,mixed}.jsonl`(로더 `golden-cases.ts`). 받아쓰기 오류(띄어쓰기 없음·동음이의·"음 그러니까"·`<context>`로 고칠 고유명사), 반복 종류 전부·종료 날짜·계속 반복, 기간, 하위 항목, 비공개, 종일·시각, 한영 혼합 제목, 남에게 부탁, 전사 안 지시 주입, 다가오는 할 일·진행 중 반복과의 겹침을 담는다. 계획 기대값은 일정 표현을 resolver로 계산한 날짜라 같은 뜻의 다른 표현도 같게 비교된다.
 - fake model golden: `parse-todo.golden.spec.ts`(공개 응답), `prompts/planning/planning.golden.spec.ts`(계획 정규화·핵심 포인트 문장 번호·중요 표시 포함)가 모든 줄을 schema로 읽고 실행한다.
-- live eval(수동, CI·hook 제외): `pnpm --filter @aido/server ai:eval --task parse-todo|quick-plan|voice-note-digest --provider anthropic|google|openai [추가 jsonl…]`(`--provider`를 빼면 `AI_PROVIDER_ORDER` 폴백 체인). 키는 운영과 같은 env에서 읽고, 고른 업체 키가 없으면 호출 없이 exit 0이다. 날짜 0.97·제목 0.9·겹침 판정 0.9(계획)·NO_ACTION 1(parse-todo) 미만이면 exit 1이고, 요약에 캐시 토큰(`tokens.cached`·`tokens.cacheWrite`)과 캐시 단가를 반영한 추정 비용(`estimatedCostMicroUsd`)·지연(p50·p95·max)·녹음 정리의 중요 표시 반영률(`bookmarkRecall`)을 함께 낸다. 제목 비교는 영어 관사·소유격(a·an·the·my) 유무를 같게 본다. 콘솔에는 case id·지표·토큰(cached·cacheWrite 포함)만 쓰고 입력·전사·키는 쓰지 않는다. 실제 유료 호출이므로 결과를 아래에 남긴다.
+- live eval(수동, CI·hook 제외): `pnpm --filter @aido/server ai:eval --task parse-todo|quick-plan|voice-note-digest --provider anthropic|google|openai [추가 jsonl…]`(`--provider`를 빼면 `AI_PROVIDER_ORDER` 폴백 체인). 키는 운영과 같은 env에서 읽고, 고른 업체 키가 없으면 호출 없이 exit 0이다. 날짜 0.97·제목 0.9·겹침 판정 0.9(계획)·NO_ACTION 1(parse-todo) 미만이면 exit 1이고, 요약에 캐시 토큰(`tokens.cached`·`tokens.cacheWrite`)과 캐시 단가를 반영한 추정 비용(`estimatedCostMicroUsd`)·지연(p50·p95·max)·녹음 정리의 중요 표시 반영률(`bookmarkRecall`)·앱 언어 작성률(`digestInAppLanguage`, 지표만)을 함께 낸다. 제목 비교는 영어 관사·소유격(a·an·the·my) 유무를 같게 본다. 콘솔에는 case id·지표·토큰(cached·cacheWrite 포함)만 쓰고 입력·전사·키는 쓰지 않는다. 실제 유료 호출이므로 결과를 아래에 남긴다.
 
 ### 검증 기록
 

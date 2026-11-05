@@ -90,7 +90,7 @@ interface PlanReviewProps {
   /** 저장 요청의 키를 화면 밖에 남길 곳. 없으면 이 화면이 떠 있는 동안만 기억한다 */
   requestStore?: PlanApplyRequestStore;
   /** 저장이 끝났다. 화면이 내려간 뒤에 응답이 와도 불리므로 저장 표시를 여기서 남긴다 */
-  onSaved?: () => void;
+  onSaved?: (saved: { todoCount: number }) => void;
   /** 화면이 떠 있을 때 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
   onApplied?: () => void;
   /** 메모에서 만든 계획의 원본 메모가 이미 없다. 초안을 버리고 떠나는 일은 화면이 맡는다 */

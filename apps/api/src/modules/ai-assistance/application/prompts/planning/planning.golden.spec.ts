@@ -43,7 +43,15 @@ describe("계획 golden — 이상적인 모델 출력을 서버가 정규화하
     const patterns = new Set(todos.map(({ repeat }) => repeat?.pattern ?? "NONE"));
     // Then
     expect([...patterns].sort()).toEqual(
-      ["BIWEEKLY_DAYS", "DAILY", "MONTHLY_DAY", "NONE", "WEEKDAYS", "WEEKLY_DAYS"].sort(),
+      [
+        "BIWEEKLY_DAYS",
+        "DAILY",
+        "MONTHLY_DAY",
+        "NONE",
+        "WEEKDAYS",
+        "WEEKENDS",
+        "WEEKLY_DAYS",
+      ].sort(),
     );
     expect(todos.some(({ repeat }) => repeat?.until != null)).toBe(true);
     expect(todos.some(({ endDate, repeat }) => endDate != null && repeat == null)).toBe(true);

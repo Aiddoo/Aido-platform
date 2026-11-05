@@ -32,7 +32,7 @@ export interface ApplyActionPlanParams {
 
 interface UseApplyActionPlanMutationOptionsParams {
   /** 저장이 끝났다. `mutate` 콜백과 달리 화면이 내려간 뒤에 응답이 와도 불린다 */
-  onSaved?: () => void;
+  onSaved?: (saved: { todoCount: number }) => void;
 }
 
 /**
@@ -67,7 +67,7 @@ export const useApplyActionPlanMutationOptions = ({
         ),
       ),
     onSuccess: ({ todoCount, hasMemo }, { source, sourceMemoId, skippedCount }) => {
-      onSaved?.();
+      onSaved?.({ todoCount });
       haptics.notify('success');
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);

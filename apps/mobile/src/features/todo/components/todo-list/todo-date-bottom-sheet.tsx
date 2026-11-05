@@ -83,6 +83,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
         }
         updateSchedule.mutate({
           todoId: todo.id,
+          changedField: 'date',
           input: {
             startDate: startDateKey,
             endDate: null,

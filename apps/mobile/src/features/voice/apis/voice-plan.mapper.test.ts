@@ -73,6 +73,25 @@ describe('toVoicePlanFromParsedMemo', () => {
     expect(plan.actions[0]).toMatchObject({ scheduledTime: null, endDate: null });
   });
 
+  test.each([
+    { why: '서버가 겹침을 알려 주면 그 할 일을 가리킨다', duplicateOfTodoId: 41, expected: 41 },
+    {
+      why: '이전 서버처럼 칸이 없으면 겹치지 않은 것으로 본다',
+      duplicateOfTodoId: undefined,
+      expected: null,
+    },
+  ])('$why', ({ duplicateOfTodoId, expected }) => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({ ...todo, duplicateOfTodoId }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({ duplicateOfTodoId: expected });
+  });
+
   test('서버가 준 repeat이 있으면 격주·매월도 그대로 쓴다', () => {
     // Given
     const dto = createParseMemoResponseDto();

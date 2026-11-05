@@ -1,6 +1,7 @@
 import { languagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
 import { securityRules } from "../../kit/security-rules.js";
+import { PLANNING_RULES_KO } from "../../planning/planning-rules.js";
 import { SCHEDULE_RULES_KO } from "../schedule/schedule-rules.js";
 import { PARSE_MEMO_EXAMPLES_KO } from "./examples.ko.js";
 
@@ -14,7 +15,7 @@ const SPLIT_RULES = `<split_rules>
 </split_rules>`;
 
 const TITLE_RULES = `<title_rules>
-- 할 일과 item의 title은 메모에 쓴 단어를 살려 사람이 직접 적듯 짧게 쓴다. 날짜·시각 표현, "~해야 함" 같은 군말, 이모지는 뺀다. 메모에 적힌 대상과 분량은 그대로 둔다.
+- 할 일과 item의 title은 메모에 쓴 단어를 살려 사람이 직접 적듯 짧게 쓴다. 날짜·시각 표현, "~해야 함" 같은 군말, 이모지는 뺀다. 메모에 적힌 대상과 분량("5km", "30분")은 그대로 둔다.
 - 행동이 적혀 있으면 "택배 반품 신청하기", "약국 가기"처럼 행동으로 끝낸다. "3시 은행", "치과"처럼 대상만 적었으면 그대로 두고, 메모에 없는 행동이나 세부를 지어내지 않는다.
 - 메모에 없는 명사도 덧붙이지 않는다. 예: "3시 은행" → "은행"("은행 업무" ✗), "내일 치과" → "치과"("치과 방문" ✗), "마트 가서 우유 사기" → "마트 가서 우유 사기"("마트 장보기" ✗).
 - 메모의 언어 그대로 쓰고 번역하지 않는다.
@@ -28,7 +29,7 @@ export const PARSE_MEMO_SYSTEM_KO = composeSystem({
 너는 문장의 뜻만 해석한다. 날짜·요일·시각 계산은 서버가 하므로 날짜를 직접 계산하지 말고, 표현의 종류와 숫자만 기록한다.`,
   security: securityRules("ko", {
     dataTags: ["context", "user_input"],
-    rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION"],
+    rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION", "KNOWN_IDS_ONLY"],
   }),
   languagePolicy: languagePolicy("ko", ["TITLES_AS_SPOKEN"]),
   outputContract: "user_input의 memo에서 할 일을 메모에 적힌 순서대로 찾아 스키마에 맞게 반환한다.",
@@ -39,6 +40,7 @@ export const PARSE_MEMO_SYSTEM_KO = composeSystem({
     SCHEDULE_RULES_KO.time,
     SCHEDULE_RULES_KO.repeat,
     SCHEDULE_RULES_KO.category,
+    PLANNING_RULES_KO.duplicate,
   ],
   examples: PARSE_MEMO_EXAMPLES_KO,
 });

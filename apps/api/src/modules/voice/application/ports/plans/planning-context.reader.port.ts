@@ -1,4 +1,4 @@
-import type { ExistingTodo } from "../../../domain/policies/plans/action-plan-dedupe.policy.js";
+import type { ExistingTodo } from "#api/modules/ai-assistance/ai-assistance-planning.public";
 
 export const PLANNING_CONTEXT_READER = Symbol("PLANNING_CONTEXT_READER");
 

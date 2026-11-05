@@ -20,11 +20,19 @@ export const AUTO_FINISH_SILENCE_MS = 2_500;
 export const SPEAKING_VOLUME_THRESHOLD = 0.18;
 
 /**
- * 말소리 크기의 음량이 들리는데 글자 없는 구간만 이어지면 인식기가 멈춘 것으로 보고 다시 연다.
- * Android는 이때 `end`가 오지 않아 앱이 달리 알 수 없다. 구간은 약 3초마다 닫히므로(QA 로그) 두 번이면 약 6초다.
- * 시끄러운 곳에서도 녹음 파일이 잘게 쪼개지지 않게 간격을 둔다.
+ * 말소리 크기의 음량이 들리는데 글자가 오지 않으면 인식기가 멈춘 것으로 보고 다시 연다.
+ * Android는 멈춘 동안 빈 구간 신호(`no-match`)도 `end`도 주지 않아 시간으로만 알 수 있다.
+ * - `textlessMs`: 마지막 글자 뒤로 글자 없이 지난 시간. QA 로그에서 말 구간이 약 3초마다 닫히므로 두 구간이다.
+ * - `voicedMs`: 그동안 말소리 크기로 들린 시간의 합. 기침·문소리 몇 번으로는 닿지 않는 길이다.
+ * - `maxSampleGapMs`: 음량은 50ms마다 온다. 이보다 벌어진 틈은 들은 시간으로 세지 않는다.
+ * - `minIntervalMs`: 글자 없이 다시 연 뒤 기다리는 시간. 시끄러운 곳에서 녹음 파일이 잘게 쪼개지지 않게 한다.
  */
-export const VOICE_STALL_RESTART = { emptySegmentLimit: 2, minIntervalMs: 30_000 } as const;
+export const VOICE_STALL_RESTART = {
+  textlessMs: 6_000,
+  voicedMs: 3_000,
+  maxSampleGapMs: 250,
+  minIntervalMs: 30_000,
+} as const;
 
 /** 단어 신뢰도(0..1)가 이보다 낮으면 잘못 들었을 수 있다고 밑줄을 친다 */
 export const LOW_CONFIDENCE_THRESHOLD = 0.5;

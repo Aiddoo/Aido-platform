@@ -28,14 +28,14 @@ export const SCHEDULE_RULES_KO = {
 - "이번 주 운동", "다음 주 회의"처럼 그 주 내내 하는 일 → THIS_WEEK, NEXT_WEEK, WEEK_AFTER_NEXT. "이번 주말", "다음 주말" → THIS_WEEKEND, NEXT_WEEKEND. "이번 주 주중" → THIS_WEEKDAYS.
 - 출장, 여행, 시험, 행사처럼 기간이 있는 단발 일정은 반복이 아니다. pattern은 NONE이고 date와 endDate로 기간을 나타낸다.
 - 격주, 매월, 매년처럼 위 목록에 없는 반복은 UNSUPPORTED다. 이때 할 일은 한 번만 만들어지므로 말한 요일·날짜를 date에 그대로 쓴다: "격주 화요일 스터디" → date kind WEEKDAY, weekday TUE, weekOffset null. date를 NONE으로 두지 않는다.
-- 반복 종료를 말했을 때만 until("다음 달 말까지") 또는 forDuration("한 달 동안" → MONTH 1)을 쓰고 아니면 둘 다 null이다.
+- 반복 종료를 말했을 때만 until("다음 달 말까지") 또는 forDuration("한 달 동안" → MONTH 1)을 쓰고 아니면 둘 다 null이다. "30분 운동"처럼 한 번에 걸리는 시간은 반복 기간이 아니므로 forDuration에 쓰지 않는다.
 </repeat_rules>`,
   category: `<category_rules>
 - categoryId는 <context>의 categories 중 할 일과 의미가 가장 가까운 id 하나다. 어울리는 항목이 없거나 목록이 비어 있으면 null이다.
 </category_rules>`,
   planRepeat: `<repeat_rules>
 - 반복이 없으면 pattern은 NONE이다.
-- 매일 → DAILY. 평일마다 → WEEKDAYS. 주말마다 → WEEKENDS.
+- 매일 → DAILY. 평일마다 → WEEKDAYS. 주말마다, 또는 "이번"·"다음" 없이 "주말에"라고 하면 → WEEKENDS다.
 - "매주 월수금" → WEEKLY_DAYS, daysOfWeek ["MON","WED","FRI"]. 요일 없이 "매주"만 말하고 date에 요일이 있으면 그 요일 하나를 daysOfWeek에 쓴다.
 - "격주 화요일", "2주마다 화요일" → BIWEEKLY_DAYS, daysOfWeek ["TUE"].
 - "매달 15일", "매월 15일" → MONTHLY_DAY, monthDay 15. "매달 말일"은 monthDay 31이다.
@@ -43,7 +43,7 @@ export const SCHEDULE_RULES_KO = {
 - 출장, 여행, 시험, 행사처럼 기간이 있는 단발 일정은 반복이 아니다. pattern은 NONE이고 date와 endDate로 기간을 나타낸다. "다음 주 내내 출장" → date 다음 주 월요일, endDate 다음 주 일요일.
 - 매년, 매월 n번째 요일, 3주 이상 간격, 시간 단위 반복은 UNSUPPORTED다. 말한 요일·날짜는 date에 그대로 쓴다.
 - 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. date는 시작을 따로 말했을 때만 쓰고 아니면 NONE이다.
-- 반복 종료를 말했을 때만 until("12월 말까지" → CALENDAR_DATE month 12, day 31) 또는 forDuration("한 달 동안" → MONTH 1)을 쓴다. 종료를 말하지 않으면 둘 다 null이다(계속 반복). 종료일을 지어내지 않는다.
+- 반복 종료를 말했을 때만 until("12월 말까지" → CALENDAR_DATE month 12, day 31) 또는 forDuration("한 달 동안" → MONTH 1)을 쓴다. 종료를 말하지 않으면 둘 다 null이다(계속 반복). 종료일을 지어내지 않는다. "30분 운동"처럼 한 번에 걸리는 시간은 반복 기간이 아니므로 forDuration에 쓰지 않는다.
 - 반복 할 일은 하루짜리다. 반복이면 endDate는 null이다.
 </repeat_rules>`,
   planCategory: `<category_rules>
@@ -77,14 +77,14 @@ export const SCHEDULE_RULES_EN = {
 - Work spread across a whole week without "every", such as "workout this week" or "meetings next week" → THIS_WEEK, NEXT_WEEK, WEEK_AFTER_NEXT. "this weekend", "next weekend" → THIS_WEEKEND, NEXT_WEEKEND. "during the week" → THIS_WEEKDAYS.
 - One-off events that span days (business trip, vacation, exam, conference) are not repetition: pattern NONE, with the span in date and endDate.
 - Repetition not listed above (every other week, monthly, yearly) → UNSUPPORTED. The to-do is created only once, so keep the stated weekday or date in date: "study group every other Tuesday" → date kind WEEKDAY, weekday TUE, weekOffset null. Never leave date NONE here.
-- Use until ("until the end of next month") or forDuration ("for a month" → MONTH 1) only when the end of the repetition is stated, otherwise both are null.
+- Use until ("until the end of next month") or forDuration ("for a month" → MONTH 1) only when the end of the repetition is stated, otherwise both are null. How long one occurrence takes ("work out for 30 minutes") is not the length of the repetition, so never put it in forDuration.
 </repeat_rules>`,
   category: `<category_rules>
 - categoryId is the single id in <context> categories closest in meaning to the to-do. Use null when nothing fits or the list is empty.
 </category_rules>`,
   planRepeat: `<repeat_rules>
 - Without repetition, pattern is NONE.
-- every day → DAILY. every weekday → WEEKDAYS. every weekend → WEEKENDS.
+- every day → DAILY. every weekday → WEEKDAYS. every weekend, or "on weekends" without "this" or "next" → WEEKENDS.
 - "every Mon, Wed and Fri" → WEEKLY_DAYS with daysOfWeek ["MON","WED","FRI"]. For a bare "every week" with a weekday in date, put that one weekday in daysOfWeek.
 - "every other Tuesday", "every two weeks on Tuesday" → BIWEEKLY_DAYS with daysOfWeek ["TUE"].
 - "on the 15th of every month", "monthly on the 15th" → MONTHLY_DAY with monthDay 15. "the last day of every month" is monthDay 31.
@@ -92,7 +92,7 @@ export const SCHEDULE_RULES_EN = {
 - One-off events that span days (business trip, vacation, exam, conference) are not repetition: pattern NONE, with the span in date and endDate. "away on a business trip all next week" → date next Monday, endDate next Sunday.
 - Yearly, "the nth weekday of the month", intervals of three weeks or more, and hourly repetition → UNSUPPORTED. Keep the stated weekday or date in date.
 - Weekdays and days of a repetition go only in daysOfWeek and monthDay. Use date only when a start is stated separately, otherwise NONE.
-- Use until ("until the end of December" → CALENDAR_DATE month 12, day 31) or forDuration ("for a month" → MONTH 1) only when the end of the repetition is stated. Without a stated end, both are null (it keeps repeating). Never invent an end date.
+- Use until ("until the end of December" → CALENDAR_DATE month 12, day 31) or forDuration ("for a month" → MONTH 1) only when the end of the repetition is stated. Without a stated end, both are null (it keeps repeating). Never invent an end date. How long one occurrence takes ("work out for 30 minutes") is not the length of the repetition, so never put it in forDuration.
 - A repeating to-do lasts one day. endDate is null when it repeats.
 </repeat_rules>`,
   planCategory: `<category_rules>

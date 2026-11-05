@@ -4,6 +4,7 @@ import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 
 import { AI_GENERATOR } from "./application/ports/generation/ai-generator.port.js";
 import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";
+import { UPCOMING_TODO_READER } from "./application/ports/parsing/upcoming-todo-reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "./application/ports/parsing/user-locale-preference.reader.port.js";
 import { GetAiUsage } from "./application/use-cases/parsing/get-ai-usage.use-case.js";
@@ -23,6 +24,7 @@ export const parseMemoProvider: FactoryProvider<ParseMemo> = {
     AI_GENERATOR,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
     USER_CATEGORY_READER,
+    UPCOMING_TODO_READER,
     QUOTA_LEDGER,
     USER_LOCALE_PREFERENCE_READER,
   ],
@@ -30,6 +32,7 @@ export const parseMemoProvider: FactoryProvider<ParseMemo> = {
     generator: ConstructorParameters<typeof ParseMemo>[0]["generator"],
     consentReader: ConstructorParameters<typeof ParseMemo>[0]["consentReader"],
     categoryReader: ConstructorParameters<typeof ParseMemo>[0]["categoryReader"],
+    upcomingTodoReader: ConstructorParameters<typeof ParseMemo>[0]["upcomingTodoReader"],
     quota: ConstructorParameters<typeof ParseMemo>[0]["quota"],
     localePreferenceReader: ConstructorParameters<typeof ParseMemo>[0]["localePreferenceReader"],
   ) =>
@@ -37,6 +40,7 @@ export const parseMemoProvider: FactoryProvider<ParseMemo> = {
       generator,
       consentReader,
       categoryReader,
+      upcomingTodoReader,
       quota,
       localePreferenceReader,
       logger: new Logger(ParseMemo.name),

@@ -15,6 +15,8 @@ import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 export interface UpdateTodoScheduleMutationParams {
   todoId: number;
   input: UpdateTodoScheduleInput;
+  /** 사용자가 고친 칸. 저장 안내 문구를 고른다. 안내를 따로 띄우는 곳(날씨 일괄 옮기기)은 넘기지 않는다 */
+  changedField?: 'date' | 'time';
   scope?: TodoUpdateScope;
 }
 
@@ -31,10 +33,12 @@ export const useUpdateTodoScheduleMutationOptions = () => {
       const result = await todoService.updateTodoSchedule(todoId, input, scope);
       return unwrap(result);
     },
-    onSuccess: (_data, { scope }) => {
+    onSuccess: (_data, { changedField, scope }) => {
       invalidateTodos(queryClient);
       invalidateNudgeInteractions(queryClient);
-      toast.success(t('todo:toast.scheduleChanged'));
+      toast.success(
+        changedField === 'time' ? t('todo:toast.timeChanged') : t('todo:toast.dateChanged'),
+      );
       if (scope != null) {
         trackEvent('todo_series_edited', { scope });
       }

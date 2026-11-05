@@ -131,7 +131,7 @@ export class TodoCategoryController {
 - \`sortOrder\` 오름차순으로 정렬됨
 
 ## 기본 카테고리
-회원가입 시 자동 생성되는 기본 카테고리:
+회원가입 시 자동 생성되는 기본 카테고리(이름은 가입 요청의 Accept-Language로 한 번 정한다. en은 Important·To-do, 그 밖은 아래 이름):
 - **중요한 일** (\`#FFB3B3\`, 빨간색 파스텔톤)
 - **할 일** (\`#FF6B43\`, 앱 메인 주황색)`,
   })

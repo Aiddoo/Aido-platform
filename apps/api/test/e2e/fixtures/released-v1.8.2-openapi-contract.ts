@@ -72,8 +72,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: 할 일 응답(소유자·친구·댓글 상세)에 선택 칸 scheduledLocalTime(HH:mm)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/todo-floating-time.e2e-spec.ts가 출시 앱 응답 모양을 고정한다. */
 	preFloatingTimeSchemasFingerprint:
 		"2ad73d7e86ab29f93362c983f4f20f3cf68092fa5a1330652568a1dab3080145",
-	schemasFingerprint:
+	/** 1.15.0: 메모 나누기 응답(ParseMemoResponseDto)의 할 일에 선택 칸 duplicateOfTodoId만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. */
+	preMemoDuplicateSchemasFingerprint:
 		"40abd44bf67d1b2826712594e48ff7c2315fa0ec6b1fd06a04549b33900e98ab",
+	schemasFingerprint:
+		"c173863282be05c57b75f985bf0e6ecf614cc21d12cafd1b390cf9499d54b9a2",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",

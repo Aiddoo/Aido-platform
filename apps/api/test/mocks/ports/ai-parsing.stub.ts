@@ -1,3 +1,4 @@
+import type { UpcomingTodoReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/upcoming-todo-reader.port";
 import type { UserCategoryReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/user-category-reader.port";
 import type {
   UserLocalePreference,
@@ -8,6 +9,13 @@ export class StubAiUserCategoryReader implements UserCategoryReaderPort {
   readonly categories = new Map<string, Array<{ id: number; name: string }>>();
   async findByUserId(userId: string): Promise<Array<{ id: number; name: string }>> {
     return (this.categories.get(userId) ?? []).map((category) => ({ ...category }));
+  }
+}
+
+export class StubUpcomingTodoReader implements UpcomingTodoReaderPort {
+  todos: Awaited<ReturnType<UpcomingTodoReaderPort["findByUserId"]>> = [];
+  async findByUserId() {
+    return this.todos;
   }
 }
 

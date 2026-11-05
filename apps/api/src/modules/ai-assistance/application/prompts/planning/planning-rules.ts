@@ -14,7 +14,7 @@ export const PLANNING_RULES_KO = {
 - "금요일에 제출", "내일 오후 2시 미팅"처럼 그날 하는 일은 date에 쓰고 endDate는 null이다.
 </deadline_rules>`,
   title: `<title_rules>
-- title은 핵심 행동만 짧게 쓴다. 날짜·시각·반복·공개 범위 표현, "~해야 돼" 같은 어미, 이모지는 뺀다. 말한 대상과 분량("5km", "10쪽")은 그대로 둔다.
+- title은 핵심 행동만 짧게 쓴다. 날짜·시각·반복·공개 범위 표현, "~해야 돼" 같은 어미, 이모지는 뺀다. 말한 대상과 분량("5km", "10쪽")은 그대로 둔다. 한 번에 걸리는 시간도 분량이라 남긴다: "매일 아침 30분 운동하기" → "30분 운동하기".
 - items는 말한 항목만 쓴다. 할 일 제목을 items에 반복하지 않고, 항목이 없으면 []다.
 </title_rules>`,
   visibility: `<visibility_rules>
@@ -39,7 +39,7 @@ export const PLANNING_RULES_EN = {
 - Work done on a stated day ("submit on Friday", "meeting tomorrow at 2pm") goes in date with endDate null.
 </deadline_rules>`,
   title: `<title_rules>
-- title is the core action only, kept short. Remove date, time, repetition, and privacy phrases, filler such as "I need to", and emojis. Keep stated objects and amounts ("5 km", "10 pages").
+- title is the core action only, kept short. Remove date, time, repetition, and privacy phrases, filler such as "I need to", and emojis. Keep stated objects and amounts ("5 km", "10 pages"). How long it takes is an amount too: "work out for 30 minutes every morning" → "Work out for 30 minutes".
 - items contain only the listed things. Never repeat the to-do title as an item; use [] when nothing is listed.
 </title_rules>`,
   visibility: `<visibility_rules>

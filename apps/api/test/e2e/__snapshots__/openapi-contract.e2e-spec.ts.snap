@@ -11698,6 +11698,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "minimum": 0,
                     "type": "integer",
                   },
+                  "duplicateOfTodoId": {
+                    "description": "이미 있는 같은 할 일의 ID (없으면 null). 1.15.0 이전 서버 응답에는 없다",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "nullable": true,
+                    "type": "integer",
+                  },
                   "endDate": {
                     "description": "종료 날짜 (YYYY-MM-DD, 단일 날짜는 null)",
                     "format": "date",
@@ -52732,7 +52739,7 @@ SYS_0001: 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
 - \`sortOrder\` 오름차순으로 정렬됨
 
 ## 기본 카테고리
-회원가입 시 자동 생성되는 기본 카테고리:
+회원가입 시 자동 생성되는 기본 카테고리(이름은 가입 요청의 Accept-Language로 한 번 정한다. en은 Important·To-do, 그 밖은 아래 이름):
 - **중요한 일** (\`#FFB3B3\`, 빨간색 파스텔톤)
 - **할 일** (\`#FF6B43\`, 앱 메인 주황색)",
       "operationId": "getTodoCategories",

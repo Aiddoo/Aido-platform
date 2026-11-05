@@ -144,7 +144,8 @@ export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse
     visibility: null,
     items: todo.items,
     categoryId: todo.categoryId,
-    duplicateOfTodoId: null,
+    // 1.15.0 이전 서버는 겹침을 판정하지 않는다
+    duplicateOfTodoId: todo.duplicateOfTodoId ?? null,
   }));
   return voicePlanSchema.parse({
     planId,

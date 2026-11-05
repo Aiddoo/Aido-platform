@@ -9,6 +9,10 @@ import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
+import {
+  type ExistingTodo,
+  findDuplicateTodoId,
+} from "../../../domain/policies/planning/action-plan-dedupe.policy.js";
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
 import type { ScheduleDraft, TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
 import { removeInvisibleCharacters } from "../../prompts/kit/untrusted-input.js";
@@ -35,8 +39,10 @@ export type NormalizationWarning =
   | "INVALID_DATE"
   | "INVALID_TIME"
   | "END_BEFORE_START"
+  | "REPEAT_END_NOT_AFTER_START"
   | "UNSUPPORTED_RECURRENCE"
-  | "EMPTY_RECURRENCE";
+  | "EMPTY_RECURRENCE"
+  | "UNKNOWN_DUPLICATE";
 
 export interface DraftNormalizeContext {
   readonly now: Date;
@@ -136,6 +142,7 @@ export function normalizeTodoDraft(
 export interface MemoDraftInput {
   readonly todos: readonly (TodoDraft & {
     readonly items: readonly { readonly title: string }[];
+    readonly duplicateOfTodoId: number | null;
   })[];
   readonly totalTaskCount: number | null;
 }
@@ -150,6 +157,7 @@ export function normalizeMemoDraft(
   context: DraftNormalizeContext & {
     readonly fallbackTitle: string;
     readonly defaultCategoryId: number;
+    readonly upcomingTodos: readonly ExistingTodo[];
   },
 ): {
   data: ParsedMemoData;
@@ -167,7 +175,7 @@ export function normalizeMemoDraft(
   if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) {
     warnings.push("TODOS_TRUNCATED");
   }
-  const drafts = noAction ? [{ ...noActionDraft(), items: [] }] : kept;
+  const drafts = noAction ? [{ ...noActionDraft(), items: [], duplicateOfTodoId: null }] : kept;
 
   const parsed = drafts.map((draft) => {
     const normalized = normalizeTodoDraft(draft, context);
@@ -179,10 +187,24 @@ export function normalizeMemoDraft(
     if (items.truncated) {
       warnings.push("ITEMS_TRUNCATED");
     }
+    const isKnownDuplicate = context.upcomingTodos.some(({ id }) => id === draft.duplicateOfTodoId);
+    if (draft.duplicateOfTodoId != null && !isKnownDuplicate) {
+      warnings.push("UNKNOWN_DUPLICATE");
+    }
     return {
       ...normalized.todo,
       categoryId: normalized.todo.categoryId ?? context.defaultCategoryId,
       items: items.titles.map((itemTitle) => ({ title: itemTitle })),
+      duplicateOfTodoId: noAction
+        ? null
+        : findDuplicateTodoId(
+            {
+              title: normalized.todo.title,
+              startDate: normalized.todo.startDate,
+              duplicateOfTodoId: isKnownDuplicate ? draft.duplicateOfTodoId : null,
+            },
+            context.upcomingTodos,
+          ),
     };
   });
   return {

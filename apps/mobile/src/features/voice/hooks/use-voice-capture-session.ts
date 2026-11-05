@@ -29,17 +29,20 @@ import {
   QUICK_CAPTURE_MAX_SECONDS,
   SPEAKING_VOLUME_THRESHOLD,
   VOICE_PREPARING_TIMEOUT_MS,
-  VOICE_STALL_RESTART,
 } from '../constants/voice.constants';
 import {
   type CapturedPlan,
   createVoiceCaptureState,
+  createVoiceStallWatch,
   reduceVoiceCapture,
   type VoiceCaptureEvent,
   type VoiceCaptureSeed,
   VoiceCapturePolicy,
   type VoiceCaptureState,
   type VoicePauseCause,
+  withStallRestart,
+  withTextHeard,
+  withVolumeSample,
 } from '../domains/voice-capture.model';
 import { type VoiceTranscript, VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 import { getDurationBucket } from '../utils/analytics/duration-bucket';
@@ -129,10 +132,7 @@ export function useVoiceCaptureSession({
   const isQuietRef = useRef(false);
   const lastStartedAtRef = useRef(0);
   const quickEndCountRef = useRef(0);
-  /** 마지막 글자 뒤로 말소리 크기의 음량을 들었는데 글자 없이 닫힌 구간 수 */
-  const emptyVoiceSegmentCountRef = useRef(0);
-  const hasHeardVoiceRef = useRef(false);
-  const lastStallRestartAtRef = useRef<number | null>(null);
+  const stallWatchRef = useRef(createVoiceStallWatch(0));
 
   const dispatch = useCallback((event: VoiceCaptureEvent) => {
     const previous = stateRef.current;
@@ -294,11 +294,11 @@ export function useVoiceCaptureSession({
 
   /**
    * 파형은 움직이는데 글자가 오지 않는 세션을 닫고 이어 듣는다. 일시정지·이어 듣기와 같은 길이고 사용자는 할 일이 없다.
-   * 멈춘 인식기는 stop에 답하지 않을 수 있어 `end`가 오지 않으면 잠시 뒤 새로 연다.
+   * 듣던 글자는 `end`가 확정한다. 멈춘 인식기는 stop에 답하지 않을 수 있어 잠시 뒤 abort로 `end`를 받는다.
+   * abort는 녹음 파일을 마무리하지만 바로 새로 시작하면 Android가 파일을 버린다.
    */
-  const restartStalledRecognizer = () => {
-    emptyVoiceSegmentCountRef.current = 0;
-    lastStallRestartAtRef.current = Date.now();
+  const restartStalledRecognizer = (now: number) => {
+    stallWatchRef.current = withStallRestart(now);
     const isOnDevice = startOptionsRef.current?.isOnDevice ?? false;
     trackEvent('voice_recognizer_stalled', { mode, on_device: isOnDevice });
     addBreadcrumb('capture.recognizer-stalled', { mode, on_device: isOnDevice });
@@ -306,23 +306,23 @@ export function useVoiceCaptureSession({
     stallRestartTimerRef.current = setTimeout(() => {
       stallRestartTimerRef.current = null;
       if (VoiceCapturePolicy.shouldRestartSegment(stateRef.current)) {
-        restartSegment();
+        speechRecognizer.abort();
       }
     }, FINALIZE_TIMEOUT_MS);
   };
 
-  const handleEmptySegment = () => {
-    if (hasHeardVoiceRef.current) {
-      emptyVoiceSegmentCountRef.current += 1;
-    }
-    hasHeardVoiceRef.current = false;
-    const lastRestartAt = lastStallRestartAtRef.current;
+  const watchRecognizerStall = (nextLevel: number) => {
+    const now = Date.now();
+    stallWatchRef.current = withVolumeSample(stallWatchRef.current, nextLevel, now);
     if (
-      getStatus() === 'listening' &&
-      emptyVoiceSegmentCountRef.current >= VOICE_STALL_RESTART.emptySegmentLimit &&
-      (lastRestartAt == null || Date.now() - lastRestartAt >= VOICE_STALL_RESTART.minIntervalMs)
+      !isStopRequestedRef.current &&
+      VoiceCapturePolicy.shouldRestartStalledRecognizer(
+        stateRef.current,
+        stallWatchRef.current,
+        now,
+      )
     ) {
-      restartStalledRecognizer();
+      restartStalledRecognizer(now);
     }
   };
 
@@ -343,9 +343,7 @@ export function useVoiceCaptureSession({
     }
     lastStartedAtRef.current = Date.now();
     quickEndCountRef.current = 0;
-    emptyVoiceSegmentCountRef.current = 0;
-    hasHeardVoiceRef.current = false;
-    lastStallRestartAtRef.current = null;
+    stallWatchRef.current = createVoiceStallWatch(lastStartedAtRef.current);
     isRecognizerRunningRef.current = true;
     isStopRequestedRef.current = false;
     speechRecognizer.start(startOptions);
@@ -362,25 +360,28 @@ export function useVoiceCaptureSession({
     }
     match(event)
       .with({ type: 'start' }, () => {
-        dispatch({ type: 'start', at: Date.now() });
+        const now = Date.now();
+        dispatch({ type: 'start', at: now });
+        stallWatchRef.current = createVoiceStallWatch(now, stallWatchRef.current.lastRestartAt);
       })
       .with({ type: 'result' }, ({ transcript, isFinal }) => {
         dispatch({ type: 'result', result: { transcript, isFinal } });
         if (transcript.trim().length > 0) {
           markSpeaking();
-          emptyVoiceSegmentCountRef.current = 0;
-          hasHeardVoiceRef.current = false;
+          // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
+          if (!isStopRequestedRef.current) {
+            stallWatchRef.current = withTextHeard(stallWatchRef.current, Date.now());
+          }
         }
       })
-      .with({ type: 'no-match' }, handleEmptySegment)
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
         level.set(nextLevel);
         if (nextLevel >= SPEAKING_VOLUME_THRESHOLD) {
-          hasHeardVoiceRef.current = true;
           markSpeaking();
         } else {
           markSilence();
         }
+        watchRecognizerStall(nextLevel);
       })
       .with({ type: 'error' }, ({ code }) => handleError(code))
       .with({ type: 'end' }, () => {
@@ -394,7 +395,7 @@ export function useVoiceCaptureSession({
           handleFinalized();
         }
       })
-      .with({ type: 'recording-started' }, { type: 'recording-saved' }, noop)
+      .with({ type: 'no-match' }, { type: 'recording-started' }, { type: 'recording-saved' }, noop)
       .exhaustive();
   });
 

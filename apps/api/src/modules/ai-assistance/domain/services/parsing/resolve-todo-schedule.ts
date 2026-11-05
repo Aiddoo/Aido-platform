@@ -137,6 +137,16 @@ export function resolveTodoSchedule(
     }
   }
 
+  const repeat = resolveRepeat(draft.repeat, recurrenceBase, startDay, today);
+  if (
+    repeat != null &&
+    recurrenceBase?.end == null &&
+    hasSpokenRepeatEnd(draft.repeat) &&
+    resolveSpokenRepeatEnd(draft.repeat, startDay, today) == null
+  ) {
+    warnings.push("REPEAT_END_NOT_AFTER_START");
+  }
+
   const scheduledTime = scheduledMinutes == null ? null : formatMinutes(scheduledMinutes);
   return {
     startDate: formatDay(startDay),
@@ -145,7 +155,7 @@ export function resolveTodoSchedule(
     isAllDay: scheduledTime == null,
     isRecurring: recurrence != null,
     recurrence,
-    repeat: resolveRepeat(draft.repeat, recurrenceBase, startDay, today),
+    repeat,
     warnings,
   };
 }
@@ -199,10 +209,7 @@ function resolveRepeatEnd(
   start: CalendarDay,
   today: CalendarDay,
 ): TodoRepeatEnd {
-  const hasSpokenEnd =
-    (repeat.until != null && repeat.until.kind !== "NONE") ||
-    (repeat.forDuration != null && repeat.forDuration.amount > 0);
-  const end = window?.end ?? (hasSpokenEnd ? resolveRecurrenceEnd(repeat, start, today) : null);
+  const end = window?.end ?? resolveSpokenRepeatEnd(repeat, start, today);
   if (end == null) {
     return { type: "NEVER" };
   }
@@ -438,24 +445,47 @@ function resolveRecurrenceWindow(
     .exhaustive();
 }
 
+function hasSpokenRepeatEnd(repeat: RepeatRef): boolean {
+  return (
+    (repeat.until != null && repeat.until.kind !== "NONE") ||
+    (repeat.forDuration != null && repeat.forDuration.amount > 0)
+  );
+}
+
+/** 말한 반복의 끝. 시작일보다 뒤가 아니면 반복이 되지 않으므로 말하지 않은 것으로 본다(모델이 지어낸 경우가 있다). */
+function resolveSpokenRepeatEnd(
+  repeat: RepeatRef,
+  start: CalendarDay,
+  today: CalendarDay,
+): CalendarDay | null {
+  if (!hasSpokenRepeatEnd(repeat)) {
+    return null;
+  }
+  const end =
+    repeat.until != null && repeat.until.kind !== "NONE"
+      ? resolveDateRef(repeat.until, today).day
+      : resolveDurationEnd(repeat, start);
+  return end.isAfter(start) ? end : null;
+}
+
+function resolveDurationEnd({ forDuration }: RepeatRef, start: CalendarDay): CalendarDay {
+  const amount = forDuration?.amount ?? 0;
+  const end = match(forDuration?.unit ?? "DAY")
+    .with("DAY", () => start.add(amount, "day"))
+    .with("WEEK", () => start.add(amount, "week"))
+    .with("MONTH", () => start.add(amount, "month"))
+    .exhaustive();
+  return end.subtract(1, "day");
+}
+
 function resolveRecurrenceEnd(
   repeat: RepeatRef,
   start: CalendarDay,
   today: CalendarDay,
 ): CalendarDay {
-  if (repeat.until != null && repeat.until.kind !== "NONE") {
-    return resolveDateRef(repeat.until, today).day;
-  }
-  if (repeat.forDuration != null && repeat.forDuration.amount > 0) {
-    const { unit, amount } = repeat.forDuration;
-    const end = match(unit)
-      .with("DAY", () => start.add(amount, "day"))
-      .with("WEEK", () => start.add(amount, "week"))
-      .with("MONTH", () => start.add(amount, "month"))
-      .exhaustive();
-    return end.subtract(1, "day");
-  }
-  return today.add(DEFAULT_RECURRENCE_WEEKS, "week");
+  return (
+    resolveSpokenRepeatEnd(repeat, start, today) ?? today.add(DEFAULT_RECURRENCE_WEEKS, "week")
+  );
 }
 
 function formatDay(day: CalendarDay): string {

@@ -5,6 +5,7 @@ import type {
   AccountProvider,
   UserStatus,
 } from "#api/modules/identity/domain/types/auth/auth.types";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TokenPair } from "../../ports/auth/auth-crypto.port.js";
 
@@ -84,6 +85,8 @@ export interface RequestMetadata {
   deviceName?: string;
   deviceType?: string;
   device?: RequestDevice;
+  /** Accept-Language의 지원 언어. 보내지 않은 요청에는 없다. */
+  locale?: SupportedLocale;
 }
 
 /**

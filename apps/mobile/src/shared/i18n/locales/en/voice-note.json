@@ -135,6 +135,7 @@
     "planLost": "We couldn't load the to-do cards. Your summary and transcript are still here.",
     "noTodos": "There was nothing to turn into to-dos. We kept the summary.",
     "applied": "To-dos added",
+    "appliedMemo": "Memo saved",
     "saveMemo": "Save as memo",
     "memoSaved": "Saved as a memo",
     "delete": "Delete voice note",

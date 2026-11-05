@@ -32,6 +32,15 @@ describe("Register — 이메일 계정 등록", () => {
     return { ...fixture, useCase };
   }
 
+  it("가입 요청의 언어를 기본 카테고리 이름에 넘긴다", async () => {
+    // Given
+    const fixture = given();
+    // When
+    await fixture.useCase.execute({ ...input, metadata: { locale: "en" } });
+    // Then
+    expect(fixture.seeder.categoryLocales).toEqual(["en"]);
+  });
+
   const input = {
     email: "new@example.com",
     password: AUTH_CREDENTIAL_PASSWORD,

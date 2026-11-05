@@ -399,7 +399,12 @@ VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
 
   return match(VoiceNotePolicy.getPlanStatus(note))
     .with({ status: 'applied' }, () => (
-      <Result title={t('result.applied')} testID="voice-note-applied" />
+      <Result
+        title={
+          VoiceNotePolicy.hasAppliedOnlyMemo(note) ? t('result.appliedMemo') : t('result.applied')
+        }
+        testID="voice-note-applied"
+      />
     ))
     .with({ status: 'no-todos' }, () => (
       <Result title={t('result.noTodos')} testID="voice-note-no-todos" />
@@ -432,10 +437,13 @@ VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
                 }
               },
             }}
-            onSaved={() => {
+            onSaved={({ todoCount }) => {
               const latest = drafts.find(accountId, draftId);
               if (latest != null) {
-                drafts.save(accountId, VoiceNotePolicy.withAppliedAt(latest, new Date()));
+                drafts.save(
+                  accountId,
+                  VoiceNotePolicy.withAppliedAt(latest, new Date(), todoCount),
+                );
               }
             }}
           />

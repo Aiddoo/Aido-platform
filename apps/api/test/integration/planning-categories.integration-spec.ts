@@ -271,4 +271,20 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // Then
     expect(await repository.countByUserId(userId)).toBe(1);
   });
+
+  it.each([
+    { why: "언어를 모르는 구 앱은 한국어", locale: undefined, names: ["중요한 일", "할 일"] },
+    { why: "영어로 가입하면 영어", locale: "en", names: ["Important", "To-do"] },
+  ] as const)("기본 카테고리 이름은 $why로 만든다", async ({ locale, names }) => {
+    // Given
+    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const provisioner = context.module.get<TodoCategoryProvisionerPort>(TODO_CATEGORY_PROVISIONER);
+
+    // When
+    await unitOfWork.run(() => provisioner.seed(userId, locale));
+
+    // Then
+    const categories = await repository.findManyByUserId(userId);
+    expect(categories.map(({ name }) => name)).toEqual(expect.arrayContaining([...names]));
+  });
 });

@@ -101,6 +101,8 @@ export const voiceNoteSchema = z.object({
   planDraft: storedPlanDraftSchema,
   planApplyRequest: voiceNotePlanApplyRequestSchema.nullable().default(null),
   appliedAt: instantSchema.nullable(),
+  /** 고른 카드로 저장한 할 일 수. 이 칸이 생기기 전에 저장한 초안은 null이다 */
+  appliedTodoCount: z.int().nonnegative().nullable().default(null),
   memoSaveRequest: voiceNoteMemoSaveRequestSchema.nullable().default(null),
   memoSavedAt: instantSchema.nullable(),
 });
@@ -125,6 +127,7 @@ export function createVoiceNote({ draftId, locale, createdAt }: CreateVoiceNoteI
     planDraft: null,
     planApplyRequest: null,
     appliedAt: null,
+    appliedTodoCount: null,
     memoSaveRequest: null,
     memoSavedAt: null,
   };
@@ -188,8 +191,17 @@ export function withPlanApplyRequest(
   return { ...note, planApplyRequest };
 }
 
-export function withAppliedAt(note: VoiceNote, appliedAt: Date): VoiceNote {
-  return { ...note, appliedAt, planDraft: null, planApplyRequest: null };
+export function withAppliedAt(
+  note: VoiceNote,
+  appliedAt: Date,
+  appliedTodoCount: number,
+): VoiceNote {
+  return { ...note, appliedAt, appliedTodoCount, planDraft: null, planApplyRequest: null };
+}
+
+/** 고른 카드에 할 일 없이 메모만 있어 메모만 저장했다 */
+export function hasAppliedOnlyMemo(note: VoiceNote): boolean {
+  return note.appliedAt != null && note.appliedTodoCount === 0;
 }
 
 export function withMemoSaveRequest(
@@ -378,6 +390,7 @@ export const VoiceNotePolicy = {
   withoutRecordings,
   hasText,
   hasNoPlannedTodos,
+  hasAppliedOnlyMemo,
   canDigest,
   canPlayRecording,
   findKeyPointAt,

@@ -69,6 +69,8 @@ interface CaseScore {
   /** 이 case가 해당 지표의 대상이 아니면 없다 */
   readonly metrics: Partial<Record<Metric, boolean>>;
   readonly bookmarkRecall?: number;
+  /** 녹음 정리의 제목·요약·핵심 포인트가 앱 언어인지 */
+  readonly isDigestInAppLanguage?: boolean;
   readonly diff?: unknown;
 }
 
@@ -220,6 +222,12 @@ function quickPlanCase(golden: QuickPlanGoldenCase): EvalCase {
   };
 }
 
+/** 지원 언어가 ko·en뿐이라 한글 유무로 가른다. 고유명사는 앱 언어가 달라도 원문 표기일 수 있어 지표로만 본다. */
+function isWrittenInLocale(texts: readonly string[], locale: VoiceNoteDigestGoldenCase["locale"]) {
+  const hasHangul = (text: string) => /\p{Script=Hangul}/u.test(text);
+  return texts.every((text) => hasHangul(text) === (locale === "ko"));
+}
+
 function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
   return {
     id: golden.id,
@@ -258,6 +266,10 @@ function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
             bookmarked.length === 0
               ? 1
               : bookmarked.filter((index) => picked.has(index)).length / bookmarked.length,
+          isDigestInAppLanguage: isWrittenInLocale(
+            [value.title, value.summary, ...value.keyPoints.map(({ text }) => text)],
+            golden.locale,
+          ),
         },
       };
     },
@@ -437,6 +449,10 @@ async function main(): Promise<number> {
     result.bookmarkRecall == null ? [] : [result.bookmarkRecall],
   );
 
+  const languageChecks = results.flatMap((result) =>
+    result.isDigestInAppLanguage == null ? [] : [result],
+  );
+
   const summary = {
     task: cli.task,
     model,
@@ -449,6 +465,14 @@ async function main(): Promise<number> {
     noAction: rate("noAction"),
     ...(recalls.length > 0 && {
       bookmarkRecall: recalls.reduce((total, value) => total + value, 0) / recalls.length,
+    }),
+    ...(languageChecks.length > 0 && {
+      digestInAppLanguage:
+        languageChecks.filter((result) => result.isDigestInAppLanguage === true).length /
+        languageChecks.length,
+      digestLanguageFailures: languageChecks
+        .filter((result) => result.isDigestInAppLanguage === false)
+        .map((result) => result.id),
     }),
     latencyMs: {
       p50: latencies[Math.floor((latencies.length - 1) / 2)] ?? null,

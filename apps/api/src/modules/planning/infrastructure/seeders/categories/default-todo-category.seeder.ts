@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todoCategory } from "#api/platform/database/schema/index";
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TodoCategoryProvisionerPort } from "../../../application/ports/categories/todo-category-provisioner.port.js";
 import { DEFAULT_CATEGORIES } from "../../../domain/policies/categories/default-categories.js";
@@ -12,10 +13,10 @@ import { DEFAULT_CATEGORIES } from "../../../domain/policies/categories/default-
 export class DefaultTodoCategorySeeder implements TodoCategoryProvisionerPort {
   constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
-  async seed(userId: string): Promise<number> {
+  async seed(userId: string, locale: SupportedLocale = DEFAULT_LOCALE): Promise<number> {
     const rows = await this.txHost.tx
       .insert(todoCategory)
-      .values(DEFAULT_CATEGORIES.map((category) => ({ userId, ...category })))
+      .values(DEFAULT_CATEGORIES[locale].map((category) => ({ userId, ...category })))
       .returning({ id: todoCategory.id });
     return rows.length;
   }
