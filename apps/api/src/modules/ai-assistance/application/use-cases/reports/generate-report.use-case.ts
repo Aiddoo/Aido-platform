@@ -198,7 +198,7 @@ export class GenerateReport {
     ]);
 
     // 다른 언어로 쓰인 지난 팁은 반복 판단 근거가 되지 못하고 언어를 섞게 한다.
-    const prevTips =
+    const previousTips =
       prevReport == null || prevReport.snapshot.locale !== locale ? null : prevReport.aiTips;
 
     const content = await this.#generateContent(
@@ -206,7 +206,7 @@ export class GenerateReport {
         reportData: aggregatedData,
         type,
         periodLabel,
-        previousTips: prevTips,
+        previousTips,
         period: { start: window.periodStart, end: window.periodEnd },
       },
       { userId, locale, isFinalAttempt },

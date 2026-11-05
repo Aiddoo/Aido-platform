@@ -51,7 +51,7 @@ import {
 /** 사람이 키·요청을 확인해야 하는 실패. 다음 업체로 넘기면서 error로 남긴다. */
 const OPERATOR_FAILURES: ReadonlySet<AiFailureKind> = new Set(["AUTH", "BAD_REQUEST"]);
 
-/** 스키마 불일치(retrySameProvider)는 첫 업체에만 한 번 더 묻는다. */
+/** 스키마 불일치(shouldRetrySameProvider)는 첫 업체에만 한 번 더 묻는다. */
 const MAX_CALLS_PER_PROVIDER = 2;
 
 type Attempt<T> =

@@ -140,10 +140,10 @@ export class UpdateTodo {
   }
 
   async publish(applied: AppliedTodoUpdate): Promise<void> {
-    const { id, userId, hasCategoryChanged: categoryChanged, events } = applied;
+    const { id, userId, hasCategoryChanged, events } = applied;
     this.#dependencies.logger.log({ event: PlanningTodoLogEvent.UPDATED, todoId: id, userId });
 
-    if (categoryChanged) {
+    if (hasCategoryChanged) {
       await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     }
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);

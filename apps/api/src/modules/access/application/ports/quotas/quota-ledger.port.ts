@@ -57,7 +57,7 @@ export interface QuotaLedgerPort {
    */
   reserve(input: QuotaReserveInput): Promise<QuotaReservation>;
   /**
-   * alreadyCommitted인데 돌려줄 결과를 잃었을 때 같은 행을 다시 예약한다. 추가로 차감하지 않는다.
+   * isAlreadyCommitted인데 돌려줄 결과를 잃었을 때 같은 행을 다시 예약한다. 추가로 차감하지 않는다.
    * 이후는 평소처럼 commit·refund한다. 다른 재요청이 먼저 다시 열었으면 AI_1314다.
    */
   reopen(reservation: QuotaReservation): Promise<QuotaReservation>;
