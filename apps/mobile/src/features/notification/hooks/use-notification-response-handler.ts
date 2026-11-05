@@ -1,7 +1,7 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, isApiError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,7 +43,9 @@ export function useNotificationResponseHandler() {
         try {
           trackEvent('marketing_push_opted_out', { source: 'push_action' });
         } catch (error) {
-          logger.warn(NOTIFICATION_LOG_EVENT.OPT_OUT_ANALYTICS_FAILED, { error });
+          logger.warn(NOTIFICATION_LOG_EVENT.OPT_OUT_ANALYTICS_FAILED, {
+            error: getErrorMessage(error),
+          });
         }
         return 'handled';
       }
@@ -85,7 +87,9 @@ export function useNotificationResponseHandler() {
           trackEvent('badge_opened_from_notification');
         }
       } catch (error) {
-        logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, { error });
+        logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, {
+          error: getErrorMessage(error),
+        });
       }
 
       if (data.notificationId > 0 && isCurrentSession()) {
@@ -93,7 +97,11 @@ export function useNotificationResponseHandler() {
           canApply: isCurrentSession,
         })
           .then(() => (isCurrentSession() ? notificationService.syncBadgeCount() : undefined))
-          .catch((error) => logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, { error }));
+          .catch((error) =>
+            logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
+              error: getErrorMessage(error),
+            }),
+          );
         notificationService
           .markOpened(data.notificationId)
           .then(unwrap)
@@ -102,7 +110,11 @@ export function useNotificationResponseHandler() {
               ? queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all })
               : undefined,
           )
-          .catch((error) => logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, { error }));
+          .catch((error) =>
+            logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, {
+              error: getErrorMessage(error),
+            }),
+          );
       }
       return 'handled';
     },

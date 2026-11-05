@@ -1,6 +1,6 @@
 import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
-import { toError } from '@src/shared/errors';
+import { getErrorMessage, toError } from '@src/shared/errors';
 import { useNavigationContainerRef } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -73,7 +73,9 @@ export function useNotificationResponseProcessor({
       try {
         gateway.clearLastResponse();
       } catch (error) {
-        logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, { error });
+        logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, {
+          error: getErrorMessage(error),
+        });
       }
     }
   }, [accountId, authStatus, gateway, logger]);

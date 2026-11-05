@@ -5,6 +5,7 @@ import { userReportSheetHref } from '@src/features/moderation/utils/navigation/m
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
+import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -220,7 +221,9 @@ function useNotificationPress(notification: Notification) {
       destination: destination.kind,
     });
     navigateToDestination(destination).catch((error) =>
-      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, { error }),
+      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, {
+        error: getErrorMessage(error),
+      }),
     );
   }, [
     notification,

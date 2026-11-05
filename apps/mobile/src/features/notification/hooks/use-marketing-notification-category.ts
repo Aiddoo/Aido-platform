@@ -1,4 +1,5 @@
 import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
+import { getErrorMessage } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { useEffect } from 'react';
 
@@ -21,7 +22,9 @@ export function useMarketingNotificationCategory() {
         ],
       })
       .catch((error) =>
-        logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_CATEGORY_REGISTRATION_FAILED, { error }),
+        logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_CATEGORY_REGISTRATION_FAILED, {
+          error: getErrorMessage(error),
+        }),
       );
   }, [gateway, logger]);
 }
