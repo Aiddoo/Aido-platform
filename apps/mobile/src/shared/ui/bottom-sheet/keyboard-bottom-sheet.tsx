@@ -95,11 +95,14 @@ export const KeyboardBottomSheet = ({
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
   const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
   const bottomPadding = getContentBottomPadding(insets.bottom);
-  // 키보드가 홈 인디케이터 영역을 덮는 동안에는 footer 아래 safe area 여백을 줄여 작은 화면(접은 Duo·SE)에서도
-  // 입력 칸이 들어갈 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
+  // 키보드 위로 시트가 끝까지 올라가 내용이 잘리는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄여 입력 칸이 들어갈
+  // 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
   const isKeyboardShown = useSharedValue(false);
   const footerPaddingStyle = useAnimatedStyle(() => ({
-    paddingBottom: isKeyboardShown.get() ? FOOTER_KEYBOARD_GAP : bottomPadding,
+    paddingBottom:
+      isKeyboardShown.get() && animatedPosition.get() <= topInset + 1
+        ? FOOTER_KEYBOARD_GAP
+        : bottomPadding,
   }));
   // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다.
   // 키보드가 오르내릴 때 내용 높이가 바뀌어 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다.
@@ -292,12 +295,12 @@ export const KeyboardBottomSheet = ({
       <BottomSheetFooter {...props}>
         <Animated.View style={[styles.footer, backgroundStyle, footerPaddingStyle]}>
           <View onLayout={(event) => setFooterContentHeight(event.nativeEvent.layout.height)}>
-            {footer}
+            <SheetFooterSlot />
           </View>
         </Animated.View>
       </BottomSheetFooter>
     ),
-    [backgroundStyle, footerPaddingStyle, footer],
+    [backgroundStyle, footerPaddingStyle],
   );
 
   const handleContentSizeChange = (_width: number, height: number) => {
@@ -318,46 +321,48 @@ export const KeyboardBottomSheet = ({
 
   return (
     <SheetDecorationContext value={backgroundDecoration}>
-      <GorhomBottomSheet
-        ref={sheetRef}
-        animatedPosition={animatedPosition}
-        accessible={false}
-        animationConfigs={animationConfigs}
-        index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
-        enableDynamicSizing
-        maxDynamicContentSize={maxDynamicContentSize}
-        enablePanDownToClose
-        enableContentPanningGesture={isContentPanEnabled}
-        keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
-        enableBlurKeyboardOnGesture
-        android_keyboardInputMode="adjustPan"
-        topInset={topInset}
-        style={{ marginLeft: margins.left, marginRight: margins.right }}
-        backgroundComponent={DecoratedSheetBackground}
-        backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
-        handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
-        backdropComponent={renderBackdrop}
-        onAnimate={handleAnimate}
-        onChange={handleSheetChange}
-        onClose={handleSheetClose}
-        footerComponent={footer == null ? undefined : renderFooter}
-      >
-        <BottomSheetScrollView
-          ref={scrollViewRef}
-          onScrollBeginDrag={handleScrollBeginDrag}
-          onContentSizeChange={handleContentSizeChange}
-          contentContainerStyle={[
-            styles.content,
-            { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
-          ]}
-          keyboardShouldPersistTaps="always"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+      <SheetFooterContext value={footer}>
+        <GorhomBottomSheet
+          ref={sheetRef}
+          animatedPosition={animatedPosition}
+          accessible={false}
+          animationConfigs={animationConfigs}
+          index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
+          enableDynamicSizing
+          maxDynamicContentSize={maxDynamicContentSize}
+          enablePanDownToClose
+          enableContentPanningGesture={isContentPanEnabled}
+          keyboardBehavior="interactive"
+          keyboardBlurBehavior="restore"
+          enableBlurKeyboardOnGesture
+          android_keyboardInputMode="adjustPan"
+          topInset={topInset}
+          style={{ marginLeft: margins.left, marginRight: margins.right }}
+          backgroundComponent={DecoratedSheetBackground}
+          backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
+          handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
+          backdropComponent={renderBackdrop}
+          onAnimate={handleAnimate}
+          onChange={handleSheetChange}
+          onClose={handleSheetClose}
+          footerComponent={footer == null ? undefined : renderFooter}
         >
-          {children}
-        </BottomSheetScrollView>
-      </GorhomBottomSheet>
+          <BottomSheetScrollView
+            ref={scrollViewRef}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onContentSizeChange={handleContentSizeChange}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
+            ]}
+            keyboardShouldPersistTaps="always"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {children}
+          </BottomSheetScrollView>
+        </GorhomBottomSheet>
+      </SheetFooterContext>
     </SheetDecorationContext>
   );
 };
@@ -381,6 +386,12 @@ function getContentBottomPadding(bottomInset: number) {
 }
 
 const SheetDecorationContext = createContext<ReactNode>(null);
+/** footer 내용이 바뀔 때 gorhom의 footerComponent가 바뀌면 고정 영역이 다시 마운트되어 누르던 버튼을 놓친다 */
+const SheetFooterContext = createContext<ReactNode>(null);
+
+function SheetFooterSlot() {
+  return use(SheetFooterContext);
+}
 
 /**
  * gorhom 기본 배경과 같은 면 뒤에 장식을 깐다. 장식이 바뀔 때 배경 컴포넌트가 바뀌어 다시 마운트되지 않도록

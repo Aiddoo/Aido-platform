@@ -19,6 +19,7 @@ import {
   useActionChipIconSize,
   ArrowUpIcon,
   BottomSheetInput,
+  BottomSheetTextArea,
   Box,
   CalendarIcon,
   ClockIcon,
@@ -321,6 +322,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     }
   });
 
+  const isFormStep = voice.state.status === 'idle' || voice.state.status === 'failed';
   const title = useWatch({ control: methods.control, name: 'title' });
   const isSubmitDisabled = !title?.trim() || isSubmitting;
 
@@ -485,86 +487,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         isContentPanEnabled={
           !VoiceCapturePolicy.isActive(voice.state) && voice.state.status !== 'planning'
         }
-      >
-        {match(voice.state)
-          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
-            <QuickVoicePanel
-              state={voice.state}
-              level={voice.level}
-              isQuiet={voice.isQuiet}
-              locale={voice.locale}
-              onLocaleChange={voice.setLocale}
-              onFinish={voice.finish}
-              onCancel={voice.cancel}
-              onResume={voice.resume}
-              onContinueAsVoiceNote={voice.continueAsVoiceNote}
-            />
-          ))
-          .with({ status: 'planning' }, () => (
-            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
-          ))
-          .with({ status: 'review' }, ({ plan, isCharged }) => (
-            <AddTodoVoiceReview
-              plan={plan}
-              isCharged={isCharged}
-              onApplied={() => {
-                onClose();
-                if (props.mode === 'create') {
-                  props.onSuccess?.();
-                }
-              }}
-              onRestart={voice.restart}
-              onTypeInstead={voice.typeInstead}
-            />
-          ))
-          .otherwise(() => (
-            <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
-              <QuickVoicePanel.Failed
-                state={voice.state}
-                isConsentRequired={voice.isConsentRequired}
-                onResume={voice.resume}
-                onRetryPlanning={voice.retryPlanning}
-              />
-              <FormField control={methods.control} name="title">
-                {({ onChange, value }) => (
-                  <BottomSheetInput
-                    ref={todoInputRef}
-                    // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
-                    autoFocus={!isVoiceHintRequested && !hasVoiceHint && !voice.isRestarting}
-                    onFocus={() => setIsTitleFocused(true)}
-                    onBlur={() => setIsTitleFocused(false)}
-                    placeholder={t('add.placeholder')}
-                    value={value}
-                    onChange={onChange}
-                    maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
-                    size="medium"
-                    renderErrorMessage={false}
-                    returnKeyType="done"
-                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
-                  />
-                )}
-              </FormField>
-
-              {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-                contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-              >
-                <DateChip onPress={handleDateChipPress} />
-                <TimeChip onPress={handleTimeChipPress} />
-                {canChangeRepeat && <RepeatChip onPress={handleRepeatChipPress} />}
-                <VisibilityChip />
-                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-                <QueryErrorBoundary fallback={() => null}>
-                  <Suspense fallback={null}>
-                    <CategoryChip onPress={handleCategoryChipPress} />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </ScrollView>
-
+        footer={
+          isFormStep ? (
+            <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
               <Box className="h-px bg-gray-2" />
 
               <HStack gap={8} align="center" justify="end">
@@ -616,6 +541,109 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                   )}
                 </PressableFeedback>
               </HStack>
+            </VStack>
+          ) : undefined
+        }
+      >
+        {match(voice.state)
+          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
+            <QuickVoicePanel
+              state={voice.state}
+              level={voice.level}
+              isQuiet={voice.isQuiet}
+              locale={voice.locale}
+              onLocaleChange={voice.setLocale}
+              onFinish={voice.finish}
+              onCancel={voice.cancel}
+              onResume={voice.resume}
+              onContinueAsVoiceNote={voice.continueAsVoiceNote}
+            />
+          ))
+          .with({ status: 'planning' }, () => (
+            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
+          ))
+          .with({ status: 'review' }, ({ plan, isCharged }) => (
+            <AddTodoVoiceReview
+              plan={plan}
+              isCharged={isCharged}
+              onApplied={() => {
+                onClose();
+                if (props.mode === 'create') {
+                  props.onSuccess?.();
+                }
+              }}
+              onRestart={voice.restart}
+              onTypeInstead={voice.typeInstead}
+            />
+          ))
+          .otherwise(() => (
+            <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
+              <QuickVoicePanel.Failed
+                state={voice.state}
+                isConsentRequired={voice.isConsentRequired}
+                onResume={voice.resume}
+                onRetryPlanning={voice.retryPlanning}
+              />
+              <FormField control={methods.control} name="title">
+                {({ onChange, value }) =>
+                  voice.state.status === 'failed' ? (
+                    // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다
+                    <BottomSheetTextArea
+                      ref={todoInputRef}
+                      autoFocus={!voice.isRestarting}
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
+                      growsWithContent
+                      textSize="b3"
+                      preserveErrorSpace={false}
+                      className="min-h-12 max-h-28"
+                      returnKeyType="done"
+                      submitBehavior="submit"
+                      onFocus={() => setIsTitleFocused(true)}
+                      onBlur={() => setIsTitleFocused(false)}
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+                    />
+                  ) : (
+                    <BottomSheetInput
+                      ref={todoInputRef}
+                      // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
+                      autoFocus={!isVoiceHintRequested && !hasVoiceHint && !voice.isRestarting}
+                      onFocus={() => setIsTitleFocused(true)}
+                      onBlur={() => setIsTitleFocused(false)}
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
+                      size="medium"
+                      renderErrorMessage={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+                    />
+                  )
+                }
+              </FormField>
+
+              {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
+              >
+                <DateChip onPress={handleDateChipPress} />
+                <TimeChip onPress={handleTimeChipPress} />
+                {canChangeRepeat && <RepeatChip onPress={handleRepeatChipPress} />}
+                <VisibilityChip />
+                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
+                <QueryErrorBoundary fallback={() => null}>
+                  <Suspense fallback={null}>
+                    <CategoryChip onPress={handleCategoryChipPress} />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </ScrollView>
             </VStack>
           ))}
       </KeyboardBottomSheet>
