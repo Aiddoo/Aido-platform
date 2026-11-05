@@ -146,7 +146,7 @@ describe("알림 문구 생성", () => {
   });
 
   it("영어 할 일 알림은 최대 제목에서도 잠금 화면 길이 예산을 지킨다", () => {
-    const stages: readonly ("60min" | "10min" | "immediate")[] = ["60min", "10min", "immediate"];
+    const stages: readonly ("60min" | "10min")[] = ["60min", "10min"];
 
     for (const stage of stages) {
       for (let occurrenceIndex = 0; occurrenceIndex < 30; occurrenceIndex += 1) {

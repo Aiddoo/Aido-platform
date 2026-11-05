@@ -13,7 +13,7 @@ describe("알림 문구 버전", () => {
       body: "산책부터 시작해볼까?",
       campaignKey: "todo_reminder_v1",
       variantId: "todo_reminder_v1.v1",
-      metadata: { stage: "immediate", message: "친구가 직접 쓴 글" },
+      metadata: { stage: "10min", message: "친구가 직접 쓴 글" },
     };
 
     // When
@@ -21,11 +21,11 @@ describe("알림 문구 버전", () => {
 
     // Then
     expect(result.metadata).toEqual({
-      stage: "immediate",
+      stage: "10min",
       message: "친구가 직접 쓴 글",
       copyRevision: "1.14.0",
     });
-    expect(data.metadata).toEqual({ stage: "immediate", message: "친구가 직접 쓴 글" });
+    expect(data.metadata).toEqual({ stage: "10min", message: "친구가 직접 쓴 글" });
     expect(result.campaignKey).toBe(data.campaignKey);
     expect(result.variantId).toBe(data.variantId);
   });

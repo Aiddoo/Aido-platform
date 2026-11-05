@@ -54,7 +54,7 @@ const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
 const SCHEMA = "pgboss";
 
-type Stage = "60min" | "10min" | "immediate";
+type Stage = "60min" | "10min";
 type Step =
   | { readonly fire: Stage }
   | { readonly move: { readonly day: number; readonly time: string | null } }

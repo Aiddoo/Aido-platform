@@ -185,9 +185,6 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
 }
 
 /** 알 수 없는 단계 문자열은 가장 이른 단계 문구로 보낸다. */
-function resolveReminderStage(stage: string): "60min" | "10min" | "immediate" {
-  if (stage === "10min" || stage === "immediate") {
-    return stage;
-  }
-  return "60min";
+function resolveReminderStage(stage: string): "60min" | "10min" {
+  return stage === "10min" ? stage : "60min";
 }

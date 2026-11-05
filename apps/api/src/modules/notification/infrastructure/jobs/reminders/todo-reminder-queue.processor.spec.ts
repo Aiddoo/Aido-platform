@@ -237,20 +237,6 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       );
     });
 
-    it("immediate 단계 알림을 발송한다", async () => {
-      // Given
-      setupMocks({ todoExists: true });
-      notificationPublisher.publish.mockResolvedValue(null);
-
-      // When
-      await processor.process(makeJob({ stageLabel: "immediate" }));
-
-      // Then
-      expect(notificationPublisher.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ metadata: { stage: "immediate" } }),
-      );
-    });
-
     it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
       // Given — DB에는 변경된 제목
       setupMocks({

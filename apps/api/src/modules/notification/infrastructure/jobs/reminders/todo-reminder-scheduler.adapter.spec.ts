@@ -2,10 +2,7 @@ import { vi } from "vitest";
 
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
-import {
-  REMINDER_IMMEDIATE_LABEL,
-  REMINDER_STAGES,
-} from "../../../domain/services/reminders/reminder-plan.js";
+import { REMINDER_STAGES } from "../../../domain/services/reminders/reminder-plan.js";
 import { TODO_REMINDER_QUEUE } from "./todo-reminder-queue.constants.js";
 import { TodoReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.js";
 
@@ -66,21 +63,39 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
     );
   });
 
-  it("5분 뒤 마감은 즉시 알림 하나만 등록한다", async () => {
-    await adapter.scheduleReminder(1, new Date(Date.now() + 5 * 60 * 1000), USER_ID);
+  it("30분 뒤 마감은 지난 60분 단계를 건너뛰고 10분 단계만 등록한다", async () => {
+    await adapter.scheduleReminder(1, new Date(Date.now() + 30 * 60 * 1000), USER_ID);
 
     expect(runtime.enqueueCalls).toHaveLength(1);
     expect(runtime.enqueueCalls[0]).toMatchObject({
-      data: { data: { stageLabel: REMINDER_IMMEDIATE_LABEL } },
-      options: { idempotencyKey: `reminder_1_${REMINDER_IMMEDIATE_LABEL}` },
+      data: { data: { stageLabel: "10min" } },
+      options: { idempotencyKey: "reminder_1_10min" },
     });
+  });
+
+  it("5분 뒤 마감은 모든 단계가 지나 아무것도 등록하지 않는다", async () => {
+    await adapter.scheduleReminder(1, new Date(Date.now() + 5 * 60 * 1000), USER_ID);
+
+    expect(runtime.enqueueCalls).toHaveLength(0);
+    expect(runtime.cancelCalls).toHaveLength(REMINDER_STAGES.length);
+  });
+
+  it("10분 안쪽으로 시간을 다섯 번 고쳐도 알림 작업은 하나도 생기지 않는다", async () => {
+    // Given
+    const minutesLeft = [9, 8, 7, 6, 5];
+    // When
+    for (const minutes of minutesLeft) {
+      await adapter.scheduleReminder(1, new Date(Date.now() + minutes * 60 * 1000), USER_ID);
+    }
+    // Then
+    expect(runtime.enqueueCalls).toHaveLength(0);
   });
 
   it("과거 일정은 기존 키를 취소하고 새 작업을 만들지 않는다", async () => {
     await adapter.scheduleReminder(1, new Date(Date.now() - 60_000), USER_ID);
 
     expect(runtime.enqueueCalls).toHaveLength(0);
-    expect(runtime.cancelCalls).toHaveLength(REMINDER_STAGES.length + 1);
+    expect(runtime.cancelCalls).toHaveLength(REMINDER_STAGES.length);
   });
 
   it("재스케줄 전 기존 작업 취소 실패를 호출자에게 전파한다", async () => {
@@ -130,9 +145,7 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
     expect(cancel).toHaveBeenCalledTimes(1);
     expect(runtime.cancelCalls.map(({ idempotencyKey }) => idempotencyKey)).toEqual(
       [42, 43].flatMap((todoId) =>
-        [...REMINDER_STAGES.map(({ label }) => label), REMINDER_IMMEDIATE_LABEL].map(
-          (label) => `reminder_${todoId}_${label}`,
-        ),
+        REMINDER_STAGES.map(({ label }) => `reminder_${todoId}_${label}`),
       ),
     );
   });

@@ -115,8 +115,8 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
   it("이미 끝난 단계 작업이 보존 중이어도 다시 예약할 수 있다", async () => {
     // Given
     const todoId = nextTodoId;
-    const key = `reminder_${todoId}_immediate`;
-    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 5 * MINUTE_MS), USER_ID);
+    const key = `reminder_${todoId}_10min`;
+    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 10 * MINUTE_MS + 500), USER_ID);
     await runtime.work(TODO_REMINDER_QUEUE, vi.fn().mockResolvedValue(undefined), {
       teamSize: 1,
       pollingIntervalSeconds: 1,
@@ -130,7 +130,7 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
       { timeout: 15_000, interval: 200 },
     );
     // When
-    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 8 * MINUTE_MS), USER_ID);
+    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 10 * MINUTE_MS + 500), USER_ID);
     // Then
     await vi.waitFor(
       async () => {

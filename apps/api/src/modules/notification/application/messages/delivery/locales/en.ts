@@ -51,13 +51,6 @@ export const SCHEDULER_TEMPLATES = {
       ({ todoTitle }) => copy("Almost time 🐾", `“${todoTitle}” starts in 10 minutes`),
     ],
   },
-  TODO_REMINDER_IMMEDIATE: {
-    variants: [
-      ({ todoTitle }) => copy("It’s go time 🐾", `Ready to start “${todoTitle}”?`),
-      ({ todoTitle }) => copy("Your reminder is here", `Time to check off “${todoTitle}”`),
-      ({ todoTitle }) => copy("Starting is half the work", `Take step one on “${todoTitle}”`),
-    ],
-  },
   TODO_SERIES_PAUSED: {
     variants: [staticCopy("Repeating to-do reminders paused", "Open the app to start them again")],
   },

@@ -61,13 +61,6 @@ export const SCHEDULER_TEMPLATES = {
       ({ todoTitle }) => copy("슬슬 준비해볼까요?", `10분 뒤 ‘${todoTitle}’ 시작이에요`),
     ],
   },
-  TODO_REMINDER_IMMEDIATE: {
-    variants: [
-      ({ todoTitle }) => copy("지금 할 시간이에요 🐾", `‘${todoTitle}’ 시작해볼까요?`),
-      ({ todoTitle }) => copy("알림을 맞춰둔 시간이에요", `‘${todoTitle}’ 끝내고 체크해봐요`),
-      ({ todoTitle }) => copy("시작이 반이에요", `‘${todoTitle}’ 첫걸음만 떼볼까요?`),
-    ],
-  },
   TODO_SERIES_PAUSED: {
     variants: [staticCopy("반복 할 일 알림을 잠시 멈췄어요", "앱을 열면 다시 시작돼요")],
   },
