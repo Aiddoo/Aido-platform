@@ -67,6 +67,7 @@
     }
   },
   "record": {
+    "languageChangeFailed": "언어를 바꾸지 못했어요. 듣던 언어로 이어 갈게요.",
     "title": "말로 메모하기",
     "close": "닫기",
     "pause": "일시정지",

@@ -68,6 +68,7 @@
     }
   },
   "record": {
+    "languageChangeFailed": "Couldn't switch languages. We'll keep listening in the current one.",
     "title": "Voice note",
     "close": "Close",
     "pause": "Pause",

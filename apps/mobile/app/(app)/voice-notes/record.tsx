@@ -1,3 +1,4 @@
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
@@ -15,6 +16,7 @@ import { VoiceNoteMarkControl } from '@src/features/voice/components/note/voice-
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { RecognitionLanguageToggle } from '@src/features/voice/components/quick-voice/recognition-language-toggle';
+import { VOICE_NOTE_LOG_EVENT } from '@src/features/voice/constants/voice-note-log-events';
 import {
   VoiceCapturePolicy,
   type VoiceCaptureState,
@@ -27,6 +29,7 @@ import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-no
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
+import { errorMessageOf } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -59,6 +62,7 @@ function VoiceNoteRecordScreen() {
   useKeepAwake(undefined, KEEP_AWAKE_OPTIONS);
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
+  const logger = useLogger();
   const confirmDialog = useConfirmDialog();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
@@ -164,8 +168,22 @@ function VoiceNoteRecordScreen() {
     }
   };
 
+  /** 닫기와 끝내기는 다시 누르면 되니 알리지 않고 진단만 남긴다 */
+  const logActionFailure = (action: 'close' | 'finish') => (error: unknown) => {
+    logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_ACTION_FAILED, {
+      action,
+      error: errorMessageOf(error),
+    });
+  };
+  const requestClose = () => {
+    handleClose().catch(logActionFailure('close'));
+  };
+  const requestFinish = () => {
+    handleFinishPress().catch(logActionFailure('finish'));
+  };
+
   const closeOnBackPress = useEffectEvent(() => {
-    handleClose().catch(() => undefined);
+    requestClose();
     return true;
   });
   useEffect(() => {
@@ -196,7 +214,7 @@ function VoiceNoteRecordScreen() {
             state={stopped}
             canResume={VoiceCapturePolicy.canResumeWithinLimit(stopped, limitMs)}
             onSummarize={recording.finish}
-            onClose={handleClose}
+            onClose={requestClose}
             onResume={recording.resume}
           />
         ))
@@ -205,7 +223,7 @@ function VoiceNoteRecordScreen() {
             isListening={state.status === 'listening'}
             markCount={recording.markCount}
             onPause={recording.pause}
-            onFinish={handleFinishPress}
+            onFinish={requestFinish}
             onMark={recording.mark}
           />
         ))}
@@ -219,12 +237,17 @@ function VoiceNoteRecordScreen() {
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
       <VoiceNoteHeader
         title={t('record.title')}
-        onClose={handleClose}
+        onClose={requestClose}
         right={
           <RecognitionLanguageToggle
             value={locale}
             onValueChange={(next) => {
-              handleLocaleChange(next).catch(() => undefined);
+              handleLocaleChange(next).catch((error: unknown) => {
+                logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
+                  error: errorMessageOf(error),
+                });
+                toast.error(t('record.languageChangeFailed'));
+              });
             }}
           />
         }
