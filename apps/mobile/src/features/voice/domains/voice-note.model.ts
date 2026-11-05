@@ -1,7 +1,7 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS } from '@src/shared/utils/date-format';
-import { chunk } from 'es-toolkit';
+import { chunk, sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
 import {
@@ -254,6 +254,42 @@ export function hasNoPlannedTodos(note: VoiceNote): boolean {
   );
 }
 
+/** 계획 칸에 무엇을 보일지. 카드를 고칠 수 있을 때만 초안을 함께 돌려준다 */
+export type VoiceNotePlanStatus =
+  | { status: 'applied' }
+  | { status: 'no-todos' }
+  | { status: 'lost' }
+  | { status: 'reviewable'; planDraft: PlanReviewDraft };
+
+export function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
+  if (note.appliedAt != null) {
+    return { status: 'applied' };
+  }
+  if (hasNoPlannedTodos(note) && (note.planDraft?.form.actions.length ?? 0) === 0) {
+    return { status: 'no-todos' };
+  }
+  return note.planDraft == null
+    ? { status: 'lost' }
+    : { status: 'reviewable', planDraft: note.planDraft };
+}
+
+export function getPlannedTodoCount(note: VoiceNote): number {
+  return note.planDraft?.form.actions.filter(isTodoAction).length ?? 0;
+}
+
+export function getCharacterCount(note: VoiceNote): number {
+  return sumBy(note.sentences, ({ text }) => text.length);
+}
+
+export function getMarkCount(note: VoiceNote): number {
+  return note.sentences.filter(({ isBookmarked }) => isBookmarked).length;
+}
+
+/** 재생 위치에 있는 문장. 첫 문장 앞이면 -1이다 */
+export function findSentenceIndexAt(note: VoiceNote, positionMs: number): number {
+  return note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs);
+}
+
 /** 정리한 제목. 정리 전이거나 서버가 비워 줬으면 null이라 화면이 기본 제목을 쓴다 */
 export function getDigestTitle(note: VoiceNote): string | null {
   return note.digest == null || note.digest.title === '' ? null : note.digest.title;
@@ -327,12 +363,30 @@ export function isRecordingFileExpired(modifiedAt: Date | null, now: Date): bool
 }
 
 export const VoiceNotePolicy = {
+  createVoiceNote,
+  createDigestInput,
+  createDigestMemo,
+  withSentences,
+  withRecordings,
+  withDigestRequest,
+  withDigestResult,
+  withPlanDraft,
+  withPlanApplyRequest,
+  withAppliedAt,
+  withMemoSaveRequest,
+  withMemoSavedAt,
+  withoutRecordings,
   hasText,
   hasNoPlannedTodos,
   canDigest,
   canPlayRecording,
   findKeyPointAt,
   findRecordingIndexAt,
+  findSentenceIndexAt,
+  getPlanStatus,
+  getPlannedTodoCount,
+  getCharacterCount,
+  getMarkCount,
   getDigestTitle,
   getRecordingSizeBytes,
   isExpired,

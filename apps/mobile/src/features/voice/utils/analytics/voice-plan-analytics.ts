@@ -1,9 +1,8 @@
 import type { VoicePlanAnalyticsSource } from '@src/shared/observability/telemetry-keys';
 
 import {
-  isDuplicateAction,
-  isTodoAction,
   type VoicePlan,
+  VoicePlanPolicy,
   type VoicePlanSource,
 } from '../../domains/voice-plan.model';
 
@@ -19,8 +18,8 @@ export const toAnalyticsSource = (source: VoicePlanSource) => ANALYTICS_SOURCE[s
 /** 제목·내용 없이 개수만 센다 */
 export function summarizePlanForAnalytics(plan: VoicePlan) {
   return {
-    todo_count: plan.actions.filter(isTodoAction).length,
-    memo_count: plan.actions.filter((action) => !isTodoAction(action)).length,
-    duplicate_count: plan.actions.filter(isDuplicateAction).length,
+    todo_count: plan.actions.filter(VoicePlanPolicy.isTodoAction).length,
+    memo_count: plan.actions.filter((action) => !VoicePlanPolicy.isTodoAction(action)).length,
+    duplicate_count: plan.actions.filter(VoicePlanPolicy.isDuplicateAction).length,
   };
 }

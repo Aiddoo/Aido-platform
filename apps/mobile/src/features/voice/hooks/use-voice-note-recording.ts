@@ -21,25 +21,15 @@ import {
   VOICE_RECORDING_SAVE_WAIT_MS,
 } from '../constants/voice-note.constants';
 import {
-  applyCaptionResult,
-  commitProvisional,
-  createCaptionsFromNote,
-  createVoiceNoteCaptions,
-  getCaptionInterimText,
-  getCaptionSentences,
-  getMarkedSentenceCount,
-  hasCaptionText,
   type VoiceNoteCaptions,
-  withBookmark,
+  VoiceNoteCaptionPolicy,
 } from '../domains/voice-note-caption.model';
 import {
-  createVoiceNote,
   type VoiceNote,
+  VoiceNotePolicy,
   type VoiceNoteRecording,
-  withRecordings,
-  withSentences,
 } from '../domains/voice-note.model';
-import { createVoiceTranscript } from '../domains/voice-transcript.model';
+import { VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 interface UseVoiceNoteRecordingOptions {
@@ -84,10 +74,14 @@ export function useVoiceNoteRecording({
     seedDraftId == null ? undefined : storage.drafts.find(accountId, seedDraftId),
   );
   const [baseNote] = useState<VoiceNote>(
-    () => seedNote ?? createVoiceNote({ draftId: randomUUID(), locale, createdAt: new Date() }),
+    () =>
+      seedNote ??
+      VoiceNotePolicy.createVoiceNote({ draftId: randomUUID(), locale, createdAt: new Date() }),
   );
   const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
-    seedNote == null ? createVoiceNoteCaptions() : createCaptionsFromNote(seedNote),
+    seedNote == null
+      ? VoiceNoteCaptionPolicy.createVoiceNoteCaptions()
+      : VoiceNoteCaptionPolicy.createCaptionsFromNote(seedNote),
   );
   const captionsRef = useRef(captions);
   const recordingsRef = useRef<VoiceNoteRecording[]>([]);
@@ -138,8 +132,12 @@ export function useVoiceNoteRecording({
 
   const toNote = (): VoiceNote => {
     const nowMs = session.getElapsedMs();
-    return withRecordings(
-      withSentences(baseNote, getCaptionSentences(captionsRef.current, nowMs), nowMs),
+    return VoiceNotePolicy.withRecordings(
+      VoiceNotePolicy.withSentences(
+        baseNote,
+        VoiceNoteCaptionPolicy.getCaptionSentences(captionsRef.current, nowMs),
+        nowMs,
+      ),
       recordingsRef.current,
     );
   };
@@ -193,7 +191,10 @@ export function useVoiceNoteRecording({
       ? storage.drafts.find(accountId, baseNote.draftId)
       : undefined;
     if (handedOff != null) {
-      storage.drafts.save(accountId, withRecordings(handedOff, recordingsRef.current));
+      storage.drafts.save(
+        accountId,
+        VoiceNotePolicy.withRecordings(handedOff, recordingsRef.current),
+      );
     }
   };
 
@@ -239,14 +240,16 @@ export function useVoiceNoteRecording({
       })
       .with({ type: 'result' }, (result) => {
         updateCaptions(
-          applyCaptionResult(captionsRef.current, result, {
+          VoiceNoteCaptionPolicy.applyCaptionResult(captionsRef.current, result, {
             nowMs: session.getElapsedMs(),
             segmentStartMs: currentSegmentStartRef.current,
           }),
         );
       })
       .with({ type: 'end' }, () => {
-        updateCaptions(commitProvisional(captionsRef.current, session.getElapsedMs()));
+        updateCaptions(
+          VoiceNoteCaptionPolicy.commitProvisional(captionsRef.current, session.getElapsedMs()),
+        );
       })
       .with({ type: 'recording-saved' }, ({ uri }) => receiveRecording(uri))
       .with({ type: 'volume' }, { type: 'error' }, { type: 'no-match' }, noop)
@@ -342,7 +345,7 @@ export function useVoiceNoteRecording({
         seedNote == null
           ? undefined
           : {
-              transcript: createVoiceTranscript({
+              transcript: VoiceTranscriptPolicy.createVoiceTranscript({
                 sentences: seedNote.sentences.map(({ text }) => text),
               }),
               elapsedMs: seedNote.durationMs,
@@ -353,7 +356,9 @@ export function useVoiceNoteRecording({
 
   const mark = () => {
     haptics.selection();
-    updateCaptions(withBookmark(captionsRef.current, session.getElapsedMs()));
+    updateCaptions(
+      VoiceNoteCaptionPolicy.withBookmark(captionsRef.current, session.getElapsedMs()),
+    );
   };
 
   /** 초안을 지우고 나간다(들은 글자가 없을 때). 뒤늦은 파일·글자는 더 받지 않는다 */
@@ -367,16 +372,16 @@ export function useVoiceNoteRecording({
     ...session,
     draftId: baseNote.draftId,
     /** 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 `interimText`로 따로 그린다 */
-    sentences: getCaptionSentences(
+    sentences: VoiceNoteCaptionPolicy.getCaptionSentences(
       { ...captions, provisional: captions.provisional.slice(0, -1) },
       0,
     ),
-    interimText: getCaptionInterimText(captions),
+    interimText: VoiceNoteCaptionPolicy.getCaptionInterimText(captions),
     /** 이어 받은 글자까지 포함해 들은 글자가 있다. 있으면 묻지 않고 지우면 안 된다 */
-    hasText: hasCaptionText(captions),
+    hasText: VoiceNoteCaptionPolicy.hasCaptionText(captions),
     bookmarksMs: captions.bookmarksMs,
     /** 중요 표시한 문장 수. 정리·결과 화면의 개수와 같은 기준이다 */
-    markCount: getMarkedSentenceCount(captions),
+    markCount: VoiceNoteCaptionPolicy.getMarkedSentenceCount(captions),
     start,
     mark,
     discard,

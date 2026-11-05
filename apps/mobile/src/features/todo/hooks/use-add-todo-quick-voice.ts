@@ -10,8 +10,8 @@ import {
   type PreparedPlanRequest,
 } from '@src/features/voice/domains/plan-request.model';
 import type { CapturedPlan } from '@src/features/voice/domains/voice-capture.model';
-import { createVoiceNoteFromTranscript } from '@src/features/voice/domains/voice-note-caption.model';
-import { getTranscriptText } from '@src/features/voice/domains/voice-transcript.model';
+import { VoiceNoteCaptionPolicy } from '@src/features/voice/domains/voice-note-caption.model';
+import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
 import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
@@ -96,7 +96,9 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     onLimitReached: noop,
     onFailed: (transcript) => {
       if (methods.getValues('title').trim().length === 0) {
-        methods.setValue('title', getTranscriptText(transcript), { shouldDirty: true });
+        methods.setValue('title', VoiceTranscriptPolicy.getTranscriptText(transcript), {
+          shouldDirty: true,
+        });
       }
     },
   });
@@ -137,7 +139,9 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   };
 
   const moveTranscriptToTitle = () => {
-    methods.setValue('title', getTranscriptText(session.state.transcript), { shouldDirty: true });
+    methods.setValue('title', VoiceTranscriptPolicy.getTranscriptText(session.state.transcript), {
+      shouldDirty: true,
+    });
   };
 
   /** 정리를 기다리다 그만둔다. 글자는 입력 칸에 남기고, 같은 글자를 다시 보내면 같은 키라 두 번 차감되지 않는다 */
@@ -164,7 +168,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
       onSubscribe: onExit,
       getRecordHref: () => {
         const { transcript, elapsedMs } = session.state;
-        const note = createVoiceNoteFromTranscript({
+        const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
           draftId: randomUUID(),
           locale,
           createdAt: new Date(),

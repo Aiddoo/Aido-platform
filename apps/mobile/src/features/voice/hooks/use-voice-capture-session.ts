@@ -41,11 +41,7 @@ import {
   type VoiceCaptureState,
   type VoicePauseCause,
 } from '../domains/voice-capture.model';
-import {
-  getTranscriptText,
-  isTranscriptEmpty,
-  type VoiceTranscript,
-} from '../domains/voice-transcript.model';
+import { type VoiceTranscript, VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 import { getDurationBucket } from '../utils/analytics/duration-bucket';
 
 /** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
@@ -464,7 +460,7 @@ export function useVoiceCaptureSession({
       return;
     }
     let isCurrent = true;
-    const text = getTranscriptText(stateRef.current.transcript);
+    const text = VoiceTranscriptPolicy.getTranscriptText(stateRef.current.transcript);
     addBreadcrumb('plan.requested', { mode });
     runCaptured(text)
       .then((result) => {
@@ -576,7 +572,10 @@ export function useVoiceCaptureSession({
       isStopRequestedRef.current = false;
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
-      trackFinished(isTranscriptEmpty(previous.transcript) ? 'empty' : outcome, previous);
+      trackFinished(
+        VoiceTranscriptPolicy.isTranscriptEmpty(previous.transcript) ? 'empty' : outcome,
+        previous,
+      );
     }
   };
 

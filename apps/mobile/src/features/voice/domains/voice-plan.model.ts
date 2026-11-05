@@ -225,6 +225,11 @@ export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
 }
 
 export const VoicePlanPolicy = {
+  isTodoAction,
+  withRepeat,
+  withStartDate,
+  withScheduledTime,
+  getCategoryId,
   isDuplicateAction,
   getDefaultSelection,
   getSelectedActions,

@@ -18,6 +18,20 @@ import {
 } from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
 
+const createPlanDraftWithActions = (actions: unknown[]) =>
+  createPlanReviewDraft(
+    voicePlanSchema.parse({
+      planId: 'draft-1',
+      source: 'voice-note',
+      sourceMemoId: null,
+      omittedTodoCount: 0,
+      actions,
+    }),
+  );
+const createPlanDraftWithoutActions = () => createPlanDraftWithActions([]);
+const createPlanDraftWithTodo = () =>
+  createPlanDraftWithActions([createPlannedTodo('todo-1', '운동')]);
+
 const createPlannedTodo = (actionId: string, title: string) => ({
   type: 'create-todo',
   actionId,
@@ -449,5 +463,105 @@ describe('VoiceNotePolicy.findRecordingIndexAt', () => {
 
     // Then
     expect(result).toBe(false);
+  });
+});
+
+describe('VoiceNotePolicy 계획 칸 상태', () => {
+  test('이미 추가했으면 카드가 남아 있어도 추가했다고 본다', () => {
+    // Given
+    const note = createVoiceNoteFixture({
+      appliedAt: new Date('2026-11-05T12:00:00.000Z'),
+      planDraft: createPlanDraftWithTodo(),
+    });
+
+    // When
+    const status = VoiceNotePolicy.getPlanStatus(note);
+
+    // Then
+    expect(status).toEqual({ status: 'applied' });
+  });
+
+  test('정리했는데 카드가 하나도 없으면 할 일이 없다고 본다', () => {
+    // Given
+    const note = createVoiceNoteFixture({
+      digest: createVoiceNoteDigest(),
+      planDraft: createPlanDraftWithoutActions(),
+    });
+
+    // When
+    const status = VoiceNotePolicy.getPlanStatus(note);
+
+    // Then
+    expect(status).toEqual({ status: 'no-todos' });
+  });
+
+  test('카드를 읽지 못했으면 잃었다고 본다', () => {
+    // Given
+    const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest(), planDraft: null });
+
+    // When
+    const status = VoiceNotePolicy.getPlanStatus(note);
+
+    // Then
+    expect(status).toEqual({ status: 'lost' });
+  });
+
+  test('고칠 카드가 있으면 초안을 함께 돌려준다', () => {
+    // Given
+    const planDraft = createPlanDraftWithTodo();
+    const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest(), planDraft });
+
+    // When
+    const status = VoiceNotePolicy.getPlanStatus(note);
+
+    // Then
+    expect(status).toEqual({ status: 'reviewable', planDraft });
+  });
+});
+
+describe('VoiceNotePolicy 문장 계산', () => {
+  const sentences = [
+    createVoiceNoteSentence({ text: '하나', startMs: 1_000, isBookmarked: true }),
+    createVoiceNoteSentence({ text: '두번째', startMs: 5_000 }),
+  ];
+
+  test('글자 수와 중요 표시 수를 문장에서 센다', () => {
+    // Given
+    const note = createVoiceNoteFixture({ sentences });
+
+    // When
+    const characterCount = VoiceNotePolicy.getCharacterCount(note);
+    const markCount = VoiceNotePolicy.getMarkCount(note);
+
+    // Then
+    expect(characterCount).toBe(5);
+    expect(markCount).toBe(1);
+  });
+
+  test('재생 위치의 문장을 찾고 첫 문장 앞이면 -1이다', () => {
+    // Given
+    const note = createVoiceNoteFixture({ sentences });
+
+    // When
+    const before = VoiceNotePolicy.findSentenceIndexAt(note, 500);
+    const atSecond = VoiceNotePolicy.findSentenceIndexAt(note, 5_000);
+
+    // Then
+    expect(before).toBe(-1);
+    expect(atSecond).toBe(1);
+  });
+
+  test('계획 카드 중 할 일만 센다. 카드가 없으면 0이다', () => {
+    // Given
+    const withTodo = createVoiceNoteFixture({ planDraft: createPlanDraftWithTodo() });
+    const withoutDraft = createVoiceNoteFixture({ planDraft: null });
+
+    // When
+    const counted = VoiceNotePolicy.getPlannedTodoCount(withTodo);
+    const empty = VoiceNotePolicy.getPlannedTodoCount(withoutDraft);
+
+    // Then
+    expect(counted).toBe(1);
+    expect(empty).toBe(0);
   });
 });

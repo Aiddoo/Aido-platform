@@ -46,12 +46,7 @@ import {
   planTodoEditFormSchema,
   type PlanTodoFormValues,
 } from '../../domains/plan-review-form.schema';
-import {
-  type PlannedTodo,
-  withRepeat,
-  withScheduledTime,
-  withStartDate,
-} from '../../domains/voice-plan.model';
+import { type PlannedTodo, VoicePlanPolicy } from '../../domains/voice-plan.model';
 import { PlanRepeatChip } from './plan-repeat';
 
 interface PlanTodoEditSheetProps {
@@ -109,7 +104,7 @@ export function PlanTodoEditSheet({
           dateFormatContext,
         );
   const hasTime = todo.scheduledTime != null;
-  const categoryId = todo.categoryId ?? fallbackCategoryId;
+  const categoryId = VoicePlanPolicy.getCategoryId(todo, fallbackCategoryId);
   const category = categoriesResult.categories.find((candidate) => candidate.id === categoryId);
   const isPrivate = todo.visibility === 'PRIVATE';
 
@@ -125,7 +120,7 @@ export function PlanTodoEditSheet({
         <TodoDatePickerContent
           value={todo.startDate}
           onChange={(date) => {
-            update((current) => withStartDate(current, date));
+            update((current) => VoicePlanPolicy.withStartDate(current, date));
             close(date);
           }}
           onCancel={() => close(null)}
@@ -150,7 +145,10 @@ export function PlanTodoEditSheet({
               value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: !hasTime }}
               onChange={(value) => {
                 update((current) =>
-                  withScheduledTime(current, value.isAllDay ? null : (value.scheduledTime ?? null)),
+                  VoicePlanPolicy.withScheduledTime(
+                    current,
+                    value.isAllDay ? null : (value.scheduledTime ?? null),
+                  ),
                 );
                 close(value);
               }}
@@ -230,7 +228,7 @@ export function PlanTodoEditSheet({
             value={todo.repeat}
             startDate={todo.startDate}
             onChange={(repeat, startDate) =>
-              update((current) => withRepeat({ ...current, startDate }, repeat))
+              update((current) => VoicePlanPolicy.withRepeat({ ...current, startDate }, repeat))
             }
           />
           <ActionChip

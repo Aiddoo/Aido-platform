@@ -54,7 +54,7 @@ import {
   toPlanSelection,
   toPlannedActions,
 } from '../../domains/plan-review-form.schema';
-import { isDuplicateAction, type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
+import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
 import { isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/use-apply-action-plan-mutation-options';
 import {
@@ -353,7 +353,7 @@ PlanReview.TodoRow = function PlanTodoRow({
           ),
     repeatLabel: todo.repeat == null ? null : formatRepeatSummary(todo.repeat, dateFormatContext),
   });
-  const isDuplicate = isDuplicateAction(todo);
+  const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
 
   const handlePress = () => {
     overlay.open(({ isOpen, close, exit }) => (

@@ -293,3 +293,17 @@ export function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCapti
     bookmarksMs: sentences.filter(({ isBookmarked }) => isBookmarked).map(({ startMs }) => startMs),
   };
 }
+
+export const VoiceNoteCaptionPolicy = {
+  createVoiceNoteCaptions,
+  createCaptionsFromNote,
+  createVoiceNoteFromTranscript,
+  splitIntoSentences,
+  commitProvisional,
+  applyCaptionResult,
+  withBookmark,
+  getCaptionSentences,
+  getCaptionInterimText,
+  getMarkedSentenceCount,
+  hasCaptionText,
+} as const;

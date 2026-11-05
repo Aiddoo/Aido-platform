@@ -83,3 +83,16 @@ export function getLowConfidenceWords(
     .map(({ text }) => text.trim())
     .filter((text) => text.length > 0);
 }
+
+export const VoiceTranscriptPolicy = {
+  createVoiceTranscript,
+  applyResult,
+  appendFinalResult,
+  replaceInterimResult,
+  withInterimFinalized,
+  getFinalText,
+  getInterimText,
+  getTranscriptText,
+  getLowConfidenceWords,
+  isTranscriptEmpty,
+} as const;

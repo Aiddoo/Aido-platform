@@ -8,12 +8,7 @@ import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
-import {
-  createDigestInput,
-  type VoiceNoteDigestInput,
-  withDigestRequest,
-  withDigestResult,
-} from '../domains/voice-note.model';
+import { type VoiceNoteDigestInput, VoiceNotePolicy } from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/use-create-voice-note-digest-mutation-options';
 
@@ -43,7 +38,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     if (note != null) {
       drafts.save(
         accountId,
-        withDigestRequest(
+        VoiceNotePolicy.withDigestRequest(
           note,
           request == null ? null : { idempotencyKey: request.idempotencyKey },
         ),
@@ -62,7 +57,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     }
 
     setFailure(null);
-    const input = createDigestInput(note);
+    const input = VoiceNotePolicy.createDigestInput(note);
     const request = PlanRequestPolicy.preparePlanRequest<VoiceNoteDigestInput>({
       previous:
         note.digestRequest == null
@@ -81,7 +76,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
       // 기다리는 사이 초안을 지웠거나 로그아웃했으면 늦은 응답으로 되살리지 않는다
       const latest = drafts.find(accountId, draftId);
       if (latest != null) {
-        drafts.save(accountId, withDigestResult(latest, result));
+        drafts.save(accountId, VoiceNotePolicy.withDigestResult(latest, result));
       }
     } catch (error) {
       if (abortController.signal.aborted) {

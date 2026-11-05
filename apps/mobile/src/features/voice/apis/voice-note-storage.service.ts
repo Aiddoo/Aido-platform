@@ -1,6 +1,6 @@
 import { orderBy, partition, sumBy } from 'es-toolkit';
 
-import { type VoiceNote, VoiceNotePolicy, withoutRecordings } from '../domains/voice-note.model';
+import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
 import type { VoiceNoteDraftRepository } from './voice-note-draft.repository';
 import type { VoiceRecordingRepository } from './voice-recording.repository';
 
@@ -55,7 +55,7 @@ export class VoiceNoteStorageService {
       return;
     }
     note.recordings.forEach(({ fileName }) => this.recordings.remove(accountId, fileName));
-    this.drafts.save(accountId, withoutRecordings(note));
+    this.drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note));
   };
 
   removeAllRecordings = (accountId: string): void => {
@@ -63,7 +63,7 @@ export class VoiceNoteStorageService {
     this.drafts
       .findAll(accountId)
       .filter((note) => note.recordings.length > 0)
-      .forEach((note) => this.drafts.save(accountId, withoutRecordings(note)));
+      .forEach((note) => this.drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note)));
   };
 
   /** 30일이 지난 초안과 그 녹음, 어느 초안에도 속하지 않고 기한이 지난 녹음 파일을 지운다 */
