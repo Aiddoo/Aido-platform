@@ -1,4 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback } from 'react';
 import { z } from 'zod';
 
 import { voiceNoteDraftIdSchema } from '../domains/voice-note.model';
@@ -24,4 +25,11 @@ export function useVoiceNoteRecordParams() {
 
 export function useVoiceNoteParams() {
   return voiceNoteParamsSchema.parse(useLocalSearchParams());
+}
+
+export function useVoiceNoteTab() {
+  const { tab } = useVoiceNoteParams();
+  const setTab = useCallback((next: VoiceNoteTab) => router.setParams({ tab: next }), []);
+
+  return [tab, setTab] as const;
 }
