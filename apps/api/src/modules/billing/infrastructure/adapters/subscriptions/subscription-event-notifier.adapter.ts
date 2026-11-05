@@ -61,6 +61,7 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
         errorType: toErrorType(error),
         errorCode: error instanceof ErrorCodedException ? error.errorCode : null,
       },
+      cause: error,
     });
   }
 }

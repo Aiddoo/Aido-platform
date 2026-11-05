@@ -41,7 +41,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     vi.useRealTimers();
   });
 
-  it("운영 경보에는 이벤트 식별자와 오류 종류만 싣고 오류 원문·사용자 id는 싣지 않는다", () => {
+  it("경보 태그와 세부 값에는 이벤트 식별자와 오류 종류만 싣고 스택은 원인 예외로 넘긴다", () => {
     // Given
     const error = new TypeError("private-provider-message user-123");
 
@@ -61,6 +61,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
           errorType: "TypeError",
           errorCode: null,
         },
+        cause: error,
       },
     ]);
     expect(JSON.stringify(alerts.alerts)).not.toContain("private-provider-message");

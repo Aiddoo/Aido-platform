@@ -12,6 +12,11 @@ export interface OperationalAlert {
   readonly message: string;
   readonly tags?: Readonly<Record<string, string>>;
   readonly details?: Readonly<Record<string, string | number | boolean | null>>;
+  /**
+   * 응답이 성공이라 전역 필터가 잡지 못하는 실패의 원인 예외. 로그에는 스택을 남기지 않아 원인을 찾을 유일한 자리다.
+   * 5xx 전역 필터처럼 예외 메시지도 함께 간다.
+   */
+  readonly cause?: unknown;
 }
 
 /** 운영 경보를 올린다. 경보 실패는 호출 흐름에 전파하지 않는다(never throws). */

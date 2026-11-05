@@ -25,7 +25,13 @@ export class SentryOperationalAlertAdapter implements OperationalAlertPort {
         scope.setTag(SENTRY_TAG.ALERT_KEY, alert.key);
         scope.setTags(alert.tags ?? {});
         scope.setExtras(alert.details ?? {});
-        Sentry.captureMessage(alert.message, alert.severity);
+        if (alert.cause === undefined) {
+          Sentry.captureMessage(alert.message, alert.severity);
+          return;
+        }
+        scope.setLevel(alert.severity);
+        scope.setExtra("alertMessage", alert.message);
+        Sentry.captureException(alert.cause);
       });
     } catch (error) {
       this.#logger.warn({
