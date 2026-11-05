@@ -293,7 +293,9 @@
     "locationUpdateFailed": "Couldn't register your location"
   },
   "introduction": {
-    "description": "We use your current location to show today's weather. You can also set location access later on the weather screen."
+    "title": "Register your location\nfor weather updates",
+    "description": "Get today's and tomorrow's weather as notifications, plus a heads-up when rain or snow may affect a to-do. You can also register later on the weather screen.",
+    "later": "Not now"
   },
   "briefing": {
     "title": "Aido briefing",

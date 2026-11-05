@@ -24,7 +24,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
   const logger = useLogger();
   const stable = useStableFeedForeground();
   const overlay = useOverlay();
-  const { t } = useTranslation(['weather', 'common']);
+  const { t } = useTranslation(['weather']);
   const [hasSeen, setHasSeen] = useState(() => introductionService.hasSeenIntroduction());
   const hasClaimed = useRef(false);
   const shouldIntroduce = location.status === 'needsPermission' && !hasSeen;
@@ -49,7 +49,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
                 exit();
               }
             }}
-            title={<ConfirmDialog.Title>{t('weather:locationPrompt.title')}</ConfirmDialog.Title>}
+            title={<ConfirmDialog.Title>{t('weather:introduction.title')}</ConfirmDialog.Title>}
             description={
               <ConfirmDialog.Description>
                 {t('weather:introduction.description')}
@@ -62,7 +62,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
                   exit();
                 }}
               >
-                {t('common:actions.cancel')}
+                {t('weather:introduction.later')}
               </ConfirmDialog.CancelButton>
             }
             confirmButton={
