@@ -138,7 +138,7 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
     vi.setSystemTime(START.getTime() + 119_000);
     // Then
     expect(policy.isOpen()).toBe(true);
-    expect(policy.state().openBreakers).toEqual(["health"]);
+    expect(policy.getState().openBreakers).toEqual(["health"]);
   });
 
   it("던지지 않고 돌아온 실패 결과(5xx)도 회로가 세고 결과는 그대로 돌려준다", async () => {
@@ -202,7 +202,7 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
     const again = registry.get({ name: "vendor" });
     // Then
     expect(again).toBe(policy);
-    expect(Object.keys(registry.states())).toEqual(["vendor"]);
+    expect(Object.keys(registry.getStates())).toEqual(["vendor"]);
   });
 
   it("동시 호출과 대기열이 가득 차면 호출하지 않고 bulkhead-full로 거절한다", async () => {

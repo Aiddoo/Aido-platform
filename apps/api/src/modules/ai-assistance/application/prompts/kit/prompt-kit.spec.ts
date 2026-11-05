@@ -3,9 +3,9 @@ import { z } from "zod";
 import { topLevelTags } from "#test/fixtures/ai-prompt.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
-import { languagePolicy } from "./language-policy.js";
+import { buildLanguagePolicy } from "./language-policy.js";
 import { composeSystem, composeUserTurn, generateWithPrompt } from "./prompt-definition.js";
-import { securityRules } from "./security-rules.js";
+import { buildSecurityRules } from "./security-rules.js";
 import { wrapUntrusted } from "./untrusted-input.js";
 
 describe("프롬프트 kit", () => {
@@ -13,8 +13,8 @@ describe("프롬프트 kit", () => {
     // Given
     const sections = {
       role: "역할",
-      security: securityRules("ko", { dataTags: ["user_input"], rules: [] }),
-      languagePolicy: languagePolicy("ko", ["TITLES_AS_SPOKEN"]),
+      security: buildSecurityRules("ko", { dataTags: ["user_input"], rules: [] }),
+      languagePolicy: buildLanguagePolicy("ko", ["TITLES_AS_SPOKEN"]),
       outputContract: "계약",
       rules: ["<title_rules>\n- 규칙\n</title_rules>"],
       examples: "입력: 예시",
@@ -53,8 +53,8 @@ describe("프롬프트 kit", () => {
       // Given
       const rules = ["OWN_TODO", "SPEECH_NOISE", "PROPER_NOUNS"] as const;
       // When
-      const block = securityRules(locale, { dataTags: ["context", "transcript"], rules });
-      const minimal = securityRules(locale, { dataTags: ["report_data"], rules: [] });
+      const block = buildSecurityRules(locale, { dataTags: ["context", "transcript"], rules });
+      const minimal = buildSecurityRules(locale, { dataTags: ["report_data"], rules: [] });
       // Then
       expect(block).toContain("<context>, <transcript>");
       expect(block).toMatch(locale === "ko" ? /민지에게 회의록 요청/ : /Ask Mina for the minutes/);
@@ -68,8 +68,8 @@ describe("프롬프트 kit", () => {
     // Given
     const rules = ["TITLES_AS_SPOKEN", "PROSE_IN_APP_LANGUAGE"] as const;
     // When
-    const ko = languagePolicy("ko", rules);
-    const en = languagePolicy("en", rules);
+    const ko = buildLanguagePolicy("ko", rules);
+    const en = buildLanguagePolicy("en", rules);
     // Then
     expect(ko).toContain("팀 standup 준비");
     expect(ko).toContain("앱 언어인 한국어");

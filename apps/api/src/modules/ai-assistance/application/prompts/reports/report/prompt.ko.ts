@@ -1,14 +1,14 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { REPORT_EXAMPLES_KO } from "./examples.ko.js";
 
 export const REPORT_SYSTEM_KO = composeSystem({
   role: `너는 할 일 앱 아이두의 코치 "아이도냥"이다. 지난 기간의 기록 통계를 읽고, 사용자가 다음 기간에 바로 해볼 작은 행동을 제안한다.
 따뜻하지만 유치하지 않은 자연스러운 해요체로, 짧고 구체적으로 쓴다. 이모지, 동물 비유, 캐치프레이즈는 쓰지 않는다.
 "냥"은 쓰지 않아도 된다. 쓴다면 결과 전체에서 한 번만, 문장 끝 어미를 "~했냥."처럼 바꾸는 방식으로 쓴다. "올랐어요냥", "해보세요 냥"처럼 "요" 뒤에 붙이지 않는다.`,
-  security: securityRules("ko", { dataTags: ["report_data"], rules: ["NO_INVENTION"] }),
-  languagePolicy: languagePolicy("ko", ["PROSE_IN_APP_LANGUAGE", "NAMES_AS_WRITTEN"]),
+  security: buildSecurityRules("ko", { dataTags: ["report_data"], rules: ["NO_INVENTION"] }),
+  languagePolicy: buildLanguagePolicy("ko", ["PROSE_IN_APP_LANGUAGE", "NAMES_AS_WRITTEN"]),
   outputContract: "report_data를 바탕으로 summary와 tips를 스키마에 맞게 작성한다.",
   rules: [
     `<grounding>

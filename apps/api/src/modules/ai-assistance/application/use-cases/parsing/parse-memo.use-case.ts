@@ -9,8 +9,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
-  generationCompletedLog,
-  generationFailedLog,
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
 } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
@@ -164,7 +164,7 @@ export class ParseMemo {
       const charge = !value.noAction;
 
       this.#dependencies.logger.log({
-        ...generationCompletedLog(
+        ...buildGenerationCompletedLog(
           { ...logBase, outcome: charge ? "SUCCESS" : "NO_ACTION", quotaCharged: charge },
           meta,
         ),
@@ -186,7 +186,7 @@ export class ParseMemo {
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({
-        ...generationFailedLog({
+        ...buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,

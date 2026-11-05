@@ -17,9 +17,9 @@ import type {
   ReportType,
 } from "../../../domain/types/reports/ai-report.types.js";
 import {
-  generationCompletedLog,
-  generationFailedLog,
-  generationFailure,
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
+  toGenerationFailure,
 } from "../../observability/generation/ai-generation-log.events.js";
 import { AiReportLogEvent } from "../../observability/reports/ai-report-log.events.js";
 import {
@@ -313,7 +313,7 @@ export class GenerateReport {
         { agreedConsentVersion: consent.agreedVersion, userId },
       );
       this.#dependencies.logger.log(
-        generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
+        buildGenerationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
       );
       return { ...value, contentSource: "AI", promptVersion: definition.version };
     } catch (error) {
@@ -324,9 +324,9 @@ export class GenerateReport {
         });
         return buildFallbackContent(input, locale);
       }
-      const failure = generationFailure(error);
+      const failure = toGenerationFailure(error);
       const retrying = !isFinalAttempt && isTransientAiFailure(failure.errorType);
-      const failedLog = generationFailedLog({
+      const failedLog = buildGenerationFailedLog({
         ...logBase,
         ...failure,
         outcome: retrying ? "RETRYING" : "FALLBACK",

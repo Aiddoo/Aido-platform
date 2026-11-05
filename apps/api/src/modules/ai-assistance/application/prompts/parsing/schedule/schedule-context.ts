@@ -13,7 +13,7 @@ const WEEKDAY_LABELS: Readonly<Record<SupportedLocale, readonly string[]>> = {
 };
 
 /** 표현을 고를 기준 시각. 연도를 포함한 사용자 로컬 시각과 요일을 준다(계산은 서버가 한다). */
-export function scheduleContext(input: {
+export function buildScheduleContext(input: {
   readonly now: Date;
   readonly timezone: string;
   readonly locale: SupportedLocale;
@@ -26,6 +26,6 @@ export function scheduleContext(input: {
   };
 }
 
-export function promptCategories(categories: readonly PromptCategory[]) {
+export function toPromptCategories(categories: readonly PromptCategory[]) {
   return categories.map(({ id, name }) => ({ id, name }));
 }

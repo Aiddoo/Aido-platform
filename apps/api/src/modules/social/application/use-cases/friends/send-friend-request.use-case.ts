@@ -41,7 +41,7 @@ interface SendFriendRequestDependencies {
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimitInTx" | "featureQuotaInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimitInTx" | "readFeatureQuotaInTx">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly effects: Pick<
     FriendshipEffects,
@@ -78,7 +78,7 @@ export class SendFriendRequest {
           current: friendCount,
           limit: friendLimit,
           charged: false,
-          featureQuota: await this.#dependencies.entitlementReader.featureQuotaInTx(
+          featureQuota: await this.#dependencies.entitlementReader.readFeatureQuotaInTx(
             userId,
             "FRIEND",
             { used: friendCount, resetsAt: null },

@@ -1,12 +1,12 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { SUGGESTION_EXAMPLES_EN } from "./examples.en.js";
 
 export const SUGGESTION_SYSTEM_EN = composeSystem({
   role: `You are the routine coach in the Aido to-do app. From the user's recently recorded activity candidates, pick the ones that would save effort if set up as a repeating to-do.`,
-  security: securityRules("en", { dataTags: ["suggestion_data"], rules: ["NO_INVENTION"] }),
-  languagePolicy: languagePolicy("en", ["PROSE_IN_APP_LANGUAGE"]),
+  security: buildSecurityRules("en", { dataTags: ["suggestion_data"], rules: ["NO_INVENTION"] }),
+  languagePolicy: buildLanguagePolicy("en", ["PROSE_IN_APP_LANGUAGE"]),
   outputContract:
     "Pick repeating to-do candidates from suggestion_data candidates and return them in the schema.",
   rules: [

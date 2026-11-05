@@ -7,7 +7,10 @@ import type { ExistingTodo } from "../../../../domain/policies/planning/action-p
 import { normalizeMemoDraft } from "../../../services/parsing/todo-draft.normalizer.js";
 import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definition.js";
 import { sanitizeTextForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
-import { type PlanningContextInput, planningContext } from "../../planning/planning-context.js";
+import {
+  type PlanningContextInput,
+  buildPlanningContext,
+} from "../../planning/planning-context.js";
 import { PARSE_MEMO_SYSTEM_EN } from "./prompt.en.js";
 import { PARSE_MEMO_SYSTEM_KO } from "./prompt.ko.js";
 import { type MemoDraft, memoDraftSchema } from "./schema.js";
@@ -56,7 +59,7 @@ export const parseMemoPrompt: PromptDefinition<
   build: (input, locale) => ({
     system: SYSTEM[locale],
     prompt: composeUserTurn({
-      context: planningContext(input, locale),
+      context: buildPlanningContext(input, locale),
       input: wrapUntrusted("user_input", {
         memo: sanitizeTextForPrompt(input.content, MEMO_LIMITS.MAX_CONTENT_LENGTH),
       }),

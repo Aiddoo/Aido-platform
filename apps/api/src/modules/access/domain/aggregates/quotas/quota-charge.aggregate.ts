@@ -120,7 +120,7 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
     return this.props.reason === input.reason && this.props.requestHash === input.requestHash;
   }
 
-  replayAt(at: Date): QuotaChargeReplay {
+  resolveReplayAt(at: Date): QuotaChargeReplay {
     return match(this.props.status)
       .with("COMMITTED", () => "COMMITTED" as const)
       .with("REFUNDED", () => "RETRY" as const)
@@ -155,7 +155,7 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
    * 달을 넘겼으면 호출부가 새 달 사용량을 잡고 새 periodKey를 넘긴다.
    */
   takeOver(input: { readonly periodKey: string; readonly at: Date }): boolean {
-    if (this.replayAt(input.at) !== "TAKE_OVER") {
+    if (this.resolveReplayAt(input.at) !== "TAKE_OVER") {
       return false;
     }
     this.props.attempt += 1;
@@ -199,7 +199,7 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
 
   /** 끝내 응답하지 못한 요청의 예약을 돌려준다. 이어받을 수 있을 만큼 오래된 예약만 바뀐다. */
   refundAbandoned(at: Date): boolean {
-    if (this.replayAt(at) !== "TAKE_OVER") {
+    if (this.resolveReplayAt(at) !== "TAKE_OVER") {
       return false;
     }
     return this.refund({

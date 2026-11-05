@@ -281,7 +281,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   }
 
   /** other에 맞추려면 바꿔야 할 값만 돌려준다. 같은 값은 비워 회차별로 고친 내용을 덮지 않는다. */
-  detailsToMatch(other: TodoSeries): Omit<TodoSeriesChanges, "rule" | "checklistTemplate"> {
+  resolveChangesToMatch(other: TodoSeries): Omit<TodoSeriesChanges, "rule" | "checklistTemplate"> {
     const { title, categoryId, visibility, scheduledLocalTime, timezone } = other.props;
     const isTimeSame =
       scheduledLocalTime === this.props.scheduledLocalTime &&

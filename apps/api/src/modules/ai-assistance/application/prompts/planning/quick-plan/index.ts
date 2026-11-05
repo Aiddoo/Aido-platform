@@ -12,7 +12,7 @@ import {
 } from "../../../services/planning/action-plan.normalizer.js";
 import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definition.js";
 import { sanitizeLineForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
-import { type PlanningContextInput, planningContext } from "../planning-context.js";
+import { type PlanningContextInput, buildPlanningContext } from "../planning-context.js";
 import { QUICK_PLAN_SYSTEM_EN } from "./prompt.en.js";
 import { QUICK_PLAN_SYSTEM_KO } from "./prompt.ko.js";
 import { quickPlanDraftSchema } from "./schema.js";
@@ -42,7 +42,7 @@ export const quickPlanPrompt: PromptDefinition<
   build: (input, locale) => ({
     system: SYSTEM[locale],
     prompt: composeUserTurn({
-      context: planningContext(input, locale),
+      context: buildPlanningContext(input, locale),
       input: wrapUntrusted("user_input", {
         text: sanitizeLineForPrompt(input.text, ACTION_PLAN_LIMITS.QUICK_PLAN_TEXT_MAX_LENGTH),
       }),

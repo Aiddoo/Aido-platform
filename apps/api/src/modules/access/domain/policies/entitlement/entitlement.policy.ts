@@ -60,14 +60,14 @@ export function resolveAccessContext(state: AccessState, at: Date): AccessContex
   return { tier: isPremium ? "PREMIUM" : "FREE", isPremium };
 }
 
-function tierValue<T>(tier: AccessTier, values: { readonly free: T; readonly premium: T }): T {
+function pickTierValue<T>(tier: AccessTier, values: { readonly free: T; readonly premium: T }): T {
   return match(tier)
     .with("PREMIUM", () => values.premium)
     .with("FREE", "ADMIN", () => values.free)
     .exhaustive();
 }
 
-function withBonus(limit: number | null, bonus: number): number | null {
+function addBonus(limit: number | null, bonus: number): number | null {
   return limit == null ? null : limit + bonus;
 }
 
@@ -79,12 +79,15 @@ export function resolveFeatureAccess(
 ): FeatureAccess {
   const definition = PLAN_CATALOG[feature];
   if (definition.kind === "flag") {
-    return { allowed: tier === "ADMIN" || tierValue(tier, definition), limit: null };
+    return { allowed: tier === "ADMIN" || pickTierValue(tier, definition), limit: null };
   }
   const limit =
     tier === "ADMIN"
       ? null
-      : withBonus(tierValue(tier, definition), feature === "FRIEND" ? resourceBonuses.FRIEND : 0);
+      : addBonus(
+          pickTierValue(tier, definition),
+          feature === "FRIEND" ? resourceBonuses.FRIEND : 0,
+        );
   return { allowed: limit == null || limit > 0, limit };
 }
 
@@ -107,7 +110,7 @@ export function resolveQuotaLimit(tier: AccessTier, feature: PlanQuotaFeatureKey
     return { limit: null, isFairUse: false };
   }
   const definition: (typeof PLAN_CATALOG)[PlanQuotaFeatureKey] = PLAN_CATALOG[feature];
-  const displayLimit = tierValue(tier, definition);
+  const displayLimit = pickTierValue(tier, definition);
   if (displayLimit != null || !("fairUse" in definition) || tier !== "PREMIUM") {
     return { limit: displayLimit, isFairUse: false };
   }
@@ -148,8 +151,8 @@ export function resolvePerUseLimit(tier: AccessTier, feature: PlanFeature): PerU
   }
   const valueTier = tier === "ADMIN" ? "PREMIUM" : tier;
   return {
-    maxSeconds: tierValue(valueTier, definition.perUse.maxSeconds),
-    maxCharacters: tierValue(valueTier, definition.perUse.maxCharacters),
+    maxSeconds: pickTierValue(valueTier, definition.perUse.maxSeconds),
+    maxCharacters: pickTierValue(valueTier, definition.perUse.maxCharacters),
   };
 }
 

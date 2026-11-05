@@ -13,10 +13,10 @@ import type {
   UsageReservation,
 } from "../interfaces/usage-meter.interface.js";
 
-const keyOf = (key: Pick<UsageKey, "meter" | "periodKey" | "subject">) =>
+const toUsageId = (key: Pick<UsageKey, "meter" | "periodKey" | "subject">) =>
   `${key.meter}\u0000${key.periodKey}\u0000${key.subject}`;
 
-const matches = (key: UsageKey) =>
+const whereUsageKey = (key: UsageKey) =>
   and(
     eq(outboundUsage.meter, key.meter),
     eq(outboundUsage.periodKey, key.periodKey),
@@ -34,7 +34,7 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
     }
     const merged = new Map<string, UsageIncrement>();
     for (const increment of increments) {
-      const id = keyOf(increment.key);
+      const id = toUsageId(increment.key);
       const previous = merged.get(id);
       merged.set(id, {
         key: increment.key,
@@ -57,8 +57,8 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
         subject: outboundUsage.subject,
         used: outboundUsage.used,
       });
-    const totals = new Map(rows.map((row) => [keyOf(row), row.used]));
-    return increments.map(({ key }) => totals.get(keyOf(key)) ?? 0);
+    const totals = new Map(rows.map((row) => [toUsageId(row), row.used]));
+    return increments.map(({ key }) => totals.get(toUsageId(key)) ?? 0);
   }
 
   async tryReserve(key: UsageKey, amount: number, limit: number): Promise<UsageReservation> {
@@ -87,7 +87,7 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
     await this.txHost.tx
       .update(outboundUsage)
       .set({ used: sql`greatest(${outboundUsage.used} - ${amount}, 0)`, updatedAt: now() })
-      .where(matches(key));
+      .where(whereUsageKey(key));
   }
 
   async read(keys: readonly UsageKey[]): Promise<readonly number[]> {
@@ -102,9 +102,9 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
         used: outboundUsage.used,
       })
       .from(outboundUsage)
-      .where(or(...keys.map(matches)));
-    const totals = new Map(rows.map((row) => [keyOf(row), row.used]));
-    return keys.map((key) => totals.get(keyOf(key)) ?? 0);
+      .where(or(...keys.map(whereUsageKey)));
+    const totals = new Map(rows.map((row) => [toUsageId(row), row.used]));
+    return keys.map((key) => totals.get(toUsageId(key)) ?? 0);
   }
 
   async prune(cutoff: Date): Promise<number> {

@@ -63,10 +63,10 @@ export interface OutboundCircuitEvent {
 
 /** 정책 상태 변화를 받는 쪽(레지스트리가 로그·경보로 남긴다). */
 export interface OutboundPolicyEvents {
-  opened(event: OutboundCircuitEvent): void;
-  halfOpened(policy: string, breaker: string): void;
-  closed(policy: string, breaker: string): void;
-  bulkheadRejected(policy: string): void;
+  onOpened(event: OutboundCircuitEvent): void;
+  onHalfOpened(policy: string, breaker: string): void;
+  onClosed(policy: string, breaker: string): void;
+  onBulkheadRejected(policy: string): void;
 }
 
 interface Breaker {
@@ -128,7 +128,7 @@ export class OutboundPolicy {
         throw new OutboundRejectedError(this.name, "circuit-open");
       }
       if (error instanceof BulkheadRejectedError) {
-        this.#events.bulkheadRejected(this.name);
+        this.#events.onBulkheadRejected(this.name);
         throw new OutboundRejectedError(this.name, "bulkhead-full");
       }
       throw error;
@@ -140,7 +140,7 @@ export class OutboundPolicy {
     return this.#openBreakers().length > 0;
   }
 
-  state(): OutboundPolicyState {
+  getState(): OutboundPolicyState {
     return {
       openBreakers: this.#openBreakers(),
       bulkhead:
@@ -203,7 +203,7 @@ export class OutboundPolicy {
     policy.onBreak((reason) => {
       breaker.openedAt = now().getTime();
       const failure = "error" in reason ? reason.error : "value" in reason ? reason.value : null;
-      this.#events.opened({
+      this.#events.onOpened({
         policy: policySpec.name,
         breaker: spec,
         failure: policySpec.describeFailure?.(failure) ?? {},
@@ -211,11 +211,11 @@ export class OutboundPolicy {
     });
     policy.onHalfOpen(() => {
       breaker.openedAt = null;
-      this.#events.halfOpened(policySpec.name, spec.name);
+      this.#events.onHalfOpened(policySpec.name, spec.name);
     });
     policy.onReset(() => {
       breaker.openedAt = null;
-      this.#events.closed(policySpec.name, spec.name);
+      this.#events.onClosed(policySpec.name, spec.name);
     });
     return breaker;
   }

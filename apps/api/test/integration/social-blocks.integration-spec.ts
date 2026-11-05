@@ -113,7 +113,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       mutationLock,
       entitlementReader: {
         getLimitInTx: async () => null,
-        featureQuotaInTx: async () => {
+        readFeatureQuotaInTx: async () => {
           throw new Error("친구 한도가 없으면 한도 오류 featureQuota를 읽지 않는다");
         },
       },

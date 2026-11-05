@@ -26,12 +26,12 @@ export class OutboundPolicyRegistry {
 
   constructor(@Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort) {
     this.#events = {
-      opened: (event) => this.#opened(event, alert),
-      halfOpened: (policy, breaker) =>
+      onOpened: (event) => this.#opened(event, alert),
+      onHalfOpened: (policy, breaker) =>
         this.#logger.log({ event: PlatformLogEvent.OUTBOUND_CIRCUIT_HALF_OPEN, policy, breaker }),
-      closed: (policy, breaker) =>
+      onClosed: (policy, breaker) =>
         this.#logger.log({ event: PlatformLogEvent.OUTBOUND_CIRCUIT_CLOSED, policy, breaker }),
-      bulkheadRejected: (policy) =>
+      onBulkheadRejected: (policy) =>
         this.#logger.warn({ event: PlatformLogEvent.OUTBOUND_BULKHEAD_REJECTED, policy }),
     };
   }
@@ -46,9 +46,9 @@ export class OutboundPolicyRegistry {
     return policy;
   }
 
-  states(): Readonly<Record<string, OutboundPolicyState>> {
+  getStates(): Readonly<Record<string, OutboundPolicyState>> {
     return Object.fromEntries(
-      [...this.#policies.entries()].map(([name, policy]) => [name, policy.state()]),
+      [...this.#policies.entries()].map(([name, policy]) => [name, policy.getState()]),
     );
   }
 

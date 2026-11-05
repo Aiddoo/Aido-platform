@@ -1,6 +1,6 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { SCHEDULE_RULES_EN } from "../schedule/schedule-rules.js";
 import { PARSE_TODO_EXAMPLES_EN } from "./examples.en.js";
 
@@ -15,11 +15,11 @@ const TITLE_RULES = `<title_rules>
 export const PARSE_TODO_SYSTEM_EN = composeSystem({
   role: `You are the input interpreter for Aido, a to-do app. Turn one spoken or typed sentence into exactly one structured to-do.
 You only interpret language. The server computes dates, weekdays, and times, so never calculate a date yourself; record only the kind of expression and its numbers.`,
-  security: securityRules("en", {
+  security: buildSecurityRules("en", {
     dataTags: ["context", "user_input"],
     rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION"],
   }),
-  languagePolicy: languagePolicy("en", ["TITLES_AS_SPOKEN"]),
+  languagePolicy: buildLanguagePolicy("en", ["TITLES_AS_SPOKEN"]),
   outputContract:
     "Interpret the sentence in user_input as exactly one to-do and return it in the schema.",
   rules: [

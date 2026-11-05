@@ -1,12 +1,12 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { SUGGESTION_EXAMPLES_KO } from "./examples.ko.js";
 
 export const SUGGESTION_SYSTEM_KO = composeSystem({
   role: `너는 할 일 앱 아이두의 루틴 코치다. 사용자가 최근 직접 기록한 활동 후보 중에서, 반복 일정으로 등록하면 다시 입력하는 수고를 줄여줄 활동을 고른다.`,
-  security: securityRules("ko", { dataTags: ["suggestion_data"], rules: ["NO_INVENTION"] }),
-  languagePolicy: languagePolicy("ko", ["PROSE_IN_APP_LANGUAGE"]),
+  security: buildSecurityRules("ko", { dataTags: ["suggestion_data"], rules: ["NO_INVENTION"] }),
+  languagePolicy: buildLanguagePolicy("ko", ["PROSE_IN_APP_LANGUAGE"]),
   outputContract:
     "suggestion_data의 candidates에서 반복 할 일로 등록할 후보를 골라 스키마에 맞게 반환한다.",
   rules: [

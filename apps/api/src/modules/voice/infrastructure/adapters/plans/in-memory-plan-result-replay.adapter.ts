@@ -20,11 +20,11 @@ export class InMemoryPlanResultReplayAdapter<T> implements PlanResultReplayPort<
     private readonly schema: z.ZodType<T>,
   ) {}
 
-  async remember(userId: string, idempotencyKey: string, result: T): Promise<void> {
+  async save(userId: string, idempotencyKey: string, result: T): Promise<void> {
     await this.cache.set(this.#key(userId, idempotencyKey), result, PLAN_RESULT_REPLAY_TTL_MS);
   }
 
-  async recall(userId: string, idempotencyKey: string): Promise<T | null> {
+  async find(userId: string, idempotencyKey: string): Promise<T | null> {
     return (await this.cache.get(this.#key(userId, idempotencyKey), this.schema)) ?? null;
   }
 

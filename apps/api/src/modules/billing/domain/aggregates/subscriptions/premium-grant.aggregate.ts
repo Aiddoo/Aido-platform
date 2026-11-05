@@ -50,7 +50,7 @@ export type PremiumGrantCreationPlan = Pick<
 };
 
 /** 진행 중에 끊은 기간의 남은 일수를 다시 쌓아 둔 기간의 출처 키. 끊긴 기간마다 하나뿐이다. */
-export function rebankedRemainderSourceKey(grantId: string): string {
+export function bankedRemainderSourceKey(grantId: string): string {
   return `rebank:${grantId}`;
 }
 
@@ -160,7 +160,7 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
   }
 
   /** 아직 시작하지 않은 ACTIVE 기간을 다시 쌓아 둔다. 이미 시작했거나 BANKED면 false다. */
-  rebank(at: Date): boolean {
+  returnToBank(at: Date): boolean {
     if (
       this.props.status !== "ACTIVE" ||
       this.props.startsAt == null ||
@@ -194,7 +194,7 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
     return {
       userId: this.props.userId,
       source: this.props.source,
-      sourceKey: rebankedRemainderSourceKey(this.props.id),
+      sourceKey: bankedRemainderSourceKey(this.props.id),
       durationDays: premiumGrantDaysOf(remainingMs),
       durationMs: remainingMs,
       status: "BANKED",

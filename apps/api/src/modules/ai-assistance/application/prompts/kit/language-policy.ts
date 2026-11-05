@@ -26,7 +26,7 @@ const LANGUAGE_POLICY: Readonly<
 };
 
 /** `<language_policy>` 블록 */
-export function languagePolicy(
+export function buildLanguagePolicy(
   locale: SupportedLocale,
   rules: readonly LanguagePolicyRule[],
 ): string {

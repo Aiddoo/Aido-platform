@@ -50,7 +50,7 @@ export class ChargedPlanRunner {
     // 처음 시도가 아니면 앞선 시도가 만든 결과가 남아 있을 수 있다. 이어받기·재생성 전에 먼저 본다.
     const remembered =
       reservation.alreadyCommitted || reservation.attempt > 1
-        ? await replay.recall(userId, idempotencyKey)
+        ? await replay.find(userId, idempotencyKey)
         : null;
     if (remembered != null) {
       return this.#returnRemembered(request, reservation, remembered);
@@ -63,7 +63,7 @@ export class ChargedPlanRunner {
       task: reason,
       generate: request.generate,
       // 확정보다 먼저 기억한다. 사이에 온 재요청은 처리 중(AI_1314)이라 결과를 잃은 것으로 보지 않는다.
-      beforeCommit: (result) => replay.remember(userId, idempotencyKey, result),
+      beforeCommit: (result) => replay.save(userId, idempotencyKey, result),
     });
   }
 

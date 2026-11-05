@@ -9,8 +9,8 @@ import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definit
 import { sanitizeLineForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
 import {
   type PromptCategory,
-  promptCategories,
-  scheduleContext,
+  toPromptCategories,
+  buildScheduleContext,
 } from "../schedule/schedule-context.js";
 import { PARSE_TODO_SYSTEM_EN } from "./prompt.en.js";
 import { PARSE_TODO_SYSTEM_KO } from "./prompt.ko.js";
@@ -61,8 +61,8 @@ export const parseTodoPrompt: PromptDefinition<
     system: SYSTEM[locale],
     prompt: composeUserTurn({
       context: wrapUntrusted("context", {
-        ...scheduleContext({ now: input.now, timezone: input.timezone, locale }),
-        categories: promptCategories(input.categories),
+        ...buildScheduleContext({ now: input.now, timezone: input.timezone, locale }),
+        categories: toPromptCategories(input.categories),
       }),
       input: wrapUntrusted("user_input", {
         text: sanitizeLineForPrompt(input.text, AI_PARSE_LIMITS.TODO_TEXT_MAX_LENGTH),

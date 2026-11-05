@@ -6,6 +6,6 @@ export const VOICE_NOTE_DIGEST_RESULT_REPLAY = Symbol("VOICE_NOTE_DIGEST_RESULT_
  * 재시작하거나 시간이 지나면 없고, 그때 호출자는 같은 행을 다시 열어 추가 차감 없이 다시 만든다.
  */
 export interface PlanResultReplayPort<T> {
-  remember(userId: string, idempotencyKey: string, result: T): Promise<void>;
-  recall(userId: string, idempotencyKey: string): Promise<T | null>;
+  save(userId: string, idempotencyKey: string, result: T): Promise<void>;
+  find(userId: string, idempotencyKey: string): Promise<T | null>;
 }

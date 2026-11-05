@@ -228,7 +228,7 @@ export class UpdateFollowingTodos {
     for (const segment of following) {
       const rescheduled = await this.#applyDetailsToSegment(
         segment,
-        ruleChanged ? segment.detailsToMatch(target) : details,
+        ruleChanged ? segment.resolveChangesToMatch(target) : details,
         pivot,
       );
       cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId));

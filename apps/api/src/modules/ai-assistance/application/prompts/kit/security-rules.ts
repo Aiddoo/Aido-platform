@@ -68,7 +68,7 @@ const SECURITY_COPY: Readonly<Record<SupportedLocale, SecurityCopy>> = {
 };
 
 /** `<security>` 블록. tags는 사용자 데이터를 담는 블록 이름이다. */
-export function securityRules(
+export function buildSecurityRules(
   locale: SupportedLocale,
   options: { readonly dataTags: readonly UntrustedTag[]; readonly rules: readonly SecurityRule[] },
 ): string {

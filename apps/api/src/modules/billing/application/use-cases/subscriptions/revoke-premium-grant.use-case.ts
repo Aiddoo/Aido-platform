@@ -2,7 +2,7 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { rebankedRemainderSourceKey } from "../../../domain/aggregates/subscriptions/premium-grant.aggregate.js";
+import { bankedRemainderSourceKey } from "../../../domain/aggregates/subscriptions/premium-grant.aggregate.js";
 import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
 import type { PremiumGrantRepositoryPort } from "../../ports/subscriptions/premium-grant.repository.port.js";
 import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
@@ -58,7 +58,7 @@ export class RevokePremiumGrant {
         return 0;
       }
       const remainder = await premiumGrantRepository.findBySourceKey(
-        rebankedRemainderSourceKey(grant.id),
+        bankedRemainderSourceKey(grant.id),
       );
       const revoked = [grant, ...(remainder == null ? [] : [remainder])].filter((target) =>
         target.revoke(input.now),

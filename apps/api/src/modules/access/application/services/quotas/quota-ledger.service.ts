@@ -357,7 +357,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
   ): Promise<QuotaReservation> {
     const { repository } = this.#dependencies;
     const expected = { status: charge.status, attempt: charge.attempt };
-    return match(charge.replayAt(context.at))
+    return match(charge.resolveReplayAt(context.at))
       .with("COMMITTED", () => this.#reserved(context, charge, true))
       .with("IN_FLIGHT", () => this.#rejectInFlight(context, charge))
       .with("TAKE_OVER", async () => {

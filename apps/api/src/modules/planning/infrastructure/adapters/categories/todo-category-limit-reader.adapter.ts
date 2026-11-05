@@ -16,7 +16,7 @@ export class TodoCategoryLimitReaderAdapter implements TodoCategoryLimitReaderPo
   constructor(
     @Inject(ENTITLEMENT_READER) private readonly entitlementReader: Pick<
       EntitlementReaderPort,
-      "getLimitInTx" | "featureQuotaInTx"
+      "getLimitInTx" | "readFeatureQuotaInTx"
     >,
   ) {}
 
@@ -25,7 +25,7 @@ export class TodoCategoryLimitReaderAdapter implements TodoCategoryLimitReaderPo
   }
 
   async readQuotaInTx(userId: string, count: number): Promise<FeatureQuota> {
-    return this.entitlementReader.featureQuotaInTx(userId, "TODO_CATEGORY", {
+    return this.entitlementReader.readFeatureQuotaInTx(userId, "TODO_CATEGORY", {
       used: count,
       resetsAt: null,
     });

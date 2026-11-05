@@ -12,9 +12,9 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { resolveSuggestedCategoryId } from "../../../domain/services/suggestions/category-resolver.js";
 import {
-  generationCompletedLog,
-  generationFailedLog,
-  generationFailure,
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
+  toGenerationFailure,
 } from "../../observability/generation/ai-generation-log.events.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
 import {
@@ -119,10 +119,10 @@ export class AnalyzeAndCreateSuggestions {
       if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
         return { skipped: error.kind } as const;
       }
-      const failure = generationFailure(error);
+      const failure = toGenerationFailure(error);
       const settled = error instanceof AiGenerationError && !isTransientAiFailure(error.kind);
       this.#dependencies.logger.warn(
-        generationFailedLog({
+        buildGenerationFailedLog({
           ...logBase,
           outcome: settled ? "FAILED" : "RETRYING",
           ...failure,
@@ -145,7 +145,7 @@ export class AnalyzeAndCreateSuggestions {
       return 0;
     }
     this.#dependencies.logger.log(
-      generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
+      buildGenerationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
     );
     const patterns = generation.value;
 

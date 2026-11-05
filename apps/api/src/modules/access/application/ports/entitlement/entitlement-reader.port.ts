@@ -34,7 +34,7 @@ export interface EntitlementReaderPort {
    * 한도 오류 details에 싣는 서버 계산 featureQuota. 활성 UoW에서 캐시 없이 최신 권한으로 계산한다.
    * usage는 소유 Context가 센 값이다(일간 quota는 X-Timezone 하루 사용량, resource는 현재 개수).
    */
-  featureQuotaInTx(
+  readFeatureQuotaInTx(
     userId: string,
     feature: UnmeteredLimitFeatureKey,
     usage: FeatureUsageReading,

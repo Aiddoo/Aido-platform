@@ -26,7 +26,7 @@ export function hasKnownPricing(model: string): boolean {
 type TokenUsage = Pick<LanguageModelUsage, "inputTokens" | "inputTokenDetails" | "outputTokens">;
 
 /** 입력 전체 토큰은 캐시 읽기·쓰기를 포함하므로 나머지만 입력 단가로 센다. */
-function usageCost(usage: TokenUsage, inputTokens: number, price: ModelPrice): number {
+function calculateUsageCost(usage: TokenUsage, inputTokens: number, price: ModelPrice): number {
   const read = usage.inputTokenDetails.cacheReadTokens ?? 0;
   const write = usage.inputTokenDetails.cacheWriteTokens ?? 0;
   return Math.round(
@@ -46,7 +46,7 @@ export function estimateCostMicroUsd(model: string, usage: TokenUsage | undefine
   if (usage == null) {
     return 0;
   }
-  return usageCost(usage, usage.inputTokens ?? 0, price);
+  return calculateUsageCost(usage, usage.inputTokens ?? 0, price);
 }
 
 const HIGHEST_INPUT_PRICE = Math.max(
@@ -76,5 +76,5 @@ export function estimateSpendMicroUsd(input: {
   if (usage == null) {
     return timedOut ? Math.round(inputChars * price.input) : 0;
   }
-  return usageCost(usage, usage.inputTokens ?? inputChars, price);
+  return calculateUsageCost(usage, usage.inputTokens ?? inputChars, price);
 }

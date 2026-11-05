@@ -1,6 +1,6 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { PLANNING_RULES_EN } from "../../planning/planning-rules.js";
 import { SCHEDULE_RULES_EN } from "../schedule/schedule-rules.js";
 import { PARSE_MEMO_EXAMPLES_EN } from "./examples.en.js";
@@ -27,11 +27,11 @@ const TITLE_RULES = `<title_rules>
 export const PARSE_MEMO_SYSTEM_EN = composeSystem({
   role: `You are the memo organizer for Aido, a to-do app. Find the real tasks in a memo, structure them as to-dos in the order they appear, and add the steps written in the memo as items.
 You only interpret language. The server computes dates, weekdays, and times, so never calculate a date yourself; record only the kind of expression and its numbers.`,
-  security: securityRules("en", {
+  security: buildSecurityRules("en", {
     dataTags: ["context", "user_input"],
     rules: ["MODEL_COMMANDS", "OWN_PLAN_EDITS", "NO_INVENTION", "KNOWN_IDS_ONLY"],
   }),
-  languagePolicy: languagePolicy("en", ["TITLES_AS_SPOKEN"]),
+  languagePolicy: buildLanguagePolicy("en", ["TITLES_AS_SPOKEN"]),
   outputContract:
     "Find the to-dos in the memo inside user_input, in memo order, and return them in the schema.",
   rules: [

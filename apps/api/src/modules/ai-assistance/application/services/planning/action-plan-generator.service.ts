@@ -8,8 +8,8 @@ import {
 } from "../../../domain/services/parsing/resolve-todo-schedule.js";
 import type { NormalizedActionPlan } from "../../../domain/types/planning/action-plan-draft.types.js";
 import {
-  generationCompletedLog,
-  generationFailedLog,
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
 } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
@@ -135,7 +135,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
       });
       const quotaCharged = keepsCharge(generation.value);
       logger.log(
-        generationCompletedLog(
+        buildGenerationCompletedLog(
           { ...logBase, outcome: quotaCharged ? "SUCCESS" : "NO_ACTION", quotaCharged },
           generation.meta,
         ),
@@ -144,7 +144,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
     } catch (error) {
       const failure = describeParsingFailure(error);
       logger.error(
-        generationFailedLog({
+        buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,
