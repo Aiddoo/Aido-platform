@@ -18,6 +18,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { match } from 'ts-pattern';
 
 import {
   AUTO_FINISH_SILENCE_MS,
@@ -34,7 +35,7 @@ import {
   VoiceCapturePolicy,
   type VoiceCaptureState,
 } from '../../domains/voice-capture.model';
-import { getTranscriptText } from '../../domains/voice-transcript.model';
+import { getTranscriptText, isTranscriptEmpty } from '../../domains/voice-transcript.model';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { PlanReview } from '../plan/plan-review';
 import { SheetEdgeGlow } from '../visualizers/sheet-edge-glow';
@@ -110,10 +111,10 @@ QuickVoicePanel.Listening = function Listening({
           <VStack gap={8} testID="quick-voice-limit">
             <VStack gap={4}>
               <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
-                {t('limit.title')}
+                {canFinish ? t('limit.title') : t('limit.titleEmpty')}
               </Text>
               <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-                {t('limit.description')}
+                {canFinish ? t('limit.description') : t('limit.descriptionEmpty')}
               </Text>
             </VStack>
             <HStack gap={8} align="center">
@@ -123,25 +124,32 @@ QuickVoicePanel.Listening = function Listening({
                 iconSize={fontScaledSize(18)}
               />
               <Box flex={1}>
-                <Button
-                  size="large"
-                  isDisabled={!canFinish}
-                  onPress={onFinish}
-                  testID="quick-voice-finish"
-                >
-                  {t('limit.finish')}
-                </Button>
+                {canFinish ? (
+                  <Button size="large" onPress={onFinish} testID="quick-voice-finish">
+                    {t('limit.finish')}
+                  </Button>
+                ) : (
+                  <Button
+                    size="large"
+                    onPress={onContinueAsVoiceNote}
+                    testID="quick-voice-continue-as-note"
+                  >
+                    {t('limit.continueAsNote')}
+                  </Button>
+                )}
               </Box>
             </HStack>
-            <Button
-              size="large"
-              variant="weak"
-              color="dark"
-              onPress={onContinueAsVoiceNote}
-              testID="quick-voice-continue-as-note"
-            >
-              {t('limit.continueAsNote')}
-            </Button>
+            {canFinish && (
+              <Button
+                size="large"
+                variant="weak"
+                color="dark"
+                onPress={onContinueAsVoiceNote}
+                testID="quick-voice-continue-as-note"
+              >
+                {t('limit.continueAsNote')}
+              </Button>
+            )}
           </VStack>
         ) : isPaused ? (
           <VStack gap={8}>
@@ -350,7 +358,16 @@ QuickVoicePanel.Failed = function Failed({
       testID="quick-voice-failed"
     >
       <Text size="b4" shade={7} className="flex-1 shrink" lineBreakStrategyIOS="hangul-word">
-        {canRetryPlanning && isConsentRequired ? t('failed.consentRequired') : t('failed.keptText')}
+        {match(state)
+          .when(
+            () => canRetryPlanning && isConsentRequired,
+            () => t('failed.consentRequired'),
+          )
+          .when(
+            ({ transcript }) => isTranscriptEmpty(transcript),
+            () => t('failed.nothingHeard'),
+          )
+          .otherwise(() => t('failed.keptText'))}
       </Text>
       {canResume && (
         <TextButton size="small" onPress={onResume}>

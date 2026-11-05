@@ -85,17 +85,23 @@ function VoiceNoteRecordScreen() {
     maxSeconds,
     onLimitReached: () => {
       const minutes = Math.round((maxSeconds ?? 0) / 60);
+      const { hasText } = recording;
       if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
-        toast.warning(t('limit.premium', { minutes }));
+        if (hasText) {
+          toast.warning(t('limit.premium', { minutes }));
+        }
         recording.finish();
         return;
       }
+      const { voiceNoteMinutes: premiumMinutes } = toPremiumBenefitAmounts();
       gate.showLimit({
         title: t('limit.title', { minutes }),
-        description: t('limit.description', {
-          premiumMinutes: toPremiumBenefitAmounts().voiceNoteMinutes,
-        }),
-        alternativeAction: { label: t('limit.summarize'), onPress: () => recording.finish() },
+        description: hasText
+          ? t('limit.description', { premiumMinutes })
+          : t('limit.descriptionEmpty', { premiumMinutes }),
+        alternativeAction: hasText
+          ? { label: t('limit.summarize'), onPress: () => recording.finish() }
+          : undefined,
       });
     },
     onFinished: (draftId) => router.replace(voiceNoteHref(draftId)),
@@ -130,6 +136,23 @@ function VoiceNoteRecordScreen() {
     const shouldFinish = await confirmDialog.open({
       title: t('record.leaveTitle'),
       description: t('record.leaveDescription'),
+      confirmLabel: t('record.leaveConfirm'),
+      cancelLabel: t('record.leaveCancel'),
+    });
+    if (shouldFinish) {
+      recording.finish();
+    }
+  };
+
+  /** 들은 내용이 없으면 끝낼 게 없어 이유를 알리고 묻는다. 묻는 동안 말이 들어왔으면 그 내용으로 정리한다 */
+  const handleFinishPress = async () => {
+    if (VoiceCapturePolicy.canFinish(state)) {
+      recording.finish();
+      return;
+    }
+    const shouldFinish = await confirmDialog.open({
+      title: t('record.finishEmptyTitle'),
+      description: t('record.finishEmptyDescription'),
       confirmLabel: t('record.leaveConfirm'),
       cancelLabel: t('record.leaveCancel'),
     });
@@ -181,46 +204,66 @@ function VoiceNoteRecordScreen() {
   const footer = (
     <VStack gap={12} className="self-stretch">
       {match(state)
-        .with({ status: P.union('paused', 'failed') }, (stopped) => (
-          <VStack gap={12}>
-            <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
-              <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
-                {stopped.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
-              </Text>
-              <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-                {match(stopped)
-                  .with({ status: 'paused' }, ({ cause }) => t(`record.pausedDescription.${cause}`))
-                  .with(
-                    { status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') },
-                    () => t('record.failedPermission'),
-                  )
-                  .otherwise(() => t('record.failedDescription'))}
-              </Text>
+        .with({ status: P.union('paused', 'failed') }, (stopped) => {
+          const hasHeard = VoiceCapturePolicy.canFinish(stopped);
+
+          return (
+            <VStack gap={12}>
+              <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
+                <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+                  {stopped.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
+                </Text>
+                <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                  {match(stopped)
+                    .with({ status: 'paused' }, ({ cause }) =>
+                      hasHeard
+                        ? t(`record.pausedDescription.${cause}`)
+                        : t(`record.pausedEmptyDescription.${cause}`),
+                    )
+                    .with(
+                      { status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') },
+                      () => t('record.failedPermission'),
+                    )
+                    .otherwise(() =>
+                      hasHeard ? t('record.failedDescription') : t('record.failedEmptyDescription'),
+                    )}
+                </Text>
+              </VStack>
+              <HStack gap={8}>
+                <Box flex={1}>
+                  {hasHeard ? (
+                    <Button
+                      size="large"
+                      variant="weak"
+                      color="dark"
+                      onPress={recording.finish}
+                      testID="voice-note-summarize"
+                    >
+                      {t('record.summarize')}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="large"
+                      variant="weak"
+                      color="dark"
+                      onPress={handleClose}
+                      testID="voice-note-stopped-close"
+                    >
+                      {t('record.close')}
+                    </Button>
+                  )}
+                </Box>
+                {canResume && (
+                  <Box flex={1}>
+                    <Button size="large" onPress={recording.resume} testID="voice-note-resume">
+                      {t('record.resume')}
+                    </Button>
+                  </Box>
+                )}
+              </HStack>
             </VStack>
-            <HStack gap={8}>
-              {VoiceCapturePolicy.canFinish(stopped) && (
-                <Box flex={1}>
-                  <Button
-                    size="large"
-                    variant="weak"
-                    color="dark"
-                    onPress={recording.finish}
-                    testID="voice-note-summarize"
-                  >
-                    {t('record.summarize')}
-                  </Button>
-                </Box>
-              )}
-              {canResume && (
-                <Box flex={1}>
-                  <Button size="large" onPress={recording.resume} testID="voice-note-resume">
-                    {t('record.resume')}
-                  </Button>
-                </Box>
-              )}
-            </HStack>
-          </VStack>
-        ))
+          );
+        })
         .otherwise(() => (
           <HStack align="start" className="w-full max-w-90 self-center">
             <RecordControl
@@ -237,8 +280,8 @@ function VoiceNoteRecordScreen() {
             </RecordControl>
             <RecordControl
               label={t('record.finish')}
-              onPress={recording.finish}
-              isDisabled={!VoiceCapturePolicy.canFinish(state)}
+              onPress={handleFinishPress}
+              isDisabled={state.status !== 'listening'}
               isPrimary
               testID="voice-note-finish"
             >

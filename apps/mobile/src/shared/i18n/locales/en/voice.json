@@ -41,6 +41,7 @@
   },
   "failed": {
     "keptText": "We kept what we heard. Keep talking or edit it yourself.",
+    "nothingHeard": "We haven't heard anything yet. Keep talking or type it yourself.",
     "consentRequired": "AI consent is needed to sort this out. Try again to see the notice.",
     "resume": "Keep talking",
     "retry": "Try again"
@@ -48,6 +49,8 @@
   "limit": {
     "title": "That's a long one",
     "description": "Everything so far is saved. Turn it into to-dos now, or keep talking in a voice note.",
+    "titleEmpty": "We haven't heard anything yet",
+    "descriptionEmpty": "You can keep talking in a voice note.",
     "finish": "Make to-dos now",
     "continueAsNote": "Continue as a voice note"
   }

@@ -112,6 +112,96 @@ describe('녹음 화면', () => {
     expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
   });
 
+  test('들은 내용 없이 일시정지하면 남아 있다고 말하지 않고 닫기와 이어서 녹음을 보인다', async () => {
+    // Given
+    await renderRecordScreen();
+
+    // When
+    await fireEvent.press(screen.getByTestId('voice-note-pause'));
+
+    // Then
+    expect(screen.getByText('아직 들은 내용은 없어요.')).toBeTruthy();
+    expect(screen.queryByText(/모두 남아 있어요/)).toBeNull();
+    expect(screen.queryByTestId('voice-note-summarize')).toBeNull();
+    expect(screen.getByTestId('voice-note-resume')).toBeTruthy();
+  });
+
+  test('들은 내용 없이 멈춘 화면에서 닫으면 초안 없이 나간다', async () => {
+    // Given
+    const { storage } = await renderRecordScreen();
+    await fireEvent.press(screen.getByTestId('voice-note-pause'));
+
+    // When
+    await fireEvent.press(screen.getByTestId('voice-note-stopped-close'));
+
+    // Then
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+  });
+
+  test('글자를 못 받고 인식이 실패하면 남아 있다고 말하지 않고 닫을 수 있다', async () => {
+    // Given
+    const { speechRecognizer } = await renderRecordScreen();
+
+    // When
+    await act(async () => speechRecognizer.emit({ type: 'error', code: 'audio-capture' }));
+
+    // Then
+    expect(screen.getByText('녹음이 멈췄어요')).toBeTruthy();
+    expect(screen.getByText(/아직 들은 내용은 없어요/)).toBeTruthy();
+    expect(screen.queryByText(/모두 남아 있어요/)).toBeNull();
+    expect(screen.getByTestId('voice-note-stopped-close')).toBeTruthy();
+  });
+
+  test('들은 내용 없이 끝내기를 누르면 이유를 묻고 그대로 두면 계속 듣는다', async () => {
+    // Given
+    const { speechRecognizer } = await renderRecordScreen();
+
+    // When
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('voice-note-finish')).catch(jest.fn());
+    });
+    await fireEvent.press(await screen.findByText('계속 녹음'));
+
+    // Then
+    expect(speechRecognizer.stop).not.toHaveBeenCalled();
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  test('들은 내용 없이 끝내기를 확인하면 남기지 않고 나간다', async () => {
+    // Given
+    const { speechRecognizer, storage } = await renderRecordScreen();
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('voice-note-finish')).catch(jest.fn());
+    });
+    await screen.findByText('아직 들은 내용이 없어요');
+
+    // When
+    await fireEvent.press(screen.getAllByText('끝내기').at(-1) ?? screen.getByText('계속 녹음'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // Then
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+  });
+
+  test('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
+    // Given
+    jest.useFakeTimers({ advanceTimers: true });
+    await renderRecordScreen(createEntitlementSnapshot({ tier: 'FREE' }));
+
+    // When
+    await act(async () => jest.advanceTimersByTime(181_000));
+
+    // Then
+    expect(await screen.findByText(/정리할 게 없어요. 프리미엄은/)).toBeTruthy();
+    expect(screen.queryByText(/정리해드릴게요/)).toBeNull();
+    expect(screen.queryByTestId('voice-note-summarize')).toBeNull();
+    expect(screen.getByTestId('voice-note-stopped-close')).toBeTruthy();
+    jest.useRealTimers();
+  });
+
   test('끝내면 초안을 저장하고 정리 화면으로 바꾼다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecordScreen();

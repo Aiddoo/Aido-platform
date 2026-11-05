@@ -66,6 +66,24 @@ describe('QuickVoicePanel 90초 제안', () => {
     expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
+  test('들은 내용 없이 90초를 넘기면 정리를 권하지 않고 말로 메모하기로 잇게 한다', async () => {
+    // Given
+    const nothingHeard = createCaptureState({
+      status: 'paused',
+      cause: 'limit',
+      elapsedMs: 90_000,
+    });
+
+    // When
+    await renderPanel(nothingHeard);
+
+    // Then
+    expect(screen.getByText('아직 들은 내용이 없어요')).toBeTruthy();
+    expect(screen.queryByText(/들은 내용은 남아 있어요/)).toBeNull();
+    expect(screen.queryByTestId('quick-voice-finish')).toBeNull();
+    expect(screen.getByTestId('quick-voice-continue-as-note')).toBeTruthy();
+  });
+
   test('앱 이탈로 멈춘 때는 제안하지 않고 이어 듣기를 보인다', async () => {
     // Given
     const paused = createCaptureState({
@@ -103,6 +121,24 @@ describe('QuickVoicePanel.Failed', () => {
 
     // Then
     expect(screen.getByText(/AI 동의가 필요해요/)).toBeTruthy();
+  });
+
+  test('글자를 못 받고 실패했으면 남겨뒀다고 말하지 않는다', async () => {
+    // Given
+    const nothingHeard = createCaptureState({ status: 'failed', reason: 'audio-capture' });
+
+    // When
+    await renderUi(
+      <QuickVoicePanel.Failed
+        state={nothingHeard}
+        onResume={jest.fn()}
+        onRetryPlanning={jest.fn()}
+      />,
+    );
+
+    // Then
+    expect(screen.getByText(/아직 들은 내용이 없어요/)).toBeTruthy();
+    expect(screen.queryByText(/남겨뒀어요/)).toBeNull();
   });
 
   test('다른 이유로 실패했으면 들은 글자를 남겼다고 보인다', async () => {

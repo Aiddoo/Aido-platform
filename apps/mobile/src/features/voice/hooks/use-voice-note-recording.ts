@@ -263,6 +263,13 @@ export function useVoiceNoteRecording({
     // 파일 받기는 ref만 읽어 화면이 내려간 뒤에도 그대로 동작한다
   }, [speechRecognizer]);
 
+  /** 남길 글자가 없어 기기의 녹음 조각과 초안을 지운다. 뒤늦은 파일·글자는 더 받지 않는다 */
+  function removeLocalNote() {
+    hasDiscardedRef.current = true;
+    recordingsRef.current.forEach(({ fileName }) => storage.recordings.remove(accountId, fileName));
+    storage.discard(accountId, baseNote.draftId);
+  }
+
   const { status } = session.state;
   const flushDraft = useEffectEvent(() => {
     persist('now');
@@ -270,6 +277,7 @@ export function useVoiceNoteRecording({
   const notifyEmpty = useEffectEvent(() => {
     if (hasBegunRef.current) {
       hasBegunRef.current = false;
+      removeLocalNote();
       onEmpty();
     }
   });
@@ -350,11 +358,9 @@ export function useVoiceNoteRecording({
 
   /** 초안을 지우고 나간다(들은 글자가 없을 때). 뒤늦은 파일·글자는 더 받지 않는다 */
   const discard = () => {
-    hasDiscardedRef.current = true;
     hasBegunRef.current = false;
     session.cancel();
-    recordingsRef.current.forEach(({ fileName }) => storage.recordings.remove(accountId, fileName));
-    storage.discard(accountId, baseNote.draftId);
+    removeLocalNote();
   };
 
   return {

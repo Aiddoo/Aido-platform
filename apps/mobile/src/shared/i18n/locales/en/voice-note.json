@@ -85,20 +85,30 @@
       "user": "Everything so far is saved.",
       "limit": "You've reached the time limit for one recording. Everything so far is saved."
     },
+    "pausedEmptyDescription": {
+      "app-background": "You switched apps, so we paused. We haven't heard anything yet.",
+      "interrupted": "A call or another sound paused recording. We haven't heard anything yet.",
+      "user": "We haven't heard anything yet.",
+      "limit": "You've reached the time limit for one recording. We didn't hear anything to summarize."
+    },
     "resume": "Resume",
     "summarize": "Summarize now",
     "failedTitle": "Recording stopped",
     "failedDescription": "Everything so far is saved. Resume recording or summarize what we have.",
+    "failedEmptyDescription": "We haven't heard anything yet. Resume recording or close this screen.",
     "failedPermission": "We can't use the microphone or speech recognition. Check the permission in Settings.",
     "leaveTitle": "Finish recording?",
     "leaveDescription": "What we heard stays in the Memos tab.",
     "leaveConfirm": "Finish",
     "leaveCancel": "Keep recording",
+    "finishEmptyTitle": "We haven't heard anything yet",
+    "finishEmptyDescription": "We can only summarize once your words appear. If you finish now, this recording won't be kept.",
     "empty": "We didn't hear anything"
   },
   "limit": {
     "title": "Free recordings stop at {{minutes}} minutes",
     "description": "We'll summarize what we have so far. With Premium, record up to {{premiumMinutes}} minutes at a time.",
+    "descriptionEmpty": "We didn't hear anything to summarize. With Premium, record up to {{premiumMinutes}} minutes at a time.",
     "summarize": "Summarize now",
     "premium": "You can record up to {{minutes}} minutes at a time. We've kept what we heard."
   },
