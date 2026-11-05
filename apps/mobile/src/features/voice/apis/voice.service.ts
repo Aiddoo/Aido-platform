@@ -9,18 +9,20 @@ import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import type {
   AppliedPlanResult,
+  CreateQuickPlanInput,
   PlannedAction,
   QuickPlanResult,
   VoiceNoteDigestResult,
   VoicePlanSource,
 } from '../domains/voice-plan.model';
 import {
-  quickPlanEnvelopeSchema,
+  lenientQuickPlanResponseSchema,
+  lenientVoiceNoteDigestResponseSchema,
   toApplyActionPlanRequest,
+  toQuickPlanRequest,
   toQuickPlanResult,
   toVoiceNoteDigestRequest,
   toVoiceNoteDigestResult,
-  voiceNoteDigestEnvelopeSchema,
 } from './voice-plan.mapper';
 
 const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
@@ -32,11 +34,6 @@ const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
 const QUICK_PLAN_TIMEOUT_MS = 30_000;
 const DIGEST_TIMEOUT_MS = 60_000;
 
-export interface CreateQuickPlanInput {
-  text: string;
-  source: 'voice' | 'text';
-}
-
 export class VoiceService {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
@@ -47,28 +44,24 @@ export class VoiceService {
   }
 
   createQuickPlan = async (
-    { text, source }: CreateQuickPlanInput,
+    input: CreateQuickPlanInput,
     idempotencyKey: string,
     signal?: AbortSignal,
   ): Promise<Result<QuickPlanResult, ApiError>> => {
-    const result = await this.#httpClient.post(
-      'v1/quick-plans',
-      { text, source: source === 'voice' ? 'VOICE' : 'TEXT' },
-      {
-        headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
-        timeout: QUICK_PLAN_TIMEOUT_MS,
-        signal,
-      },
-    );
+    const result = await this.#httpClient.post('v1/quick-plans', toQuickPlanRequest(input), {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+      timeout: QUICK_PLAN_TIMEOUT_MS,
+      signal,
+    });
     if (!result.ok) {
       return result;
     }
 
     return ok(
       this.#map('createQuickPlan', () =>
-        toQuickPlanResult(quickPlanEnvelopeSchema.parse(result.value), {
+        toQuickPlanResult(lenientQuickPlanResponseSchema.parse(result.value), {
           planId: idempotencyKey,
-          source: source === 'voice' ? 'quick-voice' : 'quick-text',
+          source: input.source === 'voice' ? 'quick-voice' : 'quick-text',
         }),
       ),
     );
@@ -94,7 +87,10 @@ export class VoiceService {
 
     return ok(
       this.#map('createVoiceNoteDigest', () =>
-        toVoiceNoteDigestResult(voiceNoteDigestEnvelopeSchema.parse(result.value), idempotencyKey),
+        toVoiceNoteDigestResult(
+          lenientVoiceNoteDigestResponseSchema.parse(result.value),
+          idempotencyKey,
+        ),
       ),
     );
   };

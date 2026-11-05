@@ -4,6 +4,7 @@ import {
   actionPlanSchema,
   type ParseMemoResponse,
   type ParsedMemoTodo,
+  type QuickPlanRequest,
   type VoiceNoteDigestRequest,
   PLANNED_ACTION_TYPES,
   plannedActionSchema,
@@ -18,6 +19,7 @@ import { z } from 'zod';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import {
+  type CreateQuickPlanInput,
   type PlannedAction,
   type QuickPlanResult,
   type VoicePlan,
@@ -32,11 +34,11 @@ import {
  */
 const lenientActionPlanSchema = actionPlanSchema.extend({ actions: z.array(z.unknown()) });
 
-export const quickPlanEnvelopeSchema = quickPlanResponseSchema.extend({
+export const lenientQuickPlanResponseSchema = quickPlanResponseSchema.extend({
   plan: lenientActionPlanSchema,
 });
 
-export const voiceNoteDigestEnvelopeSchema = voiceNoteDigestResponseSchema.extend({
+export const lenientVoiceNoteDigestResponseSchema = voiceNoteDigestResponseSchema.extend({
   plan: lenientActionPlanSchema,
 });
 
@@ -99,8 +101,13 @@ export function toVoicePlan(
   });
 }
 
+export const toQuickPlanRequest = ({ text, source }: CreateQuickPlanInput): QuickPlanRequest => ({
+  text,
+  source: source === 'voice' ? 'VOICE' : 'TEXT',
+});
+
 export function toQuickPlanResult(
-  dto: z.infer<typeof quickPlanEnvelopeSchema>,
+  dto: z.infer<typeof lenientQuickPlanResponseSchema>,
   { planId, source }: { planId: string; source: 'quick-voice' | 'quick-text' },
 ): QuickPlanResult {
   return {
@@ -211,7 +218,7 @@ export const toVoiceNoteDigestRequest = ({
 });
 
 export function toVoiceNoteDigestResult(
-  dto: z.infer<typeof voiceNoteDigestEnvelopeSchema>,
+  dto: z.infer<typeof lenientVoiceNoteDigestResponseSchema>,
   planId: string,
 ): VoiceNoteDigestResult {
   return {

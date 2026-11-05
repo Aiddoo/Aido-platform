@@ -4,13 +4,13 @@ import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import type { CreateQuickPlanInput } from '@src/features/voice/apis/voice.service';
 import {
   PlanRequestPolicy,
   type PreparedPlanRequest,
 } from '@src/features/voice/domains/plan-request.model';
 import type { CapturedPlan } from '@src/features/voice/domains/voice-capture.model';
 import { VoiceNoteCaptionPolicy } from '@src/features/voice/domains/voice-note-caption.model';
+import type { CreateQuickPlanInput } from '@src/features/voice/domains/voice-plan.model';
 import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
 import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';

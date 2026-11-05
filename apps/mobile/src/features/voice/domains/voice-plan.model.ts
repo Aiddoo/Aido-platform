@@ -72,6 +72,11 @@ export type VoicePlan = z.infer<typeof voicePlanSchema>;
 /** 행동별로 추가할지 고른 값. 키는 `actionId` */
 export type PlanSelection = Record<string, boolean>;
 
+export interface CreateQuickPlanInput {
+  text: string;
+  source: 'voice' | 'text';
+}
+
 export interface QuickPlanResult {
   plan: VoicePlan;
   /** 서버가 한도를 싣지 못했으면 null. 결과는 그대로 보여 주고 한도는 다시 묻는다 */
