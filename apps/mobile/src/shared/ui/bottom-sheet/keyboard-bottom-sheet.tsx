@@ -31,7 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
-import { HANDLE_HEIGHT, SHEET_INDEX } from './constants';
+import { HANDLE_HEIGHT, SHEET_CONTENT_PADDING, SHEET_INDEX } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingTop: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: SHEET_CONTENT_PADDING,
   },
   footer: {
     paddingTop: FOOTER_PADDING_TOP,

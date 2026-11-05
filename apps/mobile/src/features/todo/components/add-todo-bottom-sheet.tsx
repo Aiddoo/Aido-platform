@@ -24,6 +24,7 @@ import {
   HStack,
   KeyboardBottomSheet,
   ModalBottomSheet,
+  SHEET_CONTENT_PADDING,
   QueryErrorBoundary,
   RepeatIcon,
   useOverlay,
@@ -41,7 +42,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
+import { ActivityIndicator, Keyboard } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
@@ -526,11 +528,13 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 )}
               </FormField>
 
+              {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 keyboardShouldPersistTaps="always"
-                contentContainerClassName="gap-2"
+                style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
               >
                 <DateChip onPress={handleDateChipPress} />
                 <TimeChip onPress={handleTimeChipPress} />

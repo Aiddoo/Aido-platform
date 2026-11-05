@@ -6,6 +6,7 @@ export {
   BottomSheet,
   KeyboardBottomSheet,
   ModalBottomSheet,
+  SHEET_CONTENT_PADDING,
   SHEET_DETACHED_MARGIN,
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,

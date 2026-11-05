@@ -21,6 +21,7 @@ import {
   EyeOffIcon,
   KeyboardBottomSheet,
   ModalBottomSheet,
+  SHEET_CONTENT_PADDING,
   QueryErrorBoundary,
   useActionChipIconSize,
   useOverlay,
@@ -37,7 +38,8 @@ import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { useForm, useFormState, useWatch } from 'react-hook-form';
-import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
+import { ActivityIndicator, Keyboard } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 
 import {
   type PlanTodoEditFormValues,
@@ -188,11 +190,13 @@ export function PlanTodoEditSheet({
           )}
         </FormField>
 
+        {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           keyboardShouldPersistTaps="always"
-          contentContainerClassName="gap-2"
+          style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
         >
           <ActionChip
             icon={<CalendarIcon width={iconSize} height={iconSize} colorClassName="text-main" />}
