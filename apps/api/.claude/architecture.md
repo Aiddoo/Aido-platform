@@ -1,6 +1,6 @@
 # 서버 구조와 책임
 
-모듈 경계나 상태·트랜잭션 소유를 바꿀 때 참고한다. 작성 형식은 [api-conventions.md](api-conventions.md), 저장소 구현은 [drizzle.md](drizzle.md)에 있다. 이 문서는 설계 기준과 실제 사례를 구분한다. 전체 전환 이력은 [migration.md](../../../docs/server/migration.md)가 소유한다.
+모듈 경계나 상태·트랜잭션 소유를 바꿀 때 참고한다. 작성 형식은 [api-conventions.md](api-conventions.md), 저장소 구현은 [drizzle.md](drizzle.md)에 있다. 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)다.
 
 ## 의존성과 실행 흐름
 
@@ -27,6 +27,10 @@ Domain/Application은 Nest·ORM·vendor SDK·platform 구현에 의존하지 않
 
 Controller는 UseCase를 직접 호출한다. 같은 요청을 한 번 더 전달하는 Facade는 추가하지 않는다. Application에서 실제 업무 조정이나 실패 격리를 제공하는 클래스는 전달 전용 클래스와 구분한다.
 
+서버가 계산한다. 접근 권한, 한도, 남은 횟수, 초기화 시각, 전체 집계, 저장 정합성은 서버가 판단해 응답에 싣는다. 앱은 표시·입력·상호작용을 계산한다. 앱이 같은 판단을 다시 만들 값이 필요하면 응답 필드를 더한다.
+
+녹음 파일은 서버로 오지 않는다. 기기가 글자로 바꾸고 서버는 글자만 받으며 전사를 저장하지 않는다. 오브젝트 스토리지는 쓰지 않으므로 파일 업로드가 필요한 기능은 기기 처리와 글자 전송을 먼저 찾는다.
+
 ## 상태 모델과 조회 모델
 
 Aggregate는 함께 일관성을 지켜야 하는 단건 상태와 행동이 있을 때 선택한다. 식별되는 모델은 Entity, 검증·동등성·불변성이 필요한 값은 VO, 입력으로 결과를 계산하는 규칙은 순수 함수/Policy로 표현할 수 있다. 모든 필드에 VO를 만들거나 모든 Entity를 Aggregate로 승격하지 않는다.
@@ -50,6 +54,18 @@ Aggregate 행동은 생성 factory(`planCreation`/`create`)와 저장 복원(`re
 ## Port와 공개 capability
 
 Port는 소비자가 필요한 외부 공급자·캐시·큐·cross-context capability·원자적 저장 동작을 표현한다. 기존 구현을 그대로 한 번 전달하기 위한 인터페이스나 DB 호출마다 Port를 추가하지 않는다. UseCase dependency는 실제 사용하는 메서드의 `Pick`으로 좁힐 수 있다.
+
+Port 이름과 타입에는 SDK·공급자 이름을 쓰지 않고 앱의 말을 쓴다. 공급자 이름은 어댑터 파일과 클래스에만 쓴다. 교체 기준: 공급자를 바꿀 때 어댑터와 조립 밖이 바뀌면 포트 설계가 틀린 것이다.
+
+| 교체 대상   | Port(token)                                 | 지금 어댑터                     | 고르는 곳                                                           |
+| ----------- | ------------------------------------------- | ------------------------------- | ------------------------------------------------------------------- |
+| 메일        | `EmailSenderPort`(`EMAIL_SENDER`)           | Resend, 로그                    | `EMAIL_PROVIDER`, `email-sender.factory.ts`                         |
+| 관리자 알림 | `AdminNotifierPort`(`ADMIN_NOTIFIER`)       | Discord, 로그                   | `ADMIN_NOTIFIER_PROVIDER`, `admin-notifier.factory.ts`              |
+| AI 업체     | `AiGeneratorPort`(`AI_GENERATOR`)           | AI SDK(Anthropic·Google·OpenAI) | `AI_PROVIDER_ORDER`, `AI_MODEL_*`([AI](../../../docs/server/ai.md)) |
+| 푸시        | `PushProvider`(`PUSH_PROVIDER`)             | Expo                            | Module 조립                                                         |
+| 운영 경보   | `OperationalAlertPort`(`OPERATIONAL_ALERT`) | Sentry                          | Module 조립                                                         |
+
+새 어댑터는 어댑터 하나와 factory 표 한 줄만 더한다. 어댑터 계약 테스트(`email-sender.contract.ts`·`admin-notifier.contract.ts`)가 있으면 그것을 통과해야 한다.
 
 현재 Weather는 v1(KMA)과 v2(WeatherKit)가 서로 다른 Port라 공급자 선택 Registry 없이 Module에서 직접 연결한다. 외부에는 [weather-forecast.public.ts](../src/modules/weather/weather-forecast.public.ts)의 read model과 최소 Reader만 공개한다. 내부 KMA token·resolver·ancillary provider를 함께 export하지 않는다.
 
@@ -84,7 +100,7 @@ commit
 - [GenerateReport](../src/modules/ai-assistance/application/use-cases/reports/generate-report.use-case.ts)는 유료 자격을 AI 호출 전 확인하고, 외부 호출 후 account lock을 잡은 UoW에서 최신 자격·중복을 재확인해 저장한다. enqueue 시점의 cached 자격만으로 실행·저장을 허용하지 않는다.
 - [ReconcilePushReceipts](../src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.ts)는 외부 receipt 조회를 밖에서 하고 terminal 상태 기록·토큰 비활성화를 하나의 UoW로 묶는다. 비활성화 실패 시 retry 대상을 잃지 않도록 함께 rollback하며 cache 정리는 commit 뒤 격리한다.
 
-부수효과 실패를 모두 같은 방식으로 처리하지 않는다. durable outbox, 기존 best-effort, 실패 전파·재시도 계약을 구분한다. callback mock이 성공한 결과는 native rollback/동시성의 증거가 아니다.
+부수효과 실패를 모두 같은 방식으로 처리하지 않는다. durable outbox, 기존 best-effort, 실패 전파·재시도 계약을 구분한다. callback mock이 성공한 결과는 실제 rollback/동시성의 증거가 아니다.
 
 ## 캐시·큐·시간·표시의 소유
 
@@ -92,14 +108,14 @@ commit
 - queue/job 이름, payload schema, retry/backoff, attempt 의미, enqueue 조건은 queue 소유 Context의 계약이다. 외부 입력은 신뢰하지 않으며 producer/consumer가 같은 schema를 사용한다. pg-boss는 at-least-once이므로 handler는 같은 payload의 재실행에 멱등이어야 한다(`singletonKey`, unique key, 상태 fence, 위의 boolean 전이).
 - Date instant, DB DATE/calendar label, 사용자 timezone을 구분한다. 날짜 문자열을 process timezone의 instant로 바꾼 뒤 요일을 계산하지 않는다. DST 기간은 각 경계를 대상 zone에 다시 해석한다. 기존 shared date helper를 사용한다.
 - locale별 사용자 copy·AI 지시문·response schema는 Application의 typed catalog나 Presentation이 소유한다. Domain 숫자 판단과 상태 규칙은 번역 문자열을 만들거나 파싱하지 않는다. 예: AI `application/prompts`, Notification `application/messages`, Email `application/services/email/email-message.factory.ts`·`application/templates/email`.
-- Provider의 wire JSON/SDK 타입은 Infrastructure에서 변환한다. Application의 이메일 HTML처럼 순수 렌더링을 둔 기존 흐름은 I/O 구현과 구분한다. 관리자 알림은 벤더 중립 모델(severity·필드)만 Application이 만들고 Discord embed 같은 채널 표시는 어댑터가 렌더링한다. 이메일·관리자 알림 어댑터는 Module 조립과 `EMAIL_PROVIDER`·`ADMIN_NOTIFIER_PROVIDER` 설정 한 곳에서 고른다.
+- Provider의 wire JSON/SDK 타입은 Infrastructure에서 변환한다. Application의 이메일 HTML처럼 순수 렌더링을 둔 기존 흐름은 I/O 구현과 구분한다. 관리자 알림은 벤더 중립 모델(severity·필드)만 Application이 만들고 Discord embed 같은 채널 표시는 어댑터가 렌더링한다.
 
 ## 외부 호출 정책·계량·운영 경보
 
-- 외부 호출은 `OutboundPolicyRegistry.get(spec)`의 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → Aggressive timeout). 정책 값은 소유 모듈 infrastructure의 spec 상수(`ai-outbound.policies.ts`, `weather-outbound.policies.ts`, `expo-outbound.policy.ts`)다. 재시도 층은 한 호출에 하나다: 요청 안에서는 전송 계층 내장(AI SDK `maxRetries`, Expo SDK), 비동기는 pg-boss이고 cockatiel `retry`는 쓰지 않는다. 회로 로그는 `outbound.circuit.{opened,half-open,closed}`, 대기열 초과는 `outbound.bulkhead.rejected`다.
+- 외부 호출은 `OutboundPolicyRegistry.get(spec)`의 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → Aggressive timeout). 정책 값은 소유 모듈 infrastructure의 spec 상수(`ai-outbound.policies.ts`, `weather-outbound.policies.ts`, `email-outbound.policy.ts`, `expo-outbound.policy.ts`)다. 재시도 층은 한 호출에 하나다: 요청 안에서는 전송 계층 내장(AI SDK `maxRetries`, Expo SDK), 비동기는 pg-boss이고 cockatiel `retry`는 쓰지 않는다. 회로 로그는 `outbound.circuit.{opened,half-open,closed}`, 대기열 초과는 `outbound.bulkhead.rejected`다.
 - 회로를 다는 기준: 호출마다 돈이 들거나, 요청 경로에서 대기 시간이 쌓이거나, 배치가 많은 호출로 퍼질 때. 상태는 프로세스 메모리(API 컨테이너 1대)다.
 - 누적 사용량은 `USAGE_METER`(`UsageMeterPort`: `add`·`tryReserve`·`release`·`read`·`prune`, `OutboundUsage` 원자적 upsert)로 센다. 기간은 `usagePeriod`의 UTC 일·월이고 기준선 경보는 `crossedThresholds`로 기간당 한 번이다. 90일 지난 행은 `UsageRetentionJob`이 지운다.
-- 사람이 확인할 상황은 `OPERATIONAL_ALERT`(`OperationalAlertPort.raise({ key, severity, message, tags, details })`, 절대 throw하지 않음) 하나로 올린다. 어댑터는 Sentry(fingerprint = key)이고 key 상수는 각 Context의 `application/observability/*-alerts.ts`다.
+- 사람이 확인할 상황은 `OPERATIONAL_ALERT`(`OperationalAlertPort.raise({ key, severity, message, tags, details })`, 절대 throw하지 않음) 하나로 올린다. 어댑터는 Sentry(fingerprint = key)이고 key 상수는 각 Context의 `application/observability/<slice>/*-alerts.ts`에 둔다. 업무 코드에서 Sentry를 직접 부르지 않는다(5xx는 `GlobalExceptionFilter`가 보낸다). 새 key는 [배포 문서](../DEPLOYMENT.md#환경-설정과-공개-버전)의 알림 규칙 태그에도 더한다.
 
 ## 유료 기능과 권한
 
@@ -121,7 +137,7 @@ commit
 3. `/me.entitlements` 계약(`premiumEntitlementsSchema`)에 키를 추가한다. 이전 앱은 모르는 키를 무시한다.
 4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고 `QuotaLedger`로 센다.
 
-다운그레이드는 데이터를 지우지 않는다. 한도를 넘긴 카테고리·친구는 그대로 두고 새로 만들기만 막는다(`CreateTodoCategory`·`SendFriendRequest`의 `count >= limit`). 사용량은 창(일·월) 단위로 계속 세고 한도만 바뀌므로, 이번 달 20회를 쓴 뒤 만료되면 다음 초기화까지 AI 파싱이 막힌다. 창 중간에 구독하면 바로 무제한이다.
+다운그레이드는 데이터를 지우지 않는다. 한도를 넘긴 카테고리·친구는 그대로 두고 새로 만들기만 막는다(`CreateTodoCategory`·`SendFriendRequest`의 `count >= limit`). 사용량은 창(일·월) 단위로 계속 세고 한도만 바뀌므로, 이번 달 무료 한도보다 많이 쓴 뒤 만료되면 다음 초기화까지 AI 할 일 만들기가 막힌다. 창 중간에 구독하면 바로 무제한으로 보인다(집행은 `fairUse.premium`).
 
 만료 타임라인(UTC instant):
 
@@ -134,14 +150,28 @@ commit
 | 경계 직후 요청                              | Access 캐시는 기한을 함께 저장해 TTL 안에서도 경계를 넘기지 않고, /me 프로필 캐시 TTL은 다음 경계까지로 줄인다                              |
 | 정리 작업(`premium-grant-sweep`, 10분 주기) | 끝난 보상을 닫고, 만료 웹훅을 잃어 ACTIVE로 남은 projection을 다시 계산해 FREE로 저장한다. 그 전에도 판단은 위 규칙을 따른다                |
 
+## 반복 할 일
+
+규칙은 `TodoSeries`(Aggregate)와 `RepeatRule`(VO)이 소유하고, 회차는 일반 `Todo` 행이다. 코드 이름은 `seriesId`이고 DB 칸과 출시 앱 응답은 `recurrenceGroupId` 그대로다.
+
+| 항목      | 규칙                                                                                                                                                                                                                   |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 값        | 빈도 `TODO_REPEAT_FREQUENCIES`, 간격 `TODO_REPEAT_INTERVALS`, 끝 `TODO_REPEAT_END_TYPES`(`NEVER`·`UNTIL`·`COUNT`), 수정 범위 `TODO_EDIT_SCOPES`(`THIS_ONLY`·`THIS_AND_FOLLOWING`·`ALL`). 모두 `@aido/api/vocabulary`다 |
+| 상한      | `TODO_SERIES_LIMITS`: 진행 중 규칙 30개(`TODO_0842`), `COUNT` 365회. 성능 한도라 등급과 상관없이 같다. 옛 경로는 [호환](../../../docs/conventions/compatibility.md)의 300개다                                          |
+| 회차 생성 | 규칙 시간대의 오늘 + `VISIBLE_AHEAD_DAYS`(90일)까지 미리 만든다(`occurrenceHorizon`). 밤 작업은 `todo-series-materialization.v1`이고 커서는 `nextOccurrenceDate`다                                                     |
+| 멱등      | `(seriesId, occurrenceDate)` 유니크 + 잠금 뒤 커서 재확인. 잠금 순서는 `todoCategory → todoSortOrder → 규칙 행 → 할 일 행`이다                                                                                         |
+| 시각      | 벽시계에서 계산한다([떠 있는 시각](../../../docs/conventions/dates.md#5-떠-있는-시각)). 사용자 시간대가 바뀌면 규칙 시간대도 바뀐다                                                                                    |
+| 만드는 곳 | 손으로 만들기, 메모 변환, 계획 적용, AI 제안 수락이 모두 `StagedTodoCreator.stage`를 탄다. 경로마다 규칙을 따로 만들지 않는다                                                                                          |
+| 오류      | `TODO_0841`(없음)·`0842`(상한)·`0843`(맞는 날짜 없음)·`0844`(반복 아님)·`0845`(설정 오류)·`0846`(끝남). 공개 상세는 `PUBLIC_ERROR_DETAILS`에 있다                                                                      |
+
+오래 앱을 열지 않은 무료 사용자의 규칙은 멈춘다([휴면·복귀](../../../docs/server/todo-series-dormancy.md)).
+
 ## 댓글 읽기 모델
 
 댓글은 `parentId`·`replyCount`로 root와 답글을 구분한다(`path`·`depth`·`rootId` 열은 1.14.2에서 제거). overview/conversation은 변경이 잦고 viewer 상태·cursor 문맥이 있어 Redis 공유 payload를 쓰지 않는다. [DrizzleTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader.ts)가 root keyset을 SQL로 읽고 page 단위 like를 합치며, `application/presenters/comments/v1`·`v2`가 응답을 조립한다.
 
 상세 조회수는 unique key로 멱등 기록하며 별도 기록 endpoint를 만들지 않는다. 삭제된 root는 살아 있는 답글이 있으면(`replyCount > 0`) 묘비로 남는다. 서명 cursor는 todo/sort/thread/scope를 묶는다. 변경 시 UseCase·reader·presenter와 구 앱/HTTP 계약을 함께 확인한다.
 
-## 검증과 현재 전환 범위
+## 검증
 
-Module·파일 순환은 만들지 않는다. `import/no-cycle`(Oxlint)이 import 순환을 막고, Nest `forwardRef`로 순환을 덮지 않는다. Oxlint import/cycle 규칙은 일부 기계적 경계를, 타입 검사는 계약 연결을 확인한다. 상태 소유·추상화 가치·실제 Module 조립·transaction은 코드 검토와 적절한 실행 증거가 필요하다. 새 소스 파싱 검사나 중복 architecture test를 기본으로 추가하지 않는다.
-
-Context별 현재 구현과 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에서 확인한다. 계획된 경로를 현재 경로로 링크하거나 회귀 검증을 운영 배포 완료로 표현하지 않는다. 변경 위험에 맞는 검증은 [testing-guide.md](testing-guide.md)에서 선택한다.
+Module·파일 순환은 만들지 않는다. `import/no-cycle`(Oxlint)이 import 순환을 막고, Nest `forwardRef`로 순환을 덮지 않는다. 상태 소유·실제 Module 조립·transaction은 코드 검토와 실행 증거가 필요하다. 새 소스 파싱 검사나 중복 architecture test를 기본으로 추가하지 않는다. 변경 위험에 맞는 검증은 [testing-guide.md](testing-guide.md)에서 고른다.

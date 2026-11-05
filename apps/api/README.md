@@ -23,9 +23,9 @@ pnpm --filter @aido/server dev
 ```text
 src/
 ├── modules/<context>/   # domain · application · infrastructure · presentation
-├── platform/            # DB transaction, HTTP filter, job, cache, logging 등 실행 기술
+├── platform/            # DB transaction, HTTP filter, job, cache, 외부 호출 정책 등 실행 기술
 ├── shared/              # Context 공통 순수 규칙·Application 계약
-└── bootstrap.ts         # 진입점
+└── bootstrap.ts         # 운영 진입점
 drizzle/                 # SQL 마이그레이션
 test/                    # integration · e2e · architecture · performance
 ```
@@ -68,7 +68,9 @@ test/                    # integration · e2e · architecture · performance
 | DB·마이그레이션      | [drizzle](./.claude/drizzle.md)                                                            |
 | 테스트               | [testing-guide](./.claude/testing-guide.md)                                                |
 | 로그·개인정보        | [logging-guide](./.claude/logging-guide.md)                                                |
+| AI 업체·프롬프트     | [ai](../../docs/server/ai.md)                                                              |
 | 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md)                                         |
-| 관리자 Discord 알림  | [admin-notifications](./docs/admin-notifications.md)                                       |
+| 관리자 알림          | [admin-notifications](./docs/admin-notifications.md)                                       |
+| 구독·결제 웹훅       | [billing](./docs/billing.md)                                                               |
 | CI·배포·롤백         | [CI](../../docs/server/ci.md), [DEPLOYMENT.md](./DEPLOYMENT.md)                            |
 | 전체 서버 문서 안내  | [docs/server/README.md](../../docs/server/README.md)                                       |
