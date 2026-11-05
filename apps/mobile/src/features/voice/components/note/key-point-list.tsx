@@ -1,6 +1,6 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, FlagIcon, HStack, PlayIcon, Text, VStack } from '@src/shared/ui';
+import { Box, FlagIcon, HStack, PlayIcon, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactElement } from 'react';
@@ -95,9 +95,9 @@ function KeyPointItem({
         ) : (
           timeChip
         )}
-        <Text size="b3" lineBreakStrategyIOS="hangul-word" className="shrink flex-1">
+        <WordWrapText size="b3" className="shrink flex-1">
           {keyPoint.text}
-        </Text>
+        </WordWrapText>
         {keyPoint.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"

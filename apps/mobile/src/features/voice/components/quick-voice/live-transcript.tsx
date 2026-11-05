@@ -1,4 +1,4 @@
-import { Box, SheetScrollShadow, Text } from '@src/shared/ui';
+import { Box, SheetScrollShadow, splitWords, Text } from '@src/shared/ui';
 import { type ComponentRef, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -15,8 +15,6 @@ const MAX_ANIMATED_WORDS = 40;
 const WORD_FADE_MS = 450;
 /** 맨 아래에서 이만큼 안이면 끝까지 본 것으로 보고 다시 따라간다 */
 const FOLLOW_THRESHOLD_PX = 24;
-
-const splitWords = (text: string) => text.split(' ').filter((word) => word.length > 0);
 
 interface LiveTranscriptProps {
   transcript: VoiceTranscript;

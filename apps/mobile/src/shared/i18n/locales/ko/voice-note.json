@@ -94,9 +94,9 @@
     "resume": "이어서 녹음",
     "summarize": "여기까지 정리",
     "failedTitle": "녹음이 멈췄어요",
-    "failedDescription": "들은 내용은 모두 남아 있어요. 이어서 녹음하거나 여기까지 정리할 수 있어요.",
-    "failedEmptyDescription": "아직 들은 내용은 없어요. 이어서 녹음하거나 닫아주세요.",
-    "failedPermission": "마이크나 음성 인식을 쓸 수 없어요. 설정에서 권한을 확인해주세요.",
+    "failedDescription": "들은 내용은 모두 남아 있어요.\n이어서 녹음하거나 여기까지 정리할 수 있어요.",
+    "failedEmptyDescription": "아직 들은 내용은 없어요.\n이어서 녹음하거나 닫아주세요.",
+    "failedPermission": "마이크나 음성 인식을 쓸 수 없어요.\n설정에서 권한을 확인해주세요.",
     "leaveTitle": "녹음을 끝낼까요?",
     "leaveDescription": "들은 내용은 메모 탭에 남겨둬요.",
     "leaveConfirm": "끝내기",
@@ -107,8 +107,8 @@
   },
   "limit": {
     "title": "무료는 한 번에 {{minutes}}분까지 녹음해요",
-    "description": "지금까지 녹음한 내용은 정리해드릴게요. 프리미엄은 한 번에 {{premiumMinutes}}분까지 녹음해요.",
-    "descriptionEmpty": "아직 들은 내용이 없어 정리할 게 없어요. 프리미엄은 한 번에 {{premiumMinutes}}분까지 녹음해요.",
+    "description": "지금까지 녹음한 내용은 정리해드릴게요.\n프리미엄은 한 번에 {{premiumMinutes}}분까지 녹음해요.",
+    "descriptionEmpty": "아직 들은 내용이 없어 정리할 게 없어요.\n프리미엄은 한 번에 {{premiumMinutes}}분까지 녹음해요.",
     "summarize": "여기까지 정리",
     "premium": "한 번에 {{minutes}}분까지 녹음할 수 있어요. 여기까지 남겨둘게요."
   },

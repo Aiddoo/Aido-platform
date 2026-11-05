@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, FlagIcon, HStack, Text } from '@src/shared/ui';
+import { Box, FlagIcon, HStack, Text, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -98,9 +98,9 @@ export function SentenceCaptionList({
               ))
               .with({ type: 'interim' }, ({ text }) => (
                 <Box className="rounded-xl bg-gray-1 px-3 py-3">
-                  <Text size="b3" shade={5} lineBreakStrategyIOS="hangul-word">
+                  <WordWrapText size="b3" shade={5}>
                     {text}
-                  </Text>
+                  </WordWrapText>
                 </Box>
               ))
               .exhaustive()
@@ -147,23 +147,15 @@ function SentenceCard({
         <Text size="e1" shade={6} className="tabular-nums">
           {time}
         </Text>
-        <Text size="b3" lineBreakStrategyIOS="hangul-word" className="shrink flex-1">
+        <WordWrapText size="b3" className="shrink flex-1">
           {splitLowConfidenceText(sentence.text, sentence.lowConfidenceWords).map(
-            ({ text, isLowConfidence }, index) =>
-              isLowConfidence ? (
-                <Text
-                  key={index}
-                  size="b3"
-                  style={{ textDecorationLine: 'underline' }}
-                  testID="caption-low-confidence-word"
-                >
-                  {text}
-                </Text>
-              ) : (
-                text
-              ),
+            ({ text, isLowConfidence }) => ({
+              text,
+              isUnderlined: isLowConfidence,
+              testID: isLowConfidence ? 'caption-low-confidence-word' : undefined,
+            }),
           )}
-        </Text>
+        </WordWrapText>
         {sentence.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"
