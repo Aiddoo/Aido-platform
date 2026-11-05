@@ -10,9 +10,9 @@ import {
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
   ReadableContent,
-  Text,
   useConfirmDialog,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -75,12 +75,12 @@ function DeleteAccountScreen() {
           entering={FadeIn.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
         >
           <VStack mt={16} p={16} gap={4} className="bg-warning-1 rounded-xl">
-            <Text size="b3" shade={7}>
+            <WordWrapText size="b3" shade={7}>
               {t('deleteAccount.restoreNotice')}
-            </Text>
-            <Text size="b3" shade={5}>
+            </WordWrapText>
+            <WordWrapText size="b3" shade={5}>
               {t('deleteAccount.purgeNotice')}
-            </Text>
+            </WordWrapText>
           </VStack>
         </Animated.View>
       </FormStepLayout>

@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { AiIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { AiIcon, HStack, Text, VStack, WordWrapText } from '@src/shared/ui';
 
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { QuotaChip } from './quota-chip';
@@ -27,9 +27,9 @@ export function QuotaSummary() {
           <Text size="b3" weight="medium">
             {t('quota.aiParse')}
           </Text>
-          <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
+          <WordWrapText size="e1" shade={6}>
             {t('quota.aiParseHint')}
-          </Text>
+          </WordWrapText>
         </VStack>
         <QuotaChip feature="AI_PARSE" />
       </HStack>

@@ -17,6 +17,7 @@ import {
   Text,
   TextButton,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
@@ -174,9 +175,9 @@ function ConsentItem({ icon, title, description, children }: ConsentItemProps) {
         <Text size="b3" weight="semibold" shade={9}>
           {title}
         </Text>
-        <Text size="b4" shade={7}>
+        <WordWrapText size="b4" shade={7}>
           {description}
-        </Text>
+        </WordWrapText>
         {children}
       </VStack>
     </HStack>
