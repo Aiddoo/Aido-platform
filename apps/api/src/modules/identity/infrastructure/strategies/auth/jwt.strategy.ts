@@ -21,11 +21,6 @@ import {
 } from "../../../application/ports/auth/auth-collaboration.port.js";
 
 /**
- * @aido/api에서 re-export (하위 호환성 유지)
- */
-export type { CurrentUserPayload };
-
-/**
  * JWT Access Token Strategy
  *
  * Authorization: Bearer <access_token> 헤더에서 토큰을 추출하여 검증합니다.

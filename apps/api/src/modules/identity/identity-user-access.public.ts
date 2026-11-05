@@ -1,6 +1,5 @@
 export {
   USER_ACTIVITY_READER,
-  type UserActivity,
   type UserActivityReaderPort,
 } from "./application/ports/auth/user-activity.reader.port.js";
 export {

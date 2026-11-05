@@ -1,5 +1,5 @@
 /** 사용자가 결과를 기다리는 요청(interactive)과 잡이 만드는 결과(background). 동시성·재시도·예산을 나눈다. */
-export const AI_TASK_CLASSES = ["interactive", "background"] as const;
+const AI_TASK_CLASSES = ["interactive", "background"] as const;
 
 export type AiTaskClass = (typeof AI_TASK_CLASSES)[number];
 
