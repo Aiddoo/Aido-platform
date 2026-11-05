@@ -4,13 +4,14 @@ import { tv } from '@src/shared/utils/tv';
 import { times } from 'es-toolkit/compat';
 import { GlassView } from 'heroui-native';
 import type { ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { useUniwind } from 'uniwind';
 
 import { ALERT_SURFACE_COLORS } from '../constants/weather-colors';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 
 const GLASS_INTENSITY = 40;
-const HAS_BACKDROP_BLUR = process.env.EXPO_OS === 'ios';
+const HAS_BACKDROP_BLUR = Platform.OS === 'ios';
 
 const weatherCard = tv({
   slots: {
