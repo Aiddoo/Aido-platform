@@ -14,16 +14,11 @@ import type { AccountProvider } from "#api/modules/identity/domain/types/auth/au
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
-import type {
-  AuthCachePort,
-  AuthRegistrationNotifierPort,
-  AuthUserRegisteredNotification,
-} from "../../ports/auth/auth-collaboration.port.js";
+import type { AuthCachePort } from "../../ports/auth/auth-collaboration.port.js";
 import type {
   AuthAccountRepositoryPort,
   AuthLoginAttemptRepositoryPort,
@@ -41,17 +36,6 @@ import type { LoginResult, RequestMetadata, SocialLoginResult } from "../../type
 import type { IssueLogin } from "./issue-login.use-case.js";
 import type { ProvisionUser } from "./provision-user.use-case.js";
 import type { RestoreAccount } from "./restore-account.use-case.js";
-
-const ACCOUNT_PROVIDER_TO_EVENT: Record<
-  AccountProvider,
-  AuthUserRegisteredNotification["provider"]
-> = {
-  CREDENTIAL: "credential",
-  APPLE: "apple",
-  GOOGLE: "google",
-  KAKAO: "kakao",
-  NAVER: "naver",
-};
 
 export interface LoginWithOAuthTokenInput {
   readonly provider: (typeof OAUTH_PROVIDERS)[number];
@@ -73,7 +57,6 @@ interface LoginWithOAuthTokenDependencies {
   readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
-  readonly adminEventNotifier: Pick<AuthRegistrationNotifierPort, "notifyUserRegistered">;
   readonly issueLoginUseCase: Pick<IssueLogin, "execute">;
   readonly provisionUserUseCase: Pick<ProvisionUser, "execute">;
   readonly restoreAccount: Pick<RestoreAccount, "execute">;
@@ -201,15 +184,6 @@ export class LoginWithOAuthToken {
       isNewUser = true;
 
       this.#dependencies.logger.log({ event: IdentityLogEvent.USER_REGISTERED, userId, provider });
-
-      this.#dependencies.adminEventNotifier.notifyUserRegistered({
-        userId,
-        email: effectiveEmail,
-        provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
-        registeredAt: toISOString(now()),
-        name: newUser.name,
-        ...options.metadata?.device,
-      } satisfies AuthUserRegisteredNotification);
     }
 
     const loginResult = await this.#createSessionAndTokens(userId, userEmail, {

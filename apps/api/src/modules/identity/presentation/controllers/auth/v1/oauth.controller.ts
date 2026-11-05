@@ -24,7 +24,7 @@ import {
   ExchangeOAuthCode,
   LinkOAuthAccount,
   LinkOAuthAccountWithCode,
-  LoginWithOAuthToken,
+  LoginWithMobileOAuthToken,
   StartOAuthAuthorization,
 } from "#api/modules/identity/application/use-cases/auth/index";
 import { GetOAuthRedirectUri } from "#api/modules/identity/application/use-cases/auth/queries.public";
@@ -73,7 +73,7 @@ export class OAuthController {
     private readonly getOAuthRedirectUriQuery: GetOAuthRedirectUri,
     private readonly startOAuthAuthorizationUseCase: StartOAuthAuthorization,
     private readonly completeOAuthAuthorizationUseCase: CompleteOAuthAuthorization,
-    private readonly loginWithOAuthTokenUseCase: LoginWithOAuthToken,
+    private readonly loginWithMobileOAuthTokenUseCase: LoginWithMobileOAuthToken,
     private readonly linkOAuthAccountUseCase: LinkOAuthAccount,
     private readonly linkOAuthAccountWithCodeUseCase: LinkOAuthAccountWithCode,
     private readonly exchangeOAuthCodeUseCase: ExchangeOAuthCode,
@@ -152,10 +152,15 @@ export class OAuthController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async exchangeCode(
     @Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
+    @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
 
     @AppVersion() appVersion?: string,
   ): Promise<AuthTokensDto> {
-    const result = await this.exchangeOAuthCodeUseCase.execute({ code: dto.code });
+    const result = await this.exchangeOAuthCodeUseCase.execute({
+      code: dto.code,
+      device: extractMetadata(req, client).device,
+    });
     return AuthMapper.toExchangeCodeResponse(result, appVersion);
   }
 
@@ -216,7 +221,7 @@ export class OAuthController {
 
     @AppVersion() appVersion?: string,
   ) {
-    const result = await this.loginWithOAuthTokenUseCase.execute({
+    const result = await this.loginWithMobileOAuthTokenUseCase.execute({
       provider: "APPLE",
       token: dto.idToken,
       userName: dto.userName,
@@ -279,7 +284,7 @@ export class OAuthController {
 
     @AppVersion() appVersion?: string,
   ) {
-    const result = await this.loginWithOAuthTokenUseCase.execute({
+    const result = await this.loginWithMobileOAuthTokenUseCase.execute({
       provider: "GOOGLE",
       token: dto.idToken,
       userName: dto.userName,
@@ -481,7 +486,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
     @AppVersion() appVersion?: string,
   ) {
-    const result = await this.loginWithOAuthTokenUseCase.execute({
+    const result = await this.loginWithMobileOAuthTokenUseCase.execute({
       provider: "KAKAO",
       token: dto.accessToken,
       userName: dto.userName,
@@ -675,7 +680,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
     @AppVersion() appVersion?: string,
   ) {
-    const result = await this.loginWithOAuthTokenUseCase.execute({
+    const result = await this.loginWithMobileOAuthTokenUseCase.execute({
       provider: "NAVER",
       token: dto.accessToken,
       userName: dto.userName,

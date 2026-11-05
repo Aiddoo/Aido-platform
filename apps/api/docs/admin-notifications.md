@@ -73,4 +73,14 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 | 사용자 ID   | 내부 사용자 ID                                                                                 |
 | 가입 시각   | 시각 필드                                                                                      |
 
-기기·앱 정보는 인증 요청 헤더(`X-Device-Type`, `X-Device-Name`, `X-OS-Version`, `X-App-Version`, `X-App-Build`, `Accept-Language`, `X-Timezone`)를 `resolveRequestDevice`가 형식·길이 검증한 값으로, 표시용이며 신뢰 판단에 쓰지 않는다. `X-Device-Type`이 없으면 User-Agent에서 모바일 플랫폼만 추정한다. 1.13.1 앱은 `X-OS-Version`·`X-App-Build`를 보내지 않아 OS 버전과 빌드 번호 없이 표시되고(1.13.0 이하는 기기 모델도 없어 User-Agent로 확인한 플랫폼만 표시), 웹 OAuth 콜백처럼 앱 헤더가 없는 가입은 확인되지 않은 필드를 `—`로 둔다. 국가·초대 경로는 가입 요청에서 확인할 수 없어 표시하지 않는다.
+기기·앱 정보는 앱이 보낸 요청의 헤더(`X-Device-Type`, `X-Device-Name`, `X-OS-Version`, `X-App-Version`, `X-App-Build`, `Accept-Language`, `X-Timezone`)를 `resolveRequestDevice`가 형식·길이 검증한 값으로, 표시용이며 신뢰 판단에 쓰지 않는다. `X-Device-Type`이 없으면 User-Agent에서 모바일 플랫폼만 추정한다. 앱 버전별로 보내는 헤더가 달라서 1.14.0 이하 앱은 `X-OS-Version`·`X-App-Build`가 없어 OS 버전과 빌드 번호 없이 표시되고(1.13.0 이하는 기기 모델도 없어 User-Agent로 확인한 플랫폼만 표시), 확인되지 않은 필드는 `—`로 둔다. 국가·초대 경로는 가입 요청에서 확인할 수 없어 표시하지 않는다.
+
+알림을 보내는 자리는 그 요청을 앱이 보냈는지로 정한다.
+
+| 가입 경로                                         | 계정 생성                   | 알림                                               |
+| ------------------------------------------------- | --------------------------- | -------------------------------------------------- |
+| 이메일                                            | `POST /v1/auth/register`    | 같은 요청(`Register`)                              |
+| 네이티브 콜백 `POST /v1/auth/{provider}/callback` | 같은 요청                   | 같은 요청(`LoginWithMobileOAuthToken`)             |
+| 웹 흐름 `GET /v1/auth/{provider}/web-callback`    | 시스템 브라우저의 콜백 요청 | 앱의 `POST /v1/auth/exchange`(`ExchangeOAuthCode`) |
+
+웹 콜백에는 앱 헤더가 없어서 교환 요청까지 알림을 미룬다. 교환 코드는 일회용이라 알림도 한 번만 나가고, 가입 시각은 저장된 `User.createdAt`이다. 코드를 받기 전에 앱을 떠나면(10분 안에 교환하지 않으면) 그 가입의 즉시 알림은 나가지 않는다. 일일 가입 요약은 DB의 `Account.createdAt`으로 세므로 이 가입도 숫자에 들어간다. 조회나 큐 등록이 실패해도 로그인은 끝까지 진행하고 `identity.user.signup-notification.failed` 또는 `operations` 등록 실패 로그만 남긴다.
