@@ -26,7 +26,7 @@ export function getLayoutAboveKeyboard(
   keyboardTop: number,
   viewportTopLimit: number,
 ): ScrollLayout {
-  const height = Math.max(0, Math.min(viewport.height, keyboardTop - viewportTopLimit));
+  const height = clamp(keyboardTop - viewportTopLimit, 0, viewport.height);
   const shift = keyboardTop - height - viewport.top;
   return {
     viewport: { top: viewport.top + shift, height },

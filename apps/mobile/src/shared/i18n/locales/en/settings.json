@@ -46,7 +46,7 @@
     "aiDataSharing": {
       "label": "AI data sharing",
       "description": "AI features send what you enter to Anthropic, Google, and OpenAI for processing. Speech is turned into text on your device or by Apple or Google speech recognition. Audio files aren't sent to Aido's servers.",
-      "descriptionGoogleOnly": "Sends what you type to Google Gemini to organize it into to-dos",
+      "descriptionGoogleOnly": "AI features send what you enter to Google Gemini for processing.",
       "agreedOn": "Agreed on {{date}}",
       "withdrawTitle": "Withdraw consent?",
       "withdrawDescription": "You won't be able to use AI for organizing to-dos, summaries, reports, or suggestions. Existing to-dos stay.",
