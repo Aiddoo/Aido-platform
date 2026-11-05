@@ -246,13 +246,6 @@ describe('useVoiceCaptureSession', () => {
       return session;
     };
 
-    const emitEmptySegmentWithVoice = async (
-      speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
-    ) => {
-      await emit(speechRecognizer, { type: 'volume', level: SPEAKING_VOLUME_THRESHOLD });
-      await emit(speechRecognizer, { type: 'no-match' });
-    };
-
     it('침묵 끝에 세션이 끝나면 같은 옵션으로 몇 번이든 이어 듣고 글자를 모은다', async () => {
       // Given
       const { speechRecognizer, onCaptured } = await beginNote();
@@ -284,88 +277,188 @@ describe('useVoiceCaptureSession', () => {
       expect(onCaptured).toHaveBeenCalledWith('첫 문장 둘째 문장');
     });
 
-    it('말소리는 들리는데 글자 없는 구간만 이어지면 닫고 end 뒤에 다시 듣는다', async () => {
-      // Given
-      const { speechRecognizer, analytics } = await beginNote();
-      await emitEmptySegmentWithVoice(speechRecognizer);
+    describe('글자 없이 말소리만 들리는 시간을 재서', () => {
+      const SAMPLE_MS = 50;
+      const VOICE = SPEAKING_VOLUME_THRESHOLD;
+      const QUIET = 0;
 
-      // When
-      await emitEmptySegmentWithVoice(speechRecognizer);
-      await emit(speechRecognizer, { type: 'error', code: 'client' });
-      await emit(speechRecognizer, { type: 'end' });
-
-      // Then
-      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
-      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
-      expect(screen.getByTestId('status')).toHaveTextContent('listening');
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
-        mode: 'note',
-        on_device: true,
+      beforeEach(() => {
+        jest.useFakeTimers({ advanceTimers: true });
       });
-    });
 
-    it('stop에 end로 답하지 않아도 잠시 뒤 새로 열고 듣는 상태를 유지한다', async () => {
-      // Given
-      const { speechRecognizer } = await beginNote();
-      jest.useFakeTimers({ advanceTimers: true });
-      await emitEmptySegmentWithVoice(speechRecognizer);
-      await emitEmptySegmentWithVoice(speechRecognizer);
-
-      // When
-      await act(async () => jest.advanceTimersByTime(1_600));
-      jest.useRealTimers();
-
-      // Then
-      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
-      expect(screen.getByTestId('status')).toHaveTextContent('listening');
-    });
-
-    it('조용한 구간은 글자가 없어도 다시 열지 않는다', async () => {
-      // Given
-      const { speechRecognizer } = await beginNote();
-
-      // When
-      await emit(speechRecognizer, { type: 'volume', level: 0 });
-      await emit(speechRecognizer, { type: 'no-match' });
-      await emit(speechRecognizer, { type: 'no-match' });
-      await emit(speechRecognizer, { type: 'no-match' });
-
-      // Then
-      expect(speechRecognizer.stop).not.toHaveBeenCalled();
-    });
-
-    it('글자가 오면 인식기가 살아 있는 것이라 빈 구간을 처음부터 다시 센다', async () => {
-      // Given
-      const { speechRecognizer } = await beginNote();
-      await emitEmptySegmentWithVoice(speechRecognizer);
-
-      // When
-      await emit(speechRecognizer, {
-        type: 'result',
-        transcript: '듣고 있어요',
-        isFinal: false,
-        segments: [],
+      afterEach(() => {
+        jest.useRealTimers();
       });
-      await emitEmptySegmentWithVoice(speechRecognizer);
 
-      // Then
-      expect(speechRecognizer.stop).not.toHaveBeenCalled();
-    });
+      const hearVolume = (
+        speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
+        level: number,
+        durationMs: number,
+      ) =>
+        act(async () => {
+          for (let elapsed = 0; elapsed < durationMs; elapsed += SAMPLE_MS) {
+            jest.advanceTimersByTime(SAMPLE_MS);
+            speechRecognizer.emit({ type: 'volume', level });
+          }
+        });
 
-    it('시끄러운 곳에서 빈 구간이 계속돼도 간격 안에서는 한 번만 다시 연다', async () => {
-      // Given
-      const { speechRecognizer } = await beginNote();
-      await emitEmptySegmentWithVoice(speechRecognizer);
-      await emitEmptySegmentWithVoice(speechRecognizer);
-      await emit(speechRecognizer, { type: 'end' });
-      await emit(speechRecognizer, { type: 'start' });
+      const hearText = (
+        speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
+        transcript: string,
+        isFinal = false,
+      ) => emit(speechRecognizer, { type: 'result', transcript, isFinal, segments: [] });
 
-      // When
-      await emitEmptySegmentWithVoice(speechRecognizer);
-      await emitEmptySegmentWithVoice(speechRecognizer);
+      it.each([
+        { why: '말소리가 6초 넘게 이어지면', steps: [[VOICE, 6_100]], stopCount: 1 },
+        { why: '말소리가 6초에 못 미치면', steps: [[VOICE, 5_500]], stopCount: 0 },
+        { why: '조용한 침묵은 아무리 길어도', steps: [[QUIET, 60_000]], stopCount: 0 },
+        {
+          why: '말소리가 3초에 못 미친 뒤 조용해지면',
+          steps: [
+            [VOICE, 2_500],
+            [QUIET, 30_000],
+          ],
+          stopCount: 0,
+        },
+        {
+          why: '말소리를 3초 넘게 들었어도 지금 조용하면',
+          steps: [
+            [VOICE, 3_500],
+            [QUIET, 30_000],
+          ],
+          stopCount: 0,
+        },
+        {
+          why: '조용히 오래 있다가 말소리가 3초 넘게 이어지면',
+          steps: [
+            [QUIET, 30_000],
+            [VOICE, 3_100],
+          ],
+          stopCount: 1,
+        },
+      ])('$why 다시 여는 횟수가 $stopCount번이다', async ({ steps, stopCount }) => {
+        // Given
+        const { speechRecognizer } = await beginNote();
 
-      // Then
-      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+        // When
+        for (const [level = QUIET, durationMs = 0] of steps) {
+          await hearVolume(speechRecognizer, level, durationMs);
+        }
+
+        // Then
+        expect(speechRecognizer.stop).toHaveBeenCalledTimes(stopCount);
+      });
+
+      it('빈 구간 신호가 없어도 다시 열고 end 뒤에 같은 옵션으로 이어 듣는다', async () => {
+        // Given
+        const { speechRecognizer, analytics } = await beginNote();
+        const firstOptions = speechRecognizer.start.mock.calls[0]?.[0];
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+
+        // When
+        await emit(speechRecognizer, { type: 'error', code: 'client' });
+        await emit(speechRecognizer, { type: 'end' });
+
+        // Then
+        expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+        expect(speechRecognizer.start).toHaveBeenLastCalledWith(firstOptions);
+        expect(screen.getByTestId('status')).toHaveTextContent('listening');
+        expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
+          mode: 'note',
+          on_device: true,
+        });
+      });
+
+      it('다시 열 때 듣던 글자를 확정해 다음 구간 글자가 덮지 않는다', async () => {
+        // Given
+        const { speechRecognizer, onCaptured } = await beginNote();
+        await hearText(speechRecognizer, '듣던 말');
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+        await emit(speechRecognizer, { type: 'end' });
+        await emit(speechRecognizer, { type: 'start' });
+
+        // When
+        await hearText(speechRecognizer, '다음 말');
+        await fireEvent.press(screen.getByTestId('finish'));
+        await emit(speechRecognizer, { type: 'end' });
+
+        // Then
+        expect(onCaptured).toHaveBeenCalledWith('듣던 말 다음 말');
+      });
+
+      it('stop에 답이 없으면 abort로 닫고 그 end 뒤에 새로 연다', async () => {
+        // Given
+        const { speechRecognizer } = await beginNote();
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+
+        // When
+        await act(async () => jest.advanceTimersByTime(1_600));
+        const startCountBeforeEnd = speechRecognizer.start.mock.calls.length;
+        await emit(speechRecognizer, { type: 'end' });
+
+        // Then
+        expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
+        expect(startCountBeforeEnd).toBe(1);
+        expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+        expect(screen.getByTestId('status')).toHaveTextContent('listening');
+      });
+
+      it('끝내는 중에는 답이 없어도 abort로 끊지 않는다', async () => {
+        // Given
+        const { speechRecognizer } = await beginNote();
+        await hearText(speechRecognizer, '남길 말');
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+
+        // When
+        await fireEvent.press(screen.getByTestId('finish'));
+        await act(async () => jest.advanceTimersByTime(1_000));
+
+        // Then
+        expect(speechRecognizer.abort).not.toHaveBeenCalled();
+      });
+
+      it('글자가 계속 오면 말소리가 길어도 다시 열지 않는다', async () => {
+        // Given
+        const { speechRecognizer } = await beginNote();
+
+        // When
+        for (const transcript of ['하나', '둘', '셋', '넷']) {
+          await hearVolume(speechRecognizer, VOICE, 4_000);
+          await hearText(speechRecognizer, transcript);
+        }
+
+        // Then
+        expect(speechRecognizer.stop).not.toHaveBeenCalled();
+      });
+
+      it('시끄러운 곳에서 글자가 계속 없어도 30초 안에는 한 번만 다시 연다', async () => {
+        // Given
+        const { speechRecognizer } = await beginNote();
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+        await emit(speechRecognizer, { type: 'end' });
+        await emit(speechRecognizer, { type: 'start' });
+
+        // When
+        await hearVolume(speechRecognizer, VOICE, 20_000);
+
+        // Then
+        expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+      });
+
+      it('다시 연 뒤 글자가 오면 인식기가 살아난 것이라 다음 멈춤은 간격 없이 다시 연다', async () => {
+        // Given
+        const { speechRecognizer } = await beginNote();
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+        await emit(speechRecognizer, { type: 'end' });
+        await emit(speechRecognizer, { type: 'start' });
+        await hearText(speechRecognizer, '살아났어요', true);
+
+        // When
+        await hearVolume(speechRecognizer, VOICE, 6_100);
+
+        // Then
+        expect(speechRecognizer.stop).toHaveBeenCalledTimes(2);
+      });
     });
   });
 
