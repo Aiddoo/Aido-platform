@@ -36,6 +36,7 @@ import {
   type QuotaUsageReading,
 } from "../../../domain/policies/entitlement/entitlement.policy.js";
 import { QuotaWindow } from "../../../domain/value-objects/quotas/quota-window.vo.js";
+import { AccessQuotaAlertKey } from "../../observability/quotas/access-quota-alerts.js";
 import { AccessQuotaLogEvent } from "../../observability/quotas/access-quota-log.events.js";
 import type { EntitlementDatabasePort } from "../../ports/entitlement/entitlement-state.port.js";
 import type {
@@ -77,8 +78,6 @@ interface QuotaDecisionContext {
   readonly window: QuotaWindow;
   readonly at: Date;
 }
-
-export const QUOTA_STALE_RESERVATION_ALERT_KEY = "access.quota.stale-reservation";
 
 export class QuotaLedgerService implements QuotaLedgerPort {
   readonly #dependencies: QuotaLedgerServiceDependencies;
@@ -273,7 +272,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     if (failedCount > 0 || staleCount > 0) {
       // 돌려주지 못한 예약은 그 사용자의 한도를 월말까지 깎는다.
       this.#dependencies.alert.raise({
-        key: QUOTA_STALE_RESERVATION_ALERT_KEY,
+        key: AccessQuotaAlertKey.STALE_RESERVATION,
         severity: "error",
         message: "횟수 예약을 돌려주지 못하고 있습니다.",
         details: { failedCount, staleCount },

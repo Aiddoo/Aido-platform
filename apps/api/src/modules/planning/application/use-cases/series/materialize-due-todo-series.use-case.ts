@@ -9,6 +9,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import { isSeriesOwnerDormant } from "../../../domain/policies/series/series-dormancy.policy.js";
+import { PlanningTodoSeriesAlertKey } from "../../observability/series/planning-todo-series-alerts.js";
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
 import type { TodoSeriesOwnerPort } from "../../ports/series/todo-series-owner.port.js";
 import type {
@@ -25,8 +26,6 @@ export const TODO_SERIES_MATERIALIZATION_BUDGET = {
   /** UTC 오늘 + 91일이면 어떤 시간대의 오늘 + 90일도 포함한다. 시간대별 경계는 규칙마다 다시 잰다. */
   DUE_SCAN_AHEAD_DAYS: TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS + 1,
 } as const;
-
-export const TODO_SERIES_MATERIALIZE_ALERT_KEY = "planning.todo-series.materialize-failed";
 
 export interface MaterializeDueTodoSeriesResult {
   readonly processedCount: number;
@@ -133,7 +132,7 @@ export class MaterializeDueTodoSeries {
     });
     if (failedCount > 0 || timedOut) {
       alert.raise({
-        key: TODO_SERIES_MATERIALIZE_ALERT_KEY,
+        key: PlanningTodoSeriesAlertKey.MATERIALIZE_FAILED,
         severity: "error",
         message: "반복 할 일 회차 채우기가 일부 끝나지 않았습니다.",
         details: { processedCount, createdCount, failedCount, timedOut, durationMs },

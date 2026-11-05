@@ -6,12 +6,10 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture"
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
+import { PlanningTodoSeriesAlertKey } from "../../observability/series/planning-todo-series-alerts.js";
 import { TodoSeriesDueRunner } from "../../services/series/todo-series-due-runner.service.js";
 import { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
-import {
-  MaterializeDueTodoSeries,
-  TODO_SERIES_MATERIALIZE_ALERT_KEY,
-} from "./materialize-due-todo-series.use-case.js";
+import { MaterializeDueTodoSeries } from "./materialize-due-todo-series.use-case.js";
 
 const AT = new Date("2026-11-05T00:00:00.000Z");
 
@@ -94,7 +92,10 @@ describe("회차 채우기", () => {
     // Then
     expect(result).toMatchObject({ processedCount: 2, createdCount: 3, failedCount: 1 });
     expect(alert.raise).toHaveBeenCalledWith(
-      expect.objectContaining({ key: TODO_SERIES_MATERIALIZE_ALERT_KEY, severity: "error" }),
+      expect.objectContaining({
+        key: PlanningTodoSeriesAlertKey.MATERIALIZE_FAILED,
+        severity: "error",
+      }),
     );
   });
 
