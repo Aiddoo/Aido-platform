@@ -1,36 +1,47 @@
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { type QueryErrorFallbackProps, StyledSafeAreaView } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  type QueryErrorFallbackProps,
+  ScallopedContainer,
+  Spacing,
+  StyledSafeAreaView,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Spinner } from 'heroui-native';
+import { times } from 'es-toolkit/compat';
+import { Skeleton } from 'heroui-native';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { useGetOfferingsQueryOptions } from '../queries/get-offerings-query-options';
-import { toSubscriptionLoadFailure } from '../utils/view-models/subscription-failure.view-model';
+import {
+  toSubscriptionLoadFailure,
+  toSubscriptionStoreUnavailableFailure,
+} from '../utils/view-models/subscription-failure.view-model';
 import { Paywall } from './paywall';
 import { SubscriptionResult } from './subscription-result';
-import { SubscriptionStoreUnavailable } from './subscription-store-unavailable';
+
+const BENEFIT_ROW_COUNT = 3;
+const PLAN_ROW_COUNT = 2;
 
 /** 요금제를 스토어에서 받아 페이월을 그린다. 스토어를 쓸 수 없으면 예상한 상태라 오류 경계 대신 안내한다 */
 export function PaywallPane() {
-  const {
-    data: availability,
-    refetch,
-    isRefetching,
-  } = useSuspenseQuery(useGetOfferingsQueryOptions());
+  const { data: availability, refetch } = useSuspenseQuery(useGetOfferingsQueryOptions());
 
   return match(availability)
     .with({ status: 'available' }, ({ offering }) => <Paywall offering={offering} />)
     .with({ status: 'unavailable' }, ({ unavailable }) => (
-      <SubscriptionStoreUnavailable
-        unavailable={unavailable}
+      <SubscriptionResult.Failure
+        failure={toSubscriptionStoreUnavailableFailure(unavailable)}
         onRetry={() => refetch()}
-        isRetrying={isRefetching}
       />
     ))
     .exhaustive();
 }
 
-/** 요금제는 스토어에서 받아 모양이 정해지지 않아 가운데 표시기만 둔다 */
+/** 받은 뒤에 화면이 밀리지 않게 요금제 화면과 같은 자리·모양의 스켈레톤을 둔다 */
 PaywallPane.Loading = function Loading() {
   const isOnline = useIsOnline();
 
@@ -39,9 +50,40 @@ PaywallPane.Loading = function Loading() {
   }
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
-      <Spinner size="lg" color="default" />
-    </StyledSafeAreaView>
+    <Box
+      className="flex-1"
+      accessibilityState={{ busy: true }}
+      testID="subscription-paywall-loading"
+    >
+      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8" scrollEnabled={false}>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={16} />
+          <ScallopedContainer>
+            <VStack gap={24} className="p-5">
+              <VStack gap={4} align="center">
+                <TextSkeleton size="t2" className="w-48" />
+                <TextSkeleton size="b3" className="w-56" />
+              </VStack>
+              {times(BENEFIT_ROW_COUNT, (index) => (
+                <HStack key={index} gap={16} align="center">
+                  <Skeleton className="size-14 rounded-xl" />
+                  <VStack flex={1} gap={4}>
+                    <TextSkeleton size="b3" className="w-2/3" />
+                    <TextSkeleton size="b4" className="w-full" />
+                  </VStack>
+                </HStack>
+              ))}
+              {times(PLAN_ROW_COUNT, (index) => (
+                <Skeleton key={index} className="h-16 rounded-2xl" />
+              ))}
+            </VStack>
+          </ScallopedContainer>
+        </StyledSafeAreaView>
+      </ScrollView>
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+        <Skeleton className="h-14 rounded-2xl" />
+      </StyledSafeAreaView>
+    </Box>
   );
 };
 

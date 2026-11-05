@@ -50,7 +50,7 @@ describe('SubscriptionFailurePolicy.diagnosticCodeOf', () => {
 describe('SubscriptionFailurePolicy.storeUnavailableOf', () => {
   it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.storeUnavailableOf>]>([
     [
-      'SDK가 초기화되지 않았으면 설정 문제로 보고 다시 시도를 주지 않는다',
+      'SDK가 초기화되지 않았으면 설정 문제로 본다',
       SubscriptionErrors.storeUnavailable(),
       { kind: 'setup', diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE' },
     ],
@@ -60,7 +60,7 @@ describe('SubscriptionFailurePolicy.storeUnavailableOf', () => {
       { kind: 'setup', diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)' },
     ],
     [
-      '스토어가 잠시 응답하지 못하면 다시 시도할 수 있는 상태로 본다',
+      '스토어가 잠시 응답하지 못하면 일시적 문제로 본다',
       SubscriptionErrors.storeProblem('2'),
       { kind: 'temporary', diagnosticCode: 'SUBSCRIPTION_STORE_PROBLEM (2)' },
     ],

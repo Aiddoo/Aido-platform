@@ -42,8 +42,8 @@ function causeOfSubscriptionError(error: SubscriptionError): SubscriptionFailure
 
 /**
  * 스토어를 쓸 수 없어 요금제를 보여 줄 수 없는 상태. 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다.
- * - setup: 앱·스토어 설정 문제라 다시 해도 같다. 문의로만 잇는다
- * - temporary: 스토어가 잠시 응답하지 못했다. 나중에 다시 하면 풀릴 수 있다
+ * - setup: 앱·스토어 설정 문제다
+ * - temporary: 스토어가 잠시 응답하지 못했다
  */
 export interface StoreUnavailable {
   kind: 'setup' | 'temporary';

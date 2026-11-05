@@ -116,7 +116,6 @@ describe('toSubscriptionStoreUnavailableFailure', () => {
       titleKey: 'subscription:failure.title.storeUnavailable',
       descriptionKey: 'subscription:failure.description.storeSetup',
       diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
-      canRetry: false,
     });
   });
 
@@ -132,7 +131,6 @@ describe('toSubscriptionStoreUnavailableFailure', () => {
       titleKey: 'subscription:failure.title.storeUnavailable',
       descriptionKey: 'subscription:failure.description.storeTemporary',
       diagnosticCode: 'SUBSCRIPTION_STORE_PROBLEM (2)',
-      canRetry: true,
     });
   });
 });

@@ -93,26 +93,19 @@ export function toSubscriptionActionFailure(
     .exhaustive();
 }
 
-/** 스토어를 쓸 수 없을 때의 안내. 설정 문제는 다시 해도 같아 문의로만, 잠깐의 스토어 문제는 다시 시도도 준다 */
-export interface SubscriptionStoreUnavailableFailure extends SubscriptionSupportFailure {
-  canRetry: boolean;
-}
-
 export function toSubscriptionStoreUnavailableFailure({
   kind,
   diagnosticCode,
-}: StoreUnavailable): SubscriptionStoreUnavailableFailure {
+}: StoreUnavailable): SubscriptionSupportFailure {
   return {
     titleKey: FAILURE_TITLE_KEYS.storeUnavailable,
     diagnosticCode,
     ...match(kind)
       .with('setup', () => ({
         descriptionKey: 'subscription:failure.description.storeSetup' as const,
-        canRetry: false,
       }))
       .with('temporary', () => ({
         descriptionKey: 'subscription:failure.description.storeTemporary' as const,
-        canRetry: true,
       }))
       .exhaustive(),
   };
