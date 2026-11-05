@@ -1,10 +1,10 @@
 {
   "ios": {
-    "NSMicrophoneUsageDescription": "Aido uses the microphone so you can add to-dos and voice notes by speaking.",
-    "NSSpeechRecognitionUsageDescription": "Aido turns what you say into text so you can add to-dos by voice. If your device can't recognize speech on its own, your voice may be processed by Apple speech recognition. Audio files are never sent to Aido servers.",
+    "NSMicrophoneUsageDescription": "Aido uses the microphone so you can add to-dos by voice and record voice notes.",
+    "NSSpeechRecognitionUsageDescription": "Aido turns what you say into text so you can add to-dos and voice notes by speaking. Apple speech recognition may process your voice. Audio files aren't sent to Aido's servers.",
     "NSPhotoLibraryUsageDescription": "Aido uses your photo library when working with images you share or save.",
     "NSPhotoLibraryAddUsageDescription": "Aido saves images you share to your photo library.",
-    "NSLocationWhenInUseUsageDescription": "Aido uses your location to show the weather where you are.",
+    "NSLocationWhenInUseUsageDescription": "Aido uses your location to show the weather where you are and send weather notifications.",
     "Localizable.strings": {
       "오늘 할 일": "Today's to-dos",
       "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "Check today's to-dos and what's done right on your Home Screen",
