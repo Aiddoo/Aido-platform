@@ -371,7 +371,14 @@ function VoiceNotePlanPane({ note }: { note: VoiceNote }) {
   });
 
   if (note.appliedAt != null) {
-    return <Result title={t('result.applied')} testID="voice-note-applied" />;
+    return (
+      <Result
+        title={
+          VoiceNotePolicy.hasAppliedOnlyMemo(note) ? t('result.appliedMemo') : t('result.applied')
+        }
+        testID="voice-note-applied"
+      />
+    );
   }
   if (VoiceNotePolicy.hasNoPlannedTodos(note) && (planDraft?.form.actions.length ?? 0) === 0) {
     return <Result title={t('result.noTodos')} testID="voice-note-no-todos" />;
@@ -401,10 +408,10 @@ function VoiceNotePlanPane({ note }: { note: VoiceNote }) {
             }
           },
         }}
-        onSaved={() => {
+        onSaved={({ todoCount }) => {
           const latest = drafts.find(accountId, draftId);
           if (latest != null) {
-            drafts.save(accountId, withAppliedAt(latest, new Date()));
+            drafts.save(accountId, withAppliedAt(latest, new Date(), todoCount));
           }
         }}
       />
