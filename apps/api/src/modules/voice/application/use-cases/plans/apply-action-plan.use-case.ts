@@ -29,7 +29,7 @@ import { fingerprintRequest } from "../../services/plans/request-fingerprint.js"
 
 export interface ApplyActionPlanInput {
   readonly userId: string;
-  readonly timezone: string;
+  readonly timezone: string | undefined;
   readonly source: ActionPlanSource;
   /** source가 MEMO일 때의 원본 메모. 저장에 성공하면 지운다 */
   readonly sourceMemoId: number | undefined;

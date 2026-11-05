@@ -36,6 +36,8 @@ export abstract class TodoMapper {
       startDate: toDateString(entity.startDate),
       endDate: toDateStringOrNull(entity.endDate),
       scheduledTime: toISOStringOrNull(entity.scheduledTime),
+      // 옛 서버가 시간을 지운 행은 칸이 낡았을 수 있다. 칸이 빈 행은 앱이 순간에서 읽는다.
+      scheduledLocalTime: entity.scheduledTime == null ? null : entity.scheduledLocalTime,
       isAllDay: entity.isAllDay,
       visibility: entity.visibility,
       recurrenceGroupId: entity.seriesId,

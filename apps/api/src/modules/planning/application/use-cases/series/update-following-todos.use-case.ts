@@ -14,7 +14,6 @@ import {
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
@@ -23,6 +22,7 @@ import type {
 } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { occurrenceHorizon } from "../../../domain/policies/series/occurrence-horizon.policy.js";
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
+import { resolveScheduledInstant } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
@@ -354,11 +354,12 @@ export class UpdateFollowingTodos {
     const reminders: TodoReminderSchedule[] = [];
     if (pivotMoveDate != null) {
       const localTime = target.getScheduledLocalTime();
-      const scheduledTime =
-        localTime == null
-          ? null
-          : parseLocalDateTime(pivotMoveDate, localTime, target.getTimezone());
-      await todoRepository.moveOccurrence(pivotTodoId, pivotMoveDate, scheduledTime);
+      const scheduledTime = resolveScheduledInstant(pivotMoveDate, localTime, target.getTimezone());
+      await todoRepository.moveOccurrence(pivotTodoId, {
+        occurrenceDate: pivotMoveDate,
+        scheduledLocalTime: localTime,
+        scheduledTime,
+      });
       movedTodoIds.push(pivotTodoId);
       if (scheduledTime != null) {
         reminders.push({ todoId: pivotTodoId, scheduledTime, userId: target.getUserId() });
@@ -387,10 +388,8 @@ export class UpdateFollowingTodos {
       .filter((row) => !row.completed)
       .map((row) => ({
         todoId: row.todoId,
-        scheduledTime:
-          localTime == null
-            ? null
-            : parseLocalDateTime(row.startDate, localTime, target.getTimezone()),
+        scheduledLocalTime: localTime,
+        scheduledTime: resolveScheduledInstant(row.startDate, localTime, target.getTimezone()),
       }));
     await todoRepository.updateOccurrenceTimes(times);
     return times;

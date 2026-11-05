@@ -4,10 +4,11 @@ import { isEqual } from "es-toolkit";
 
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { localDateInTimezone, parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
 import type { RepeatRule } from "../../value-objects/series/repeat-rule.vo.js";
+import { resolveScheduledInstant } from "../../value-objects/todos/todo-schedule.vo.js";
 import { TodoTitle } from "../../value-objects/todos/todo-title.vo.js";
 import type { TodoCreationDraft } from "../todos/todo.aggregate.js";
 
@@ -190,9 +191,9 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       visibility,
       startDate: parseDateOnly(date),
       endDate: null,
+      scheduledLocalTime,
       // DST로 오프셋이 달라지므로 회차 날짜마다 규칙 시간대로 다시 해석한다.
-      scheduledTime:
-        scheduledLocalTime == null ? null : parseLocalDateTime(date, scheduledLocalTime, timezone),
+      scheduledTime: resolveScheduledInstant(date, scheduledLocalTime, timezone),
       isAllDay: scheduledLocalTime == null,
       occurrenceDate: date,
       // 리텐션·성장 지표가 createdAt을 사용자 행동으로 쓰므로 규칙을 만든 시각을 물려받는다.

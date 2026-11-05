@@ -1,11 +1,13 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { REMINDER_TIMEZONE_CACHE } from "#api/modules/notification/notification-reminders-cache.public";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import { PREFERENCE_ENTITLEMENT } from "./application/ports/settings/preference-entitlement.port.js";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/settings/reminder-schedule.enqueuer.port.js";
 import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/settings/streak-milestone.notifier.port.js";
 import { TODO_COMPLETION_STATS_READER } from "./application/ports/settings/todo-completion-stats.reader.port.js";
+import { TODO_TIMEZONE_REBASE_ENQUEUER } from "./application/ports/settings/todo-timezone-rebase.enqueuer.port.js";
 import { USER_CONSENT_REPOSITORY } from "./application/ports/settings/user-consent.repository.port.js";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/settings/user-preference.repository.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
@@ -109,7 +111,13 @@ export const onTodoToggledProvider: FactoryProvider<OnTodoToggled> = {
 
 export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezone> = {
   provide: RefreshPushTimezone,
-  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE, REMINDER_TIMEZONE_CACHE],
+  inject: [
+    USER_PREFERENCE_REPOSITORY,
+    USER_SETTINGS_CACHE,
+    REMINDER_TIMEZONE_CACHE,
+    TODO_TIMEZONE_REBASE_ENQUEUER,
+    UNIT_OF_WORK,
+  ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof RefreshPushTimezone
@@ -118,7 +126,16 @@ export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezone> =
     reminderTimezoneCache: ConstructorParameters<
       typeof RefreshPushTimezone
     >[0]["reminderTimezoneCache"],
-  ) => new RefreshPushTimezone({ preferenceRepository, cache, reminderTimezoneCache }),
+    todoTimezoneRebase: ConstructorParameters<typeof RefreshPushTimezone>[0]["todoTimezoneRebase"],
+    unitOfWork: ConstructorParameters<typeof RefreshPushTimezone>[0]["unitOfWork"],
+  ) =>
+    new RefreshPushTimezone({
+      preferenceRepository,
+      cache,
+      reminderTimezoneCache,
+      todoTimezoneRebase,
+      unitOfWork,
+    }),
 };
 
 export const seedUserSettingsProvider: FactoryProvider<SeedUserSettings> = {
@@ -192,6 +209,8 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
     USER_SETTINGS_CACHE,
     REMINDER_TIMEZONE_CACHE,
     REMINDER_SCHEDULE_ENQUEUER,
+    TODO_TIMEZONE_REBASE_ENQUEUER,
+    UNIT_OF_WORK,
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<typeof UpdatePreference>[0]["preferenceRepository"],
@@ -201,6 +220,8 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
       typeof UpdatePreference
     >[0]["reminderTimezoneCache"],
     reminderEnqueuer: ConstructorParameters<typeof UpdatePreference>[0]["reminderEnqueuer"],
+    todoTimezoneRebase: ConstructorParameters<typeof UpdatePreference>[0]["todoTimezoneRebase"],
+    unitOfWork: ConstructorParameters<typeof UpdatePreference>[0]["unitOfWork"],
   ) =>
     new UpdatePreference({
       preferenceRepository,
@@ -208,6 +229,8 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
       cache,
       reminderTimezoneCache,
       reminderEnqueuer,
+      todoTimezoneRebase,
+      unitOfWork,
       logger: new Logger(UpdatePreference.name),
     }),
 };
@@ -223,7 +246,13 @@ export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocale> = {
 
 export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezone> = {
   provide: UpsertPushTimezone,
-  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE, REMINDER_TIMEZONE_CACHE],
+  inject: [
+    USER_PREFERENCE_REPOSITORY,
+    USER_SETTINGS_CACHE,
+    REMINDER_TIMEZONE_CACHE,
+    TODO_TIMEZONE_REBASE_ENQUEUER,
+    UNIT_OF_WORK,
+  ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof UpsertPushTimezone
@@ -232,5 +261,14 @@ export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezone> = {
     reminderTimezoneCache: ConstructorParameters<
       typeof UpsertPushTimezone
     >[0]["reminderTimezoneCache"],
-  ) => new UpsertPushTimezone({ preferenceRepository, cache, reminderTimezoneCache }),
+    todoTimezoneRebase: ConstructorParameters<typeof UpsertPushTimezone>[0]["todoTimezoneRebase"],
+    unitOfWork: ConstructorParameters<typeof UpsertPushTimezone>[0]["unitOfWork"],
+  ) =>
+    new UpsertPushTimezone({
+      preferenceRepository,
+      cache,
+      reminderTimezoneCache,
+      todoTimezoneRebase,
+      unitOfWork,
+    }),
 };

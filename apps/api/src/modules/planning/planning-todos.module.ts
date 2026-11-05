@@ -14,6 +14,7 @@ import { STAGED_TODO_CREATOR } from "./application/ports/todos/staged-todo-creat
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todos/todo-cache.port.js";
 import { TODO_NOTIFICATION } from "./application/ports/todos/todo-notification.port.js";
+import { TODO_OWNER_TIMEZONE } from "./application/ports/todos/todo-owner-timezone.port.js";
 import { TODO_PLAN_READER } from "./application/ports/todos/todo-plan.reader.port.js";
 import {
   TODO_READ_REPOSITORY,
@@ -30,6 +31,7 @@ import { FriendAdapter } from "./infrastructure/adapters/todos/friend.adapter.js
 import { StreakAdapter } from "./infrastructure/adapters/todos/streak.adapter.js";
 import { TodoCacheAdapter } from "./infrastructure/adapters/todos/todo-cache.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todos/todo-notification.adapter.js";
+import { TodoOwnerTimezoneAdapter } from "./infrastructure/adapters/todos/todo-owner-timezone.adapter.js";
 import { TodoReminderAdapter } from "./infrastructure/adapters/todos/todo-reminder.adapter.js";
 import { DrizzleTodoSeriesRepository } from "./infrastructure/persistence/series/drizzle-todo-series.repository.js";
 import { DrizzleTodoReadRepository } from "./infrastructure/persistence/todos/drizzle-todo-read.repository.js";
@@ -64,6 +66,7 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     { provide: STREAK_PORT, useClass: StreakAdapter },
     { provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
     { provide: TODO_REMINDER, useClass: TodoReminderAdapter },
+    { provide: TODO_OWNER_TIMEZONE, useClass: TodoOwnerTimezoneAdapter },
     ...TODO_PROVIDERS,
     { provide: STAGED_TODO_CREATOR, useExisting: StagedTodoCreator },
     {

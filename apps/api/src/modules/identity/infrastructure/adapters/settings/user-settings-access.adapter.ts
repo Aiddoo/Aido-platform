@@ -5,6 +5,7 @@ import type {
   UserNotificationSettingsAccessPort,
   UserSettingsProvisionerPort,
   UserStreakAccessPort,
+  UserTimezoneReaderPort,
 } from "../../../application/ports/settings/user-settings-access.port.js";
 import { GetConsentRecord } from "../../../application/use-cases/settings/get-consent-record.use-case.js";
 import { GetConsentRecords } from "../../../application/use-cases/settings/get-consent-records.use-case.js";
@@ -19,7 +20,11 @@ import { UpsertPushTimezone } from "../../../application/use-cases/settings/upse
 /** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
 @Injectable()
 export class UserSettingsAccessAdapter
-  implements UserSettingsProvisionerPort, UserStreakAccessPort, UserNotificationSettingsAccessPort
+  implements
+    UserSettingsProvisionerPort,
+    UserStreakAccessPort,
+    UserNotificationSettingsAccessPort,
+    UserTimezoneReaderPort
 {
   constructor(
     private readonly seedUserSettingsUseCase: SeedUserSettings,
@@ -43,6 +48,11 @@ export class UserSettingsAccessAdapter
 
   getPreferenceRecord(userId: string) {
     return this.getPreferenceRecordUseCase.execute({ userId });
+  }
+
+  async findStoredTimezone(userId: string): Promise<string | null> {
+    const record = await this.getPreferenceRecordUseCase.execute({ userId });
+    return record?.timezone ?? null;
   }
 
   getPreferenceRecordsByUserIds(userIds: string[]) {

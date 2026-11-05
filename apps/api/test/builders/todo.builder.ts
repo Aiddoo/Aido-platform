@@ -33,6 +33,7 @@ export class TodoBuilder {
       sortOrder: 0,
       startDate: now,
       endDate: null,
+      scheduledLocalTime: null,
       scheduledTime: null,
       isAllDay: true,
       visibility: "PUBLIC",

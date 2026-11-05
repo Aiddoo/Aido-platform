@@ -48,7 +48,7 @@ export class UpdateTodoTitle {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      todo.updateDetails({ title });
+      todo.rename(title);
       await this.#dependencies.todoRepository.updateTitle(id, todo.toPersistence().title);
       return todo.pullDomainEvents();
     });

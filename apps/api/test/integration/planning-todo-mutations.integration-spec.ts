@@ -220,8 +220,22 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const outcomes = await contend(
-      () => toggle.execute({ id: todoId, userId, completed: true, timezone: "Asia/Seoul" }),
-      () => toggle.execute({ id: todoId, userId, completed: true, timezone: "Asia/Seoul" }),
+      () =>
+        toggle.execute({
+          id: todoId,
+          userId,
+          completed: true,
+          timezone: "Asia/Seoul",
+          requestTimezone: "Asia/Seoul",
+        }),
+      () =>
+        toggle.execute({
+          id: todoId,
+          userId,
+          completed: true,
+          timezone: "Asia/Seoul",
+          requestTimezone: "Asia/Seoul",
+        }),
     );
 
     // Then
@@ -539,6 +553,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             title: "rollback 대상",
             startDate: AT,
             endDate: null,
+            scheduledLocalTime: null,
             scheduledTime: null,
             sortOrder: 1,
             isAllDay: true,

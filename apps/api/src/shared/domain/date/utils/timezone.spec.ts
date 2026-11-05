@@ -18,6 +18,7 @@ import {
   localDateInTimezone,
   normalizeIanaTimezone,
   parseLocalDateTime,
+  resolveWallClockTimezone,
   resolveDeliveryTimezone,
   resolveTimezone,
   startOfDayInTimezone,
@@ -312,5 +313,27 @@ describe("timezone", () => {
       // Then
       expect(result.toISOString()).toBe(next);
     });
+  });
+});
+
+describe("resolveWallClockTimezone — 할 일 벽시계의 시간대", () => {
+  it.each([
+    {
+      name: "앞선 후보가 유효하면 그 값",
+      candidates: ["America/New_York", "Asia/Seoul"],
+      zone: "America/New_York",
+    },
+    {
+      name: "앞이 잘못되면 다음 후보",
+      candidates: ["Mars/Phobos", "Europe/London"],
+      zone: "Europe/London",
+    },
+    { name: "저장된 UTC는 그대로", candidates: [undefined, "UTC"], zone: "UTC" },
+    { name: "모두 없으면 기본값", candidates: [undefined, null], zone: "Asia/Seoul" },
+  ])("$name", ({ candidates, zone }) => {
+    // When
+    const timezone = resolveWallClockTimezone(...candidates);
+    // Then
+    expect(timezone).toBe(zone);
   });
 });

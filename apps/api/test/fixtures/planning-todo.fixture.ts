@@ -3,6 +3,7 @@ import { mock } from "vitest-mock-extended";
 
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
 import { TodoSeriesEditEffects } from "#api/modules/planning/application/services/series/todo-series-edit-effects.service";
+import { TodoTimezoneResolver } from "#api/modules/planning/application/services/todos/todo-timezone-resolver.service";
 import type { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -10,6 +11,7 @@ import { TodoBuilder } from "#test/builders/index";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 import {
   StubPlanningTodoRepository,
+  StubPlanningTodoOwnerTimezone,
   StubPlanningTodoReadRepository,
   StubPlanningTodoReminder,
   StubPlanningTodoSeriesOwner,
@@ -58,6 +60,8 @@ export function createPlanningTodoFixture(
   const mutationLock = new StubPlanningMutationLock();
   const categoryOwnership = createCategoryOwnershipStub(categories, categoryOwners);
   const unitOfWork = createUnitOfWorkMock();
+  const ownerTimezone = new StubPlanningTodoOwnerTimezone(new Map([[userId, "Asia/Seoul"]]));
+  const timezoneResolver = new TodoTimezoneResolver({ ownerTimezone });
   const paginationService = new PaginationService();
   const seriesCatchUp = { ensureCaughtUp: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
@@ -94,6 +98,8 @@ export function createPlanningTodoFixture(
     mutationLock,
     categoryOwnership,
     unitOfWork,
+    ownerTimezone,
+    timezoneResolver,
     logger,
     paginationService,
     seriesCatchUp,

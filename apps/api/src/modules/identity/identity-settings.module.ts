@@ -3,12 +3,14 @@ import { Module } from "@nestjs/common";
 import { AccessModule, ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { NotificationQueueModule } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
+import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/planning-todo-timezone-jobs.public";
 
 import { AI_DATA_SHARING_CONSENT_READER } from "./application/ports/settings/ai-data-sharing-consent.reader.port.js";
 import { PREFERENCE_ENTITLEMENT } from "./application/ports/settings/preference-entitlement.port.js";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/settings/reminder-schedule.enqueuer.port.js";
 import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/settings/streak-milestone.notifier.port.js";
 import { TODO_COMPLETION_STATS_READER } from "./application/ports/settings/todo-completion-stats.reader.port.js";
+import { TODO_TIMEZONE_REBASE_ENQUEUER } from "./application/ports/settings/todo-timezone-rebase.enqueuer.port.js";
 import { USER_CONSENT_REPOSITORY } from "./application/ports/settings/user-consent.repository.port.js";
 import { USER_PREFERENCE_READER } from "./application/ports/settings/user-preference.reader.port.js";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/settings/user-preference.repository.port.js";
@@ -16,6 +18,7 @@ import {
   USER_NOTIFICATION_SETTINGS_ACCESS,
   USER_SETTINGS_PROVISIONER,
   USER_STREAK_ACCESS,
+  USER_TIMEZONE_READER,
 } from "./application/ports/settings/user-settings-access.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
 import { AiDataSharingConsentReader } from "./application/services/settings/ai-data-sharing-consent-reader.service.js";
@@ -41,6 +44,7 @@ import {
 } from "./identity-settings-application.providers.js";
 import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/settings/streak-milestone-notifier.adapter.js";
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/settings/timezone-reminder-enqueuer.adapter.js";
+import { TodoTimezoneRebaseEnqueuerAdapter } from "./infrastructure/adapters/settings/todo-timezone-rebase-enqueuer.adapter.js";
 import { UserSettingsAccessAdapter } from "./infrastructure/adapters/settings/user-settings-access.adapter.js";
 import { UserSettingsCacheAdapter } from "./infrastructure/adapters/settings/user-settings-cache.adapter.js";
 import { DrizzleTodoCompletionStatsReader } from "./infrastructure/persistence/settings/drizzle-todo-completion-stats.reader.js";
@@ -50,7 +54,12 @@ import { SettingsController } from "./presentation/controllers/settings/v1/user-
 import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/settings/timezone-self-heal.interceptor.js";
 
 @Module({
-  imports: [AccessModule, NotificationQueueModule, TimezoneReminderQueueModule],
+  imports: [
+    AccessModule,
+    NotificationQueueModule,
+    TimezoneReminderQueueModule,
+    TodoTimezoneRebaseQueueModule,
+  ],
   controllers: [SettingsController],
   providers: [
     UserSettingsAccessAdapter,
@@ -92,6 +101,10 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
       useClass: TimezoneReminderEnqueuerAdapter,
     },
     {
+      provide: TODO_TIMEZONE_REBASE_ENQUEUER,
+      useClass: TodoTimezoneRebaseEnqueuerAdapter,
+    },
+    {
       provide: STREAK_MILESTONE_NOTIFIER,
       useClass: StreakMilestoneNotifierAdapter,
     },
@@ -101,6 +114,7 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
       useExisting: UserSettingsAccessAdapter,
     },
     { provide: USER_STREAK_ACCESS, useExisting: UserSettingsAccessAdapter },
+    { provide: USER_TIMEZONE_READER, useExisting: UserSettingsAccessAdapter },
     {
       provide: USER_NOTIFICATION_SETTINGS_ACCESS,
       useExisting: UserSettingsAccessAdapter,
@@ -111,6 +125,7 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
     USER_PREFERENCE_READER,
     USER_SETTINGS_PROVISIONER,
     USER_STREAK_ACCESS,
+    USER_TIMEZONE_READER,
     USER_NOTIFICATION_SETTINGS_ACCESS,
     AI_DATA_SHARING_CONSENT_READER,
     TimezoneSelfHealInterceptor,

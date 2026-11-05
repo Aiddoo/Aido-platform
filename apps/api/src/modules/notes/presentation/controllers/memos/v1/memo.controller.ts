@@ -285,7 +285,7 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ConvertMemoToTodoDto }) dto: ConvertMemoToTodoDto,
-    @Timezone() tz: string,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ConvertMemoToTodoResponseDto> {
     return this.convertMemoToTodo.execute({
       userId: user.userId,
@@ -335,12 +335,12 @@ export class MemoController {
   @ApiCreatedResponse({ type: ConvertMemoToTodosResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
-  @ApiForbiddenError(ErrorCode.TODO_0811)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.TODO_0811, ErrorCode.TODO_0813])
   async convertToTodos(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ConvertMemoToTodosDto }) dto: ConvertMemoToTodosDto,
-    @Timezone() tz: string,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ConvertMemoToTodosResponseDto> {
     return this.convertMemoToTodos.execute({
       userId: user.userId,

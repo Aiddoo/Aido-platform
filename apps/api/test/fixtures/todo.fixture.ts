@@ -77,6 +77,7 @@ export const TodoFixture = {
       completedAt: overrides.completedAt ?? null,
       startDate: overrides.startDate ?? now,
       endDate: overrides.endDate ?? null,
+      scheduledLocalTime: overrides.scheduledLocalTime ?? null,
       scheduledTime: overrides.scheduledTime ?? null,
       isAllDay: overrides.isAllDay ?? true,
       sortOrder: overrides.sortOrder ?? id,

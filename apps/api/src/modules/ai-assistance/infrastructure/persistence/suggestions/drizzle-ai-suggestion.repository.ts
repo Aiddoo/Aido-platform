@@ -15,7 +15,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { recurringSuggestion } from "#api/platform/database/schema/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { startOfDayInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   AiSuggestionRepositoryPort,
@@ -247,6 +247,7 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       columns: {
         title: true,
         startDate: true,
+        scheduledLocalTime: true,
         scheduledTime: true,
         categoryId: true,
         completed: true,
@@ -266,7 +267,9 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       title: t.title,
       startDate: toDateString(t.startDate),
       scheduledTime:
-        t.scheduledTime == null ? null : dayjs(t.scheduledTime).tz(timezone).format("HH:mm"),
+        t.scheduledTime == null
+          ? null
+          : (t.scheduledLocalTime ?? toLocalTimeString(t.scheduledTime, timezone)),
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.category).name,

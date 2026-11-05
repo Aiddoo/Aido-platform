@@ -14,6 +14,7 @@ import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE } from "./application/ports/todos/todo-cache.port.js";
+import { TODO_OWNER_TIMEZONE } from "./application/ports/todos/todo-owner-timezone.port.js";
 import { TODO_READ_REPOSITORY } from "./application/ports/todos/todo-read.repository.port.js";
 import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
@@ -24,6 +25,7 @@ import { TodoSeriesEditEffects } from "./application/services/series/todo-series
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
 import { TodoCreationWriter } from "./application/services/todos/todo-creation-writer.service.js";
+import { TodoTimezoneResolver } from "./application/services/todos/todo-timezone-resolver.service.js";
 import { GetTodoSeries } from "./application/use-cases/series/get-todo-series.use-case.js";
 import { MaterializeDueTodoSeries } from "./application/use-cases/series/materialize-due-todo-series.use-case.js";
 import { StartSeriesFromTodo } from "./application/use-cases/series/start-series-from-todo.use-case.js";
@@ -40,6 +42,7 @@ import { GetTodoById } from "./application/use-cases/todos/get-todo-by-id.use-ca
 import { GetTodoResourceLimit } from "./application/use-cases/todos/get-todo-resource-limit.use-case.js";
 import { GetTodoSummary } from "./application/use-cases/todos/get-todo-summary.use-case.js";
 import { GetTodos } from "./application/use-cases/todos/get-todos.use-case.js";
+import { RebaseTodoTimezone } from "./application/use-cases/todos/rebase-todo-timezone.use-case.js";
 import { ReorderTodoItems } from "./application/use-cases/todos/reorder-todo-items.use-case.js";
 import { ReorderTodo } from "./application/use-cases/todos/reorder-todo.use-case.js";
 import { ToggleTodoComplete } from "./application/use-cases/todos/toggle-todo-complete.use-case.js";
@@ -48,6 +51,46 @@ import { UpdateTodoSchedule } from "./application/use-cases/todos/update-todo-sc
 import { UpdateTodoTitle } from "./application/use-cases/todos/update-todo-title.use-case.js";
 import { UpdateTodoVisibility } from "./application/use-cases/todos/update-todo-visibility.use-case.js";
 import { UpdateTodo } from "./application/use-cases/todos/update-todo.use-case.js";
+
+export const todoTimezoneResolverProvider: FactoryProvider<TodoTimezoneResolver> = {
+  provide: TodoTimezoneResolver,
+  inject: [TODO_OWNER_TIMEZONE],
+  useFactory: (
+    ownerTimezone: ConstructorParameters<typeof TodoTimezoneResolver>[0]["ownerTimezone"],
+  ) => new TodoTimezoneResolver({ ownerTimezone }),
+};
+
+export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezone> = {
+  provide: RebaseTodoTimezone,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TODO_OWNER_TIMEZONE,
+    TODO_REMINDER,
+    TODO_CACHE,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof RebaseTodoTimezone>[0]["seriesRepository"],
+    ownerTimezone: ConstructorParameters<typeof RebaseTodoTimezone>[0]["ownerTimezone"],
+    todoReminder: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoReminder"],
+    todoCache: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoCache"],
+    unitOfWork: ConstructorParameters<typeof RebaseTodoTimezone>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof RebaseTodoTimezone>[0]["mutationLock"],
+  ) =>
+    new RebaseTodoTimezone({
+      todoRepository,
+      seriesRepository,
+      ownerTimezone,
+      todoReminder,
+      todoCache,
+      unitOfWork,
+      mutationLock,
+      logger: new Logger(RebaseTodoTimezone.name),
+    }),
+};
 
 export const todoSeriesDueRunProvider: FactoryProvider<TodoSeriesDueRun> = {
   provide: TodoSeriesDueRun,
@@ -257,12 +300,13 @@ export const todoCreationEffectsProvider: FactoryProvider<TodoCreationEffects> =
 
 export const stagedTodoCreatorProvider: FactoryProvider<StagedTodoCreator> = {
   provide: StagedTodoCreator,
-  inject: [TodoCreationWriter, TodoCreationEffects, TODO_READ_REPOSITORY],
+  inject: [TodoCreationWriter, TodoCreationEffects, TODO_READ_REPOSITORY, TodoTimezoneResolver],
   useFactory: (
     writer: ConstructorParameters<typeof StagedTodoCreator>[0]["writer"],
     effects: ConstructorParameters<typeof StagedTodoCreator>[0]["effects"],
     todoReadRepository: ConstructorParameters<typeof StagedTodoCreator>[0]["todoReadRepository"],
-  ) => new StagedTodoCreator({ writer, effects, todoReadRepository }),
+    timezoneResolver: ConstructorParameters<typeof StagedTodoCreator>[0]["timezoneResolver"],
+  ) => new StagedTodoCreator({ writer, effects, todoReadRepository, timezoneResolver }),
 };
 
 export const createTodoProvider: FactoryProvider<CreateTodo> = {
@@ -493,6 +537,7 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
     MUTATION_LOCK,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
+    TodoTimezoneResolver,
   ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoRepository"],
@@ -501,6 +546,7 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
     mutationLock: ConstructorParameters<typeof ToggleTodoComplete>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof ToggleTodoComplete>[0]["eventPublisher"],
+    timezoneResolver: ConstructorParameters<typeof ToggleTodoComplete>[0]["timezoneResolver"],
   ) =>
     new ToggleTodoComplete({
       todoRepository,
@@ -509,6 +555,7 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
       mutationLock,
       todoCache,
       eventPublisher,
+      timezoneResolver,
       logger: new Logger(ToggleTodoComplete.name),
     }),
 };
@@ -523,6 +570,7 @@ export const editTodoProvider: FactoryProvider<EditTodo> = {
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
     MUTATION_LOCK,
+    TodoTimezoneResolver,
   ],
   useFactory: (
     updateTodo: ConstructorParameters<typeof EditTodo>[0]["updateTodo"],
@@ -532,6 +580,7 @@ export const editTodoProvider: FactoryProvider<EditTodo> = {
     todoReadRepository: ConstructorParameters<typeof EditTodo>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof EditTodo>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof EditTodo>[0]["mutationLock"],
+    timezoneResolver: ConstructorParameters<typeof EditTodo>[0]["timezoneResolver"],
   ) =>
     new EditTodo({
       updateTodo,
@@ -541,6 +590,7 @@ export const editTodoProvider: FactoryProvider<EditTodo> = {
       todoReadRepository,
       unitOfWork,
       mutationLock,
+      timezoneResolver,
     }),
 };
 
@@ -605,6 +655,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
     MUTATION_LOCK,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
+    TodoTimezoneResolver,
   ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoRepository"],
@@ -613,6 +664,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
     mutationLock: ConstructorParameters<typeof UpdateTodoSchedule>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof UpdateTodoSchedule>[0]["eventPublisher"],
+    timezoneResolver: ConstructorParameters<typeof UpdateTodoSchedule>[0]["timezoneResolver"],
   ) =>
     new UpdateTodoSchedule({
       todoRepository,
@@ -621,6 +673,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
       mutationLock,
       todoCache,
       eventPublisher,
+      timezoneResolver,
       logger: new Logger(UpdateTodoSchedule.name),
     }),
 };

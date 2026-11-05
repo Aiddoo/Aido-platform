@@ -57,7 +57,7 @@ export class ActionPlanController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ApplyActionPlanRequestDto }) dto: ApplyActionPlanRequestDto,
     @IdempotencyKey() idempotencyKey: string,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<ApplyActionPlanResponseDto> {
     return this.applyActionPlan.execute({
       userId: user.userId,

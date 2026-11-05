@@ -203,4 +203,17 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       await execution;
     }
   });
+
+  it.each([
+    { name: "시간대를 바꾸면 재계산 작업을 등록한다", timezone: "America/New_York", enqueued: 1 },
+    { name: "같은 시간대를 보내면 등록하지 않는다", timezone: "UTC", enqueued: 0 },
+    { name: "시간대가 없는 수정은 등록하지 않는다", timezone: undefined, enqueued: 0 },
+  ])("$name", async ({ timezone, enqueued }) => {
+    // Given
+    const fixture = createUserSettingsFixture();
+    // When
+    await new UpdatePreference(fixture).execute({ userId: fixture.userId, timezone });
+    // Then
+    expect(fixture.todoTimezoneRebase.enqueued).toHaveLength(enqueued);
+  });
 });

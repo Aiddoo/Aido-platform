@@ -36,6 +36,12 @@ export interface TodoSeriesRepositoryPort {
 
   countActiveByUserId(userId: string): Promise<number>;
 
+  /**
+   * 이 사용자의 규칙 시간대를 한 문장으로 바꾸고 바뀐 수를 돌려준다. 끝난 규칙도 바꾼다.
+   * 규칙을 바꿔 다시 진행하면 그 시간대로 회차를 만들기 때문이다.
+   */
+  updateTimezoneByUserId(userId: string, timezone: string): Promise<number>;
+
   findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
 
   /** 커서가 through 이하인 이 사용자의 규칙. */

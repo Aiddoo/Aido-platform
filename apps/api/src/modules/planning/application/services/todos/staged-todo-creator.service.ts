@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/index";
 
-import type { CreateTodoData } from "../../models/todos/todo.types.js";
+import type { CreateTodoData, ResolvedCreateTodoData } from "../../models/todos/todo.types.js";
 import type {
   StagedTodoCreation,
   StagedTodoCreatorPort,
@@ -11,6 +11,7 @@ import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.reposit
 import { toTodoSeriesResponse } from "../../read-models/series/todo-series.read-model.js";
 import type { TodoCreationEffects } from "./todo-creation-effects.service.js";
 import { planTodoCreation, type TodoCreationWriter } from "./todo-creation-writer.service.js";
+import type { TodoTimezoneResolver } from "./todo-timezone-resolver.service.js";
 
 interface StagedTodoCreatorDependencies {
   readonly writer: Pick<TodoCreationWriter, "createSingle" | "startSeries">;
@@ -19,6 +20,7 @@ interface StagedTodoCreatorDependencies {
     TodoReadRepositoryPort,
     "findByIdAndUserId" | "findManyBySeriesId"
   >;
+  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
 }
 
 export class StagedTodoCreator implements StagedTodoCreatorPort {
@@ -28,11 +30,18 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
     this.#dependencies = dependencies;
   }
 
-  stage(input: CreateTodoData): Promise<StagedTodoCreation> {
-    return input.repeat == null ? this.#stageSingle(input) : this.#stageSeries(input, input.repeat);
+  async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+    const timezone = await this.#dependencies.timezoneResolver.resolve(
+      input.userId,
+      input.timezone,
+    );
+    const resolved = { ...input, timezone };
+    return resolved.repeat == null
+      ? this.#stageSingle(resolved)
+      : this.#stageSeries(resolved, resolved.repeat);
   }
 
-  async #stageSingle(input: CreateTodoData): Promise<StagedTodoCreation> {
+  async #stageSingle(input: ResolvedCreateTodoData): Promise<StagedTodoCreation> {
     const created = await this.#dependencies.writer.createSingle(
       planTodoCreation(input),
       input.items,
@@ -52,7 +61,7 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
   }
 
   async #stageSeries(
-    input: CreateTodoData,
+    input: ResolvedCreateTodoData,
     repeat: NonNullable<CreateTodoData["repeat"]>,
   ): Promise<StagedTodoCreation> {
     const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);

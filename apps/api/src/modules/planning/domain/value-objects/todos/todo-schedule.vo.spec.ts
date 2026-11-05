@@ -12,37 +12,47 @@ import { TodoSchedule } from "./todo-schedule.vo.js";
 
 describe("TodoSchedule — 일정 값 객체", () => {
   const START = new Date("2026-03-01");
+  const LOCAL = "06:00";
   const TIME = new Date("2026-03-01T06:00:00.000Z");
+  const ZONE = "UTC";
 
   it.each([
     {
       name: "종일인데 시간이 있으면 시간 일정",
       isAllDay: true,
-      scheduledTime: TIME,
+      scheduledLocalTime: LOCAL,
+      instant: TIME,
       allDay: false,
     },
     {
       name: "시간 일정인데 시간이 없으면 종일",
       isAllDay: false,
-      scheduledTime: null,
+      scheduledLocalTime: null,
+      instant: null,
       allDay: true,
     },
-  ])("$name으로 맞춘다", ({ isAllDay, scheduledTime, allDay }) => {
+  ])("$name으로 맞춘다", ({ isAllDay, scheduledLocalTime, instant, allDay }) => {
     // Given
-    const props = { startDate: START, endDate: null, scheduledTime, isAllDay };
+    const props = { startDate: START, endDate: null, scheduledLocalTime, isAllDay, timezone: ZONE };
     // When
     const schedule = TodoSchedule.create(props);
     // Then
     expect(schedule.isAllDay()).toBe(allDay);
-    expect(schedule.getScheduledTime()).toEqual(scheduledTime);
+    expect(schedule.getScheduledTime()).toEqual(instant);
+    expect(schedule.getScheduledLocalTime()).toBe(scheduledLocalTime);
   });
 
   it.each([
     { name: "종일로 바꾸면 시간을 지운다", patch: { isAllDay: true }, time: null, allDay: true },
-    { name: "시간을 지우면 종일이 된다", patch: { scheduledTime: null }, time: null, allDay: true },
+    {
+      name: "시간을 지우면 종일이 된다",
+      patch: { scheduledLocalTime: null },
+      time: null,
+      allDay: true,
+    },
     {
       name: "시간과 종일이 함께 오면 시간을 따른다",
-      patch: { scheduledTime: TIME, isAllDay: true },
+      patch: { scheduledLocalTime: LOCAL, isAllDay: true },
       time: TIME,
       allDay: false,
     },
@@ -51,29 +61,113 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.create({
       startDate: START,
       endDate: null,
-      scheduledTime: TIME,
+      scheduledLocalTime: LOCAL,
       isAllDay: false,
+      timezone: ZONE,
     });
     // When
-    const patched = schedule.patch(patch);
+    const patched = schedule.patch(patch, ZONE);
     // Then
     expect(patched.getScheduledTime()).toEqual(time);
     expect(patched.isAllDay()).toBe(allDay);
   });
 
-  it("시간을 건드리지 않는 수정은 저장된 옛 종일+시간 행을 그대로 둔다", () => {
+  it("날짜만 옮기면 저장된 옛 종일+시간 행의 종일 값은 그대로이고 순간은 새 날짜로 간다", () => {
     // Given
     const legacy = TodoSchedule.reconstitute({
       startDate: START,
       endDate: null,
+      scheduledLocalTime: LOCAL,
       scheduledTime: TIME,
       isAllDay: true,
     });
     // When
-    const patched = legacy.patch({ startDate: new Date("2026-03-02") });
+    const patched = legacy.patch({ startDate: new Date("2026-03-02") }, ZONE);
     // Then
     expect(patched.isAllDay()).toBe(true);
-    expect(patched.getScheduledTime()).toEqual(TIME);
+    expect(patched.getScheduledLocalTime()).toBe(LOCAL);
+    expect(patched.getScheduledTime()).toEqual(new Date("2026-03-02T06:00:00.000Z"));
+  });
+
+  it("날짜를 옮기면 고른 벽시계가 그대로이고 그 날짜의 오프셋으로 순간을 다시 만든다", () => {
+    // Given
+    const schedule = TodoSchedule.create({
+      startDate: new Date("2026-03-07"),
+      endDate: null,
+      scheduledLocalTime: "10:00",
+      isAllDay: false,
+      timezone: "America/New_York",
+    });
+    // When
+    const patched = schedule.patch({ startDate: new Date("2026-03-09") }, "America/New_York");
+    // Then
+    expect(schedule.getScheduledTime()).toEqual(new Date("2026-03-07T15:00:00.000Z"));
+    expect(patched.getScheduledLocalTime()).toBe("10:00");
+    expect(patched.getScheduledTime()).toEqual(new Date("2026-03-09T14:00:00.000Z"));
+  });
+
+  it("날짜·시간을 건드리지 않는 수정은 지난 시간대로 만든 순간을 바꾸지 않는다", () => {
+    // Given
+    const schedule = TodoSchedule.create({
+      startDate: START,
+      endDate: null,
+      scheduledLocalTime: LOCAL,
+      isAllDay: false,
+      timezone: "Asia/Seoul",
+    });
+    // When
+    const patched = schedule.patch({ endDate: new Date("2026-03-02") }, "America/New_York");
+    // Then
+    expect(patched.getScheduledTime()).toEqual(schedule.getScheduledTime());
+  });
+
+  it("옛 서버가 시간을 지워 칸만 낡은 행은 벽시계도 없는 것으로 읽는다", () => {
+    // Given
+    const props = {
+      startDate: START,
+      endDate: null,
+      scheduledLocalTime: LOCAL,
+      scheduledTime: null,
+      isAllDay: true,
+    };
+    // When
+    const schedule = TodoSchedule.reconstitute(props);
+    // Then
+    expect(schedule.getScheduledLocalTime()).toBeNull();
+  });
+
+  it("옛 서버가 써서 칸이 빈 행은 순간을 지금 시간대로 읽어 날짜를 옮겨도 보던 시각이 된다", () => {
+    // Given
+    const legacy = TodoSchedule.reconstitute({
+      startDate: START,
+      endDate: null,
+      scheduledLocalTime: null,
+      scheduledTime: new Date("2026-03-01T01:00:00.000Z"),
+      isAllDay: false,
+    });
+    // When
+    const patched = legacy.patch({ startDate: new Date("2026-03-02") }, "Asia/Seoul");
+    // Then
+    expect(legacy.getLocalTimeIn("Asia/Seoul")).toBe("10:00");
+    expect(patched.getScheduledLocalTime()).toBe("10:00");
+    expect(patched.getScheduledTime()).toEqual(new Date("2026-03-02T01:00:00.000Z"));
+  });
+
+  it("새 시간대로 다시 맞추면 벽시계는 그대로이고 순간만 바뀐다", () => {
+    // Given
+    const schedule = TodoSchedule.create({
+      startDate: new Date("2026-11-10"),
+      endDate: null,
+      scheduledLocalTime: "10:00",
+      isAllDay: false,
+      timezone: "Asia/Seoul",
+    });
+    // When
+    const rederived = schedule.rederivedIn("America/New_York");
+    // Then
+    expect(rederived.getScheduledLocalTime()).toBe("10:00");
+    expect(rederived.getScheduledTime()).toEqual(new Date("2026-11-10T15:00:00.000Z"));
+    expect(schedule.getScheduledTime()).toEqual(new Date("2026-11-10T01:00:00.000Z"));
   });
 
   it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {
@@ -86,8 +180,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.create({
       startDate,
       endDate,
-      scheduledTime,
+      scheduledLocalTime: "06:00",
       isAllDay: false,
+      timezone: "UTC",
     });
 
     // Then
@@ -102,8 +197,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.create({
       startDate: new Date("2026-03-01"),
       endDate: null,
-      scheduledTime: null,
+      scheduledLocalTime: null,
       isAllDay: true,
+      timezone: "UTC",
     });
 
     // Then
@@ -117,8 +213,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
       TodoSchedule.create({
         startDate: new Date("2026-03-05"),
         endDate: new Date("2026-03-01"),
-        scheduledTime: null,
+        scheduledLocalTime: null,
         isAllDay: true,
+        timezone: "UTC",
       });
 
     // When & Then
@@ -138,8 +235,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.create({
       startDate: new Date("2026-03-01"),
       endDate: new Date("2026-03-05"),
-      scheduledTime: new Date("2026-03-01T06:00:00.000Z"),
+      scheduledLocalTime: "06:00",
       isAllDay: false,
+      timezone: "UTC",
     });
 
     // When - 반환된 Date를 임의로 변조
@@ -158,8 +256,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.create({
       startDate: new Date("2026-03-01"),
       endDate: new Date("2026-03-05"),
-      scheduledTime: null,
+      scheduledLocalTime: null,
       isAllDay: true,
+      timezone: "UTC",
     });
 
     // When - 반환된 props의 Date를 임의로 변조
@@ -178,8 +277,9 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.create({
       startDate: sameDay,
       endDate: sameDay,
-      scheduledTime: null,
+      scheduledLocalTime: null,
       isAllDay: true,
+      timezone: "UTC",
     });
 
     // Then
@@ -192,6 +292,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
       const schedule = TodoSchedule.reconstitute({
         startDate: new Date("2026-03-05"),
         endDate: new Date("2026-03-01"),
+        scheduledLocalTime: null,
         scheduledTime: null,
         isAllDay: true,
       });
@@ -208,13 +309,14 @@ describe("TodoSchedule — 일정 값 객체", () => {
       const base = TodoSchedule.create({
         startDate: new Date("2026-03-01"),
         endDate: new Date("2026-03-05"),
-        scheduledTime: null,
+        scheduledLocalTime: null,
         isAllDay: true,
+        timezone: "UTC",
       });
 
-      // When - scheduledTime/isAllDay만 패치
+      // When - 시간/isAllDay만 패치
       const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
-      const patched = base.patch({ scheduledTime, isAllDay: false });
+      const patched = base.patch({ scheduledLocalTime: "06:00", isAllDay: false }, "UTC");
 
       // Then - 날짜는 유지, 시간·종일 여부만 변경 (원본 VO는 불변)
       expect(patched.getStartDate()).toEqual(new Date("2026-03-01"));
@@ -230,12 +332,13 @@ describe("TodoSchedule — 일정 값 객체", () => {
       const base = TodoSchedule.create({
         startDate: new Date("2026-03-01"),
         endDate: new Date("2026-03-05"),
-        scheduledTime: null,
+        scheduledLocalTime: null,
         isAllDay: true,
+        timezone: "UTC",
       });
 
       // When
-      const patched = base.patch({ endDate: null });
+      const patched = base.patch({ endDate: null }, "UTC");
 
       // Then
       expect(patched.getEndDate()).toBeNull();
@@ -246,10 +349,11 @@ describe("TodoSchedule — 일정 값 객체", () => {
       const base = TodoSchedule.create({
         startDate: new Date("2026-03-01"),
         endDate: null,
-        scheduledTime: null,
+        scheduledLocalTime: null,
         isAllDay: true,
+        timezone: "UTC",
       });
-      const patch = () => base.patch({ endDate: new Date("2026-02-20") });
+      const patch = () => base.patch({ endDate: new Date("2026-02-20") }, "UTC");
 
       // When & Then - 단일 필드 패치도 교차 검증
       expect(patch).toThrow(DomainException);
@@ -267,15 +371,16 @@ describe("TodoSchedule — 일정 값 객체", () => {
       const legacyViolating = TodoSchedule.reconstitute({
         startDate: new Date("2026-03-05"),
         endDate: new Date("2026-03-01"),
+        scheduledLocalTime: null,
         scheduledTime: null,
         isAllDay: true,
       });
 
       // When - 날짜를 건드리지 않는 패치
-      const patched = legacyViolating.patch({
-        scheduledTime: new Date("2026-03-05T09:00:00.000Z"),
-        isAllDay: false,
-      });
+      const patched = legacyViolating.patch(
+        { scheduledLocalTime: "09:00", isAllDay: false },
+        "UTC",
+      );
 
       // Then - 실패 없이 위반 날짜가 그대로 유지된다
       expect(patched.getStartDate()).toEqual(new Date("2026-03-05"));
@@ -286,22 +391,44 @@ describe("TodoSchedule — 일정 값 객체", () => {
 });
 
 describe("TodoSchedule 입력 상태 보호", () => {
-  it.each([TodoSchedule.create, TodoSchedule.reconstitute])(
-    "입력 Date 변경은 검증·복원된 일정에 영향을 주지 않는다",
-    (create) => {
-      // Given
-      const startDate = new Date("2026-03-01");
-      const endDate = new Date("2026-03-02");
-      const scheduledTime = new Date("2026-03-01T09:00:00Z");
-      const schedule = create({ startDate, endDate, scheduledTime, isAllDay: false });
-      // When
-      startDate.setUTCFullYear(2030);
-      endDate.setUTCFullYear(2031);
-      scheduledTime.setUTCFullYear(2032);
-      // Then
-      expect(schedule.getStartDate()).toEqual(new Date("2026-03-01"));
-      expect(schedule.getEndDate()).toEqual(new Date("2026-03-02"));
-      expect(schedule.getScheduledTime()).toEqual(new Date("2026-03-01T09:00:00Z"));
-    },
-  );
+  it("입력 Date 변경은 복원된 일정에 영향을 주지 않는다", () => {
+    // Given
+    const startDate = new Date("2026-03-01");
+    const endDate = new Date("2026-03-02");
+    const scheduledTime = new Date("2026-03-01T09:00:00Z");
+    const schedule = TodoSchedule.reconstitute({
+      startDate,
+      endDate,
+      scheduledLocalTime: "09:00",
+      scheduledTime,
+      isAllDay: false,
+    });
+    // When
+    startDate.setUTCFullYear(2030);
+    endDate.setUTCFullYear(2031);
+    scheduledTime.setUTCFullYear(2032);
+    // Then
+    expect(schedule.getStartDate()).toEqual(new Date("2026-03-01"));
+    expect(schedule.getEndDate()).toEqual(new Date("2026-03-02"));
+    expect(schedule.getScheduledTime()).toEqual(new Date("2026-03-01T09:00:00Z"));
+  });
+
+  it("입력 Date 변경은 검증된 일정에 영향을 주지 않는다", () => {
+    // Given
+    const startDate = new Date("2026-03-01");
+    const endDate = new Date("2026-03-02");
+    const schedule = TodoSchedule.create({
+      startDate,
+      endDate,
+      scheduledLocalTime: null,
+      isAllDay: true,
+      timezone: "UTC",
+    });
+    // When
+    startDate.setUTCFullYear(2030);
+    endDate.setUTCFullYear(2031);
+    // Then
+    expect(schedule.getStartDate()).toEqual(new Date("2026-03-01"));
+    expect(schedule.getEndDate()).toEqual(new Date("2026-03-02"));
+  });
 });

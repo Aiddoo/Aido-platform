@@ -46,6 +46,56 @@ describe("할 일 부분 수정", () => {
       completed: false,
     });
   });
+  it("날짜만 옮기면 벽시계를 새 날짜의 순간으로 다시 만들고 알림 재예약 이벤트를 낸다", async () => {
+    // Given
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { scheduledTime: "10:00" },
+    });
+    fixture.eventPublisher.events.length = 0;
+    // When
+    const result = await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "America/New_York",
+      data: { startDate: new Date("2026-05-20T00:00:00Z") },
+    });
+    // Then
+    const instant = new Date("2026-05-20T14:00:00.000Z");
+    expect(result).toMatchObject({ startDate: "2026-05-20", scheduledLocalTime: "10:00" });
+    expect(fixture.records.get(1)).toMatchObject({ scheduledTime: instant, isAllDay: false });
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, instant),
+    );
+  });
+  it("PATCH로 완료를 되돌리면 벽시계를 지금 시간대로 다시 계산한다", async () => {
+    // Given
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { scheduledTime: "10:00", completed: true },
+    });
+    fixture.eventPublisher.events.length = 0;
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "America/New_York",
+      data: { completed: false },
+    });
+    // Then
+    const instant = new Date("2026-05-15T14:00:00.000Z");
+    expect(fixture.records.get(1)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: instant,
+    });
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, instant),
+    );
+  });
   it("시간만 수정하면 저장된 날짜와 사용자 timezone으로 변환한다", async () => {
     // Given / When
     const result = await useCase.execute({

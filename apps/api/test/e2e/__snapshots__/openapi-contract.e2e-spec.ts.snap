@@ -1181,6 +1181,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "items": [],
               "recurrenceGroupId": null,
+              "scheduledLocalTime": "18:00",
               "scheduledTime": "2024-01-15T09:00:00.000Z",
               "sortOrder": 0,
               "startDate": "2024-01-15",
@@ -1638,8 +1639,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   },
                 ],
               },
+              "scheduledLocalTime": {
+                "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+                "nullable": true,
+                "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                "type": "string",
+              },
               "scheduledTime": {
-                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -2569,6 +2576,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
             "items": [],
             "recurrenceGroupId": null,
+            "scheduledLocalTime": "18:00",
             "scheduledTime": "2024-01-15T09:00:00.000Z",
             "sortOrder": 0,
             "startDate": "2024-01-15",
@@ -3026,8 +3034,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
               ],
             },
+            "scheduledLocalTime": {
+              "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+              "nullable": true,
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "type": "string",
+            },
             "scheduledTime": {
-              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
               "format": "date-time",
               "nullable": true,
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -3537,6 +3551,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "items": [],
               "recurrenceGroupId": null,
+              "scheduledLocalTime": "18:00",
               "scheduledTime": "2024-01-15T09:00:00.000Z",
               "sortOrder": 0,
               "startDate": "2024-01-15",
@@ -3994,8 +4009,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   },
                 ],
               },
+              "scheduledLocalTime": {
+                "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+                "nullable": true,
+                "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                "type": "string",
+              },
               "scheduledTime": {
-                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -4490,6 +4511,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "items": [],
               "recurrenceGroupId": null,
+              "scheduledLocalTime": "18:00",
               "scheduledTime": "2024-01-15T09:00:00.000Z",
               "sortOrder": 0,
               "startDate": "2024-01-15",
@@ -4947,8 +4969,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   },
                 ],
               },
+              "scheduledLocalTime": {
+                "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+                "nullable": true,
+                "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                "type": "string",
+              },
               "scheduledTime": {
-                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -6027,6 +6055,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
             "items": [],
             "recurrenceGroupId": null,
+            "scheduledLocalTime": "18:00",
             "scheduledTime": "2024-01-15T09:00:00.000Z",
             "sortOrder": 0,
             "startDate": "2024-01-15",
@@ -6484,8 +6513,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
               ],
             },
+            "scheduledLocalTime": {
+              "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+              "nullable": true,
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "type": "string",
+            },
             "scheduledTime": {
-              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
               "format": "date-time",
               "nullable": true,
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -8800,6 +8835,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "items": [],
               "recurrenceGroupId": null,
+              "scheduledLocalTime": "18:00",
               "scheduledTime": "2024-01-15T09:00:00.000Z",
               "sortOrder": 0,
               "startDate": "2024-01-15",
@@ -8966,8 +9002,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "null",
                 ],
               },
+              "scheduledLocalTime": {
+                "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+                "nullable": true,
+                "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                "type": "string",
+              },
               "scheduledTime": {
-                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -14877,6 +14919,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
             "items": [],
             "recurrenceGroupId": null,
+            "scheduledLocalTime": "18:00",
             "scheduledTime": "2024-01-15T09:00:00.000Z",
             "sortOrder": 0,
             "startDate": "2024-01-15",
@@ -15334,8 +15377,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
               ],
             },
+            "scheduledLocalTime": {
+              "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+              "nullable": true,
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "type": "string",
+            },
             "scheduledTime": {
-              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
               "format": "date-time",
               "nullable": true,
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -19938,6 +19987,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
             "items": [],
             "recurrenceGroupId": null,
+            "scheduledLocalTime": "18:00",
             "scheduledTime": "2024-01-15T09:00:00.000Z",
             "sortOrder": 0,
             "startDate": "2024-01-15",
@@ -20104,8 +20154,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "null",
               ],
             },
+            "scheduledLocalTime": {
+              "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+              "nullable": true,
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "type": "string",
+            },
             "scheduledTime": {
-              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
               "format": "date-time",
               "nullable": true,
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -20231,6 +20287,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "items": [],
               "recurrenceGroupId": null,
+              "scheduledLocalTime": "18:00",
               "scheduledTime": "2024-01-15T09:00:00.000Z",
               "sortOrder": 0,
               "startDate": "2024-01-15",
@@ -20688,8 +20745,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   },
                 ],
               },
+              "scheduledLocalTime": {
+                "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+                "nullable": true,
+                "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                "type": "string",
+              },
               "scheduledTime": {
-                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -20828,6 +20891,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         },
         "items": [],
         "recurrenceGroupId": null,
+        "scheduledLocalTime": "18:00",
         "scheduledTime": "2024-01-15T09:00:00.000Z",
         "sortOrder": 0,
         "startDate": "2024-01-15",
@@ -21285,8 +21349,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
           ],
         },
+        "scheduledLocalTime": {
+          "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+          "nullable": true,
+          "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+          "type": "string",
+        },
         "scheduledTime": {
-          "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+          "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
           "format": "date-time",
           "nullable": true,
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -22878,6 +22948,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
             "items": [],
             "recurrenceGroupId": null,
+            "scheduledLocalTime": "18:00",
             "scheduledTime": "2024-01-15T09:00:00.000Z",
             "sortOrder": 0,
             "startDate": "2024-01-15",
@@ -23335,8 +23406,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
               ],
             },
+            "scheduledLocalTime": {
+              "description": "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+              "nullable": true,
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "type": "string",
+            },
             "scheduledTime": {
-              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+              "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
               "format": "date-time",
               "nullable": true,
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -45643,11 +45720,41 @@ TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0811": {
+                  "summary": "카테고리의 활성 할 일이 최대 한도에 도달했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0811",
+                      "details": null,
+                      "message": "카테고리의 활성 할 일이 최대 한도에 도달했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0813": {
+                  "summary": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0813",
+                      "details": null,
+                      "message": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0811",
+                          "TODO_0813",
+                        ],
                         "example": "TODO_0811",
                         "type": "string",
                       },
@@ -45685,7 +45792,9 @@ TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "카테고리의 활성 할 일이 최대 한도에 도달했습니다.",
+          "description": "TODO_0811: 카테고리의 활성 할 일이 최대 한도에 도달했습니다.
+
+TODO_0813: 반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
         },
         "404": {
           "content": {
@@ -54463,9 +54572,9 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
 #### 시간 처리 (scheduledTime)
 
 - **종일 이벤트** (\`isAllDay=true\`): \`scheduledTime\`은 null
-- **시간 이벤트** (\`isAllDay=false\`): \`scheduledTime\`은 UTC ISO 8601 형식
-  - 생성/수정 시 \`X-Timezone\` 헤더 기반으로 로컬→UTC 변환하여 저장
-  - 응답은 UTC로 반환, 클라이언트에서 로컬 시간으로 표시
+- **시간 이벤트** (\`isAllDay=false\`): \`scheduledLocalTime\`(HH:mm)이 사용자가 고른 시각이고 어디서든 그 시각입니다
+  - \`scheduledTime\`(UTC ISO 8601)은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이고 시간대가 바뀌면 다시 계산됩니다
+  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다. 키가 없는 옛 서버 응답에서만 \`scheduledTime\`을 기기 시간대로 바꿉니다
 
 #### 에러 케이스
 
@@ -54707,7 +54816,7 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
 
 **선택 필드**
 - \`endDate\`: 종료 날짜 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). 어디서든 그 시각입니다. 순간은 \`X-Timezone\`(없으면 저장된 사용자 시간대)으로 만듭니다.
 - \`isAllDay\`: 종일 여부 (기본값: true)
 - \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)
 - \`items\`: 하위 항목 배열 (선택, 최대 20개). 투두와 함께 체크리스트를 일괄 생성합니다.
@@ -54742,7 +54851,7 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
       "operationId": "createTodo",
       "parameters": [
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -55409,7 +55518,7 @@ TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
       "operationId": "createRecurringTodo",
       "parameters": [
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -56588,7 +56697,7 @@ TODO_0841: 반복 할 일을 찾을 수 없습니다.",
           },
         },
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -57285,7 +57394,7 @@ TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
           },
         },
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -58853,7 +58962,7 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
 **요청 필드** (\`startDate\` 필수, 나머지 선택)
 - \`startDate\`: 시작일 (YYYY-MM-DD)
 - \`endDate\`: 종료일 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). 어디서든 그 시각입니다. 순간은 \`X-Timezone\`(없으면 저장된 사용자 시간대)으로 만듭니다.
 - \`isAllDay\`: 종일 여부",
       "operationId": "updateTodoSchedule",
       "parameters": [
@@ -58871,7 +58980,7 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
           },
         },
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
           "in": "header",
           "name": "X-Timezone",
           "required": false,

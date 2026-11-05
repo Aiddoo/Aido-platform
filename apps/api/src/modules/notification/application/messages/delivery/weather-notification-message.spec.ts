@@ -1,5 +1,7 @@
 import { pushNotificationDataSchema } from "@aido/api";
 
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+
 import type { WeatherBriefingDay } from "../../../domain/services/reminders/weather-briefing.policy.js";
 import {
   createWeatherEveningNotificationMessage,
@@ -188,5 +190,17 @@ describe("날씨 옮기기 deep link", () => {
       pushNotificationDataSchema.safeParse({ notificationId: 1, type: "WEATHER_MORNING", action })
         .success,
     ).toBe(true);
+  });
+
+  it("재계산 뒤의 순간은 어느 시간대에서든 고른 벽시계로 적힌다", () => {
+    // Given
+    const instant = parseLocalDateTime("2026-11-10", "10:00", "America/New_York");
+    // When
+    const label = formatWeatherNotificationTime(instant, {
+      locale: "ko",
+      timezone: "America/New_York",
+    });
+    // Then
+    expect(label).toBe("오전 10시");
   });
 });

@@ -10,8 +10,6 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
@@ -32,6 +30,7 @@ export interface UpdateTodoInput {
   readonly id: number;
   readonly userId: string;
   readonly data: UpdateTodoData;
+  /** 해석이 끝난 시간대. EditTodo가 TodoTimezoneResolver로 정해 넘긴다. */
   readonly timezone: string;
   /** 명시했는데 반복이 아니면 TODO_0844다. 회차 하나만 고쳐도 원래 회차 날짜는 그대로다. */
   readonly scope?: TodoUpdateScope;
@@ -96,19 +95,9 @@ export class UpdateTodo {
     }
 
     const wasCompleted = todo.isCompleted();
-    const details: TodoDetailsPatch = { ...data, scheduledTime: undefined };
-    // nullish-strict: PATCH라 undefined는 유지, null은 시간 지우기다
-    if (data.scheduledTime !== undefined) {
-      details.scheduledTime =
-        data.scheduledTime == null
-          ? null
-          : parseLocalDateTime(
-              toDateString(data.startDate ?? todo.toPersistence().startDate),
-              data.scheduledTime,
-              timezone,
-            );
-    }
-    todo.updateDetails(details);
+    const { scheduledTime: scheduledLocalTime, ...details } = data;
+    const patchDetails: TodoDetailsPatch = { ...details, scheduledLocalTime };
+    todo.updateDetails(patchDetails, timezone);
     const snapshot = todo.toPersistence();
 
     const patch: TodoUpdatePatch = {};
@@ -126,9 +115,16 @@ export class UpdateTodo {
     copyField("categoryId");
     copyField("startDate");
     copyField("endDate");
+    const reopened = wasCompleted && !snapshot.completed;
     // nullish-strict: scheduledTime null은 시간 지우기다
-    if (data.scheduledTime !== undefined || data.isAllDay != null) {
-      // 종일과 시간은 함께 맞춰지므로 한쪽만 보내도 둘 다 저장한다.
+    if (
+      data.scheduledTime !== undefined ||
+      data.isAllDay != null ||
+      data.startDate != null ||
+      reopened
+    ) {
+      // 벽시계·순간·종일은 함께 맞춰지므로 한쪽만 보내도 모두 저장한다.
+      patch.scheduledLocalTime = snapshot.scheduledLocalTime;
       patch.scheduledTime = snapshot.scheduledTime;
       patch.isAllDay = snapshot.isAllDay;
     }

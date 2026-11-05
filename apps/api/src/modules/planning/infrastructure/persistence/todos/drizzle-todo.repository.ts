@@ -1,7 +1,7 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
 import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
@@ -18,6 +18,9 @@ import type {
   OccurrencePatch,
   OccurrenceRow,
   OccurrenceTime,
+  RebaseCandidate,
+  RebaseCandidateQuery,
+  RebasedInstant,
   TodoOccurrenceAttachment,
   TodoOccurrencePlan,
   TodoRepositoryPort,
@@ -54,6 +57,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       schedule: TodoSchedule.reconstitute({
         startDate: row.startDate,
         endDate: row.endDate,
+        scheduledLocalTime: row.scheduledLocalTime,
         scheduledTime: row.scheduledTime,
         isAllDay: row.isAllDay,
       }),
@@ -191,17 +195,25 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       return;
     }
     // 행마다 다른 값을 쓰므로 CASE 한 문장으로 갱신한다.
-    const cases = sql.join(
+    const instantCases = sql.join(
       times.map(
         ({ todoId, scheduledTime }) =>
           sql`WHEN ${todoId}::integer THEN ${scheduledTime == null ? null : scheduledTime.toISOString()}::timestamptz`,
       ),
       sql` `,
     );
+    const localTimeCases = sql.join(
+      times.map(
+        ({ todoId, scheduledLocalTime }) =>
+          sql`WHEN ${todoId}::integer THEN ${scheduledLocalTime}::varchar`,
+      ),
+      sql` `,
+    );
     await this.db
       .update(todo)
       .set({
-        scheduledTime: sql`CASE ${todo.id} ${cases} END`,
+        scheduledTime: sql`CASE ${todo.id} ${instantCases} END`,
+        scheduledLocalTime: sql`CASE ${todo.id} ${localTimeCases} END`,
         isAllDay: times.every(({ scheduledTime }) => scheduledTime == null),
       })
       .where(
@@ -222,13 +234,64 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .where(inArray(todo.id, [...todoIds]));
   }
 
-  async moveOccurrence(
-    todoId: number,
-    occurrenceDate: string,
-    scheduledTime: Date | null,
-  ): Promise<void> {
-    const date = parseDateOnly(occurrenceDate);
-    await this.updateTodoRow(todoId, { occurrenceDate: date, startDate: date, scheduledTime });
+  async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    await this.updateTodoRow(todoId, {
+      occurrenceDate: date,
+      startDate: date,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
+      scheduledTime: occurrence.scheduledTime,
+    });
+  }
+
+  async lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]> {
+    const rows = await this.db
+      .select({
+        todoId: todo.id,
+        startDate: todo.startDate,
+        scheduledLocalTime: todo.scheduledLocalTime,
+        scheduledTime: todo.scheduledTime,
+      })
+      .from(todo)
+      .where(
+        and(
+          eq(todo.userId, query.userId),
+          eq(todo.completed, false),
+          gte(todo.startDate, parseDateOnly(query.fromDate)),
+          isNotNull(todo.scheduledTime),
+          query.afterId == null ? undefined : gt(todo.id, query.afterId),
+        ),
+      )
+      .orderBy(asc(todo.id))
+      .limit(query.limit)
+      .for("update");
+    return rows.map((row) => ({
+      ...row,
+      startDate: toDateString(row.startDate),
+      scheduledTime: requireRecord(row.scheduledTime),
+    }));
+  }
+
+  async updateRebasedInstants(instants: readonly RebasedInstant[]): Promise<void> {
+    if (instants.length === 0) {
+      return;
+    }
+    const cases = sql.join(
+      instants.map(
+        ({ todoId, scheduledTime }) =>
+          sql`WHEN ${todoId}::integer THEN ${scheduledTime.toISOString()}::timestamptz`,
+      ),
+      sql` `,
+    );
+    await this.db
+      .update(todo)
+      .set({ scheduledTime: sql`CASE ${todo.id} ${cases} END`, updatedAt: sql`${todo.updatedAt}` })
+      .where(
+        inArray(
+          todo.id,
+          instants.map(({ todoId }) => todoId),
+        ),
+      );
   }
 
   async attachToSeries(
@@ -242,6 +305,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       occurrenceDate: date,
       startDate: date,
       endDate: null,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
       scheduledTime: occurrence.scheduledTime,
       isAllDay: occurrence.scheduledTime == null,
     });
@@ -275,10 +339,6 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       return;
     }
     await this.db.delete(todo).where(inArray(todo.id, [...todoIds]));
-  }
-
-  async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
-    await this.updateDetails(id, { completed, completedAt });
   }
 
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {

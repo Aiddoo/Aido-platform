@@ -14,6 +14,7 @@ import type {
   TodoSeriesRepositoryPort,
 } from "#api/modules/planning/application/ports/series/todo-series.repository.port";
 import type { TodoCachePort } from "#api/modules/planning/application/ports/todos/todo-cache.port";
+import type { TodoOwnerTimezonePort } from "#api/modules/planning/application/ports/todos/todo-owner-timezone.port";
 import type {
   TodoReadRepositoryPort,
   TodaySummaryTodoRow,
@@ -27,6 +28,9 @@ import type {
   OccurrencePatch,
   OccurrenceRow,
   OccurrenceTime,
+  RebaseCandidate,
+  RebaseCandidateQuery,
+  RebasedInstant,
   TodoOccurrenceAttachment,
   TodoOccurrencePlan,
   TodoRepositoryPort,
@@ -161,8 +165,12 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     }
   }
   async updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void> {
-    for (const { todoId, scheduledTime } of times) {
-      Object.assign(this.#record(todoId), { scheduledTime, isAllDay: scheduledTime === null });
+    for (const { todoId, scheduledLocalTime, scheduledTime } of times) {
+      Object.assign(this.#record(todoId), {
+        scheduledLocalTime,
+        scheduledTime,
+        isAllDay: scheduledTime === null,
+      });
     }
   }
   async reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void> {
@@ -170,13 +178,43 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       this.#record(todoId).seriesId = toSeriesId;
     }
   }
-  async moveOccurrence(
-    todoId: number,
-    occurrenceDate: string,
-    scheduledTime: Date | null,
-  ): Promise<void> {
-    const date = parseDateOnly(occurrenceDate);
-    Object.assign(this.#record(todoId), { occurrenceDate: date, startDate: date, scheduledTime });
+  async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    Object.assign(this.#record(todoId), {
+      occurrenceDate: date,
+      startDate: date,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
+      scheduledTime: occurrence.scheduledTime,
+    });
+  }
+  async lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]> {
+    return [...this.records.values()]
+      .filter(
+        (record) =>
+          record.userId === query.userId &&
+          !record.completed &&
+          toDateString(record.startDate) >= query.fromDate &&
+          (query.afterId == null || record.id > query.afterId),
+      )
+      .sort((left, right) => left.id - right.id)
+      .slice(0, query.limit)
+      .flatMap((record) =>
+        record.scheduledTime == null
+          ? []
+          : [
+              {
+                todoId: record.id,
+                startDate: toDateString(record.startDate),
+                scheduledLocalTime: record.scheduledLocalTime,
+                scheduledTime: record.scheduledTime,
+              },
+            ],
+      );
+  }
+  async updateRebasedInstants(instants: readonly RebasedInstant[]): Promise<void> {
+    for (const { todoId, scheduledTime } of instants) {
+      this.#record(todoId).scheduledTime = scheduledTime;
+    }
   }
   async attachToSeries(
     todoId: number,
@@ -189,6 +227,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       occurrenceDate: date,
       startDate: date,
       endDate: null,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
       scheduledTime: occurrence.scheduledTime,
       isAllDay: occurrence.scheduledTime === null,
     });
@@ -375,8 +414,24 @@ export class StubPlanningTodoSeriesOwner implements TodoSeriesOwnerPort {
   }
 }
 
+export class StubPlanningTodoOwnerTimezone implements TodoOwnerTimezonePort {
+  constructor(readonly timezones: Map<string, string> = new Map()) {}
+  async findTimezone(userId: string): Promise<string | null> {
+    return this.timezones.get(userId) ?? null;
+  }
+}
+
 export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
   constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
+  async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
+    const owned = [...this.store.values()].filter(
+      (series) => series.getUserId() === userId && series.getTimezone() !== timezone,
+    );
+    for (const series of owned) {
+      series.applyDetails({ timezone });
+    }
+    return owned.length;
+  }
   async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
     const series = this.store.get(id);
     return series === undefined || series.getUserId() !== userId ? null : this.#copy(series);

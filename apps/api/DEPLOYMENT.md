@@ -107,6 +107,31 @@ COMMIT;
 
 1.14.2로 되돌릴 때의 다른 영향: `email-delivery.v1` 큐에 남은 인증 메일은 재배포 전까지 나가지 않는다. `admin-notification.v1`의 새 형식 잡은 옛 worker가 버린다(운영 알림이라 수용). 2026-11-04 AI 데이터 공유 동의자는 옛 서버에서 UNDECIDED로 보인다(개인정보 쪽으로 안전한 방향이고, 다시 올리면 돌아온다).
 
+**1.15.0 떠 있는 시각(`todo_scheduled_local_time`)도 1.14.2로 되돌릴 수 있다.** `Todo.scheduledLocalTime`은 NOT NULL·CHECK가 없는 추가 칸이라 옛 서버가 몰라도 쓰기가 깨지지 않는다. 다만 되돌린 동안 옛 서버는 이 칸을 채우거나 고치지 않는다. 그동안 새 앱은 칸이 비면 `scheduledTime`을 기기 시간대로 보여 주고, 칸이 낡은 행은 옛 값을 보여 준다. 재계산은 칸이 빈 행을 건너뛴다. `todo-timezone-rebase.v1`의 대기 작업은 옛 서버가 소비하지 않으므로 쌓이기만 하고, 다시 올리면 보관 시간(24시간) 안의 것은 그대로 돈다.
+
+다시 1.15.0 이상으로 올릴 때는 위 FK SQL과 함께 새 API로 교체한 직후 아래의 다시 채우는 SQL을 한 번 실행한다. `rollback_started_at`은 옛 이미지로 교체한 UTC 시각이다. `updatedAt`으로 롤백 중 옛 서버가 쓴 행만 고치고 그 전의 지난 행은 벽시계를 지킨다. 칸이 빈 행은 시각과 상관없이 채운다. 여러 번 돌려도 결과가 같고 `updatedAt`을 바꾸지 않는다. 앱 쓰기를 막지 않도록 행 잠금만 잡는다. 실행 전 건수는 `WHERE`만 `SELECT count(*)`로 바꿔 확인한다.
+
+```sql
+UPDATE "Todo" AS t
+SET "scheduledLocalTime" = CASE
+  WHEN t."scheduledTime" IS NULL THEN NULL
+  ELSE to_char(t."scheduledTime" AT TIME ZONE zone."name", 'HH24:MI')
+END
+FROM (
+  SELECT u."id" AS "userId", COALESCE(valid_zone."name", 'Asia/Seoul') AS "name"
+  FROM "User" AS u
+  LEFT JOIN "UserPreference" AS preference ON preference."userId" = u."id"
+  LEFT JOIN (SELECT "name" FROM pg_timezone_names) AS valid_zone ON valid_zone."name" = preference."timezone"
+) AS zone
+WHERE zone."userId" = t."userId"
+  AND (
+    t."updatedAt" >= :'rollback_started_at'::timestamp
+    OR (t."scheduledTime" IS NOT NULL AND t."scheduledLocalTime" IS NULL)
+  );
+```
+
+되돌린 동안 시간대가 바뀐 사용자는 재계산 작업이 없어 앞으로 할 일의 순간이 옛 시간대로 남는다. 표시는 벽시계라 맞고, 알림은 사용자가 다음에 시간대를 바꾸거나 그 할 일의 시간을 고칠 때 맞는다. 되돌린 기간이 길었다면 저장 시간대가 규칙 시간대와 다른 사용자를 찾아 `todo-timezone-rebase.v1`을 넣는다.
+
 **1.15.0 앱 × 1.14.2 서버의 제약 (롤백 중에만):** 서버를 먼저 배포하므로 이 조합은 롤백 때만 생긴다.
 
 | 동작                                             | 결과                                                                                                                                                             |
@@ -125,6 +150,14 @@ COMMIT;
 ```sql
 SELECT count(DISTINCT "recurrenceGroupId") AS series, count(*) AS rows FROM "Todo" WHERE "recurrenceGroupId" IS NOT NULL;
 ```
+
+**`todo_scheduled_local_time` 배포 전 확인**: 칸 채우기도 같은 트랜잭션에서 `Todo`를 잠근다. 일회용 PostgreSQL에서 전체 126만 행 중 시간 있는 63만 행을 채우는 데 10.9초였다(사용자 2만 명, 인덱스 그대로, 약 17µs/행). 앱 요청 제한이 10초이고 위 이관과 시간이 더해지므로 아래 건수가 20만을 넘으면 배포 전에 나눠 채운다. 건수가 그 아래면 그대로 실행한다.
+
+```sql
+SELECT count(*) FROM "Todo" WHERE "scheduledTime" IS NOT NULL;
+```
+
+나눠 채우는 법: 먼저 `ALTER TABLE "Todo" ADD COLUMN IF NOT EXISTS "scheduledLocalTime" varchar(5);`을 실행하고, 마이그레이션의 `UPDATE`에 `AND t."id" BETWEEN :from AND :to`를 붙여 1만 행씩 커밋한다. 옛 서버가 새 칸을 몰라도 쓰기는 깨지지 않는다. 마이그레이션은 빈 칸만 다시 채우므로 그 뒤 배포하면 잠금이 짧다.
 
 nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
 

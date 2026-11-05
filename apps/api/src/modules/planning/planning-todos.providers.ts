@@ -1,5 +1,6 @@
 import { TodoSeriesMaterializationJob } from "./infrastructure/jobs/series/todo-series-materialization.job.js";
 import { TodoSeriesMaterializationProcessor } from "./infrastructure/jobs/series/todo-series-materialization.processor.js";
+import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todos/todo-timezone-rebase.processor.js";
 import { TodoCreatedHandler } from "./infrastructure/subscribers/todos/todo-created.handler.js";
 import { TodoDeletedHandler } from "./infrastructure/subscribers/todos/todo-deleted.handler.js";
 import { TodoRescheduledHandler } from "./infrastructure/subscribers/todos/todo-rescheduled.handler.js";
@@ -13,6 +14,8 @@ import {
   todoSeriesDueRunProvider,
   todoSeriesCatchUpProvider,
   materializeDueTodoSeriesProvider,
+  rebaseTodoTimezoneProvider,
+  todoTimezoneResolverProvider,
   todoSeriesEditEffectsProvider,
   getTodoSeriesProvider,
   stopTodoSeriesProvider,
@@ -40,6 +43,9 @@ import {
 } from "./planning-todos-application.providers.js";
 
 export const TODO_PROVIDERS = [
+  todoTimezoneResolverProvider,
+  rebaseTodoTimezoneProvider,
+  TodoTimezoneRebaseProcessor,
   addTodoItemProvider,
   changeTodoCategoryProvider,
   createTodoProvider,
@@ -47,6 +53,8 @@ export const TODO_PROVIDERS = [
   todoSeriesDueRunProvider,
   todoSeriesCatchUpProvider,
   materializeDueTodoSeriesProvider,
+  rebaseTodoTimezoneProvider,
+  todoTimezoneResolverProvider,
   todoSeriesEditEffectsProvider,
   getTodoSeriesProvider,
   stopTodoSeriesProvider,

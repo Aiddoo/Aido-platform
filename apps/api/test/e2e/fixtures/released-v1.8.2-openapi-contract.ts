@@ -69,8 +69,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: 할 일 목록 반복 정보. 소유자가 보는 할 일 응답(TodoResponseDto·TodoListResponseDto·CreateTodoResponseDto 등 todo를 담은 응답)에 optional repeat·occurrenceDate만 추가했다. 구버전 Zod는 strip 모드라 모르는 키를 버리고, 친구에게 보이는 응답에는 넣지 않는다. test/e2e/todo-list-repeat.e2e-spec.ts가 출시 앱 응답 스키마 파싱으로 증명한다. */
 	preTodoListRepeatSchemasFingerprint:
 		"9b3c746351caf907307ba9a3f5b1411dc5e1645959f017bdf296429ef0f963b3",
-	schemasFingerprint:
+	/** 1.15.0: 할 일 응답(소유자·친구·댓글 상세)에 선택 칸 scheduledLocalTime(HH:mm)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/todo-floating-time.e2e-spec.ts가 출시 앱 응답 모양을 고정한다. */
+	preFloatingTimeSchemasFingerprint:
 		"2ad73d7e86ab29f93362c983f4f20f3cf68092fa5a1330652568a1dab3080145",
+	schemasFingerprint:
+		"40abd44bf67d1b2826712594e48ff7c2315fa0ec6b1fd06a04549b33900e98ab",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",
@@ -104,6 +107,9 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: 친구의 할 일 목록(GET /todos/friends/{userId})의 응답 schema 이름만 TodoListResponseDto에서 FriendTodoListResponseDto로 나눴다. 소유자 응답에만 repeat·occurrenceDate를 더하려고 분리했고, 친구 응답의 필드·타입·상태 코드는 이전과 같다. */
 	preTodoListRepeatPathsFingerprint:
 		"a64adcb427027286d5f113734c5e806e4462f38955eb4ae1fbbc446a9796b6d4",
-	pathsFingerprint:
+	/** 1.15.0: 할 일 응답에 들어가는 선택 칸 scheduledLocalTime과 메모 변환 403 enum에 TODO_0813 추가. 이 경로는 옛 서버도 카테고리 한도로 TODO_0813을 보냈고 문서만 빠져 있었다. 진행 중 반복 300개 상한(옛 경로)도 같은 코드로 거절한다. 응답 shape·상태 코드는 같다. */
+	preFloatingTimePathsFingerprint:
 		"8319a1871be67cdd60f41aba0f101d2c3e8825d4f6dfdbefc710cdc5ecaa7e76",
+	pathsFingerprint:
+		"4d687195af930d753c79f970bf0027e82c7e07d73fe9ace834775ef541894df5",
 } as const;

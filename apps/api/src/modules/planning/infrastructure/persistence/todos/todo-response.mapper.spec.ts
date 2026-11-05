@@ -58,6 +58,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         startDate: "2024-01-15",
         endDate: "2024-01-16",
         scheduledTime: "2024-01-15T10:00:00.000Z",
+        scheduledLocalTime: null,
         isAllDay: false,
         visibility: "PUBLIC",
         recurrenceGroupId: null,

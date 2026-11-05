@@ -153,6 +153,15 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     );
   }
 
+  async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
+    const updated = await this.db
+      .update(todoSeries)
+      .set({ timezone })
+      .where(and(eq(todoSeries.userId, userId), ne(todoSeries.timezone, timezone)))
+      .returning({ id: todoSeries.id });
+    return updated.length;
+  }
+
   findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
     return this.db
       .select({ id: todoSeries.id, userId: todoSeries.userId })

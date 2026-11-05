@@ -5,7 +5,6 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
@@ -14,7 +13,7 @@ import {
   RepeatRule,
   type RepeatSpec,
 } from "../../../domain/value-objects/series/repeat-rule.vo.js";
-import type { CreateTodoData } from "../../models/todos/todo.types.js";
+import type { ResolvedCreateTodoData } from "../../models/todos/todo.types.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
 import type {
@@ -23,17 +22,15 @@ import type {
 } from "../../ports/todos/todo.repository.port.js";
 import type { TodoOccurrenceMaterializer } from "../series/todo-occurrence-materializer.service.js";
 
-export function planTodoCreation(data: CreateTodoData): TodoCreationDraft {
+export function planTodoCreation(data: ResolvedCreateTodoData): TodoCreationDraft {
   return Todo.planCreation({
     userId: data.userId,
     categoryId: data.categoryId,
     title: data.title,
     startDate: data.startDate,
     endDate: data.endDate ?? null,
-    scheduledTime:
-      data.scheduledTime == null
-        ? null
-        : parseLocalDateTime(toDateString(data.startDate), data.scheduledTime, data.timezone),
+    scheduledLocalTime: data.scheduledTime ?? null,
+    timezone: data.timezone,
     isAllDay: data.isAllDay,
     visibility: data.visibility,
   });
@@ -88,7 +85,7 @@ export class TodoCreationWriter {
   }
 
   /** 상한 확인 → 규칙 저장 → 회차를 한 번에 만든다. 활성 UoW와 생성 잠금 안에서 호출한다. */
-  async startSeries(data: CreateTodoData, repeat: RepeatSpec): Promise<StartedSeries> {
+  async startSeries(data: ResolvedCreateTodoData, repeat: RepeatSpec): Promise<StartedSeries> {
     const { userId, categoryId } = data;
     if (data.endDate != null) {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "endDate" });

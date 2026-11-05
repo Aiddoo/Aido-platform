@@ -34,7 +34,7 @@ export interface ConvertMemoToTodoInput {
   readonly userId: string;
   readonly memoId: number;
   readonly data: ConvertMemoToTodoData;
-  readonly timezone: string;
+  readonly timezone: string | undefined;
 }
 
 interface ConvertMemoToTodoDependencies {

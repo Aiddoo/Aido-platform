@@ -35,6 +35,9 @@ export const todo = pgTable(
     occurrenceDate: date({ mode: "date" }),
     // 코드 이름은 seriesId. 출시 앱·1.14.2 롤백 호환을 위해 DB 열 이름은 그대로 둔다.
     seriesId: varchar("recurrenceGroupId", { length: 36 }),
+    // 벽시계(HH:mm)가 진실이고 scheduledTime은 startDate + 이 값 + 사용자 시간대로 만든 파생값이다.
+    // 1.14.2 롤백 때 옛 서버가 채우지 않으므로 NOT NULL·CHECK를 걸지 않는다.
+    scheduledLocalTime: varchar({ length: 5 }),
     scheduledTime: timestamp({ precision: 3, withTimezone: true }),
     sortOrder: integer().default(0).notNull(),
     startDate: date({ mode: "date" }).notNull(),

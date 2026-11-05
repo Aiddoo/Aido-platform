@@ -3,7 +3,7 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 import type {
   Todo,
   TodoCreationPlan,
-  TodoDetailsPatch,
+  TodoPersistenceSnapshot,
 } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import type { TodoScheduleProps } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
 
@@ -30,12 +30,36 @@ export interface OccurrencePatch {
 
 export interface OccurrenceTime {
   readonly todoId: number;
+  readonly scheduledLocalTime: string | null;
   readonly scheduledTime: Date | null;
 }
 
 export interface TodoOccurrenceAttachment {
   readonly occurrenceDate: string;
+  readonly scheduledLocalTime: string | null;
   readonly scheduledTime: Date | null;
+}
+
+/** 시간대가 바뀌면 다시 계산할 할 일. 벽시계가 빈 행은 옛 서버가 쓴 것이라 재배포 SQL이 채운다. */
+export interface RebaseCandidate {
+  readonly todoId: number;
+  readonly startDate: string;
+  readonly scheduledLocalTime: string | null;
+  readonly scheduledTime: Date;
+}
+
+export interface RebaseCandidateQuery {
+  readonly userId: string;
+  /** 이 날짜(포함) 뒤에 시작하는 미완료 시간 일정 */
+  readonly fromDate: string;
+  /** id 순 커서. 지난 묶음의 마지막 id */
+  readonly afterId: number | null;
+  readonly limit: number;
+}
+
+export interface RebasedInstant {
+  readonly todoId: number;
+  readonly scheduledTime: Date;
 }
 
 export interface CreatedOccurrence {
@@ -43,15 +67,8 @@ export interface CreatedOccurrence {
   readonly scheduledTime: Date | null;
 }
 
-/**
- * Todo 부분 수정 영속화 패치
- *
- * 도메인 패치에 전이로 파생된 completedAt을 더한 형태입니다.
- * undefined 필드는 변경하지 않습니다(부분 수정 시맨틱).
- */
-export type TodoUpdatePatch = TodoDetailsPatch & {
-  completedAt?: Date | null;
-};
+/** Todo 부분 수정 영속화 패치. undefined 필드는 변경하지 않습니다(부분 수정 시맨틱). */
+export type TodoUpdatePatch = Partial<TodoPersistenceSnapshot>;
 
 /**
  * Todo 쓰기 리포지토리 포트 (애그리게잇 경계)
@@ -67,9 +84,6 @@ export interface TodoRepositoryPort {
 
   /** 인라인 하위 항목 일괄 생성(생성 트랜잭션 내부에서 호출) */
   createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void>;
-
-  /** 완료 상태 등 애그리게잇 변경분 영속화 */
-  updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void>;
 
   /** 부분 수정 패치 영속화 (undefined 필드는 미변경) */
   updateDetails(id: number, patch: TodoUpdatePatch): Promise<void>;
@@ -122,7 +136,13 @@ export interface TodoRepositoryPort {
   reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void>;
 
   /** 새 규칙에 없는 날짜의 회차를 맞는 날짜로 옮긴다. */
-  moveOccurrence(todoId: number, occurrenceDate: string, scheduledTime: Date | null): Promise<void>;
+  moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void>;
+
+  /** 재계산 대상을 id 순으로 잠그고 최신 값을 읽는다. 활성 UoW 안에서 호출한다. */
+  lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]>;
+
+  /** 순간만 한 문장으로 다시 쓴다. 벽시계·종일·updatedAt은 사용자가 고친 값이 아니라 그대로 둔다. */
+  updateRebasedInstants(instants: readonly RebasedInstant[]): Promise<void>;
 
   /** 단일 할 일을 규칙의 첫 회차로 삼는다. */
   attachToSeries(

@@ -4,6 +4,7 @@ import {
   datetimeSchema,
   nullableDateSchema,
   nullableDatetimeSchema,
+  timeOfDaySchema,
 } from "../../../common/datetime.js";
 import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
@@ -38,6 +39,7 @@ const todoExample = {
   startDate: "2024-01-15",
   endDate: "2024-01-15",
   scheduledTime: "2024-01-15T09:00:00.000Z",
+  scheduledLocalTime: "18:00",
   isAllDay: false,
   visibility: "PUBLIC",
   recurrenceGroupId: null,
@@ -75,8 +77,14 @@ export const todoSchema = z
       .nullable()
       .describe("종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)"),
     scheduledTime: nullableDatetimeSchema.describe(
-      "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+      "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
     ),
+    scheduledLocalTime: timeOfDaySchema
+      .nullable()
+      .optional()
+      .describe(
+        "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+      ),
     isAllDay: z.boolean().describe("종일 일정 여부"),
     visibility: todoVisibilitySchema.describe("공개 범위 (PUBLIC | FRIENDS | PRIVATE)"),
     recurrenceGroupId: z.string().nullable().describe("반복 생성 그룹 ID (null이면 단일 생성)"),

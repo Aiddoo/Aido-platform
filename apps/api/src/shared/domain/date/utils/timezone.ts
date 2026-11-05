@@ -57,6 +57,20 @@ export function resolveDeliveryTimezone(value: unknown): string {
 }
 
 /**
+ * 할 일 벽시계를 순간으로 바꿀 때 쓰는 시간대. 앞선 후보부터 쓴다(요청 → 저장값).
+ * `resolveDeliveryTimezone`과 달리 저장된 UTC는 진짜 UTC 사용자일 수 있어 그대로 둔다.
+ */
+export function resolveWallClockTimezone(...candidates: readonly unknown[]): string {
+  for (const candidate of candidates) {
+    const timezone = normalizeIanaTimezone(candidate);
+    if (timezone != null) {
+      return timezone;
+    }
+  }
+  return DEFAULT_DELIVERY_TIMEZONE;
+}
+
+/**
  * 지정 타임존 기준 "오늘" 날짜를 UTC midnight Date로 반환
  *
  * 사용자의 로컬 타임존에서 "오늘"이 무슨 날짜인지 확인할 때 사용합니다.

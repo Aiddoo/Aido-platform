@@ -35,6 +35,7 @@ export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
     startDate: toDateString(row.startDate),
     endDate: toDateStringOrNull(row.endDate),
     scheduledTime: toISOStringOrNull(row.scheduledTime),
+    scheduledLocalTime: row.scheduledTime == null ? null : row.scheduledLocalTime,
     isAllDay: row.isAllDay,
     visibility: row.visibility,
     recurrenceGroupId: row.seriesId,

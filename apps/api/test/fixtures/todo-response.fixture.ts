@@ -24,6 +24,7 @@ export function createTodoResponseFixture(record: PlanningTodoRecord): TodoRespo
     startDate: record.startDate.toISOString().slice(0, 10),
     endDate: record.endDate?.toISOString().slice(0, 10) ?? null,
     scheduledTime: record.scheduledTime?.toISOString() ?? null,
+    scheduledLocalTime: record.scheduledTime == null ? null : record.scheduledLocalTime,
     isAllDay: record.isAllDay,
     visibility: record.visibility,
     recurrenceGroupId: record.seriesId,

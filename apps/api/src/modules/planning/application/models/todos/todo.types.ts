@@ -12,7 +12,8 @@ export interface CreateTodoData {
   readonly startDate: Date;
   readonly endDate?: Date | null;
   readonly scheduledTime?: string | null;
-  readonly timezone: string;
+  /** 요청의 시간대. 없거나 잘못되면 저장된 사용자 시간대로 해석한다. */
+  readonly timezone: string | undefined;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly items?: readonly { title: string }[];
@@ -23,6 +24,9 @@ export interface CreateTodoData {
    */
   readonly exemptFromSeriesLimit?: boolean;
 }
+
+/** 시간대를 해석한 뒤의 생성 입력. 쓰기 경로는 이 값만 받는다. */
+export type ResolvedCreateTodoData = CreateTodoData & { readonly timezone: string };
 
 export interface UpdateTodoData {
   readonly title?: string;

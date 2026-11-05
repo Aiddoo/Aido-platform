@@ -10,7 +10,7 @@ export interface MemoTodoDraft {
   readonly startDate: Date;
   readonly endDate?: Date | null;
   readonly scheduledTime?: string | null;
-  readonly timezone: string;
+  readonly timezone: string | undefined;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly items?: readonly { title: string }[];

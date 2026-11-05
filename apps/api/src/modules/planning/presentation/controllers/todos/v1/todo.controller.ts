@@ -33,7 +33,7 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException, DomainException } from "#api/shared/domain/index";
 
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
@@ -178,7 +178,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -193,7 +193,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
 **선택 필드**
 - \`endDate\`: 종료 날짜 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). 어디서든 그 시각입니다. 순간은 \`X-Timezone\`(없으면 저장된 사용자 시간대)으로 만듭니다.
 - \`isAllDay\`: 종일 여부 (기본값: true)
 - \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)
 - \`items\`: 하위 항목 배열 (선택, 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개). 투두와 함께 체크리스트를 일괄 생성합니다.
@@ -238,7 +238,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateTodoResponseDto> {
     const { todos, series } = await this.createTodoUseCase.execute({
       userId: user.userId,
@@ -269,7 +269,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -303,7 +303,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   async createRecurring(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateRecurringTodoResponseDto> {
     const { todos } = await this.createTodoUseCase
       .execute({
@@ -444,9 +444,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 #### 시간 처리 (scheduledTime)
 
 - **종일 이벤트** (\`isAllDay=true\`): \`scheduledTime\`은 null
-- **시간 이벤트** (\`isAllDay=false\`): \`scheduledTime\`은 UTC ISO 8601 형식
-  - 생성/수정 시 \`X-Timezone\` 헤더 기반으로 로컬→UTC 변환하여 저장
-  - 응답은 UTC로 반환, 클라이언트에서 로컬 시간으로 표시
+- **시간 이벤트** (\`isAllDay=false\`): \`scheduledLocalTime\`(HH:mm)이 사용자가 고른 시각이고 어디서든 그 시각입니다
+  - \`scheduledTime\`(UTC ISO 8601)은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이고 시간대가 바뀌면 다시 계산됩니다
+  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다. 키가 없는 옛 서버 응답에서만 \`scheduledTime\`을 기기 시간대로 바꿉니다
 
 #### 에러 케이스
 
@@ -578,7 +578,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -612,7 +612,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.editTodoUseCase.execute({
       id: params.id,
@@ -650,7 +650,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -674,12 +674,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
     @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) requestTimezone: string | undefined,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.toggleTodoCompleteUseCase.execute({
       id: params.id,
       userId: user.userId,
       completed: dto.completed,
       timezone,
+      requestTimezone,
     });
 
     return {
@@ -751,7 +753,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -762,7 +764,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 **요청 필드** (\`startDate\` 필수, 나머지 선택)
 - \`startDate\`: 시작일 (YYYY-MM-DD)
 - \`endDate\`: 종료일 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). 어디서든 그 시각입니다. 순간은 \`X-Timezone\`(없으면 저장된 사용자 시간대)으로 만듭니다.
 - \`isAllDay\`: 종일 여부`,
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
@@ -772,7 +774,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.updateTodoScheduleUseCase.execute({
       id: params.id,
@@ -780,12 +782,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       schedule: {
         startDate: parseDateOnly(dto.startDate),
         endDate: dto.endDate == null ? null : parseDateOnly(dto.endDate),
-        scheduledTime:
-          dto.scheduledTime == null
-            ? null
-            : parseLocalDateTime(dto.startDate, dto.scheduledTime, timezone),
+        scheduledTime: dto.scheduledTime ?? null,
         isAllDay: dto.isAllDay ?? true,
       },
+      timezone,
     });
 
     return {

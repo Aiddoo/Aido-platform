@@ -6,6 +6,7 @@ import type { UserPreferenceRecordWithId } from "./user-preference.repository.po
 export const USER_SETTINGS_PROVISIONER = Symbol("USER_SETTINGS_PROVISIONER");
 export const USER_STREAK_ACCESS = Symbol("USER_STREAK_ACCESS");
 export const USER_NOTIFICATION_SETTINGS_ACCESS = Symbol("USER_NOTIFICATION_SETTINGS_ACCESS");
+export const USER_TIMEZONE_READER = Symbol("USER_TIMEZONE_READER");
 
 /** auth가 회원가입 트랜잭션 안에서 사용하는 초기 설정 생성 capability. */
 export interface UserSettingsProvisionerPort {
@@ -16,6 +17,12 @@ export interface UserSettingsProvisionerPort {
 export interface UserStreakAccessPort {
   recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void>;
   getPreferenceRecord(userId: string): Promise<UserPreferenceRecord | null>;
+}
+
+/** planning이 벽시계를 순간으로 바꿀 때 최신 저장값을 읽는 capability. 캐시를 거치지 않는다. */
+export interface UserTimezoneReaderPort {
+  /** 저장된 값 그대로다. 탈퇴했거나 설정이 없으면 null이다. */
+  findStoredTimezone(userId: string): Promise<string | null>;
 }
 
 /** notification이 푸시 발송 판단과 토큰 메타데이터 동기화에 사용하는 capability. */

@@ -12,6 +12,7 @@ import { ApplicationException } from "#api/shared/domain/index";
 import { TodoRescheduledEvent } from "../../../domain/events/todos/todo-rescheduled.event.js";
 import type { UpdateTodoData } from "../../models/todos/todo.types.js";
 import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
+import type { TodoTimezoneResolver } from "../../services/todos/todo-timezone-resolver.service.js";
 import type { StartSeriesFromTodo } from "../series/start-series-from-todo.use-case.js";
 import type { StopTodoSeries } from "../series/stop-todo-series.use-case.js";
 import type { UpdateFollowingTodos } from "../series/update-following-todos.use-case.js";
@@ -20,7 +21,8 @@ import type { UpdateTodo } from "./update-todo.use-case.js";
 export interface EditTodoInput {
   readonly id: number;
   readonly userId: string;
-  readonly timezone: string;
+  /** 요청의 시간대. 없거나 잘못되면 저장된 사용자 시간대로 해석한다. */
+  readonly timezone: string | undefined;
   readonly scope?: TodoUpdateScope;
   /** 생략은 변경 없음, null은 이 회차 뒤로 반복 끝내기, 값은 전환이나 범위 수정의 새 규칙이다. */
   readonly repeat?: TodoRepeat | null;
@@ -36,6 +38,11 @@ interface EditTodoDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
+}
+
+interface ResolvedEditTodoInput extends EditTodoInput {
+  readonly timezone: string;
 }
 
 /**
@@ -49,7 +56,12 @@ export class EditTodo {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: EditTodoInput): Promise<TodoResponse> {
+  async execute(request: EditTodoInput): Promise<TodoResponse> {
+    const timezone = await this.#dependencies.timezoneResolver.resolve(
+      request.userId,
+      request.timezone,
+    );
+    const input = { ...request, timezone };
     const { scope, repeat, checklist } = input;
     if (checklist != null && scope !== "THIS_AND_FOLLOWING") {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "checklist" });
@@ -68,11 +80,11 @@ export class EditTodo {
     if (repeat === null) {
       return this.#stopSeries(input);
     }
-    const { id, userId, timezone, data } = input;
+    const { id, userId, data } = input;
     return this.#dependencies.updateTodo.execute({ id, userId, timezone, scope, data });
   }
 
-  async #editFollowing(input: EditTodoInput, repeat: TodoRepeat | undefined) {
+  async #editFollowing(input: ResolvedEditTodoInput, repeat: TodoRepeat | undefined) {
     const { id, userId, timezone, checklist, data } = input;
     const { updateFollowingTodos, updateTodo, unitOfWork } = this.#dependencies;
     const followingInput = {
@@ -109,7 +121,7 @@ export class EditTodo {
     return this.#read(applied.following.responseTodoId, userId);
   }
 
-  async #startSeries(input: EditTodoInput, repeat: TodoRepeat) {
+  async #startSeries(input: ResolvedEditTodoInput, repeat: TodoRepeat) {
     const { id, userId, timezone, data } = input;
     const { startSeriesFromTodo, updateTodo, unitOfWork } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {
@@ -128,7 +140,7 @@ export class EditTodo {
     return this.#read(id, userId);
   }
 
-  async #stopSeries(input: EditTodoInput) {
+  async #stopSeries(input: ResolvedEditTodoInput) {
     const { id, userId, timezone, data } = input;
     const { stopTodoSeries, updateTodo, unitOfWork } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {

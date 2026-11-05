@@ -7,11 +7,11 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
+import { resolveScheduledInstant } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { TodoReminderPort } from "../../ports/todos/todo-reminder.port.js";
 import type {
@@ -88,8 +88,7 @@ export class StartSeriesFromTodo {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     const snapshot = todo.toPersistence();
-    const scheduledLocalTime =
-      snapshot.scheduledTime == null ? null : toLocalTimeString(snapshot.scheduledTime, timezone);
+    const scheduledLocalTime = todo.getLocalTimeIn(timezone);
     const at = now();
     const startDate = toDateString(snapshot.startDate);
     const series = TodoSeries.planCreation({
@@ -113,12 +112,10 @@ export class StartSeriesFromTodo {
     }
     await seriesRepository.insert(series);
     // 시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮겨 그 할 일을 첫 회차로 쓴다.
-    const firstTime =
-      scheduledLocalTime == null
-        ? null
-        : parseLocalDateTime(first.occurrenceDate, scheduledLocalTime, timezone);
+    const firstTime = resolveScheduledInstant(first.occurrenceDate, scheduledLocalTime, timezone);
     await todoRepository.attachToSeries(todoId, series.getId(), {
       occurrenceDate: first.occurrenceDate,
+      scheduledLocalTime,
       scheduledTime: firstTime,
     });
     // 첫 회차 날짜가 옮겨졌을 수 있어 옛 시각의 예약을 지우고 새 시각으로 다시 잡는다.

@@ -12,6 +12,7 @@ import type {
   TodoCompletionStats,
   TodoCompletionStatsReaderPort,
 } from "#api/modules/identity/application/ports/settings/todo-completion-stats.reader.port";
+import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/application/ports/settings/todo-timezone-rebase.enqueuer.port";
 import type {
   ConsentSeedInput,
   UserConsentRecordWithId,
@@ -80,8 +81,10 @@ export class StubUserPreferenceRepository implements UserPreferenceRepositoryPor
     return { ...record };
   }
 
-  async upsertTimezone(userId: string, timezone: string): Promise<void> {
-    this.records.set(userId, { ...(this.records.get(userId) ?? this.#defaults(userId)), timezone });
+  async upsertTimezone(userId: string, timezone: string): Promise<boolean> {
+    const existing = this.records.get(userId);
+    this.records.set(userId, { ...(existing ?? this.#defaults(userId)), timezone });
+    return existing?.timezone !== timezone;
   }
 
   async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {
@@ -275,5 +278,12 @@ export class StubTodoCompletionStatsReader implements TodoCompletionStatsReaderP
         completed: 0,
       }
     );
+  }
+}
+
+export class StubTodoTimezoneRebaseEnqueuer implements TodoTimezoneRebaseEnqueuerPort {
+  readonly enqueued: string[] = [];
+  async enqueueRebase(userId: string): Promise<void> {
+    this.enqueued.push(userId);
   }
 }
