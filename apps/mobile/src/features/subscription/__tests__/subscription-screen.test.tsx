@@ -18,7 +18,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { onlineManager } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
-import SubscriptionRoute from '../../../../app/(app)/settings/subscription';
+import SubscriptionRoute from '../../../../app/(app)/(mypage-menu)/settings/subscription';
 import { EntitlementService } from '../apis/entitlement.service';
 import { RevenueCatSdkManager } from '../apis/revenuecat-sdk-manager';
 import { SubscriptionService } from '../apis/subscription.service';

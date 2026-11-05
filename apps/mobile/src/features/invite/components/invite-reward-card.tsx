@@ -1,3 +1,4 @@
+import { useMyPageMenuNavigation } from '@src/features/user/hooks/use-mypage-menu-navigation';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -19,6 +20,7 @@ import { match, P } from 'ts-pattern';
 import { InvitePolicy } from '../domains/invite.model';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
+import { myInviteHref } from '../utils/navigation/invite-href';
 import { createPawPrintBoard } from '../utils/view-models/invite-paw-print-board.view-model';
 import { inviteRewardDotVariants } from './invite-reward-card.variants';
 
@@ -32,6 +34,7 @@ export function InviteRewardCard({ className, ...props }: InviteRewardCardProps)
   const { t } = useTranslation('invite');
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
+  const { navigate, isSelected } = useMyPageMenuNavigation();
   const remaining = InvitePolicy.remainingToNextMilestone(invite);
   const [firstRow] = createPawPrintBoard(invite, {
     columns: PREVIEW_COLUMNS,
@@ -42,8 +45,12 @@ export function InviteRewardCard({ className, ...props }: InviteRewardCardProps)
     <PressableFeedback
       testID="mypage-invite-card"
       accessibilityRole="button"
-      onPress={() => openMyInvite('mypage_card')}
-      className={cn('rounded-[20px] bg-white p-4', className)}
+      onPress={() => openMyInvite('mypage_card', navigate)}
+      className={cn(
+        'rounded-[20px] p-4',
+        isSelected(myInviteHref().pathname) ? 'bg-gray-2' : 'bg-white',
+        className,
+      )}
       {...props}
     >
       <VStack gap={12}>

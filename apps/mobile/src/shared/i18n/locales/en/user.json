@@ -1,5 +1,9 @@
 {
   "mypage": {
+    "empty": {
+      "title": "Choose a menu",
+      "description": "The menu you choose appears here"
+    },
     "header": "My account",
     "sections": {
       "activity": "Activity",

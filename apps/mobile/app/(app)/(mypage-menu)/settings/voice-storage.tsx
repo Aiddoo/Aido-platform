@@ -11,7 +11,7 @@ import {
   QueryErrorBoundary,
   Result,
   SettingsCard,
-  StyledSafeAreaView,
+  SettingsScreenLayout,
   Text,
   TextSkeleton,
   TrashIcon,
@@ -22,8 +22,7 @@ import { formatDateLabel } from '@src/shared/utils/date-format';
 import { formatFileSize } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { Fragment, Suspense, useState } from 'react';
 
 function VoiceStorageScreen() {
   const { t } = useTranslation('settings');
@@ -65,9 +64,9 @@ function VoiceStorageScreen() {
   };
 
   return (
-    <VStack gap={12}>
+    <>
       <SettingsCard>
-        <VStack gap={4}>
+        <SettingsCard.Content gap={4}>
           <Text size="b4" shade={6}>
             {t('voiceStorage.totalLabel')}
           </Text>
@@ -77,20 +76,22 @@ function VoiceStorageScreen() {
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
             {t('voiceStorage.description')}
           </Text>
-        </VStack>
+        </SettingsCard.Content>
       </SettingsCard>
 
       {usage.notes.length === 0 ? (
         <Result title={t('voiceStorage.empty')} className="py-10" testID="voice-storage-empty" />
       ) : (
         <SettingsCard>
-          {usage.notes.map(({ note, bytes }) => (
-            <VoiceStorageScreen.Row
-              key={note.draftId}
-              note={note}
-              bytes={bytes}
-              onRemove={() => handleRemoveOne(note.draftId)}
-            />
+          {usage.notes.map(({ note, bytes }, index) => (
+            <Fragment key={note.draftId}>
+              {index > 0 && <SettingsCard.Separator />}
+              <VoiceStorageScreen.Row
+                note={note}
+                bytes={bytes}
+                onRemove={() => handleRemoveOne(note.draftId)}
+              />
+            </Fragment>
           ))}
         </SettingsCard>
       )}
@@ -105,7 +106,7 @@ function VoiceStorageScreen() {
           {t('voiceStorage.removeAll')}
         </Button>
       )}
-    </VStack>
+    </>
   );
 }
 
@@ -123,7 +124,7 @@ VoiceStorageScreen.Row = function Row({
   const dateFormatContext = useDateFormatContext();
 
   return (
-    <HStack gap={12} align="center" testID="voice-storage-row">
+    <HStack gap={12} align="center" px={16} py={12} testID="voice-storage-row">
       <VStack flex={1} gap={2}>
         <Text size="b3" weight="medium" maxLines={1}>
           {VoiceNotePolicy.getDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
@@ -154,27 +155,23 @@ VoiceStorageScreen.Row = function Row({
 VoiceStorageScreen.Loading = function Loading() {
   return (
     <SettingsCard>
-      <VStack gap={4}>
+      <SettingsCard.Content gap={4}>
         <TextSkeleton size="b4" className="w-24" />
         <TextSkeleton size="t2" className="w-32" />
         <TextSkeleton size="b4" className="w-full" />
-      </VStack>
+      </SettingsCard.Content>
     </SettingsCard>
   );
 };
 
 export default function VoiceStorageRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <QueryErrorBoundary>
-            <Suspense fallback={<VoiceStorageScreen.Loading />}>
-              <VoiceStorageScreen />
-            </Suspense>
-          </QueryErrorBoundary>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+    <SettingsScreenLayout>
+      <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <Suspense fallback={<VoiceStorageScreen.Loading />}>
+          <VoiceStorageScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </SettingsScreenLayout>
   );
 }

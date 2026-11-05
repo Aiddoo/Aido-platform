@@ -10,7 +10,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import type * as ReactTypes from 'react';
 import type * as ReactNativeTypes from 'react-native';
 
-import LanguageSettingsScreen from '../../../../app/(app)/settings/language';
+import LanguageSettingsScreen from '../../../../app/(app)/(mypage-menu)/settings/language';
 
 // vendor UI(heroui-native)와 그 배럴만 mock — 나머지 의존성은 DI(prop/컨테이너)로 주입한다
 jest.mock('@src/shared/ui', () => {
@@ -19,6 +19,11 @@ jest.mock('@src/shared/ui', () => {
 
   const StyledSafeAreaView = (props: ReactTypes.PropsWithChildren) =>
     React.createElement(View, null, props.children);
+
+  const SettingsCard = (props: ReactTypes.PropsWithChildren) =>
+    React.createElement(View, null, props.children);
+  SettingsCard.Separator = () => null;
+  const SettingsScreenLayout = SettingsCard;
 
   const ListRow = (props: { contents: ReactTypes.ReactNode; right?: ReactTypes.ReactNode }) =>
     React.createElement(View, null, props.contents, props.right);
@@ -34,6 +39,8 @@ jest.mock('@src/shared/ui', () => {
 
   return {
     StyledSafeAreaView,
+    SettingsCard,
+    SettingsScreenLayout,
     ListRow,
     DeviceIcon: NoopIcon,
     KoreanIcon: NoopIcon,

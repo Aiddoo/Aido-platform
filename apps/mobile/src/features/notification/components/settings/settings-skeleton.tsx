@@ -11,15 +11,3 @@ export function TimeRowSkeleton() {
     </HStack>
   );
 }
-
-export function NavigationSkeleton() {
-  return (
-    <HStack justify="between" align="center" gap={20} className="py-2">
-      <TextSkeleton size="b2" className="w-24" />
-      <HStack gap={8} align="center">
-        <TextSkeleton size="b2" className="w-12" />
-        <ArrowRightIcon colorClassName="text-gray-3" />
-      </HStack>
-    </HStack>
-  );
-}

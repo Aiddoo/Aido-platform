@@ -15,7 +15,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import VoiceStorageRoute from '../../../../app/(app)/settings/voice-storage';
+import VoiceStorageRoute from '../../../../app/(app)/(mypage-menu)/settings/voice-storage';
 import { createVoiceNoteDraftRepository } from '../apis/voice-note-draft.repository';
 import { VoiceNoteStorageService } from '../apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '../apis/voice-recording.repository';

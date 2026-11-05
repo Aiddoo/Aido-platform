@@ -4,8 +4,9 @@ import { router, usePathname } from 'expo-router';
 import { useMyPageMenuNavigation } from './use-mypage-menu-navigation';
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn() },
+  router: { push: jest.fn(), replace: jest.fn(), dismissAll: jest.fn() },
   usePathname: jest.fn(),
+  useRootNavigationState: jest.fn(),
 }));
 
 const mockedUsePathname = jest.mocked(usePathname);
@@ -38,6 +39,19 @@ describe('useMyPageMenuNavigation', () => {
 
     // Then
     expect(router.replace).toHaveBeenCalledWith('/settings/language');
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('이미 보고 있는 항목을 다시 누르면 이동하지 않는다', async () => {
+    // Given
+    mockedUsePathname.mockReturnValue('/settings/theme');
+    const { result } = await renderHook(() => useMyPageMenuNavigation());
+
+    // When
+    result.current.navigate('/settings/theme');
+
+    // Then
+    expect(router.replace).not.toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
   });
 

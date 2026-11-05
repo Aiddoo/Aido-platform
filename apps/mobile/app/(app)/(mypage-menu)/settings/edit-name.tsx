@@ -9,13 +9,14 @@ import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   H3,
   Input,
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
+  ReadableContent,
   Spacing,
   StyledSafeAreaView,
-  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -111,11 +112,13 @@ function EditNameScreen() {
 export default function EditNameRoute() {
   return (
     <Box className="flex-1 bg-gray-1">
-      <QueryErrorBoundary>
-        <Suspense fallback={<Box className="flex-1" />}>
-          <EditNameScreen />
-        </Suspense>
-      </QueryErrorBoundary>
+      <ReadableContent flex={1}>
+        <QueryErrorBoundary>
+          <Suspense fallback={<Box className="flex-1" />}>
+            <EditNameScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ReadableContent>
     </Box>
   );
 }

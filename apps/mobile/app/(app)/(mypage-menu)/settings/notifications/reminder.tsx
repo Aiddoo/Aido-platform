@@ -14,61 +14,51 @@ import { EntitlementPolicy } from '@src/features/subscription/domains/entitlemen
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  CrownIcon,
-  QueryErrorBoundary,
-  SettingsCard,
-  Spacing,
-  StyledSafeAreaView,
-  VStack,
-} from '@src/shared/ui';
+import { CrownIcon, QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
-import { ScrollView } from 'react-native';
 
 export default function ReminderSettingsScreen() {
   const { t } = useTranslation('notification');
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={20} />
-          <QueryErrorBoundary>
-            <Suspense fallback={<ReminderSettingsLoading />}>
-              <VStack gap={24}>
-                <SettingsCard>
-                  <ReminderTimeInput
-                    label={t('settings.reminderMorningLabel')}
-                    description={t('settings.reminderMorningDescription')}
-                    period="morning"
-                  />
-                  <Separator className="bg-gray-2" />
-                  <ReminderTimeInput
-                    label={t('settings.reminderEveningLabel')}
-                    description={t('settings.reminderEveningDescription')}
-                    period="evening"
-                  />
-                </SettingsCard>
-              </VStack>
-            </Suspense>
-          </QueryErrorBoundary>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+    <SettingsScreenLayout>
+      <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <Suspense fallback={<ReminderSettingsLoading />}>
+          <SettingsCard>
+            <SettingsCard.Content>
+              <ReminderTimeInput
+                label={t('settings.reminderMorningLabel')}
+                description={t('settings.reminderMorningDescription')}
+                period="morning"
+              />
+            </SettingsCard.Content>
+            <SettingsCard.Separator />
+            <SettingsCard.Content>
+              <ReminderTimeInput
+                label={t('settings.reminderEveningLabel')}
+                description={t('settings.reminderEveningDescription')}
+                period="evening"
+              />
+            </SettingsCard.Content>
+          </SettingsCard>
+        </Suspense>
+      </QueryErrorBoundary>
+    </SettingsScreenLayout>
   );
 }
 
 function ReminderSettingsLoading() {
   return (
-    <VStack gap={24}>
-      <SettingsCard>
+    <SettingsCard>
+      <SettingsCard.Content>
         <TimeRowSkeleton />
-        <Separator className="bg-gray-2" />
+      </SettingsCard.Content>
+      <SettingsCard.Separator />
+      <SettingsCard.Content>
         <TimeRowSkeleton />
-      </SettingsCard>
-    </VStack>
+      </SettingsCard.Content>
+    </SettingsCard>
   );
 }
 

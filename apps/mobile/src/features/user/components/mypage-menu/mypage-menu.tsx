@@ -6,10 +6,28 @@ import {
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/use-feature-discovery-hub';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
-import { QuotaSummary } from '@src/features/subscription/components/quota-summary';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { SettingNavigation, Spacing } from '@src/shared/ui';
+import {
+  AiIcon,
+  BellIcon,
+  BlockIcon,
+  ChatBubbleIcon,
+  CrownIcon,
+  EditIcon,
+  FlagIcon,
+  InfoIcon,
+  KoreanIcon,
+  ListIcon,
+  MemoIcon,
+  MicIcon,
+  MoonIcon,
+  PawIcon,
+  PersonIcon,
+  SettingsCard,
+  type StyledIconType,
+} from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { type ComponentProps } from 'react';
 
@@ -19,28 +37,43 @@ import {
 } from '../../hooks/use-mypage-menu-navigation';
 import { useGetMeQueryOptions } from '../../queries/get-me-query-options';
 
+const MENU_ICON_SIZE = 20;
+
 type MyPageMenuItemProps = Omit<
-  ComponentProps<typeof SettingNavigation.Item>,
-  'onPress' | 'className'
+  ComponentProps<typeof SettingsCard.Item>,
+  'onPress' | 'className' | 'icon' | 'isSelected'
 > & {
   pathname: MyPageMenuPathname;
+  Icon: StyledIconType;
 };
 
-function MyPageMenuItem({ pathname, ...props }: MyPageMenuItemProps) {
+function MyPageMenuItem({ pathname, Icon, ...props }: MyPageMenuItemProps) {
   const { navigate, isSelected } = useMyPageMenuNavigation();
 
   return (
-    <SettingNavigation.Item
+    <SettingsCard.Item
       {...props}
-      className={isSelected(pathname) ? 'bg-gray-2' : undefined}
+      icon={<MyPageMenuIcon Icon={Icon} />}
+      isSelected={isSelected(pathname)}
       onPress={() => navigate(pathname)}
     />
   );
 }
 
-/** 마이페이지 탭과 펼친 화면의 설정 왼쪽 pane이 함께 쓰는 이동 목록이다. */
-export function MyPageMenu() {
-  const { t } = useTranslation(['user', 'settings', 'featureDiscovery']);
+function MyPageMenuIcon({ Icon }: { Icon: StyledIconType }) {
+  const fontScaledSize = useFontScaledSize();
+
+  return (
+    <Icon
+      width={fontScaledSize(MENU_ICON_SIZE)}
+      height={fontScaledSize(MENU_ICON_SIZE)}
+      colorClassName="text-main"
+    />
+  );
+}
+
+function Activity() {
+  const { t } = useTranslation(['user', 'featureDiscovery']);
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useFeatureDiscoveryHub();
   const featureDiscoveryState = useFeatureDiscoveryStateService();
@@ -67,58 +100,112 @@ export function MyPageMenu() {
   };
 
   return (
-    <>
-      <SettingNavigation label={t('mypage.sections.activity')}>
-        <MyPageMenuItem label={t('mypage.items.friends')} pathname="/friends" />
-        <MyPageMenuItem label={t('mypage.items.blockedUsers')} pathname="/settings/blocked-users" />
-        <MyPageMenuItem
-          label={t('mypage.items.categories')}
-          pathname="/settings/category-settings"
-        />
-        {campaign != null && (
-          <SettingNavigation.Item
+    <SettingsCard label={t('mypage.sections.activity')}>
+      <MyPageMenuItem Icon={PersonIcon} label={t('mypage.items.friends')} pathname="/friends" />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={BlockIcon}
+        label={t('mypage.items.blockedUsers')}
+        pathname="/settings/blocked-users"
+      />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={ListIcon}
+        label={t('mypage.items.categories')}
+        pathname="/settings/category-settings"
+      />
+      {campaign != null && (
+        <>
+          <SettingsCard.Separator />
+          <SettingsCard.Item
             testID="feature-guide-open"
+            icon={<MyPageMenuIcon Icon={InfoIcon} />}
             label={t('featureDiscovery:entry.mypage')}
             onPress={openFeatureGuide}
           />
-        )}
-        <MyPageMenuItem label={t('mypage.items.achievements')} pathname="/achievements" />
-      </SettingNavigation>
-
-      <Spacing size={12} />
-
-      <QuotaSummary mb={12} />
-      <SettingNavigation label={t('mypage.sections.subscription')}>
-        <MyPageMenuItem label={t('mypage.items.aiReports')} pathname="/reports" />
-        <MyPageMenuItem label={t('mypage.items.appIcon')} pathname="/settings/app-icon" />
-        <MyPageMenuItem
-          label={t('mypage.items.subscription')}
-          pathname={subscriptionHref().pathname}
-        />
-      </SettingNavigation>
-
-      <Spacing size={12} />
-
-      <SettingNavigation label={t('mypage.sections.settings')}>
-        <MyPageMenuItem
-          label={t('mypage.items.notifications')}
-          pathname="/settings/notifications"
-        />
-        <MyPageMenuItem label={t('mypage.items.theme')} pathname="/settings/theme" />
-        <MyPageMenuItem label={t('mypage.items.fontSize')} pathname="/settings/font-size" />
-        <MyPageMenuItem label={t('settings:titles.language')} pathname="/settings/language" />
-        <MyPageMenuItem
-          label={t('settings:titles.voiceStorage')}
-          pathname="/settings/voice-storage"
-        />
-      </SettingNavigation>
-
-      <Spacing size={12} />
-
-      <SettingNavigation>
-        <MyPageMenuItem label={t('mypage.items.inquiry')} pathname="/settings/inquiry" />
-        <MyPageMenuItem label={t('mypage.items.terms')} pathname="/settings/terms" />
-      </SettingNavigation>
-    </>
+        </>
+      )}
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={FlagIcon}
+        label={t('mypage.items.achievements')}
+        pathname="/achievements"
+      />
+    </SettingsCard>
   );
 }
+
+function Subscription() {
+  const { t } = useTranslation('user');
+
+  return (
+    <SettingsCard label={t('mypage.sections.subscription')}>
+      <MyPageMenuItem Icon={AiIcon} label={t('mypage.items.aiReports')} pathname="/reports" />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={PawIcon}
+        label={t('mypage.items.appIcon')}
+        pathname="/settings/app-icon"
+      />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={CrownIcon}
+        label={t('mypage.items.subscription')}
+        pathname={subscriptionHref().pathname}
+      />
+    </SettingsCard>
+  );
+}
+
+function Settings() {
+  const { t } = useTranslation(['user', 'settings']);
+
+  return (
+    <SettingsCard label={t('mypage.sections.settings')}>
+      <MyPageMenuItem
+        Icon={BellIcon}
+        label={t('mypage.items.notifications')}
+        pathname="/settings/notifications"
+      />
+      <SettingsCard.Separator />
+      <MyPageMenuItem Icon={MoonIcon} label={t('mypage.items.theme')} pathname="/settings/theme" />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={EditIcon}
+        label={t('mypage.items.fontSize')}
+        pathname="/settings/font-size"
+      />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={KoreanIcon}
+        label={t('settings:titles.language')}
+        pathname="/settings/language"
+      />
+      <SettingsCard.Separator />
+      <MyPageMenuItem
+        Icon={MicIcon}
+        label={t('settings:titles.voiceStorage')}
+        pathname="/settings/voice-storage"
+      />
+    </SettingsCard>
+  );
+}
+
+function Support() {
+  const { t } = useTranslation('user');
+
+  return (
+    <SettingsCard>
+      <MyPageMenuItem
+        Icon={ChatBubbleIcon}
+        label={t('mypage.items.inquiry')}
+        pathname="/settings/inquiry"
+      />
+      <SettingsCard.Separator />
+      <MyPageMenuItem Icon={MemoIcon} label={t('mypage.items.terms')} pathname="/settings/terms" />
+    </SettingsCard>
+  );
+}
+
+/** 내 정보 메뉴. 묶음마다 나란히 두어 기획이 바뀌면 그 줄만 고친다 */
+export const MyPageMenu = { Activity, Subscription, Settings, Support };

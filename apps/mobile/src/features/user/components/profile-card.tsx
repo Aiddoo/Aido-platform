@@ -3,21 +3,21 @@ import type { AccessTier } from '@src/features/subscription/domains/entitlement.
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
 
+import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
 
 export function ProfileCard() {
   const fontScaledSize = useFontScaledSize();
-  const push = useSingleTap(router.push);
+  const { navigate, isSelected } = useMyPageMenuNavigation();
 
   const [{ data: user }, { data: entitlements }] = useSuspenseQueries({
     queries: [useGetMeQueryOptions(), useGetEntitlementsQueryOptions()],
@@ -38,7 +38,10 @@ export function ProfileCard() {
   };
 
   return (
-    <PressableFeedback onPress={() => push('/settings/profile')} className="rounded-2xl px-4 py-3">
+    <PressableFeedback
+      onPress={() => navigate('/settings/profile')}
+      className={cn('rounded-2xl px-4 py-3', isSelected('/settings/profile') && 'bg-gray-2')}
+    >
       <HStack gap={12} align="center">
         <UserAvatar
           size="lg"

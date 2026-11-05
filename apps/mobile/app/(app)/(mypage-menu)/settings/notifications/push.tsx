@@ -7,17 +7,9 @@ import { PreferencePolicy } from '@src/features/preference/domains/preference.mo
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  QueryErrorBoundary,
-  SettingsCard,
-  Spacing,
-  StyledSafeAreaView,
-  VStack,
-} from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
-import { ScrollView } from 'react-native';
 
 function PushSettingsScreen() {
   // 두 쿼리를 useSuspenseQueries로 병렬 발사 (개별 useSuspenseQuery는 첫 쿼리에서
@@ -32,9 +24,11 @@ function PushSettingsScreen() {
   const { t } = useTranslation(['notification', 'auth']);
 
   return (
-    <VStack gap={24}>
+    <>
       <SettingsCard>
-        <PushPermissionStatusRow />
+        <SettingsCard.Content>
+          <PushPermissionStatusRow />
+        </SettingsCard.Content>
       </SettingsCard>
 
       <SettingsCard>
@@ -45,7 +39,7 @@ function PushSettingsScreen() {
           onSelectedChange={(enabled) => pushEnabledMutation.mutate({ pushEnabled: enabled })}
           isDisabled={updateMutation.isPending || pushEnabledMutation.isPending}
         />
-        <Separator className="bg-gray-2" />
+        <SettingsCard.Separator />
         <SettingsCard.Toggle
           label={t('settings.nightPushLabel')}
           description={
@@ -72,7 +66,7 @@ function PushSettingsScreen() {
           onSelectedChange={(agreed) => marketingMutation.mutate({ agreed })}
           isDisabled={marketingMutation.isPending}
         />
-        <Separator className="bg-gray-2" />
+        <SettingsCard.Separator />
         <SettingsCard.Toggle
           label={t('settings.marketingPushLabel')}
           description={t('settings.marketingPushDescription')}
@@ -81,43 +75,38 @@ function PushSettingsScreen() {
           isDisabled={marketingPushMutation.isPending}
         />
       </SettingsCard>
-    </VStack>
+    </>
   );
 }
 
 PushSettingsScreen.Loading = function Loading() {
   return (
-    <VStack gap={24}>
+    <>
       <SettingsCard>
         <SettingsCard.ToggleSkeleton hasDescription />
       </SettingsCard>
       <SettingsCard>
         <SettingsCard.ToggleSkeleton hasDescription />
-        <Separator className="bg-gray-2" />
+        <SettingsCard.Separator />
         <SettingsCard.ToggleSkeleton hasDescription />
       </SettingsCard>
       <SettingsCard>
         <SettingsCard.ToggleSkeleton hasDescription />
-        <Separator className="bg-gray-2" />
+        <SettingsCard.Separator />
         <SettingsCard.ToggleSkeleton hasDescription />
       </SettingsCard>
-    </VStack>
+    </>
   );
 };
 
 export default function PushSettingsRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={20} />
-          <QueryErrorBoundary>
-            <Suspense fallback={<PushSettingsScreen.Loading />}>
-              <PushSettingsScreen />
-            </Suspense>
-          </QueryErrorBoundary>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+    <SettingsScreenLayout>
+      <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <Suspense fallback={<PushSettingsScreen.Loading />}>
+          <PushSettingsScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </SettingsScreenLayout>
   );
 }

@@ -1,5 +1,9 @@
 {
   "mypage": {
+    "empty": {
+      "title": "메뉴를 골라 주세요",
+      "description": "고른 메뉴가 여기에 보여요"
+    },
     "header": "내 정보",
     "sections": {
       "activity": "활동",

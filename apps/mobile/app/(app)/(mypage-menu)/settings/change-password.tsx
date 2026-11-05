@@ -7,7 +7,13 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { KeyboardAdaptiveButton, QueryErrorBoundary, FormStepLayout, Box } from '@src/shared/ui';
+import {
+  Box,
+  FormStepLayout,
+  KeyboardAdaptiveButton,
+  QueryErrorBoundary,
+  ReadableContent,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -49,18 +55,20 @@ function ChangePasswordScreen() {
 
   return (
     <Box className="flex-1 bg-gray-1">
-      <FormProvider {...form}>
-        {match(step)
-          .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
-          .with('newPassword', () => (
-            <NewPasswordStep
-              onSubmit={submitNewPassword}
-              nextLabel={t('changePassword.next')}
-              submitLabel={t('changePassword.submit')}
-            />
-          ))
-          .exhaustive()}
-      </FormProvider>
+      <ReadableContent flex={1}>
+        <FormProvider {...form}>
+          {match(step)
+            .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
+            .with('newPassword', () => (
+              <NewPasswordStep
+                onSubmit={submitNewPassword}
+                nextLabel={t('changePassword.next')}
+                submitLabel={t('changePassword.submit')}
+              />
+            ))
+            .exhaustive()}
+        </FormProvider>
+      </ReadableContent>
     </Box>
   );
 }

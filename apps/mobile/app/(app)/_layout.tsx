@@ -1,7 +1,9 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { ActivationPushPermissionDialog } from '@src/features/activation/components/activation-push-permission-dialog';
+import { MyPagePaneLayoutProvider } from '@src/features/user/hooks/use-mypage-pane-layout';
 import { classifyBoundaryError } from '@src/shared/errors';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryErrorResetBoundary } from '@tanstack/react-query';
@@ -36,9 +38,10 @@ export const unstable_settings = {
 
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
+  const isCompact = useWindowSizeClass() === 'compact';
 
   return (
-    <>
+    <MyPagePaneLayoutProvider>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -48,13 +51,14 @@ function AppLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="friends" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="nudges" />
-        <Stack.Screen name="achievements" />
-        <Stack.Screen name="reports" />
         <Stack.Screen name="suggestions" />
-        <Stack.Screen name="settings" />
+        {/* 넓은 화면은 왼쪽 메뉴가 탭과 같은 자리에 있어 들어갈 때 화면 전체가 밀리지 않게 한다 */}
+        <Stack.Screen
+          name="(mypage-menu)"
+          options={{ animation: isCompact ? 'slide_from_right' : 'none' }}
+        />
         <Stack.Screen name="weather" />
         <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
         {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
@@ -67,7 +71,7 @@ function AppLayout() {
         ))}
       </Stack>
       <ActivationPushPermissionDialog />
-    </>
+    </MyPagePaneLayoutProvider>
   );
 }
 
