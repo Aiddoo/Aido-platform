@@ -327,6 +327,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       <ModalBottomSheet
         isOpen={isOpen}
         onOpenChange={() => close(null)}
+        onCloseStart={focusTodoInput}
         onExit={() => {
           exit();
           if (pickerResult) {
@@ -345,7 +346,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             }
             methods.setValue('startDate', pickerResult);
           }
-          focusTodoInput();
         }}
       >
         <TodoDatePickerContent
@@ -367,13 +367,13 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       <ModalBottomSheet
         isOpen={isOpen}
         onOpenChange={() => close(null)}
+        onCloseStart={focusTodoInput}
         onExit={() => {
           exit();
           if (pickerResult) {
             methods.setValue('scheduledTime', pickerResult.scheduledTime);
             methods.setValue('isAllDay', pickerResult.isAllDay);
           }
-          focusTodoInput();
         }}
       >
         <QueryErrorBoundary>
@@ -404,6 +404,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         <ModalBottomSheet
           isOpen={isOpen}
           onOpenChange={() => close(null)}
+          onCloseStart={focusTodoInput}
           onExit={() => {
             exit();
             if (pickerResult) {
@@ -413,7 +414,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 methods.setValue('endDate', null);
               }
             }
-            focusTodoInput();
           }}
         >
           <TodoRepeatPickerContent
@@ -439,12 +439,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       <ModalBottomSheet
         isOpen={isOpen}
         onOpenChange={() => close(null)}
+        onCloseStart={focusTodoInput}
         onExit={() => {
           exit();
           if (pickerResult != null) {
             methods.setValue('categoryId', pickerResult);
           }
-          focusTodoInput();
         }}
       >
         <QueryErrorBoundary>

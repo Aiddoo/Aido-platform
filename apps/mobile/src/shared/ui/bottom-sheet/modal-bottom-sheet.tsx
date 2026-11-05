@@ -25,6 +25,8 @@ const DISMISS_VELOCITY = 500;
 interface ModalBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  /** 닫기 애니메이션 시작 시 호출. 아래 시트의 키보드를 함께 올릴 때 쓴다 */
+  onCloseStart?: () => void;
   /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
   onExit: () => void;
   children: ReactNode;
@@ -41,6 +43,7 @@ interface ModalBottomSheetProps {
 export const ModalBottomSheet = ({
   isOpen,
   onOpenChange,
+  onCloseStart,
   onExit,
   children,
   footer,
@@ -58,11 +61,13 @@ export const ModalBottomSheet = ({
 
   // Refs for callbacks — inline 함수가 매 렌더마다 바뀌어도 애니메이션이 리셋되지 않도록
   const onOpenChangeRef = useRef(onOpenChange);
+  const onCloseStartRef = useRef(onCloseStart);
   const onExitRef = useRef(onExit);
   useLayoutEffect(() => {
     onOpenChangeRef.current = onOpenChange;
+    onCloseStartRef.current = onCloseStart;
     onExitRef.current = onExit;
-  }, [onOpenChange, onExit]);
+  }, [onOpenChange, onCloseStart, onExit]);
 
   // Animation shared values
   const translateY = useSharedValue(windowHeight);
@@ -112,6 +117,7 @@ export const ModalBottomSheet = ({
       // Animate out (한 번만 실행)
       if (!isAnimatingOut.value) {
         isAnimatingOut.value = true;
+        onCloseStartRef.current?.();
         translateY.value = withTiming(
           windowHeight,
           { duration: enterDuration, reduceMotion: ReduceMotion.System },
