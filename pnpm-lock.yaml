@@ -553,7 +553,7 @@ overrides:
 packageExtensionsChecksum: sha256-mET1OjWRF0wgMCOx62KEb6y40/NHHc7uEP1a4r2v4SY=
 
 patchedDependencies:
-  '@gorhom/bottom-sheet@5.2.14': 5fd631b5e0d4684c9a185cbbda0431ac7ece836b6623585ca1afa79b57d40d93
+  '@gorhom/bottom-sheet@5.2.14': 8a6968adb084d57fcbf34b7e67970ca7f0a01efd213978feaf0f2972d4af0080
   '@sentry/react-native@8.28.0': c8c08839911538497445c08fa07cf21352139f5080772cc7e7858fe2376daa9b
   expo-widgets@58.0.27: 32e956b6794cf56e6ba7e00266bd5bd774945710d43e3c9a1e760bec00506d2d
   react-native-screens@4.30.1: 3b2c0397382e591b417687430dd54fcaddbf73cad61974b698f330f9a2f3e51a
@@ -844,7 +844,7 @@ importers:
         version: 58.0.27(@babel/core@7.29.7(supports-color@8.1.1))(expo@58.0.23)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@gorhom/bottom-sheet':
         specifier: 5.2.14
-        version: 5.2.14(patch_hash=5fd631b5e0d4684c9a185cbbda0431ac7ece836b6623585ca1afa79b57d40d93)(50dd6323713420dc6cb45b2c91b9913e)
+        version: 5.2.14(patch_hash=8a6968adb084d57fcbf34b7e67970ca7f0a01efd213978feaf0f2972d4af0080)(50dd6323713420dc6cb45b2c91b9913e)
       '@hookform/resolvers':
         specifier: 7.0.2
         version: 7.0.2(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.7)(class-transformer@0.5.1)(class-validator@0.14.3)(effect@4.0.3)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.0))(superstruct@2.0.2)(typanion@3.14.0)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
@@ -1003,7 +1003,7 @@ importers:
         version: 58.0.27(patch_hash=32e956b6794cf56e6ba7e00266bd5bd774945710d43e3c9a1e760bec00506d2d)(@babel/core@7.29.7(supports-color@8.1.1))(expo@58.0.23)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       heroui-native:
         specifier: catalog:expo58
-        version: 1.0.11(883c28ea20e048e47514b9d8b92c3581)
+        version: 1.0.11(b27d18d368d697927a2b512f712af398)
       i18next:
         specifier: 26.7.1
         version: 26.7.1(typescript@6.0.3)
@@ -13503,7 +13503,7 @@ snapshots:
 
   '@firebase/webchannel-wrapper@1.0.6': {}
 
-  '@gorhom/bottom-sheet@5.2.14(patch_hash=5fd631b5e0d4684c9a185cbbda0431ac7ece836b6623585ca1afa79b57d40d93)(50dd6323713420dc6cb45b2c91b9913e)':
+  '@gorhom/bottom-sheet@5.2.14(patch_hash=8a6968adb084d57fcbf34b7e67970ca7f0a01efd213978feaf0f2972d4af0080)(50dd6323713420dc6cb45b2c91b9913e)':
     dependencies:
       '@gorhom/portal': 1.0.14(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       invariant: 2.2.4
@@ -18689,7 +18689,7 @@ snapshots:
     dependencies:
       hermes-estree: 0.36.1
 
-  heroui-native@1.0.11(883c28ea20e048e47514b9d8b92c3581):
+  heroui-native@1.0.11(b27d18d368d697927a2b512f712af398):
     dependencies:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
@@ -18701,7 +18701,7 @@ snapshots:
       tailwind-merge: 3.7.0
       tailwind-variants: 3.3.1(tailwind-merge@3.7.0)(tailwindcss@4.3.4)
     optionalDependencies:
-      '@gorhom/bottom-sheet': 5.2.14(patch_hash=5fd631b5e0d4684c9a185cbbda0431ac7ece836b6623585ca1afa79b57d40d93)(50dd6323713420dc6cb45b2c91b9913e)
+      '@gorhom/bottom-sheet': 5.2.14(patch_hash=8a6968adb084d57fcbf34b7e67970ca7f0a01efd213978feaf0f2972d4af0080)(50dd6323713420dc6cb45b2c91b9913e)
       expo-blur: 58.0.5(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-screens: 4.30.1(patch_hash=3b2c0397382e591b417687430dd54fcaddbf73cad61974b698f330f9a2f3e51a)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
 

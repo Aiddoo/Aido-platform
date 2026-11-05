@@ -1,8 +1,63 @@
 diff --git a/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js b/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js
-index 55c63080..5129aa5f 100644
+index 55c63080de7abdb51a7409cd8c81eb5f676161bd..60e771ad42d79d5a94507d2276a53750a6f9e17b 100644
 --- a/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js
 +++ b/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js
-@@ -93,7 +93,7 @@ const BottomSheetTextInputComponent = /*#__PURE__*/(0, _react.forwardRef)(({
+@@ -7,6 +7,7 @@ exports.default = void 0;
+ var _react = _interopRequireWildcard(require("react"));
+ var _reactNative = require("react-native");
+ var _reactNativeGestureHandler = require("react-native-gesture-handler");
++var _reactNativeReanimated = require("react-native-reanimated");
+ var _hooks = require("../../hooks");
+ var _utilities = require("../../utilities");
+ var _jsxRuntime = require("react/jsx-runtime");
+@@ -29,10 +30,12 @@ const BottomSheetTextInputComponent = /*#__PURE__*/(0, _react.forwardRef)(({
+ 
+   //#region callbacks
+   const handleOnFocus = (0, _react.useCallback)(args => {
+-    animatedKeyboardState.set(state => ({
+-      ...state,
+-      target: args.nativeEvent.target
+-    }));
++    const target = args.nativeEvent.target;
++    // `.set(updater)` on the JS runtime reads then writes across threads and can drop a pending keyboard event.
++    (0, _reactNativeReanimated.runOnUI)(() => {
++      'worklet';
++      animatedKeyboardState.set(state => ({ ...state, target }));
++    })();
+     if (onFocus) {
+       onFocus(args);
+     }
+@@ -49,10 +52,10 @@ const BottomSheetTextInputComponent = /*#__PURE__*/(0, _react.forwardRef)(({
+     const shouldRemoveCurrentTarget = keyboardState.target === args.nativeEvent.target;
+     const shouldIgnoreBlurEvent = currentFocusedInput && textInputNodesRef.current.has(currentFocusedInput);
+     if (shouldRemoveCurrentTarget && !shouldIgnoreBlurEvent) {
+-      animatedKeyboardState.set(state => ({
+-        ...state,
+-        target: undefined
+-      }));
++      (0, _reactNativeReanimated.runOnUI)(() => {
++        'worklet';
++        animatedKeyboardState.set(state => ({ ...state, target: undefined }));
++      })();
+     }
+     if (onBlur) {
+       onBlur(args);
+@@ -80,10 +83,10 @@ const BottomSheetTextInputComponent = /*#__PURE__*/(0, _react.forwardRef)(({
+        * to the current component.
+        */
+       if (keyboardState.target === componentNode) {
+-        animatedKeyboardState.set(state => ({
+-          ...state,
+-          target: undefined
+-        }));
++        (0, _reactNativeReanimated.runOnUI)(() => {
++          'worklet';
++          animatedKeyboardState.set(state => ({ ...state, target: undefined }));
++        })();
+       }
+       if (textInputNodesRef.current.has(componentNode)) {
+         textInputNodesRef.current.delete(componentNode);
+@@ -93,7 +96,7 @@ const BottomSheetTextInputComponent = /*#__PURE__*/(0, _react.forwardRef)(({
    (0, _react.useImperativeHandle)(providedRef, () => ref.current ?? undefined, []);
    //#endregion
  
@@ -12,20 +67,68 @@ index 55c63080..5129aa5f 100644
      onFocus: handleOnFocus,
      onBlur: handleOnBlur,
 diff --git a/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js b/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js
-index 4be35994..81f2ce6d 100644
+index 4be35994105a54a5de90708e748f04ed99feb187..070a22db47807167a7d3af823ad0bc6e2304d4b3 100644
 --- a/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js
 +++ b/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js
-@@ -2,7 +2,7 @@
+@@ -2,7 +2,8 @@
  
  import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
  import { TextInput as RNTextInput } from 'react-native';
 -import { TextInput } from 'react-native-gesture-handler';
 +import { LegacyTextInput as TextInput } from 'react-native-gesture-handler';
++import { runOnUI } from 'react-native-reanimated';
  import { useBottomSheetInternal } from '../../hooks';
  import { findNodeHandle } from '../../utilities';
  import { jsx as _jsx } from "react/jsx-runtime";
+@@ -24,10 +25,12 @@ const BottomSheetTextInputComponent = /*#__PURE__*/forwardRef(({
+ 
+   //#region callbacks
+   const handleOnFocus = useCallback(args => {
+-    animatedKeyboardState.set(state => ({
+-      ...state,
+-      target: args.nativeEvent.target
+-    }));
++    const target = args.nativeEvent.target;
++    // `.set(updater)` on the JS runtime reads then writes across threads and can drop a pending keyboard event.
++    runOnUI(() => {
++      'worklet';
++      animatedKeyboardState.set(state => ({ ...state, target }));
++    })();
+     if (onFocus) {
+       onFocus(args);
+     }
+@@ -44,10 +47,10 @@ const BottomSheetTextInputComponent = /*#__PURE__*/forwardRef(({
+     const shouldRemoveCurrentTarget = keyboardState.target === args.nativeEvent.target;
+     const shouldIgnoreBlurEvent = currentFocusedInput && textInputNodesRef.current.has(currentFocusedInput);
+     if (shouldRemoveCurrentTarget && !shouldIgnoreBlurEvent) {
+-      animatedKeyboardState.set(state => ({
+-        ...state,
+-        target: undefined
+-      }));
++      runOnUI(() => {
++        'worklet';
++        animatedKeyboardState.set(state => ({ ...state, target: undefined }));
++      })();
+     }
+     if (onBlur) {
+       onBlur(args);
+@@ -75,10 +78,10 @@ const BottomSheetTextInputComponent = /*#__PURE__*/forwardRef(({
+        * to the current component.
+        */
+       if (keyboardState.target === componentNode) {
+-        animatedKeyboardState.set(state => ({
+-          ...state,
+-          target: undefined
+-        }));
++        runOnUI(() => {
++          'worklet';
++          animatedKeyboardState.set(state => ({ ...state, target: undefined }));
++        })();
+       }
+       if (textInputNodesRef.current.has(componentNode)) {
+         textInputNodesRef.current.delete(componentNode);
 diff --git a/lib/typescript/components/bottomSheet/types.d.ts b/lib/typescript/components/bottomSheet/types.d.ts
-index 6b23056a..c0218882 100644
+index 6b23056a6f338c76a0dfe59b728cf41f7ab7520a..c02188821b7d40abf38a6f2e262f41a794a38b53 100644
 --- a/lib/typescript/components/bottomSheet/types.d.ts
 +++ b/lib/typescript/components/bottomSheet/types.d.ts
 @@ -1,6 +1,6 @@
@@ -37,7 +140,7 @@ index 6b23056a..c0218882 100644
    AnimateStyle,
    ReduceMotion,
 diff --git a/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts b/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts
-index c09584d1..2d297912 100644
+index c09584d1be1e2cb453c479b3f9282d8cf91c0e1e..2d297912c2891459b886edc4caea81f8e755fe83 100644
 --- a/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts
 +++ b/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts
 @@ -1,6 +1,6 @@
@@ -49,7 +152,7 @@ index c09584d1..2d297912 100644
      scrollableGesture: SimultaneousGesture;
  }
 diff --git a/lib/typescript/components/bottomSheetRefreshControl/index.d.ts b/lib/typescript/components/bottomSheetRefreshControl/index.d.ts
-index 6554dc1b..84b2a613 100644
+index 6554dc1b40cb8b967c6b78b632cd7ad579a2f88e..84b2a613ddfa76165edf63e231e0da6d4f993890 100644
 --- a/lib/typescript/components/bottomSheetRefreshControl/index.d.ts
 +++ b/lib/typescript/components/bottomSheetRefreshControl/index.d.ts
 @@ -1,6 +1,6 @@
@@ -61,7 +164,7 @@ index 6554dc1b..84b2a613 100644
      scrollableGesture: SimultaneousGesture;
      children: React.ReactNode | React.ReactNode[];
 diff --git a/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts b/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts
-index 0e4911b3..31772803 100644
+index 0e4911b311f59c73f747f347428eef9101ccf647..3177280309d397f2d904ac925d10c55851cb023e 100644
 --- a/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts
 +++ b/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts
 @@ -1,5 +1,5 @@
@@ -72,7 +175,7 @@ index 0e4911b3..31772803 100644
      scrollableGesture?: SimultaneousGesture;
      children: React.ReactNode;
 diff --git a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts
-index 7714abb5..b993095f 100644
+index 7714abb585c581d2e80ddace33f52f449b56d574..b993095f1b70e8a10e651e8ecd9eb4848d5e24d3 100644
 --- a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts
 +++ b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts
 @@ -1,5 +1,5 @@
@@ -83,7 +186,7 @@ index 7714abb5..b993095f 100644
      nativeGesture: SimultaneousGesture;
      refreshControl: any;
 diff --git a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts
-index f6e1f7dc..f62f576f 100644
+index f6e1f7dc16cd2b0e5b0376bee379e1d083ccbd19..f62f576f6b77cbd2e5a16da699e3c521352cb3d9 100644
 --- a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts
 +++ b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts
 @@ -1,5 +1,5 @@
@@ -94,7 +197,7 @@ index f6e1f7dc..f62f576f 100644
      nativeGesture?: SimultaneousGesture;
      ScrollableComponent: FC<any>;
 diff --git a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts
-index 44c9744f..66c7e6f1 100644
+index 44c9744f7eaaf645f98ef8481158d9b86d169dec..66c7e6f1c42184bc1ec8064d47272b916236a91c 100644
 --- a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts
 +++ b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts
 @@ -1,6 +1,6 @@
@@ -106,7 +209,7 @@ index 44c9744f..66c7e6f1 100644
      nativeGesture: SimultaneousGesture;
      setContentSize: (contentHeight: number) => void;
 diff --git a/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts b/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts
-index 1f0e1cab..9b813662 100644
+index 1f0e1cabeb49a1033949bac5154899a1f55cac38..9b813662ac14bf4ebfae5408360f593e7f25ac03 100644
 --- a/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts
 +++ b/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts
 @@ -1,5 +1,5 @@
@@ -117,7 +220,7 @@ index 1f0e1cab..9b813662 100644
  declare const BottomSheetTextInput: React.MemoExoticComponent<React.ForwardRefExoticComponent<BottomSheetTextInputProps & React.RefAttributes<TextInput | undefined>>>;
  export default BottomSheetTextInput;
 diff --git a/src/components/bottomSheet/types.d.ts b/src/components/bottomSheet/types.d.ts
-index 6b23056a..c0218882 100644
+index 6b23056a6f338c76a0dfe59b728cf41f7ab7520a..c02188821b7d40abf38a6f2e262f41a794a38b53 100644
 --- a/src/components/bottomSheet/types.d.ts
 +++ b/src/components/bottomSheet/types.d.ts
 @@ -1,6 +1,6 @@
@@ -129,7 +232,7 @@ index 6b23056a..c0218882 100644
    AnimateStyle,
    ReduceMotion,
 diff --git a/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx b/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx
-index 36a1a60b..5ffcc563 100644
+index 36a1a60ba1028f032823e13fc345e333a9d4bf88..5ffcc563222a33592852cf2a29a54985d1be5e5a 100644
 --- a/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx
 +++ b/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx
 @@ -3,7 +3,7 @@ import { RefreshControl, type RefreshControlProps } from 'react-native';
@@ -142,7 +245,7 @@ index 36a1a60b..5ffcc563 100644
  import Animated, { useAnimatedProps } from 'react-native-reanimated';
  import { SCROLLABLE_STATUS } from '../../constants';
 diff --git a/src/components/bottomSheetRefreshControl/index.ts b/src/components/bottomSheetRefreshControl/index.ts
-index b716fa28..8eee70e3 100644
+index b716fa28129b3efafc99675356ecec3b75f85485..8eee70e3d8b786d1c718231f6585b58c567322ed 100644
 --- a/src/components/bottomSheetRefreshControl/index.ts
 +++ b/src/components/bottomSheetRefreshControl/index.ts
 @@ -2,7 +2,7 @@ import type React from 'react';
@@ -155,7 +258,7 @@ index b716fa28..8eee70e3 100644
  import BottomSheetRefreshControl from './BottomSheetRefreshControl';
  
 diff --git a/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx b/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx
-index 92d035a9..db521227 100644
+index 92d035a9a0069b96f1d05dba6433cf2560e6e512..db521227446e40212f23955d6f122aa0d9503b7a 100644
 --- a/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx
 +++ b/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx
 @@ -1,7 +1,7 @@
@@ -168,7 +271,7 @@ index 92d035a9..db521227 100644
  
  interface BottomSheetDraggableScrollableProps {
 diff --git a/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx b/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx
-index 1f944e06..8cdaea1e 100644
+index 1f944e06ff50d0cc5a5562d8c0112e1b51a6bdb2..8cdaea1eb6f0c569b184d84a67f0a5f53ce3b6b3 100644
 --- a/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx
 +++ b/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx
 @@ -1,5 +1,5 @@
@@ -179,7 +282,7 @@ index 1f944e06..8cdaea1e 100644
  import { BottomSheetDraggableScrollable } from './BottomSheetDraggableScrollable';
  import { styles } from './styles';
 diff --git a/src/components/bottomSheetScrollable/ScrollableContainer.tsx b/src/components/bottomSheetScrollable/ScrollableContainer.tsx
-index ab3bc59b..694bfc3c 100644
+index ab3bc59b287161349027d23e64c5efa3dfeb14bb..694bfc3ca8a8c1a66fd1b22362d5bcfbcc20a1ff 100644
 --- a/src/components/bottomSheetScrollable/ScrollableContainer.tsx
 +++ b/src/components/bottomSheetScrollable/ScrollableContainer.tsx
 @@ -1,5 +1,5 @@
@@ -190,7 +293,7 @@ index ab3bc59b..694bfc3c 100644
  
  interface ScrollableContainerProps {
 diff --git a/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx b/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx
-index bb76c4ea..c7dc2a52 100644
+index bb76c4ea9781f5623890144044eb29fdce27686d..c7dc2a525aa563c1fbb54e454af93f5d70d7d976 100644
 --- a/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx
 +++ b/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx
 @@ -5,7 +5,7 @@ import React, {
@@ -203,15 +306,63 @@ index bb76c4ea..c7dc2a52 100644
  import { INITIAL_LAYOUT_VALUE } from '../../constants';
  import { useBottomSheetInternal } from '../../hooks';
 diff --git a/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx b/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx
-index 861d276e..614ffd8a 100644
+index 861d276ec59022d8c9de64cc0920972f68d4a6a4..3dee7aa805a9a089bb32f4815a295a78b89738b8 100644
 --- a/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx
 +++ b/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx
-@@ -11,7 +11,7 @@ import type {
+@@ -11,7 +11,8 @@ import type {
    TextInputFocusEventData,
  } from 'react-native';
  import { TextInput as RNTextInput } from 'react-native';
 -import { TextInput } from 'react-native-gesture-handler';
 +import { LegacyTextInput as TextInput } from 'react-native-gesture-handler';
++import { runOnUI } from 'react-native-reanimated';
  import { useBottomSheetInternal } from '../../hooks';
  import { findNodeHandle } from '../../utilities';
  import type { BottomSheetTextInputProps } from './types';
+@@ -31,10 +32,12 @@ const BottomSheetTextInputComponent = forwardRef<
+   //#region callbacks
+   const handleOnFocus = useCallback(
+     (args: NativeSyntheticEvent<TextInputFocusEventData>) => {
+-      animatedKeyboardState.set(state => ({
+-        ...state,
+-        target: args.nativeEvent.target,
+-      }));
++      const target = args.nativeEvent.target;
++      // `.set(updater)` on the JS runtime reads then writes across threads and can drop a pending keyboard event.
++      runOnUI(() => {
++        'worklet';
++        animatedKeyboardState.set(state => ({ ...state, target }));
++      })();
+       if (onFocus) {
+         onFocus(args);
+       }
+@@ -60,10 +63,10 @@ const BottomSheetTextInputComponent = forwardRef<
+         textInputNodesRef.current.has(currentFocusedInput);
+ 
+       if (shouldRemoveCurrentTarget && !shouldIgnoreBlurEvent) {
+-        animatedKeyboardState.set(state => ({
+-          ...state,
+-          target: undefined,
+-        }));
++        runOnUI(() => {
++          'worklet';
++          animatedKeyboardState.set(state => ({ ...state, target: undefined }));
++        })();
+       }
+ 
+       if (onBlur) {
+@@ -97,10 +100,10 @@ const BottomSheetTextInputComponent = forwardRef<
+        * to the current component.
+        */
+       if (keyboardState.target === componentNode) {
+-        animatedKeyboardState.set(state => ({
+-          ...state,
+-          target: undefined,
+-        }));
++        runOnUI(() => {
++          'worklet';
++          animatedKeyboardState.set(state => ({ ...state, target: undefined }));
++        })();
+       }
+ 
+       if (textInputNodesRef.current.has(componentNode)) {
