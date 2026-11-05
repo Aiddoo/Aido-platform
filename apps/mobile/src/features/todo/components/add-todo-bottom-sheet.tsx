@@ -6,9 +6,9 @@ import type { Todo } from '@src/features/todo/domains/todo.model';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
-import { isBusinessError } from '@src/shared/errors/result';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -39,7 +39,6 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
@@ -156,7 +155,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const { t: tVoice } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
-  const { showBoundary } = useErrorBoundary();
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
 
   // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
@@ -307,10 +306,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         })
         .exhaustive();
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-        return;
-      }
+      // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
+      reportUnexpectedError(error);
       if (shouldReopenRepeatPicker(error)) {
         handleRepeatChipPress();
       }

@@ -10,8 +10,9 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { isBusinessError } from '@src/shared/errors/result';
+import { isConnectivityError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -37,7 +38,6 @@ import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { ActivityIndicator, Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -118,7 +118,7 @@ MemoDetailPane.Empty = function Empty() {
 
 function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   const haptics = useHaptics();
-  const { showBoundary } = useErrorBoundary();
+  const reportUnexpectedError = useReportUnexpectedError('memo');
   const goBack = useSingleTap(router.back);
   const navigate = useSingleTap(router.navigate);
 
@@ -148,7 +148,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     defaultValues: restoredMemoDraft ?? savedValues,
   });
   const { control, handleSubmit, getValues, reset, subscribe } = formMethods;
-  const { isDirty, isValid, isSubmitting } = useFormState({ control });
+  const { isDirty, isValid } = useFormState({ control });
   const discardMemoDraft = useFormDraftAutosave(subscribe, {
     initialValues: savedValues,
     saveDraft: saveMemoDraft,
@@ -165,7 +165,9 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   const [isEditing, setIsEditing] = useState(restoredMemoDraft != null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const { mutateAsync: updateMemo } = useMutation(useUpdateMemoMutationOptions());
+  const { mutateAsync: updateMemo, isPending: isUpdatePending } = useMutation(
+    useUpdateMemoMutationOptions(),
+  );
   const { mutate: deleteMemo, isPending: isDeletePending } = useMutation(
     useDeleteMemoMutationOptions(),
   );
@@ -182,9 +184,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
       setIsEditing(false);
       Keyboard.dismiss();
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   });
 
@@ -194,10 +194,11 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
         await updateMemo({ memoId, input: { content: getValues('content').trim() } });
         discardMemoDraft();
       } catch (error) {
-        if (!isBusinessError(error)) {
-          showBoundary(error);
+        reportUnexpectedError(error);
+        // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
+        if (!isConnectivityError(error)) {
+          return;
         }
-        return;
       }
     }
     leaveMemo();
@@ -267,7 +268,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
               {isEditing && (
                 <MemoSaveButton
                   isHighlighted={isDirty && isValid}
-                  isDisabled={!isValid || isSubmitting}
+                  isDisabled={!isValid || isUpdatePending}
                   onPress={() => handleSave()}
                 />
               )}
@@ -280,6 +281,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
               <Stack.Toolbar.Button
                 icon={STACK_BACK_ICON}
                 accessibilityLabel={t('common:actions.goBack')}
+                disabled={isUpdatePending}
                 onPress={handleBack}
               />
             </Stack.Toolbar>
@@ -314,7 +316,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                 accessibilityLabel={t('common:actions.save')}
                 variant="prominent"
                 tintColor={saveTint}
-                disabled={!isValid || isSubmitting}
+                disabled={!isValid || isUpdatePending}
                 onPress={() => handleSave()}
               />
             </Stack.Toolbar>

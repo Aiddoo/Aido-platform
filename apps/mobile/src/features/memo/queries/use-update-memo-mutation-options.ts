@@ -22,6 +22,8 @@ export const useUpdateMemoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
+    networkMode: 'always',
     mutationFn: async ({ memoId, input }: UpdateMemoMutationParams) => {
       const result = await service.updateMemo(memoId, input);
       return unwrap(result);

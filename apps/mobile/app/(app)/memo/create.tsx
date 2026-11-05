@@ -6,15 +6,16 @@ import { createMemoDraftKey } from '@src/features/memo/utils/memo-draft';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { isBusinessError } from '@src/shared/errors/result';
+import { isConnectivityError } from '@src/shared/errors';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
 import { Suspense, useCallback, useRef } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import type { TextInputInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -23,7 +24,7 @@ import { useResolveClassNames } from 'uniwind';
 const EMPTY_MEMO_VALUES = { content: '' };
 
 function MemoCreateScreen() {
-  const { showBoundary } = useErrorBoundary();
+  const reportUnexpectedError = useReportUnexpectedError('memo');
 
   const goBack = useSingleTap(router.back);
 
@@ -73,30 +74,30 @@ function MemoCreateScreen() {
   const createMutation = useMutation(useCreateMemoMutationOptions());
   const { color: saveTint } = useResolveClassNames(isValid ? 'text-main' : 'text-gray-4');
 
-  const handleSave = handleSubmit(async (formValues) => {
-    try {
-      await createMutation.mutateAsync(
-        { content: formValues.content.trim() },
-        {
-          onSuccess: () => {
-            discardMemoDraft();
-            goBack();
-          },
-        },
-      );
-    } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
+  // mutate 콜백은 화면이 내려가면 불리지 않는다. 저장이 끝났는데 초안이 남지 않게 기다린 뒤에 지운다
+  const saveMemo = (onFailed: (error: unknown) => void) =>
+    handleSubmit(async ({ content }) => {
+      try {
+        await createMutation.mutateAsync({ content: content.trim() });
+        discardMemoDraft();
+        goBack();
+      } catch (error) {
+        reportUnexpectedError(error);
+        onFailed(error);
       }
-    }
-  });
+    });
 
   const handleBack = useSingleTap(async () => {
-    if (isValid) {
-      await handleSave();
+    if (!isValid) {
+      goBack();
       return;
     }
-    goBack();
+    // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
+    await saveMemo((error) => {
+      if (isConnectivityError(error)) {
+        goBack();
+      }
+    })();
   });
 
   return (
@@ -117,7 +118,7 @@ function MemoCreateScreen() {
             variant="prominent"
             tintColor={saveTint}
             disabled={!isValid || isSubmitting}
-            onPress={() => handleSave()}
+            onPress={() => saveMemo(noop)()}
           />
         </Stack.Toolbar>
         <StyledSafeAreaView edges={['left', 'right']} className="flex-1 px-4">
@@ -139,7 +140,6 @@ function MemoCreateScreen() {
   );
 }
 
-/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
 export default function MemoCreateRoute() {
   return (
     <QueryErrorBoundary>

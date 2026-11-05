@@ -1,7 +1,7 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TODO_SHEET_FALLBACK_HREF } from '@src/features/todo/utils/navigation/todo-sheet-href';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -16,7 +16,6 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { Image } from 'react-native';
 
@@ -108,7 +107,7 @@ function NudgeMessageSheet({
   onOpenChange,
   ...sheetProps
 }: NudgeMessageSheetProps) {
-  const { showBoundary } = useErrorBoundary();
+  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
   const { t } = useTranslation('todo');
   const formMethods = useForm({
     resolver: zodResolver(nudgeFormSchema),
@@ -130,9 +129,7 @@ function NudgeMessageSheet({
       await onSend(message);
       handleOpenChange(false);
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   };
 

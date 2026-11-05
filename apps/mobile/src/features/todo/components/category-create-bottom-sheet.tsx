@@ -2,7 +2,7 @@ import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/ap
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/queries/use-create-todo-category-mutation-options';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -15,7 +15,6 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
 import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category-colors';
@@ -28,7 +27,7 @@ type CategoryCreateBottomSheetProps = Omit<
 >;
 
 export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps) {
-  const { showBoundary } = useErrorBoundary();
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
 
   const { t } = useTranslation(['todo', 'common']);
@@ -50,9 +49,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
         onError: (error) => gate.handleError(error, { onSubscribe: sheet.exit }),
       });
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   };
 
