@@ -68,11 +68,59 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey";
 ```
 
-다시 1.15.0 이상으로 올릴 때는 이 사이 지워진 카테고리를 가리키는 규칙을 먼저 정리한 뒤 같은 이름의 FK를 `NOT VALID`→`VALIDATE`로 다시 건다.
+다시 1.15.0 이상으로 올릴 때는 새 API로 교체한 직후 아래 SQL을 한 트랜잭션으로 한 번 실행한다. 교체 전에 FK를 걸면 아직 도는 옛 서버의 카테고리 삭제가 다시 막힌다. `migrate`는 이 FK를 복구하지 않는다.
+
+정리 대상이 없어도 그대로 실행한다. 옛 서버는 카테고리를 지울 때 할 일만 옮겼으므로 규칙은 자기 회차가 옮겨 간 카테고리로 따라가고, 회차가 없으면 사용자의 첫 카테고리로 간다. 사용자마다 카테고리가 하나 이상 있어 대상이 비지 않는다. 대상이 없으면 `NOT NULL` 위반으로 트랜잭션 전체가 되돌아가므로 일부만 적용되지 않는다.
+
+```sql
+BEGIN;
+UPDATE "TodoSeries" AS series
+SET
+  "categoryId" = COALESCE(
+    (
+      SELECT occurrence."categoryId"
+      FROM "Todo" AS occurrence
+      JOIN "TodoCategory" AS category ON category."id" = occurrence."categoryId"
+      WHERE occurrence."recurrenceGroupId" = series."id"
+        AND category."userId" = series."userId"
+      ORDER BY occurrence."startDate" DESC, occurrence."id" DESC
+      LIMIT 1
+    ),
+    (
+      SELECT category."id"
+      FROM "TodoCategory" AS category
+      WHERE category."userId" = series."userId"
+      ORDER BY category."sortOrder", category."id"
+      LIMIT 1
+    )
+  ),
+  "updatedAt" = now()
+WHERE NOT EXISTS (SELECT 1 FROM "TodoCategory" AS category WHERE category."id" = series."categoryId");
+ALTER TABLE "TodoSeries"
+  ADD CONSTRAINT "TodoSeries_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "TodoCategory"("id")
+  ON DELETE RESTRICT ON UPDATE CASCADE NOT VALID;
+ALTER TABLE "TodoSeries" VALIDATE CONSTRAINT "TodoSeries_categoryId_fkey";
+COMMIT;
+```
+
+이 SQL을 돌리기 전까지 새 서버의 동작: 밤 작업은 깨진 규칙만 `planning.todo-series.materialize-failed`로 건너뛰고 다른 규칙은 계속 만든다. 사용자가 그 규칙을 바꾸면 400 `SYS_0002`이고 `categoryId`를 함께 보내면 풀린다. SQL을 돌린 뒤 다음 밤 작업부터 멈췄던 규칙이 이어진다.
 
 1.14.2로 되돌릴 때의 다른 영향: `email-delivery.v1` 큐에 남은 인증 메일은 재배포 전까지 나가지 않는다. `admin-notification.v1`의 새 형식 잡은 옛 worker가 버린다(운영 알림이라 수용). 2026-11-04 AI 데이터 공유 동의자는 옛 서버에서 UNDECIDED로 보인다(개인정보 쪽으로 안전한 방향이고, 다시 올리면 돌아온다).
 
-**1.15.0 배포 전 확인**: `todo_series` 이관은 `Todo` 전체를 잠근다(로컬 측정 126만 행·26만 행 묶음에서 약 5초, 앱 요청 제한 10초, `lock_timeout` 5초). 실행 전에 운영 DB에서 읽기 전용으로 아래 건수를 본다. 묶음 행이 수만을 넘으면 칸 추가·채우기·`CREATE UNIQUE INDEX CONCURRENTLY`로 나눈다. 2026-11 기준 묶음 119개·1,834행이라 그대로 실행한다.
+**1.15.0 앱 × 1.14.2 서버의 제약 (롤백 중에만):** 서버를 먼저 배포하므로 이 조합은 롤백 때만 생긴다.
+
+| 동작                                             | 결과                                                                                                                                                             |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 반복 회차 수정 시트                              | `GET /v1/todo-series/:id`가 없어 404 `SYS_0002`다. 앱은 규칙 없음으로 보고 "이 할 일만" 고친다                                                                   |
+| 반복 만들기                                      | 옛 서버는 `repeat`를 버리고 단일 할 일 하나만 201로 만든다. 응답에 `series`가 없으면 앱은 실패로 안내하고 입력을 보존한다. **이미 만들어진 단일 할 일은 남는다** |
+| 삭제 `scope=ALL`, 이후 모두 수정                 | 옛 서버는 `scope`를 몰라 이 회차 하나만 지우거나 고치고 200을 준다. 앱은 구분할 수 없다                                                                          |
+| 반복 끝내기                                      | 200이지만 아무것도 바뀌지 않는다. 앱은 구분할 수 없다                                                                                                            |
+| AI 동의 `2026-11-04` 동의·철회                   | 400 `SYS_0002`다. 이 동의자는 옛 서버에서 UNDECIDED로 보여 `AI_1311`을 받는다. 동의도 철회도 다시 올릴 때까지 안 된다                                            |
+| `/v1/entitlements`, `/v1/quick-plans` 등 새 경로 | 404다. 크래시는 없고 내 정보·구독 화면에 재시도 화면이 뜬다                                                                                                      |
+
+옛 서버가 만든 묶음은 규칙과 회차 날짜가 없어 응답의 `repeat`가 null이다. 앱은 이런 묶음에 범위 질문과 반복 끝내기를 보이지 않고, 다시 올린 뒤 새 서버는 이 묶음의 "모든 반복 할 일" 삭제를 받는다. 이관에서 요일을 정할 수 없던 묶음도 같은 상태다.
+
+**1.15.0 배포 전 확인**: `todo_series` 이관은 `Todo` 전체를 잠근다(로컬 측정 126만 행·26만 행 묶음에서 약 4.7초, 앱 요청 제한 10초, `lock_timeout` 5초). 실행 전에 운영 DB에서 읽기 전용으로 아래 건수를 본다. 묶음 행이 수만을 넘으면 칸 추가·채우기·`CREATE UNIQUE INDEX CONCURRENTLY`로 나눈다. 2026-11 기준 묶음 119개·1,834행이라 그대로 실행한다.
 
 ```sql
 SELECT count(DISTINCT "recurrenceGroupId") AS series, count(*) AS rows FROM "Todo" WHERE "recurrenceGroupId" IS NOT NULL;
