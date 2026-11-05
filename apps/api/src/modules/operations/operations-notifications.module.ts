@@ -3,6 +3,7 @@ import { HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DatabaseModule } from "#api/platform/database/index";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import { AdminEventNotifier } from "./application/notifiers/notifications/admin-event.notifier.js";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "./application/ports/notifications/admin-notification-queue.port.js";
@@ -45,7 +46,7 @@ import {
     {
       provide: ADMIN_NOTIFIER,
       useFactory: createAdminNotifier,
-      inject: [TypedConfigService, getHttpClientToken("discord")],
+      inject: [TypedConfigService, getHttpClientToken("discord"), OutboundPolicyRegistry],
     },
   ],
   exports: [AdminEventNotifier],
