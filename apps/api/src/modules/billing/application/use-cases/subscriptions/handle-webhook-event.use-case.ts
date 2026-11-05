@@ -145,7 +145,6 @@ export class HandleWebhookEvent {
         eventType: event.type,
         eventId: event.id,
         store: event.store,
-        appUserId: event.app_user_id,
         productId: event.product_id,
       },
       () =>

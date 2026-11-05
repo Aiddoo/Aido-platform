@@ -33,21 +33,3 @@ export function maskEmail(email: string): string {
   }
   return `${local[0]}***@${domain}`;
 }
-
-/**
- * 사용자 ID(cuid)를 로그 안전 형태로 마스킹.
- *
- * cuid 는 비인증적(non-auth) 식별자이지만 노출 표면적을 줄이기 위해 앞 6자만 남김.
- * 운영 디버깅 시에는 DB 에서 prefix 로 조회 가능.
- *
- * @example maskUserId("cmmxmf9tx000f1ysse29t7981") → "cmmxmf…"
- */
-export function maskUserId(userId: string): string {
-  if (!userId) {
-    return "<empty>";
-  }
-  if (userId.length <= 6) {
-    return `${userId}…`;
-  }
-  return `${userId.slice(0, 6)}…`;
-}
