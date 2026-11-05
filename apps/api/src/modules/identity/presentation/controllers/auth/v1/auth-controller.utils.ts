@@ -29,6 +29,7 @@ export function extractMetadata(
       deviceName: body?.deviceName,
       deviceType: body?.deviceType,
     }),
+    ...(client.locale != null && { locale: client.locale }),
   };
 }
 

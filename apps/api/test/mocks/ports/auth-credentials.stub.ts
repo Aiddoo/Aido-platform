@@ -305,13 +305,19 @@ export class StubAuthProvisioningSeeder implements UserProvisioningSeederPort {
     consent: Parameters<UserProvisioningSeederPort["seedDefaultSettings"]>[1];
   }[] = [];
   readonly categoryUserIds: string[] = [];
+  readonly categoryLocales: Parameters<UserProvisioningSeederPort["seedDefaultCategories"]>[1][] =
+    [];
   async seedDefaultSettings(
     userId: string,
     consent: Parameters<UserProvisioningSeederPort["seedDefaultSettings"]>[1],
   ): Promise<void> {
     this.settings.push({ userId, consent });
   }
-  async seedDefaultCategories(userId: string): Promise<void> {
+  async seedDefaultCategories(
+    userId: string,
+    locale?: Parameters<UserProvisioningSeederPort["seedDefaultCategories"]>[1],
+  ): Promise<void> {
     this.categoryUserIds.push(userId);
+    this.categoryLocales.push(locale);
   }
 }

@@ -16,6 +16,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type {
@@ -192,6 +193,7 @@ export class LoginWithOAuthToken {
         providerAccountId,
         userName: options.userName,
         profileImage: options.profileImage,
+        locale: options.metadata?.locale,
       });
 
       userId = newUser.id;
@@ -224,6 +226,7 @@ export class LoginWithOAuthToken {
     providerAccountId: string;
     userName?: string;
     profileImage?: string;
+    locale?: SupportedLocale;
   }) {
     return this.#dependencies.unitOfWork.run(async () => {
       const maximumNameLength = 20;
@@ -247,6 +250,7 @@ export class LoginWithOAuthToken {
           privacyAgreedAt: currentTime,
           // OAuth 가입 시 선택 동의 화면이 없으므로 마케팅 동의를 자동 처리하지 않는다.
         },
+        locale: data.locale,
       });
 
       await this.#dependencies.securityLogRepository.create({

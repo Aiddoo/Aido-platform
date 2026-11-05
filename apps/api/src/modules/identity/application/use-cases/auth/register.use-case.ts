@@ -87,6 +87,7 @@ export class Register {
             marketingAgreedAt: marketingAgreed ? currentTime : undefined,
             marketingPushAgreedAt: marketingPushAgreed ? currentTime : undefined,
           },
+          locale: metadata?.locale,
         });
 
         const verificationResult =
