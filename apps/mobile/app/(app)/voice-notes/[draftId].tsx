@@ -49,16 +49,23 @@ import {
 import { useTrack } from '@src/shared/analytics';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
+  Button,
+  CheckmarkIcon,
   HStack,
+  MemoIcon,
+  MoreIcon,
   QueryErrorBoundary,
+  READABLE_CONTENT_MAX_WIDTH,
   Result,
+  ScreenScrollShadow,
   StyledSafeAreaView,
   Text,
-  TextButton,
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
@@ -67,7 +74,7 @@ import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/rea
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Tabs } from 'heroui-native';
+import { Menu, PressableFeedback, Spinner, Tabs } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ScrollView } from 'react-native';
@@ -79,6 +86,13 @@ const SCAN_PREVIEW_SENTENCES = 12;
 
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */
 const UNUSED_CATEGORY_ID = 0;
+
+const PLAN_REVIEW_CLASS_NAME = 'flex-1 pb-3';
+
+const HEADER_PILL_ICON_SIZE = 16;
+/** 32 높이의 머리글 버튼을 44로 넓힌다 */
+const HEADER_PILL_HIT_SLOP = 6;
+const VOICE_NOTE_MENU_WIDTH = 180;
 
 const closeScreen = () => {
   if (router.canGoBack()) {
@@ -126,7 +140,11 @@ function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
 
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
-      <VoiceNoteHeader title={t('digest.readyTitle')} onClose={closeScreen} />
+      <VoiceNoteHeader
+        title={t('digest.readyTitle')}
+        onClose={closeScreen}
+        right={<VoiceNoteMoreMenu />}
+      />
       <SentenceCaptionList sentences={note.sentences} className="min-h-24 flex-1" />
       {failure != null && <VoiceNoteDigest.Failure failure={failure} />}
       {(failure == null || canRetryPlanFailure(failure.cause)) && (
@@ -136,7 +154,6 @@ function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
           onPress={() => digest()}
         />
       )}
-      <DeleteVoiceNoteButton />
     </VStack>
   );
 }
@@ -195,6 +212,11 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
     }),
   );
   const player = useVoiceNotePlayer({ parts, durationMs: note.durationMs });
+  useOnScreenBlur(() => {
+    if (player.getPlayback().isPlaying) {
+      player.togglePlay().catch(noop);
+    }
+  });
   // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
   const [levels] = useState(() => createSpeechLevels(note.sentences, note.durationMs));
   const markCount = VoiceNotePolicy.getMarkCount(note);
@@ -203,7 +225,7 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
   const canPlay = parts.length > 0;
   const todos = (
     <QueryErrorBoundary>
-      <Suspense fallback={<PlanReview.Loading />}>
+      <Suspense fallback={<PlanReview.Loading className={PLAN_REVIEW_CLASS_NAME} />}>
         <VoiceNoteResult.Todos note={note} />
       </Suspense>
     </QueryErrorBoundary>
@@ -212,7 +234,15 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
 
   return (
     <VStack flex={1} gap={12} className="px-4 pt-2">
-      <VoiceNoteHeader onClose={closeScreen} right={<VoiceNoteResult.SaveMemo note={note} />} />
+      <VoiceNoteHeader
+        onClose={closeScreen}
+        right={
+          <HStack gap={12} align="center" className="shrink">
+            <VoiceNoteResult.SaveMemo note={note} />
+            <VoiceNoteMoreMenu />
+          </HStack>
+        }
+      />
       <VStack gap={4}>
         <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
           {VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle')}
@@ -269,7 +299,11 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
               .exhaustive()}
           </Animated.View>
         </VStack>
-        {!isCompact && <Box flex={1}>{todos}</Box>}
+        {!isCompact && (
+          <Box flex={1} style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}>
+            {todos}
+          </Box>
+        )}
       </HStack>
     </VStack>
   );
@@ -291,24 +325,25 @@ VoiceNoteResult.Summary = function Summary({
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (
-    <ScrollView contentContainerClassName="gap-4 pb-6" showsVerticalScrollIndicator={false}>
-      <Text size="b2" lineBreakStrategyIOS="hangul-word">
-        {note.digest?.summary}
-      </Text>
-      {/* 넓은 화면은 할 일 칸이 늘 보여 거기서 알린다 */}
-      {isCompact && VoiceNotePolicy.hasNoPlannedTodos(note) && (
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word" testID="voice-note-no-todos">
-          {t('result.noTodos')}
+    <ScreenScrollShadow className="flex-1">
+      <ScrollView contentContainerClassName="gap-4 pb-6" showsVerticalScrollIndicator={false}>
+        <Text size="b2" lineBreakStrategyIOS="hangul-word">
+          {note.digest?.summary}
         </Text>
-      )}
-      <VStack gap={4}>
-        <Text size="b4" weight="semibold" shade={6}>
-          {t('keyPoints.title')}
-        </Text>
-        <VoiceNoteResult.KeyPoints note={note} player={player} canPlay={canPlay} />
-      </VStack>
-      <DeleteVoiceNoteButton />
-    </ScrollView>
+        {/* 넓은 화면은 할 일 칸이 늘 보여 거기서 알린다 */}
+        {isCompact && VoiceNotePolicy.hasNoPlannedTodos(note) && (
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word" testID="voice-note-no-todos">
+            {t('result.noTodos')}
+          </Text>
+        )}
+        <VStack gap={4}>
+          <Text size="b4" weight="semibold" shade={6}>
+            {t('keyPoints.title')}
+          </Text>
+          <VoiceNoteResult.KeyPoints note={note} player={player} canPlay={canPlay} />
+        </VStack>
+      </ScrollView>
+    </ScreenScrollShadow>
   );
 };
 
@@ -416,44 +451,40 @@ VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
       fallbackCategoryId == null ? (
         <Result title={t('result.noTodos')} />
       ) : (
-        <ScrollView contentContainerClassName="pb-6" showsVerticalScrollIndicator={false}>
-          <PlanReview
-            form={form}
-            plan={toVoicePlanFromDraft(
-              {
-                planId: voicePlanIdSchema.parse(draftId),
-                source: 'voice-note',
-                sourceMemoId: null,
-              },
-              planDraft,
-            )}
-            fallbackCategoryId={fallbackCategoryId}
-            requestStore={{
-              find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
-              save: (request) => {
-                const latest = drafts.find(accountId, draftId);
-                if (latest != null) {
-                  drafts.save(accountId, VoiceNotePolicy.withPlanApplyRequest(latest, request));
-                }
-              },
-            }}
-            onSaved={({ todoCount }) => {
+        <PlanReview
+          className={PLAN_REVIEW_CLASS_NAME}
+          form={form}
+          plan={toVoicePlanFromDraft(
+            {
+              planId: voicePlanIdSchema.parse(draftId),
+              source: 'voice-note',
+              sourceMemoId: null,
+            },
+            planDraft,
+          )}
+          fallbackCategoryId={fallbackCategoryId}
+          requestStore={{
+            find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
+            save: (request) => {
               const latest = drafts.find(accountId, draftId);
               if (latest != null) {
-                drafts.save(
-                  accountId,
-                  VoiceNotePolicy.withAppliedAt(latest, new Date(), todoCount),
-                );
+                drafts.save(accountId, VoiceNotePolicy.withPlanApplyRequest(latest, request));
               }
-            }}
-          />
-        </ScrollView>
+            },
+          }}
+          onSaved={({ todoCount }) => {
+            const latest = drafts.find(accountId, draftId);
+            if (latest != null) {
+              drafts.save(accountId, VoiceNotePolicy.withAppliedAt(latest, new Date(), todoCount));
+            }
+          }}
+        />
       ),
     )
     .exhaustive();
 };
 
-/** 정리한 내용을 메모 한 장으로 저장한다. 저장했으면 다시 저장하지 않게 글자로만 보인다 */
+/** 정리한 내용을 메모 한 장으로 저장한다. 저장했으면 다시 저장하지 않게 같은 자리에 저장했다고만 보인다 */
 VoiceNoteResult.SaveMemo = function SaveMemo({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
@@ -472,9 +503,21 @@ VoiceNoteResult.SaveMemo = function SaveMemo({ note }: { note: VoiceNote }) {
 
   if (note.memoSavedAt != null) {
     return (
-      <Text size="b4" shade={6} maxLines={1} testID="voice-note-memo-saved">
-        {t('result.memoSaved')}
-      </Text>
+      <HStack
+        gap={4}
+        align="center"
+        className="h-8 shrink rounded-full bg-gray-9/5 px-3 dark:bg-gray-9/20"
+        testID="voice-note-memo-saved"
+      >
+        <CheckmarkIcon
+          width={HEADER_PILL_ICON_SIZE}
+          height={HEADER_PILL_ICON_SIZE}
+          colorClassName="text-gray-7"
+        />
+        <Text size="b4" weight="medium" shade={7} maxLines={1} className="shrink">
+          {t('result.memoSaved')}
+        </Text>
+      </HStack>
     );
   }
   if (memo == null) {
@@ -518,22 +561,45 @@ VoiceNoteResult.SaveMemo = function SaveMemo({ note }: { note: VoiceNote }) {
   };
 
   return (
-    <TextButton
-      size="medium"
+    <Button
+      size="small"
+      variant="weak"
+      display="inline"
+      radius="full"
+      hitSlop={HEADER_PILL_HIT_SLOP}
+      accessibilityLabel={t('result.saveMemo')}
       isDisabled={mutation.isPending}
       onPress={handleSave}
+      className="shrink"
       testID="voice-note-save-memo"
     >
-      {t('result.saveMemo')}
-    </TextButton>
+      <HStack gap={4} align="center" className="shrink">
+        {/* isLoading은 글자를 스피너로 바꿔 폭이 줄어든다. 글자를 두고 아이콘 자리만 바꾼다 */}
+        {mutation.isPending ? (
+          <Spinner size="sm" color="default" />
+        ) : (
+          <MemoIcon
+            width={HEADER_PILL_ICON_SIZE}
+            height={HEADER_PILL_ICON_SIZE}
+            colorClassName="text-main"
+          />
+        )}
+        <Text size="b4" weight="semibold" tone="brand" maxLines={1} className="shrink">
+          {t('result.saveMemo')}
+        </Text>
+      </HStack>
+    </Button>
   );
 };
 
-function DeleteVoiceNoteButton() {
+/** 머리글 ⋯. X와 같은 크기·터치 영역으로 오른쪽 끝선에 맞춘다 */
+function VoiceNoteMoreMenu() {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
+  const fontScaledSize = useFontScaledSize();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleDelete = async () => {
     const isConfirmed = await confirmDialog.open({
@@ -550,14 +616,37 @@ function DeleteVoiceNoteButton() {
   };
 
   return (
-    <TextButton
-      size="small"
-      className="self-center"
-      onPress={handleDelete}
-      testID="voice-note-delete"
-    >
-      {t('result.delete')}
-    </TextButton>
+    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Menu.Trigger asChild>
+        <PressableFeedback
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t('result.more')}
+          accessibilityState={{ expanded: isOpen }}
+          testID="voice-note-more"
+        >
+          <MoreIcon
+            width={fontScaledSize(22)}
+            height={fontScaledSize(22)}
+            colorClassName="text-gray-7"
+          />
+        </PressableFeedback>
+      </Menu.Trigger>
+      <Menu.Portal disableFullWindowOverlay={false}>
+        <Menu.Overlay />
+        <Menu.Content
+          presentation="popover"
+          placement="bottom"
+          align="end"
+          width={VOICE_NOTE_MENU_WIDTH}
+          className="rounded-2xl border border-gray-2 bg-gray-1"
+        >
+          <Menu.Item variant="danger" onPress={handleDelete} testID="voice-note-delete">
+            <Menu.ItemTitle>{t('result.delete')}</Menu.ItemTitle>
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu>
   );
 }
 

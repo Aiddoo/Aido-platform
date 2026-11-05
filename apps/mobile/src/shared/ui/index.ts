@@ -149,6 +149,7 @@ export {
   type ReadableContentProps,
 } from './readable-content';
 export { Result } from './result';
+export { ScreenScrollShadow } from './screen-scroll-shadow';
 export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer, type ScallopedContainerProps } from './scalloped-container';
 export { ScrollProgressWidget } from './scroll-progress-widget';

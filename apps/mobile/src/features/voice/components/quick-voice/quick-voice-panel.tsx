@@ -255,6 +255,7 @@ QuickVoicePanel.Review = function Review({
     defaultValues: createPlanReviewFormValues(plan),
     mode: 'onChange',
   });
+  const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
   const restartButton = (
     <Box className="flex-1">
       <Button variant="weak" color="dark" onPress={onRestart} testID="quick-voice-restart">
@@ -266,6 +267,8 @@ QuickVoicePanel.Review = function Review({
   return (
     <Animated.View entering={FadeIn.duration(200)} testID="quick-voice-review">
       <PlanReview
+        surface="sheet"
+        style={{ maxHeight: bodyMaxHeight }}
         form={form}
         plan={plan}
         fallbackCategoryId={fallbackCategoryId}

@@ -57,7 +57,7 @@ export function VoiceNoteHeader({
             </Text>
           ))}
       </Box>
-      <Box flex={isCompact ? undefined : 1} className="items-end">
+      <Box flex={isCompact ? undefined : 1} className="shrink items-end">
         {right}
       </Box>
     </HStack>

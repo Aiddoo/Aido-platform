@@ -21,6 +21,8 @@ import {
   InfoIcon,
   QueryErrorBoundary,
   Result,
+  ScreenScrollShadow,
+  SheetScrollShadow,
   Text,
   TextSkeleton,
   useOverlay,
@@ -36,7 +38,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { randomUUID } from 'expo-crypto';
 import { Skeleton } from 'heroui-native';
-import { type ReactNode, Suspense, useRef } from 'react';
+import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
 import {
   FormProvider,
   type UseFormReturn,
@@ -45,6 +47,7 @@ import {
   useFormState,
   useWatch,
 } from 'react-hook-form';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
@@ -82,7 +85,7 @@ interface PlanApplyRequestStore {
   save: (request: PlanApplyRequest | null) => void;
 }
 
-interface PlanReviewProps {
+interface PlanReviewProps extends Pick<ComponentProps<typeof VStack>, 'className' | 'style'> {
   /** 폼은 화면이 소유한다. `createPlanReviewFormValues`로 만든 값으로 화면이 `useForm`을 만들어 넘긴다 */
   form: UseFormReturn<PlanReviewFormValues>;
   plan: VoicePlan;
@@ -90,6 +93,8 @@ interface PlanReviewProps {
   fallbackCategoryId: number;
   /** 계획을 만들 때 횟수를 썼는지. false면 빈 결과에서 "횟수는 차감되지 않았어요"를 보여 준다 */
   isCharged?: boolean;
+  /** 어디에 놓였는지. 스크롤이 잘리는 쪽을 그 면 색으로 덮는다 */
+  surface?: 'screen' | 'sheet';
   /** 추가 버튼 왼쪽에 둘 보조 동작(예: 다시 말하기). 카드가 없으면 안내 아래에 둔다 */
   secondaryAction?: ReactNode;
   /** 저장 요청의 키를 화면 밖에 남길 곳. 없으면 이 화면이 떠 있는 동안만 기억한다 */
@@ -111,11 +116,14 @@ export function PlanReview({
   plan,
   fallbackCategoryId,
   isCharged = true,
+  surface = 'screen',
   secondaryAction,
   requestStore,
   onSaved,
   onApplied,
   onSourceMissing,
+  className,
+  style,
 }: PlanReviewProps) {
   const { t } = useTranslation(['voicePlan', 'subscription']);
   const { control, handleSubmit } = form;
@@ -141,6 +149,7 @@ export function PlanReview({
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
   const headline = VoicePlanPolicy.getPlanHeadline(plan, selection);
+  const ScrollFade = surface === 'sheet' ? SheetScrollShadow : ScreenScrollShadow;
 
   const handleApply = handleSubmit((values) => {
     const selected = VoicePlanPolicy.sortPlanActionsByGroup(
@@ -203,47 +212,55 @@ export function PlanReview({
 
   return (
     <FormProvider {...form}>
-      <VStack gap={16}>
-        <VStack gap={4}>
-          <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
-            {match(headline)
-              .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
-              .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
-              .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
-              .exhaustive()}
-          </Text>
-          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-            {t('voicePlan:plan.hint')}
-          </Text>
-          {plan.omittedTodoCount > 0 && (
-            <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-              {t('voicePlan:plan.omitted', { count: plan.omittedTodoCount })}
-            </Text>
-          )}
-        </VStack>
-
-        <VStack gap={8}>
-          {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
-            <VStack key={group.categoryId ?? 'memo'} gap={8}>
-              {group.categoryId != null && (
-                <PlanReview.CategoryHeader categoryId={group.categoryId} />
-              )}
-              {group.indexes.map((index) =>
-                group.categoryId == null ? (
-                  <PlanReview.MemoRow key={fields[index]?.id} index={index} />
-                ) : (
-                  <PlanReview.TodoRow
-                    key={fields[index]?.id}
-                    index={index}
-                    fallbackCategoryId={fallbackCategoryId}
-                  />
-                ),
+      <VStack className={className} style={style}>
+        <ScrollFade className="shrink grow">
+          <ScrollView
+            contentContainerClassName="gap-4 pb-4"
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          >
+            <VStack gap={4}>
+              <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
+                {match(headline)
+                  .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
+                  .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
+                  .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
+                  .exhaustive()}
+              </Text>
+              <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                {t('voicePlan:plan.hint')}
+              </Text>
+              {plan.omittedTodoCount > 0 && (
+                <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                  {t('voicePlan:plan.omitted', { count: plan.omittedTodoCount })}
+                </Text>
               )}
             </VStack>
-          ))}
-        </VStack>
 
-        <HStack gap={8}>
+            <VStack gap={8}>
+              {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
+                <VStack key={group.categoryId ?? 'memo'} gap={8}>
+                  {group.categoryId != null && (
+                    <PlanReview.CategoryHeader categoryId={group.categoryId} />
+                  )}
+                  {group.indexes.map((index) =>
+                    group.categoryId == null ? (
+                      <PlanReview.MemoRow key={fields[index]?.id} index={index} />
+                    ) : (
+                      <PlanReview.TodoRow
+                        key={fields[index]?.id}
+                        index={index}
+                        fallbackCategoryId={fallbackCategoryId}
+                      />
+                    ),
+                  )}
+                </VStack>
+              ))}
+            </VStack>
+          </ScrollView>
+        </ScrollFade>
+
+        <HStack gap={8} className="pt-3">
           {secondaryAction}
           <Box className="flex-1">
             <Button
@@ -264,23 +281,31 @@ export function PlanReview({
   );
 }
 
-/** 카드 수를 아직 몰라 흔한 개수로 그린다. 제목·안내·행 자리는 실제 검토 화면과 같다 */
-PlanReview.Loading = function Loading() {
+/** 카드 수를 아직 몰라 흔한 개수로 그린다. 제목·안내·행·아래 버튼 자리는 실제 검토 화면과 같다 */
+PlanReview.Loading = function Loading({
+  className,
+  style,
+}: Pick<PlanReviewProps, 'className' | 'style'>) {
   return (
-    <VStack gap={16}>
-      <VStack gap={4}>
-        <TextSkeleton size="t3" className="w-2/3" />
-        <TextSkeleton size="b4" className="w-full" />
+    <VStack className={className} style={style}>
+      <VStack flex={1} gap={16}>
+        <VStack gap={4}>
+          <TextSkeleton size="t3" className="w-2/3" />
+          <TextSkeleton size="b4" className="w-full" />
+        </VStack>
+        <VStack gap={8}>
+          {times(LOADING_ROW_COUNT, (index) => (
+            <TodoRow
+              key={index}
+              left={<Skeleton className="size-5 rounded-md" />}
+              top={<TextSkeleton size="b3" className="w-3/4" />}
+            />
+          ))}
+        </VStack>
       </VStack>
-      <VStack gap={8}>
-        {times(LOADING_ROW_COUNT, (index) => (
-          <TodoRow
-            key={index}
-            left={<Skeleton className="size-5 rounded-md" />}
-            top={<TextSkeleton size="b3" className="w-3/4" />}
-          />
-        ))}
-      </VStack>
+      <Box className="pt-3">
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </Box>
     </VStack>
   );
 };
@@ -385,6 +410,7 @@ PlanReview.TodoRow = function PlanTodoRow({
           label={
             <TodoLabel
               isChecked={false}
+              lineBreakStrategyIOS="hangul-word"
               className={cn('flex-1', !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
             >
               {todo.title}
@@ -428,6 +454,7 @@ PlanReview.TodoRow = function PlanTodoRow({
               top={
                 <TodoLabel
                   isChecked={false}
+                  lineBreakStrategyIOS="hangul-word"
                   className={cn(!todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
                 >
                   {item.title}

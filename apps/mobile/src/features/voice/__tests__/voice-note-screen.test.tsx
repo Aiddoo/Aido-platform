@@ -196,7 +196,7 @@ describe('말로 메모 화면', () => {
       /한 번에 정리할 수 있는 길이를 넘었어요/,
     );
     expect(screen.queryByText('다시 정리')).toBeNull();
-    expect(screen.getByTestId('voice-note-delete')).toBeTruthy();
+    expect(screen.getByTestId('voice-note-more')).toBeTruthy();
   });
 
   test('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {

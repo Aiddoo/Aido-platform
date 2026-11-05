@@ -44,8 +44,11 @@ export function VoiceNotePlayerBar({
 
   if (!isRecordingAvailable) {
     return (
-      <HStack className={cn('rounded-2xl bg-gray-1 px-3 py-3', className)} {...stackProps}>
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+      <HStack
+        className={cn('self-start rounded-xl bg-gray-1 px-3 py-2', className)}
+        {...stackProps}
+      >
+        <Text size="e1" shade={7} lineBreakStrategyIOS="hangul-word" className="shrink">
           {t('player.unavailable')}
         </Text>
       </HStack>

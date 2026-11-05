@@ -73,6 +73,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `HStack`                                                             | 수평 레이아웃                                                               | `src/shared/ui/h-stack/h-stack.md`                               |
 | `AdaptivePane`                                                       | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음)     | `src/shared/ui/adaptive-pane/adaptive-pane.md`                   |
 | `ReadableContent`                                                    | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                          | `src/shared/ui/readable-content/readable-content.md`             |
+| `ScreenScrollShadow`                                                 | 화면 배경 위 스크롤의 잘리는 쪽을 흐리게 덮음 (시트는 `SheetScrollShadow`)  | `src/shared/ui/screen-scroll-shadow/screen-scroll-shadow.md`     |
 | `VStack`                                                             | 수직 레이아웃                                                               | `src/shared/ui/v-stack/v-stack.md`                               |
 | `Grid`                                                               | 그리드 레이아웃                                                             | `src/shared/ui/grid/grid.md`                                     |
 | `GridItem`                                                           | 그리드 아이템                                                               | `src/shared/ui/grid/grid.md`                                     |

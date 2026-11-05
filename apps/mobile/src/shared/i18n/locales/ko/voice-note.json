@@ -81,13 +81,13 @@
     "pausedTitle": "잠시 멈췄어요",
     "pausedDescription": {
       "app-background": "다른 앱으로 가서 멈췄어요. 들은 내용은 모두 남아 있어요.",
-      "interrupted": "전화나 다른 소리 때문에 멈췄어요. 들은 내용은 모두 남아 있어요.",
+      "interrupted": "전화나 다른 화면 때문에 멈췄어요. 들은 내용은 모두 남아 있어요.",
       "user": "들은 내용은 모두 남아 있어요.",
       "limit": "한 번에 녹음할 수 있는 시간을 다 썼어요. 들은 내용은 모두 남아 있어요."
     },
     "pausedEmptyDescription": {
       "app-background": "다른 앱으로 가서 멈췄어요. 아직 들은 내용은 없어요.",
-      "interrupted": "전화나 다른 소리 때문에 멈췄어요. 아직 들은 내용은 없어요.",
+      "interrupted": "전화나 다른 화면 때문에 멈췄어요. 아직 들은 내용은 없어요.",
       "user": "아직 들은 내용은 없어요.",
       "limit": "한 번에 녹음할 수 있는 시간을 다 썼어요. 들은 내용이 없어 정리할 게 없어요."
     },
@@ -138,6 +138,7 @@
     "appliedMemo": "메모를 저장했어요",
     "saveMemo": "메모로 저장",
     "memoSaved": "메모로 저장했어요",
+    "more": "더 보기",
     "delete": "이 메모 삭제",
     "deleteTitle": "이 메모를 삭제할까요?",
     "deleteDescription": "요약과 들은 내용, 녹음 파일을 기기에서 삭제해요. 되돌릴 수 없어요.",
@@ -149,6 +150,8 @@
   "drafts": {
     "title": "말로 남긴 메모",
     "notDigested": "정리 전",
-    "digested": "정리함"
+    "digested": "정리함",
+    "viewAll": "전체 보기 {{amount}}개",
+    "empty": "말로 남긴 메모가 없어요"
   }
 }

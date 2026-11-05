@@ -20,12 +20,13 @@ import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave'
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, Result, StyledSafeAreaView } from '@src/shared/ui';
+import { QueryErrorBoundary, ReadableContent, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { ScrollView } from 'react-native';
+
+const PLAN_REVIEW_CLASS_NAME = 'flex-1 px-4 pb-3 pt-4';
 
 function AiReviewScreen() {
   const { t } = useTranslation('memo');
@@ -83,23 +84,22 @@ function AiReviewScreen() {
   }
 
   return (
-    <ScrollView contentContainerClassName="p-4 pb-6">
-      <PlanReview
-        form={form}
-        plan={toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
-        fallbackCategoryId={fallbackCategoryId}
-        onApplied={() => {
-          discardDraft();
-          dismiss();
-          navigate('/feed');
-        }}
-        onSourceMissing={() => {
-          discardDraft();
-          dismiss();
-          navigate('/memo');
-        }}
-      />
-    </ScrollView>
+    <PlanReview
+      className={PLAN_REVIEW_CLASS_NAME}
+      form={form}
+      plan={toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
+      fallbackCategoryId={fallbackCategoryId}
+      onApplied={() => {
+        discardDraft();
+        dismiss();
+        navigate('/feed');
+      }}
+      onSourceMissing={() => {
+        discardDraft();
+        dismiss();
+        navigate('/memo');
+      }}
+    />
   );
 }
 
@@ -118,17 +118,13 @@ export default function AiReviewRoute() {
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
-      <QueryErrorBoundary resetKeys={[params.data.memoId]}>
-        <Suspense
-          fallback={
-            <Box className="p-4">
-              <PlanReview.Loading />
-            </Box>
-          }
-        >
-          <AiReviewScreen />
-        </Suspense>
-      </QueryErrorBoundary>
+      <ReadableContent flex={1}>
+        <QueryErrorBoundary resetKeys={[params.data.memoId]}>
+          <Suspense fallback={<PlanReview.Loading className={PLAN_REVIEW_CLASS_NAME} />}>
+            <AiReviewScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ReadableContent>
     </StyledSafeAreaView>
   );
 }

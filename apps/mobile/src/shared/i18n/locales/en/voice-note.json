@@ -82,13 +82,13 @@
     "pausedTitle": "Recording paused",
     "pausedDescription": {
       "app-background": "You switched apps, so we paused. Everything so far is saved.",
-      "interrupted": "A call or another sound paused recording. Everything so far is saved.",
+      "interrupted": "A call or another screen paused recording. Everything so far is saved.",
       "user": "Everything so far is saved.",
       "limit": "You've reached the time limit for one recording. Everything so far is saved."
     },
     "pausedEmptyDescription": {
       "app-background": "You switched apps, so we paused. We haven't heard anything yet.",
-      "interrupted": "A call or another sound paused recording. We haven't heard anything yet.",
+      "interrupted": "A call or another screen paused recording. We haven't heard anything yet.",
       "user": "We haven't heard anything yet.",
       "limit": "You've reached the time limit for one recording. We didn't hear anything to summarize."
     },
@@ -139,6 +139,7 @@
     "appliedMemo": "Memo saved",
     "saveMemo": "Save as memo",
     "memoSaved": "Saved as a memo",
+    "more": "More",
     "delete": "Delete voice note",
     "deleteTitle": "Delete this voice note?",
     "deleteDescription": "Deletes the summary, what we heard, and the audio from this device. This can't be undone.",
@@ -150,6 +151,8 @@
   "drafts": {
     "title": "Voice notes",
     "notDigested": "Not summarized",
-    "digested": "Summarized"
+    "digested": "Summarized",
+    "viewAll": "View all {{amount}}",
+    "empty": "No voice notes yet"
   }
 }
