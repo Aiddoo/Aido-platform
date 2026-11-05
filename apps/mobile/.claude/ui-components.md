@@ -1,6 +1,6 @@
 # UI 컴포넌트 사용 가이드
 
-**Version**: 1.1.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
+**Version**: 1.2.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
 
 > 컴포넌트 선택 우선순위: HeroUI Native → Shared UI 래퍼 (`@src/shared/ui`) → React Native 기본.
 
@@ -43,7 +43,7 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 HeroUI와 Shared UI 모두에 없는 경우에만 React Native 컴포넌트를 쓴다.
 
 ```tsx
-import { FlatList, Image, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 ```
 
 ### 한도 안내는 `PremiumDialog` 하나
@@ -89,14 +89,14 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `SettingsCard`(`.Item`·`.Toggle`·`.Content`·`.Separator`·스켈레톤), `SettingsScreenLayout` | 설정 카드와 행(`ListGroup`·`ControlField` 기반), 설정 화면 스크롤 틀         | `src/shared/ui/settings-card/settings-card.md`                   |
 | `KeyboardBottomSheet`                                                                      | 키보드 연동 바텀시트 (폼용)                                                  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `BottomSheet`                                                                              | 키보드 불필요 바텀시트 (피커, 액션시트)                                      | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
-| `ModalBottomSheet`                                                                         | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                             | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
+| `ModalBottomSheet`                                                                         | `OverlayProvider` 안의 절대 위치 바텀시트 (시트 위에 시트)                   | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `SheetHeaderLayout`                                                                        | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤             | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `SheetRouteScreen`, `useSheetRoute`                                                        | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기   | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `useStackScreenOptions`, `useStackBackToolbar`                                             | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기       | `src/shared/ui/stack-header/stack-header.md`                     |
 | `FormStepLayout`                                                                           | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)             | `src/shared/ui/form-step-layout/form-step-layout.md`             |
 | `ActionChip`                                                                               | 아이콘 + 라벨 선택 칩 (필터·옵션)                                            | `src/shared/ui/action-chip/action-chip.md`                       |
 | `ListRow`                                                                                  | 썸네일·텍스트가 있는 목록 행                                                 | `src/shared/ui/list-row/list-row.md`                             |
-| `Overlay`, `useOverlay`                                                                    | 루트에 다이얼로그·시트를 띄우고 값을 Promise로 반환                          | `src/shared/ui/overlay/overlay.md`                               |
+| `OverlayProvider`, `useOverlay`                                                            | 루트에 다이얼로그·시트를 띄우고 값을 Promise로 반환                          | `src/shared/ui/overlay/overlay.md`                               |
 | `PremiumDialog`                                                                            | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움  | `src/shared/ui/premium-dialog/premium-dialog.md`                 |
 | `OfflineBanner`                                                                            | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                  | `src/shared/ui/offline-banner/offline-banner.md`                 |
 | `QueryErrorBoundary`                                                                       | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                   | `src/shared/ui/query-error-boundary/query-error-boundary.md`     |
@@ -135,6 +135,36 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
   `condition && <Node />`로 쓸 수 있다. 숫자·문자열 조건과 함수 prop에서는 `false` 노출이나 타입
   확장을 피하기 위해 삼항식을 유지한다.
 
+## 목록: `FlashList`와 `.map`
+
+| 목록                                                | 도구               | 예                                                                       |
+| --------------------------------------------------- | ------------------ | ------------------------------------------------------------------------ |
+| 개수가 정해지지 않거나 페이지로 받는 목록           | `FlashList`        | `NotificationList`, `UserList`, `VoiceNoteDraftList.All`, 녹음 저장 공간 |
+| 상수로 개수가 제한되거나 한 화면에 다 들어가는 목록 | `.map`             | 말로 메모 미리보기(`VOICE_NOTE_PREVIEW_COUNT`), `KeyPointList`           |
+| 개수가 고정된 스켈레톤·슬롯                         | es-toolkit `times` | `VoiceNoteDraftList.Loading`                                             |
+
+- 합계·전체 삭제 같은 머리말·꼬리말은 `ListHeaderComponent`·`ListFooterComponent`에 둔다(녹음 저장 공간).
+- RN `FlatList`는 달력과 시간별 예보에만 남아 있다. 새 목록에 쓰지 않는다.
+- 할 일 `TodoList`와 메모 `MemoList`는 지금 `.map`이다. `MemoList`는 [미룬 일](../../../docs/releases/1.15.0/README.md#출시-후로-미룬-일)에 있다.
+
+## 긴 글 줄바꿈: `WordWrapText`와 `lineBreakStrategyIOS`
+
+Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS`는 iOS에만 듣고, `WordWrapText`는 Android에서 단어마다 뷰를 만든다.
+
+| 글                             | 도구                                 | 이유                                       |
+| ------------------------------ | ------------------------------------ | ------------------------------------------ |
+| 긴 안내 글                     | `WordWrapText`                       | iOS·Android 모두 단어 중간에서 끊지 않는다 |
+| 가상화 목록 행, 행이 많은 목록 | `lineBreakStrategyIOS="hangul-word"` | 행마다 단어 수만큼 뷰가 늘지 않게 한다     |
+
+- 줄 수 제한(`maxLines`)이나 글자 선택이 필요하면 `WordWrapText`를 쓰지 않는다.
+- 말로 메모 자막은 문장 하나가 행이고 문장 단위로 가상화해 `WordWrapText`를 쓴다.
+
+## 메뉴 항목: `MenuActionItem`
+
+- ⋯ 메뉴의 행동은 heroui `Menu` 안에 `MenuActionItem`으로 둔다. `Menu.Item`을 직접 조합하지 않는다. 삭제·차단처럼 위험한 항목은 `variant="danger"`다.
+- 고르는 메뉴(`Menu.ItemIndicator`, `TodoCommentSortBar`)는 `Menu.Item`을 쓴다.
+- 네이티브 `Stack.Toolbar.Menu`의 아이콘 색은 시스템이 정한다. 접힌 스택과 펼친 pane은 항목과 순서를 같게 둔다.
+
 ## 파일 응집도와 이름
 
 - 공개 컴포넌트 이름은 도메인과 기반 UI를 함께 드러낸다. Card를 확장하면 `{Domain}Card.tsx`처럼 짓는다.
@@ -164,11 +194,11 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
   `shrink`·`numberOfLines`로 줄인다([레이아웃 안전](i18n-guide.md#레이아웃-안전-영어-장문)).
 - **시트·다이얼로그**: 새로 만들지 않고 `SheetRouteScreen`(대상이 있는 route 시트)·`BottomSheet`/`KeyboardBottomSheet`·
   `ConfirmDialog`를 쓴다. 배치는 `getSheetLayout`(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백)이 정하고, Android 뒤로가기는
-  `useAndroidSheetBackHandler`가 소비한다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
+  `useAndroidSheetBackHandler`가 소비한다. `KeyboardBottomSheet`의 바깥 탭·뒤로가기에서 닫기 전에 할 일이 있으면 `onDismissRequest`를 넘긴다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
 - **iPhone Duo·큰 창**: 배치는 기기 종류가 아니라 창 크기 class(`useWindowSizeClass`: `compact`·`medium`·`expanded`)로
-  정하고, 좁은 창(compact)과 넓은 창의 2-pane(`AdaptivePane`)만 구분한다. [Expo의 Supporting iPhone Duo](https://expo.dev/blog/supporting-iphone-duo)를
-  따른다: 세로 레일(84pt)과 Split View·배치 전환은 safe area inset으로 처리하고(위 [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)),
-  접힘선은 reserved region의 실제 위치를 쓴다.
+  정하고, 좁은 창(compact)과 넓은 창의 2-pane(`AdaptivePane`)만 구분한다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞추고 reserved region의 실제 위치를 쓴다.
+  세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 처리한다(위 [가로 safe area](#가로-safe-area-iphone-duo-세로-레일), [Expo의 Supporting iPhone Duo](https://expo.dev/blog/supporting-iphone-duo)).
+  Expo `SplitView`·`ArrangementView`는 시험 후 넣지 않았다([이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유)).
 
 ---
 
@@ -322,10 +352,10 @@ import { ArrowRightIcon } from '@src/shared/ui/icon';
 **새 아이콘 추가 시:**
 
 ```tsx
-// src/shared/ui/Icon/icons.ts에 추가
+// src/shared/ui/icon/icons.ts에 추가
 import NewIconSvg from '@assets/icons/ic_new.svg';
 
-import { createStyledIcon } from './createStyledIcon';
+import { createStyledIcon } from './create-styled-icon';
 
 export const NewIcon = createStyledIcon(NewIconSvg);
 ```
@@ -436,7 +466,9 @@ overlay.open(({ isOpen, close }) => (
     isOpen={isOpen}
     onSubmit={async (v) => {
       const saved = await mutation.mutateAsync(v).catch(() => null);
-      if (saved) close();
+      if (saved) {
+        close();
+      }
     }}
   />
 ));

@@ -1,6 +1,6 @@
 # Aido 1.15.0 review notes (draft)
 
-**Status: draft, not submitted.** Fill in the demo account before pasting. Menu paths match code `fc146d7de`. Recheck Me tab paths after the settings redesign merges. The Korean version is [app-review-notes.ko.md](app-review-notes.ko.md), and data declarations follow [privacy-label.md](privacy-label.md). The simulator and emulator lines come from library docs and code. We did not run them on a simulator or emulator.
+**Status: draft, not submitted.** Fill in the demo account before pasting. Menu paths match code `da9b73498`. The Korean version is [app-review-notes.ko.md](app-review-notes.ko.md), and data declarations follow [privacy-label.md](privacy-label.md). The simulator and emulator lines come from library docs and code. We did not run them on a simulator or emulator.
 
 ## App Store Connect: App Review Information > Notes
 
@@ -52,7 +52,7 @@ Other permissions
 
 Where to find other items
 - Subscription price and period, Restore Purchases, Terms and Privacy: Me tab > Manage subscription.
-- Account deletion: Me tab > Delete account. Web: https://aido.kr/en/account-deletion
+- Account deletion: Delete account at the bottom of the Me tab. Web: https://aido.kr/en/account-deletion
 - Report and block (Guideline 1.2): same as 1.14.0, from the ••• menu and Me tab > Manage friends. Contact: matthew@redband.co.kr
 ```
 

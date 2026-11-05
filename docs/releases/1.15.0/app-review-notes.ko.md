@@ -1,6 +1,6 @@
 # 아이두 1.15.0 심사 메모 (초안)
 
-**상태: 초안, 제출 전.** 붙여 넣기 전에 데모 계정을 채운다. 메뉴 경로는 코드 `fc146d7de`와 맞췄다. 설정 리디자인을 합친 뒤 마이 탭 경로를 다시 확인한다. 영어판은 [app-review-notes.en.md](app-review-notes.en.md)이고, 데이터 신고는 [privacy-label.md](privacy-label.md)를 따른다. 시뮬레이터·에뮬레이터 내용은 라이브러리 문서와 코드에서 가져왔다. 시뮬레이터·에뮬레이터에서 직접 돌려 보지는 않았다.
+**상태: 초안, 제출 전.** 붙여 넣기 전에 데모 계정을 채운다. 메뉴 경로는 코드 `da9b73498`과 맞췄다. 영어판은 [app-review-notes.en.md](app-review-notes.en.md)이고, 데이터 신고는 [privacy-label.md](privacy-label.md)를 따른다. 시뮬레이터·에뮬레이터 내용은 라이브러리 문서와 코드에서 가져왔다. 시뮬레이터·에뮬레이터에서 직접 돌려 보지는 않았다.
 
 ## App Store Connect: 앱 심사 정보 > 메모
 
@@ -52,7 +52,7 @@ AI 사용과 한도
 
 다른 항목 위치
 - 구독 가격과 기간, 구매 복원, 약관과 개인정보처리방침: 마이 탭 > 구독 관리.
-- 회원 탈퇴: 마이 탭 > 회원 탈퇴. 웹: https://aido.kr/ko/account-deletion
+- 회원 탈퇴: 마이 탭 맨 아래 탈퇴하기. 웹: https://aido.kr/ko/account-deletion
 - 신고와 차단(가이드라인 1.2): 1.14.0과 같아요. ••• 메뉴와 마이 탭 > 친구 관리에 있어요. 연락처: matthew@redband.co.kr
 ```
 

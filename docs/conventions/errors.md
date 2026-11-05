@@ -4,11 +4,11 @@
 
 ## 1. 계약
 
-| 경우 | 형태                                                                | 정본                                                                                                                           |
-| ---- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 성공 | `{ success: true, data, timestamp }`                                | `successEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts)) + 기능별 `contracts/<feature>/*.response.ts` |
-| 목록 | `data` 안의 기능별 schema + 공용 cursor 정보                        | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)               |
-| 실패 | `{ success: false, error: { code, message, details? }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                |
+| 경우 | 형태                                                                | 정본                                                                                                                                |
+| ---- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 성공 | `{ success: true, data, timestamp }`                                | `successEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts)) + 기능별 `contracts/<feature>/v{n}/*.response.ts` |
+| 목록 | `data` 안의 기능별 schema + 공용 cursor 정보                        | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)                    |
+| 실패 | `{ success: false, error: { code, message, details? }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                     |
 
 - 실패의 의미는 `error.code`로 정한다. 앱은 `message`로 분기하지 않는다. HTTP 상태로 분기하는 곳은 아래 `ErrorCode`가 없는 경우뿐이다.
 - `details`는 코드별 계약이다. 운영에는 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(`featureQuota`, `charged`, 반복 오류 상세 등). 앱은 등록된 값을 공유 스키마로 읽는다. 등록하지 않은 코드의 `details`는 개발 환경 진단용이라 운영 응답에 없다. 스키마와 맞지 않는 값은 운영에서 빠지므로 코드별 details를 바꾸면 등록 스키마도 함께 바꾼다.
