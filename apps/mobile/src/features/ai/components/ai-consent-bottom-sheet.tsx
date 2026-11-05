@@ -104,11 +104,7 @@ export function AiConsentBottomSheet({
         <VStack gap={14}>
           <ConsentItem
             icon={
-              <SendIcon
-                width={ITEM_ICON_SIZE}
-                height={ITEM_ICON_SIZE}
-                colorClassName="text-gray-7"
-              />
+              <SendIcon width={ITEM_ICON_SIZE} height={ITEM_ICON_SIZE} colorClassName="text-main" />
             }
             title={t('consent.items.sentData.title')}
             description={t('consent.items.sentData.description')}
@@ -118,7 +114,7 @@ export function AiConsentBottomSheet({
               <RobotIcon
                 width={ITEM_ICON_SIZE}
                 height={ITEM_ICON_SIZE}
-                colorClassName="text-gray-7"
+                colorClassName="text-main"
               />
             }
             title={t('consent.items.processor.title')}
@@ -129,7 +125,7 @@ export function AiConsentBottomSheet({
               <CheckmarkIcon
                 width={ITEM_ICON_SIZE}
                 height={ITEM_ICON_SIZE}
-                colorClassName="text-gray-7"
+                colorClassName="text-main"
               />
             }
             title={t('consent.items.usage.title')}
@@ -137,11 +133,7 @@ export function AiConsentBottomSheet({
           />
           <ConsentItem
             icon={
-              <LockIcon
-                width={ITEM_ICON_SIZE}
-                height={ITEM_ICON_SIZE}
-                colorClassName="text-gray-7"
-              />
+              <LockIcon width={ITEM_ICON_SIZE} height={ITEM_ICON_SIZE} colorClassName="text-main" />
             }
             title={t('consent.items.retention.title')}
             description={t('consent.items.retention.description')}
@@ -177,7 +169,7 @@ interface ConsentItemProps {
 function ConsentItem({ icon, title, description, children }: ConsentItemProps) {
   return (
     <HStack gap={12} align="start">
-      <Box className="size-7 items-center justify-center rounded-full bg-gray-2">{icon}</Box>
+      <Box className="size-7 items-center justify-center rounded-full bg-main/10">{icon}</Box>
       <VStack gap={2} className="flex-1">
         <Text size="b3" weight="semibold" shade={9}>
           {title}

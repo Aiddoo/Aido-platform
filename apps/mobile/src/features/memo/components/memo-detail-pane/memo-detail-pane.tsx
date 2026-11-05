@@ -19,6 +19,9 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  CheckmarkIcon,
+  MenuActionItem,
+  TrashIcon,
   AiIcon,
   Box,
   ConfirmDialog,
@@ -383,27 +386,27 @@ function MemoMoreMenu({ aiParse, convertToTodo, onDelete }: MemoMoreMenuProps) {
           width={MEMO_MORE_MENU_WIDTH}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          <Menu.Item
+          <MenuActionItem
             testID="memo-ai-review"
+            icon={AiIcon}
+            title={t('memo:detail.aiParse')}
+            description={aiQuota}
             isDisabled={aiParse.isDisabled}
             onPress={aiParse.handlePress}
-          >
-            <AiIcon width={18} height={18} colorClassName="text-main" />
-            <VStack flex={1}>
-              <Menu.ItemTitle>{t('memo:detail.aiParse')}</Menu.ItemTitle>
-              {aiQuota != null && <Menu.ItemDescription>{aiQuota}</Menu.ItemDescription>}
-            </VStack>
-          </Menu.Item>
-          <Menu.Item
+          />
+          <MenuActionItem
             testID="memo-convert-to-todo"
+            icon={CheckmarkIcon}
+            title={t('memo:detail.convertToTodo')}
             isDisabled={convertToTodo.isDisabled}
             onPress={convertToTodo.handlePress}
-          >
-            <Menu.ItemTitle>{t('memo:detail.convertToTodo')}</Menu.ItemTitle>
-          </Menu.Item>
-          <Menu.Item variant="danger" onPress={onDelete}>
-            <Menu.ItemTitle>{t('common:actions.delete')}</Menu.ItemTitle>
-          </Menu.Item>
+          />
+          <MenuActionItem
+            icon={TrashIcon}
+            title={t('common:actions.delete')}
+            variant="danger"
+            onPress={onDelete}
+          />
         </Menu.Content>
       </Menu.Portal>
     </Menu>

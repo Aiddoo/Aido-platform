@@ -164,6 +164,7 @@ export {
 export { Spacing, type SpacingProps } from './spacing';
 export {
   STACK_BACK_ICON,
+  STACK_MENU_ICON,
   STACK_MORE_ICON,
   useStackBackToolbar,
   useStackScreenOptions,
@@ -197,3 +198,4 @@ export { VStack } from './v-stack';
 
 export { FormField, type FormFieldProps } from './form-field';
 export { type TextRun, splitWords, WordWrapText } from './word-wrap-text';
+export { MenuActionItem } from './menu-action-item';

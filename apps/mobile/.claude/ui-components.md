@@ -75,6 +75,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `ReadableContent`                                                    | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                           | `src/shared/ui/readable-content/readable-content.md`             |
 | `ScreenScrollShadow`                                                 | 화면 배경 위 스크롤의 잘리는 쪽을 흐리게 덮음 (시트는 `SheetScrollShadow`)   | `src/shared/ui/screen-scroll-shadow/screen-scroll-shadow.md`     |
 | `WordWrapText`                                                       | 한글이 음절 사이에서 끊기지 않는 긴 글 (Android는 단어마다, iOS는 Text 하나) | `src/shared/ui/word-wrap-text/word-wrap-text.md`                 |
+| `MenuActionItem`                                                     | ⋯ 메뉴 항목. 주황 아이콘, 위험한 항목은 빨간색                               | `src/shared/ui/menu-action-item/menu-action-item.md`             |
 | `VStack`                                                             | 수직 레이아웃                                                                | `src/shared/ui/v-stack/v-stack.md`                               |
 | `Grid`                                                               | 그리드 레이아웃                                                              | `src/shared/ui/grid/grid.md`                                     |
 | `GridItem`                                                           | 그리드 아이템                                                                | `src/shared/ui/grid/grid.md`                                     |

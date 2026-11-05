@@ -117,8 +117,8 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
           horizontalPadding="medium"
           verticalPadding="medium"
           left={
-            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-              <EditIcon width={16} height={16} colorClassName="text-gray-7" />
+            <Box className="size-7 items-center justify-center rounded-full bg-main/10">
+              <EditIcon width={16} height={16} colorClassName="text-main" />
             </Box>
           }
           contents={

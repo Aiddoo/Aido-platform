@@ -17,6 +17,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
+  MenuActionItem,
   BlockIcon,
   Box,
   CopyIcon,
@@ -68,12 +69,13 @@ import {
 } from './todo-comment-heart-burst';
 import { useTodoCommentReveal } from './todo-comment-reveal';
 
+const MENU_TRIGGER_ICON_SIZE = 18;
+
 const NAME_MIN_VISIBLE_CHARS = 4;
 const NAME_MIN_WIDTH = 52;
 const NAME_SHRINK_PRIORITY = 1000;
 /** 이 폭보다 좁으면(좁은 pane의 답글) 이름 4글자·시간·⋯가 한 줄에 다 들어가지 않아 태그·시간을 둘째 줄로 내린다 */
 const SINGLE_AUTHOR_LINE_MIN_WIDTH = 220;
-const MENU_ICON_SIZE = 18;
 const MENU_WIDTH = 200;
 const MORE_HIT_SLOP = 12;
 
@@ -469,7 +471,11 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           accessibilityLabel={t('actions.more')}
           accessibilityState={{ expanded: isOpen, busy: deleteComment.isPending }}
         >
-          <MoreIcon width={MENU_ICON_SIZE} height={MENU_ICON_SIZE} colorClassName="text-gray-6" />
+          <MoreIcon
+            width={MENU_TRIGGER_ICON_SIZE}
+            height={MENU_TRIGGER_ICON_SIZE}
+            colorClassName="text-gray-6"
+          />
         </PressableFeedback>
       </Menu.Trigger>
       <Menu.Portal disableFullWindowOverlay={false}>
@@ -482,70 +488,52 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
           {TodoCommentPolicy.isEditableComment(comment) && (
-            <Menu.Item
+            <MenuActionItem
+              icon={EditIcon}
+              title={t('actions.edit')}
               testID="todo-comment-edit"
               onPress={() => {
                 reset(TodoCommentComposer.edit(comment));
                 reveal(rowRef);
               }}
-            >
-              <EditIcon
-                width={MENU_ICON_SIZE}
-                height={MENU_ICON_SIZE}
-                colorClassName="text-gray-8"
-              />
-              <Menu.ItemTitle>{t('actions.edit')}</Menu.ItemTitle>
-            </Menu.Item>
+            />
           )}
           {TodoCommentPolicy.canCopyComment(comment) && (
-            <Menu.Item testID="todo-comment-copy" onPress={copyContent}>
-              <CopyIcon
-                width={MENU_ICON_SIZE}
-                height={MENU_ICON_SIZE}
-                colorClassName="text-gray-8"
-              />
-              <Menu.ItemTitle>{t('actions.copy')}</Menu.ItemTitle>
-            </Menu.Item>
+            <MenuActionItem
+              icon={CopyIcon}
+              title={t('actions.copy')}
+              testID="todo-comment-copy"
+              onPress={copyContent}
+            />
           )}
           {hasPrimaryActions && hasSecondaryActions && <Separator className="my-1" />}
           {TodoCommentPolicy.canDeleteComment(comment) && (
-            <Menu.Item variant="danger" testID="todo-comment-delete" onPress={confirmDelete}>
-              <TrashIcon
-                width={MENU_ICON_SIZE}
-                height={MENU_ICON_SIZE}
-                colorClassName="text-error"
-              />
-              <Menu.ItemTitle>{t('actions.delete')}</Menu.ItemTitle>
-            </Menu.Item>
+            <MenuActionItem
+              icon={TrashIcon}
+              title={t('actions.delete')}
+              variant="danger"
+              testID="todo-comment-delete"
+              onPress={confirmDelete}
+            />
           )}
           {TodoCommentPolicy.canReportComment(comment) && (
-            <Menu.Item
+            <MenuActionItem
+              icon={FlagIcon}
+              title={t('actions.report')}
               testID="todo-comment-report"
               onPress={() => push(commentReportSheetHref({ todoId, commentId: comment.id }))}
-            >
-              <FlagIcon
-                width={MENU_ICON_SIZE}
-                height={MENU_ICON_SIZE}
-                colorClassName="text-gray-8"
-              />
-              <Menu.ItemTitle>{t('actions.report')}</Menu.ItemTitle>
-            </Menu.Item>
+            />
           )}
           {author != null && TodoCommentPolicy.canBlockCommentAuthor(comment) && (
-            <Menu.Item
+            <MenuActionItem
+              icon={BlockIcon}
+              title={t('actions.block', { name: authorName })}
               variant="danger"
               testID="todo-comment-block"
               onPress={() =>
                 push(blockUserConfirmHref({ userId: author.id, displayName: authorName }))
               }
-            >
-              <BlockIcon
-                width={MENU_ICON_SIZE}
-                height={MENU_ICON_SIZE}
-                colorClassName="text-error"
-              />
-              <Menu.ItemTitle>{t('actions.block', { name: authorName })}</Menu.ItemTitle>
-            </Menu.Item>
+            />
           )}
         </Menu.Content>
       </Menu.Portal>

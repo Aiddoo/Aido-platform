@@ -16,6 +16,9 @@ import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  BlockIcon,
+  FlagIcon,
+  MenuActionItem,
   Button,
   DocsIcon,
   Flex,
@@ -249,7 +252,9 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
           width={180}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          <Menu.Item
+          <MenuActionItem
+            icon={FlagIcon}
+            title={t('menu.report')}
             onPress={() =>
               push(
                 userReportSheetHref({
@@ -258,15 +263,13 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
                 }),
               )
             }
-          >
-            <Menu.ItemTitle>{t('menu.report')}</Menu.ItemTitle>
-          </Menu.Item>
-          <Menu.Item
+          />
+          <MenuActionItem
+            icon={BlockIcon}
+            title={t('block.action')}
             variant="danger"
             onPress={() => push(blockUserConfirmHref({ userId, displayName }))}
-          >
-            <Menu.ItemTitle>{t('block.action')}</Menu.ItemTitle>
-          </Menu.Item>
+          />
         </Menu.Content>
       </Menu.Portal>
     </Menu>

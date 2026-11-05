@@ -24,6 +24,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  STACK_MENU_ICON,
   ArrowRightIcon,
   Button,
   CheckIcon,
@@ -340,6 +341,7 @@ function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
     <Stack.Toolbar placement="right">
       <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('menu.more')}>
         <Stack.Toolbar.MenuAction
+          icon={STACK_MENU_ICON.report}
           onPress={() =>
             push(
               userReportSheetHref({
@@ -355,6 +357,7 @@ function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
           {t('menu.report')}
         </Stack.Toolbar.MenuAction>
         <Stack.Toolbar.MenuAction
+          icon={STACK_MENU_ICON.block}
           destructive
           onPress={() =>
             push(blockUserConfirmHref({ userId: nudge.senderId, displayName: nudge.senderName }))

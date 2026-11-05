@@ -198,8 +198,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
             horizontalPadding="medium"
             verticalPadding="medium"
             left={
-              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                <EditIcon width={16} height={16} colorClassName="text-gray-7" />
+              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
+                <EditIcon width={16} height={16} colorClassName="text-main" />
               </Box>
             }
             contents={
@@ -217,8 +217,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
             horizontalPadding="medium"
             verticalPadding="medium"
             left={
-              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />
+              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
+                <CalendarIcon width={16} height={16} colorClassName="text-main" />
               </Box>
             }
             contents={
@@ -240,8 +240,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
             horizontalPadding="medium"
             verticalPadding="medium"
             left={
-              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                <ClockIcon width={16} height={16} colorClassName="text-gray-7" />
+              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
+                <ClockIcon width={16} height={16} colorClassName="text-main" />
               </Box>
             }
             contents={
@@ -263,8 +263,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
             horizontalPadding="medium"
             verticalPadding="medium"
             left={
-              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                <ListIcon width={16} height={16} colorClassName="text-gray-7" />
+              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
+                <ListIcon width={16} height={16} colorClassName="text-main" />
               </Box>
             }
             contents={
@@ -283,11 +283,11 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
             horizontalPadding="medium"
             verticalPadding="medium"
             left={
-              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
                 {isTodoToday ? (
-                  <MoveRightIcon width={16} height={16} colorClassName="text-gray-7" />
+                  <MoveRightIcon width={16} height={16} colorClassName="text-main" />
                 ) : (
-                  <SunIcon width={16} height={16} colorClassName="text-gray-7" />
+                  <SunIcon width={16} height={16} colorClassName="text-main" />
                 )}
               </Box>
             }
@@ -310,8 +310,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
               horizontalPadding="medium"
               verticalPadding="medium"
               left={
-                <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                  <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />
+                <Box className="size-7 items-center justify-center rounded-full bg-main/10">
+                  <RepeatIcon width={16} height={16} colorClassName="text-main" />
                 </Box>
               }
               contents={

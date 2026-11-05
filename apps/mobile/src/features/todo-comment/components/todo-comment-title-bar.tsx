@@ -7,6 +7,10 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  BlockIcon,
+  FlagIcon,
+  MenuActionItem,
+  STACK_MENU_ICON,
   HStack,
   MoreIcon,
   STACK_BACK_ICON,
@@ -87,10 +91,14 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
           icon={STACK_MORE_ICON}
           accessibilityLabel={t('moderation:menu.more')}
         >
-          <Stack.Toolbar.MenuAction onPress={moderation.report}>
+          <Stack.Toolbar.MenuAction icon={STACK_MENU_ICON.report} onPress={moderation.report}>
             {t('moderation:menu.report')}
           </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction destructive onPress={moderation.block}>
+          <Stack.Toolbar.MenuAction
+            icon={STACK_MENU_ICON.block}
+            destructive
+            onPress={moderation.block}
+          >
             {t('moderation:block.action')}
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
@@ -175,12 +183,13 @@ function TodoModerationMenu() {
           width={180}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          <Menu.Item onPress={moderation.report}>
-            <Menu.ItemTitle>{t('menu.report')}</Menu.ItemTitle>
-          </Menu.Item>
-          <Menu.Item variant="danger" onPress={moderation.block}>
-            <Menu.ItemTitle>{t('block.action')}</Menu.ItemTitle>
-          </Menu.Item>
+          <MenuActionItem icon={FlagIcon} title={t('menu.report')} onPress={moderation.report} />
+          <MenuActionItem
+            icon={BlockIcon}
+            title={t('block.action')}
+            variant="danger"
+            onPress={moderation.block}
+          />
         </Menu.Content>
       </Menu.Portal>
     </Menu>
