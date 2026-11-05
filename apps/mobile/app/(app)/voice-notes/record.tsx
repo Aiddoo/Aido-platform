@@ -33,6 +33,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
+import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen-awake';
 import {
   Box,
   Button,
@@ -47,18 +48,14 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
 import { Suspense, useEffect, useEffectEvent } from 'react';
 import { BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
-/** Android는 Activity가 사라진 뒤 풀면 거절한다. 켜둘 화면이 이미 없으니 알릴 일이 아니다 */
-const KEEP_AWAKE_OPTIONS = { suppressDeactivateWarnings: true };
-
 function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
-  useKeepAwake(undefined, KEEP_AWAKE_OPTIONS);
+  useKeepScreenAwake();
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
   const logger = useLogger();

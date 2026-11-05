@@ -470,3 +470,37 @@ test('Hermes에 있는 toReversed와 다른 객체의 fromAsync는 통과한다'
     },
   );
 });
+
+test('SDK를 shared/infra 밖에서 import하면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo/hooks/use-new-feature.ts': `
+        import * as Clipboard from 'expo-clipboard';
+        export const copy = Clipboard.setStringAsync;
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /expo-clipboard는 shared\/infra에서만/);
+    },
+  );
+});
+
+test('shared/infra와 허용된 경계 훅, 테스트의 SDK import는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/infra/clipboard/expo-clipboard.gateway.ts': `
+        import * as Clipboard from 'expo-clipboard';
+      `,
+      'apps/mobile/src/features/voice/hooks/use-voice-note-player.ts': `
+        import { useAudioPlaylist } from 'expo-audio';
+      `,
+      'apps/mobile/src/features/todo/hooks/use-new-feature.test.ts': `
+        import * as Clipboard from 'expo-clipboard';
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});

@@ -100,6 +100,124 @@ const STRICT_EQUALITY_OPERATORS = new Set([
   ts.SyntaxKind.ExclamationEqualsEqualsToken,
 ]);
 
+// 네이티브·외부 SDK는 shared/infra에서만 import한다(.claude/architecture.md#portadapterdi).
+const SDK_MODULES = [
+  'expo-linking',
+  'expo-application',
+  'expo-device',
+  'expo-secure-store',
+  'expo-sharing',
+  'expo-clipboard',
+  'expo-haptics',
+  'expo-notifications',
+  'expo-speech-recognition',
+  'react-native-purchases',
+  'expo-audio',
+  'expo-keep-awake',
+  'expo-file-system',
+  'expo-location',
+  'react-native-mmkv',
+  'expo-network',
+  'expo-web-browser',
+  'expo-apple-authentication',
+  'expo-updates',
+  'expo-localization',
+  'expo-crypto',
+  '@sentry/react-native',
+  '@react-native-firebase/app',
+  '@react-native-firebase/analytics',
+];
+const SDK_INFRA_ROOT = 'apps/mobile/src/shared/infra/';
+// 라이브러리 자체가 React 훅인 경계 파일. 파일 하나에서만 import한다.
+const SDK_BOUNDARY_HOOKS = new Map([
+  ['apps/mobile/src/features/voice/hooks/use-voice-note-player.ts', ['expo-audio']],
+]);
+// 규칙을 넣기 전부터 있던 위반. 출시 후 첫 스택에서 모두 옮겨 비운다. 새 위반을 여기 더하지 않는다.
+const SDK_IMPORT_ALLOWLIST = new Map([
+  ['apps/mobile/app/(app)/voice-notes/[draftId].tsx', ['expo-crypto']],
+  ['apps/mobile/app/_layout.tsx', ['expo-updates']],
+  ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
+  ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],
+  ['apps/mobile/src/bootstrap/providers/notification-provider.tsx', ['expo-notifications']],
+  ['apps/mobile/src/bootstrap/providers/query-provider.tsx', ['expo-application', 'expo-updates']],
+  ['apps/mobile/src/features/ai/queries/use-parse-memo-mutation-options.ts', ['expo-crypto']],
+  [
+    'apps/mobile/src/features/auth/apis/auth.service.ts',
+    ['expo-linking', 'expo-web-browser', 'expo-apple-authentication', 'expo-crypto'],
+  ],
+  ['apps/mobile/src/features/feature-discovery/apis/native-app-version.ts', ['expo-application']],
+  ['apps/mobile/src/features/notification/apis/device-id.repository.ts', ['expo-secure-store']],
+  [
+    'apps/mobile/src/features/notification/apis/device-id.service.ts',
+    ['expo-application', 'expo-crypto'],
+  ],
+  ['apps/mobile/src/features/notification/hooks/use-notification-navigation.ts', ['expo-linking']],
+  [
+    'apps/mobile/src/features/subscription/hooks/use-open-subscription-management.ts',
+    ['expo-linking', 'expo-application'],
+  ],
+  [
+    'apps/mobile/src/features/todo-comment/components/todo-comment-composer/todo-comment-form.tsx',
+    ['expo-crypto'],
+  ],
+  ['apps/mobile/src/features/todo/hooks/use-add-todo-quick-voice.ts', ['expo-crypto']],
+  ['apps/mobile/src/features/voice/components/plan/plan-review.tsx', ['expo-crypto']],
+  ['apps/mobile/src/features/voice/hooks/use-voice-note-digest.ts', ['expo-crypto']],
+  ['apps/mobile/src/features/voice/hooks/use-voice-note-recording.ts', ['expo-crypto']],
+  ['apps/mobile/src/features/weather/components/weather-hero.tsx', ['expo-localization']],
+  [
+    'apps/mobile/src/features/weather/components/weather-scene/weather-scene-canvas.tsx',
+    ['expo-device'],
+  ],
+  ['apps/mobile/src/features/weather/hooks/use-temperature-unit.ts', ['expo-localization']],
+  ['apps/mobile/src/features/weather/hooks/use-weather-location.ts', ['expo-linking']],
+  [
+    'apps/mobile/src/features/widget/bridge/android-widget-task-handler.ts',
+    ['expo-linking', 'expo-crypto'],
+  ],
+  ['apps/mobile/src/shared/config/device.ts', ['expo-device']],
+  ['apps/mobile/src/shared/config/env.ts', ['expo-device']],
+  ['apps/mobile/src/shared/hooks/use-open-url.ts', ['expo-linking', 'expo-web-browser']],
+  ['apps/mobile/src/shared/hooks/use-share-view.ts', ['expo-sharing']],
+  ['apps/mobile/src/shared/hooks/use-stable-feed-foreground.ts', ['expo-linking']],
+  ['apps/mobile/src/shared/i18n/device-language.ts', ['expo-localization']],
+  ['apps/mobile/src/shared/providers/language-provider.tsx', ['expo-localization']],
+  ['apps/mobile/src/shared/providers/local-date-provider.tsx', ['expo-localization']],
+  ['apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx', ['expo-application']],
+  ['apps/mobile/src/shared/utils/device-headers.ts', ['expo-device']],
+  ['apps/mobile/src/shared/utils/timezone.ts', ['expo-localization']],
+]);
+
+function getSdkModule(moduleName) {
+  return SDK_MODULES.find((sdk) => moduleName === sdk || moduleName.startsWith(`${sdk}/`));
+}
+
+function checkSdkImports(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (relativePath.startsWith(SDK_INFRA_ROOT) || isTestSource(relativePath)) {
+    return;
+  }
+  const allowed = [
+    ...(SDK_BOUNDARY_HOOKS.get(relativePath) ?? []),
+    ...(SDK_IMPORT_ALLOWLIST.get(relativePath) ?? []),
+  ];
+  for (const statement of sourceFile.statements) {
+    if (
+      !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
+      statement.moduleSpecifier === undefined ||
+      !ts.isStringLiteral(statement.moduleSpecifier)
+    ) {
+      continue;
+    }
+    const sdk = getSdkModule(statement.moduleSpecifier.text);
+    if (sdk !== undefined && !allowed.includes(sdk)) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} ${sdk}는 shared/infra에서만 import합니다. 포트와 어댑터를 거쳐 DI 훅으로 받으세요. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둡니다(.claude/architecture.md#portadapterdi).`,
+      );
+    }
+  }
+}
+
 function getSourceFiles(root, relativeDirectory) {
   const directory = resolve(root, relativeDirectory);
   if (!existsSync(directory)) {
@@ -708,6 +826,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
       file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
     checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
+    checkSdkImports(sourceFile, repositoryRoot, errors);
   }
 
   const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];
