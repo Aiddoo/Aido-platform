@@ -152,10 +152,58 @@ export function getCategoryId(todo: PlannedTodo, fallbackCategoryId: number) {
   return todo.categoryId ?? fallbackCategoryId;
 }
 
+/** 카드 묶음을 나누는 데 필요한 값 */
+export type PlanGroupableAction =
+  | Pick<PlannedTodo, 'type' | 'categoryId'>
+  | Pick<PlannedMemo, 'type'>;
+
+/** 한 카테고리의 카드들. 메모는 카테고리가 없어 `categoryId`가 null인 묶음으로 맨 뒤에 모인다 */
+export interface PlanActionGroup {
+  categoryId: number | null;
+  /** 폼 배열에서의 자리. 묶어 보여도 카드를 고칠 때는 이 자리를 쓴다 */
+  indexes: number[];
+}
+
+/** 카테고리가 처음 나온 순서로 묶고, 묶음 안에서는 원래 순서를 지킨다 */
+export function getPlanActionGroups(
+  actions: readonly PlanGroupableAction[],
+  fallbackCategoryId: number,
+): PlanActionGroup[] {
+  const todoIndexes = new Map<number, number[]>();
+  const memoIndexes: number[] = [];
+  actions.forEach((action, index) => {
+    if (action.type === 'create-memo') {
+      memoIndexes.push(index);
+      return;
+    }
+    const categoryId = action.categoryId ?? fallbackCategoryId;
+    todoIndexes.set(categoryId, [...(todoIndexes.get(categoryId) ?? []), index]);
+  });
+  const groups: PlanActionGroup[] = [...todoIndexes].map(([categoryId, indexes]) => ({
+    categoryId,
+    indexes,
+  }));
+  return memoIndexes.length === 0
+    ? groups
+    : [...groups, { categoryId: null, indexes: memoIndexes }];
+}
+
+/** 화면에 묶어 보인 순서대로 늘어놓는다. 저장 순서가 사용자가 본 순서와 같아진다 */
+export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
+  actions: readonly TAction[],
+  fallbackCategoryId: number,
+): TAction[] {
+  return getPlanActionGroups(actions, fallbackCategoryId).flatMap(({ indexes }) =>
+    indexes.flatMap((index) => actions.slice(index, index + 1)),
+  );
+}
+
 export const VoicePlanPolicy = {
   isDuplicateAction,
   getDefaultSelection,
   getSelectedActions,
   countSelectedTodos,
   canApplyPlan,
+  getPlanActionGroups,
+  sortPlanActionsByGroup,
 } as const;

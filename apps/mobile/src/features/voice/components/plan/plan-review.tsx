@@ -118,8 +118,9 @@ export function PlanReview({
       values.map((action) => ({
         actionId: action.actionId,
         isSelected: action.isSelected,
-        categoryId: action.type === 'create-todo' ? action.categoryId : null,
-        isMemo: action.type === 'create-memo',
+        ...(action.type === 'create-todo'
+          ? { type: action.type, categoryId: action.categoryId }
+          : { type: action.type }),
       })),
   });
   const { isValid } = useFormState({ control });
@@ -131,9 +132,12 @@ export function PlanReview({
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
 
   const handleApply = handleSubmit((values) => {
-    const selected = VoicePlanPolicy.getSelectedActions(
-      { ...plan, actions: toPlannedActions(values) },
-      toPlanSelection(values),
+    const selected = VoicePlanPolicy.sortPlanActionsByGroup(
+      VoicePlanPolicy.getSelectedActions(
+        { ...plan, actions: toPlannedActions(values) },
+        toPlanSelection(values),
+      ),
+      fallbackCategoryId,
     );
     const input = { source: plan.source, actions: selected, fallbackCategoryId };
     const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
@@ -206,28 +210,24 @@ export function PlanReview({
         </VStack>
 
         <VStack gap={8}>
-          {fields.map((field, index) => {
-            const action = actions[index];
-            const previous = actions[index - 1];
-            const categoryId =
-              action == null || action.isMemo ? null : (action.categoryId ?? fallbackCategoryId);
-            const previousCategoryId =
-              previous == null || previous.isMemo
-                ? null
-                : (previous.categoryId ?? fallbackCategoryId);
-            return (
-              <VStack key={field.id} gap={8}>
-                {categoryId != null && categoryId !== previousCategoryId && (
-                  <PlanReview.CategoryHeader categoryId={categoryId} />
-                )}
-                {action?.isMemo ? (
-                  <PlanReview.MemoRow index={index} />
+          {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
+            <VStack key={group.categoryId ?? 'memo'} gap={8}>
+              {group.categoryId != null && (
+                <PlanReview.CategoryHeader categoryId={group.categoryId} />
+              )}
+              {group.indexes.map((index) =>
+                group.categoryId == null ? (
+                  <PlanReview.MemoRow key={fields[index]?.id} index={index} />
                 ) : (
-                  <PlanReview.TodoRow index={index} fallbackCategoryId={fallbackCategoryId} />
-                )}
-              </VStack>
-            );
-          })}
+                  <PlanReview.TodoRow
+                    key={fields[index]?.id}
+                    index={index}
+                    fallbackCategoryId={fallbackCategoryId}
+                  />
+                ),
+              )}
+            </VStack>
+          ))}
         </VStack>
 
         <HStack gap={8}>

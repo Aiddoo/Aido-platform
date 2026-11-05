@@ -102,12 +102,16 @@ async function renderPlan(
   plan?: VoicePlan,
   isCharged?: boolean,
   onValues?: (values: PlanReviewFormValues) => void,
+  httpClient: ReturnType<typeof createMockHttpClient> = createMockHttpClient(),
 ) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
-    categories: [{ id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 2 }],
+    categories: [
+      { id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 2 },
+      { id: 2, name: '중요한 일', color: '#EF4444', sortOrder: 1, todoCount: 0 },
+    ],
   });
   queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'H12' });
 
@@ -123,7 +127,7 @@ async function renderPlan(
       di: {
         analytics: createMockAnalytics(),
         errorReporter: createErrorReporterStub(),
-        voiceService: new VoiceService(createMockHttpClient(), silentLogger),
+        voiceService: new VoiceService(httpClient, silentLogger),
         todoCategoryService: new TodoCategoryService(createMockHttpClient()),
         preferenceService: new PreferenceService(createMockHttpClient()),
         activationService: new ActivationService(
@@ -154,6 +158,70 @@ describe('PlanReview', () => {
 
     // Then
     await waitFor(() => expect(screen.getByText('할 일 1개 추가')).toBeTruthy());
+  });
+
+  describe('같은 카테고리가 나뉘어 온 계획', () => {
+    const SPLIT_PLAN: VoicePlan = {
+      ...PLAN,
+      actions: [
+        createTodoAction({ actionId: 'a', title: '장보기', categoryId: 1 }),
+        createTodoAction({ actionId: 'b', title: '세금 신고', categoryId: 2 }),
+        createTodoAction({ actionId: 'c', title: '운동', categoryId: 1 }),
+      ],
+    };
+
+    test('카테고리 머리글을 한 번씩만 보이고 카드를 그 아래로 모은다', async () => {
+      // When
+      await renderPlan(SPLIT_PLAN);
+
+      // Then
+      expect(await screen.findAllByText('기본')).toHaveLength(1);
+      expect(screen.getAllByText('중요한 일')).toHaveLength(1);
+      expect(screen.getAllByText(/장보기|세금 신고|운동/).map((row) => row.props.children)).toEqual(
+        ['장보기', '운동', '세금 신고'],
+      );
+    });
+
+    test('모아 보여도 고친 값은 그 카드의 자리에 들어간다', async () => {
+      // Given
+      const onValues = jest.fn();
+      await renderPlan(SPLIT_PLAN, true, onValues);
+      await fireEvent.press(await screen.findByText('운동'));
+      await fireEvent.changeText(await screen.findByLabelText('할 일 제목'), '달리기');
+      await waitFor(() => expect(screen.getByTestId('plan-todo-edit-confirm')).toBeEnabled());
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-todo-edit-confirm'));
+
+      // Then
+      await waitFor(() =>
+        expect(
+          onValues.mock.lastCall?.[0].actions.map(
+            ({ actionId, title }: { actionId: string; title: string }) => [actionId, title],
+          ),
+        ).toEqual([
+          ['a', '장보기'],
+          ['b', '세금 신고'],
+          ['c', '달리기'],
+        ]),
+      );
+    });
+
+    test('저장은 묶어 보인 순서대로 보낸다', async () => {
+      // Given
+      const httpClient = createMockHttpClient();
+      await renderPlan(SPLIT_PLAN, true, undefined, httpClient);
+      await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+
+      // Then
+      await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+      expect(httpClient.post.mock.lastCall?.[1]).toMatchObject({
+        actions: [{ title: '장보기' }, { title: '운동' }, { title: '세금 신고' }],
+      });
+    });
   });
 
   test('제목이 비어 저장할 수 없는 카드가 있으면 추가 버튼을 막는다', async () => {
