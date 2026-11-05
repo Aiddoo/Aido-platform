@@ -1,5 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
@@ -53,10 +54,14 @@ import { Suspense, useEffect, useEffectEvent } from 'react';
 import { BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
+const MARK_HINT_HEIGHT = 124;
+
 function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
   useKeepScreenAwake();
   const isCompact = useWindowSizeClass() === 'compact';
+  const fontScaledSize = useFontScaledSize();
+  const [isMarkHintPending] = useMyPendingCoachmark('voice-note-mark');
   const toast = useAppToast();
   const logger = useLogger();
   const confirmDialog = useConfirmDialog();
@@ -199,6 +204,8 @@ function VoiceNoteRecordScreen() {
       sentences={recording.sentences}
       interimText={recording.interimText}
       isLive
+      // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
+      contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
       className="min-h-24 flex-1"
     />
   );

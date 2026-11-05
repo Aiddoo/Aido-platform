@@ -27,6 +27,8 @@ interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'chi
   activeSentenceIndex?: number;
   /** 주면 문장을 눌러 그 시각부터 들을 수 있다 */
   onPressSentence?: (sentence: VoiceNoteSentence) => void;
+  /** 목록 아래를 덮는 안내의 높이. 최신 문장이 그 위에 오게 비운다 */
+  contentBottomInset?: number;
 }
 
 /** 문장 카드 자막. 녹음 중에는 아래로 쌓이고 사용자가 위로 올리면 자동 스크롤이 멈춘다 */
@@ -36,6 +38,7 @@ export function SentenceCaptionList({
   isLive = false,
   activeSentenceIndex,
   onPressSentence,
+  contentBottomInset = 0,
   ...boxProps
 }: SentenceCaptionListProps) {
   const { t } = useTranslation('voiceNote');
@@ -73,6 +76,7 @@ export function SentenceCaptionList({
               .exhaustive()
           }
           getItemType={(item) => item.type}
+          contentContainerStyle={{ paddingBottom: contentBottomInset }}
           maintainVisibleContentPosition={
             isLive
               ? {
