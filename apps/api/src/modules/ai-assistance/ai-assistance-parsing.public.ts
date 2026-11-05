@@ -11,6 +11,7 @@ export {
   type UserLocalePreferenceReaderPort,
 } from "./application/ports/parsing/user-locale-preference.reader.port.js";
 export { readFeatureQuotaOrNull } from "./application/services/parsing/ai-parsing-error-code.js";
+export { fingerprintRequest } from "./application/services/parsing/request-fingerprint.js";
 export { resolveRequestLocale } from "./application/services/parsing/resolve-request-locale.js";
 export {
   AI_DATA_SHARING_CONSENT_DECISION_READER,

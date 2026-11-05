@@ -43,7 +43,7 @@ function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const hasFullAccess = EntitlementPolicy.hasFullAccess(entitlements);
+  const canViewReports = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_REPORT');
   const [reportType, setReportType] = useReportType();
   const [refreshing, onRefresh] = useRefresh(() => invalidateAiReports(queryClient));
 
@@ -56,7 +56,7 @@ function ReportsScreen() {
         <Spacing size={16} />
 
         <VStack gap={12}>
-          {hasFullAccess && <AiConsentNotice>{t('consent.notice.reports')}</AiConsentNotice>}
+          {canViewReports && <AiConsentNotice>{t('consent.notice.reports')}</AiConsentNotice>}
 
           <ScallopedContainer>
             <Box className="items-center px-5 pt-4">
@@ -67,10 +67,10 @@ function ReportsScreen() {
               />
               <Spacing size={8} />
               <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-                {hasFullAccess ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
+                {canViewReports ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
               </H4>
               <Text size="b4" shade={6} align="center">
-                {hasFullAccess
+                {canViewReports
                   ? t('report.list.premiumDescription')
                   : t('report.list.freeDescription')}
               </Text>
@@ -78,7 +78,7 @@ function ReportsScreen() {
 
             <Spacing size={16} />
 
-            {hasFullAccess && (
+            {canViewReports && (
               <Box className="px-4">
                 <QueryErrorBoundary>
                   <Suspense fallback={<ReportStatusBanner.Loading />}>
@@ -112,7 +112,7 @@ function ReportsScreen() {
             <Spacing size={8} />
 
             <Box className="px-4 pb-4">
-              {match(hasFullAccess)
+              {match(canViewReports)
                 .with(true, () => (
                   <QueryErrorBoundary resetKeys={[reportType]}>
                     <Suspense fallback={<ReportCard.Loading />}>

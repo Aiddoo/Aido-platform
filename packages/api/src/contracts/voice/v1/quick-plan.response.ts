@@ -1,11 +1,10 @@
 import { z } from "zod";
 
 import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
-import { actionPlanMetaSchema, actionPlanSchema } from "./action-plan.common.js";
+import { actionPlanSchema } from "./action-plan.common.js";
 
 export const quickPlanResponseSchema = z.object({
   plan: actionPlanSchema,
-  meta: actionPlanMetaSchema,
   featureQuota: featureQuotaSchema
     .nullable()
     .describe("이 요청을 반영한 AI_PARSE 한도·사용량. 결과는 주되 한도를 읽지 못했으면 null"),

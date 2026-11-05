@@ -1,5 +1,6 @@
 import { quickPlanResponseSchema, voiceNoteDigestResponseSchema } from "@aido/api";
 import { Module, type Provider } from "@nestjs/common";
+import { z } from "zod";
 
 import { AccessModule } from "#api/modules/access/access-quota.public";
 import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
@@ -52,7 +53,7 @@ const replayProviders: Provider[] = [
       new InMemoryPlanResultReplay(
         cache,
         "quick-plan",
-        quickPlanResponseSchema.pick({ plan: true, meta: true }),
+        quickPlanResponseSchema.pick({ plan: true }).extend({ model: z.string() }),
       ),
   },
   {
@@ -62,7 +63,9 @@ const replayProviders: Provider[] = [
       new InMemoryPlanResultReplay(
         cache,
         "voice-note-digest",
-        voiceNoteDigestResponseSchema.omit({ featureQuota: true, charged: true }),
+        voiceNoteDigestResponseSchema
+          .omit({ featureQuota: true, charged: true })
+          .extend({ model: z.string() }),
       ),
   },
 ];

@@ -4,12 +4,6 @@ import { VoiceService } from './voice.service';
 
 const quickPlanDto = {
   plan: { actions: [], omittedTodoCount: 0 },
-  meta: {
-    model: 'm',
-    processingTimeMs: 1,
-    tokenUsage: { input: 1, output: 1 },
-    promptVersion: 'quick-plan@1',
-  },
   featureQuota: null,
   charged: false,
 };

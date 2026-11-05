@@ -2,6 +2,7 @@ import type { QuickPlanResponse } from "@aido/api";
 import type { QuickPlanSource } from "@aido/api/vocabulary";
 
 import {
+  fingerprintRequest,
   resolveRequestLocale,
   type UserLocalePreferenceReaderPort,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
@@ -16,13 +17,12 @@ import type { PlanResultReplayPort } from "../../ports/plans/plan-result-replay.
 import type { PlanningContextReaderPort } from "../../ports/plans/planning-context.reader.port.js";
 import {
   countPlannedActions,
-  toActionPlanMeta,
   toActionPlanView,
 } from "../../read-models/plans/action-plan.read-model.js";
 import type { ChargedPlanRunner } from "../../services/plans/charged-plan-runner.js";
-import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
-export type QuickPlanResult = Pick<QuickPlanResponse, "plan" | "meta">;
+/** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
+export type QuickPlanResult = Pick<QuickPlanResponse, "plan"> & { readonly model: string };
 
 export interface CreateQuickPlanInput {
   readonly userId: string;
@@ -83,7 +83,7 @@ export class CreateQuickPlan {
           return {
             result: {
               plan: toActionPlanView(generation.plan, context.upcomingTodos),
-              meta: toActionPlanMeta(generation.meta, Date.now() - startedAt),
+              model: generation.meta.model,
             },
             outcome: generation.plan.todos.length > 0 ? "CHARGE" : "NO_ACTION",
           };
@@ -95,11 +95,11 @@ export class CreateQuickPlan {
         source,
         characterCount: text.length,
         ...countPlannedActions(result.plan),
-        model: result.meta.model,
+        model: result.model,
         latencyMs: Date.now() - startedAt,
         quotaCharged: charged,
       });
-      return { ...result, featureQuota, charged };
+      return { plan: result.plan, featureQuota, charged };
     } catch (error) {
       logger.warn({
         event: VoiceLogEvent.QUICK_PLAN_FAILED,

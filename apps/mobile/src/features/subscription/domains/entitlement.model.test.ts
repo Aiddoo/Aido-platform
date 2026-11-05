@@ -9,6 +9,7 @@ import { EntitlementPolicy } from './entitlement.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
+const NOW = new Date('2026-11-15T00:00:00.000Z');
 
 describe('EntitlementPolicy', () => {
   describe('등급별 판단', () => {
@@ -48,7 +49,7 @@ describe('EntitlementPolicy', () => {
       });
 
       // When
-      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE');
+      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
 
       // Then
       expect(decision).toBe(expected);
@@ -63,7 +64,7 @@ describe('EntitlementPolicy', () => {
       const snapshot = createEntitlementSnapshot({ tier });
 
       // When
-      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'APP_ICON');
+      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'APP_ICON', NOW);
 
       // Then
       expect(decision).toBe(expected);
@@ -77,10 +78,57 @@ describe('EntitlementPolicy', () => {
       });
 
       // When
-      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE');
+      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
 
       // Then
       expect(decision).toBe('limit-reached');
+    });
+
+    it.each([
+      ['지난 초기화 시각', new Date('2026-11-01T00:00:00.000Z'), 'allow'],
+      ['지금과 같은 초기화 시각', NOW, 'allow'],
+      ['앞으로의 초기화 시각', new Date('2026-12-01T00:00:00.000Z'), 'limit-reached'],
+      ['초기화 시각 없음', null, 'limit-reached'],
+    ] as const)('남은 횟수가 0일 때 %s이면 %s다', (_label, resetsAt, expected) => {
+      // Given
+      const usedUp = createEntitlementSnapshot({
+        used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free },
+      });
+      const quota = EntitlementPolicy.findFeatureQuota(usedUp, 'AI_PARSE');
+      const snapshot =
+        quota == null ? usedUp : EntitlementPolicy.withFeatureQuota(usedUp, { ...quota, resetsAt });
+
+      // When
+      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
+
+      // Then
+      expect(decision).toBe(expected);
+    });
+
+    it('막힌 기능은 초기화 시각이 지나도 locked다', () => {
+      // Given
+      const snapshot = createEntitlementSnapshot({ tier: 'FREE' });
+
+      // When
+      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'APP_ICON', NOW);
+
+      // Then
+      expect(decision).toBe('locked');
+    });
+
+    it.each([
+      ['FREE', true],
+      ['PREMIUM', false],
+      ['ADMIN', false],
+    ] as const)('프리미엄 전용 기능은 서버 allowed 기준으로 %s에게 잠김 %s다', (tier, expected) => {
+      // Given
+      const snapshot = createEntitlementSnapshot({ tier });
+
+      // When
+      const isLocked = EntitlementPolicy.isFeatureLocked(snapshot, 'AI_REPORT');
+
+      // Then
+      expect(isLocked).toBe(expected);
     });
 
     it('스냅샷에 없는 기능은 서버가 판단하도록 막지 않는다', () => {
@@ -88,7 +136,7 @@ describe('EntitlementPolicy', () => {
       const snapshot = { ...createEntitlementSnapshot(), features: {} };
 
       // When
-      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE');
+      const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
 
       // Then
       expect(decision).toBe('allow');

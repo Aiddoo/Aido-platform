@@ -14,13 +14,13 @@ describe('AiService.parseMemo', () => {
     const service = new AiService(httpClient, logger);
 
     // When
-    await service.parseMemo('메모', 1, 'plan-1');
+    await service.parseMemo('메모', 1, 'memo-key');
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith(
       'v1/ai/parse-memo',
       { content: '메모', categoryId: 1 },
-      { timeout: 30_000 },
+      { headers: { 'Idempotency-Key': 'memo-key' }, timeout: 30_000 },
     );
   });
 });

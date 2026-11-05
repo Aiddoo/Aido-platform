@@ -13,6 +13,8 @@ export type PlannedActionType = (typeof PLANNED_ACTION_TYPES)[number];
 export const ACTION_PLAN_REJECTION_REASONS = ["CATEGORY_NOT_OWNED"] as const;
 export type ActionPlanRejectionReason = (typeof ACTION_PLAN_REJECTION_REASONS)[number];
 
+export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
+
 /** QuotaCharge·PlanApplication 키 열 길이와 같다. */
 export const IDEMPOTENCY_KEY_MAX_LENGTH = 128;
 

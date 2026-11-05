@@ -38,13 +38,13 @@ describe('toVoicePlan', () => {
     expect(plan.omittedTodoCount).toBe(2);
   });
 
-  test('날짜 문자열은 로컬 날짜로, 반복은 앱 모델로 바꾼다', () => {
+  test('달력 날짜는 그대로 옮기고, 반복은 앱 모델로 바꾼다', () => {
     // Given & When
     const plan = toVoicePlan('plan-1', 'quick-voice', { actions: [todoDto], omittedTodoCount: 0 });
 
     // Then
     expect(plan.actions[0]).toMatchObject({
-      startDate: new Date(2026, 10, 5),
+      startDate: '2026-11-05',
       repeat: {
         frequency: 'WEEKLY',
         weekdays: ['MON', 'WED'],

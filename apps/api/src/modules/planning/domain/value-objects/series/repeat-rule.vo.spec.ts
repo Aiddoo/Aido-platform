@@ -1,4 +1,8 @@
+import { readFileSync } from "node:fs";
+
+import { todoRepeatSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { z } from "zod";
 
 import { DomainException } from "#api/shared/domain/index";
 
@@ -6,7 +10,42 @@ import { RepeatRule, type RepeatEnd, type RepeatSpec } from "./repeat-rule.vo.js
 
 const NEVER: RepeatEnd = { type: "NEVER" };
 
+/** 앱 TodoRepeatPolicy도 같은 표를 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다. */
+const SHARED_OCCURRENCE_CASES = z
+  .array(
+    z.object({
+      name: z.string(),
+      startDate: z.iso.date(),
+      repeat: todoRepeatSchema,
+      through: z.iso.date(),
+      expected: z.array(z.iso.date()),
+    }),
+  )
+  .parse(
+    JSON.parse(
+      readFileSync(
+        new URL(
+          "../../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ),
+  );
+
 describe("RepeatRule — 반복 규칙", () => {
+  it.each(SHARED_OCCURRENCE_CASES)(
+    "앱과 같은 회차 표: $name",
+    ({ startDate, repeat, through, expected }) => {
+      // Given
+      const rule = RepeatRule.from(repeat);
+      // When
+      const occurrences = rule.occurrencesBetween(startDate, startDate, through);
+      // Then
+      expect(occurrences).toEqual(expected);
+    },
+  );
+
   describe("회차 날짜 계산", () => {
     it.each<{
       name: string;

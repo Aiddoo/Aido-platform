@@ -56,7 +56,7 @@ const planDraftWithTodo = createPlanReviewDraft(
         type: 'create-todo',
         actionId: 'todo-1',
         title: '운동',
-        startDate: new Date(2026, 10, 5, 12),
+        startDate: '2026-11-05',
         endDate: null,
         scheduledTime: null,
         repeat: null,
@@ -84,12 +84,6 @@ const createDigestDto = () => ({
   summary: '요약이에요',
   keyPoints: [],
   plan: { actions: [], omittedTodoCount: 0 },
-  meta: {
-    model: 'm',
-    processingTimeMs: 1,
-    tokenUsage: { input: 1, output: 1 },
-    promptVersion: 'voice-note-digest@1',
-  },
   featureQuota: null,
   charged: true,
 });

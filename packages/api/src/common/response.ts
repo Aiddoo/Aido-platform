@@ -17,7 +17,7 @@ export interface SuccessResponse<T = unknown> {
 
 /**
  * JSON 오류 응답. code는 새 서버가 추가한 코드도 파싱되도록 문자열로 받고,
- * details는 개발 환경에서만 내려온다.
+ * details는 운영에서 PUBLIC_ERROR_DETAILS에 등록한 코드의 검증된 필드만, 개발 환경에서는 전부 내려온다.
  */
 export const errorEnvelopeSchema = z.object({
   success: z.literal(false),

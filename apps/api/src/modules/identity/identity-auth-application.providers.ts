@@ -37,6 +37,7 @@ import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/auth/session-p
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
 import { LinkOAuthIdentity } from "./application/services/auth/link-oauth-identity.service.js";
+import { NotifyOAuthSignup } from "./application/services/auth/notify-oauth-signup.service.js";
 import { SessionService } from "./application/services/auth/session.service.js";
 import { VerificationService } from "./application/services/auth/verification.service.js";
 import { ChangePassword } from "./application/use-cases/auth/change-password.use-case.js";
@@ -51,6 +52,7 @@ import { LinkOAuthAccountWithCode } from "./application/use-cases/auth/link-oaut
 import { LinkOAuthAccount } from "./application/use-cases/auth/link-oauth-account.use-case.js";
 import { ListActiveSessions } from "./application/use-cases/auth/list-active-sessions.use-case.js";
 import { ListLinkedAccounts } from "./application/use-cases/auth/list-linked-accounts.use-case.js";
+import { LoginWithMobileOAuthToken } from "./application/use-cases/auth/login-with-mobile-oauth-token.use-case.js";
 import { LoginWithOAuthToken } from "./application/use-cases/auth/login-with-oauth-token.use-case.js";
 import { LoginWithPassword } from "./application/use-cases/auth/login-with-password.use-case.js";
 import { LogoutAll } from "./application/use-cases/auth/logout-all.use-case.js";
@@ -306,15 +308,31 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
 
 export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
   provide: ExchangeOAuthCode,
-  inject: [AUTH_OAUTH_STATE_REPOSITORY],
+  inject: [AUTH_OAUTH_STATE_REPOSITORY, NotifyOAuthSignup],
   useFactory: (
     oauthStateRepository: ConstructorParameters<
       typeof ExchangeOAuthCode
     >[0]["oauthStateRepository"],
+    notifyOAuthSignup: ConstructorParameters<typeof ExchangeOAuthCode>[0]["notifyOAuthSignup"],
   ) =>
     new ExchangeOAuthCode({
       oauthStateRepository,
+      notifyOAuthSignup,
       logger: new Logger(ExchangeOAuthCode.name),
+    }),
+};
+
+export const notifyOAuthSignupProvider: FactoryProvider<NotifyOAuthSignup> = {
+  provide: NotifyOAuthSignup,
+  inject: [AUTH_USER_REPOSITORY, AUTH_REGISTRATION_NOTIFIER],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof NotifyOAuthSignup>[0]["userRepository"],
+    adminEventNotifier: ConstructorParameters<typeof NotifyOAuthSignup>[0]["adminEventNotifier"],
+  ) =>
+    new NotifyOAuthSignup({
+      userRepository,
+      adminEventNotifier,
+      logger: new Logger(NotifyOAuthSignup.name),
     }),
 };
 
@@ -421,7 +439,6 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
     AUTH_LOGIN_ATTEMPT_REPOSITORY,
     UNIT_OF_WORK,
     AUTH_CACHE,
-    AUTH_REGISTRATION_NOTIFIER,
     IssueLogin,
     ProvisionUser,
     RestoreAccount,
@@ -438,7 +455,6 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
     >[0]["loginAttemptRepository"],
     unitOfWork: ConstructorParameters<typeof LoginWithOAuthToken>[0]["unitOfWork"],
     cacheService: ConstructorParameters<typeof LoginWithOAuthToken>[0]["cacheService"],
-    adminEventNotifier: ConstructorParameters<typeof LoginWithOAuthToken>[0]["adminEventNotifier"],
     issueLoginUseCase: ConstructorParameters<typeof LoginWithOAuthToken>[0]["issueLoginUseCase"],
     provisionUserUseCase: ConstructorParameters<
       typeof LoginWithOAuthToken
@@ -453,12 +469,24 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
       loginAttemptRepository,
       unitOfWork,
       cacheService,
-      adminEventNotifier,
       issueLoginUseCase,
       provisionUserUseCase,
       restoreAccount,
       logger: new Logger(LoginWithOAuthToken.name),
     }),
+};
+
+export const loginWithMobileOAuthTokenProvider: FactoryProvider<LoginWithMobileOAuthToken> = {
+  provide: LoginWithMobileOAuthToken,
+  inject: [LoginWithOAuthToken, NotifyOAuthSignup],
+  useFactory: (
+    loginWithOAuthToken: ConstructorParameters<
+      typeof LoginWithMobileOAuthToken
+    >[0]["loginWithOAuthToken"],
+    notifyOAuthSignup: ConstructorParameters<
+      typeof LoginWithMobileOAuthToken
+    >[0]["notifyOAuthSignup"],
+  ) => new LoginWithMobileOAuthToken({ loginWithOAuthToken, notifyOAuthSignup }),
 };
 
 export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {

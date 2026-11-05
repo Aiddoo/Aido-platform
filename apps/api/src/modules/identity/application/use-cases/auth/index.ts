@@ -5,6 +5,7 @@ export * from "./exchange-oauth-code.use-case.js";
 export * from "./issue-login.use-case.js";
 export * from "./link-oauth-account.use-case.js";
 export * from "./link-oauth-account-with-code.use-case.js";
+export * from "./login-with-mobile-oauth-token.use-case.js";
 export * from "./login-with-oauth-token.use-case.js";
 export * from "./login-with-password.use-case.js";
 export * from "./logout.use-case.js";

@@ -126,4 +126,79 @@ describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
     // Then
     expect(result.isNewUser).toBe(false);
   });
+
+  describe("새 가입 알림", () => {
+    const device = { devicePlatform: "IOS", appVersion: "1.14.2", timezone: "Asia/Seoul" } as const;
+
+    it("웹 흐름의 새 가입이면 앱 요청의 기기 정보와 실제 가입 시각으로 알림을 한 번 보낸다", async () => {
+      // Given
+      const registeredAt = new Date("2026-11-05T00:00:00.000Z");
+      const fixture = given({ isNewUser: true, provider: "KAKAO" });
+      fixture.userRepository.users.set(fixture.user.id, {
+        ...fixture.user,
+        createdAt: registeredAt,
+      });
+      fixture.userRepository.profiles.set(fixture.user.id, {
+        name: "새 사용자",
+        profileImage: null,
+      });
+      // When
+      const result = await fixture.useCase.execute({
+        code: fixture.state.exchangeCode ?? "",
+        device,
+      });
+      // Then
+      expect(result.isNewUser).toBe(true);
+      expect(fixture.adminEventNotifier.notifications).toEqual([
+        {
+          userId: fixture.user.id,
+          email: fixture.user.email,
+          provider: "kakao",
+          registeredAt: "2026-11-05T00:00:00.000Z",
+          name: "새 사용자",
+          ...device,
+        },
+      ]);
+    });
+
+    it("기존 사용자 로그인 코드를 교환하면 알림을 보내지 않는다", async () => {
+      // Given
+      const fixture = given({ isNewUser: false });
+      // When
+      await fixture.useCase.execute({ code: fixture.state.exchangeCode ?? "", device });
+      // Then
+      expect(fixture.adminEventNotifier.notifications).toEqual([]);
+    });
+
+    it("같은 코드를 동시에 교환해도 알림은 성공한 한 번만 나간다", async () => {
+      // Given
+      const fixture = given({ isNewUser: true });
+      const code = fixture.state.exchangeCode ?? "";
+      // When
+      const results = await Promise.allSettled([
+        fixture.useCase.execute({ code, device }),
+        fixture.useCase.execute({ code, device }),
+      ]);
+      // Then
+      expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+      expect(fixture.adminEventNotifier.notifications).toHaveLength(1);
+    });
+
+    it("가입 사용자 조회가 실패해도 토큰을 돌려주고 실패를 기록한다", async () => {
+      // Given
+      const fixture = given({ isNewUser: true });
+      vi.spyOn(fixture.userRepository, "findByIdWithProfile").mockRejectedValue(
+        new Error("database unavailable"),
+      );
+      // When
+      const result = await fixture.useCase.execute({
+        code: fixture.state.exchangeCode ?? "",
+        device,
+      });
+      // Then
+      expect(result.accessToken).toBe("access-secret");
+      expect(fixture.adminEventNotifier.notifications).toEqual([]);
+      expect(fixture.logger.error).toHaveBeenCalledTimes(1);
+    });
+  });
 });

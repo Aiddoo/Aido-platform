@@ -39,6 +39,56 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     return response.body.data.data.used;
   }
 
+  describe("메모 나누기 Idempotency-Key", () => {
+    const parseMemo = (key?: string) => {
+      const pending = request(ctx.app.getHttpServer())
+        .post("/v1/ai/parse-memo")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("X-Timezone", "Asia/Seoul");
+      return (key == null ? pending : pending.set("Idempotency-Key", key)).send({
+        content: "회의록 정리하기",
+        categoryId: 1,
+      });
+    };
+    const memoResponse = {
+      todos: [
+        {
+          intent: "TASK",
+          title: "회의록 정리",
+          date: { kind: "NONE" },
+          time: null,
+          repeat: { pattern: "NONE" },
+          items: [],
+        },
+      ],
+    };
+
+    it("출시 앱처럼 키 없이 두 번 보내면 두 번 차감한다", async () => {
+      // Given
+      fakeAiGenerator.setRawResponse(memoResponse);
+      const first = await parseMemo();
+      fakeAiGenerator.setRawResponse(memoResponse);
+      // When
+      const second = await parseMemo();
+      // Then
+      expect([first.status, second.status]).toEqual([200, 200]);
+      expect(await usage()).toBe(2);
+    });
+
+    it("같은 키로 다시 보내면 결과를 받고 한 번만 차감한다", async () => {
+      // Given
+      fakeAiGenerator.setRawResponse(memoResponse);
+      const first = await parseMemo("memo-retry-key");
+      fakeAiGenerator.setRawResponse(memoResponse);
+      // When
+      const retried = await parseMemo("memo-retry-key");
+      // Then
+      expect([first.status, retried.status]).toEqual([200, 200]);
+      expect(retried.body.data.data.todos).toHaveLength(1);
+      expect(await usage()).toBe(1);
+    });
+  });
+
   it("draft의 날짜·시각 표현을 서버가 계산해 공개 계약 그대로 응답하고 promptVersion을 남긴다", async () => {
     // Given - 연도를 말한 날짜와 오후 3시
     fakeAiGenerator.setRawResponse({

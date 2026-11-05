@@ -29,12 +29,9 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import {
-  formatDateKey,
-  formatDateKeyLabel,
-  formatDateKeyRange,
-} from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
+import { toDate } from '@src/shared/utils/date';
+import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-format';
+import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { useForm, useFormState, useWatch } from 'react-hook-form';
@@ -92,17 +89,12 @@ export function PlanTodoEditSheet({
   };
   const handleConfirm = handleSubmit((values) => onConfirm(values.todo));
 
-  const startDateKey = formatDateKey(todo.startDate, getDeviceTimezone());
   const dateLabel =
     todo.endDate == null
-      ? startDateKey === todayKey
+      ? todo.startDate === todayKey
         ? t('common:dateSections.today')
-        : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext)
-      : formatDateKeyRange(
-          startDateKey,
-          formatDateKey(todo.endDate, getDeviceTimezone()),
-          dateFormatContext,
-        );
+        : formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext)
+      : formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext);
   const hasTime = todo.scheduledTime != null;
   const categoryId = VoicePlanPolicy.getCategoryId(todo, fallbackCategoryId);
   const category = categoriesResult.categories.find((candidate) => candidate.id === categoryId);
@@ -118,9 +110,9 @@ export function PlanTodoEditSheet({
         onExit={exit}
       >
         <TodoDatePickerContent
-          value={todo.startDate}
+          value={toDate(todo.startDate)}
           onChange={(date) => {
-            update((current) => VoicePlanPolicy.withStartDate(current, date));
+            update((current) => VoicePlanPolicy.withStartDate(current, toDeviceDateKey(date)));
             close(date);
           }}
           onCancel={() => close(null)}
@@ -141,7 +133,7 @@ export function PlanTodoEditSheet({
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
-              date={todo.startDate}
+              date={toDate(todo.startDate)}
               value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: !hasTime }}
               onChange={(value) => {
                 update((current) =>

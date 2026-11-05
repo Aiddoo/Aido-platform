@@ -19,7 +19,7 @@ const todo = (overrides: Partial<PlannedTodo> = {}): PlannedTodo => ({
   type: 'create-todo',
   actionId: 'a1',
   title: '영양제 먹기',
-  startDate: new Date(2026, 10, 5),
+  startDate: '2026-11-05',
   endDate: null,
   scheduledTime: '08:00',
   repeat: null,
@@ -201,7 +201,7 @@ describe('카드 묶기', () => {
 describe('카드 고치기', () => {
   test('반복으로 바꾸면 기간(종료일)을 지운다', () => {
     // Given
-    const period = todo({ endDate: new Date(2026, 10, 7) });
+    const period = todo({ endDate: '2026-11-07' });
 
     // When
     const result = withRepeat(period, { frequency: 'DAILY', end: { type: 'NEVER' } });
@@ -210,14 +210,46 @@ describe('카드 고치기', () => {
     expect(result.endDate).toBeNull();
   });
 
-  test('시작일을 옮기면 기간 길이를 유지한다', () => {
-    // Given
-    const period = todo({ endDate: new Date(2026, 10, 7) });
+  test.each([
+    {
+      label: '평일',
+      startDate: '2026-11-05',
+      endDate: '2026-11-07',
+      movedTo: '2026-11-10',
+      expected: '2026-11-12',
+    },
+    {
+      label: 'LA 서머타임이 끝나는 날(25시간)을 낀 기간',
+      startDate: '2026-10-31',
+      endDate: '2026-11-02',
+      movedTo: '2026-11-01',
+      expected: '2026-11-03',
+    },
+    {
+      label: 'LA 서머타임이 시작하는 날(23시간)을 낀 기간',
+      startDate: '2026-03-07',
+      endDate: '2026-03-09',
+      movedTo: '2026-03-08',
+      expected: '2026-03-10',
+    },
+    {
+      label: '연말을 넘는 기간',
+      startDate: '2026-12-30',
+      endDate: '2027-01-02',
+      movedTo: '2027-02-27',
+      expected: '2027-03-02',
+    },
+  ])(
+    '시작일을 옮기면 기간 일수를 유지한다: $label',
+    ({ startDate, endDate, movedTo, expected }) => {
+      // Given
+      const period = todo({ startDate, endDate });
 
-    // When
-    const result = withStartDate(period, new Date(2026, 10, 10));
+      // When
+      const result = withStartDate(period, movedTo);
 
-    // Then
-    expect(result.endDate).toEqual(new Date(2026, 10, 12));
-  });
+      // Then
+      expect(result).toMatchObject({ startDate: movedTo, endDate: expected });
+    },
+  );
 });

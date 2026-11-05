@@ -1,10 +1,9 @@
-import type { ActionPlan, ActionPlanMeta, PlannedAction } from "@aido/api";
+import type { ActionPlan, PlannedAction } from "@aido/api";
 
 import {
   type ExistingTodo,
   findDuplicateTodoId,
   type GeneratedActionPlan,
-  type PlanGenerationMeta,
 } from "#api/modules/ai-assistance/ai-assistance-planning.public";
 
 /** 계획 응답. 행동 key는 응답마다 앱이 선택·편집 상태를 묶는 값이라 순서로 만든다. */
@@ -37,18 +36,6 @@ export function toActionPlanView(
           },
         ];
   return { actions: [...todos, ...memo], omittedTodoCount: plan.omittedTodoCount };
-}
-
-export function toActionPlanMeta(
-  meta: PlanGenerationMeta,
-  processingTimeMs: number,
-): ActionPlanMeta {
-  return {
-    model: meta.model,
-    processingTimeMs,
-    tokenUsage: { input: meta.inputTokens, output: meta.outputTokens },
-    promptVersion: meta.promptVersion,
-  };
 }
 
 export function countPlannedActions(plan: ActionPlan) {

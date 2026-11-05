@@ -3,8 +3,8 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import type { CreateQuickPlanInput } from '../apis/voice.service';
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
+import type { CreateQuickPlanInput } from '../domains/voice-plan.model';
 import {
   summarizePlanForAnalytics,
   toAnalyticsSource,

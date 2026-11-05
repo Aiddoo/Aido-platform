@@ -6,6 +6,7 @@ import {
   suggestionActionResponseSchema,
   suggestionListResponseSchema,
 } from '@aido/api';
+import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
@@ -129,12 +130,12 @@ export class AiService {
   parseMemo = async (
     content: string,
     categoryId: number,
-    planId: string,
+    idempotencyKey: string,
   ): Promise<Result<ParsedMemoPlan, ApiError>> => {
     const result = await this.#httpClient.post(
       'v1/ai/parse-memo',
       { content, categoryId },
-      { timeout: PARSE_MEMO_TIMEOUT_MS },
+      { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: PARSE_MEMO_TIMEOUT_MS },
     );
 
     if (!result.ok) {
@@ -152,7 +153,7 @@ export class AiService {
 
     try {
       return ok({
-        plan: toVoicePlanFromParsedMemo(planId, parsed.data),
+        plan: toVoicePlanFromParsedMemo(idempotencyKey, parsed.data),
         featureQuota:
           parsed.data.featureQuota == null ? null : toFeatureQuota(parsed.data.featureQuota),
       });

@@ -27,12 +27,10 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
-  formatDateKey,
   formatDateKeyLabel,
   formatDateKeyRange,
   formatTimeOfDay,
 } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { randomUUID } from 'expo-crypto';
@@ -330,17 +328,16 @@ PlanReview.TodoRow = function PlanTodoRow({
     return null;
   }
 
-  const startDateKey = formatDateKey(todo.startDate, getDeviceTimezone());
   const dateLabel =
     todo.endDate == null
-      ? shouldShowPlanDate({ hasRepeat: todo.repeat != null, startDateKey, todayKey })
-        ? formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext)
+      ? shouldShowPlanDate({
+          hasRepeat: todo.repeat != null,
+          startDateKey: todo.startDate,
+          todayKey,
+        })
+        ? formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext)
         : null
-      : formatDateKeyRange(
-          startDateKey,
-          formatDateKey(todo.endDate, getDeviceTimezone()),
-          dateFormatContext,
-        );
+      : formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext);
   const subtitle = getPlanTodoSubtitle({
     dateLabel,
     timeLabel:

@@ -13232,53 +13232,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           ],
           "type": "object",
         },
-        "meta": {
-          "description": "AI 처리 메타데이터",
-          "properties": {
-            "model": {
-              "description": "응답한 AI 모델 (예: anthropic:claude-haiku-5-5)",
-              "type": "string",
-            },
-            "processingTimeMs": {
-              "description": "처리 시간 (밀리초)",
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
-            },
-            "promptVersion": {
-              "description": "응답을 만든 프롬프트 버전 (예: quick-plan@1)",
-              "type": "string",
-            },
-            "tokenUsage": {
-              "properties": {
-                "input": {
-                  "description": "입력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-                "output": {
-                  "description": "출력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-              },
-              "required": [
-                "input",
-                "output",
-              ],
-              "type": "object",
-            },
-          },
-          "required": [
-            "model",
-            "processingTimeMs",
-            "tokenUsage",
-            "promptVersion",
-          ],
-          "type": "object",
-        },
         "plan": {
           "description": "실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다",
           "properties": {
@@ -13721,7 +13674,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "plan",
-        "meta",
         "featureQuota",
         "charged",
       ],
@@ -23827,53 +23779,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "maxItems": 5,
           "type": "array",
         },
-        "meta": {
-          "description": "AI 처리 메타데이터",
-          "properties": {
-            "model": {
-              "description": "응답한 AI 모델 (예: anthropic:claude-haiku-5-5)",
-              "type": "string",
-            },
-            "processingTimeMs": {
-              "description": "처리 시간 (밀리초)",
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
-            },
-            "promptVersion": {
-              "description": "응답을 만든 프롬프트 버전 (예: quick-plan@1)",
-              "type": "string",
-            },
-            "tokenUsage": {
-              "properties": {
-                "input": {
-                  "description": "입력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-                "output": {
-                  "description": "출력 토큰 수 (0 이상)",
-                  "maximum": 9007199254740991,
-                  "minimum": 0,
-                  "type": "integer",
-                },
-              },
-              "required": [
-                "input",
-                "output",
-              ],
-              "type": "object",
-            },
-          },
-          "required": [
-            "model",
-            "processingTimeMs",
-            "tokenUsage",
-            "promptVersion",
-          ],
-          "type": "object",
-        },
         "plan": {
           "description": "실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다",
           "properties": {
@@ -24329,7 +24234,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "summary",
         "keyPoints",
         "plan",
-        "meta",
         "featureQuota",
         "charged",
       ],
@@ -27596,6 +27500,15 @@ AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
 - 다시 채우는 때: KST 매월 1일 00:00",
       "operationId": "parseMemoToTodos",
       "parameters": [
+        {
+          "description": "사용자 행동 한 번마다 새로 만드는 키(128자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 보내면 한 번만 차감합니다. 처리 중이면 AI_1314, 내용이 다르면 AI_1318입니다. 미전송 시 요청마다 차감합니다.",
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
         {
           "description": "파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.",
           "in": "header",

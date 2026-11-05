@@ -1,4 +1,22 @@
+import { todoRepeatSchema as todoRepeatDtoSchema } from '@aido/api';
+import { z } from 'zod';
+
+import repeatOccurrenceCases from '../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
+import { toRepeat } from '../apis/todo-series.mapper';
 import { type TodoRepeat, TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
+
+/** 서버 RepeatRule도 같은 표를 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
+const SHARED_OCCURRENCE_CASES = z
+  .array(
+    z.object({
+      name: z.string(),
+      startDate: z.iso.date(),
+      repeat: todoRepeatDtoSchema,
+      through: z.iso.date(),
+      expected: z.array(z.iso.date()),
+    }),
+  )
+  .parse(repeatOccurrenceCases);
 
 const MONDAY = '2026-11-02';
 const WEDNESDAY = '2026-11-04';
@@ -372,5 +390,21 @@ describe('TodoRepeatPolicy 회차별 동작', () => {
 
     // Then
     expect(result).toEqual({ hasRule, canChangeRepeat, deleteScopes });
+  });
+});
+
+describe('서버와 같은 회차 표', () => {
+  test.each(SHARED_OCCURRENCE_CASES)('$name', ({ startDate, repeat, through, expected }) => {
+    // Given
+    const appRepeat = toRepeat(repeat);
+
+    // When
+    const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(appRepeat, startDate, {
+      from: startDate,
+      to: through,
+    });
+
+    // Then
+    expect(occurrences).toEqual(expected);
   });
 });

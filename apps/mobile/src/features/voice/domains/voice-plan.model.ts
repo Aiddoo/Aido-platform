@@ -5,7 +5,7 @@ import {
   TodoRepeatPolicy,
   todoRepeatSchema,
 } from '@src/features/todo/domains/todo-repeat.model';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
+import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/utils/date-key';
 import { z } from 'zod';
 
 export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();
@@ -15,8 +15,8 @@ const plannedTodoShape = {
   type: z.literal('create-todo'),
   actionId: plannedActionIdSchema,
   title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH),
-  startDate: z.date(),
-  endDate: z.date().nullable(),
+  startDate: z.iso.date(),
+  endDate: z.iso.date().nullable(),
   /** null이면 종일 */
   scheduledTime: z.iso.time({ precision: -1 }).nullable(),
   repeat: todoRepeatSchema.nullable(),
@@ -71,6 +71,11 @@ export type VoicePlan = z.infer<typeof voicePlanSchema>;
 
 /** 행동별로 추가할지 고른 값. 키는 `actionId` */
 export type PlanSelection = Record<string, boolean>;
+
+export interface CreateQuickPlanInput {
+  text: string;
+  source: 'voice' | 'text';
+}
 
 export interface QuickPlanResult {
   plan: VoicePlan;
@@ -150,23 +155,19 @@ export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): Planne
 }
 
 /** 시작일을 옮기면 기간이 거꾸로 되지 않게 종료일을 같은 길이만큼 옮기고, 반복은 시작일을 따라오는 값을 맞춘다 */
-export function withStartDate(todo: PlannedTodo, startDate: Date): PlannedTodo {
+export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
   if (todo.repeat != null) {
     return {
       ...todo,
       startDate,
-      repeat: TodoRepeatPolicy.withRepeatStartDate(
-        todo.repeat,
-        toDeviceDateKey(todo.startDate),
-        toDeviceDateKey(startDate),
-      ),
+      repeat: TodoRepeatPolicy.withRepeatStartDate(todo.repeat, todo.startDate, startDate),
     };
   }
   if (todo.endDate == null) {
     return { ...todo, startDate };
   }
-  const span = todo.endDate.getTime() - todo.startDate.getTime();
-  return { ...todo, startDate, endDate: new Date(startDate.getTime() + span) };
+  const spanInDays = diffDateKeysInDays(todo.startDate, todo.endDate);
+  return { ...todo, startDate, endDate: addDaysToDateKey(startDate, spanInDays) };
 }
 
 export function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
