@@ -36,7 +36,12 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { toNullableDate } from '@src/shared/utils/date';
+import {
+  formatDateKey,
+  formatDateKeyCompactRange,
+  formatDateKeyLabel,
+} from '@src/shared/utils/date-format';
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -338,7 +343,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         onExit={() => {
           exit();
           if (pickerResult) {
-            const { startDate, repeat } = methods.getValues();
+            const { startDate, endDate, repeat } = methods.getValues();
             // 반복 회차의 날짜 이동은 이 회차에만 적용되므로 규칙은 그대로 둔다
             const isSeriesOccurrence =
               props.mode === 'edit' && TodoPolicy.isRecurringTodo(props.todo);
@@ -352,7 +357,16 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 ),
               );
             }
+            // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
+            const nextEndDate = TodoPolicy.getShiftedEndDate(
+              {
+                startDate: toDeviceDateKey(startDate),
+                endDate: endDate == null ? null : toDeviceDateKey(endDate),
+              },
+              toDeviceDateKey(pickerResult),
+            );
             methods.setValue('startDate', pickerResult);
+            methods.setValue('endDate', toNullableDate(nextEndDate));
           }
         }}
       >
@@ -655,15 +669,22 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
 const DateChip = ({ onPress }: { onPress: () => void }) => {
   const actionChipIconSize = useActionChipIconSize();
-  const startDate = useWatch<AddTodoFormValues, 'startDate'>({ name: 'startDate' });
+  const [startDate, endDate] = useWatch<AddTodoFormValues, ['startDate', 'endDate']>({
+    name: ['startDate', 'endDate'],
+  });
   const { t } = useTranslation('common');
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
   const startDateKey = formatDateKey(startDate, getDeviceTimezone());
-  const label =
+  const endDateKey = endDate == null ? null : formatDateKey(endDate, getDeviceTimezone());
+  const singleDayLabel =
     startDateKey === todayDateKey
       ? t('dateSections.today')
       : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext);
+  const label =
+    endDateKey == null || endDateKey === startDateKey
+      ? singleDayLabel
+      : formatDateKeyCompactRange(startDateKey, endDateKey, dateFormatContext);
 
   return (
     <ActionChip
