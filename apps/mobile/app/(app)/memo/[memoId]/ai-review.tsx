@@ -83,7 +83,7 @@ function AiReviewScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
+    <ScrollView contentContainerClassName="p-4 pb-6">
       <PlanReview
         form={form}
         plan={toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}

@@ -1,6 +1,6 @@
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
+import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import { useTrack } from '@src/shared/analytics';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -27,7 +27,6 @@ import { ScrollView } from 'react-native';
 
 function VoiceStorageScreen() {
   const { t } = useTranslation('settings');
-  const { t: tVoiceNote } = useTranslation('voiceNote');
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();
   const confirmDialog = useConfirmDialog();
@@ -86,31 +85,12 @@ function VoiceStorageScreen() {
       ) : (
         <SettingsCard>
           {usage.notes.map(({ note, bytes }) => (
-            <HStack key={note.draftId} gap={12} align="center" testID="voice-storage-row">
-              <VStack flex={1} gap={2}>
-                <Text size="b3" weight="medium" maxLines={1}>
-                  {VoiceNotePolicy.getDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
-                </Text>
-                <Text size="e1" shade={6} maxLines={1} className="tabular-nums">
-                  {tVoiceNote('result.meta', {
-                    date: formatDateLabel(note.createdAt, 'monthDay', dateFormatContext),
-                    duration: formatMediaTime(note.durationMs),
-                  })}
-                </Text>
-              </VStack>
-              <Text size="b4" shade={7} maxLines={1} className="tabular-nums">
-                {formatFileSize(bytes, dateFormatContext.locale)}
-              </Text>
-              <PressableFeedback
-                onPress={() => handleRemoveOne(note.draftId)}
-                hitSlop={12}
-                accessibilityRole="button"
-                accessibilityLabel={t('voiceStorage.removeOneTitle')}
-                testID="voice-storage-remove"
-              >
-                <TrashIcon width={20} height={20} colorClassName="text-gray-6" />
-              </PressableFeedback>
-            </HStack>
+            <VoiceStorageScreen.Row
+              key={note.draftId}
+              note={note}
+              bytes={bytes}
+              onRemove={() => handleRemoveOne(note.draftId)}
+            />
           ))}
         </SettingsCard>
       )}
@@ -128,6 +108,48 @@ function VoiceStorageScreen() {
     </VStack>
   );
 }
+
+VoiceStorageScreen.Row = function Row({
+  note,
+  bytes,
+  onRemove,
+}: {
+  note: VoiceNote;
+  bytes: number;
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation('settings');
+  const { t: tVoiceNote } = useTranslation('voiceNote');
+  const dateFormatContext = useDateFormatContext();
+
+  return (
+    <HStack gap={12} align="center" testID="voice-storage-row">
+      <VStack flex={1} gap={2}>
+        <Text size="b3" weight="medium" maxLines={1}>
+          {VoiceNotePolicy.getDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
+        </Text>
+        <Text size="e1" shade={6} maxLines={1} className="tabular-nums">
+          {tVoiceNote('result.meta', {
+            date: formatDateLabel(note.createdAt, 'monthDay', dateFormatContext),
+            duration: formatMediaTime(note.durationMs),
+          })}
+        </Text>
+      </VStack>
+      <Text size="b4" shade={7} maxLines={1} className="tabular-nums">
+        {formatFileSize(bytes, dateFormatContext.locale)}
+      </Text>
+      <PressableFeedback
+        onPress={onRemove}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel={t('voiceStorage.removeOneTitle')}
+        testID="voice-storage-remove"
+      >
+        <TrashIcon width={20} height={20} colorClassName="text-gray-6" />
+      </PressableFeedback>
+    </HStack>
+  );
+};
 
 VoiceStorageScreen.Loading = function Loading() {
   return (
