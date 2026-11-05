@@ -47,6 +47,12 @@ export function LiveTranscript({
     isWordFadeEnabled && !isReducedMotion && finalWords.length <= MAX_ANIMATED_WORDS;
   const isEmpty = finalWords.length === 0 && interimWords.length === 0;
 
+  const scrollToLatest = () => {
+    if (isFollowingRef.current) {
+      scrollRef.current?.scrollToEnd({ animated: false });
+    }
+  };
+
   const followIfAtEnd = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
     isFollowingRef.current =
@@ -57,11 +63,8 @@ export function LiveTranscript({
     <SheetScrollShadow className="flex-1">
       <ScrollView
         ref={scrollRef}
-        onContentSizeChange={() => {
-          if (isFollowingRef.current) {
-            scrollRef.current?.scrollToEnd({ animated: false });
-          }
-        }}
+        onContentSizeChange={scrollToLatest}
+        onLayout={scrollToLatest}
         onScrollBeginDrag={() => {
           isFollowingRef.current = false;
         }}

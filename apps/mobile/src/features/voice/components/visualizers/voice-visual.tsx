@@ -57,8 +57,8 @@ half4 main(float2 position) {
   float angle = atan(p.y, p.x);
   float q = length(p);
   float edge = 0.6 + 0.13 * level + 0.008 * sin(time * 0.9)
-    + (0.003 + 0.05 * level) * sin(3.0 * angle + time * 1.1)
-    + (0.002 + 0.032 * level) * sin(5.0 * angle - time * 1.6);
+    + (0.002 + 0.008 * level) * sin(3.0 * angle + time * 1.1)
+    + (0.001 + 0.005 * level) * sin(5.0 * angle - time * 1.6);
   float2 w = p * 1.5;
   float flow = sin(w.x * 1.3 + time * 0.7 + 1.6 * sin(w.y * 1.1 - time * 0.5))
     + sin(w.y * 1.5 - time * 0.6 + 1.4 * sin(w.x * 0.9 + time * 0.4 + level * 2.0));
