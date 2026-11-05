@@ -1,4 +1,5 @@
 import { addMonths, addWeeks, getMonthStart, getWeekStart } from '@src/shared/utils/date';
+import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { CalendarViewMode } from '../../components/calendar/calendar.types';
@@ -11,7 +12,7 @@ export function shiftCalendarDate(viewMode: CalendarViewMode, date: Date, step: 
 }
 
 export function clampCalendarPage(page: number, totalPages: number): number {
-  return Math.max(0, Math.min(totalPages - 1, page));
+  return clamp(page, 0, totalPages - 1);
 }
 
 interface CalendarPageAtOffsetParams {

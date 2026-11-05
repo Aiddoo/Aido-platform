@@ -1,5 +1,6 @@
 'use no memo';
 
+import { clamp } from 'es-toolkit';
 import type { ReactNode } from 'react';
 import {
   FlexWidget,
@@ -100,7 +101,7 @@ function Paw({ layout, size = 11 }: { layout: Layout; size?: number }) {
 }
 
 function Progress({ layout, width, height }: { layout: Layout; width: number; height: number }) {
-  const progress = Math.min(100, Math.max(0, layout.props.completionRate));
+  const progress = clamp(layout.props.completionRate, 0, 100);
   return (
     <FlexWidget
       style={{
