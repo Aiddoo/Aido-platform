@@ -1,13 +1,16 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
+  type BottomSheetBackgroundProps,
   BottomSheetFooter,
   type BottomSheetFooterProps,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import {
   type ComponentRef,
+  createContext,
   type ReactNode,
+  use,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -31,7 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
-import { HANDLE_HEIGHT, SHEET_CONTENT_PADDING, SHEET_INDEX } from './constants';
+import { HANDLE_HEIGHT, SHEET_CONTENT_PADDING, SHEET_INDEX, SHEET_RADIUS } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
@@ -45,6 +48,8 @@ interface KeyboardBottomSheetProps {
   children: ReactNode;
   /** 내용이 길어 스크롤돼도 시트 아래(키보드 위)에 고정되는 영역. 주 동작 버튼을 둔다. */
   footer?: ReactNode;
+  /** 시트 면 뒤에 깔리는 장식. 시트 크기를 기준으로 absolute로 배치하고, 내용 위로는 올라오지 않는다 */
+  backgroundDecoration?: ReactNode;
 }
 
 /**
@@ -61,6 +66,7 @@ export const KeyboardBottomSheet = ({
   onCloseStart,
   children,
   footer,
+  backgroundDecoration,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
@@ -300,45 +306,71 @@ export const KeyboardBottomSheet = ({
   };
 
   return (
-    <GorhomBottomSheet
-      ref={sheetRef}
-      animatedPosition={animatedPosition}
-      accessible={false}
-      index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
-      enableDynamicSizing
-      maxDynamicContentSize={maxDynamicContentSize}
-      enablePanDownToClose
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      enableBlurKeyboardOnGesture
-      android_keyboardInputMode="adjustPan"
-      topInset={topInset}
-      style={{ marginLeft: margins.left, marginRight: margins.right }}
-      backgroundStyle={[backgroundStyle, { borderRadius: 32 }]}
-      handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
-      backdropComponent={renderBackdrop}
-      onAnimate={handleAnimate}
-      onChange={handleSheetChange}
-      onClose={handleSheetClose}
-      footerComponent={footer == null ? undefined : renderFooter}
-    >
-      <BottomSheetScrollView
-        ref={scrollViewRef}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onContentSizeChange={handleContentSizeChange}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
-        ]}
-        keyboardShouldPersistTaps="always"
-        showsVerticalScrollIndicator={false}
-        bounces={false}
+    <SheetDecorationContext value={backgroundDecoration}>
+      <GorhomBottomSheet
+        ref={sheetRef}
+        animatedPosition={animatedPosition}
+        accessible={false}
+        index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
+        enableDynamicSizing
+        maxDynamicContentSize={maxDynamicContentSize}
+        enablePanDownToClose
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        enableBlurKeyboardOnGesture
+        android_keyboardInputMode="adjustPan"
+        topInset={topInset}
+        style={{ marginLeft: margins.left, marginRight: margins.right }}
+        backgroundComponent={DecoratedSheetBackground}
+        backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
+        handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
+        backdropComponent={renderBackdrop}
+        onAnimate={handleAnimate}
+        onChange={handleSheetChange}
+        onClose={handleSheetClose}
+        footerComponent={footer == null ? undefined : renderFooter}
       >
-        {children}
-      </BottomSheetScrollView>
-    </GorhomBottomSheet>
+        <BottomSheetScrollView
+          ref={scrollViewRef}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onContentSizeChange={handleContentSizeChange}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
+          ]}
+          keyboardShouldPersistTaps="always"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {children}
+        </BottomSheetScrollView>
+      </GorhomBottomSheet>
+    </SheetDecorationContext>
   );
 };
+
+const SheetDecorationContext = createContext<ReactNode>(null);
+
+/**
+ * gorhom 기본 배경과 같은 면 뒤에 장식을 깐다. 장식이 바뀔 때 배경 컴포넌트가 바뀌어 다시 마운트되지 않도록
+ * 컴포넌트는 고정하고 장식만 Context로 넘긴다.
+ */
+function DecoratedSheetBackground({ pointerEvents, style }: BottomSheetBackgroundProps) {
+  const decoration = use(SheetDecorationContext);
+
+  return (
+    <>
+      {decoration}
+      <View
+        pointerEvents={pointerEvents}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel="Bottom Sheet"
+        style={style}
+      />
+    </>
+  );
+}
 
 const FOOTER_PADDING_TOP = 12;
 const FOOTER_KEYBOARD_GAP = 8;

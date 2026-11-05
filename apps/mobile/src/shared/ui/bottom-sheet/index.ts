@@ -5,6 +5,6 @@ export { SheetHeaderLayout } from './sheet-header-layout';
 export { SHEET_ROUTE_SCREEN_OPTIONS, type SheetRouteExit } from './sheet-route';
 export { SheetRouteScreen } from './sheet-route-screen';
 export { useDialogPortalTarget } from './sheet-route-portal-host';
-export { SHEET_CONTENT_PADDING, SHEET_DETACHED_MARGIN } from './constants';
+export { SHEET_CONTENT_PADDING, SHEET_DETACHED_MARGIN, SHEET_RADIUS } from './constants';
 export { useSheetLayout } from './use-sheet-layout';
 export { useSheetRoute } from './use-sheet-route';
