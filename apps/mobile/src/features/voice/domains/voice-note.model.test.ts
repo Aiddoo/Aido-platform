@@ -36,7 +36,7 @@ const createPlannedTodo = (actionId: string, title: string) => ({
   type: 'create-todo',
   actionId,
   title,
-  startDate: new Date('2026-11-05T12:00:00.000Z'),
+  startDate: '2026-11-05',
   endDate: null,
   scheduledTime: null,
   repeat: null,
@@ -236,7 +236,7 @@ describe('voiceNoteSchema 저장과 복원', () => {
         type: 'create-todo',
         actionId: 'a1',
         title: '시안 받기',
-        startDate: new Date('2026-11-06T00:00:00.000Z'),
+        startDate: '2026-11-06',
         endDate: null,
         scheduledTime: null,
         repeat: null,
@@ -248,7 +248,7 @@ describe('voiceNoteSchema 저장과 복원', () => {
     ],
   });
 
-  test('고친 카드까지 저장했다가 날짜를 Date로 되살린다', () => {
+  test('고친 카드까지 저장했다가 달력 날짜를 그대로 되살린다', () => {
     // Given
     const note = createVoiceNoteFixture({ planDraft: createPlanReviewDraft(plan) });
 
@@ -258,9 +258,7 @@ describe('voiceNoteSchema 저장과 복원', () => {
 
     // Then
     const [action] = restored.planDraft?.form.actions ?? [];
-    expect(action?.type === 'create-todo' && action.startDate).toEqual(
-      new Date('2026-11-06T00:00:00.000Z'),
-    );
+    expect(action?.type === 'create-todo' && action.startDate).toBe('2026-11-06');
   });
 
   test('검토 초안이 깨졌으면 글자는 살리고 그 칸만 비운다', () => {

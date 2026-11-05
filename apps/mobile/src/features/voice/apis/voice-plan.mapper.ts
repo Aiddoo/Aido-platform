@@ -13,9 +13,6 @@ import {
 import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/todo/apis/todo-series.mapper';
 import type { TodoRepeat } from '@src/features/todo/domains/todo-repeat.model';
-import { toDate } from '@src/shared/utils/date';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -67,8 +64,8 @@ const toPlannedAction = (dto: z.infer<typeof plannedActionSchema>): PlannedActio
       type: 'create-todo',
       actionId: todo.key,
       title: todo.title,
-      startDate: toDate(todo.startDate),
-      endDate: todo.endDate == null ? null : toDate(todo.endDate),
+      startDate: todo.startDate,
+      endDate: todo.endDate,
       scheduledTime: todo.scheduledTime,
       repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
       visibility: todo.visibility,
@@ -137,8 +134,8 @@ export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse
     type: 'create-todo',
     actionId: `memo-todo-${index}`,
     title: todo.title,
-    startDate: toDate(todo.startDate),
-    endDate: isParsedMemoRepeating(todo) || todo.endDate == null ? null : toDate(todo.endDate),
+    startDate: todo.startDate,
+    endDate: isParsedMemoRepeating(todo) ? null : todo.endDate,
     scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
     repeat: toParsedMemoRepeat(todo),
     visibility: null,
@@ -163,8 +160,8 @@ const toApplyAction = (action: PlannedAction, fallbackCategoryId: number): Apply
       type: 'CREATE_TODO',
       key: todo.actionId,
       title: todo.title,
-      startDate: formatDateKey(todo.startDate, getDeviceTimezone()),
-      endDate: todo.endDate == null ? null : formatDateKey(todo.endDate, getDeviceTimezone()),
+      startDate: todo.startDate,
+      endDate: todo.endDate,
       scheduledTime: todo.scheduledTime,
       repeat: todo.repeat == null ? null : toRepeatDto(todo.repeat),
       visibility: todo.visibility,

@@ -1,4 +1,6 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { z } from 'zod';
 
 import {
@@ -58,17 +60,26 @@ export function toPlanSelection({
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value != null;
 
-const reviveDate = (value: unknown) => (typeof value === 'string' ? new Date(value) : value);
+/**
+ * 달력 날짜를 `Date`로 들던 때의 초안은 ISO 순간으로 남아 있고, 저장 때의 시간대는 기록되지 않았다.
+ * 날짜 선택기를 거친 값은 자정이 아닐 수도 있어 UTC 자정 반올림 같은 추측은 더 자주 틀린다. 그래서
+ * 지금 기기 시간대로 읽는다. 저장한 시간대에 그대로 있으면 사용자가 보던 날짜와 같고, 그 사이 시간대를
+ * 옮긴 초안만 하루 밀릴 수 있지만 저장 전 카드에서 보고 고칠 수 있다.
+ */
+export function restoreDraftDateKey(value: unknown, timeZone: string) {
+  const instant = z.iso.datetime().safeParse(value);
+  return instant.success ? formatDateKey(new Date(instant.data), timeZone) : value;
+}
 
-/** 기기에 JSON으로 남긴 카드의 날짜 문자열을 `Date`로 되살린다 */
-function reviveActionDates(action: unknown) {
+function restoreActionDates(action: unknown) {
   if (!isRecord(action) || action.type !== 'create-todo') {
     return action;
   }
+  const timeZone = getDeviceTimezone();
   return {
     ...action,
-    startDate: reviveDate(action.startDate),
-    endDate: reviveDate(action.endDate),
+    startDate: restoreDraftDateKey(action.startDate, timeZone),
+    endDate: restoreDraftDateKey(action.endDate, timeZone),
   };
 }
 
@@ -83,7 +94,7 @@ export const planReviewDraftSchema = z
   })
   .transform(({ omittedTodoCount, form }) => {
     const parsed = form.actions.map((action) =>
-      planActionFormSchema.safeParse(reviveActionDates(action)),
+      planActionFormSchema.safeParse(restoreActionDates(action)),
     );
     const actions = parsed.flatMap((result) => (result.success ? [result.data] : []));
     return {
