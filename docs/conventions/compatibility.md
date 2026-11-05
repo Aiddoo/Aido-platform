@@ -24,12 +24,23 @@
 
 - `POST /v1/todos/recurring`: 마지막 지원 앱 1.14.x. 내부는 `POST /v1/todos`의 `repeat`(매주 + 날짜까지)와 같은 경로다. 날짜 없음은 이 경로에서만 옛 코드 `SYS_0002`다. 1.16.0에서 출시 앱 비율을 보고 제거 일정을 정한다. 진행 중 반복 상한은 이 경로(메모 변환의 `isRecurring`, AI 제안 수락도 같다)에서 `TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY`(300개)이고 거절 코드는 `TODO_0813`이다. 옛 앱이 `TODO_0842`를 몰라 `SYS_0001`로 보이기 때문이고, `TODO_0813`은 옛 서버도 이 경로에서 보내던 코드라 옛 앱에 전용 문구("카테고리 한도")가 있다. 새 경로의 30개는 그대로 `TODO_0842`다. `TODO_0812`와 `RECURRING_TODO_LIMITS.MAX_DAYS_RANGE`는 이 경로와 함께 지운다.
 - `GET /v1/ai/usage`: 마지막 지원 앱 1.14.x(1.15 앱은 안 쓴다). 1.16.0에서 `/recurring`과 같이 판단한다.
+- `POST /v1/ai/parse-todo`: 마지막 지원 앱 1.14.x(1.15 앱은 `POST /v1/quick-plans`를 쓴다). 응답의 `meta`도 출시 계약이다. 1.16.0에서 `/recurring`과 같이 판단한다.
+- `POST /v1/ai/parse-memo`의 `Idempotency-Key` 생략: 마지막 지원 앱 1.14.x. 헤더가 없으면 요청마다 차감한다. 1.15 앱은 항상 보낸다. 생략을 막는 것은 1.14.x 사용자가 사라진 뒤에 판단한다.
 - 메모 변환의 `isRecurring`·`recurrence`: 마지막 지원 앱 1.14.x. 서버가 Presentation에서 같은 `repeat`로 바꾼다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - `Todo.recurrenceGroupId`(DB 칸·응답): 영구. 출시 앱 응답의 필수 칸이다.
 - `Todo.scheduledTime`(응답): 영구. 출시 앱은 이 순간을 기기 시간대로 보여 준다. 시간대 재계산은 완료했거나 지난 할 일까지 모두 다시 쓰므로 옛 앱에서도 고른 시각으로 보인다. 재계산 전 1~2분만 옛 시간대의 시각으로 보인다.
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`): 1.15.1에서 지운다. 대기 잡 보관이 24시간이라 배포 순간의 잡만 해당한다.
+
+출시 앱이 아니라 서버 롤백 구간을 위한 1.15 앱 코드도 있다. 1.15 서버를 되돌려 1.15 앱이 옛 서버를 만나도 저장이 어긋나지 않게 한다. 1.15 서버 안정화를 확인한 뒤 1.16에서 지운다.
+
+| 코드(앱)                                              | 옛 서버에서 생기는 일                                                | 동작                                   |
+| ----------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- |
+| `todo.mapper.ts` `toLocalTime`의 `scheduledTime` 대체 | 응답에 `scheduledLocalTime`이 없다                                   | 순간을 기기 시간대의 시각으로 읽는다   |
+| `voice-plan.mapper.ts` `toParsedMemoRepeat`           | parse-memo 응답에 `repeat`가 없고 `recurrence`(요일 + 종료일)만 온다 | 매주 + 날짜까지로 바꾼다               |
+| `todo-series.error.ts` `TodoSeriesNotCreatedError`    | `POST /v1/todos`가 `repeat`를 모르고 단일 할 일을 만들고 201을 준다  | 성공으로 처리하지 않고 안내한다        |
+| `todo.service.ts` `getTodoSeries`의 404 → `null`      | `GET /v1/todo-series/{id}` 경로가 없어 404 `SYS_0002`로 온다         | 규칙이 없는 할 일로 보고 화면을 그린다 |
 
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/.claude/e2e-test.md#호환성openapi))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 

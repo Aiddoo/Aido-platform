@@ -10,7 +10,7 @@
 | 목록 | `data` 안의 기능별 schema + 공용 cursor 정보              | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)               |
 | 실패 | `{ success: false, error: { code, message }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                |
 
-- 실패 본문의 의미는 `error.code`뿐이다. 앱은 `message`나 HTTP 상태 문자열로 분기하지 않는다. `details`는 개발 환경 진단용이다.
+- 실패 본문의 의미는 `error.code`뿐이다. 앱은 `message`나 HTTP 상태 문자열로 분기하지 않는다. `details`는 운영에서 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(한도, `charged`). 앱은 이 값을 스키마로 읽고, 그 밖의 `details`는 개발 환경 진단용이라 운영 응답에 없다.
 - `ErrorCode`는 [errors.ts](../../packages/api/src/errors/errors.ts)의 도메인 범위(`SYS 0001-0099`, `AUTH 0100-0199`, … `INVITE 2100-2199`)에서 다음 번호를 쓴다. 새 도메인은 빈 범위를 정해 같은 파일 머리 주석에 적는다. 문자열 코드를 하드코딩하지 않는다.
 - `@RawResponse` endpoint(AppConfig의 `feature-discovery`·`app-version`)만 envelope 없이 raw union을 돌려준다. 새 raw 응답은 만들지 않는다.
 
