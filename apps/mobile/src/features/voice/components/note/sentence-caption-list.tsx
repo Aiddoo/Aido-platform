@@ -23,7 +23,6 @@ interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'chi
   interimText?: string;
   /** 녹음 중이면 아래부터 쌓이며 따라 내려가고, 사용자가 위로 올리면 멈춘다 */
   isLive?: boolean;
-  /** 재생 위치가 속한 문장 */
   activeSentenceIndex?: number;
   /** 주면 문장을 눌러 그 시각부터 들을 수 있다 */
   onPressSentence?: (sentence: VoiceNoteSentence) => void;

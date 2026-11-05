@@ -18,7 +18,6 @@ const FOLLOW_THRESHOLD_PX = 24;
 
 interface LiveTranscriptProps {
   transcript: VoiceTranscript;
-  /** 글자가 없을 때 글자 자리에 보이는 안내 */
   placeholder?: string;
   /** 이미 본 글자를 다시 보일 때는 등장 효과를 끈다 */
   isWordFadeEnabled?: boolean;

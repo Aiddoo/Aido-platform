@@ -27,7 +27,6 @@ export interface VoiceRecordingRepository {
   remove(accountId: string, fileName: string): void;
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
-  /** 이 계정의 녹음 파일을 모두 지운다 */
   removeOwned(accountId: string): void;
   /** 초안이 가리키지 않고 보관 기한이 지난 파일을 지우고 지운 파일 이름을 돌려준다 */
   removeExpired(accountId: string, now: Date, referencedFileNames: ReadonlySet<string>): string[];

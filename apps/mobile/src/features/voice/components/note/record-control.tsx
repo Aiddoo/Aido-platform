@@ -37,7 +37,6 @@ interface RecordControlProps extends Omit<ComponentProps<typeof PressableFeedbac
   children: ReactNode;
 }
 
-/** 녹음 화면의 조작 하나(둥근 버튼 + 라벨) */
 export function RecordControl({ label, children, ...buttonProps }: RecordControlProps) {
   return (
     <RecordControl.Column

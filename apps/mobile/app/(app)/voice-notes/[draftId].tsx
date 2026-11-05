@@ -319,7 +319,6 @@ VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
 interface VoiceNoteResultPlaybackProps {
   note: VoiceNote;
   player: VoiceNotePlayer;
-  /** 들을 녹음 파일이 기기에 있다 */
   canPlay: boolean;
 }
 

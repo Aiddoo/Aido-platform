@@ -345,7 +345,6 @@ export interface EntitlementEventMap {
     surface: EntitlementGateSurface;
     trigger: LimitReachedTrigger;
   };
-  /** 한도 안내에서 구독하기를 눌렀다 */
   limit_reached_cta_tapped: {
     feature: PremiumGateAnalyticsFeature;
     surface: EntitlementGateSurface;

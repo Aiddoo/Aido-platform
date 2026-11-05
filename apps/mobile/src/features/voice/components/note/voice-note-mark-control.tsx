@@ -28,7 +28,6 @@ const INFO_POPOVER_GAP = 9;
 const INFO_ICON_SIZE = 14;
 
 interface VoiceNoteMarkControlProps {
-  /** 지금까지 중요 표시한 문장 수 */
   markCount: number;
   isListening: boolean;
   onPress: () => void;

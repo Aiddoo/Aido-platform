@@ -296,8 +296,6 @@ describe('TodoService', () => {
     });
   });
 
-  // ── createRepeatingTodo ──────────────────────
-
   describe('createRepeatingTodo', () => {
     const draft: RepeatingTodoDraft = {
       title: '반복 할일',

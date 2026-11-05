@@ -185,7 +185,6 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
 /** 값을 바꿀 때마다 스키마를 다시 돌려 확인 버튼(isValid)이 따라오게 한다 */
 const VALIDATE = { shouldValidate: true } as const;
 
-/** 순수 함수가 돌려준 다음 값을 폼에 넣는다 */
 function useApplyRepeatFormValues() {
   const { setValue } = useFormContext<TodoRepeatFormValues>();
 

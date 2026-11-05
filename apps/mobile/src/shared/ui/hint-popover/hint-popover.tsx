@@ -30,7 +30,6 @@ export interface HintPopoverContentProps extends Omit<
   description?: string;
   /** 바깥을 막지 않는다. 안내가 떠 있어도 대상과 화면을 그대로 눌러야 할 때 쓴다. 닫기는 X와 대상이다 */
   isPassThrough?: boolean;
-  /** 설명 아래에 더 보일 내용 */
   children?: ReactNode;
 }
 

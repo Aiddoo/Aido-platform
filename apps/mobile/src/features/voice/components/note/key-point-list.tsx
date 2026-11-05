@@ -23,7 +23,6 @@ interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'childre
   hasTimeCoachmark?: boolean;
 }
 
-/** 핵심 포인트 목록. 누르면 그 시각부터 들려주고, 재생 중인 포인트는 배경으로 강조한다 */
 export function KeyPointList({
   keyPoints,
   activeKeyPointId,

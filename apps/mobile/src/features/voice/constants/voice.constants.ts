@@ -13,7 +13,6 @@ export const QUICK_CAPTURE_MAX_SECONDS = 90;
 /** 듣기를 시작하라고 한 뒤 인식기가 이 안에 시작을 알리지 않으면 실패로 보고 글자를 들고 멈춘다 */
 export const VOICE_PREPARING_TIMEOUT_MS = 10_000;
 
-/** 말이 이만큼 멈추면 자동으로 마무리한다 */
 export const AUTO_FINISH_SILENCE_MS = 2_500;
 
 /** 이 음량(0..1)을 넘으면 말하는 중으로 본다 */
@@ -43,13 +42,11 @@ export const LOW_CONFIDENCE_THRESHOLD = 0.5;
 /** 인식기가 고유명사를 맞히도록 알려 주는 단어의 최대 개수(SDK 권장 상한) */
 export const SPEECH_CONTEXT_MAX_STRINGS = 100;
 
-/** 인식기에 알려 줄 최근 할 일 제목의 최대 개수 */
 export const SPEECH_CONTEXT_RECENT_TODO_LIMIT = 60;
 
 /** 서버가 아직 처리 중(AI_1314)이면 같은 키로 잠시 뒤 다시 묻는다. 차감은 한 번뿐이다 */
 export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
 
-/** 듣는 시간 시계를 다시 그리는 간격 */
 export const VOICE_CLOCK_TICK_MS = 1_000;
 
 export const LISTENING_PANEL_HEIGHT = { windowRatio: 0.56, min: 420 } as const;

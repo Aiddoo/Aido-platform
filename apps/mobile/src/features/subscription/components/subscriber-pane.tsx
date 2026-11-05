@@ -13,7 +13,6 @@ import { RestorePurchaseButton } from './restore-purchase-button';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
 import { SubscriptionReceipt } from './subscription-receipt';
 
-/** 프리미엄을 쓰는 사람(결제·초대 보상·관리자)의 구독 화면. 영수증과 다음 행동을 보여 준다 */
 export function SubscriberPane() {
   const { t } = useTranslation('subscription');
   const { primaryAction } = useSubscriptionReceipt();
