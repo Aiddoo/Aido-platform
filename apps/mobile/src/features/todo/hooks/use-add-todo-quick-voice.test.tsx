@@ -549,11 +549,9 @@ describe('useAddTodoQuickVoice', () => {
       const { httpClient, speechRecognizer, voiceNoteStorage, onExit } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       httpClient.get.mockRejectedValue(new Error('offline'));
-      speechRecognizer.getPermission.mockResolvedValue({ isGranted: false, canAskAgain: true });
-      speechRecognizer.requestPermission.mockResolvedValue({
-        isGranted: false,
-        canAskAgain: true,
-      });
+      const denied = { isGranted: false, canAskAgain: true, missing: 'microphone' } as const;
+      speechRecognizer.getPermission.mockResolvedValue(denied);
+      speechRecognizer.requestPermission.mockResolvedValue(denied);
 
       // When
       await fireEvent.press(screen.getByTestId('continue-as-note'));

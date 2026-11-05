@@ -1,4 +1,5 @@
 import type {
+  MissingSpeechPermission,
   OfflineModelResult,
   PermissionSnapshot,
   SpeechEvent,
@@ -8,6 +9,7 @@ import type {
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
 import { clamp } from 'es-toolkit';
+import { PermissionStatus } from 'expo';
 import { getLocales } from 'expo-localization';
 import {
   type ExpoSpeechRecognitionOptions,
@@ -26,14 +28,31 @@ const NOTE_COMPLETE_SILENCE_MS = 10_000;
 /** 16kHz 16bit mono WAV(약 1.9MB/분). Android는 이 형식으로만 저장한다 */
 const RECORDING_SAMPLE_RATE = 16_000;
 
-function toPermissionSnapshot({
-  granted,
-  canAskAgain,
-}: {
-  granted: boolean;
-  canAskAgain: boolean;
-}): PermissionSnapshot {
-  return { isGranted: granted, canAskAgain };
+/** 합친 응답은 어느 쪽이 거절됐는지 알려주지 않아 따로 읽는다. Android의 음성 인식은 늘 허용으로 온다 */
+async function findMissingSpeechPermission(): Promise<MissingSpeechPermission> {
+  const [microphone, speechRecognizer] = await Promise.all([
+    ExpoSpeechRecognitionModule.getMicrophonePermissionsAsync(),
+    ExpoSpeechRecognitionModule.getSpeechRecognizerPermissionsAsync(),
+  ]);
+
+  if (speechRecognizer.status !== PermissionStatus.DENIED) {
+    return 'microphone';
+  }
+  return microphone.status === PermissionStatus.DENIED ? 'both' : 'speech-recognition';
+}
+
+async function toPermissionSnapshot(
+  { granted, canAskAgain }: { granted: boolean; canAskAgain: boolean },
+  isMicrophoneOnly: boolean,
+): Promise<PermissionSnapshot> {
+  if (granted) {
+    return { isGranted: true, canAskAgain };
+  }
+  return {
+    isGranted: false,
+    canAskAgain,
+    missing: isMicrophoneOnly ? 'microphone' : await findMissingSpeechPermission(),
+  };
 }
 
 function supportsContinuousRecognition() {
@@ -130,19 +149,27 @@ function toRecognitionOptions({
 }
 
 export const expoSpeechRecognizerGateway: SpeechRecognizer = {
-  getPermission: async (mode, locale) =>
-    toPermissionSnapshot(
-      (await usesMicrophoneOnlyPermission(mode, locale))
+  getPermission: async (mode, locale) => {
+    const isMicrophoneOnly = await usesMicrophoneOnlyPermission(mode, locale);
+
+    return toPermissionSnapshot(
+      isMicrophoneOnly
         ? await ExpoSpeechRecognitionModule.getMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.getPermissionsAsync(),
-    ),
+      isMicrophoneOnly,
+    );
+  },
 
-  requestPermission: async (mode, locale) =>
-    toPermissionSnapshot(
-      (await usesMicrophoneOnlyPermission(mode, locale))
+  requestPermission: async (mode, locale) => {
+    const isMicrophoneOnly = await usesMicrophoneOnlyPermission(mode, locale);
+
+    return toPermissionSnapshot(
+      isMicrophoneOnly
         ? await ExpoSpeechRecognitionModule.requestMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.requestPermissionsAsync(),
-    ),
+      isMicrophoneOnly,
+    );
+  },
 
   getCapabilities: async (locale) => {
     const isOnDevice = await canRecognizeOnDevice(locale);

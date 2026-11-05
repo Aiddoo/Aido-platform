@@ -71,13 +71,23 @@
       "title": "Microphone access needed",
       "message": "To use your voice, allow microphone access in Settings.",
       "denied": "Microphone access is required."
+    },
+    "speechRecognition": {
+      "title": "Speech recognition access needed",
+      "message": "To turn your voice into text, allow speech recognition access in Settings.",
+      "denied": "Speech recognition access is required."
+    },
+    "microphoneAndSpeechRecognition": {
+      "title": "Microphone and speech recognition access needed",
+      "message": "To use your voice, allow microphone and speech recognition access in Settings.",
+      "denied": "Microphone and speech recognition access are required."
     }
   },
   "speechErrors": {
     "no-speech": "We didn't catch that. Please try speaking again.",
     "speech-timeout": "We stopped because we didn't hear anything. Please try again.",
     "aborted": "Listening canceled.",
-    "not-allowed": "Microphone access is needed. Please allow it in Settings.",
+    "not-allowed": "Microphone or speech recognition access is needed. Please allow it in Settings.",
     "service-not-allowed": "Voice input isn't available right now.",
     "busy": "Already listening. Please try again shortly.",
     "audio-capture": "Please check your microphone connection.",

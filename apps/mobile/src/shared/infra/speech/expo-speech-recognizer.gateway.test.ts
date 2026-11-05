@@ -1,4 +1,5 @@
 import type { SpeechEvent, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+import { PermissionStatus, type PermissionResponse } from 'expo';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { Platform } from 'react-native';
 
@@ -23,6 +24,9 @@ jest.mock('expo-speech-recognition', () => ({
     getMicrophonePermissionsAsync: jest.fn(() =>
       Promise.resolve({ granted: true, canAskAgain: true }),
     ),
+    getSpeechRecognizerPermissionsAsync: jest.fn(() =>
+      Promise.resolve({ granted: true, canAskAgain: true }),
+    ),
     requestMicrophonePermissionsAsync: jest.fn(() =>
       Promise.resolve({ granted: true, canAskAgain: true }),
     ),
@@ -42,6 +46,17 @@ const START_OPTIONS: SpeechStartOptions = {
   isOnDevice: false,
   recordingDirectory: null,
 };
+
+function createPermissionResponse(
+  response: Partial<PermissionResponse> & Pick<PermissionResponse, 'status'>,
+) {
+  return {
+    granted: response.status === 'granted',
+    canAskAgain: response.status !== PermissionStatus.DENIED,
+    expires: 'never' as const,
+    ...response,
+  };
+}
 
 function emitNative(eventName: string, event: unknown) {
   mockNativeListeners.get(eventName)?.(event);
@@ -217,6 +232,63 @@ describe('expoSpeechRecognizerGateway', () => {
 
       // Then
       expect(nativeModule.getPermissionsAsync).toHaveBeenCalledTimes(1);
+    });
+
+    test.each([
+      {
+        microphone: PermissionStatus.GRANTED,
+        speechRecognizer: PermissionStatus.DENIED,
+        missing: 'speech-recognition',
+      },
+      {
+        microphone: PermissionStatus.DENIED,
+        speechRecognizer: PermissionStatus.GRANTED,
+        missing: 'microphone',
+      },
+      {
+        microphone: PermissionStatus.DENIED,
+        speechRecognizer: PermissionStatus.DENIED,
+        missing: 'both',
+      },
+      {
+        microphone: PermissionStatus.DENIED,
+        speechRecognizer: PermissionStatus.UNDETERMINED,
+        missing: 'microphone',
+      },
+    ])(
+      '마이크 $microphone·음성 인식 $speechRecognizer이면 $missing을 막은 권한으로 알린다',
+      async ({ microphone, speechRecognizer, missing }) => {
+        // Given
+        nativeModule.getPermissionsAsync.mockResolvedValueOnce(
+          createPermissionResponse({ status: PermissionStatus.DENIED }),
+        );
+        nativeModule.getMicrophonePermissionsAsync.mockResolvedValueOnce(
+          createPermissionResponse({ status: microphone }),
+        );
+        nativeModule.getSpeechRecognizerPermissionsAsync.mockResolvedValueOnce(
+          createPermissionResponse({ status: speechRecognizer }),
+        );
+
+        // When
+        const permission = await expoSpeechRecognizerGateway.getPermission('dictation', 'ko-KR');
+
+        // Then
+        expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing });
+      },
+    );
+
+    test('기기 인식이면 음성 인식 권한을 읽지 않고 마이크를 막은 권한으로 알린다', async () => {
+      // Given
+      nativeModule.getMicrophonePermissionsAsync.mockResolvedValueOnce(
+        createPermissionResponse({ status: PermissionStatus.DENIED }),
+      );
+
+      // When
+      const permission = await expoSpeechRecognizerGateway.getPermission('note', 'ko-KR');
+
+      // Then
+      expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing: 'microphone' });
+      expect(nativeModule.getSpeechRecognizerPermissionsAsync).not.toHaveBeenCalled();
     });
   });
 

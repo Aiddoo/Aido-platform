@@ -47,10 +47,12 @@ export type SpeechEvent =
   | { type: 'recording-saved'; uri: string }
   | { type: 'error'; code: SpeechErrorCode };
 
-export interface PermissionSnapshot {
-  isGranted: boolean;
-  canAskAgain: boolean;
-}
+/** 듣기를 막고 있는 권한. iOS는 마이크와 음성 인식을 따로 거절할 수 있다 */
+export type MissingSpeechPermission = 'microphone' | 'speech-recognition' | 'both';
+
+export type PermissionSnapshot =
+  | { isGranted: true; canAskAgain: boolean }
+  | { isGranted: false; canAskAgain: boolean; missing: MissingSpeechPermission };
 
 export interface SpeechCapabilities {
   isAvailable: boolean;
