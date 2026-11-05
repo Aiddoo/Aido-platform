@@ -122,7 +122,8 @@ function KeyPointTimeCoachmark({ children }: { children: ReactElement }) {
         title={t('coach.keyPoint.title')}
         description={t('coach.keyPoint.description')}
         icon={PlayIcon}
-        placement="bottom"
+        // 아래로 띄우면 다음 포인트를 가린다. 위쪽 자리가 모자라면 말풍선이 알아서 뒤집는다
+        placement="top"
         align="start"
         avoidCollisions
       >
