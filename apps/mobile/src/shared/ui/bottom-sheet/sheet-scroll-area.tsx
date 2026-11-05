@@ -43,6 +43,7 @@ export function SheetScrollArea({ style, contentContainerStyle, children }: Shee
         style={styles.scroll}
         contentContainerStyle={contentContainerStyle}
         persistentScrollbar
+        automaticallyAdjustsScrollIndicatorInsets={false}
         bounces={false}
       >
         {children}
