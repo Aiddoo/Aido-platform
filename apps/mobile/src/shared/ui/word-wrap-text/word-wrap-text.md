@@ -23,7 +23,7 @@
 
 ## 언제 쓰나
 
-- 뷰가 단어 수만큼 늘어난다(Android). 자막 카드처럼 `FlashList` 문장 단위 가상화 안이나 짧은 글에 쓴다.
+- 긴 안내 글에 쓴다. 뷰가 단어 수만큼 늘어나므로(Android) 가상화 목록 행과 행이 많은 목록은 `lineBreakStrategyIOS`만 쓴다([기준](../../../../.claude/ui-components.md#긴-글-줄바꿈-wordwraptext와-linebreakstrategyios)). 말로 메모 자막은 문장 단위로 가상화해 예외다.
 - 글자 선택이 필요한 화면에는 쓰지 않는다. 줄 수 제한(`maxLines`)도 지원하지 않는다.
 - 창 제목과 짧은 안내는 문구의 `\n`으로 줄을 나눈다(`i18n-guide.md`).
 

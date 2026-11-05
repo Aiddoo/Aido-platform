@@ -1,6 +1,6 @@
 # AdaptivePane 컴포넌트
 
-창 폭(`useWindowSizeClass`)에 따라 목록과 상세를 나란히 놓는 List-detail 컨테이너입니다. 폴더블 펼침, 태블릿, 분할 화면에서 쓰며 힌지 상태는 쓰지 않습니다.
+창 폭(`useWindowSizeClass`)에 따라 목록과 상세를 나란히 놓는 List-detail 컨테이너입니다. 폴더블 펼침, 태블릿, 분할 화면에서 씁니다. 레이아웃을 힌지로 나누지 않습니다. 접힘선은 경계 위치만 맞춥니다.
 
 ```tsx
 import { AdaptivePane } from '@src/shared/ui';
@@ -27,14 +27,17 @@ import { AdaptivePane } from '@src/shared/ui';
 
 ## 내 정보 메뉴 (왼쪽 메뉴 + 오른쪽 내비게이터)
 
-- 라우트 그룹 `app/(app)/(mypage-menu)`가 `friends`·`achievements`·`reports`·`settings`를 URL 변경 없이 묶고, `_layout`에서 `AdaptivePane primary={<MyPagePane />} secondary={<Stack />} compactPane="secondary"`로 쓴다. 접힌 화면은 왼쪽 메뉴 없이 기존처럼 push다.
-- 내 정보 탭도 같은 `MyPagePane`을 두 칸 왼쪽에 그린다. 탭에서 들어갈 때 넓은 화면은 애니메이션을 끄고, `useMyPagePaneLayout`이 두 pane의 스크롤과 위 여백을 맞춰 왼쪽이 움직이지 않는다.
+- 라우트 그룹 `app/(app)/(mypage-menu)`가 `friends`·`achievements`·`reports`·`settings`를 URL 변경 없이 묶고, `_layout`에서 `primary`에 `MyPagePaneLayout` + `MyPagePane`, `secondary`에 `Stack`, `compactPane="secondary"`로 쓴다. 접힌 화면은 왼쪽 메뉴 없이 기존처럼 push다.
+- 내 정보 탭도 같은 `MyPagePane`을 두 칸 왼쪽에 그린다. 탭에서 들어갈 때 넓은 화면은 애니메이션을 끄고, `useMyPagePaneLayout`이 탭과 메뉴 화면의 스크롤과 위 여백을 맞춰 왼쪽이 움직이지 않는다.
 - 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 메뉴 화면 안에서는 상세만 교체(더 들어간 화면은 먼저 걷어 냄)해 뒤로 가기에 쌓이지 않는다.
 - 탭 바는 탭 화면에만 있다. 넓은 화면의 메뉴 화면에서 탭으로 돌아갈 때는 첫 화면의 뒤로 가기를 쓴다.
 
-## 왜 Expo `SplitView`를 쓰지 않는가
+## `SplitView`·`ArrangementView`를 쓰지 않는 이유
 
-expo-router 58.0.30·react-native-screens 4.30.1 기준(2026-11 확인). `SplitView`는 다른 네이티브 내비게이터 안에 둘 수 없어(throw) 루트를 Slot으로 바꿔야 하고, 왼쪽 칸은 라우트가 아니다. 접힌 화면에서 `RNSSplitNavigationController`의 뒤로 가기가 모든 화면에 추가로 떠서(react-native-screens #4858, 일반 iPhone에서도 재현) 쓰지 않는다. Expo UI `ArrangementView`는 iOS 27.1 미만과 Android에 없어 이 컴포넌트를 대체하지 못한다.
+1.15.0에서 시험했고 넣지 않았다. 다음 버전에 다시 검토한다. expo-router 58.0.30·react-native-screens 4.30.1·@expo/ui 58.0.27 기준(2026-11 확인).
+
+- **`SplitView`**: 다른 네이티브 내비게이터 안에서 throw해 루트를 Slot으로 바꿔야 하고, 왼쪽 칸은 라우트가 아니다. iOS 전용이다. 접힌 화면에서 `RNSSplitNavigationController`의 뒤로 가기가 모든 화면에 추가로 뜬다(react-native-screens #4858, 일반 iPhone에서도 재현).
+- **`ArrangementView`**: iOS 27.1 미만은 컨테이너 없이 그려 시험에서 목록이 보이지 않았고, Android 대응이 없다. 시뮬레이터로 두 칸을 검증할 수 없다.
 
 ## 상세 pane 헤더
 
@@ -42,7 +45,7 @@ pane은 Stack 화면이 아니어서 네이티브 헤더가 없고, 꼭대기 �
 
 - 선택과 해제는 목록 pane이 맡는다. 상세 pane 첫 단계에는 뒤로가기·닫기 버튼을 두지 않는다. Android 하드웨어 뒤로가기는 댓글 단계를 먼저 되돌린 뒤 선택을 해제한다.
 - 제목·보조 문구는 왼쪽 정렬 `Text` 토큰(b2 bold, e1)이라 글자 크기 설정을 따르고, 버튼은 44×44로 고정한다.
-- 오른쪽에는 그 항목의 동작만 둔다(내 할 일은 ⋯ → `/todo/[todoId]/actions`, 메모는 고정·AI·할 일 변환·삭제·저장).
+- 오른쪽에는 그 항목의 동작만 둔다(내 할 일은 ⋯ → `/todo/[todoId]/actions`, 메모는 고정·저장·⋯. AI·바꾸기·삭제는 ⋯ 메뉴의 `MenuActionItem`이다).
 - pane 안에서 한 단계 들어간 화면(댓글 대화)만 그 안의 이전 단계로 돌아가는 뒤로가기를 둔다.
 - 접힌 화면(compact)은 상세 라우트의 네이티브 헤더와 시스템 뒤로가기를 그대로 쓴다.
 
@@ -63,6 +66,7 @@ adaptive-pane/
 ├── adaptive-pane.test.tsx
 ├── get-pane-initial-insets.ts
 ├── get-primary-pane-width.ts
+├── get-primary-pane-width.test.ts
 ├── index.ts
 └── adaptive-pane.md
 ```

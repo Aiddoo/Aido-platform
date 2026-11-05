@@ -40,7 +40,7 @@ src/
 │   ├── utils/                    # 순수 계산, navigation/, view-models/
 │   └── __tests__/                # {entity}.factories.ts
 └── shared/                       # analytics, config, constants, draft, errors, hooks, i18n,
-                                  # infra(어댑터), observability, providers, ui, utils
+                                  # infra(어댑터), observability, preferences, providers, types, ui, utils
 ```
 
 - 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. 위젯의 네이티브 경계는 `features/widget/bridge/`에 둔다.
@@ -118,7 +118,7 @@ export default function MyPageScreen() {
 - 정상 목록과 오류 화면이 같은 슬롯 구성을 쓰면 Screen 안의 JSX 상수로 한 번 정의해 공유해도 된다.
 - 데이터를 보여 주는 화면은 로딩·오류·빈 상태·데이터 4상태를 그린다. 저장 실패는 입력값을 지우지 않는다.
 
-마이 탭 두 칸과 설정 리디자인은 아직 합쳐지지 않았다. 합친 뒤 이 절에 실제 화면을 예시로 보강한다.
+실제 화면: 내 정보는 탭(`app/(app)/(tabs)/mypage/index.tsx`)과 메뉴 그룹(`app/(app)/(mypage-menu)/_layout.tsx`)이 같은 `MyPagePane`을 두 칸 왼쪽에 그린다. 경계와 간격은 `MyPagePane`에 위에서 아래로 나열돼 있다.
 
 ---
 
@@ -150,7 +150,7 @@ export function FriendCalendar() {
 
 선택된 대상을 보여 주는 블록은 바깥 컴포넌트가 튜플 훅으로 id를 읽어 `== null`이면 `.Empty`를 돌려주고, 좁혀진 id만 `.Contents`에 넘긴다(`SelectedMemoDetailPane`).
 
-대상이 있는 시트(할 일·하위 항목·카테고리·제안)는 Expo Router 시트 route로 띄운다. 시트가 route hook으로 id를 읽어 캐시에서 조회한다. 폼 상태에 묶인 피커처럼 route 문맥이 없는 Overlay 시트만 값을 Props로 받는다. 계약: `src/shared/ui/bottom-sheet/bottom-sheet.md`.
+대상이 있는 시트(할 일·하위 항목·카테고리·제안)는 Expo Router 시트 route로 띄운다. 시트가 route hook으로 id를 읽어 캐시에서 조회한다. 폼 상태에 묶인 피커처럼 route 문맥이 없어 `useOverlay`로 띄우는 시트만 값을 Props로 받는다. 계약: `src/shared/ui/bottom-sheet/bottom-sheet.md`.
 
 **컴포넌트는 바깥 레이아웃을 모른다.** margin·폭·위치를 스스로 정하지 않는다. 카드 자신의 모양(`rounded-xl bg-gray-1 px-4 py-3.5`)은 컴포넌트 몫이다.
 
@@ -184,8 +184,7 @@ interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'c
 
 **목록 도구**
 
-- 수가 정해지지 않은 긴 목록은 `FlashList`다. `VoiceNoteDraftList.All`이 예다.
-- 짧고 수가 정해진 목록은 `.map`이다.
+- `FlashList`와 `.map`을 고르는 기준은 [ui-components](./ui-components.md#목록-flashlist와-map)에 있다.
 - 공용 목록은 원본 계약을 확장한다. `UserList`는 `FlashListProps`에 `hasNextPage`·`isFetchingNextPage`·`fetchNextPage`(TanStack 이름)와 `refreshing`·`onRefresh`(RN 이름)만 더한다.
 
 **목록 컴포넌트**
@@ -275,7 +274,7 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 
 ### 폼
 
-- 화면(가장 가까운 session 부모)이 `useForm`, `zodResolver`, 제출 mutation을 소유하고 지역 `FormProvider`로 넘긴다. `shared/ui/FormField`만 `Controller`를 소유한다.
+- 화면(가장 가까운 session 부모)이 `useForm`, `zodResolver`, 제출 mutation을 소유하고 지역 `FormProvider`로 넘긴다. `shared/ui/form-field`의 `FormField`만 `Controller`를 소유한다.
 - 하위는 `useWatch({ name })`·`useFormState({ name })`로 자기 값만 구독한다. 폼 값을 전역 상태에 복사하지 않는다.
 - 생성과 수정은 같은 폼·스키마·컴포넌트를 쓴다. 차이는 `defaultValues`와 제출 변환뿐이다.
 - 저장 가능 여부는 스키마와 `formState.isValid`로 판단한다. 같은 규칙을 함수로 또 만들지 않는다.
@@ -581,19 +580,11 @@ await clipboard.copy(comment.content ?? '');
 
 ## 넓은 화면과 기기
 
-- **창 폭으로 판단한다.** 1열·2열은 `useWindowSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 기기 종류나 힌지 상태로 레이아웃을 나누지 않는다.
-- **2열은 `AdaptivePane` 하나다.** 접기·펼치기에서 pane이 다시 마운트되지 않는다. 2열일 때 접힘선이 있으면 갈라지는 위치만 접힘선(`findVerticalFold`)에 맞춘다. 상세: [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md).
+- **창 폭으로 판단한다.** 1열·2열은 `useWindowSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 기기 종류나 힌지로 레이아웃을 나누지 않는다.
+- **2열은 `AdaptivePane` 하나다.** 접기·펼치기에서 pane이 다시 마운트되지 않는다. 접힘선은 경계 위치만 맞춘다(`findVerticalFold`). 상세: [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md).
 - **Duo 세로 레일은 safe area inset으로 피한다.** [가로 safe area](./ui-components.md#가로-safe-area-iphone-duo-세로-레일)를 따른다.
 - **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
-
-### `SplitView`·`ArrangementView`를 지금 쓰지 않는 이유
-
-1.15.0에서 시험했지만 넣지 않았다. `AdaptivePane`을 유지하고 다음 버전에 다시 본다.
-
-| 후보                         | 막힌 이유                                                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `expo-router` `SplitView`    | 네이티브 내비게이터 안에 둘 수 없다. iOS 전용이다. 일반 iPhone에 "<"가 생긴다(react-native-screens #4858 미해결) |
-| `@expo/ui` `ArrangementView` | iOS 27.1 미만에서 목록이 보이지 않는다. 시뮬레이터로 두 칸을 검증할 수 없다                                      |
+- **`SplitView`·`ArrangementView`는 쓰지 않는다.** 1.15.0에서 시험했고 다음 버전에 다시 본다. [이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유).
 
 ---
 
