@@ -5,7 +5,13 @@ import { EntitlementPolicy } from '@src/features/subscription/domains/entitlemen
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
+import {
+  QueryErrorBoundary,
+  ReadableContent,
+  Spacing,
+  StyledSafeAreaView,
+  VStack,
+} from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
@@ -21,7 +27,7 @@ function SuggestionsScreen() {
 
   return (
     <ScrollView
-      className="flex-1 px-4"
+      className="flex-1"
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
       refreshControl={
         canViewSuggestions ? (
@@ -30,20 +36,22 @@ function SuggestionsScreen() {
       }
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
-        <Spacing size={16} />
-        {match(canViewSuggestions)
-          .with(true, () => (
-            <VStack gap={12}>
-              <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
-              <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
-                <Suspense fallback={<SuggestionsList.Loading />}>
-                  <SuggestionsList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </VStack>
-          ))
-          .with(false, () => <SuggestionsList.PremiumPreview />)
-          .exhaustive()}
+        <ReadableContent className="grow px-4">
+          <Spacing size={16} />
+          {match(canViewSuggestions)
+            .with(true, () => (
+              <VStack gap={12}>
+                <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
+                <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
+                  <Suspense fallback={<SuggestionsList.Loading />}>
+                    <SuggestionsList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </VStack>
+            ))
+            .with(false, () => <SuggestionsList.PremiumPreview />)
+            .exhaustive()}
+        </ReadableContent>
       </StyledSafeAreaView>
     </ScrollView>
   );
@@ -55,9 +63,9 @@ export default function SuggestionsRoute() {
       <QueryErrorBoundary>
         <Suspense
           fallback={
-            <Box className="px-4 pt-4">
+            <ReadableContent className="px-4 pt-4">
               <SuggestionsList.Loading />
-            </Box>
+            </ReadableContent>
           }
         >
           <SuggestionsScreen />

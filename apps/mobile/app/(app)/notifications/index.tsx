@@ -14,7 +14,7 @@ import {
 } from '@src/features/nudge/domains/nudge-interaction.model';
 import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-availability-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
+import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
@@ -33,59 +33,61 @@ export default function NotificationsScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['left', 'right', 'bottom']}>
-      <Tabs
-        value={category}
-        onValueChange={(value) => {
-          const parsed = notificationCategorySchema.safeParse(value);
-          if (parsed.success) {
-            setCategory(parsed.data);
-          }
-        }}
-        variant="secondary"
-        className="flex-1"
-      >
-        <Tabs.List className="border-b border-gray-2 w-full">
-          <Tabs.Indicator className="h-[2px]" />
+      <ReadableContent flex={1}>
+        <Tabs
+          value={category}
+          onValueChange={(value) => {
+            const parsed = notificationCategorySchema.safeParse(value);
+            if (parsed.success) {
+              setCategory(parsed.data);
+            }
+          }}
+          variant="secondary"
+          className="flex-1"
+        >
+          <Tabs.List className="border-b border-gray-2 w-full">
+            <Tabs.Indicator className="h-[2px]" />
 
-          <CategoryTab value={NOTIFICATION_CATEGORY.ALL}>{t('categories.all')}</CategoryTab>
-          <CategoryTab value={NOTIFICATION_CATEGORY.NOTICE}>{t('categories.notice')}</CategoryTab>
-          <CategoryTab value={NOTIFICATION_CATEGORY.TODO}>{t('categories.todo')}</CategoryTab>
-          <CategoryTab value={NOTIFICATION_CATEGORY.SOCIAL}>{t('categories.social')}</CategoryTab>
-        </Tabs.List>
+            <CategoryTab value={NOTIFICATION_CATEGORY.ALL}>{t('categories.all')}</CategoryTab>
+            <CategoryTab value={NOTIFICATION_CATEGORY.NOTICE}>{t('categories.notice')}</CategoryTab>
+            <CategoryTab value={NOTIFICATION_CATEGORY.TODO}>{t('categories.todo')}</CategoryTab>
+            <CategoryTab value={NOTIFICATION_CATEGORY.SOCIAL}>{t('categories.social')}</CategoryTab>
+          </Tabs.List>
 
-        {isDirectionSelectable && (
-          <DirectionTabs value={visibleDirection} onValueChange={setDirection} />
-        )}
+          {isDirectionSelectable && (
+            <DirectionTabs value={visibleDirection} onValueChange={setDirection} />
+          )}
 
-        {match(visibleDirection)
-          .with('received', () => (
-            <>
-              <QueryErrorBoundary>
-                <Suspense fallback={<UnreadNotificationCard.Loading />}>
-                  <UnreadNotificationCard />
-                </Suspense>
-              </QueryErrorBoundary>
+          {match(visibleDirection)
+            .with('received', () => (
+              <>
+                <QueryErrorBoundary>
+                  <Suspense fallback={<UnreadNotificationCard.Loading />}>
+                    <UnreadNotificationCard />
+                  </Suspense>
+                </QueryErrorBoundary>
 
+                <Tabs.Content value={category} className="flex-1">
+                  <QueryErrorBoundary resetKeys={[category]} fallback={NotificationList.Error}>
+                    <Suspense fallback={<NotificationList.Loading />}>
+                      <NotificationList category={category} limit={10} />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                </Tabs.Content>
+              </>
+            ))
+            .with('sent', () => (
               <Tabs.Content value={category} className="flex-1">
-                <QueryErrorBoundary resetKeys={[category]} fallback={NotificationList.Error}>
-                  <Suspense fallback={<NotificationList.Loading />}>
-                    <NotificationList category={category} limit={10} />
+                <QueryErrorBoundary fallback={SentNudgeList.Error}>
+                  <Suspense fallback={<SentNudgeList.Loading />}>
+                    <SentNudgeList />
                   </Suspense>
                 </QueryErrorBoundary>
               </Tabs.Content>
-            </>
-          ))
-          .with('sent', () => (
-            <Tabs.Content value={category} className="flex-1">
-              <QueryErrorBoundary fallback={SentNudgeList.Error}>
-                <Suspense fallback={<SentNudgeList.Loading />}>
-                  <SentNudgeList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </Tabs.Content>
-          ))
-          .exhaustive()}
-      </Tabs>
+            ))
+            .exhaustive()}
+        </Tabs>
+      </ReadableContent>
     </StyledSafeAreaView>
   );
 }
