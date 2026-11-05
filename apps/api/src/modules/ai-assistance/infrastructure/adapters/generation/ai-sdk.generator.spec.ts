@@ -16,7 +16,7 @@ import {
   isTransientAiFailure,
 } from "../../../application/ports/generation/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../../application/ports/generation/ai-generator.port.js";
-import { AiSpendGuard } from "./ai-spend.guard.js";
+import { AiSpendBudget } from "./ai-spend.budget.js";
 
 const schema = z.object({ title: z.string() });
 const NOW = new Date("2026-11-05T03:00:00.000Z");
@@ -74,12 +74,12 @@ const spendKey = (periodKey: string, subject = "*") => ({
   subject,
 });
 
-describe("AiSpendGuard — 기동 검사", () => {
+describe("AiSpendBudget — 기동 검사", () => {
   it("가격표에 없는 모델이 설정되면 기동 때 경보를 올린다", () => {
     // Given
     const config = createAiTestConfig({ AI_MODEL_ANTHROPIC: "claude-unknown-9" });
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendGuard(
+    const guard = new AiSpendBudget(
       config,
       new InMemoryUsageMeterAdapter(),
       alert,
@@ -99,7 +99,7 @@ describe("AiSpendGuard — 기동 검사", () => {
   it("기본 모델은 경보를 올리지 않는다", () => {
     // Given
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendGuard(
+    const guard = new AiSpendBudget(
       createAiTestConfig(),
       new InMemoryUsageMeterAdapter(),
       alert,

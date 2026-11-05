@@ -36,7 +36,7 @@ import {
   AiAttemptFailure,
   aiProviderPolicy,
 } from "./ai-outbound.policies.js";
-import { AiSpendGuard } from "./ai-spend.guard.js";
+import { AiSpendBudget } from "./ai-spend.budget.js";
 import {
   AI_PROVIDER_ADAPTERS,
   type AiProviderAdapter,
@@ -112,7 +112,7 @@ export class AiSdkGenerator implements AiGeneratorPort {
     private readonly config: TypedConfigService,
     @Inject(AI_PROVIDER_ADAPTERS) adapters: readonly AiProviderAdapter[],
     policies: OutboundPolicyRegistry,
-    private readonly spend: AiSpendGuard,
+    private readonly spend: AiSpendBudget,
   ) {
     this.#adapters = new Map(adapters.map((adapter) => [adapter.id, adapter]));
     this.#providerPolicies = new Map(

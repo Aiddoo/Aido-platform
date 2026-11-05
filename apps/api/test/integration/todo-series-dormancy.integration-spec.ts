@@ -12,7 +12,7 @@ import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infras
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
 import { TodoSeriesCatchUp } from "#api/modules/planning/application/services/series/todo-series-catch-up.service";
-import { TodoSeriesDueRun } from "#api/modules/planning/application/services/series/todo-series-due-run.service";
+import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";
 import { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
@@ -108,7 +108,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   function dueRun() {
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
-    return new TodoSeriesDueRun({
+    return new TodoSeriesDueRunner({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       materializer: new TodoOccurrenceMaterializer({
         todoRepository,
@@ -144,7 +144,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     return new TodoSeriesCatchUp({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
-      dueRun: dueRun(),
+      dueRunner: dueRun(),
       logger: new Logger("DormancyIntegration"),
     });
   }
@@ -153,7 +153,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     return new MaterializeDueTodoSeries({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
-      dueRun: dueRun(),
+      dueRunner: dueRun(),
       alert: mock<OperationalAlertPort>(),
       logger: new Logger("DormancyIntegration"),
     });
@@ -510,7 +510,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const broken = new TodoSeriesCatchUp({
         seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
         seriesOwner: seriesOwner(),
-        dueRun: {
+        dueRunner: {
           materialize: async () => {
             throw new Error("쓰기 실패");
           },

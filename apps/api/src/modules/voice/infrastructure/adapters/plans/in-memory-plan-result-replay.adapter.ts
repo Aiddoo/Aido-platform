@@ -13,7 +13,7 @@ export const PLAN_RESULT_REPLAY_MAX_ITEMS = 200;
  * 말한 내용에서 나온 결과라 Redis에 두지 않고 프로세스 메모리에만 잠시 둔다(서버 인스턴스는 하나다).
  * 그래서 CACHE_SERVICE가 아닌 전용 InMemoryCacheAdapter를 받는다.
  */
-export class InMemoryPlanResultReplay<T> implements PlanResultReplayPort<T> {
+export class InMemoryPlanResultReplayAdapter<T> implements PlanResultReplayPort<T> {
   constructor(
     private readonly cache: Pick<ICacheService, "get" | "set">,
     private readonly namespace: string,

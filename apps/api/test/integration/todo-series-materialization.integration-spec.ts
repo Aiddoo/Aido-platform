@@ -13,7 +13,7 @@ import type {
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import type { TodoReminderPort } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
-import { TodoSeriesDueRun } from "#api/modules/planning/application/services/series/todo-series-due-run.service";
+import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";
 import type { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
@@ -102,7 +102,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
         new DrizzleUserRepository(fixture.txHost),
         entitlements,
       ),
-      dueRun: new TodoSeriesDueRun({
+      dueRunner: new TodoSeriesDueRunner({
         seriesRepository,
         materializer: new TodoOccurrenceMaterializer({
           todoRepository,

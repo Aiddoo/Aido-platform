@@ -33,7 +33,7 @@ import { quickPlanPrompt } from "../../src/modules/ai-assistance/application/pro
 import { voiceNoteDigestPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/voice-note-digest/index.js";
 import type { NormalizedActionPlan } from "../../src/modules/ai-assistance/domain/types/planning/action-plan-draft.types.js";
 import { AiSdkGenerator } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator.js";
-import { AiSpendGuard } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.guard.js";
+import { AiSpendBudget } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget.js";
 import type { AiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter.js";
 import { AnthropicProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/anthropic.provider-adapter.js";
 import { GoogleProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/google.provider-adapter.js";
@@ -333,7 +333,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       adapters,
       new OutboundPolicyRegistry(alert),
       // eval은 userId가 null이라 사용자 예산·등급을 읽지 않는다.
-      new AiSpendGuard(config, new InMemoryUsageMeterAdapter(), alert, {
+      new AiSpendBudget(config, new InMemoryUsageMeterAdapter(), alert, {
         getAccessSnapshot: () => Promise.reject(new Error("eval has no user")),
       }),
     ),

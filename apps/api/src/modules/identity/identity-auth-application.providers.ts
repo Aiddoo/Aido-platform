@@ -37,7 +37,7 @@ import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/auth/session-p
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
 import { LinkOAuthIdentity } from "./application/services/auth/link-oauth-identity.service.js";
-import { NotifyOAuthSignup } from "./application/services/auth/notify-oauth-signup.service.js";
+import { OAuthSignupNotifier } from "./application/services/auth/oauth-signup-notifier.service.js";
 import { SessionService } from "./application/services/auth/session.service.js";
 import { VerificationService } from "./application/services/auth/verification.service.js";
 import { ChangePassword } from "./application/use-cases/auth/change-password.use-case.js";
@@ -308,31 +308,31 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
 
 export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
   provide: ExchangeOAuthCode,
-  inject: [AUTH_OAUTH_STATE_REPOSITORY, NotifyOAuthSignup],
+  inject: [AUTH_OAUTH_STATE_REPOSITORY, OAuthSignupNotifier],
   useFactory: (
     oauthStateRepository: ConstructorParameters<
       typeof ExchangeOAuthCode
     >[0]["oauthStateRepository"],
-    notifyOAuthSignup: ConstructorParameters<typeof ExchangeOAuthCode>[0]["notifyOAuthSignup"],
+    notifyOAuthSignup: ConstructorParameters<typeof ExchangeOAuthCode>[0]["oauthSignupNotifier"],
   ) =>
     new ExchangeOAuthCode({
       oauthStateRepository,
-      notifyOAuthSignup,
+      oauthSignupNotifier: notifyOAuthSignup,
       logger: new Logger(ExchangeOAuthCode.name),
     }),
 };
 
-export const notifyOAuthSignupProvider: FactoryProvider<NotifyOAuthSignup> = {
-  provide: NotifyOAuthSignup,
+export const oauthSignupNotifierProvider: FactoryProvider<OAuthSignupNotifier> = {
+  provide: OAuthSignupNotifier,
   inject: [AUTH_USER_REPOSITORY, AUTH_REGISTRATION_NOTIFIER],
   useFactory: (
-    userRepository: ConstructorParameters<typeof NotifyOAuthSignup>[0]["userRepository"],
-    adminEventNotifier: ConstructorParameters<typeof NotifyOAuthSignup>[0]["adminEventNotifier"],
+    userRepository: ConstructorParameters<typeof OAuthSignupNotifier>[0]["userRepository"],
+    adminEventNotifier: ConstructorParameters<typeof OAuthSignupNotifier>[0]["adminEventNotifier"],
   ) =>
-    new NotifyOAuthSignup({
+    new OAuthSignupNotifier({
       userRepository,
       adminEventNotifier,
-      logger: new Logger(NotifyOAuthSignup.name),
+      logger: new Logger(OAuthSignupNotifier.name),
     }),
 };
 
@@ -478,15 +478,16 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
 
 export const loginWithMobileOAuthTokenProvider: FactoryProvider<LoginWithMobileOAuthToken> = {
   provide: LoginWithMobileOAuthToken,
-  inject: [LoginWithOAuthToken, NotifyOAuthSignup],
+  inject: [LoginWithOAuthToken, OAuthSignupNotifier],
   useFactory: (
     loginWithOAuthToken: ConstructorParameters<
       typeof LoginWithMobileOAuthToken
     >[0]["loginWithOAuthToken"],
     notifyOAuthSignup: ConstructorParameters<
       typeof LoginWithMobileOAuthToken
-    >[0]["notifyOAuthSignup"],
-  ) => new LoginWithMobileOAuthToken({ loginWithOAuthToken, notifyOAuthSignup }),
+    >[0]["oauthSignupNotifier"],
+  ) =>
+    new LoginWithMobileOAuthToken({ loginWithOAuthToken, oauthSignupNotifier: notifyOAuthSignup }),
 };
 
 export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {

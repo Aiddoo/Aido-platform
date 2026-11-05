@@ -11,7 +11,7 @@ import {
   TODO_SERIES_MATERIALIZATION_QUEUE,
   TODO_SERIES_MATERIALIZATION_SCHEDULE,
   TodoSeriesMaterializationJobKey,
-} from "./todo-series-materialization.queue.constants.js";
+} from "./todo-series-materialization-queue.constants.js";
 
 @Injectable()
 export class TodoSeriesMaterializationJob implements OnModuleInit {

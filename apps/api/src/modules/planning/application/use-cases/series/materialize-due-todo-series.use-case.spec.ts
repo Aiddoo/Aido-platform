@@ -6,7 +6,7 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture"
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
-import { TodoSeriesDueRun } from "../../services/series/todo-series-due-run.service.js";
+import { TodoSeriesDueRunner } from "../../services/series/todo-series-due-runner.service.js";
 import { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
 import {
   MaterializeDueTodoSeries,
@@ -33,7 +33,7 @@ describe("회차 채우기", () => {
     return new MaterializeDueTodoSeries({
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
-      dueRun: new TodoSeriesDueRun({
+      dueRunner: new TodoSeriesDueRunner({
         seriesRepository: fixture.todoSeriesRepository,
         materializer: fixture.occurrenceMaterializer,
         effects: new TodoCreationEffects(fixture),
