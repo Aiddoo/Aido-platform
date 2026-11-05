@@ -141,11 +141,8 @@ export class Todo extends AggregateRoot<TodoProps> {
     );
   }
 
-  /**
-   * timezone은 스트릭의 "오늘" 경계이고 scheduleTimezone은 벽시계를 순간으로 바꾸는 시간대다.
-   * 헤더가 없을 때의 규칙이 달라 나눈다(docs/conventions/dates.md).
-   */
-  toggleComplete(completed: boolean, timezone: string, scheduleTimezone: string): boolean {
+  /** timezone은 스트릭의 "오늘" 경계다. */
+  toggleComplete(completed: boolean, timezone: string): boolean {
     if (this.props.completed === completed) {
       return false;
     }
@@ -157,14 +154,13 @@ export class Todo extends AggregateRoot<TodoProps> {
       new TodoToggledEvent(this.props.id.getValue(), this.props.userId, completed, timezone),
     );
     if (!completed) {
-      this.#restoreSchedule(scheduleTimezone);
+      this.#restoreReminders();
     }
     return true;
   }
 
-  /** 완료한 할 일은 재계산에서 빠지고 예약도 지워졌으므로 되돌릴 때 순간과 예약을 다시 맞춘다. */
-  #restoreSchedule(timezone: string): void {
-    this.props.schedule = this.props.schedule.rederiveIn(timezone);
+  /** 완료하면 예약이 지워지므로 되돌릴 때 다시 잡는다. 순간은 재계산이 늘 맞춰 둔다. */
+  #restoreReminders(): void {
     const scheduledTime = this.props.schedule.getScheduledTime();
     if (scheduledTime != null) {
       this.raise(
@@ -230,7 +226,7 @@ export class Todo extends AggregateRoot<TodoProps> {
       new TodoUpdatedEvent(this.props.id.getValue(), this.props.userId, this.props.completed),
     );
     if (reopened) {
-      this.#restoreSchedule(timezone);
+      this.#restoreReminders();
     } else if (
       nextSchedule != null &&
       nextSchedule.getScheduledTime()?.getTime() !== previousTimeMs

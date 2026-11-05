@@ -28,11 +28,19 @@ const DAYS = 90;
 /** 수동 측정 전용. 일반 unit/integration/E2E와 CI에는 포함하지 않는다. */
 describe("시간대 재계산 규모 측정", () => {
   it.each([
-    { name: "새 경로 상한", seriesCount: 30 },
-    { name: "옛 경로 상한", seriesCount: 300 },
+    { name: "새 경로 상한", seriesCount: 30, days: DAYS, historyRows: 0, otherUsers: 0 },
+    { name: "옛 경로 상한", seriesCount: 300, days: DAYS, historyRows: 0, otherUsers: 0 },
+    { name: "전체 이력 5만 행", seriesCount: 30, days: DAYS, historyRows: 47_300, otherUsers: 0 },
+    {
+      name: "전체 이력 5만 행 + 다른 사용자 20만 행",
+      seriesCount: 30,
+      days: DAYS,
+      historyRows: 47_300,
+      otherUsers: 200,
+    },
   ])(
-    "$name: 규칙 $seriesCount개 × 90일",
-    async ({ seriesCount }) => {
+    "$name",
+    async ({ seriesCount, days, historyRows, otherUsers }) => {
       let statements = 0;
       const database = new TestDatabase({
         createClient: (url) =>
@@ -65,8 +73,8 @@ describe("시간대 재계산 규모 측정", () => {
       try {
         const user = UserFixture.create({
           id: createEntityId(),
-          email: `scale-${seriesCount}@example.com`,
-          userTag: `SCALE${seriesCount}`.slice(0, 8),
+          email: `scale-${createEntityId()}@example.com`,
+          userTag: createEntityId().slice(-8).toUpperCase(),
         });
         await client.insert(userTable).values(user);
         await client.insert(userPreference).values({ userId: user.id, timezone: NEW_YORK });
@@ -83,7 +91,31 @@ describe("시간대 재계산 규모 측정", () => {
         INSERT INTO "Todo" ("userId", "categoryId", "title", "startDate", "occurrenceDate", "recurrenceGroupId", "scheduledLocalTime", "scheduledTime", "isAllDay", "updatedAt")
         SELECT ${user.id}, ${category?.id}, '회차', CURRENT_DATE + day, CURRENT_DATE + day, id, '10:00',
           ((CURRENT_DATE + day)::timestamp + time '10:00') AT TIME ZONE 'Asia/Seoul', false, now()
-        FROM unnest(${sql.param(seriesIds)}::text[]) AS id, generate_series(1, ${DAYS}) AS day`);
+        FROM unnest(${sql.param(seriesIds)}::text[]) AS id, generate_series(1, ${days}) AS day`);
+        // 지난 이력은 대부분 완료했고 날짜가 흩어져 있다.
+        await client.execute(sql`
+        INSERT INTO "Todo" ("userId", "categoryId", "title", "startDate", "scheduledLocalTime", "scheduledTime", "isAllDay", "completed", "completedAt", "updatedAt")
+        SELECT ${user.id}, ${category?.id}, '지난 할 일', CURRENT_DATE - (n % 1500) - 1, '10:00',
+          ((CURRENT_DATE - (n % 1500) - 1)::timestamp + time '10:00') AT TIME ZONE 'Asia/Seoul', false,
+          n % 10 <> 0, CASE WHEN n % 10 <> 0 THEN now() END, now()
+        FROM generate_series(1, ${historyRows}) AS n`);
+        for (let index = 0; index < otherUsers; index += 1) {
+          const other = UserFixture.create({
+            id: createEntityId(),
+            email: `other-${createEntityId()}@example.com`,
+            userTag: createEntityId().slice(-8).toUpperCase(),
+          });
+          await client.insert(userTable).values(other);
+          const [otherCategory] = await client
+            .insert(todoCategory)
+            .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
+            .returning();
+          await client.execute(sql`
+          INSERT INTO "Todo" ("userId", "categoryId", "title", "startDate", "scheduledLocalTime", "scheduledTime", "isAllDay", "completed", "updatedAt")
+          SELECT ${other.id}, ${otherCategory?.id}, '다른 사용자', CURRENT_DATE - n, '10:00', now(), false, true, now()
+          FROM generate_series(1, 1000) AS n`);
+        }
+        await client.execute(sql`ANALYZE "Todo"`);
         const reminders = new TodoReminderAdapter(new TodoReminderSchedulerAdapter(runtime));
         const useCase = new RebaseTodoTimezone({
           todoRepository: new DrizzleTodoRepository(transaction.txHost),
@@ -116,6 +148,13 @@ describe("시간대 재계산 규모 측정", () => {
         const durationMs = Math.round(performance.now() - startedAt);
         clearInterval(sampler);
         const firstStatements = statements;
+        const queued = await client.execute<{ count: string }>(
+          sql`SELECT count(*) FROM pgboss.job WHERE name = 'todo-reminder.v1' AND state = 'created'`,
+        );
+        const plan = await client.execute<{ "QUERY PLAN": string }>(sql`
+          EXPLAIN (ANALYZE, BUFFERS) SELECT id, "startDate", "scheduledLocalTime", "scheduledTime", completed FROM "Todo"
+          WHERE "userId" = ${user.id} AND "scheduledTime" IS NOT NULL AND id > 0
+          ORDER BY id LIMIT 500 FOR UPDATE`);
 
         statements = 0;
         const repeatedAt = performance.now();
@@ -124,7 +163,10 @@ describe("시간대 재계산 규모 측정", () => {
 
         const measured = {
           seriesCount,
+          historyRows,
+          otherRows: otherUsers * 1000,
           rows: result.scannedCount,
+          queuedReminderJobs: Number(queued.rows[0]?.count),
           rebased: result.rebasedCount,
           drizzleStatements: firstStatements,
           durationMs,
@@ -134,7 +176,8 @@ describe("시간대 재계산 규모 측정", () => {
           repeatedMs,
         };
         console.log(JSON.stringify(measured));
-        expect(result.rebasedCount).toBe(seriesCount * DAYS);
+        console.log(plan.rows.map((line) => line["QUERY PLAN"]).join("\n"));
+        expect(result.rebasedCount).toBe(seriesCount * days + historyRows);
         expect(repeated.rebasedCount).toBe(0);
       } finally {
         await runtime.stop();

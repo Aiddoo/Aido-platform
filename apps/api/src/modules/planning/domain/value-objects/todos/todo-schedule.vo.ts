@@ -115,20 +115,6 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     return new TodoSchedule(merged);
   }
 
-  /** 시간대가 바뀌는 동안 재계산에서 빠졌던 일정을 지금 시간대로 다시 맞춘다. */
-  rederiveIn(timezone: string): TodoSchedule {
-    const scheduledLocalTime = this.getLocalTimeIn(timezone);
-    return new TodoSchedule({
-      ...this.value,
-      scheduledLocalTime,
-      scheduledTime: resolveScheduledInstant(
-        toDateString(this.value.startDate),
-        scheduledLocalTime,
-        timezone,
-      ),
-    });
-  }
-
   /** 칸이 빈 옛 행은 사용자가 보던 그대로 순간을 지금 시간대로 읽는다. */
   getLocalTimeIn(timezone: string): string | null {
     const { scheduledLocalTime, scheduledTime } = this.value;

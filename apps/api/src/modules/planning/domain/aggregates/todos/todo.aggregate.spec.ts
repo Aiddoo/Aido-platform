@@ -201,7 +201,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: false }));
 
       // When - 완료로 토글하면
-      const changed = todo.toggleComplete(true, "Asia/Seoul", "Asia/Seoul");
+      const changed = todo.toggleComplete(true, "Asia/Seoul");
 
       // Then - 상태가 완료로 전이되고 이벤트가 쌓인다
       expect(changed).toBe(true);
@@ -225,7 +225,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
       // When - 미완료로 토글하면
-      const changed = todo.toggleComplete(false, "UTC", "UTC");
+      const changed = todo.toggleComplete(false, "UTC");
 
       // Then - 상태가 미완료로 전이된다
       expect(changed).toBe(true);
@@ -247,7 +247,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       );
 
       // When - 동일 값(true)으로 재토글
-      const changed = todo.toggleComplete(true, "UTC", "UTC");
+      const changed = todo.toggleComplete(true, "UTC");
 
       // Then - 전이 없음 + completedAt 불변 + 이벤트 미적립
       expect(changed).toBe(false);

@@ -675,14 +675,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
     @Timezone() timezone: string,
-    @Timezone({ preserveIfMissing: true }) requestTimezone: string | undefined,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.toggleTodoCompleteUseCase.execute({
       id: params.id,
       userId: user.userId,
       completed: dto.completed,
       timezone,
-      requestTimezone,
     });
 
     return {

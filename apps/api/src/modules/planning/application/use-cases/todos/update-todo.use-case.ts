@@ -115,14 +115,8 @@ export class UpdateTodo {
     copyField("categoryId");
     copyField("startDate");
     copyField("endDate");
-    const reopened = wasCompleted && !snapshot.completed;
     // nullish-strict: scheduledTime null은 시간 지우기다
-    if (
-      data.scheduledTime !== undefined ||
-      data.isAllDay != null ||
-      data.startDate != null ||
-      reopened
-    ) {
+    if (data.scheduledTime !== undefined || data.isAllDay != null || data.startDate != null) {
       // 벽시계·순간·종일은 함께 맞춰지므로 한쪽만 보내도 모두 저장한다.
       patch.scheduledLocalTime = snapshot.scheduledLocalTime;
       patch.scheduledTime = snapshot.scheduledTime;

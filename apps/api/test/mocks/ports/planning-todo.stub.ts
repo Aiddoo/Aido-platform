@@ -192,8 +192,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       .filter(
         (record) =>
           record.userId === query.userId &&
-          !record.completed &&
-          toDateString(record.startDate) >= query.fromDate &&
+          record.scheduledTime != null &&
           (query.afterId == null || record.id > query.afterId),
       )
       .sort((left, right) => left.id - right.id)
@@ -207,6 +206,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
                 startDate: toDateString(record.startDate),
                 scheduledLocalTime: record.scheduledLocalTime,
                 scheduledTime: record.scheduledTime,
+                completed: record.completed,
               },
             ],
       );

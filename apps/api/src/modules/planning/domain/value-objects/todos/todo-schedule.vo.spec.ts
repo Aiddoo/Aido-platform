@@ -153,23 +153,6 @@ describe("TodoSchedule — 일정 값 객체", () => {
     expect(patched.getScheduledTime()).toEqual(new Date("2026-03-02T01:00:00.000Z"));
   });
 
-  it("새 시간대로 다시 맞추면 벽시계는 그대로이고 순간만 바뀐다", () => {
-    // Given
-    const schedule = TodoSchedule.create({
-      startDate: new Date("2026-11-10"),
-      endDate: null,
-      scheduledLocalTime: "10:00",
-      isAllDay: false,
-      timezone: "Asia/Seoul",
-    });
-    // When
-    const rederived = schedule.rederiveIn("America/New_York");
-    // Then
-    expect(rederived.getScheduledLocalTime()).toBe("10:00");
-    expect(rederived.getScheduledTime()).toEqual(new Date("2026-11-10T15:00:00.000Z"));
-    expect(schedule.getScheduledTime()).toEqual(new Date("2026-11-10T01:00:00.000Z"));
-  });
-
   it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {
     // Given
     const startDate = new Date("2026-03-01");

@@ -4,12 +4,8 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import {
-  localDateInTimezone,
-  resolveWallClockTimezone,
-} from "#api/shared/domain/date/utils/timezone";
+import { resolveWallClockTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { resolveScheduledInstant } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
 import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
@@ -58,12 +54,13 @@ interface RebaseTodoTimezoneDependencies {
 }
 
 /**
- * 시간대가 바뀐 사용자의 앞으로 할 일을 벽시계에서 다시 계산하고 알림을 다시 예약한다.
+ * 시간대가 바뀐 사용자의 시간 있는 모든 할 일을 벽시계에서 다시 계산한다. 순간은 언제나
+ * `날짜 + 벽시계 + 사용자 현재 시간대`이고 완료했거나 지난 할 일도 예외가 아니다. 알림은 완료 전이고
+ * 앞으로 울릴 회차만 다시 잡는다.
  *
  * 벽시계에서 계산하므로 몇 번을 돌아도 결과가 같고, 순간이 그대로인 행은 쓰지 않는다.
  * pg-boss는 at-least-once라 중간 실패 뒤 재시도도 남은 행만 바꾼다. 묶음마다 최신 시간대를 다시 읽어
  * 시간대가 또 바뀌었으면 멈춘다. 그 변경이 등록한 다음 작업이 끝까지 다시 계산한다.
- * 어제부터 보는 이유는 서쪽으로 가면 어제 날짜의 시각이 다시 미래가 되기 때문이다.
  */
 export class RebaseTodoTimezone {
   readonly #dependencies: RebaseTodoTimezoneDependencies;
@@ -97,7 +94,6 @@ export class RebaseTodoTimezone {
   async #rebase(userId: string, timezone: string): Promise<RebaseTodoTimezoneResult> {
     const { unitOfWork, seriesRepository } = this.#dependencies;
     const batchSize = this.#dependencies.batchSize ?? TODO_TIMEZONE_REBASE_BUDGET.BATCH_SIZE;
-    const fromDate = addDaysToDateKey(localDateInTimezone(now(), timezone), -1);
     // 규칙을 먼저 바꾼다. 그 뒤 밤 작업이 만드는 회차는 새 시간대이고, 그 전에 만든 회차는 아래에서 읽힌다.
     const seriesCount = await unitOfWork.run(async () => {
       await this.#acquireLocks(userId);
@@ -110,7 +106,7 @@ export class RebaseTodoTimezone {
     let skippedCount = 0;
     for (;;) {
       const batch: RebasedBatch = await unitOfWork.run(() =>
-        this.#rebaseBatch(userId, timezone, fromDate, afterId, batchSize),
+        this.#rebaseBatch(userId, timezone, afterId, batchSize),
       );
       if (batch.superseded) {
         return { outcome: "SUPERSEDED", seriesCount, scannedCount, rebasedCount, skippedCount };
@@ -128,7 +124,6 @@ export class RebaseTodoTimezone {
   async #rebaseBatch(
     userId: string,
     timezone: string,
-    fromDate: string,
     afterId: number | null,
     limit: number,
   ): Promise<RebasedBatch> {
@@ -140,16 +135,18 @@ export class RebaseTodoTimezone {
     }
     const candidates = await todoRepository.lockRebaseCandidates({
       userId,
-      fromDate,
       afterId,
       limit,
     });
     const rebased = candidates.flatMap((candidate) => rebaseInstant(candidate, timezone));
     await todoRepository.updateRebasedInstants(rebased);
-    const rebasedIds = rebased.map(({ todoId }) => todoId);
+    const nowMs = now().getTime();
+    const reminders = rebased.filter((row) => hasPendingReminder(row, nowMs));
     // 행과 함께 커밋한다. 실패하면 행도 그대로라 재시도가 같은 행을 다시 본다.
-    await todoReminder.cancelReminders(rebasedIds);
-    await todoReminder.scheduleReminders(rebased.map((row) => ({ ...row, userId })));
+    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId));
+    await todoReminder.scheduleReminders(
+      reminders.map(({ todoId, scheduledTime }) => ({ todoId, scheduledTime, userId })),
+    );
     return {
       superseded: false,
       scannedCount: candidates.length,
@@ -188,10 +185,20 @@ const EMPTY_RESULT = { scannedCount: 0, rebasedCount: 0, skippedCount: 0, series
 
 /** 순간이 그대로면(이름만 다른 같은 시각) 쓰기와 재예약을 하지 않는다. */
 function rebaseInstant(candidate: RebaseCandidate, timezone: string) {
-  const { todoId, startDate, scheduledLocalTime, scheduledTime } = candidate;
+  const { todoId, startDate, scheduledLocalTime, scheduledTime, completed } = candidate;
   const next = resolveScheduledInstant(startDate, scheduledLocalTime, timezone);
   if (next == null || next.getTime() === scheduledTime.getTime()) {
     return [];
   }
-  return [{ todoId, scheduledTime: next }];
+  return [{ todoId, scheduledTime: next, previousTime: scheduledTime, completed }];
+}
+
+/** 완료 전이고 옛 시각이나 새 시각이 앞으로일 때만 지울 예약이나 새 예약이 있다. 지난 이력은 예약을 건드리지 않는다. */
+function hasPendingReminder(
+  row: { readonly scheduledTime: Date; readonly previousTime: Date; readonly completed: boolean },
+  nowMs: number,
+): boolean {
+  return (
+    !row.completed && (row.scheduledTime.getTime() > nowMs || row.previousTime.getTime() > nowMs)
+  );
 }

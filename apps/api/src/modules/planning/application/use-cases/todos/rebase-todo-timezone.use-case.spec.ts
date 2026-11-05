@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 
+import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -102,33 +103,93 @@ describe("시간대 재계산", () => {
     expect(fixture.records.get(1)?.scheduledLocalTime).toBe(localTime);
   });
 
-  it("앞으로 할 일만 다시 계산하고 완료·종일·그제 이전은 건드리지 않는다", async () => {
+  it("완료했거나 지난 할 일도 다시 계산하고 종일은 건드리지 않는다", async () => {
     // Given
     const todos = [
       timedTodo(1, "2026-11-10"),
-      timedTodo(2, "2026-11-10", {
-        completed: true,
-        completedAt: NOW,
-      }),
+      timedTodo(2, "2026-11-10", { completed: true, completedAt: NOW }),
       timedTodo(3, "2026-11-10", { scheduledLocalTime: null, scheduledTime: null, isAllDay: true }),
-      timedTodo(4, "2026-11-03"),
-      timedTodo(5, "2026-11-04"),
-      timedTodo(6, "2026-11-10", { endDate: new Date("2026-11-12T00:00:00.000Z") }),
-      timedTodo(7, "2026-11-01", { endDate: new Date("2026-11-12T00:00:00.000Z") }),
+      timedTodo(4, "2024-01-15", { completed: true, completedAt: NOW }),
+      timedTodo(5, "2026-11-01"),
+      timedTodo(6, "2026-11-01", { endDate: new Date("2026-11-12T00:00:00.000Z") }),
     ];
     const useCase = setUp(todos, NEW_YORK);
     // When
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
-    expect(result).toMatchObject({ scannedCount: 3, rebasedCount: 3 });
-    expect(fixture.records.get(2)?.scheduledTime).toEqual(todos[1]?.scheduledTime);
-    expect(fixture.records.get(4)?.scheduledTime).toEqual(todos[3]?.scheduledTime);
-    expect(fixture.records.get(7)?.scheduledTime).toEqual(todos[6]?.scheduledTime);
-    expect(readInstant(5)).toBe("2026-11-04T15:00:00.000Z");
-    expect(readInstant(6)).toBe("2026-11-10T15:00:00.000Z");
+    expect(result).toMatchObject({ scannedCount: 5, rebasedCount: 5 });
+    expect(readInstant(1)).toBe("2026-11-10T15:00:00.000Z");
+    expect(readInstant(2)).toBe("2026-11-10T15:00:00.000Z");
+    expect(fixture.records.get(3)?.scheduledTime).toBeNull();
+    expect(readInstant(4)).toBe("2024-01-15T15:00:00.000Z");
+    expect(readInstant(5)).toBe("2026-11-01T15:00:00.000Z");
+    expect(readInstant(6)).toBe("2026-11-01T15:00:00.000Z");
   });
 
-  it("서쪽으로 가면 어제 날짜까지 다시 계산해 예약 대상으로 넘긴다", async () => {
+  it.each([
+    {
+      name: "완료 전 앞으로 울릴 회차",
+      overrides: {},
+      date: "2026-11-10",
+      cancelled: [1],
+      scheduled: [1],
+    },
+    {
+      name: "완료한 앞으로 회차",
+      overrides: { completed: true, completedAt: NOW },
+      date: "2026-11-10",
+      cancelled: [],
+      scheduled: [],
+    },
+    {
+      name: "완료 전 지난 회차",
+      overrides: {},
+      date: "2026-11-01",
+      cancelled: [],
+      scheduled: [],
+    },
+    {
+      name: "완료한 지난 회차",
+      overrides: { completed: true, completedAt: NOW },
+      date: "2024-01-15",
+      cancelled: [],
+      scheduled: [],
+    },
+    {
+      name: "옛 시각은 앞으로였는데 새 시간대에서 지난 회차",
+      overrides: {
+        scheduledLocalTime: "01:00",
+        scheduledTime: new Date("2026-11-05T13:00:00.000Z"),
+      },
+      date: "2026-11-05",
+      cancelled: [1],
+      scheduled: [1],
+    },
+  ])("$name: 알림 예약은 이 회차만 건드린다", async ({ overrides, date, cancelled, scheduled }) => {
+    // Given
+    const useCase = setUp([timedTodo(1, date, overrides)], NEW_YORK);
+    // When
+    const result = await useCase.execute({ userId: "planning-user" });
+    // Then
+    expect(result.rebasedCount).toBe(1);
+    expect(fixture.todoReminder.cancelled).toEqual(cancelled);
+    expect(fixture.todoReminder.scheduled.map(({ todoId }) => todoId)).toEqual(scheduled);
+  });
+
+  it("옛 앱은 지난 할 일도 새 기기 시간대에서 고른 시각으로 읽는다", async () => {
+    // Given
+    const useCase = setUp(
+      [timedTodo(1, "2026-01-15", { completed: true, completedAt: NOW })],
+      NEW_YORK,
+    );
+    // When
+    await useCase.execute({ userId: "planning-user" });
+    // Then
+    const instant = fixture.records.get(1)?.scheduledTime;
+    expect(instant == null ? null : toLocalTimeString(instant, NEW_YORK)).toBe("10:00");
+  });
+
+  it("서쪽으로 가서 다시 앞으로가 된 어제 날짜 회차만 예약 대상으로 넘긴다", async () => {
     // Given
     const useCase = setUp(
       [
@@ -144,8 +205,8 @@ describe("시간대 재계산", () => {
       todoId,
       scheduledTime: scheduledTime.toISOString(),
     }));
-    expect(scheduled).toContainEqual({ todoId: 1, scheduledTime: "2026-11-06T06:00:00.000Z" });
-    expect(scheduled).toContainEqual({ todoId: 2, scheduledTime: "2026-11-05T11:00:00.000Z" });
+    expect(scheduled).toEqual([{ todoId: 1, scheduledTime: "2026-11-06T06:00:00.000Z" }]);
+    expect(readInstant(2)).toBe("2026-11-05T11:00:00.000Z");
   });
 
   it("같은 시각의 다른 이름이면 쓰기와 재예약을 하지 않는다", async () => {
@@ -166,7 +227,14 @@ describe("시간대 재계산", () => {
   it("서울 → 뉴욕 → 서울 왕복은 처음과 같고 다시 돌려도 바뀌지 않는다", async () => {
     // Given
     const before = "2026-11-10T01:00:00.000Z";
-    const useCase = setUp([timedTodo(1, "2026-11-10")], NEW_YORK);
+    const past = "2026-01-15T01:00:00.000Z";
+    const useCase = setUp(
+      [
+        timedTodo(1, "2026-11-10"),
+        timedTodo(2, "2026-01-15", { completed: true, completedAt: NOW }),
+      ],
+      NEW_YORK,
+    );
     // When
     await useCase.execute({ userId: "planning-user" });
     const away = readInstant(1);
@@ -177,6 +245,7 @@ describe("시간대 재계산", () => {
     expect(away).toBe("2026-11-10T15:00:00.000Z");
     expect(again.rebasedCount).toBe(0);
     expect(readInstant(1)).toBe(before);
+    expect(readInstant(2)).toBe(past);
   });
 
   it("이 할 일만 바꾼 회차의 벽시계를 규칙 값으로 덮어쓰지 않는다", async () => {

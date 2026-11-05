@@ -70,7 +70,7 @@ describe("할 일 부분 수정", () => {
       new TodoRescheduledEvent(1, fixture.userId, instant),
     );
   });
-  it("PATCH로 완료를 되돌리면 벽시계를 지금 시간대로 다시 계산한다", async () => {
+  it("PATCH로 완료를 되돌리면 순간은 그대로 두고 지금 순간으로 알림을 다시 잡는다", async () => {
     // Given
     await useCase.execute({
       id: 1,
@@ -87,7 +87,7 @@ describe("할 일 부분 수정", () => {
       data: { completed: false },
     });
     // Then
-    const instant = new Date("2026-05-15T14:00:00.000Z");
+    const instant = new Date("2026-05-15T01:00:00.000Z");
     expect(fixture.records.get(1)).toMatchObject({
       scheduledLocalTime: "10:00",
       scheduledTime: instant,

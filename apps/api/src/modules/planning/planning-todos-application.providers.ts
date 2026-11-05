@@ -537,7 +537,6 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
     MUTATION_LOCK,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
-    TodoTimezoneResolver,
   ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoRepository"],
@@ -546,7 +545,6 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
     mutationLock: ConstructorParameters<typeof ToggleTodoComplete>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof ToggleTodoComplete>[0]["eventPublisher"],
-    timezoneResolver: ConstructorParameters<typeof ToggleTodoComplete>[0]["timezoneResolver"],
   ) =>
     new ToggleTodoComplete({
       todoRepository,
@@ -555,7 +553,6 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
       mutationLock,
       todoCache,
       eventPublisher,
-      timezoneResolver,
       logger: new Logger(ToggleTodoComplete.name),
     }),
 };

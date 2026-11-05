@@ -5,6 +5,8 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
+import { RefreshPushTimezone } from "#api/modules/identity/application/use-cases/settings/refresh-push-timezone.use-case";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { TodoSeriesDueRun } from "#api/modules/planning/application/services/series/todo-series-due-run.service";
@@ -35,7 +37,12 @@ import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import {
+  localDateInTimezone,
+  parseLocalDateTime,
+  todayInTimezone,
+  toLocalTimeString,
+} from "#api/shared/domain/date/utils/timezone";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -63,6 +70,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let userId: string;
   let categoryId: number;
   let today: string;
+  let transaction: ReturnType<typeof createDatabaseTransactionFixture>;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
@@ -83,7 +91,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       createSchema: false,
       max: 3,
     });
-    const transaction = createDatabaseTransactionFixture(client);
+    transaction = createDatabaseTransactionFixture(client);
     runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
       job: { shutdownTimeoutMs: 10_000 },
     });
@@ -114,7 +122,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     suppressLogger();
     await database.cleanup();
     await client.execute(
-      sql.raw(`DELETE FROM ${SCHEMA}.job WHERE name = '${TODO_REMINDER_QUEUE}'`),
+      sql.raw(
+        `DELETE FROM ${SCHEMA}.job WHERE name IN ('${TODO_REMINDER_QUEUE}', '${TODO_TIMEZONE_REBASE_QUEUE}')`,
+      ),
     );
     const user = UserFixture.create({
       id: createEntityId(),
@@ -168,6 +178,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     return jobs.map((job) => job.startAfter.getTime());
   }
 
+  async function queuedJobCount() {
+    const jobs = await boss.findJobs(TODO_REMINDER_QUEUE, { queued: true });
+    return jobs.length;
+  }
+
   function setStoredTimezone(timezone: string) {
     return client.update(userPreference).set({ timezone }).where(eq(userPreference.userId, userId));
   }
@@ -206,7 +221,51 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     expect(result.rebasedCount).toBe(1);
     expect(await queuedStarts(id, "60min")).toEqual([]);
     expect(await queuedStarts(id, "10min")).toEqual([]);
-    expect(await queuedStarts(id, "immediate")).toEqual([]);
+  });
+
+  it("새 시간대에서 10분 안쪽으로 남으면 바로 보내지 않고 건너뛴다", async () => {
+    // Given
+    const soon = new Date(Date.now() + 5 * 60 * 1000);
+    const localTime = toLocalTimeString(soon, NEW_YORK);
+    const id = await seedTodo(localDateInTimezone(soon, NEW_YORK), localTime, {
+      scheduledTime: new Date(Date.now() + 5 * HOUR_MS),
+    });
+    await reminderAdapter.scheduleReminders([
+      { todoId: id, scheduledTime: new Date(Date.now() + 5 * HOUR_MS), userId },
+    ]);
+    // When
+    const result = await useCase.execute({ userId });
+    // Then
+    expect(result.rebasedCount).toBe(1);
+    expect(await queuedJobCount()).toBe(0);
+  });
+
+  it("완료했거나 지난 할 일은 순간만 바꾸고 예약은 만들지 않는다", async () => {
+    // Given
+    const future = addDaysToDateKey(today, 3);
+    const past = addDaysToDateKey(today, -400);
+    const completedFuture = await seedTodo(future, "10:00", { completed: true });
+    const completedPast = await seedTodo(past, "10:00", { completed: true });
+    const openPast = await seedTodo(past, "11:00");
+    const open = await seedTodo(future, "12:00");
+    // When
+    const result = await useCase.execute({ userId });
+    // Then
+    expect(result).toMatchObject({ scannedCount: 4, rebasedCount: 4 });
+    expect(await readInstant(completedFuture)).toBe(
+      parseLocalDateTime(future, "10:00", NEW_YORK).toISOString(),
+    );
+    expect(await readInstant(completedPast)).toBe(
+      parseLocalDateTime(past, "10:00", NEW_YORK).toISOString(),
+    );
+    expect(await readInstant(openPast)).toBe(
+      parseLocalDateTime(past, "11:00", NEW_YORK).toISOString(),
+    );
+    expect(await queuedStarts(completedFuture, "60min")).toEqual([]);
+    expect(await queuedStarts(completedPast, "60min")).toEqual([]);
+    expect(await queuedStarts(openPast, "60min")).toEqual([]);
+    expect(await queuedStarts(open, "60min")).toHaveLength(1);
+    expect(await queuedStarts(open, "10min")).toHaveLength(1);
   });
 
   it("왕복 여행과 중복 실행 뒤에도 예약은 회차·단계마다 하나다", async () => {
@@ -325,6 +384,68 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       first.getTime(),
     );
   });
+
+  it.each([
+    {
+      name: "폰(뉴욕) → 태블릿(서울) → 폰(뉴욕)",
+      requests: [NEW_YORK, SEOUL, NEW_YORK],
+      last: NEW_YORK,
+    },
+    {
+      name: "폰(뉴욕) → 태블릿(서울)을 다섯 번 왕복한 뒤 태블릿",
+      requests: [
+        NEW_YORK,
+        SEOUL,
+        NEW_YORK,
+        SEOUL,
+        NEW_YORK,
+        SEOUL,
+        NEW_YORK,
+        SEOUL,
+        NEW_YORK,
+        SEOUL,
+      ],
+      last: SEOUL,
+    },
+    {
+      name: "환승(런던 → 두바이 → 뉴욕)",
+      requests: ["Europe/London", "Asia/Dubai", NEW_YORK],
+      last: NEW_YORK,
+    },
+  ])(
+    "기기 두 대 $name: 같은 분의 전환은 작업 하나이고 결과는 마지막 값이다",
+    async ({ requests, last }) => {
+      // Given
+      const date = addDaysToDateKey(today, 3);
+      const id = await seedTodo(date, "10:00");
+      await reminderAdapter.scheduleReminders([
+        { todoId: id, scheduledTime: parseLocalDateTime(date, "10:00", SEOUL), userId },
+      ]);
+      await setStoredTimezone(SEOUL);
+      const at = new Date(
+        Math.floor(Date.now() / TODO_TIMEZONE_REBASE_WINDOW_MS) * TODO_TIMEZONE_REBASE_WINDOW_MS +
+          1_000,
+      );
+      const preferenceRepository = new DrizzleUserPreferenceRepository(transaction.txHost);
+      const refresh = new RefreshPushTimezone({
+        preferenceRepository,
+        cache: { invalidateUserPreference: async () => undefined },
+        reminderTimezoneCache: { invalidateActiveTimezones: async () => undefined },
+        todoTimezoneRebase: { enqueueRebase: (user) => queue.enqueueRebase(user, at) },
+        unitOfWork: transaction.uow,
+      });
+      // When
+      for (const timezone of requests) {
+        await refresh.execute({ userId, timezone });
+      }
+      // Then
+      const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE, { queued: true });
+      expect(jobs.filter((job) => job.singletonKey?.includes(userId))).toHaveLength(1);
+      await useCase.execute({ userId });
+      expect(await readInstant(id)).toBe(parseLocalDateTime(date, "10:00", last).toISOString());
+      expect(await queuedStarts(id, "60min")).toHaveLength(1);
+    },
+  );
 
   it("활성 트랜잭션이 되돌아가면 재계산 작업도 등록되지 않는다", async () => {
     // Given

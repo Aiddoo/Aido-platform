@@ -251,13 +251,12 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
         startDate: todo.startDate,
         scheduledLocalTime: todo.scheduledLocalTime,
         scheduledTime: todo.scheduledTime,
+        completed: todo.completed,
       })
       .from(todo)
       .where(
         and(
           eq(todo.userId, query.userId),
-          eq(todo.completed, false),
-          gte(todo.startDate, parseDateOnly(query.fromDate)),
           isNotNull(todo.scheduledTime),
           query.afterId == null ? undefined : gt(todo.id, query.afterId),
         ),

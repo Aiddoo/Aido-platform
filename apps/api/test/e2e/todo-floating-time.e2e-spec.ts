@@ -7,6 +7,7 @@ import {
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
+import { z } from "zod";
 
 import { RebaseTodoTimezone } from "#api/modules/planning/application/use-cases/todos/rebase-todo-timezone.use-case";
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/infrastructure/jobs/todos/todo-timezone-rebase.queue.constants";
@@ -15,7 +16,11 @@ import { todoSeries, userPreference } from "#api/platform/database/schema/index"
 import { JOB_RUNTIME } from "#api/shared/application/ports/index";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import {
+  parseLocalDateTime,
+  todayInTimezone,
+  toLocalTimeString,
+} from "#api/shared/domain/date/utils/timezone";
 import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
@@ -23,6 +28,7 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
+const releasedListSchema = z.object({ items: z.array(releasedTodoSchema) });
 
 describe("떠 있는 시각 E2E", () => {
   let ctx: E2eTestContext;
@@ -201,33 +207,52 @@ describe("떠 있는 시각 E2E", () => {
     expect(patchedTodo(cleared)).toMatchObject({ scheduledLocalTime: null, isAllDay: true });
   });
 
-  it("완료를 되돌리면 지금 시간대로 순간을 다시 계산한다", async () => {
+  it.each([
+    { name: "완료 토글", path: (id: number) => `/v1/todos/${id}/complete` },
+    { name: "일반 PATCH", path: (id: number) => `/v1/todos/${id}` },
+  ])("$name로 완료를 되돌려도 순간은 재계산에 맡기고 따로 고치지 않는다", async ({ path }) => {
     // Given
     const created = await createTimed(SEOUL);
-    await send("patch", `/v1/todos/${created.id}/complete`, SEOUL, { completed: true }).expect(200);
+    await send("patch", path(created.id), SEOUL, { completed: true }).expect(200);
     // When
-    const response = await send("patch", `/v1/todos/${created.id}/complete`, NEW_YORK, {
+    const response = await send("patch", path(created.id), NEW_YORK, {
       completed: false,
     }).expect(200);
     // Then
     expect(patchedTodo(response)).toMatchObject({
       scheduledLocalTime: "10:00",
-      scheduledTime: parseLocalDateTime(date(), "10:00", NEW_YORK).toISOString(),
+      scheduledTime: parseLocalDateTime(date(), "10:00", SEOUL).toISOString(),
     });
   });
 
-  it("PATCH completed=false로 되돌려도 같은 함수로 다시 계산한다", async () => {
+  it("옛 앱은 서울 → 뉴욕 → 서울 왕복에서 지난 완료 할 일도 그곳의 오전 10시로 읽는다", async () => {
     // Given
-    const created = await createTimed(SEOUL);
-    await send("patch", `/v1/todos/${created.id}`, SEOUL, { completed: true }).expect(200);
+    const past = addDaysToDateKey(toDateString(todayInTimezone(SEOUL)), -30);
+    const created = await createTimed(SEOUL, "10:00", { startDate: past });
+    await send("patch", `/v1/todos/${created.id}/complete`, SEOUL, { completed: true }).expect(200);
+    const readLocalTimeIn = async (timezone: string) => {
+      const response = await send(
+        "get",
+        `/v1/todos?startDate=${past}&endDate=${past}`,
+        timezone,
+      ).expect(200);
+      const [item] = releasedListSchema.parse(response.body.data).items;
+      return item?.scheduledTime == null
+        ? null
+        : toLocalTimeString(new Date(item.scheduledTime), timezone);
+    };
+    const rebaseTo = async (timezone: string) => {
+      await storeTimezone(timezone);
+      await ctx.module.get(RebaseTodoTimezone).execute({ userId });
+    };
     // When
-    const response = await send("patch", `/v1/todos/${created.id}`, NEW_YORK, {
-      completed: false,
-    }).expect(200);
+    await rebaseTo(NEW_YORK);
+    const inNewYork = await readLocalTimeIn(NEW_YORK);
+    await rebaseTo(SEOUL);
+    const backInSeoul = await readLocalTimeIn(SEOUL);
     // Then
-    expect(patchedTodo(response).scheduledTime).toBe(
-      parseLocalDateTime(date(), "10:00", NEW_YORK).toISOString(),
-    );
+    expect(inNewYork).toBe("10:00");
+    expect(backInSeoul).toBe("10:00");
   });
 
   it("제목만 고치면 순간을 건드리지 않는다", async () => {
@@ -426,7 +451,6 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
       todoListResponseSchema.parse(ownerRows.body.data).items.map((item) => [item.id, item]),
     );
     const moved = parseLocalDateTime(future, "10:00", zone).toISOString();
-    const kept = parseLocalDateTime(future, "10:00", SEOUL).toISOString();
     expect(items.get(general.todo.id)).toMatchObject({
       scheduledLocalTime: "10:00",
       scheduledTime: moved,
@@ -447,11 +471,11 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     });
     expect(items.get(completed.todo.id)).toMatchObject({
       scheduledLocalTime: "10:00",
-      scheduledTime: kept,
+      scheduledTime: moved,
     });
     expect(items.get(pastDay.todo.id)).toMatchObject({
       scheduledLocalTime: "10:00",
-      scheduledTime: parseLocalDateTime(past, "10:00", SEOUL).toISOString(),
+      scheduledTime: parseLocalDateTime(past, "10:00", zone).toISOString(),
     });
     const friendItems = friendTodoListResponseSchema.parse(friendRows.body.data).items;
     expect(friendItems.length).toBeGreaterThan(0);

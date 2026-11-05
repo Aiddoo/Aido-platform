@@ -226,7 +226,6 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
           userId,
           completed: true,
           timezone: "Asia/Seoul",
-          requestTimezone: "Asia/Seoul",
         }),
       () =>
         toggle.execute({
@@ -234,7 +233,6 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
           userId,
           completed: true,
           timezone: "Asia/Seoul",
-          requestTimezone: "Asia/Seoul",
         }),
     );
 

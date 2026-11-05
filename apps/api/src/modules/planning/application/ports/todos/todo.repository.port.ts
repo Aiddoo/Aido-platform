@@ -46,12 +46,11 @@ export interface RebaseCandidate {
   readonly startDate: string;
   readonly scheduledLocalTime: string | null;
   readonly scheduledTime: Date;
+  readonly completed: boolean;
 }
 
 export interface RebaseCandidateQuery {
   readonly userId: string;
-  /** 이 날짜(포함) 뒤에 시작하는 미완료 시간 일정 */
-  readonly fromDate: string;
   /** id 순 커서. 지난 묶음의 마지막 id */
   readonly afterId: number | null;
   readonly limit: number;

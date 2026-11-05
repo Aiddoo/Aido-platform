@@ -100,6 +100,24 @@ describe("TimezoneSelfHealInterceptor", () => {
       timezone: "America/New_York",
     });
   });
+  it("기기 두 대가 번갈아 요청하면 스로틀에 막히지 않고 마지막 요청의 시간대를 반영한다", () => {
+    // Given
+    const phone = contextFor({ userId: "u1" }, { "x-timezone": "America/New_York" });
+    const tablet = contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" });
+
+    // When
+    intercept(phone);
+    intercept(tablet);
+    intercept(phone);
+
+    // Then
+    expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(3);
+    expect(refreshPushTimezoneUseCase.execute).toHaveBeenLastCalledWith({
+      userId: "u1",
+      timezone: "America/New_York",
+    });
+  });
+
   it("타임존 저장에 실패하면 같은 타임존의 다음 요청에서 다시 시도한다", async () => {
     // Given
     const context = contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" });
