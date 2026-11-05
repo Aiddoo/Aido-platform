@@ -195,3 +195,4 @@ export { AppToast, type AppToastVariant } from './toast';
 export { VStack } from './v-stack';
 
 export { FormField, type FormFieldProps } from './form-field';
+export { type TextRun, splitWords, WordWrapText } from './word-wrap-text';

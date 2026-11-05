@@ -942,9 +942,9 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(�
 
 ### 규칙
 
-- **SDK는 `shared/infra`에서만 import한다.** 네이티브·외부 SDK는 한 줄짜리 호출이어도 어댑터를 거친다. 쓰는 쪽은 `use{X}` 훅으로 받는다.
+- **SDK는 `shared/infra`에서만 import한다.** 네이티브·외부 SDK는 한 줄짜리 호출이어도 어댑터를 거친다. 쓰는 쪽은 `use{X}` 훅으로 받는다. `check:conventions`가 검사한다. 규칙 전부터 있던 파일은 `scripts/check-mobile-conventions.mjs`의 `SDK_IMPORT_ALLOWLIST`에 있고 출시 후 첫 스택에서 비운다. 새 위반은 실패한다.
 - **예외는 두 가지뿐이다.**
-  - 라이브러리 자체가 React 훅이면(`expo-audio`) 경계 훅 파일 하나에서만 import한다(`use-voice-note-player.ts`).
+  - 라이브러리 자체가 React 훅이면 경계 훅 파일 하나에서만 import한다(`expo-audio`는 `use-voice-note-player.ts`, `expo-keep-awake`는 `use-keep-screen-awake.ts`).
   - React 밖 코드(시작 시 값, 위젯 진입점, 부트스트랩)는 DI 훅을 부를 수 없으니 `shared/infra`의 함수를 직접 import한다.
 - **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
 - **조립은 `bootstrap/providers/di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.

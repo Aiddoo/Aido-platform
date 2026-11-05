@@ -308,6 +308,47 @@ describe('CoachmarkPopover', () => {
     );
   });
 
+  it('사용자가 다른 일을 시작하면(isDismissed) 안내를 끝내 다시 열지 않는다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const coachmarkService = new CoachmarkService(
+      createCoachmarkRepository(createMemorySyncStorage()),
+    );
+    const analytics = createMockAnalytics();
+    const accountId = createCurrentUserDto().userId;
+    const renderHint = (isDismissed: boolean) => (
+      <CoachmarkPopover
+        kind="voice-quick-start"
+        title="안내 제목"
+        description="안내 설명"
+        isPassThrough
+        isDismissed={isDismissed}
+      >
+        <Text testID="target">마이크</Text>
+      </CoachmarkPopover>
+    );
+    const { rerender } = await renderUi(renderHint(false), {
+      di: { coachmarkService, analytics, userService: new UserService(httpClient) },
+    });
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
+        kind: 'voice-quick-start',
+      }),
+    );
+
+    // When
+    rerender(renderHint(true));
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_dismissed', {
+        kind: 'voice-quick-start',
+      }),
+    );
+    expect(coachmarkService.isPending({ accountId, kind: 'voice-quick-start' })).toBe(false);
+  });
+
   describe('가리키던 자리를 옮기면', () => {
     const OPENED_AT = 1_000_000;
 

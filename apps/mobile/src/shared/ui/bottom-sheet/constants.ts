@@ -4,6 +4,12 @@ import { Easing } from 'react-native-reanimated';
 /** 닫기 전용 빠른 애니메이션. 열기는 기본 속도 유지. */
 export const FAST_DISMISS = { duration: 250, easing: Easing.out(Easing.quad) };
 
+/**
+ * gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다.
+ * Android 기본값(250ms)과 맞춘다.
+ */
+export const SHEET_ANIMATION_DURATION = 250;
+
 export const SHEET_INDEX = {
   CLOSED: -1,
   OPEN: 0,

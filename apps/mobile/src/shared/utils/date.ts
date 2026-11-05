@@ -62,10 +62,13 @@ export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[], separator = ', '): str
 
 export const getDayOfWeekLabel = (day: DayOfWeek): string => t(`common:daysOfWeek.${day}`);
 
-/** 캘린더 헤더용 요일 라벨 (일요일 시작, Date#getDay() 인덱스와 일치) */
-export const getWeekdayLabels = (): string[] =>
+/**
+ * 캘린더 헤더용 요일 라벨 (일요일 시작, Date#getDay() 인덱스와 일치).
+ * 컴포넌트는 `language`를 넘긴다. 인자가 없으면 React Compiler가 첫 언어의 결과를 계속 쓴다.
+ */
+export const getWeekdayLabels = (language?: string): string[] =>
   (['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const).map((day) =>
-    t(`common:daysOfWeek.${day}`),
+    t(`common:daysOfWeek.${day}`, { lng: language }),
   );
 
 /**

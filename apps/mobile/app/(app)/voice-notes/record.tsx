@@ -1,5 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
@@ -28,13 +29,13 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
-import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { errorMessageOf } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
+import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen-awake';
 import {
   Box,
   Button,
@@ -49,19 +50,19 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
 import { Suspense, useEffect, useEffectEvent } from 'react';
 import { BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
-/** Android는 Activity가 사라진 뒤 풀면 거절한다. 켜둘 화면이 이미 없으니 알릴 일이 아니다 */
-const KEEP_AWAKE_OPTIONS = { suppressDeactivateWarnings: true };
+const MARK_HINT_HEIGHT = 124;
 
 function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
-  useKeepAwake(undefined, KEEP_AWAKE_OPTIONS);
+  useKeepScreenAwake();
   const isCompact = useWindowSizeClass() === 'compact';
+  const fontScaledSize = useFontScaledSize();
+  const [isMarkHintPending] = useMyPendingCoachmark('voice-note-mark');
   const toast = useAppToast();
   const logger = useLogger();
   const confirmDialog = useConfirmDialog();
@@ -205,6 +206,8 @@ function VoiceNoteRecordScreen() {
       sentences={recording.sentences}
       interimText={recording.interimText}
       isLive
+      // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
+      contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
       className="min-h-24 flex-1"
     />
   );
@@ -305,11 +308,7 @@ VoiceNoteRecordScreen.Waveform = function Waveform({
   bookmarksMs: readonly number[];
 }) {
   return (
-    <RecognizerWaveform
-      isActive={isActive}
-      flagIndexes={bookmarksMs.map(getBarIndexAt)}
-      className="self-stretch"
-    />
+    <RecognizerWaveform isActive={isActive} bookmarksMs={bookmarksMs} className="self-stretch" />
   );
 };
 

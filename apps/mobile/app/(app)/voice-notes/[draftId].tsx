@@ -68,6 +68,7 @@ import {
   Text,
   useConfirmDialog,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
@@ -327,9 +328,7 @@ VoiceNoteResult.Summary = function Summary({
   return (
     <ScreenScrollShadow className="flex-1">
       <ScrollView contentContainerClassName="gap-4 pb-6" showsVerticalScrollIndicator={false}>
-        <Text size="b2" lineBreakStrategyIOS="hangul-word">
-          {note.digest?.summary}
-        </Text>
+        <WordWrapText size="b2">{note.digest?.summary ?? ''}</WordWrapText>
         {/* 넓은 화면은 할 일 칸이 늘 보여 거기서 알린다 */}
         {isCompact && VoiceNotePolicy.hasNoPlannedTodos(note) && (
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word" testID="voice-note-no-todos">

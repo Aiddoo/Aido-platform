@@ -18,6 +18,7 @@ export function VoiceNoteStartButton() {
       title={t('coach.noteStart.title')}
       description={t('coach.noteStart.description')}
       placement="bottom"
+      isPassThrough
     >
       <PressableFeedback
         onPress={() => start()}

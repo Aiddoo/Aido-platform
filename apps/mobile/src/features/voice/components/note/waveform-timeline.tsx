@@ -5,7 +5,7 @@ import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
   cancelAnimation,
@@ -26,6 +26,7 @@ import {
   createLevelSampler,
   getTimelineLevel,
   type LevelSampler,
+  withFlagBars,
 } from '../../utils/view-models/waveform.view-model';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
@@ -123,7 +124,7 @@ function addLevelBars(
 
 interface WaveformTimelineProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
   waveform: LiveWaveform;
-  /** 깃발이 꽂힌 칸. `getBarIndexAt`으로 구한 전체 칸 번호다 */
+  /** 깃발이 꽂힌 전체 칸 번호 */
   flagIndexes: readonly number[];
 }
 
@@ -226,16 +227,27 @@ export function WaveformTimeline({
   );
 }
 
-interface RecognizerWaveformProps extends Omit<WaveformTimelineProps, 'waveform'> {
+interface RecognizerWaveformProps extends Omit<WaveformTimelineProps, 'waveform' | 'flagIndexes'> {
   /** 듣지 않을 때는 음량을 받지 않아 파형이 멈춘다 */
   isActive: boolean;
+  /** 중요 표시한 시각. 표시한 순간의 칸에 깃발을 꽂는다 */
+  bookmarksMs: readonly number[];
 }
 
 /** 인식기 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
-export function RecognizerWaveform({ isActive, ...timelineProps }: RecognizerWaveformProps) {
+export function RecognizerWaveform({
+  isActive,
+  bookmarksMs,
+  ...timelineProps
+}: RecognizerWaveformProps) {
   const speechRecognizer = useSpeechRecognizer();
   const waveform = useLiveWaveform();
-  const { pushLevel } = waveform;
+  const { pushLevel, barCount } = waveform;
+  const [flagBars, setFlagBars] = useState<ReadonlyMap<number, number>>(new Map());
+
+  useEffect(() => {
+    setFlagBars((previous) => withFlagBars(previous, bookmarksMs, barCount.get() - 1));
+  }, [barCount, bookmarksMs]);
 
   useEffect(() => {
     if (!isActive) {
@@ -260,5 +272,7 @@ export function RecognizerWaveform({ isActive, ...timelineProps }: RecognizerWav
     };
   }, [isActive, pushLevel, speechRecognizer]);
 
-  return <WaveformTimeline {...timelineProps} waveform={waveform} />;
+  return (
+    <WaveformTimeline {...timelineProps} waveform={waveform} flagIndexes={[...flagBars.values()]} />
+  );
 }

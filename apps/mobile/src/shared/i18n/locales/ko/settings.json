@@ -46,7 +46,7 @@
     "aiDataSharing": {
       "label": "AI 기능 데이터 제공",
       "description": "입력하거나 말한 내용을 Anthropic·Google·OpenAI로 보내 처리해요. 음성은 Apple·Google 음성 인식이 글자로 바꿀 수 있고, 녹음 파일은 아이두 서버로 보내지 않아요.",
-      "descriptionGoogleOnly": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",
+      "descriptionGoogleOnly": "AI 기능을 쓰면 입력한 내용을 Google Gemini로 보내 처리해요.",
       "agreedOn": "{{date}} 동의",
       "withdrawTitle": "동의를 철회할까요?",
       "withdrawDescription": "AI 기능을 쓸 수 없어요. 만든 할 일은 그대로 남아요.",

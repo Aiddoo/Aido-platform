@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
+import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
@@ -14,11 +15,13 @@ import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   ActionChip,
   useActionChipIconSize,
   ArrowUpIcon,
   BottomSheetInput,
+  BottomSheetTextArea,
   Box,
   CalendarIcon,
   ClockIcon,
@@ -35,7 +38,12 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { toNullableDate } from '@src/shared/utils/date';
+import {
+  formatDateKey,
+  formatDateKeyCompactRange,
+  formatDateKeyLabel,
+} from '@src/shared/utils/date-format';
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -210,6 +218,10 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   useOnScreenBlur(voice.interrupt);
   const isVoiceHintRequested = props.mode === 'create' && props.isVoiceHintForced === true;
   const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
+  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
+  const hasVoiceHint = props.mode === 'create' && isVoiceHintPending;
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
   const handleSubmitTodo = methods.handleSubmit(async (values) => {
     try {
@@ -318,6 +330,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     }
   });
 
+  const isFormStep = voice.state.status === 'idle' || voice.state.status === 'failed';
   const title = useWatch({ control: methods.control, name: 'title' });
   const isSubmitDisabled = !title?.trim() || isSubmitting;
 
@@ -333,7 +346,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         onExit={() => {
           exit();
           if (pickerResult) {
-            const { startDate, repeat } = methods.getValues();
+            const { startDate, endDate, repeat } = methods.getValues();
             // 반복 회차의 날짜 이동은 이 회차에만 적용되므로 규칙은 그대로 둔다
             const isSeriesOccurrence =
               props.mode === 'edit' && TodoPolicy.isRecurringTodo(props.todo);
@@ -347,7 +360,16 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 ),
               );
             }
+            // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
+            const nextEndDate = TodoPolicy.getShiftedEndDate(
+              {
+                startDate: toDeviceDateKey(startDate),
+                endDate: endDate == null ? null : toDeviceDateKey(endDate),
+              },
+              toDeviceDateKey(pickerResult),
+            );
             methods.setValue('startDate', pickerResult);
+            methods.setValue('endDate', toNullableDate(nextEndDate));
           }
         }}
       >
@@ -482,83 +504,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         isContentPanEnabled={
           !VoiceCapturePolicy.isActive(voice.state) && voice.state.status !== 'planning'
         }
-      >
-        {match(voice.state)
-          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
-            <QuickVoicePanel
-              state={voice.state}
-              level={voice.level}
-              isQuiet={voice.isQuiet}
-              locale={voice.locale}
-              onLocaleChange={voice.setLocale}
-              onFinish={voice.finish}
-              onCancel={voice.cancel}
-              onResume={voice.resume}
-              onContinueAsVoiceNote={voice.continueAsVoiceNote}
-            />
-          ))
-          .with({ status: 'planning' }, () => (
-            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
-          ))
-          .with({ status: 'review' }, ({ plan, isCharged }) => (
-            <AddTodoVoiceReview
-              plan={plan}
-              isCharged={isCharged}
-              onApplied={() => {
-                onClose();
-                if (props.mode === 'create') {
-                  props.onSuccess?.();
-                }
-              }}
-              onRestart={voice.restart}
-              onTypeInstead={voice.typeInstead}
-            />
-          ))
-          .otherwise(() => (
-            <VStack gap={12} testID="todo-add-sheet">
-              <QuickVoicePanel.Failed
-                state={voice.state}
-                isConsentRequired={voice.isConsentRequired}
-                onResume={voice.resume}
-                onRetryPlanning={voice.retryPlanning}
-              />
-              <FormField control={methods.control} name="title">
-                {({ onChange, value }) => (
-                  <BottomSheetInput
-                    ref={todoInputRef}
-                    autoFocus={!isVoiceHintRequested && !voice.isRestarting}
-                    placeholder={t('add.placeholder')}
-                    value={value}
-                    onChange={onChange}
-                    maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
-                    size="medium"
-                    renderErrorMessage={false}
-                    returnKeyType="done"
-                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
-                  />
-                )}
-              </FormField>
-
-              {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-                contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-              >
-                <DateChip onPress={handleDateChipPress} />
-                <TimeChip onPress={handleTimeChipPress} />
-                {canChangeRepeat && <RepeatChip onPress={handleRepeatChipPress} />}
-                <VisibilityChip />
-                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-                <QueryErrorBoundary fallback={() => null}>
-                  <Suspense fallback={null}>
-                    <CategoryChip onPress={handleCategoryChipPress} />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </ScrollView>
-
+        footer={
+          isFormStep ? (
+            <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
               <Box className="h-px bg-gray-2" />
 
               <HStack gap={8} align="center" justify="end">
@@ -571,6 +519,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                       description={tVoice('coach.quickStart.description')}
                       placement="left"
                       align="center"
+                      isEnabled={!isTitleFocused}
+                      isPassThrough
+                      isDismissed={hasTouchedForm}
                       isForced={isVoiceHintForced}
                       onDismiss={() => setIsVoiceHintForced(false)}
                     >
@@ -608,6 +559,115 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 </PressableFeedback>
               </HStack>
             </VStack>
+          ) : undefined
+        }
+      >
+        {match(voice.state)
+          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
+            <QuickVoicePanel
+              state={voice.state}
+              level={voice.level}
+              isQuiet={voice.isQuiet}
+              locale={voice.locale}
+              onLocaleChange={voice.setLocale}
+              onFinish={voice.finish}
+              onCancel={voice.cancel}
+              onResume={voice.resume}
+              onContinueAsVoiceNote={voice.continueAsVoiceNote}
+            />
+          ))
+          .with({ status: 'planning' }, () => (
+            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
+          ))
+          .with({ status: 'review' }, ({ plan, isCharged }) => (
+            <AddTodoVoiceReview
+              plan={plan}
+              isCharged={isCharged}
+              onApplied={() => {
+                onClose();
+                if (props.mode === 'create') {
+                  props.onSuccess?.();
+                }
+              }}
+              onRestart={voice.restart}
+              onTypeInstead={voice.typeInstead}
+            />
+          ))
+          .otherwise(() => (
+            <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
+              <QuickVoicePanel.Failed
+                state={voice.state}
+                isConsentRequired={voice.isConsentRequired}
+                onResume={voice.resume}
+                onRetryPlanning={voice.retryPlanning}
+              />
+              <FormField control={methods.control} name="title">
+                {({ onChange, value }, { error }) =>
+                  voice.state.status === 'failed' ? (
+                    // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
+                    // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
+                    <BottomSheetTextArea
+                      ref={todoInputRef}
+                      autoFocus={!voice.isRestarting}
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      isInvalid={error != null}
+                      errorMessage={
+                        error == null
+                          ? undefined
+                          : resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+                      }
+                      growsWithContent
+                      textSize="b3"
+                      preserveErrorSpace={false}
+                      className="min-h-12 max-h-28"
+                      returnKeyType="done"
+                      submitBehavior="submit"
+                      onFocus={() => setIsTitleFocused(true)}
+                      onBlur={() => setIsTitleFocused(false)}
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+                    />
+                  ) : (
+                    <BottomSheetInput
+                      ref={todoInputRef}
+                      // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
+                      autoFocus={!isVoiceHintRequested && !hasVoiceHint && !voice.isRestarting}
+                      onFocus={() => setIsTitleFocused(true)}
+                      onBlur={() => setIsTitleFocused(false)}
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
+                      size="medium"
+                      renderErrorMessage={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+                    />
+                  )
+                }
+              </FormField>
+
+              {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
+              >
+                <DateChip onPress={handleDateChipPress} />
+                <TimeChip onPress={handleTimeChipPress} />
+                {canChangeRepeat && <RepeatChip onPress={handleRepeatChipPress} />}
+                <VisibilityChip />
+                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
+                <QueryErrorBoundary fallback={() => null}>
+                  <Suspense fallback={null}>
+                    <CategoryChip onPress={handleCategoryChipPress} />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </ScrollView>
+            </VStack>
           ))}
       </KeyboardBottomSheet>
     </FormProvider>
@@ -618,15 +678,22 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
 const DateChip = ({ onPress }: { onPress: () => void }) => {
   const actionChipIconSize = useActionChipIconSize();
-  const startDate = useWatch<AddTodoFormValues, 'startDate'>({ name: 'startDate' });
+  const [startDate, endDate] = useWatch<AddTodoFormValues, ['startDate', 'endDate']>({
+    name: ['startDate', 'endDate'],
+  });
   const { t } = useTranslation('common');
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
   const startDateKey = formatDateKey(startDate, getDeviceTimezone());
-  const label =
+  const endDateKey = endDate == null ? null : formatDateKey(endDate, getDeviceTimezone());
+  const singleDayLabel =
     startDateKey === todayDateKey
       ? t('dateSections.today')
       : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext);
+  const label =
+    endDateKey == null || endDateKey === startDateKey
+      ? singleDayLabel
+      : formatDateKeyCompactRange(startDateKey, endDateKey, dateFormatContext);
 
   return (
     <ActionChip

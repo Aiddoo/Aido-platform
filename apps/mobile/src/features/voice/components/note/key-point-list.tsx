@@ -1,12 +1,17 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
+import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, FlagIcon, HStack, PlayIcon, Text, VStack } from '@src/shared/ui';
+import { Box, FlagIcon, HStack, PlayIcon, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactElement } from 'react';
 
 import type { VoiceNoteKeyPoint } from '../../domains/voice-note.model';
 import { formatMediaTime } from '../../utils/format-media-time';
+
+/** 위로 뜨는 시간 칩 안내의 높이. 이만큼 비워 요약과 "핵심 포인트" 제목을 가리지 않는다 */
+const KEY_POINT_HINT_HEIGHT = 116;
 
 interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
   keyPoints: readonly VoiceNoteKeyPoint[];
@@ -34,6 +39,7 @@ export function KeyPointList({
 
   return (
     <VStack gap={4} {...stackProps}>
+      {coachmarkKeyPointId != null && <KeyPointHintSpace />}
       {keyPoints.map((keyPoint) => (
         <KeyPointList.Item
           key={keyPoint.id}
@@ -46,6 +52,14 @@ export function KeyPointList({
       ))}
     </VStack>
   );
+}
+
+/** 안내가 남아 있는 동안만 말풍선 자리를 비운다 */
+function KeyPointHintSpace() {
+  const fontScaledSize = useFontScaledSize();
+  const [isHintPending] = useMyPendingCoachmark('voice-key-point');
+
+  return isHintPending && <Box style={{ height: fontScaledSize(KEY_POINT_HINT_HEIGHT) }} />;
 }
 
 interface KeyPointItemProps extends Omit<
@@ -95,9 +109,9 @@ function KeyPointItem({
         ) : (
           timeChip
         )}
-        <Text size="b3" lineBreakStrategyIOS="hangul-word" className="shrink flex-1">
+        <WordWrapText size="b3" className="shrink flex-1">
           {keyPoint.text}
-        </Text>
+        </WordWrapText>
         {keyPoint.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"

@@ -69,7 +69,7 @@ export function ConfirmDialog({
 ConfirmDialog.Title = function Title({ children }: { children: ReactNode }) {
   return (
     <Dialog.Title>
-      <H4>{children}</H4>
+      <H4 lineBreakStrategyIOS="hangul-word">{children}</H4>
     </Dialog.Title>
   );
 };
@@ -77,7 +77,7 @@ ConfirmDialog.Title = function Title({ children }: { children: ReactNode }) {
 ConfirmDialog.Description = function Description({ children }: { children: ReactNode }) {
   return (
     <Dialog.Description>
-      <Text size="b3" shade={6}>
+      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
         {children}
       </Text>
     </Dialog.Description>
