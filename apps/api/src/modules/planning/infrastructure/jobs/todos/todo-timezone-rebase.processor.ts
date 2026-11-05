@@ -7,6 +7,7 @@ import {
 } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
+import { PlanningTodoAlertKey } from "../../../application/observability/todos/planning-todo-alerts.js";
 import { PlanningTodoLogEvent } from "../../../application/observability/todos/planning-todo-log.events.js";
 import { RebaseTodoTimezone } from "../../../application/use-cases/todos/rebase-todo-timezone.use-case.js";
 import {
@@ -15,8 +16,6 @@ import {
   TODO_TIMEZONE_REBASE_WORKER_POLICY,
   todoTimezoneRebaseJobSchema,
 } from "./todo-timezone-rebase-queue.constants.js";
-
-export const TODO_TIMEZONE_REBASE_ALERT_KEY = "planning.todo-timezone-rebase-failed";
 
 @Injectable()
 export class TodoTimezoneRebaseProcessor implements OnModuleInit {
@@ -61,7 +60,7 @@ export class TodoTimezoneRebaseProcessor implements OnModuleInit {
       if (attempt > TODO_TIMEZONE_REBASE_JOB_POLICY.retryLimit) {
         // 재시도가 끝났다. 알림이 옛 시각으로 울리므로 사람이 봐야 한다.
         this.alert.raise({
-          key: TODO_TIMEZONE_REBASE_ALERT_KEY,
+          key: PlanningTodoAlertKey.TIMEZONE_REBASE_FAILED,
           severity: "error",
           message: "할 일 시간대 재계산이 재시도 뒤에도 실패했습니다.",
           details: { userId, attempt, errorType },

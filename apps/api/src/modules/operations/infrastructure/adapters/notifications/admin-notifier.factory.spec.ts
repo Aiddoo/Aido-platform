@@ -3,6 +3,8 @@ import { mock } from "vitest-mock-extended";
 
 import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webhook.schema";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { createAdminNotifier } from "./admin-notifier.factory.js";
 import { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";
@@ -23,7 +25,11 @@ describe("createAdminNotifier", () => {
       });
 
       // When
-      const notifier = createAdminNotifier(config, new HttpClient());
+      const notifier = createAdminNotifier(
+        config,
+        new HttpClient(),
+        new OutboundPolicyRegistry(new RecordingOperationalAlert()),
+      );
 
       // Then
       expect(notifier).toBeInstanceOf(adapter);

@@ -125,7 +125,7 @@
     "items": {
       "sentData": {
         "title": "What we send",
-        "description": "What you type or say, categories, and the date and time zone. Reports and suggestions also use to-do titles and completion history. We don't send your name, email, or friends, and audio files don't go to Aido's servers."
+        "description": "What you type or say, categories, and the date and time zone. Reports and suggestions also use to-do titles and completion history. We don't send your name, email, or friends, and audio files aren't sent to Aido's servers."
       },
       "processor": {
         "title": "Who processes it",

@@ -62,7 +62,7 @@
 | `category_deleted`                           | –                                                                                                                                                                                                                        | 카테고리 삭제                   |
 | `category_reordered`                         | `source`: `settings`                                                                                                                                                                                                     | 카테고리 순서 변경              |
 
-`todo_created.source` 타입은 `manual`·`ai`, `creation_entry` 타입은 `manual`·`ai_parse`·`recurring`·`memo_single`·`memo_ai_multi`·`ai_suggestion`이다. 지금 코드는 `source=manual`과 `creation_entry`의 `manual`·`recurring`만 보낸다. 계획 저장은 `todo_created`를 보내지 않고 `voice_plan_applied`를 보낸다. AI 제안 수락은 `ai_suggestion_acted`만 보낸다.
+`todo_created.source`는 `manual`, `creation_entry`는 `manual`·`recurring`이다. 계획 저장은 `todo_created`를 보내지 않고 `voice_plan_applied`를 보낸다. AI 제안 수락은 `ai_suggestion_acted`만 보낸다.
 
 **댓글**
 
@@ -216,7 +216,7 @@
 | 이름 불일치    | 대부분 `object_verb(과거형)`이다. 예외: `todo_completed{is_completed:false}`(해제도 completed), `notification_center_opened`(항목 탭), `ai_parse_used`(현재형), `remind_nudge_sent`                                    |
 | 중복 의미      | `subscription_started` ↔ RC `purchase` ↔ 자동 `in_app_purchase`, `badge_opened_from_notification` ↔ `push_notification_opened{type=WEEKLY_ACHIEVEMENT}`, `memo_converted_to_todos` ↔ `voice_plan_applied{source=memo}` |
 | 타입 느슨      | `push_notification_opened.type`·`action`, `notification_center_opened.type`, `push_permission_*.step`·`status`가 `string`이다                                                                                          |
-| 보내지 않는 값 | `todo_created`의 `source=ai`와 `creation_entry`의 `ai_parse`·`memo_single`·`memo_ai_multi`·`ai_suggestion`, `voice_plan_failed`의 `consent-required`                                                                   |
+| 보내지 않는 값 | `voice_plan_failed`의 `consent-required`                                                                                                                                                                               |
 
 ---
 

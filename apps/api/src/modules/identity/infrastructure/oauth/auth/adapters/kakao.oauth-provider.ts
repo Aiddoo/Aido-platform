@@ -13,8 +13,11 @@ import type {
 } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { readJson } from "#api/platform/http/read-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { KAKAO_OAUTH_POLICY } from "../oauth-outbound.policies.js";
 import { readOAuthProviderError } from "./oauth-provider-error.js";
 
 const KAKAO_TOKEN_RESPONSE_SCHEMA = z.object({ access_token: z.string() });
@@ -40,13 +43,16 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
   readonly #getConfig: () => OAuthConfig;
   readonly #verifier: OAuthTokenVerifier;
   readonly #logger: Logger;
+  readonly #policy: OutboundPolicy;
 
   constructor(
     getConfig: () => OAuthConfig,
     verifier: OAuthTokenVerifier,
     logger: Logger,
     private readonly http: HttpClient,
+    policies: OutboundPolicyRegistry,
   ) {
+    this.#policy = policies.get(KAKAO_OAUTH_POLICY);
     this.#getConfig = getConfig;
     this.#verifier = verifier;
     this.#logger = logger;
@@ -82,20 +88,23 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 
-    const { data: tokenResponse } = await this.http.request("https://kauth.kakao.com/oauth/token", {
-      method: "POST",
-      responseType: "response",
-      retry: false,
-      throwOnHttpError: false,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: callbackUrl,
-        code,
-      }).toString(),
-    });
+    const { data: tokenResponse } = await this.#policy.execute((signal) =>
+      this.http.request("https://kauth.kakao.com/oauth/token", {
+        method: "POST",
+        responseType: "response",
+        retry: false,
+        throwOnHttpError: false,
+        signal,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: callbackUrl,
+          code,
+        }).toString(),
+      }),
+    );
 
     if (!tokenResponse.ok) {
       this.#logger.error({

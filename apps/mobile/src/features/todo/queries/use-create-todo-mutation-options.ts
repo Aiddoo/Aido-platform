@@ -30,7 +30,7 @@ import {
 
 export interface CreateTodoParams {
   input: CreateTodoInput;
-  source: 'manual' | 'ai';
+  source: 'manual';
 }
 
 export const useCreateTodoMutationOptions = () => {
@@ -95,7 +95,7 @@ export const useCreateTodoMutationOptions = () => {
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source,
-        creation_entry: source === 'ai' ? 'ai_parse' : 'manual',
+        creation_entry: 'manual',
         is_recurring: false,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,

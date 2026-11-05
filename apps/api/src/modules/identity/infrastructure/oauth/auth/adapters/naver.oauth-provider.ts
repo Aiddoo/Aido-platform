@@ -13,8 +13,11 @@ import type {
 } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { readJson } from "#api/platform/http/read-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { NAVER_OAUTH_POLICY } from "../oauth-outbound.policies.js";
 import { readOAuthProviderError } from "./oauth-provider-error.js";
 
 const NAVER_TOKEN_RESPONSE_SCHEMA = z.object({ access_token: z.string() });
@@ -40,13 +43,16 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
   readonly #getConfig: () => OAuthConfig;
   readonly #verifier: OAuthTokenVerifier;
   readonly #logger: Logger;
+  readonly #policy: OutboundPolicy;
 
   constructor(
     getConfig: () => OAuthConfig,
     verifier: OAuthTokenVerifier,
     logger: Logger,
     private readonly http: HttpClient,
+    policies: OutboundPolicyRegistry,
   ) {
+    this.#policy = policies.get(NAVER_OAUTH_POLICY);
     this.#getConfig = getConfig;
     this.#verifier = verifier;
     this.#logger = logger;
@@ -93,16 +99,16 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
       tokenRequestBody.set("state", state);
     }
 
-    const { data: tokenResponse } = await this.http.request(
-      "https://nid.naver.com/oauth2.0/token",
-      {
+    const { data: tokenResponse } = await this.#policy.execute((signal) =>
+      this.http.request("https://nid.naver.com/oauth2.0/token", {
         method: "POST",
         responseType: "response",
         retry: false,
         throwOnHttpError: false,
+        signal,
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: tokenRequestBody.toString(),
-      },
+      }),
     );
 
     if (!tokenResponse.ok) {

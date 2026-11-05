@@ -548,7 +548,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       isProduction,
       revenueCatAppleApiKey: process.env.REVENUECAT_APPLE_API_KEY,
       revenueCatGoogleApiKey: process.env.REVENUECAT_GOOGLE_API_KEY,
-      revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY,
+      // 테스트 키는 개발 빌드에서만 쓴다. 운영·프리뷰 번들에 싣지 않는다
+      ...(isDevelopment && { revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY }),
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       kakaoNativeAppKey,
       // dev에서 Sentry 전송을 강제로 켜는 플래그(테스트 버튼 검증용). 평소 미설정 → dev는 전송 안 함.

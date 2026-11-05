@@ -4,11 +4,11 @@ import { NUDGE_LIMITS } from "@aido/api/vocabulary";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 export class NudgeMessage {
-  private constructor(private readonly text: string | null) {}
+  private constructor(readonly raw: string | undefined) {}
 
-  static of(value?: string | null): NudgeMessage {
+  static of(value?: string): NudgeMessage {
     if (value == null) {
-      return new NudgeMessage(null);
+      return new NudgeMessage(undefined);
     }
     if (value.length > NUDGE_LIMITS.MAX_MESSAGE_LENGTH) {
       throw new DomainException(ErrorCode.SYS_0002, {
@@ -16,13 +16,5 @@ export class NudgeMessage {
       });
     }
     return new NudgeMessage(value);
-  }
-
-  get raw(): string | undefined {
-    return this.text ?? undefined;
-  }
-
-  get value(): string | null {
-    return this.text;
   }
 }

@@ -130,17 +130,11 @@ export interface AuthEventMap {
   session_expired: { reason: SessionExpiredReason };
 }
 
-export type TodoCreationEntry =
-  | 'manual'
-  | 'ai_parse'
-  | 'recurring'
-  | 'memo_single'
-  | 'memo_ai_multi'
-  | 'ai_suggestion';
+export type TodoCreationEntry = 'manual' | 'recurring';
 
 export interface TodoEventMap {
   todo_created: {
-    source: 'manual' | 'ai';
+    source: 'manual';
     creation_entry: TodoCreationEntry;
     is_recurring: boolean;
     has_scheduled_time: boolean;

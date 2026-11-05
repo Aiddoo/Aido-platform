@@ -574,7 +574,6 @@ describe("HandleWebhookEvent", () => {
           eventType: "INITIAL_PURCHASE",
           eventId: body.event.id,
           store: "APP_STORE",
-          appUserId: body.event.app_user_id,
           productId: "premium_monthly",
         },
       },

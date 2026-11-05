@@ -1,6 +1,9 @@
 import { Logger } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 import {
   type AdminNotifierContractScenario,
@@ -25,6 +28,7 @@ function adapter(
   return new DiscordAdminNotifierAdapter(
     { admin: webhooks.admin, payment: webhooks.payment },
     new HttpClient({ retry: { attempts: 3, methods: ["POST"] }, throwOnHttpError: true }),
+    new OutboundPolicyRegistry(new RecordingOperationalAlert()),
   );
 }
 
