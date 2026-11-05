@@ -15,7 +15,7 @@
 
 **promotional_text** (170자 이내)
 
-> 말하면 AI가 할 일로 나눠 드려요. 녹음 파일은 아이두 서버로 보내지 않고, 저장 전에 하나씩 확인할 수 있어요.
+> 말하면 AI가 할 일로 나눠드려요. 녹음 파일은 아이두 서버로 보내지 않고, 저장 전에 하나씩 확인할 수 있어요.
 
 **description** (4000자 이내)
 
@@ -23,7 +23,7 @@
 할 일 관리, 혼자 하니까 안 되셨죠?
 
 아이두는 AI와 친구의 힘으로 매일의 할 일을 끝까지 해내도록 도와주는 소셜 투두 앱이에요.
-말 한마디면 투두가 정리되고, 친구와 함께하니 꾸준히 해낼 수 있어요.
+말 한마디면 할 일이 정리되고, 친구와 함께하니 꾸준히 해낼 수 있어요.
 
 [ 친구 초대하고 프리미엄 받기 ]
 - 초대 링크를 카카오톡이나 다른 앱으로 보내고, 6자리 초대 코드로도 초대
@@ -37,11 +37,11 @@
 - 말로 할 일 만들기: 말하면 글자로 바꾸고 AI가 할 일·날짜·시간으로 나눠요
 - 나눠진 할 일을 하나씩 확인하고 고쳐서 저장해요. 저장하기 전에는 아무것도 추가되지 않아요
 - ‘다음 주 금요일’, ‘3일 후’, ‘월말’도 내 시간대의 오늘을 기준으로 정확하게
-- "매주 월수금 운동" 한마디로 반복 일정 자동 생성
+- "매주 월수금 운동" 한마디로 반복 할 일 자동 생성
 - 말로 메모하기: 긴 이야기를 말로 남기면 요약, 핵심 포인트, 할 일로 정리
 - 녹음 파일은 아이두 서버로 보내지 않고, 글자만 보내요
 - 메모 한 장을 AI가 여러 개의 할 일로 정리
-- 내가 여러 번 해 온 할 일을 바탕으로 반복 루틴 자동 제안 (프리미엄)
+- 내가 여러 번 해온 할 일을 바탕으로 AI가 반복 할 일 제안 (프리미엄)
 - 주간·월간 AI 리포트로 완료율·카테고리·요일별 패턴 분석 (프리미엄)
 
 [ 날씨와 함께 챙기는 하루 ]
@@ -59,21 +59,21 @@
 
 [ 한눈에 보는 나의 성장 ]
 - 주간·월간 캘린더에서 일별 달성률 확인
-- 연속 달성 스트릭으로 꾸준함을 기록
+- 연속 기록으로 꾸준함을 확인
 
 [ 깔끔한 일정 관리 ]
 - 카테고리별 컬러 태그로 할 일 분류
 - 날짜·시간 설정으로 일정처럼 관리
-- 세부 항목으로 큰 할 일을 잘게 나누기
-- 반복 투두로 매주 루틴 자동 생성
+- 하위 할 일로 큰 할 일을 잘게 나누기
+- 반복 할 일로 매주 루틴 자동 생성
 - 드래그 앤 드롭으로 우선순위 정렬
 - 공개/비공개 설정으로 보여줄 것만 선택
 - 인터넷이 끊겨도 마지막으로 본 할 일과 날씨 확인
 
-[ 나에게 맞는 리마인더 ]
-- 매일 아침·저녁 리마인더로 하루를 시작하고 마무리
-- 할 일 시작 60분 전·10분 전 자동 알림
-- 리마인더 시간 자유롭게 커스터마이징 (프리미엄)
+[ 나에게 맞는 리마인드 알림 ]
+- 매일 아침·저녁 리마인드 알림으로 하루를 시작하고 마무리
+- 할 일 시작 1시간 전·10분 전 자동 알림
+- 리마인드 시간 자유롭게 바꾸기 (프리미엄)
 
 [ 홈 화면 위젯 ]
 - 작은·중간·큰 크기로 오늘 할 일과 달성률, 연속 기록을 홈 화면에서 확인
@@ -97,22 +97,22 @@
 
 [ 구독 안내 ]
 
-아이두는 기본 기능을 무료로 제공해요.
+아이두의 기본 기능은 무료예요.
 무료에서는 AI 할 일 만들기(글·말·메모 공통)를 월 10회, 말로 메모하기를 월 3회(회당 3분까지) 쓸 수 있어요. 녹음 다시 듣기와 핵심 포인트 이동은 무료에서도 쓸 수 있어요.
 
-아이두 프리미엄을 구독하면 아래 기능을 이용할 수 있어요.
+아이두 프리미엄을 구독하면 아래 기능을 쓸 수 있어요.
 - AI 할 일 만들기 넉넉하게 (월 1,000회까지)
 - 말로 메모하기 월 100회 (회당 30분까지)
 - AI 주간·월간 리포트
-- 루틴 자동 제안
-- 리마인더 시간 커스터마이징
+- AI 반복 제안
+- 리마인드 시간 자유롭게 바꾸기
 - 친구 추가·콕 찌르기 무제한
 - 카테고리 최대 30개
 - 프리미엄 앱 아이콘 (고양이 테마 8종)
 
 친구 초대로 받은 프리미엄에서도 같은 기능을 쓸 수 있어요. 구독 중에 받은 보상은 구독이 끝난 뒤 이어서 시작돼요.
 
-- 아이두 프리미엄은 월간·연간 자동 갱신 구독이에요. 가격과 기간은 구매 전에 앱에서 보여 드려요.
+- 아이두 프리미엄은 월간·연간 자동 갱신 구독이에요. 가격과 기간은 구매 전에 앱에서 보여드려요.
 - 구독료는 구매를 확인하면 Apple 계정으로 청구돼요.
 - 현재 구독 기간이 끝나기 최소 24시간 전에 자동 갱신을 끄지 않으면 자동으로 갱신돼요.
 - 구독은 구매 후 기기 설정에서 관리할 수 있어요.
@@ -135,7 +135,7 @@
 
 개선
 - AI 할 일 만들기는 프리미엄에서 월 1,000회까지 넉넉하게 써요.
-- 한도에 닿으면 남은 횟수와 다시 채워지는 날을 알려 드려요.
+- 횟수를 다 쓰면 언제 다시 생기는지 알려드려요.
 
 버그 수정
 - 숨길 답글이 없는데도 '답글 숨기기'가 보이던 문제를 고쳤어요.
@@ -145,7 +145,7 @@
 
 **promotional_text**
 
-> Say it and Aido sorts it into to-dos. Recordings are never sent to Aido's server, and you can check each to-do before it's saved.
+> Say it and Aido sorts it into to-dos. Audio files aren't sent to Aido's servers, and you can check each to-do before it's saved.
 
 **description**
 
@@ -164,13 +164,13 @@ Just say it and it becomes a to-do.
 - Up to 30 days of Premium per 30 days, 90 days in total (see Terms of Use)
 
 [ Smart to-dos with AI ]
-- Speak to add to-dos: AI drafts them, and you check each before saving
+- Speak to add: AI drafts to-dos, and you check each before saving
 - Understands “next Friday” or “in 3 days” in your time zone
 - Say “work out every Mon, Wed, and Fri” for a repeating to-do
 - Voice notes: summaries, key points, and to-dos from longer talks
-- Recordings are not sent to Aido's server. Only text is sent.
-- Turn one note into several to-dos with AI
-- Routine suggestions from to-dos you repeat (Premium)
+- Audio files aren't sent to Aido's servers. Only text is.
+- Turn one memo into several to-dos with AI
+- AI repeat suggestions from to-dos you keep repeating (Premium)
 - Weekly and monthly AI reports on completion and patterns (Premium)
 
 [ Plan around the weather ]
@@ -201,7 +201,7 @@ Just say it and it becomes a to-do.
 
 [ Reminders that fit your day ]
 - Morning and evening reminders to start and end your day
-- Automatic alerts 60 and 10 minutes before a to-do starts
+- Automatic alerts 1 hour and 10 minutes before a to-do starts
 - Set your own reminder times (Premium)
 
 [ Home Screen widgets ]
@@ -228,7 +228,7 @@ Subscribe to Aido Premium to unlock:
 - Plenty of AI to-dos, up to 1,000 a month
 - Voice notes: 100 a month, up to 30 minutes each
 - Weekly and monthly AI reports
-- Routine suggestions
+- AI repeat suggestions
 - Custom reminder times
 - Unlimited friends and nudges
 - Up to 30 categories
@@ -253,13 +253,13 @@ Privacy Policy: https://aido.kr/en/privacy
 
 ```text
 New
-- Speak to add to-dos: AI drafts them, and you check before saving.
+- Speak to add: AI drafts to-dos, and you check before saving.
 - Voice notes: summaries, key points, and to-dos from longer talks.
 - Jump to any key point and listen from there.
 
 Improvements
 - Plenty of AI to-dos on Premium, up to 1,000 a month.
-- When you reach a limit, we show what's left and when it refills.
+- When you run out, we show when you'll get more.
 
 Bug fixes
 - "Hide replies" no longer shows when there is nothing to hide.
