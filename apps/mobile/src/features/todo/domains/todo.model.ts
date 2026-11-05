@@ -113,12 +113,10 @@ export function isRecurringTodo(todo: Todo): boolean {
   return todo.recurrenceGroupId != null;
 }
 
-/** 여러 날에 걸친 할 일은 하나라서 어느 날에서 지워도 전부 지워진다 */
 export function isMultiDayTodo(todo: Pick<Todo, 'startDate' | 'endDate'>): boolean {
   return todo.endDate != null && todo.endDate !== todo.startDate;
 }
 
-/** 날짜를 옮겨도 기간 길이는 그대로다. 하루짜리는 null */
 export function getShiftedEndDate(
   todo: Pick<Todo, 'startDate' | 'endDate'>,
   startDate: string,
@@ -211,7 +209,6 @@ function isTodoOnDate(todo: Todo, date: string): boolean {
   return todo.startDate <= date && (todo.endDate ?? todo.startDate) >= date;
 }
 
-/** 그날 목록으로 달력 요약을 다시 계산한다. 여러 날 할 일도 기간 안의 날이면 센다. 할 일이 없는 날은 요약이 없다. */
 export function withDailyCompletionFromTodos(
   result: DailyCompletionsResult,
   date: string,

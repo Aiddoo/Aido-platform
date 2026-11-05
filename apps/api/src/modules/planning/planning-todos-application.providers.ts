@@ -204,13 +204,21 @@ export const getTodosProvider: FactoryProvider<GetTodos> = {
 
 export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
   provide: AddTodoItem,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TODO_CACHE,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof AddTodoItem>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof AddTodoItem>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof AddTodoItem>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof AddTodoItem>[0]["eventPublisher"],
   ) =>
     new AddTodoItem({
       todoRepository,
@@ -218,6 +226,7 @@ export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
       unitOfWork,
       mutationLock,
       todoCache,
+      eventPublisher,
       logger: new Logger(AddTodoItem.name),
     }),
 };

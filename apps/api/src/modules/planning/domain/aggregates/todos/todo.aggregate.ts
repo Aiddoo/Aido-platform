@@ -300,6 +300,11 @@ export class Todo extends AggregateRoot<TodoProps> {
     return { title, sortOrder: maxSortOrder + 1 };
   }
 
+  /** 끝낸 일에 항목을 더하면 남은 일이 생긴 것이라 완료를 유지하면 "완료 + 0/N"이 된다(QA #37). */
+  reopenForAddedItem(timezone: string): boolean {
+    return this.toggleComplete(false, timezone);
+  }
+
   updateItem(itemId: number, patch: { title?: string; completed?: boolean }): TodoItem {
     const item = this.#requireItem(itemId);
     if (patch.title != null) {

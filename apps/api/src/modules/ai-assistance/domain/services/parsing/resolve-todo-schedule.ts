@@ -160,7 +160,6 @@ export function resolveTodoSchedule(
   };
 }
 
-/** 계획에서 끝 없는 반복이 아니라 그 주말 한 번을 뜻하는 표현 */
 const ONCE_ON_WEEKEND_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
   "THIS_WEEKEND",
   "NEXT_WEEKEND",

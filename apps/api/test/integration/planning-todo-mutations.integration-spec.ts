@@ -194,8 +194,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const outcomes = await contend(
-      () => add.execute({ todoId, userId, title: "첫 요청" }),
-      () => add.execute({ todoId, userId, title: "두 번째 요청" }),
+      () => add.execute({ todoId, userId, title: "첫 요청", timezone: "UTC" }),
+      () => add.execute({ todoId, userId, title: "두 번째 요청", timezone: "UTC" }),
     );
     const items = await client.query.todoItem.findMany({
       columns: { sortOrder: true },
@@ -256,12 +256,17 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const otherTodoId = await createTodo();
     const add = context.module.get(AddTodoItem);
     const release = await holdTodoRow();
-    const blocked = add.execute({ todoId, userId, title: "대기 중" });
+    const blocked = add.execute({ todoId, userId, title: "대기 중", timezone: "UTC" });
 
     // When
     try {
       await waitForBlockedRequests(1);
-      const response = await add.execute({ todoId: otherTodoId, userId, title: "독립 요청" });
+      const response = await add.execute({
+        todoId: otherTodoId,
+        userId,
+        title: "독립 요청",
+        timezone: "UTC",
+      });
 
       // Then
       expect(response.items.map((item) => item.title)).toEqual(["독립 요청"]);

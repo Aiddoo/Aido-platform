@@ -10,9 +10,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
-  cancelTodoQueries,
+  cancelTodoCompletionQueries,
   createOptimisticId,
-  settleTodoListWrite,
+  settleTodoCompletionWrite,
+  snapshotTodo,
+  syncDailyCompletionWithList,
   updateCachedTodo,
 } from './todo-cache';
 
@@ -31,14 +33,15 @@ export const useAddSubTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationKey: TODO_MUTATION_KEYS.listWrites(),
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, title }: AddSubTodoParams) => {
       const result = await subTodoService.addSubTodo(todoId, { title });
       return unwrap(result);
     },
     onMutate: async ({ todoId, title, date }) => {
-      await cancelTodoQueries(queryClient, { date, todoId });
+      await cancelTodoCompletionQueries(queryClient, { date, todoId });
       const optimisticId = createOptimisticId();
+      const wasCompleted = snapshotTodo(queryClient, { date, todoId })?.todo.completed ?? false;
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoAdded(todo, {
           id: optimisticId,
@@ -47,8 +50,9 @@ export const useAddSubTodoMutationOptions = () => {
           sortOrder: todo.subTodos.length,
         }),
       );
+      syncDailyCompletionWithList(queryClient, { date });
 
-      return { optimisticId };
+      return { optimisticId, wasCompleted };
     },
     onSuccess: (saved, { todoId, date }, { optimisticId }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -66,13 +70,15 @@ export const useAddSubTodoMutationOptions = () => {
       }
 
       if (context != null) {
-        updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-          SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
-        );
+        updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
+          ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
+          completed: context.wasCompleted,
+        }));
+        syncDailyCompletionWithList(queryClient, { date });
       }
     },
     onSettled: () => {
-      settleTodoListWrite(queryClient);
+      settleTodoCompletionWrite(queryClient);
     },
   });
 };
