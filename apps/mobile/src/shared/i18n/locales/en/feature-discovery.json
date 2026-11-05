@@ -62,7 +62,7 @@
     "facts": {
       "privacy": {
         "title": "Audio files aren't sent to Aido's servers",
-        "description": "Only the text is used. If your device can't turn speech into text itself, Apple or Google speech recognition may be used."
+        "description": "Only the text is used. Apple or Google speech recognition may turn your speech into text."
       },
       "free": {
         "title": "Free to try",

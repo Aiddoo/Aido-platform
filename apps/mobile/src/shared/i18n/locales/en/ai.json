@@ -121,19 +121,19 @@
   },
   "consent": {
     "title": "Before AI organizes this",
-    "subtitle": "Agree once and we'll skip this next time.",
+    "subtitle": "You only need to agree once.",
     "items": {
       "sentData": {
         "title": "What we send",
-        "description": "The sentence or memo you entered, your speech turned into text, category names, and today's date and time zone. Audio files aren't sent to Aido's servers. For reports and suggestions, to-do titles and completion history for that period. We never send your name, email, or friends."
+        "description": "What you type or say, categories, and the date and time zone. Reports and suggestions also use to-do titles and completion history. We don't send your name, email, or friends, and audio files don't go to Aido's servers."
       },
       "processor": {
         "title": "Who processes it",
-        "description": "Anthropic (Claude), Google (Gemini), and OpenAI receive only the text, organize it into to-dos, and summarize it. If your device can't turn speech into text itself, Apple or Google speech recognition may do it."
+        "description": "Anthropic, Google, and OpenAI organize the text. Apple or Google speech recognition may turn your speech into text."
       },
       "usage": {
         "title": "How it's used",
-        "description": "Only for organizing to-dos, summaries, reports, and suggestions. Never for ads."
+        "description": "Only for AI features. Never for ads."
       },
       "retention": {
         "title": "How long we keep it",
@@ -141,10 +141,10 @@
       }
     },
     "privacyLink": "View Privacy Policy",
-    "declineNotice": "If you don't agree, only AI features turn off. You can still add to-dos yourself.",
+    "declineNotice": "You can still add to-dos yourself without agreeing.",
     "renewal": {
-      "subtitle": "We added AI processors, so here's the updated notice.",
-      "declineNotice": "If you skip this, AI features keep working under your previous consent."
+      "subtitle": "We added AI processors, so here's an update.",
+      "declineNotice": "If you skip this, everything keeps working as before."
     },
     "later": "Not now",
     "agree": "Agree",

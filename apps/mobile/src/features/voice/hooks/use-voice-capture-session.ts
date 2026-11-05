@@ -527,7 +527,7 @@ export function useVoiceCaptureSession({
     }
     dispatch({ type: 'prepare', seed });
     try {
-      const capabilities = await speechRecognizer.getCapabilities(locale);
+      const capabilities = await speechRecognizer.getCapabilities(locale, mode);
       if (getStatus() !== 'preparing') {
         return false;
       }
@@ -610,7 +610,7 @@ export function useVoiceCaptureSession({
     if (startOptions == null || startOptions.locale === locale) {
       return;
     }
-    const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale);
+    const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale, mode);
     startOptionsRef.current = { ...startOptions, locale, isOnDevice: canRecognizeOnDevice };
     if (VoiceCapturePolicy.isActive(stateRef.current)) {
       trackEvent('voice_capture_locale_changed', { mode, locale, on_device: canRecognizeOnDevice });

@@ -45,7 +45,7 @@ jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));
 
 const ACCOUNT_ID = 'user-1';
-const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어나 안내를 다시 드려요.';
+const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 const createQuickPlanDto = (actions: unknown[], charged = true) => ({

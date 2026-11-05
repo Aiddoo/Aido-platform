@@ -116,19 +116,19 @@
   },
   "consent": {
     "title": "AI로 정리하기 전에 확인해주세요",
-    "subtitle": "한 번 동의하면 다음부터는 바로 정리해요.",
+    "subtitle": "한 번만 동의하면 돼요.",
     "items": {
       "sentData": {
         "title": "보내는 내용",
-        "description": "입력한 문장이나 메모 내용, 말을 글자로 바꾼 내용, 카테고리 이름, 오늘 날짜와 시간대. 녹음 파일은 아이두 서버로 보내지 않아요. 리포트·제안은 그 기간의 할 일 제목과 완료 기록이에요. 이름·이메일·친구 정보는 보내지 않아요."
+        "description": "입력하거나 말한 내용, 카테고리, 날짜와 시간대예요. 리포트·제안은 할 일 제목과 완료 기록도 보내요. 이름·이메일·친구 정보는 보내지 않고, 녹음 파일은 아이두 서버로 보내지 않아요."
       },
       "processor": {
         "title": "받는 곳",
-        "description": "Anthropic(Claude)·Google(Gemini)·OpenAI가 글자만 받아 할 일 형태로 정리하고 요약해요. 기기에서 글자로 바꿀 수 없으면 Apple·Google 음성 인식 서비스가 말을 글자로 바꿀 수 있어요."
+        "description": "글자는 Anthropic·Google·OpenAI가 정리해요. 음성은 Apple·Google 음성 인식이 글자로 바꿀 수 있어요."
       },
       "usage": {
         "title": "쓰는 곳",
-        "description": "할 일 정리·요약·리포트·제안에만 써요. 광고에는 쓰지 않아요."
+        "description": "AI 기능에만 쓰고, 광고에는 쓰지 않아요."
       },
       "retention": {
         "title": "보관",
@@ -136,10 +136,10 @@
       }
     },
     "privacyLink": "개인정보처리방침 보기",
-    "declineNotice": "동의하지 않으면 AI 기능만 꺼지고, 할 일은 직접 입력할 수 있어요.",
+    "declineNotice": "동의하지 않아도 할 일은 직접 입력할 수 있어요.",
     "renewal": {
-      "subtitle": "AI 처리 업체가 늘어나 안내를 다시 드려요.",
-      "declineNotice": "지금 답하지 않아도 AI 기능은 이전 동의 범위로 그대로 쓸 수 있어요."
+      "subtitle": "AI 처리 업체가 늘어 다시 안내해요.",
+      "declineNotice": "지금 답하지 않아도 전처럼 쓸 수 있어요."
     },
     "later": "나중에",
     "agree": "동의하고 계속",

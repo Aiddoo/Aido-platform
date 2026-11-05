@@ -58,7 +58,7 @@ export type PermissionSnapshot =
 
 export interface SpeechCapabilities {
   isAvailable: boolean;
-  /** 이 언어를 기기 안에서 인식한다고 확인했다(Android는 언어 모델 설치, iOS는 기기 기본 언어) */
+  /** 이 언어와 모드를 기기 안에서 인식한다(Android는 언어 모델 설치, iOS는 말로 메모 + 기기 기본 언어) */
   canRecognizeOnDevice: boolean;
   /** 기기 인식을 지원하지만 이 언어 모델이 없어 받을 수 있다(Android) */
   canDownloadOnDeviceModel: boolean;
@@ -84,7 +84,7 @@ export interface SpeechRecognizer {
   /** 필요한 권한은 언어마다 다르다. 기기 안에서 인식할 수 없는 언어는 음성 인식 권한도 필요하다 */
   getPermission(mode: SpeechMode, locale: SpeechLocale): Promise<PermissionSnapshot>;
   requestPermission(mode: SpeechMode, locale: SpeechLocale): Promise<PermissionSnapshot>;
-  getCapabilities(locale: SpeechLocale): Promise<SpeechCapabilities>;
+  getCapabilities(locale: SpeechLocale, mode: SpeechMode): Promise<SpeechCapabilities>;
   requestOfflineModel(locale: SpeechLocale): Promise<OfflineModelResult>;
   start(options: SpeechStartOptions): void;
   /** 듣기를 멈추고 남은 결과를 마지막으로 보낸다 */

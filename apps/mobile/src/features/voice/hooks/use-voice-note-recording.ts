@@ -299,7 +299,10 @@ export function useVoiceNoteRecording({
    * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
    */
   const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
-    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(startLocale);
+    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(
+      startLocale,
+      'note',
+    );
     if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
       return;
     }

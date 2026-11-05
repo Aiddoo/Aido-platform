@@ -19,7 +19,7 @@ When the microphone and speech recognition are used
 - If someone denies access, voice features stop and the app explains how to allow it in Settings. Typing to-dos and every other feature keep working.
 
 Where voice and text go
-- Speech recognition: Speak to add and Voice notes use on-device recognition when the device supports it for the chosen language. Otherwise, and for subtask voice typing, Apple speech recognition may process the voice over the network.
+- Speech recognition: On iOS, Speak to add uses Apple speech recognition. Voice notes use on-device recognition when the device supports it for the chosen language. Otherwise, and for subtask voice typing, Apple speech recognition may process the voice over the network.
 - Audio files: Voice notes saves audio on the device for playback. Audio files aren't sent to Aido's servers. They are removed after 30 days, and can be deleted in Me tab > Voice Note Storage. They may be part of device backups.
 - Text: after speech becomes text, the text goes to Aido's server and to AI providers (Anthropic Claude, Google Gemini, OpenAI) to organize it into to-dos or a summary. Our server does not store the transcript.
 

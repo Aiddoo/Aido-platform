@@ -85,9 +85,17 @@ async function canRecognizeOnDevice(locale: SpeechLocale) {
   return Platform.OS !== 'ios' || getLocales()[0]?.languageTag === locale;
 }
 
+/** iOS 한국어는 서버 인식이 더 정확해(2026-11 실기기 비교) 짧은 말은 서버로 보낸다. 긴 녹음은 끊기지 않게 기기 인식을 우선한다 */
+async function shouldRecognizeOnDevice(mode: SpeechMode, locale: SpeechLocale) {
+  if (Platform.OS === 'ios' && mode !== 'note') {
+    return false;
+  }
+  return canRecognizeOnDevice(locale);
+}
+
 /** iOS 기기 안 인식은 음성이 Apple 서버로 가지 않아 마이크 권한만 있으면 된다 */
 async function usesMicrophoneOnlyPermission(mode: SpeechMode, locale: SpeechLocale) {
-  return mode !== 'dictation' && Platform.OS === 'ios' && (await canRecognizeOnDevice(locale));
+  return Platform.OS === 'ios' && (await shouldRecognizeOnDevice(mode, locale));
 }
 
 function normalizeVolume(value: number) {
@@ -168,8 +176,8 @@ export const expoSpeechRecognizerGateway: SpeechRecognizer = {
     );
   },
 
-  getCapabilities: async (locale) => {
-    const isOnDevice = await canRecognizeOnDevice(locale);
+  getCapabilities: async (locale, mode) => {
+    const isOnDevice = await shouldRecognizeOnDevice(mode, locale);
 
     return {
       isAvailable: ExpoSpeechRecognitionModule.isRecognitionAvailable(),

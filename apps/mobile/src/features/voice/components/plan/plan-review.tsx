@@ -6,18 +6,19 @@ import {
   TodoLabel,
   TodoProgress,
   TodoRow,
+  TodoTitleLine,
 } from '@src/features/todo/components/todo-row';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { formatRepeatSummary } from '@src/features/todo/utils/format-repeat-summary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
-  DocsIcon,
   HStack,
-  LockIcon,
+  InfoIcon,
   QueryErrorBoundary,
   Result,
   Text,
@@ -34,7 +35,7 @@ import {
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { randomUUID } from 'expo-crypto';
-import { Checkbox, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useRef } from 'react';
 import {
   FormProvider,
@@ -64,6 +65,11 @@ import {
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
 
 const LOADING_ROW_COUNT = 3;
+const DUPLICATE_ICON_SIZE = 13;
+/** 체크(20)를 44로 넓히는 터치 여백. 행의 글자까지 먹지 않게 행 간격(12)과 같다 */
+const SELECT_HIT_SLOP = 12;
+/** 고르지 않은 행의 제목. 라이트 4.5:1, 다크 6:1 이상이라 흐려도 읽힌다 */
+const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-7 dark:text-gray-5';
 
 /** 저장 요청의 멱등 키와 내용 지문 */
 export interface PlanApplyRequest {
@@ -97,7 +103,7 @@ interface PlanReviewProps {
 }
 
 /**
- * 계획 카드 검토. 카드는 실제 할 일 목록 행을 그대로 쓰고 오른쪽에 추가할지 고르는 동그라미만 더한다.
+ * 계획 카드 검토. 카드는 실제 할 일 목록 행을 그대로 쓰고, 목록의 체크 자리에서 추가할지 고른다.
  * 행을 누르면 할 일 추가 시트와 같은 칩·바텀시트로 고친다. 저장은 고른 카드만 보낸다.
  */
 export function PlanReview({
@@ -272,7 +278,6 @@ PlanReview.Loading = function Loading() {
             key={index}
             left={<Skeleton className="size-5 rounded-md" />}
             top={<TextSkeleton size="b3" className="w-3/4" />}
-            right={<Skeleton className="size-6 rounded-full" />}
           />
         ))}
       </VStack>
@@ -290,26 +295,6 @@ PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId
   return <CategoryHeaderPill label={category.name} color={category.color} />;
 };
 
-/** 오른쪽 "추가할지" 동그라미. 꺼진 행은 흐리게 보인다 */
-function SelectCircle({
-  isSelected,
-  onSelectedChange,
-  label,
-}: {
-  isSelected: boolean;
-  onSelectedChange: (isSelected: boolean) => void;
-  label: string;
-}) {
-  return (
-    <Checkbox
-      accessibilityLabel={label}
-      className="size-6 rounded-full border border-main shadow-none"
-      isSelected={isSelected}
-      onSelectedChange={onSelectedChange}
-    />
-  );
-}
-
 PlanReview.TodoRow = function PlanTodoRow({
   index,
   fallbackCategoryId,
@@ -324,6 +309,7 @@ PlanReview.TodoRow = function PlanTodoRow({
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
+  const fontScaledSize = useFontScaledSize();
 
   if (todo.type !== 'create-todo') {
     return null;
@@ -383,48 +369,55 @@ PlanReview.TodoRow = function PlanTodoRow({
 
   return (
     <TodoRow
-      className={cn(!todo.isSelected && 'opacity-50')}
       onPress={handlePress}
       left={
         <TodoCheckbox
-          accessibilityLabel={todo.title}
-          isSelected={false}
-          onSelectedChange={undefined}
-        />
-      }
-      top={
-        <HStack gap={4} align="center">
-          <TodoLabel isChecked={false}>{todo.title}</TodoLabel>
-          {todo.visibility === 'PRIVATE' && (
-            <LockIcon width={14} height={14} colorClassName="text-gray-5" />
-          )}
-          {isDuplicate && (
-            <Box className="rounded-md bg-gray-2 px-2 py-1">
-              <Text size="e1" shade={6} maxLines={1}>
-                {t('plan.duplicate')}
-              </Text>
-            </Box>
-          )}
-        </HStack>
-      }
-      middle={
-        subtitle == null ? undefined : (
-          <Text size="e1" shade={6}>
-            {subtitle}
-          </Text>
-        )
-      }
-      bottom={
-        todo.items.length > 0 ? <TodoProgress value={0} total={todo.items.length} /> : undefined
-      }
-      right={
-        <SelectCircle
-          label={t('plan.select', { title: todo.title })}
+          accessibilityLabel={t('plan.select', { title: todo.title })}
+          hitSlop={SELECT_HIT_SLOP}
           isSelected={todo.isSelected}
           onSelectedChange={(isSelected) =>
             form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
           }
         />
+      }
+      top={
+        <TodoTitleLine
+          label={
+            <TodoLabel
+              isChecked={false}
+              className={cn('flex-1', !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
+            >
+              {todo.title}
+            </TodoLabel>
+          }
+          isPrivate={todo.visibility === 'PRIVATE'}
+        />
+      }
+      middle={
+        (subtitle != null || isDuplicate) && (
+          <VStack gap={2}>
+            {subtitle != null && (
+              <Text size="e1" shade={6}>
+                {subtitle}
+              </Text>
+            )}
+            {isDuplicate && (
+              <HStack gap={4} align="center">
+                <InfoIcon
+                  width={fontScaledSize(DUPLICATE_ICON_SIZE)}
+                  height={fontScaledSize(DUPLICATE_ICON_SIZE)}
+                  colorClassName="text-gray-7"
+                />
+                <Text size="e1" shade={7} className="shrink">
+                  {t('plan.duplicate')}
+                </Text>
+              </HStack>
+            )}
+          </VStack>
+        )
+      }
+      bottom={
+        todo.items.length > 0 ? <TodoProgress value={0} total={todo.items.length} /> : undefined
       }
     >
       {todo.items.length > 0 && (
@@ -432,15 +425,14 @@ PlanReview.TodoRow = function PlanTodoRow({
           {todo.items.map((item, itemIndex) => (
             <TodoRow
               key={itemIndex}
-              className={cn(!todo.isSelected && 'opacity-50')}
-              left={
-                <TodoCheckbox
-                  accessibilityLabel={item.title}
-                  isSelected={false}
-                  onSelectedChange={undefined}
-                />
+              top={
+                <TodoLabel
+                  isChecked={false}
+                  className={cn(!todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
+                >
+                  {item.title}
+                </TodoLabel>
               }
-              top={<TodoLabel isChecked={false}>{item.title}</TodoLabel>}
             />
           ))}
         </SubTodoIndent>
@@ -462,10 +454,22 @@ PlanReview.MemoRow = function PlanMemoRow({ index }: { index: number }) {
 
   return (
     <TodoRow
-      className={cn(!memo.isSelected && 'opacity-50')}
-      left={<DocsIcon width={20} height={20} colorClassName="text-gray-6" />}
+      left={
+        <TodoCheckbox
+          accessibilityLabel={t('plan.select', { title: label })}
+          hitSlop={SELECT_HIT_SLOP}
+          isSelected={memo.isSelected}
+          onSelectedChange={(isSelected) =>
+            form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
+          }
+        />
+      }
       top={
-        <TodoLabel isChecked={false} maxLines={1}>
+        <TodoLabel
+          isChecked={false}
+          maxLines={1}
+          className={cn(!memo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
+        >
           {label}
         </TodoLabel>
       }
@@ -473,15 +477,6 @@ PlanReview.MemoRow = function PlanMemoRow({ index }: { index: number }) {
         <Text size="e1" shade={6}>
           {t('plan.memoCaption')}
         </Text>
-      }
-      right={
-        <SelectCircle
-          label={t('plan.select', { title: label })}
-          isSelected={memo.isSelected}
-          onSelectedChange={(isSelected) =>
-            form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
-          }
-        />
       }
     />
   );

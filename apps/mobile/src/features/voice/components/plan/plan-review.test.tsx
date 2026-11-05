@@ -163,7 +163,7 @@ describe('PlanReview', () => {
     expect(screen.getByText('할 일 2개 추가')).toBeTruthy();
   });
 
-  test('동그라미를 끄면 추가할 개수가 줄어든다', async () => {
+  test('체크를 끄면 추가할 개수가 줄어든다', async () => {
     // Given
     await renderPlan();
 

@@ -32,7 +32,7 @@ import { useVoiceNoteStart } from './use-voice-note-start';
 jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
 
 const ACCOUNT_ID = 'user-1';
-const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어나 안내를 다시 드려요.';
+const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
 const PREVIOUS_AGREEMENT: Partial<Consent> = {
   aiDataSharingDecision: 'AGREED',
   aiDataSharingConsentVersion: '2026-10-26',

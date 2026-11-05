@@ -4,7 +4,7 @@
     "title_other": "Found {{count}} to-dos",
     "titleMemoOnly": "Sorted into a memo",
     "titleAlreadyAdded": "Already in your to-dos",
-    "hint": "Pick the ones to add on the right. Tap to edit.",
+    "hint": "Check the ones to add.\nTap a to-do to edit it.",
     "omitted_one": "{{count}} to-do couldn't be included here.",
     "omitted_other": "{{count}} to-dos couldn't be included here.",
     "empty": "No to-dos found",
