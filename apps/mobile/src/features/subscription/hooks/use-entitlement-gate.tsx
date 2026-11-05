@@ -110,7 +110,7 @@ export function useEntitlementGate(
         if (snapshot == null) {
           return true;
         }
-        return match(EntitlementPolicy.getAccessDecision(snapshot, feature))
+        return match(EntitlementPolicy.getAccessDecision(snapshot, feature, new Date()))
           .with('allow', () => true)
           .with('limit-reached', 'locked', (decision) => {
             open(feature, decision, 'precheck', options);

@@ -38,7 +38,7 @@ function AppIconScreen() {
   const isSupported = appIconService.isSupported();
   const isLoading = isSupported && isCurrentIconPending;
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const isIconLocked = EntitlementPolicy.getAccessDecision(entitlements, 'APP_ICON') === 'locked';
+  const isIconLocked = EntitlementPolicy.isFeatureLocked(entitlements, 'APP_ICON');
   const overlay = useOverlay();
   const gate = useEntitlementGate('APP_ICON', { surface: 'app_icon_settings' });
 

@@ -111,8 +111,7 @@ function ReminderTimeInput({
     queries: [useGetEntitlementsQueryOptions(), useGetPreferenceQueryOptions()],
   });
   const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
-  const isLocked =
-    EntitlementPolicy.getAccessDecision(entitlements, 'CUSTOM_REMINDER_TIME') === 'locked';
+  const isLocked = EntitlementPolicy.isFeatureLocked(entitlements, 'CUSTOM_REMINDER_TIME');
   const time = REMINDER_TIME[period];
 
   return (

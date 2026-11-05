@@ -46,7 +46,7 @@ export function SuggestionEntry() {
     );
   }
 
-  if (!EntitlementPolicy.hasFullAccess(entitlementsQuery.data)) {
+  if (EntitlementPolicy.isFeatureLocked(entitlementsQuery.data, 'AI_SUGGESTION')) {
     return <InfoCard label={t('feed.routineSuggestion')} onPress={() => push('/suggestions')} />;
   }
 

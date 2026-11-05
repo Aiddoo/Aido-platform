@@ -17,21 +17,21 @@ function SuggestionsScreen() {
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
-  const hasFullAccess = EntitlementPolicy.hasFullAccess(entitlements);
+  const canViewSuggestions = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_SUGGESTION');
 
   return (
     <ScrollView
       className="flex-1 px-4"
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
       refreshControl={
-        hasFullAccess ? (
+        canViewSuggestions ? (
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
         ) : undefined
       }
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Spacing size={16} />
-        {match(hasFullAccess)
+        {match(canViewSuggestions)
           .with(true, () => (
             <VStack gap={12}>
               <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>

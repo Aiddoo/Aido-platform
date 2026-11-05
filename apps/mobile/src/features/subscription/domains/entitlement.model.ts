@@ -75,9 +75,19 @@ export function findFeatureQuota(
   return snapshot.features[feature] ?? null;
 }
 
+/** 서버가 이 등급에 열지 않은 기능인지. 모르는 기능은 서버가 판단하도록 막지 않는다 */
+export function isFeatureLocked(
+  snapshot: EntitlementSnapshot,
+  feature: EntitlementFeature,
+): boolean {
+  return findFeatureQuota(snapshot, feature)?.allowed === false;
+}
+
+/** 초기화 시각이 지난 스냅샷의 남은 0은 오래된 값이다. 앱이 막지 않고 서버에 맡긴다 */
 export function getAccessDecision(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
+  now: Date,
 ): AccessDecision {
   const quota = findFeatureQuota(snapshot, feature);
   if (quota == null) {
@@ -86,7 +96,10 @@ export function getAccessDecision(
   if (!quota.allowed) {
     return 'locked';
   }
-  return quota.remaining === 0 ? 'limit-reached' : 'allow';
+  if (quota.remaining !== 0) {
+    return 'allow';
+  }
+  return quota.resetsAt != null && hasPassed(quota.resetsAt, now) ? 'allow' : 'limit-reached';
 }
 
 /** 지금 한도. null은 무제한이거나 알 수 없다 */
@@ -171,6 +184,7 @@ export const EntitlementPolicy = {
   isPremium,
   hasFullAccess,
   findFeatureQuota,
+  isFeatureLocked,
   getAccessDecision,
   getLimit,
   getRemainingCount,
