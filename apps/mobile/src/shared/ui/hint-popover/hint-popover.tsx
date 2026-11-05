@@ -133,7 +133,8 @@ export function HintPopoverContent({
 
   return (
     <Popover.Portal disableFullWindowOverlay={false}>
-      {!isPassThrough && <Popover.Overlay testID="hint-popover-overlay" />}
+      {/* Android 제스처 핸들러는 배경 없는 뷰를 그대로 통과해 아래 시트 배경의 탭까지 시트를 닫는다. 보이지 않는 배경을 둔다 */}
+      {!isPassThrough && <Popover.Overlay className="bg-black/1" testID="hint-popover-overlay" />}
       <Popover.Content
         presentation="popover"
         placement={resolvedPlacement}
