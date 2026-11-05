@@ -6,13 +6,31 @@ import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useOverlay } from '@src/shared/ui';
-import { useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useQueryClient } from '@tanstack/react-query';
+import { withTimeout } from 'es-toolkit';
 
 import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
+
+/** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
+export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;
 
 export interface AiConsentCheck {
   readonly isAgreed: boolean;
   readonly wasAsked: boolean;
+}
+
+/**
+ * 시작을 막지 않고 값을 읽는다. 오프라인이면 TanStack Query가 요청을 멈춰 두어 `ensureQueryData`가 연결될 때까지
+ * 끝나지 않으므로(`networkMode`를 바꿔도 이미 멈춘 조회의 약속을 받는다) 캐시만 보고, 온라인이면 제한 시간까지만 기다린다.
+ */
+export async function readWithoutBlocking<T>(cached: T | undefined, fetch: () => Promise<T>) {
+  if (cached != null) {
+    return cached;
+  }
+  if (!onlineManager.isOnline()) {
+    return null;
+  }
+  return withTimeout(fetch, AI_CONSENT_CHECK_TIMEOUT_MS).catch(() => null);
 }
 
 /**
@@ -27,6 +45,11 @@ export function useAiDataSharingConsentGate() {
   const coachmarkService = useCoachmarkService();
   const consentQueryOptions = useGetConsentQueryOptions();
   const meQueryOptions = useGetMeQueryOptions();
+
+  const readConsent = () =>
+    readWithoutBlocking(queryClient.getQueryData(consentQueryOptions.queryKey), () =>
+      queryClient.ensureQueryData(consentQueryOptions),
+    );
 
   /** 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다 */
   const requestAgreement = ({ isRenewal = false }: { isRenewal?: boolean } = {}) =>
@@ -65,7 +88,7 @@ export function useAiDataSharingConsentGate() {
    */
   const ensureAgreed = async (): Promise<AiConsentCheck> => {
     // 동의 상태를 읽지 못하면 막지 않고 서버 판단에 맡긴다. 동의가 없으면 AI_1311로 다시 안내한다
-    const consent = await queryClient.ensureQueryData(consentQueryOptions).catch(() => null);
+    const consent = await readConsent();
     if (consent == null) {
       return { isAgreed: true, wasAsked: false };
     }
@@ -79,12 +102,14 @@ export function useAiDataSharingConsentGate() {
   /**
    * 듣기 전에 동의를 받는다. 다 말한 뒤에 막히지 않게, 미응답이면 시작할 때마다 안내를 띄우고 [나중에]면 isAgreed는 false다.
    * 호출한 쪽은 그 자리에서 멈춘다. 이전 안내에 동의한 사람은 재안내에서 [나중에]를 눌러도 이어 간다.
-   * 내 정보를 아직 못 받았으면 여기서 기다려, 마이크 권한처럼 뒤에 오는 단계가 안내를 앞지르지 않게 한다.
+   * 내 정보를 아직 못 받았으면 제한 시간까지 기다려, 마이크 권한처럼 뒤에 오는 단계가 안내를 앞지르지 않게 한다.
    */
   const ensureAgreedBeforeListening = async (): Promise<AiConsentCheck> => {
     const [consent, me] = await Promise.all([
-      queryClient.ensureQueryData(consentQueryOptions).catch(() => null),
-      queryClient.ensureQueryData(meQueryOptions).catch(() => null),
+      readConsent(),
+      readWithoutBlocking(getCachedMe(queryClient), () =>
+        queryClient.ensureQueryData(meQueryOptions),
+      ),
     ]);
     if (consent == null) {
       return { isAgreed: true, wasAsked: false };

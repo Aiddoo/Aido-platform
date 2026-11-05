@@ -19,6 +19,8 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에 멈춰 있으면 시트의 버튼이 돌기만 하고 나중에도 누를 수 없다. 바로 실패해 시트를 그대로 둔다
+    networkMode: 'always',
     mutationFn: async ({ agreed }: Pick<UpdateAiDataSharingConsentInput, 'agreed'>) => {
       const result = await authService.updateAiDataSharingConsent({
         agreed,

@@ -18,13 +18,19 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { NetworkError } from '@src/shared/errors';
 import { ok } from '@src/shared/errors/result';
 import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useState } from 'react';
 
-import { useAiDataSharingConsentGate } from './use-ai-data-sharing-consent-gate';
+import {
+  AI_CONSENT_CHECK_TIMEOUT_MS,
+  readWithoutBlocking,
+  useAiDataSharingConsentGate,
+} from './use-ai-data-sharing-consent-gate';
 
 jest.mock('@src/shared/config/env', () => ({
   ENV: { API_URL: 'http://test', SOCIAL_AUTH_REDIRECT_URL: 'http://test' },
@@ -52,7 +58,7 @@ function ConsentGateProbe() {
 }
 
 async function renderGate(
-  consentOverrides: Partial<Consent>,
+  consentOverrides: Partial<Consent> | null,
   { me = { id: 'account-1' } }: { me?: { id: string } | null } = {},
 ) {
   const authHttp = createMockHttpClient();
@@ -60,7 +66,9 @@ async function renderGate(
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consentOverrides));
+  if (consentOverrides != null) {
+    queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consentOverrides));
+  }
   if (me != null) {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), me);
   }
@@ -87,7 +95,80 @@ async function renderGate(
   return { authHttp, userHttp };
 }
 
+describe('readWithoutBlocking', () => {
+  test('연결이 있어도 응답이 오지 않으면 제한 시간 뒤 없는 값으로 이어 간다', async () => {
+    // Given
+    jest.useFakeTimers();
+    const result = readWithoutBlocking(undefined, () => new Promise(() => undefined));
+
+    // When
+    await jest.advanceTimersByTimeAsync(AI_CONSENT_CHECK_TIMEOUT_MS);
+
+    // Then
+    await expect(result).resolves.toBeNull();
+    jest.useRealTimers();
+  });
+});
+
 describe('useAiDataSharingConsentGate', () => {
+  describe('연결이 없을 때', () => {
+    afterEach(() => {
+      onlineManager.setOnline(true);
+    });
+
+    test('동의 상태가 캐시에 없으면 묻지 않고 듣기로 이어 간다', async () => {
+      // Given
+      onlineManager.setOnline(false);
+      await renderGate(null, { me: null });
+
+      // When
+      fireEvent.press(screen.getByText('듣기 전 확인'));
+
+      // Then
+      await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    });
+
+    test('동의 상태가 캐시에 없으면 AI 시작도 막지 않고 서버 판단에 맡긴다', async () => {
+      // Given
+      onlineManager.setOnline(false);
+      await renderGate(null, { me: null });
+
+      // When
+      fireEvent.press(screen.getByText('시작'));
+
+      // Then
+      await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    });
+
+    test('캐시에 동의가 있으면 내 정보를 기다리지 않고 이어 간다', async () => {
+      // Given
+      onlineManager.setOnline(false);
+      await renderGate({ aiDataSharingDecision: 'AGREED' }, { me: null });
+
+      // When
+      fireEvent.press(screen.getByText('듣기 전 확인'));
+
+      // Then
+      await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    });
+
+    test('캐시가 미응답이면 안내를 띄우고 동의 저장은 멈춰 있지 않고 바로 실패해 시트를 그대로 둔다', async () => {
+      // Given
+      onlineManager.setOnline(false);
+      const { authHttp } = await renderGate({});
+      authHttp.patch.mockRejectedValue(new NetworkError());
+      fireEvent.press(screen.getByText('듣기 전 확인'));
+
+      // When
+      fireEvent.press(await screen.findByTestId('ai-consent-agree'));
+
+      // Then
+      await waitFor(() => expect(authHttp.patch).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(screen.getByTestId('ai-consent-later')).not.toBeDisabled());
+      expect(screen.getByTestId('ai-consent-sheet')).toBeTruthy();
+    });
+  });
+
   test('듣기 전 확인에서 미응답이 나중에를 누르면 멈추라고 알리고 다시 물으면 또 안내한다', async () => {
     // Given
     const { authHttp } = await renderGate({});
