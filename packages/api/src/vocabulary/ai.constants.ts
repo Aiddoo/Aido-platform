@@ -32,17 +32,6 @@ export const ACTION_PLAN_LIMITS = {
   DIGEST_KEY_POINT_MAX_LENGTH: 200,
 } as const;
 
-// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤 사용하지 않는 AI_REPORT_LIMITS를 제거한다
-/**
- * @deprecated 어디에서도 쓰지 않고 실제 디스패치(매시, 사용자 로컬 월요일·1일)와도 다르다.
- * 외부 소비 확인 뒤 제거한다.
- */
-export const AI_REPORT_LIMITS = {
-  WEEKLY_CRON_HOUR_UTC: 22,
-  WEEKLY_CRON_DAY: 0,
-  MONTHLY_CRON_HOUR_UTC: 22,
-} as const;
-
 export const AI_SUGGESTION_LIMITS = {
   /** 분석을 실행하기 위한 최소 투두 수 */
   MIN_OCCURRENCES: 3,

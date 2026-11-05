@@ -56,7 +56,7 @@ export class EntitlementService implements EntitlementReaderPort {
     return this.#featureAccess(await this.#freshAccess(userId), feature).limit;
   }
 
-  async featureQuotaInTx(
+  async readFeatureQuotaInTx(
     userId: string,
     feature: UnmeteredLimitFeatureKey,
     usage: FeatureUsageReading,

@@ -322,7 +322,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           weekdays: dto.daysOfWeek,
           end: { type: "UNTIL", date: dto.endDate },
         },
-        legacySeriesLimit: true,
+        usesLegacySeriesLimit: true,
       })
       .catch((error: unknown) => {
         // 출시 앱 계약: 이 경로의 날짜 없음은 SYS_0002다. TODO_0843은 새 경로의 코드다.

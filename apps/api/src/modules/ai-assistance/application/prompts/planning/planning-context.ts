@@ -5,8 +5,8 @@ import type { BuiltPrompt, PromptDefinition } from "../kit/prompt-definition.js"
 import { wrapUntrusted } from "../kit/untrusted-input.js";
 import {
   type PromptCategory,
-  promptCategories,
-  scheduleContext,
+  toPromptCategories,
+  buildScheduleContext,
 } from "../parsing/schedule/schedule-context.js";
 import {
   PLANNING_CONTEXT_TITLE_MAX_LENGTH,
@@ -44,10 +44,10 @@ export function buildWithinLimit<I extends { readonly upcomingTodos: readonly un
 }
 
 /** 계획 프롬프트의 `<context>`: 기준 시각, 카테고리 id·이름, 다가오는 할 일 */
-export function planningContext(input: PlanningContextInput, locale: SupportedLocale): string {
+export function buildPlanningContext(input: PlanningContextInput, locale: SupportedLocale): string {
   return wrapUntrusted("context", {
-    ...scheduleContext({ now: input.now, timezone: input.timezone, locale }),
-    categories: promptCategories(input.categories),
+    ...buildScheduleContext({ now: input.now, timezone: input.timezone, locale }),
+    categories: toPromptCategories(input.categories),
     upcomingTodos: input.upcomingTodos.slice(0, PLANNING_UPCOMING_TODO_LIMIT).map((todo) => ({
       id: todo.id,
       title: truncateGraphemes(todo.title, PLANNING_CONTEXT_TITLE_MAX_LENGTH),

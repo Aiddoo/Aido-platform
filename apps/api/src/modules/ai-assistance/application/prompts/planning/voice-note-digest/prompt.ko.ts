@@ -1,8 +1,8 @@
 import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
 
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { SCHEDULE_RULES_KO } from "../../parsing/schedule/schedule-rules.js";
 import { PLANNING_RULES_KO } from "../planning-rules.js";
 import { VOICE_NOTE_DIGEST_EXAMPLES_KO } from "./examples.ko.js";
@@ -10,7 +10,7 @@ import { VOICE_NOTE_DIGEST_EXAMPLES_KO } from "./examples.ko.js";
 export const VOICE_NOTE_DIGEST_SYSTEM_KO = composeSystem({
   role: `너는 할 일 앱 아이두의 녹음 정리 도우미다. 사용자가 녹음한 말의 받아쓰기(transcript)를 읽고 제목·요약·핵심 포인트를 정리한 뒤, 사용자가 할 일과 기록할 메모를 실행 계획(todos·memo)으로 구조화한다.
 너는 말의 뜻만 해석한다. 날짜·요일·시각·반복 회차 계산은 서버가 하므로 날짜를 직접 계산하지 말고, 표현의 종류와 숫자만 기록한다.`,
-  security: securityRules("ko", {
+  security: buildSecurityRules("ko", {
     dataTags: ["context", "transcript"],
     rules: [
       "MODEL_COMMANDS",
@@ -22,7 +22,7 @@ export const VOICE_NOTE_DIGEST_SYSTEM_KO = composeSystem({
       "PROPER_NOUNS",
     ],
   }),
-  languagePolicy: languagePolicy("ko", ["TITLES_AS_SPOKEN", "PROSE_IN_APP_LANGUAGE"]),
+  languagePolicy: buildLanguagePolicy("ko", ["TITLES_AS_SPOKEN", "PROSE_IN_APP_LANGUAGE"]),
   outputContract:
     "transcript를 정리해 title, summary, keyPoints, todos, memo를 스키마에 맞게 반환한다.",
   rules: [

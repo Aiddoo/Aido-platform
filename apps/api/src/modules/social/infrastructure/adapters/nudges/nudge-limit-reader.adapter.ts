@@ -14,7 +14,7 @@ export class NudgeLimitReaderAdapter implements NudgeLimitReaderPort {
   constructor(
     @Inject(ENTITLEMENT_READER) private readonly entitlementReader: Pick<
       EntitlementReaderPort,
-      "getLimitInTx" | "featureQuotaInTx"
+      "getLimitInTx" | "readFeatureQuotaInTx"
     >,
   ) {}
 
@@ -23,6 +23,6 @@ export class NudgeLimitReaderAdapter implements NudgeLimitReaderPort {
   }
 
   async readDailyQuotaInTx(userId: string, usage: DailySendUsage): Promise<FeatureQuota> {
-    return this.entitlementReader.featureQuotaInTx(userId, "NUDGE", usage);
+    return this.entitlementReader.readFeatureQuotaInTx(userId, "NUDGE", usage);
   }
 }

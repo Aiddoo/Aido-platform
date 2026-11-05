@@ -3,8 +3,6 @@ export {
   type AccessSnapshot,
   type EntitlementReaderPort,
   type FeatureAccess,
-  type FeatureUsageReading,
-  type UnmeteredLimitFeatureKey,
 } from "./application/ports/entitlement/entitlement-reader.port.js";
 export {
   assertEntitled,

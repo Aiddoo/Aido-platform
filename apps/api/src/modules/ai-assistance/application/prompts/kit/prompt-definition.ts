@@ -75,17 +75,17 @@ export interface SystemSections {
   readonly examples: string;
 }
 
-const block = (tag: string, body: string) => `<${tag}>\n${body.trim()}\n</${tag}>`;
+const renderBlock = (tag: string, body: string) => `<${tag}>\n${body.trim()}\n</${tag}>`;
 
 /** 캐시 친화 순서: role → security → language_policy → output_contract → rules → examples. */
 export function composeSystem(sections: SystemSections): string {
   return [
-    block("role", sections.role),
+    renderBlock("role", sections.role),
     sections.security,
     sections.languagePolicy,
-    block("output_contract", sections.outputContract),
-    block("rules", sections.rules.join("\n\n")),
-    block("examples", sections.examples),
+    renderBlock("output_contract", sections.outputContract),
+    renderBlock("rules", sections.rules.join("\n\n")),
+    renderBlock("examples", sections.examples),
   ].join("\n\n");
 }
 

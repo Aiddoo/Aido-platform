@@ -7,20 +7,20 @@ import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
 import { TodoCreationEffects } from "../todos/todo-creation-effects.service.js";
 import { TODO_SERIES_CATCH_UP_BUDGET, TodoSeriesCatchUp } from "./todo-series-catch-up.service.js";
-import { TodoSeriesDueRun } from "./todo-series-due-run.service.js";
+import { TodoSeriesDueRunner } from "./todo-series-due-runner.service.js";
 
 const AT = new Date("2026-11-05T03:00:00.000Z");
 const LAST_MOVED_AT = new Date("2026-06-01T00:00:00.000Z");
 
 describe("복귀 회차 채우기", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let dueRun: TodoSeriesDueRun;
+  let dueRunner: TodoSeriesDueRunner;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
     fixture = createPlanningTodoFixture();
-    dueRun = new TodoSeriesDueRun({
+    dueRunner = new TodoSeriesDueRunner({
       seriesRepository: fixture.todoSeriesRepository,
       materializer: fixture.occurrenceMaterializer,
       effects: new TodoCreationEffects(fixture),
@@ -36,7 +36,7 @@ describe("복귀 회차 채우기", () => {
     return new TodoSeriesCatchUp({
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
-      dueRun,
+      dueRunner,
       logger: fixture.logger,
       ...overrides,
     });
@@ -124,7 +124,7 @@ describe("복귀 회차 채우기", () => {
   it("같은 사용자의 동시 요청은 한 번의 복귀를 함께 기다린다", async () => {
     // Given
     await seedStale("series-1");
-    const materialize = vi.spyOn(dueRun, "materialize");
+    const materialize = vi.spyOn(dueRunner, "materialize");
     const service = catchUp();
     // When
     await Promise.all([

@@ -7,7 +7,7 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
 import type { TodoSeriesOwnerPort } from "../../ports/series/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
-import type { TodoSeriesDueRun } from "./todo-series-due-run.service.js";
+import type { TodoSeriesDueRunner } from "./todo-series-due-runner.service.js";
 
 export const TODO_SERIES_CATCH_UP_BUDGET = {
   /** 앱 요청 제한(10초) 안에 목록을 돌려주도록 이 시간이 지나면 남은 규칙은 다음 요청이나 밤 작업에 맡긴다. */
@@ -19,7 +19,7 @@ export const TODO_SERIES_CATCH_UP_BUDGET = {
 interface TodoSeriesCatchUpDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findIdsBehind">;
   readonly seriesOwner: Pick<TodoSeriesOwnerPort, "findOperatingOwners">;
-  readonly dueRun: Pick<TodoSeriesDueRun, "materialize">;
+  readonly dueRunner: Pick<TodoSeriesDueRunner, "materialize">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly deadlineMs?: number;
 }
@@ -103,7 +103,7 @@ export class TodoSeriesCatchUp {
   }
 
   async #materializeAll(userId: string, seriesIds: readonly string[]) {
-    const { dueRun, logger } = this.#dependencies;
+    const { dueRunner, logger } = this.#dependencies;
     const deadlineMs = this.#dependencies.deadlineMs ?? TODO_SERIES_CATCH_UP_BUDGET.DEADLINE_MS;
     const startedAt = Date.now();
     let createdCount = 0;
@@ -114,7 +114,7 @@ export class TodoSeriesCatchUp {
       }
       try {
         // 다른 기기의 복귀가 먼저 잡았으면 기다려야 이 요청의 목록에도 오늘 회차가 있다.
-        createdCount += await dueRun.materialize({ id, userId }, { skipLocked: false });
+        createdCount += await dueRunner.materialize({ id, userId }, { skipLocked: false });
       } catch (error) {
         failedCount += 1;
         logger.warn({

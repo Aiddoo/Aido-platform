@@ -161,7 +161,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     // Then
     expect(failure).toMatchObject({ kind: "BLOCKED", errorCode: "AI_1302", attempts: 1 });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(registry.states()["ai:openai"]?.openBreakers).toEqual([]);
+    expect(registry.getStates()["ai:openai"]?.openBreakers).toEqual([]);
   });
 
   it("insufficient_quota 429는 마지막 업체여도 SDK가 다시 부르지 않는다", async () => {

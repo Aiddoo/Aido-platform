@@ -7,7 +7,7 @@ import {
   TODO_TIMEZONE_REBASE_JOB_POLICY,
   TODO_TIMEZONE_REBASE_QUEUE,
   TODO_TIMEZONE_REBASE_WINDOW_MS,
-} from "./todo-timezone-rebase.queue.constants.js";
+} from "./todo-timezone-rebase-queue.constants.js";
 
 @Injectable()
 export class TodoTimezoneRebaseQueueService {

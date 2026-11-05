@@ -1,6 +1,6 @@
 import type { OAuthIdentityProviderRegistry } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { LinkOAuthIdentity } from "#api/modules/identity/application/services/auth/link-oauth-identity.service";
-import { NotifyOAuthSignup } from "#api/modules/identity/application/services/auth/notify-oauth-signup.service";
+import { OAuthSignupNotifier } from "#api/modules/identity/application/services/auth/oauth-signup-notifier.service";
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
 import {
   CountingOAuthIdentityProvider,
@@ -18,13 +18,13 @@ export function createAuthOAuthFixture(
   const registry: OAuthIdentityProviderRegistry = new Map([[provider, identityProvider]]);
   const oauthStateRepository = new StubAuthOAuthStateRepository();
   const linkOAuthIdentity = new LinkOAuthIdentity(fixture);
-  const notifyOAuthSignup = new NotifyOAuthSignup(fixture);
+  const oauthSignupNotifier = new OAuthSignupNotifier(fixture);
   return {
     ...fixture,
     identityProvider,
     registry,
     oauthStateRepository,
     linkOAuthIdentity,
-    notifyOAuthSignup,
+    oauthSignupNotifier,
   };
 }

@@ -15,6 +15,7 @@ export const PLANNING_RULES_KO = {
 </deadline_rules>`,
   title: `<title_rules>
 - title은 핵심 행동만 짧게 쓴다. 날짜·시각·반복·공개 범위 표현, "~해야 돼" 같은 어미, 이모지는 뺀다. 말한 대상과 분량("5km", "10쪽")은 그대로 둔다. 한 번에 걸리는 시간도 분량이라 남긴다: "매일 아침 30분 운동하기" → "30분 운동하기".
+- 끼니를 뜻하는 말("가족 저녁 장보기", "아침 식사 준비")은 때가 아니다. time에 쓰지 않고 title에 남긴다. "오늘 저녁에 장보기"처럼 때를 말하면 partOfDay다.
 - items는 말한 항목만 쓴다. 할 일 제목을 items에 반복하지 않고, 항목이 없으면 []다.
 </title_rules>`,
   visibility: `<visibility_rules>
@@ -40,6 +41,7 @@ export const PLANNING_RULES_EN = {
 </deadline_rules>`,
   title: `<title_rules>
 - title is the core action only, kept short. Remove date, time, repetition, and privacy phrases, filler such as "I need to", and emojis. Keep stated objects and amounts ("5 km", "10 pages"). How long it takes is an amount too: "work out for 30 minutes every morning" → "Work out for 30 minutes".
+- Meal words ("family dinner shopping", "breakfast prep") are not a time of day. Leave time null and keep them in the title. "Shop this evening" states a time, so it is partOfDay.
 - items contain only the listed things. Never repeat the to-do title as an item; use [] when nothing is listed.
 </title_rules>`,
   visibility: `<visibility_rules>

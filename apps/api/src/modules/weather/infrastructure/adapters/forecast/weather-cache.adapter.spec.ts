@@ -67,7 +67,10 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
       kmaTimingFixture(at),
     );
     await weather.setConditions(60, 127, at, conditions);
-    await weather.saveForecast(60, 127, kmaTimingFixture(at), forecast);
+    await weather.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: forecast }],
+      kmaTimingFixture(at),
+    );
     // When / Then
     vi.setSystemTime(at.getTime() + 60 * 60_000 + 1);
     expect(await weather.getConditions(60, 127, at)).toBeUndefined();
@@ -118,8 +121,14 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
       126.978,
       kmaTimingFixture(at),
     );
-    await weather.saveForecast(60, 127, kmaTimingFixture(at), forecast);
-    await weather.saveForecast(60, 127, kmaTimingFixture(next), forecast);
+    await weather.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: forecast }],
+      kmaTimingFixture(at),
+    );
+    await weather.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: forecast }],
+      kmaTimingFixture(next),
+    );
     await weather.setConditions(60, 127, at, conditions);
     await weather.setConditions(60, 127, next, conditions);
     await weather.setConditions(60, 128, at, conditions);

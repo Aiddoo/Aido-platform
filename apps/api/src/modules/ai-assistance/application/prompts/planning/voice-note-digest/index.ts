@@ -16,7 +16,7 @@ import {
   sanitizeTextForPrompt,
   wrapUntrusted,
 } from "../../kit/untrusted-input.js";
-import { type PlanningContextInput, planningContext } from "../planning-context.js";
+import { type PlanningContextInput, buildPlanningContext } from "../planning-context.js";
 import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "./prompt.en.js";
 import { VOICE_NOTE_DIGEST_SYSTEM_KO } from "./prompt.ko.js";
 import { voiceNoteDigestDraftSchema } from "./schema.js";
@@ -42,7 +42,7 @@ const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
 };
 
 /** 프롬프트에 실을 번호 붙인 문장. 정규화의 sentenceCount와 같은 수를 쓴다. */
-export function promptSentences(sentences: readonly TranscriptSentence[]) {
+export function toPromptSentences(sentences: readonly TranscriptSentence[]) {
   return sentences.slice(0, ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS).map((sentence, index) => ({
     index,
     text: sanitizeLineForPrompt(sentence.text, TRANSCRIPT_MAX_LENGTH),
@@ -58,7 +58,7 @@ export const voiceNoteDigestPrompt: PromptDefinition<
   VoiceNoteDigestNormalizeContext
 > = {
   id: "voice-note-digest",
-  version: "voice-note-digest@7",
+  version: "voice-note-digest@8",
   taskClass: "interactive",
   // 프리미엄 40,000자 전사를 문장 600개로 나눈 최대 user 턴이 약 94,000자다.
   maxInputChars: 100_000,
@@ -66,11 +66,11 @@ export const voiceNoteDigestPrompt: PromptDefinition<
   build: (input, locale) => ({
     system: SYSTEM[locale],
     prompt: composeUserTurn({
-      context: planningContext(input, locale),
+      context: buildPlanningContext(input, locale),
       input: wrapUntrusted(
         "transcript",
         input.sentences.length > 0
-          ? { sentences: promptSentences(input.sentences) }
+          ? { sentences: toPromptSentences(input.sentences) }
           : { text: sanitizeTextForPrompt(input.transcript, TRANSCRIPT_MAX_LENGTH) },
       ),
     }),

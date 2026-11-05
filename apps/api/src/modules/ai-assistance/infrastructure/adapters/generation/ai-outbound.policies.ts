@@ -36,7 +36,7 @@ const PROVIDER_NAMES: Readonly<Record<AiProviderId, string>> = {
 
 const AI_AUTH_CIRCUIT_THRESHOLD = 3;
 
-const failsBreaker = (kind: AiCircuitBreakerKind) => (error: unknown) =>
+const isFailureForBreaker = (kind: AiCircuitBreakerKind) => (error: unknown) =>
   error instanceof AiAttemptFailure &&
   error.countsAgainstProvider &&
   resolveAiFailureRule(error.kind).breaker === kind;
@@ -45,7 +45,7 @@ const failsBreaker = (kind: AiCircuitBreakerKind) => (error: unknown) =>
  * 업체별 회로. 결제 실패는 한 번에, 인증 실패와 일시 장애는 연속으로 쌓이면 연다. 결제·인증은 운영 경보를 올린다.
  * 재시도는 AI SDK maxRetries 한 층뿐이라 여기에는 timeout·재시도를 두지 않는다.
  */
-export function aiProviderPolicy(
+export function createAiProviderPolicy(
   provider: AiProviderId,
   breaker: AiSettings["breaker"],
 ): OutboundPolicySpec {
@@ -56,7 +56,7 @@ export function aiProviderPolicy(
         name: "billing",
         consecutiveFailures: 1,
         halfOpenAfterMs: breaker.billingCooldownMs,
-        handles: failsBreaker("billing"),
+        handles: isFailureForBreaker("billing"),
         alert: {
           key: AiAlertKey.PROVIDER_BILLING_CIRCUIT_OPENED,
           message: `${PROVIDER_NAMES[provider]} 결제 실패, 다음 순서 AI 업체로 전환`,
@@ -67,7 +67,7 @@ export function aiProviderPolicy(
         name: "auth",
         consecutiveFailures: AI_AUTH_CIRCUIT_THRESHOLD,
         halfOpenAfterMs: breaker.billingCooldownMs,
-        handles: failsBreaker("auth"),
+        handles: isFailureForBreaker("auth"),
         alert: {
           key: AiAlertKey.PROVIDER_BILLING_CIRCUIT_OPENED,
           message: `${PROVIDER_NAMES[provider]} 인증 실패가 이어져 다음 순서 AI 업체로 전환`,
@@ -77,7 +77,7 @@ export function aiProviderPolicy(
         name: "health",
         consecutiveFailures: breaker.healthThreshold,
         halfOpenAfterMs: breaker.healthCooldownMs,
-        handles: failsBreaker("health"),
+        handles: isFailureForBreaker("health"),
       },
     ],
     describeFailure: (failure): Readonly<Record<string, string>> =>

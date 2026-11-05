@@ -14,7 +14,7 @@ export class CheerLimitReaderAdapter implements CheerLimitReaderPort {
   constructor(
     @Inject(ENTITLEMENT_READER) private readonly entitlementReader: Pick<
       EntitlementReaderPort,
-      "getLimitInTx" | "featureQuotaInTx"
+      "getLimitInTx" | "readFeatureQuotaInTx"
     >,
   ) {}
 
@@ -23,6 +23,6 @@ export class CheerLimitReaderAdapter implements CheerLimitReaderPort {
   }
 
   async readDailyQuotaInTx(userId: string, usage: DailySendUsage): Promise<FeatureQuota> {
-    return this.entitlementReader.featureQuotaInTx(userId, "CHEER", usage);
+    return this.entitlementReader.readFeatureQuotaInTx(userId, "CHEER", usage);
   }
 }

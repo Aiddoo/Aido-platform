@@ -20,6 +20,7 @@ export const SCHEDULE_RULES_KO = {
 - 말한 숫자를 그대로 hour에 쓴다. "오후 3시" → hour 3, meridiem PM. "15시" → hour 15, meridiem NONE. "3시 반" → minute 30.
 - 새벽·오전·아침 → AM. 오후·저녁·밤 → PM. 오전/오후 단서가 없으면 meridiem은 NONE이며 추측하지 않는다.
 - 숫자 시각 없이 때만 말하면 hour·minute·relativeMinutes는 null이고 partOfDay만 쓴다: 새벽 DAWN, 아침 MORNING, 점심·정오 NOON, 오후 AFTERNOON, 저녁 EVENING, 밤 NIGHT, 자정 MIDNIGHT. "아침"이라고 hour 8처럼 시각을 지어내지 않는다. 기본 시각은 서버가 정한다.
+- 때와 숫자 시각을 함께 말하면 숫자가 우선이다. "아침 7시" → hour 7, minute 0, meridiem AM, partOfDay null.
 - relativeMinutes는 "N시간 후", "N분 뒤"처럼 지금부터 지날 시간을 말할 때만 1 이상의 분으로 쓰고 아니면 null이다. 0을 쓰거나 partOfDay·hour와 함께 쓰지 않는다.
 </time_rules>`,
   repeat: `<repeat_rules>
@@ -69,6 +70,7 @@ export const SCHEDULE_RULES_EN = {
 - Put the number exactly as said in hour. "3pm" → hour 3, meridiem PM. "15:00" → hour 15, meridiem NONE. "half past 3" or "3:30" → minute 30.
 - am/morning → AM. pm/afternoon/evening/tonight → PM. Without an AM/PM cue, meridiem is NONE; do not guess.
 - With only a part of day and no clock time, set only partOfDay; hour, minute, and relativeMinutes are null: early morning DAWN, morning MORNING, noon/lunch NOON, afternoon AFTERNOON, evening EVENING, tonight/night NIGHT, midnight MIDNIGHT. Never invent a clock time such as hour 8 for "morning"; the server picks the default.
+- When a part of day comes with a clock time, the clock time wins. "7 in the morning" → hour 7, minute 0, meridiem AM, partOfDay null.
 - Use relativeMinutes only for time from now ("in N hours", "in N minutes"), as minutes of 1 or more, otherwise null. Never write 0 and never combine it with partOfDay or hour.
 </time_rules>`,
   repeat: `<repeat_rules>

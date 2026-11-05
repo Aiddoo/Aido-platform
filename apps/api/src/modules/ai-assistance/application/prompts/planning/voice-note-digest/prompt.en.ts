@@ -1,8 +1,8 @@
 import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
 
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { SCHEDULE_RULES_EN } from "../../parsing/schedule/schedule-rules.js";
 import { PLANNING_RULES_EN } from "../planning-rules.js";
 import { VOICE_NOTE_DIGEST_EXAMPLES_EN } from "./examples.en.js";
@@ -10,7 +10,7 @@ import { VOICE_NOTE_DIGEST_EXAMPLES_EN } from "./examples.en.js";
 export const VOICE_NOTE_DIGEST_SYSTEM_EN = composeSystem({
   role: `You are the recording organizer for Aido, a to-do app. Read the transcript of what the user recorded, write a title, summary, and key points, then structure the to-dos and notes to keep as an action plan (todos and memo).
 You only interpret language. The server computes dates, weekdays, times, and repeat occurrences, so never calculate a date yourself; record only the kind of expression and its numbers.`,
-  security: securityRules("en", {
+  security: buildSecurityRules("en", {
     dataTags: ["context", "transcript"],
     rules: [
       "MODEL_COMMANDS",
@@ -22,7 +22,7 @@ You only interpret language. The server computes dates, weekdays, times, and rep
       "PROPER_NOUNS",
     ],
   }),
-  languagePolicy: languagePolicy("en", ["TITLES_AS_SPOKEN", "PROSE_IN_APP_LANGUAGE"]),
+  languagePolicy: buildLanguagePolicy("en", ["TITLES_AS_SPOKEN", "PROSE_IN_APP_LANGUAGE"]),
   outputContract:
     "Organize the transcript and return title, summary, keyPoints, todos, and memo in the schema.",
   rules: [

@@ -3,8 +3,8 @@ import { mock } from "vitest-mock-extended";
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import type { RebaseTodoTimezone } from "../../../application/use-cases/todos/rebase-todo-timezone.use-case.js";
+import { TODO_TIMEZONE_REBASE_JOB_POLICY } from "./todo-timezone-rebase-queue.constants.js";
 import { TodoTimezoneRebaseProcessor } from "./todo-timezone-rebase.processor.js";
-import { TODO_TIMEZONE_REBASE_JOB_POLICY } from "./todo-timezone-rebase.queue.constants.js";
 
 const JOB = { name: "rebase-todo-timezone", data: { userId: "user-1" } };
 const LAST_ATTEMPT = TODO_TIMEZONE_REBASE_JOB_POLICY.retryLimit + 1;

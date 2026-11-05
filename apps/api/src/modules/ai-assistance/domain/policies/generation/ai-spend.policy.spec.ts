@@ -100,7 +100,7 @@ describe("decideAiSpend", () => {
     },
   ] as const)("$name", ({ taskClass, enabled, spend, expected }) => {
     // When
-    const decision = decideAiSpend({ taskClass, enabled, spend, limits });
+    const decision = decideAiSpend({ taskClass, isEnabled: enabled, spend, limits });
     // Then
     expect(decision).toEqual(expected);
   });

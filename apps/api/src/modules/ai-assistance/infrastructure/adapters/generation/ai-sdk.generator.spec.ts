@@ -16,7 +16,7 @@ import {
   isTransientAiFailure,
 } from "../../../application/ports/generation/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../../application/ports/generation/ai-generator.port.js";
-import { AiSpendGuard } from "./ai-spend.guard.js";
+import { AiSpendBudget } from "./ai-spend.budget.js";
 
 const schema = z.object({ title: z.string() });
 const NOW = new Date("2026-11-05T03:00:00.000Z");
@@ -74,12 +74,12 @@ const spendKey = (periodKey: string, subject = "*") => ({
   subject,
 });
 
-describe("AiSpendGuard — 기동 검사", () => {
+describe("AiSpendBudget — 기동 검사", () => {
   it("가격표에 없는 모델이 설정되면 기동 때 경보를 올린다", () => {
     // Given
     const config = createAiTestConfig({ AI_MODEL_ANTHROPIC: "claude-unknown-9" });
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendGuard(
+    const guard = new AiSpendBudget(
       config,
       new InMemoryUsageMeterAdapter(),
       alert,
@@ -99,7 +99,7 @@ describe("AiSpendGuard — 기동 검사", () => {
   it("기본 모델은 경보를 올리지 않는다", () => {
     // Given
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendGuard(
+    const guard = new AiSpendBudget(
       createAiTestConfig(),
       new InMemoryUsageMeterAdapter(),
       alert,
@@ -386,7 +386,7 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     // Then
     expect(chain.google.callCount).toBe(2);
     expect(chain.openai.callCount).toBe(2);
-    expect(chain.registry.states()["ai:google"]?.openBreakers).toEqual(["health"]);
+    expect(chain.registry.getStates()["ai:google"]?.openBreakers).toEqual(["health"]);
   });
 
   it("앞 업체의 재질문에 시간을 뺏겨 몫보다 적게 받은 업체의 TIMEOUT은 장애 회로에 쌓지 않는다", async () => {
@@ -409,7 +409,7 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     // Then
     expect(failure).toMatchObject({ kind: "TIMEOUT", provider: "google" });
     expect(chain.google.callCount).toBe(1);
-    expect(chain.registry.states()["ai:google"]?.openBreakers).toEqual([]);
+    expect(chain.registry.getStates()["ai:google"]?.openBreakers).toEqual([]);
   });
 
   it("정해진 시간을 온전히 받은 업체의 TIMEOUT은 장애 회로에 쌓는다", async () => {
@@ -427,7 +427,7 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
       await chain.generator.generate(request({ prompt })).catch((cause: unknown) => cause);
     }
     // Then
-    expect(chain.registry.states()["ai:anthropic"]?.openBreakers).toEqual(["health"]);
+    expect(chain.registry.getStates()["ai:anthropic"]?.openBreakers).toEqual(["health"]);
   });
 
   it("호출자가 끊은 시도는 업체 장애로 세지 않는다", async () => {
@@ -446,7 +446,7 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     const failure = await pending;
     // Then
     expect(failure).toMatchObject({ kind: "TIMEOUT" });
-    expect(chain.registry.states()["ai:anthropic"]?.openBreakers).toEqual([]);
+    expect(chain.registry.getStates()["ai:anthropic"]?.openBreakers).toEqual([]);
   });
 
   it("추론 토큰이 상한을 다 써 본문 없이 끝나면 TRUNCATED이고 다시 묻지도 넘기지도 않는다", async () => {

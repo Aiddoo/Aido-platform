@@ -17,10 +17,10 @@ import {
 } from "./application/ports/plans/plan-result-replay.port.js";
 import { PLANNING_CONTEXT_READER } from "./application/ports/plans/planning-context.reader.port.js";
 import {
-  InMemoryPlanResultReplay,
+  InMemoryPlanResultReplayAdapter,
   PLAN_RESULT_REPLAY_MAX_ITEMS,
   PLAN_RESULT_REPLAY_TTL_MS,
-} from "./infrastructure/adapters/plans/in-memory-plan-result-replay.js";
+} from "./infrastructure/adapters/plans/in-memory-plan-result-replay.adapter.js";
 import { PlanningContextReader } from "./infrastructure/adapters/plans/planning-context.reader.js";
 import { PlanApplicationCleanupJob } from "./infrastructure/jobs/plans/plan-application-cleanup.job.js";
 import { PlanApplicationCleanupProcessor } from "./infrastructure/jobs/plans/plan-application-cleanup.processor.js";
@@ -50,7 +50,7 @@ const replayProviders: Provider[] = [
     provide: QUICK_PLAN_RESULT_REPLAY,
     inject: [PLAN_RESULT_CACHE],
     useFactory: (cache: InMemoryCacheAdapter) =>
-      new InMemoryPlanResultReplay(
+      new InMemoryPlanResultReplayAdapter(
         cache,
         "quick-plan",
         quickPlanResponseSchema.pick({ plan: true }).extend({ model: z.string() }),
@@ -60,7 +60,7 @@ const replayProviders: Provider[] = [
     provide: VOICE_NOTE_DIGEST_RESULT_REPLAY,
     inject: [PLAN_RESULT_CACHE],
     useFactory: (cache: InMemoryCacheAdapter) =>
-      new InMemoryPlanResultReplay(
+      new InMemoryPlanResultReplayAdapter(
         cache,
         "voice-note-digest",
         voiceNoteDigestResponseSchema

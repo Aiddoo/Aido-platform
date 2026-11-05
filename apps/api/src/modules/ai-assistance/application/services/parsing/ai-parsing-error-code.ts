@@ -9,7 +9,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import {
   AiGenerationLogEvent,
   type GenerationFailure,
-  generationFailure,
+  toGenerationFailure,
 } from "../../observability/generation/ai-generation-log.events.js";
 import { resolveAiFailureRule } from "../../ports/generation/ai-generation.errors.js";
 import type { AiTaskId } from "../../ports/generation/ai-generator.port.js";
@@ -20,7 +20,7 @@ export interface ParsingFailure extends GenerationFailure {
 
 /** 생성 실패 종류를 사용자 응답 코드로 바꾼다. 일시 장애를 "이해 못함"으로 보내지 않는다. */
 export function describeParsingFailure(error: unknown): ParsingFailure {
-  const failure = generationFailure(error);
+  const failure = toGenerationFailure(error);
   return { ...failure, errorCode: resolveAiFailureRule(failure.errorType).errorCode };
 }
 

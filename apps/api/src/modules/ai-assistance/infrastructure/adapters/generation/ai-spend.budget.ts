@@ -51,8 +51,8 @@ interface GlobalSnapshot {
  * 진행 중인 호출은 끝난 뒤에 더해지므로 상한은 그만큼 넘을 수 있다. 계량 오류는 생성을 막지 않는다.
  */
 @Injectable()
-export class AiSpendGuard implements OnModuleInit {
-  readonly #logger = new Logger(AiSpendGuard.name);
+export class AiSpendBudget implements OnModuleInit {
+  readonly #logger = new Logger(AiSpendBudget.name);
   #global: GlobalSnapshot | null = null;
   /** #usersDay 하루의 사용자별 비용 */
   readonly #users = new Map<string, number>();
@@ -91,7 +91,7 @@ export class AiSpendGuard implements OnModuleInit {
     const spend = enabled ? await this.#readSpend(input.userId) : EMPTY_SPEND;
     const decision = decideAiSpend({
       taskClass: input.taskClass,
-      enabled,
+      isEnabled: enabled,
       spend,
       limits: ai.budget,
     });
@@ -115,9 +115,9 @@ export class AiSpendGuard implements OnModuleInit {
     const month = usagePeriod.month(at);
     try {
       const [daily = 0, monthly = 0, user] = await this.meter.add([
-        { key: spendKey(day, USAGE_SUBJECT_ALL), amount: microUsd },
-        { key: spendKey(month, USAGE_SUBJECT_ALL), amount: microUsd },
-        ...(userId == null ? [] : [{ key: spendKey(day, userId), amount: microUsd }]),
+        { key: buildSpendKey(day, USAGE_SUBJECT_ALL), amount: microUsd },
+        { key: buildSpendKey(month, USAGE_SUBJECT_ALL), amount: microUsd },
+        ...(userId == null ? [] : [{ key: buildSpendKey(day, userId), amount: microUsd }]),
       ]);
       this.#global = { day, month, daily, monthly };
       if (userId != null && user != null) {
@@ -173,8 +173,8 @@ export class AiSpendGuard implements OnModuleInit {
       return cached;
     }
     const [daily = 0, monthly = 0] = await this.meter.read([
-      spendKey(day, USAGE_SUBJECT_ALL),
-      spendKey(month, USAGE_SUBJECT_ALL),
+      buildSpendKey(day, USAGE_SUBJECT_ALL),
+      buildSpendKey(month, USAGE_SUBJECT_ALL),
     ]);
     this.#global = { day, month, daily, monthly };
     return this.#global;
@@ -185,7 +185,7 @@ export class AiSpendGuard implements OnModuleInit {
     if (cached != null) {
       return cached;
     }
-    const [used = 0] = await this.meter.read([spendKey(day, userId)]);
+    const [used = 0] = await this.meter.read([buildSpendKey(day, userId)]);
     this.#rememberUser(day, userId, used);
     return used;
   }
@@ -253,6 +253,6 @@ const EMPTY_SPEND: AiSpend = {
   userDailyMicroUsd: null,
 };
 
-function spendKey(periodKey: string, subject: string): UsageKey {
+function buildSpendKey(periodKey: string, subject: string): UsageKey {
   return { meter: AI_SPEND_METER, periodKey, subject };
 }

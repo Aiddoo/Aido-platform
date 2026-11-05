@@ -4,10 +4,7 @@ import type { z } from "zod";
 
 import type { AiTaskClass } from "../../../domain/policies/generation/ai-spend.policy.js";
 
-export {
-  AI_TASK_CLASSES,
-  type AiTaskClass,
-} from "../../../domain/policies/generation/ai-spend.policy.js";
+export type { AiTaskClass } from "../../../domain/policies/generation/ai-spend.policy.js";
 
 export const AI_TASK_IDS = [
   "parse-todo",

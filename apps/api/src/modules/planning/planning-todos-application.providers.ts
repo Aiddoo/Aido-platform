@@ -20,7 +20,7 @@ import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
 import { TodoOccurrenceMaterializer } from "./application/services/series/todo-occurrence-materializer.service.js";
 import { TodoSeriesCatchUp } from "./application/services/series/todo-series-catch-up.service.js";
-import { TodoSeriesDueRun } from "./application/services/series/todo-series-due-run.service.js";
+import { TodoSeriesDueRunner } from "./application/services/series/todo-series-due-runner.service.js";
 import { TodoSeriesEditEffects } from "./application/services/series/todo-series-edit-effects.service.js";
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
@@ -92,8 +92,8 @@ export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezone> = {
     }),
 };
 
-export const todoSeriesDueRunProvider: FactoryProvider<TodoSeriesDueRun> = {
-  provide: TodoSeriesDueRun,
+export const todoSeriesDueRunnerProvider: FactoryProvider<TodoSeriesDueRunner> = {
+  provide: TodoSeriesDueRunner,
   inject: [
     TODO_SERIES_REPOSITORY,
     TodoOccurrenceMaterializer,
@@ -102,43 +102,44 @@ export const todoSeriesDueRunProvider: FactoryProvider<TodoSeriesDueRun> = {
     MUTATION_LOCK,
   ],
   useFactory: (
-    seriesRepository: ConstructorParameters<typeof TodoSeriesDueRun>[0]["seriesRepository"],
-    materializer: ConstructorParameters<typeof TodoSeriesDueRun>[0]["materializer"],
-    effects: ConstructorParameters<typeof TodoSeriesDueRun>[0]["effects"],
-    unitOfWork: ConstructorParameters<typeof TodoSeriesDueRun>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof TodoSeriesDueRun>[0]["mutationLock"],
-  ) => new TodoSeriesDueRun({ seriesRepository, materializer, effects, unitOfWork, mutationLock }),
+    seriesRepository: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["materializer"],
+    effects: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["mutationLock"],
+  ) =>
+    new TodoSeriesDueRunner({ seriesRepository, materializer, effects, unitOfWork, mutationLock }),
 };
 
 export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
   provide: TodoSeriesCatchUp,
-  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRun],
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRunner],
   useFactory: (
     seriesRepository: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesRepository"],
     seriesOwner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesOwner"],
-    dueRun: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRun"],
+    dueRunner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRunner"],
   ) =>
     new TodoSeriesCatchUp({
       seriesRepository,
       seriesOwner,
-      dueRun,
+      dueRunner,
       logger: new Logger(TodoSeriesCatchUp.name),
     }),
 };
 
 export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
   provide: MaterializeDueTodoSeries,
-  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRun, OPERATIONAL_ALERT],
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRunner, OPERATIONAL_ALERT],
   useFactory: (
     seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
     seriesOwner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesOwner"],
-    dueRun: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRun"],
+    dueRunner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRunner"],
     alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
   ) =>
     new MaterializeDueTodoSeries({
       seriesRepository,
       seriesOwner,
-      dueRun,
+      dueRunner,
       alert,
       logger: new Logger(MaterializeDueTodoSeries.name),
     }),

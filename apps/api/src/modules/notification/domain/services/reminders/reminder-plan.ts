@@ -40,7 +40,7 @@ export function planReminderJobs(scheduledMs: number, nowMs: number): PlannedRem
 
 /** 특정 todoId의 모든 단계 잡 라벨(취소 시 순회용) */
 export function allReminderLabels(): string[] {
-  return REMINDER_STAGES.map((s) => s.label);
+  return REMINDER_STAGES.map((stage) => stage.label);
 }
 
 /**

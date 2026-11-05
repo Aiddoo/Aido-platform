@@ -22,7 +22,7 @@ export interface CreateTodoData {
    * 출시 앱(1.14.x까지)의 기간이 정해진 경로 전용. 새 경로보다 넉넉한 상한을 보고, 거절은 옛 앱이
    * 아는 코드로 한다. 호환 범위는 docs/conventions/compatibility.md에 적는다.
    */
-  readonly legacySeriesLimit?: boolean;
+  readonly usesLegacySeriesLimit?: boolean;
 }
 
 /** 시간대를 해석한 뒤의 생성 입력. 쓰기 경로는 이 값만 받는다. */

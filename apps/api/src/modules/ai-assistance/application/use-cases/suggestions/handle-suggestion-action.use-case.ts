@@ -140,7 +140,7 @@ export class HandleSuggestionAction {
           weekdays: days.data,
           end: { type: "UNTIL", date: endDate },
         },
-        legacySeriesLimit: true,
+        usesLegacySeriesLimit: true,
       });
       this.#dependencies.afterCommit.register(staged.afterCommit);
       return {

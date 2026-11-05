@@ -160,7 +160,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
   }
 
   async commit(reservation: QuotaReservation): Promise<boolean> {
-    if (reservation.alreadyCommitted) {
+    if (reservation.isAlreadyCommitted) {
       return false;
     }
     const meter = resolveMeter(reservation.feature);
@@ -196,7 +196,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
   }
 
   async refund(reservation: QuotaReservation, reason: QuotaRefundReason): Promise<boolean> {
-    if (reservation.alreadyCommitted) {
+    if (reservation.isAlreadyCommitted) {
       return false;
     }
     const meter = resolveMeter(reservation.feature);
@@ -357,7 +357,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
   ): Promise<QuotaReservation> {
     const { repository } = this.#dependencies;
     const expected = { status: charge.status, attempt: charge.attempt };
-    return match(charge.replayAt(context.at))
+    return match(charge.resolveReplayAt(context.at))
       .with("COMMITTED", () => this.#reserved(context, charge, true))
       .with("IN_FLIGHT", () => this.#rejectInFlight(context, charge))
       .with("TAKE_OVER", async () => {
@@ -425,9 +425,9 @@ export class QuotaLedgerService implements QuotaLedgerPort {
   #reserved(
     context: QuotaDecisionContext,
     charge: QuotaCharge,
-    alreadyCommitted: boolean,
+    isAlreadyCommitted: boolean,
   ): QuotaReservation {
-    if (!alreadyCommitted) {
+    if (!isAlreadyCommitted) {
       this.#dependencies.logger.log({
         event: AccessQuotaLogEvent.RESERVED,
         chargeId: charge.id,
@@ -440,7 +440,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       userId: context.userId,
       feature: context.feature,
       attempt: charge.attempt,
-      alreadyCommitted,
+      isAlreadyCommitted,
     });
   }
 

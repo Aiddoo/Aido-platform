@@ -67,7 +67,7 @@ import {
   logoutAllProvider,
   logoutProvider,
   linkOAuthIdentityProvider,
-  notifyOAuthSignupProvider,
+  oauthSignupNotifierProvider,
   provisionUserProvider,
   purgeDeletedAccountsProvider,
   restoreAccountProvider,
@@ -224,7 +224,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     },
     OAuthTokenVerifierService,
     linkOAuthIdentityProvider,
-    notifyOAuthSignupProvider,
+    oauthSignupNotifierProvider,
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
     issueLoginProvider,
     restoreAccountProvider,

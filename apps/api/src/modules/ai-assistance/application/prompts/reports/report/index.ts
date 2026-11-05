@@ -37,7 +37,7 @@ const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
 };
 
 /** 모델에 준 report_data의 수치와 사용자가 쓴 이름. 문장 속 숫자는 이 안에 있어야 한다. */
-function numberEvidence(input: ReportPromptInput, locale: SupportedLocale) {
+function buildNumberEvidence(input: ReportPromptInput, locale: SupportedLocale) {
   const { stats, focus, period } = buildReportContext(input, locale);
   const focusItems = focus.axis === "CATEGORY" ? focus.categories : focus.days;
   return {
@@ -55,7 +55,7 @@ function numberEvidence(input: ReportPromptInput, locale: SupportedLocale) {
       // 주간 리포트는 "다음 7일"을 말하도록 지시한다.
       ...(input.type === "WEEKLY" ? [7] : []),
     ],
-    quotedTexts: [period.label, ...input.data.categoryBreakdown.map(({ name }) => name)],
+    quotedTexts: [period.label, ...input.reportData.categoryBreakdown.map(({ name }) => name)],
   };
 }
 
@@ -63,7 +63,7 @@ function normalizeReport(
   draft: ReportDraft,
   { input, locale }: ReportNormalizeContext,
 ): GeneratedReportContent {
-  const evidence = numberEvidence(input, locale);
+  const evidence = buildNumberEvidence(input, locale);
   // persona 말투를 고친 뒤, 근거 밖 숫자가 있는 문장은 빼고 남은 문장만 쓴다.
   const clean = (text: string) =>
     keepGroundedSentences(

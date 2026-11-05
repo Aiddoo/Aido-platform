@@ -2,11 +2,11 @@ import { vi } from "vitest";
 
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
-import { TodoSeriesMaterializationJob } from "./todo-series-materialization.job.js";
 import {
   TODO_SERIES_MATERIALIZATION_QUEUE,
   TODO_SERIES_MATERIALIZATION_SCHEDULE,
-} from "./todo-series-materialization.queue.constants.js";
+} from "./todo-series-materialization-queue.constants.js";
+import { TodoSeriesMaterializationJob } from "./todo-series-materialization.job.js";
 
 describe("TodoSeriesMaterializationJob — 매일 스케줄과 놓친 실행 따라잡기", () => {
   let runtime: FakeJobRuntime;

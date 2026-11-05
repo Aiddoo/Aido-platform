@@ -9,8 +9,8 @@ import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definit
 import { sanitizeLineForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
 import {
   type PromptCategory,
-  promptCategories,
-  scheduleContext,
+  toPromptCategories,
+  buildScheduleContext,
 } from "../schedule/schedule-context.js";
 import { PARSE_TODO_SYSTEM_EN } from "./prompt.en.js";
 import { PARSE_TODO_SYSTEM_KO } from "./prompt.ko.js";
@@ -34,7 +34,7 @@ export interface ParseTodoNormalizeContext {
 }
 
 export interface ParseTodoOutcome {
-  readonly data: ParsedTodoData;
+  readonly parsedTodo: ParsedTodoData;
   /** 실행할 행동 없이 모델 대상 명령만 있었는지. 이 경우 사용량을 차감하지 않는다. */
   readonly intent: TodoDraft["intent"];
   readonly warnings: readonly string[];
@@ -52,7 +52,7 @@ export const parseTodoPrompt: PromptDefinition<
   ParseTodoNormalizeContext
 > = {
   id: "parse-todo",
-  version: "parse-todo@6",
+  version: "parse-todo@7",
   taskClass: "interactive",
   // 30개 카테고리(이름 50자)와 500자 입력의 최대 user 턴이 약 3,700자다.
   maxInputChars: 5_000,
@@ -61,8 +61,8 @@ export const parseTodoPrompt: PromptDefinition<
     system: SYSTEM[locale],
     prompt: composeUserTurn({
       context: wrapUntrusted("context", {
-        ...scheduleContext({ now: input.now, timezone: input.timezone, locale }),
-        categories: promptCategories(input.categories),
+        ...buildScheduleContext({ now: input.now, timezone: input.timezone, locale }),
+        categories: toPromptCategories(input.categories),
       }),
       input: wrapUntrusted("user_input", {
         text: sanitizeLineForPrompt(input.text, AI_PARSE_LIMITS.TODO_TEXT_MAX_LENGTH),
@@ -75,7 +75,7 @@ export const parseTodoPrompt: PromptDefinition<
       fallbackTitle: context.text,
     });
     return {
-      data: { ...todo, categoryId: context.requestedCategoryId ?? todo.categoryId },
+      parsedTodo: { ...todo, categoryId: context.requestedCategoryId ?? todo.categoryId },
       intent,
       warnings,
     };

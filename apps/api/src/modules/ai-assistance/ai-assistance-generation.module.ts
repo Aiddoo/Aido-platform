@@ -4,7 +4,7 @@ import { AccessModule } from "#api/modules/access/access-entitlement.public";
 
 import { AI_GENERATOR } from "./application/ports/generation/ai-generator.port.js";
 import { AiSdkGenerator } from "./infrastructure/adapters/generation/ai-sdk.generator.js";
-import { AiSpendGuard } from "./infrastructure/adapters/generation/ai-spend.guard.js";
+import { AiSpendBudget } from "./infrastructure/adapters/generation/ai-spend.budget.js";
 import {
   AI_PROVIDER_ADAPTERS,
   type AiProviderAdapter,
@@ -30,7 +30,7 @@ const providerAdaptersProvider: FactoryProvider<readonly AiProviderAdapter[]> = 
     GoogleProviderAdapter,
     OpenAiProviderAdapter,
     providerAdaptersProvider,
-    AiSpendGuard,
+    AiSpendBudget,
     { provide: AI_GENERATOR, useClass: AiSdkGenerator },
   ],
   exports: [AI_GENERATOR],

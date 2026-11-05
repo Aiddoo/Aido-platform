@@ -57,7 +57,7 @@ describe("QuotaLedgerService", () => {
         userId: fixture.userId,
         feature: "AI_PARSE",
         attempt: 1,
-        alreadyCommitted: false,
+        isAlreadyCommitted: false,
       });
       expect(Object.isFrozen(reservation)).toBe(true);
       expect(fixture.repository.charges.get("charge-1")).toMatchObject({
@@ -274,7 +274,7 @@ describe("QuotaLedgerService", () => {
       const replayRefund = await fixture.ledger.refund(replay, "FAILED");
 
       // Then
-      expect(replay).toMatchObject({ chargeId: first.chargeId, alreadyCommitted: true });
+      expect(replay).toMatchObject({ chargeId: first.chargeId, isAlreadyCommitted: true });
       expect(replayRefund).toBe(false);
       expect((await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used).toBe(1);
     });
@@ -309,7 +309,7 @@ describe("QuotaLedgerService", () => {
       expect(retry).toMatchObject({
         chargeId: first.chargeId,
         attempt: 2,
-        alreadyCommitted: false,
+        isAlreadyCommitted: false,
       });
       expect(lateRefund).toBe(false);
       expect((await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used).toBe(1);
@@ -326,7 +326,7 @@ describe("QuotaLedgerService", () => {
       const takeover = await reserve(fixture, { feature: "VOICE_NOTE", idempotencyKey: "key-1" });
 
       // Then
-      expect(takeover).toMatchObject({ attempt: 2, alreadyCommitted: false });
+      expect(takeover).toMatchObject({ attempt: 2, isAlreadyCommitted: false });
       expect((await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used).toBe(1);
     });
 

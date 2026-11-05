@@ -85,26 +85,6 @@ export class WeatherCacheAdapter implements WeatherCachePort {
     return this.cacheService.get(forecastKey(gridX, gridY, timing), WEATHER_FORECAST_SCHEMA);
   }
 
-  async saveForecast(
-    gridX: number,
-    gridY: number,
-    timing: KmaForecastTiming,
-    forecast: WeatherForecast,
-  ): Promise<void> {
-    await Promise.all([
-      this.cacheService.set(
-        forecastKey(gridX, gridY, timing),
-        forecast,
-        WEATHER_CACHE_TTL_MS.FORECAST,
-      ),
-      this.cacheService.set(
-        WeatherCacheKey.latestForecast(gridX, gridY),
-        forecast,
-        WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
-      ),
-    ]);
-  }
-
   getOrLoadForecast(
     gridX: number,
     gridY: number,

@@ -1,7 +1,6 @@
+import type { CurrentUserPayload } from "@aido/api";
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 import type { Request } from "express";
-
-import type { CurrentUserPayload } from "#api/modules/identity/infrastructure/strategies/auth/jwt.strategy";
 
 import { authenticatedUserSchema } from "./authenticated-user.schema.js";
 

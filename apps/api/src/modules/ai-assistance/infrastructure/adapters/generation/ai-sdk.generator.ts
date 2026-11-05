@@ -34,9 +34,9 @@ import { estimateCostMicroUsd, estimateSpendMicroUsd } from "./ai-model-pricing.
 import {
   AI_TASK_CLASS_POLICIES,
   AiAttemptFailure,
-  aiProviderPolicy,
+  createAiProviderPolicy,
 } from "./ai-outbound.policies.js";
-import { AiSpendGuard } from "./ai-spend.guard.js";
+import { AiSpendBudget } from "./ai-spend.budget.js";
 import {
   AI_PROVIDER_ADAPTERS,
   type AiProviderAdapter,
@@ -51,7 +51,7 @@ import {
 /** 사람이 키·요청을 확인해야 하는 실패. 다음 업체로 넘기면서 error로 남긴다. */
 const OPERATOR_FAILURES: ReadonlySet<AiFailureKind> = new Set(["AUTH", "BAD_REQUEST"]);
 
-/** 스키마 불일치(retrySameProvider)는 첫 업체에만 한 번 더 묻는다. */
+/** 스키마 불일치(shouldRetrySameProvider)는 첫 업체에만 한 번 더 묻는다. */
 const MAX_CALLS_PER_PROVIDER = 2;
 
 type Attempt<T> =
@@ -112,13 +112,13 @@ export class AiSdkGenerator implements AiGeneratorPort {
     private readonly config: TypedConfigService,
     @Inject(AI_PROVIDER_ADAPTERS) adapters: readonly AiProviderAdapter[],
     policies: OutboundPolicyRegistry,
-    private readonly spend: AiSpendGuard,
+    private readonly spend: AiSpendBudget,
   ) {
     this.#adapters = new Map(adapters.map((adapter) => [adapter.id, adapter]));
     this.#providerPolicies = new Map(
       AI_PROVIDER_IDS.map((provider) => [
         provider,
-        policies.get(aiProviderPolicy(provider, config.ai.breaker)),
+        policies.get(createAiProviderPolicy(provider, config.ai.breaker)),
       ]),
     );
     this.#classPolicies = {
@@ -131,7 +131,7 @@ export class AiSdkGenerator implements AiGeneratorPort {
     this.#assertInputSize(request);
     await this.#assertSpendAllowed(request);
 
-    const key = coalescingKey(request);
+    const key = buildCoalescingKey(request);
     const shared = this.#inflight.get(key);
     if (shared != null) {
       const result = await shared;
@@ -157,7 +157,7 @@ export class AiSdkGenerator implements AiGeneratorPort {
       inputChars,
       maxInputChars: request.maxInputChars,
     });
-    throw withheld("BAD_REQUEST");
+    throw createWithheldError("BAD_REQUEST");
   }
 
   async #assertSpendAllowed<T>(request: AiGenerationRequest<T>): Promise<void> {
@@ -175,14 +175,14 @@ export class AiSdkGenerator implements AiGeneratorPort {
         taskClass: request.taskClass,
         reason: decision.reason,
       });
-      throw withheld("HALTED");
+      throw createWithheldError("HALTED");
     }
     this.#logger.warn({
       event: AiGuardLogEvent.SPEND_USER_LIMITED,
       task: request.task,
       userId: request.userId,
     });
-    throw withheld("USER_SPEND_LIMITED");
+    throw createWithheldError("USER_SPEND_LIMITED");
   }
 
   async #generateOnce<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
@@ -201,12 +201,12 @@ export class AiSdkGenerator implements AiGeneratorPort {
       }, request.signal);
     } catch (error) {
       if (error instanceof OutboundRejectedError) {
-        throw withheld("RATE_LIMITED");
+        throw createWithheldError("RATE_LIMITED");
       }
       const aborted =
         request.signal?.aborted === true || chainSignals.some((signal) => signal.aborted);
       if (!(error instanceof AiGenerationError) && aborted) {
-        throw withheld("TIMEOUT");
+        throw createWithheldError("TIMEOUT");
       }
       throw error;
     } finally {
@@ -269,10 +269,10 @@ export class AiSdkGenerator implements AiGeneratorPort {
         }
         last = { provider, failure: attempt.failure };
         const rule = resolveAiFailureRule(attempt.failure.kind);
-        if (!rule.fallback || signal.aborted) {
+        if (!rule.shouldFallback || signal.aborted) {
           throw this.#failed(last, { attempts, route, cost });
         }
-        if (!rule.retrySameProvider) {
+        if (!rule.shouldRetrySameProvider) {
           break;
         }
       }
@@ -480,7 +480,7 @@ export class AiSdkGenerator implements AiGeneratorPort {
 }
 
 /** 업체를 부르지 않고 끝난 실패 */
-function withheld(kind: AiFailureKind): AiGenerationError {
+function createWithheldError(kind: AiFailureKind): AiGenerationError {
   return new AiGenerationError(kind, {
     provider: null,
     attempts: 0,
@@ -491,7 +491,7 @@ function withheld(kind: AiFailureKind): AiGenerationError {
 }
 
 /** 같은 사용자의 같은 프롬프트가 동시에 들어오면(연타·재시도) 업체 호출 하나를 나눠 쓴다. */
-function coalescingKey<T>(request: AiGenerationRequest<T>): string {
+function buildCoalescingKey<T>(request: AiGenerationRequest<T>): string {
   return createHash("sha256")
     .update(
       JSON.stringify([

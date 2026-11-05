@@ -25,7 +25,7 @@ interface GenerationLogBase {
   readonly quotaCharged: boolean;
 }
 
-export function generationCompletedLog(
+export function buildGenerationCompletedLog(
   base: GenerationLogBase & { readonly outcome: AiGenerationOutcome },
   meta: AiGenerationMeta,
 ) {
@@ -61,7 +61,7 @@ export interface GenerationFailure {
 }
 
 /** 실패 로그의 원인 필드. 생성 오류가 아니면 서버 정규화·검증이 거절한 출력으로 본다. */
-export function generationFailure(error: unknown): GenerationFailure {
+export function toGenerationFailure(error: unknown): GenerationFailure {
   if (error instanceof AiGenerationError) {
     return {
       errorType: error.kind,
@@ -82,7 +82,7 @@ export function generationFailure(error: unknown): GenerationFailure {
   };
 }
 
-export function generationFailedLog(
+export function buildGenerationFailedLog(
   base: GenerationLogBase &
     GenerationFailure & {
       readonly outcome: AiGenerationOutcome;

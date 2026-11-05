@@ -98,7 +98,7 @@ describe("QuotaCharge", () => {
       const existing = charge({ status });
 
       // When
-      const decision = existing.replayAt(new Date(AT.getTime() + ageMs));
+      const decision = existing.resolveReplayAt(new Date(AT.getTime() + ageMs));
 
       // Then
       expect(decision).toBe(replay);

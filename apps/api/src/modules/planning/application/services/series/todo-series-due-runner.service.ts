@@ -12,7 +12,7 @@ import type {
 import type { TodoCreationEffects } from "../todos/todo-creation-effects.service.js";
 import type { TodoOccurrenceMaterializer } from "./todo-occurrence-materializer.service.js";
 
-interface TodoSeriesDueRunDependencies {
+interface TodoSeriesDueRunnerDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update">;
   readonly materializer: Pick<TodoOccurrenceMaterializer, "planDueRun" | "persist">;
   readonly effects: Pick<TodoCreationEffects, "publishOccurrences">;
@@ -21,10 +21,10 @@ interface TodoSeriesDueRunDependencies {
 }
 
 /** 규칙 하나를 지금 시각까지 채운다. 밤 작업과 복귀 경로가 같은 잠금 순서·저장 규칙을 쓴다. */
-export class TodoSeriesDueRun {
-  readonly #dependencies: TodoSeriesDueRunDependencies;
+export class TodoSeriesDueRunner {
+  readonly #dependencies: TodoSeriesDueRunnerDependencies;
 
-  constructor(dependencies: TodoSeriesDueRunDependencies) {
+  constructor(dependencies: TodoSeriesDueRunnerDependencies) {
     this.#dependencies = dependencies;
   }
 

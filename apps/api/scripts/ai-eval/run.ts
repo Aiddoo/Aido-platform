@@ -33,7 +33,7 @@ import { quickPlanPrompt } from "../../src/modules/ai-assistance/application/pro
 import { voiceNoteDigestPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/voice-note-digest/index.js";
 import type { NormalizedActionPlan } from "../../src/modules/ai-assistance/domain/types/planning/action-plan-draft.types.js";
 import { AiSdkGenerator } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator.js";
-import { AiSpendGuard } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.guard.js";
+import { AiSpendBudget } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget.js";
 import type { AiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter.js";
 import { AnthropicProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/anthropic.provider-adapter.js";
 import { GoogleProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/google.provider-adapter.js";
@@ -174,7 +174,8 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
         },
         options,
       );
-      const { title, categoryId: _categoryId, ...schedule } = value.data;
+      // golden은 출시 응답 칸만 기대값으로 갖는다. 새 선택 칸 repeat은 비교하지 않는다.
+      const { title, categoryId: _categoryId, repeat: _repeat, ...schedule } = value.parsedTodo;
       const {
         title: expectedTitle,
         categoryId: _expectedCategoryId,
@@ -189,7 +190,7 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
         score: {
           metrics: { date, title: titleOk, ...(noAction && { noAction: intentOk }) },
           ...(!(date && titleOk && intentOk) && {
-            diff: { expected: golden.expected, actual: value.data, intent: value.intent },
+            diff: { expected: golden.expected, actual: value.parsedTodo, intent: value.intent },
           }),
         },
       };
@@ -258,18 +259,18 @@ function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
       );
       const picked = new Set(value.keyPoints.map(({ sentenceIndex }) => sentenceIndex));
       const score = scorePlan(golden.expected, toPlanExpectation(plan, clock));
+      const digestTexts = [value.title, value.summary, ...value.keyPoints.map(({ text }) => text)];
+      const isDigestInAppLanguage = isWrittenInLocale(digestTexts, golden.locale);
       return {
         meta,
         score: {
           ...score,
+          ...(!isDigestInAppLanguage && score.diff == null && { diff: { digestTexts } }),
           bookmarkRecall:
             bookmarked.length === 0
               ? 1
               : bookmarked.filter((index) => picked.has(index)).length / bookmarked.length,
-          isDigestInAppLanguage: isWrittenInLocale(
-            [value.title, value.summary, ...value.keyPoints.map(({ text }) => text)],
-            golden.locale,
-          ),
+          isDigestInAppLanguage,
         },
       };
     },
@@ -332,7 +333,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       adapters,
       new OutboundPolicyRegistry(alert),
       // eval은 userId가 null이라 사용자 예산·등급을 읽지 않는다.
-      new AiSpendGuard(config, new InMemoryUsageMeterAdapter(), alert, {
+      new AiSpendBudget(config, new InMemoryUsageMeterAdapter(), alert, {
         getAccessSnapshot: () => Promise.reject(new Error("eval has no user")),
       }),
     ),

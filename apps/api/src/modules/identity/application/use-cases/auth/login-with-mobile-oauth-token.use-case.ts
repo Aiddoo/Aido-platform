@@ -1,4 +1,4 @@
-import type { NotifyOAuthSignup } from "../../services/auth/notify-oauth-signup.service.js";
+import type { OAuthSignupNotifier } from "../../services/auth/oauth-signup-notifier.service.js";
 import type { SocialLoginResult } from "../../types/auth/index.js";
 import type {
   LoginWithOAuthToken,
@@ -7,7 +7,7 @@ import type {
 
 interface LoginWithMobileOAuthTokenDependencies {
   readonly loginWithOAuthToken: Pick<LoginWithOAuthToken, "execute">;
-  readonly notifyOAuthSignup: Pick<NotifyOAuthSignup, "execute">;
+  readonly oauthSignupNotifier: Pick<OAuthSignupNotifier, "notify">;
 }
 
 export class LoginWithMobileOAuthToken {
@@ -20,7 +20,7 @@ export class LoginWithMobileOAuthToken {
   async execute(input: LoginWithOAuthTokenInput): Promise<SocialLoginResult> {
     const result = await this.#dependencies.loginWithOAuthToken.execute(input);
     if (result.isNewUser) {
-      await this.#dependencies.notifyOAuthSignup.execute({
+      await this.#dependencies.oauthSignupNotifier.notify({
         userId: result.userId,
         provider: input.provider,
         device: input.metadata?.device,

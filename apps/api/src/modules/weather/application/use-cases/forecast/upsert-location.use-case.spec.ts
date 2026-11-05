@@ -79,11 +79,9 @@ describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
     repository.records.set("weather-user", weatherLocationFixture());
     for (const day of [date, next]) {
       await cache.setConditions(60, 127, day, weatherConditionsFixture());
-      await cache.saveForecast(
-        60,
-        127,
+      await cache.saveForecastBatch(
+        [{ gridX: 60, gridY: 127, forecast: weatherForecastFixture({ date: day }) }],
         kmaTimingFixture(day),
-        weatherForecastFixture({ date: day }),
       );
     }
     await cache.setConditions(98, 76, date, weatherConditionsFixture({ sunrise: "05:30" }));

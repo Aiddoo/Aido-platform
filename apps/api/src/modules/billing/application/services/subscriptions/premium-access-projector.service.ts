@@ -87,7 +87,7 @@ export class PremiumAccessProjector {
     const remainders: PremiumGrantCreationPlan[] = [];
     for (const grantId of plan.rebankedGrantIds) {
       const grant = grantsById.get(grantId);
-      if (grant?.rebank(input.now)) {
+      if (grant?.returnToBank(input.now)) {
         changed.add(grant);
       }
     }

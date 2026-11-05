@@ -21,7 +21,7 @@ const secretApiKey = (name: string) =>
   z
     .string()
     .optional()
-    .refine((val) => !val || SECRET_API_KEY_PATTERN.test(val), {
+    .refine((value) => !value || SECRET_API_KEY_PATTERN.test(value), {
       message: `${name} must be at least 20 characters without whitespace`,
     });
 
@@ -48,7 +48,7 @@ export const aiSchema = z.object({
   GOOGLE_GENERATIVE_AI_API_KEY: z
     .string()
     .optional()
-    .refine((val) => !val || GOOGLE_GENERATIVE_AI_API_KEY_PATTERN.test(val), {
+    .refine((value) => !value || GOOGLE_GENERATIVE_AI_API_KEY_PATTERN.test(value), {
       message:
         "GOOGLE_GENERATIVE_AI_API_KEY must be at least 30 characters of [A-Za-z0-9._-] without whitespace",
     }),
@@ -56,7 +56,7 @@ export const aiSchema = z.object({
   AI_PROVIDER_ORDER: z
     .string()
     .default(DEFAULT_PROVIDER_ORDER)
-    .refine((val) => parseProviderOrder(val) != null, {
+    .refine((value) => parseProviderOrder(value) != null, {
       message: `AI_PROVIDER_ORDER must be a comma-separated list of distinct providers (${DEFAULT_PROVIDER_ORDER})`,
     }),
   AI_MODEL_ANTHROPIC: modelId("claude-haiku-5-5"),

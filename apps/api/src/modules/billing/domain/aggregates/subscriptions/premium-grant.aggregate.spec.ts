@@ -136,7 +136,7 @@ describe("PremiumGrant", () => {
     });
 
     // When
-    const results = [future.rebank(at), running.rebank(at), future.rebank(at)];
+    const results = [future.returnToBank(at), running.returnToBank(at), future.returnToBank(at)];
 
     // Then
     expect(results).toEqual([true, false, false]);

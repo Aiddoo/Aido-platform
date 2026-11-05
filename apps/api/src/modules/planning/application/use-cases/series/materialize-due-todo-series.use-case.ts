@@ -15,7 +15,7 @@ import type {
   TodoSeriesRef,
   TodoSeriesRepositoryPort,
 } from "../../ports/series/todo-series.repository.port.js";
-import type { TodoSeriesDueRun } from "../../services/series/todo-series-due-run.service.js";
+import type { TodoSeriesDueRunner } from "../../services/series/todo-series-due-runner.service.js";
 
 export const TODO_SERIES_MATERIALIZATION_BUDGET = {
   /** ID만 읽으므로 배치 메모리는 1MB 미만이다. */
@@ -39,7 +39,7 @@ export interface MaterializeDueTodoSeriesResult {
 interface MaterializeDueTodoSeriesDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findDueBatch">;
   readonly seriesOwner: TodoSeriesOwnerPort;
-  readonly dueRun: Pick<TodoSeriesDueRun, "materialize">;
+  readonly dueRunner: Pick<TodoSeriesDueRunner, "materialize">;
   readonly alert: OperationalAlertPort;
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly batchSize?: number;
@@ -61,7 +61,7 @@ export class MaterializeDueTodoSeries {
   }
 
   async execute(): Promise<MaterializeDueTodoSeriesResult> {
-    const { logger, alert, seriesRepository, seriesOwner, dueRun } = this.#dependencies;
+    const { logger, alert, seriesRepository, seriesOwner, dueRunner } = this.#dependencies;
     const batchSize = this.#dependencies.batchSize ?? TODO_SERIES_MATERIALIZATION_BUDGET.BATCH_SIZE;
     const deadlineMs =
       this.#dependencies.deadlineMs ?? TODO_SERIES_MATERIALIZATION_BUDGET.DEADLINE_MS;
@@ -105,7 +105,7 @@ export class MaterializeDueTodoSeries {
         processedCount += 1;
         try {
           // 사용자 수정이나 다른 실행이 규칙 행을 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
-          createdCount += await dueRun.materialize(due, { skipLocked: true });
+          createdCount += await dueRunner.materialize(due, { skipLocked: true });
         } catch (error) {
           failedCount += 1;
           logger.warn({

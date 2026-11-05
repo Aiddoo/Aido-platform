@@ -11,7 +11,7 @@ import {
   resolveAllFeatureAccess,
 } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 import { AiSdkGenerator } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator";
-import { AiSpendGuard } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.guard";
+import { AiSpendBudget } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget";
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -99,7 +99,7 @@ export function createAiSdkGenerator(
     config,
     adapters,
     registry,
-    new AiSpendGuard(config, meter, alert, options.access ?? stubAccessTiers()),
+    new AiSpendBudget(config, meter, alert, options.access ?? stubAccessTiers()),
   );
   return { generator, alert, meter, registry };
 }

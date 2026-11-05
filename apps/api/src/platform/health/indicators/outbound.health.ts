@@ -15,7 +15,7 @@ export class OutboundHealthIndicator {
   ) {}
 
   isHealthy(key: string): HealthIndicatorResult {
-    const degraded = Object.values(this.registry.states()).some(
+    const degraded = Object.values(this.registry.getStates()).some(
       (state) => state.openBreakers.length > 0,
     );
     return this.healthIndicatorService.check(key).up({ degraded });

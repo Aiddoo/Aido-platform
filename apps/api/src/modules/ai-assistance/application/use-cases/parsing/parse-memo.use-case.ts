@@ -9,8 +9,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
-  generationCompletedLog,
-  generationFailedLog,
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
 } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
@@ -106,14 +106,14 @@ export class ParseMemo {
     });
     const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
       // 확정 뒤 응답을 받지 못한 재시도다. 메모 결과는 서버에 남기지 않아 추가 차감 없이 다시 만든다.
-      reservation: reservation.alreadyCommitted ? await quota.reopen(reservation) : reservation,
+      reservation: reservation.isAlreadyCommitted ? await quota.reopen(reservation) : reservation,
       userId,
       feature: "AI_PARSE",
       task: parseMemoPrompt.id,
       generate: async () => {
         const parsed = await this.#parse({ ...input, timezone, locale }, startTime);
         // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
-        return { result: parsed.result, outcome: parsed.charge ? "CHARGE" : "NO_ACTION" };
+        return { result: parsed.result, outcome: parsed.shouldCharge ? "CHARGE" : "NO_ACTION" };
       },
     });
     return { ...result, featureQuota };
@@ -122,7 +122,10 @@ export class ParseMemo {
   async #parse(
     input: ResolvedParseMemoInput,
     startTime: number,
-  ): Promise<{ readonly result: Omit<ParseMemoResult, "featureQuota">; readonly charge: boolean }> {
+  ): Promise<{
+    readonly result: Omit<ParseMemoResult, "featureQuota">;
+    readonly shouldCharge: boolean;
+  }> {
     const { content, userId, timezone, categoryId, locale } = input;
     const definition = parseMemoPrompt;
     const at = now();
@@ -160,11 +163,11 @@ export class ParseMemo {
         },
         { agreedConsentVersion: agreedVersion, userId, signal: input.signal },
       );
-      const { data, omittedTodoCount } = value;
-      const charge = !value.noAction;
+      const { parsedMemo: data, omittedTodoCount } = value;
+      const charge = !value.hasNoAction;
 
       this.#dependencies.logger.log({
-        ...generationCompletedLog(
+        ...buildGenerationCompletedLog(
           { ...logBase, outcome: charge ? "SUCCESS" : "NO_ACTION", quotaCharged: charge },
           meta,
         ),
@@ -181,12 +184,12 @@ export class ParseMemo {
             omittedTodoCount,
           },
         },
-        charge,
+        shouldCharge: charge,
       };
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({
-        ...generationFailedLog({
+        ...buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,

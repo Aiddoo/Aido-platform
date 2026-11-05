@@ -49,21 +49,21 @@ export class ChargedPlanRunner {
     });
     // 처음 시도가 아니면 앞선 시도가 만든 결과가 남아 있을 수 있다. 이어받기·재생성 전에 먼저 본다.
     const remembered =
-      reservation.alreadyCommitted || reservation.attempt > 1
-        ? await replay.recall(userId, idempotencyKey)
+      reservation.isAlreadyCommitted || reservation.attempt > 1
+        ? await replay.find(userId, idempotencyKey)
         : null;
     if (remembered != null) {
       return this.#returnRemembered(request, reservation, remembered);
     }
     return settleChargedGeneration<T>(this.#dependencies, {
       // 확정했는데 결과를 잃었으면(재시작·10분 경과) 추가 차감 없이 같은 행에서 다시 만든다.
-      reservation: reservation.alreadyCommitted ? await quota.reopen(reservation) : reservation,
+      reservation: reservation.isAlreadyCommitted ? await quota.reopen(reservation) : reservation,
       userId,
       feature,
       task: reason,
       generate: request.generate,
       // 확정보다 먼저 기억한다. 사이에 온 재요청은 처리 중(AI_1314)이라 결과를 잃은 것으로 보지 않는다.
-      beforeCommit: (result) => replay.remember(userId, idempotencyKey, result),
+      beforeCommit: (result) => replay.save(userId, idempotencyKey, result),
     });
   }
 
@@ -74,7 +74,7 @@ export class ChargedPlanRunner {
   ): Promise<ChargedGenerationResult<T>> {
     const { userId, feature, reason } = request;
     const charged =
-      reservation.alreadyCommitted ||
+      reservation.isAlreadyCommitted ||
       (await commitOrWarn(this.#dependencies, { reservation, task: reason }));
     const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
       userId,

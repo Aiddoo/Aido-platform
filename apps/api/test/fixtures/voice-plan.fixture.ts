@@ -51,11 +51,11 @@ export const EMPTY_PLANNING_CONTEXT: PlanningContext = {
 export class InMemoryPlanResultReplay<T> implements PlanResultReplayPort<T> {
   readonly results = new Map<string, T>();
 
-  async remember(userId: string, idempotencyKey: string, result: T): Promise<void> {
+  async save(userId: string, idempotencyKey: string, result: T): Promise<void> {
     this.results.set(`${userId}:${idempotencyKey}`, result);
   }
 
-  async recall(userId: string, idempotencyKey: string): Promise<T | null> {
+  async find(userId: string, idempotencyKey: string): Promise<T | null> {
     return this.results.get(`${userId}:${idempotencyKey}`) ?? null;
   }
 }

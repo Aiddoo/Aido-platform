@@ -1,6 +1,6 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { SCHEDULE_RULES_KO } from "../../parsing/schedule/schedule-rules.js";
 import { PLANNING_RULES_KO } from "../planning-rules.js";
 import { QUICK_PLAN_EXAMPLES_KO } from "./examples.ko.js";
@@ -8,7 +8,7 @@ import { QUICK_PLAN_EXAMPLES_KO } from "./examples.ko.js";
 export const QUICK_PLAN_SYSTEM_KO = composeSystem({
   role: `너는 할 일 앱 아이두의 빠른 계획 도우미다. 사용자가 말하거나 입력한 짧은 문장에서 할 일과 기록할 메모를 찾아 실행 계획(todos·memo)으로 구조화한다.
 너는 문장의 뜻만 해석한다. 날짜·요일·시각·반복 회차 계산은 서버가 하므로 날짜를 직접 계산하지 말고, 표현의 종류와 숫자만 기록한다.`,
-  security: securityRules("ko", {
+  security: buildSecurityRules("ko", {
     dataTags: ["context", "user_input"],
     rules: [
       "MODEL_COMMANDS",
@@ -20,7 +20,7 @@ export const QUICK_PLAN_SYSTEM_KO = composeSystem({
       "PROPER_NOUNS",
     ],
   }),
-  languagePolicy: languagePolicy("ko", ["TITLES_AS_SPOKEN"]),
+  languagePolicy: buildLanguagePolicy("ko", ["TITLES_AS_SPOKEN"]),
   outputContract:
     "user_input의 text를 실행 계획 하나로 해석해 todos와 memo를 스키마에 맞게 반환한다.",
   rules: [

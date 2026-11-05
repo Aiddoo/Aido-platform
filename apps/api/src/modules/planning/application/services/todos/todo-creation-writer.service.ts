@@ -22,17 +22,17 @@ import type {
 } from "../../ports/todos/todo.repository.port.js";
 import type { TodoOccurrenceMaterializer } from "../series/todo-occurrence-materializer.service.js";
 
-export function planTodoCreation(data: ResolvedCreateTodoData): TodoCreationDraft {
+export function planTodoCreation(input: ResolvedCreateTodoData): TodoCreationDraft {
   return Todo.planCreation({
-    userId: data.userId,
-    categoryId: data.categoryId,
-    title: data.title,
-    startDate: data.startDate,
-    endDate: data.endDate ?? null,
-    scheduledLocalTime: data.scheduledTime ?? null,
-    timezone: data.timezone,
-    isAllDay: data.isAllDay,
-    visibility: data.visibility,
+    userId: input.userId,
+    categoryId: input.categoryId,
+    title: input.title,
+    startDate: input.startDate,
+    endDate: input.endDate ?? null,
+    scheduledLocalTime: input.scheduledTime ?? null,
+    timezone: input.timezone,
+    isAllDay: input.isAllDay,
+    visibility: input.visibility,
   });
 }
 
@@ -85,9 +85,9 @@ export class TodoCreationWriter {
   }
 
   /** 상한 확인 → 규칙 저장 → 회차를 한 번에 만든다. 활성 UoW와 생성 잠금 안에서 호출한다. */
-  async startSeries(data: ResolvedCreateTodoData, repeat: RepeatSpec): Promise<StartedSeries> {
-    const { userId, categoryId } = data;
-    if (data.endDate != null) {
+  async startSeries(input: ResolvedCreateTodoData, repeat: RepeatSpec): Promise<StartedSeries> {
+    const { userId, categoryId } = input;
+    if (input.endDate != null) {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "endDate" });
     }
     const at = now();
@@ -95,18 +95,18 @@ export class TodoCreationWriter {
       id: randomUUID(),
       userId,
       categoryId,
-      title: data.title,
-      visibility: data.visibility ?? "PUBLIC",
-      scheduledLocalTime: data.scheduledTime ?? null,
-      timezone: data.timezone,
+      title: input.title,
+      visibility: input.visibility ?? "PUBLIC",
+      scheduledLocalTime: input.scheduledTime ?? null,
+      timezone: input.timezone,
       rule: RepeatRule.from(repeat),
-      startDate: toDateString(data.startDate),
-      checklistTemplate: data.items ?? [],
+      startDate: toDateString(input.startDate),
+      checklistTemplate: input.items ?? [],
       at,
     });
     series.assertWithinPastLimit(at);
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
-    await this.#assertSeriesLimit(userId, data.legacySeriesLimit === true);
+    await this.#assertSeriesLimit(userId, input.usesLegacySeriesLimit === true);
     const activeInCategory = await this.#dependencies.todoRepository.countCategoryUsage(
       userId,
       categoryId,
@@ -124,15 +124,15 @@ export class TodoCreationWriter {
     return { series, occurrences };
   }
 
-  async #assertSeriesLimit(userId: string, legacy: boolean): Promise<void> {
-    const limit = legacy
+  async #assertSeriesLimit(userId: string, usesLegacyLimit: boolean): Promise<void> {
+    const limit = usesLegacyLimit
       ? TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY
       : TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER;
     const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
     if (activeCount < limit) {
       return;
     }
-    if (legacy) {
+    if (usesLegacyLimit) {
       // 출시 앱은 TODO_0842를 몰라 SYS_0001로 보인다. 이 경로에서 이미 받는 한도 거절로 돌려준다.
       throw new ApplicationException(ErrorCode.TODO_0813, {
         activeInCategory: activeCount,

@@ -28,9 +28,13 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     await adapter.readQuotaInTx("user-123", 3);
 
     // Then
-    expect(entitlementReader.featureQuotaInTx).toHaveBeenCalledWith("user-123", "TODO_CATEGORY", {
-      used: 3,
-      resetsAt: null,
-    });
+    expect(entitlementReader.readFeatureQuotaInTx).toHaveBeenCalledWith(
+      "user-123",
+      "TODO_CATEGORY",
+      {
+        used: 3,
+        resetsAt: null,
+      },
+    );
   });
 });

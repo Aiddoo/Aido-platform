@@ -32,9 +32,9 @@ export type AiCircuitBreakerKind = "billing" | "auth" | "health";
 
 export interface AiFailureRule {
   /** 다음 업체로 넘어가는지 */
-  readonly fallback: boolean;
+  readonly shouldFallback: boolean;
   /** 같은 업체를 한 번 더 부르는지(스키마 불일치는 다시 부르면 맞는 경우가 많다) */
-  readonly retrySameProvider: boolean;
+  readonly shouldRetrySameProvider: boolean;
   readonly breaker: AiCircuitBreakerKind | null;
   /** 모든 업체가 실패했을 때 사용자에게 주는 코드 */
   readonly errorCode: ErrorCodeType;
@@ -46,56 +46,60 @@ export function resolveAiFailureRule(kind: AiFailureKind): AiFailureRule {
   return match(kind)
     .returnType<AiFailureRule>()
     .with("QUOTA_EXHAUSTED", () => ({
-      fallback: true,
-      retrySameProvider: false,
+      shouldFallback: true,
+      shouldRetrySameProvider: false,
       breaker: "billing",
       errorCode: ErrorCode.AI_1301,
     }))
     .with("AUTH", () => ({
-      fallback: true,
-      retrySameProvider: false,
+      shouldFallback: true,
+      shouldRetrySameProvider: false,
       breaker: "auth",
       errorCode: ErrorCode.AI_1301,
     }))
     .with("RATE_LIMITED", () => ({
-      fallback: true,
-      retrySameProvider: false,
+      shouldFallback: true,
+      shouldRetrySameProvider: false,
       breaker: null,
       errorCode: ErrorCode.AI_1310,
     }))
     .with("OVERLOADED", "UPSTREAM", "TIMEOUT", () => ({
-      fallback: true,
-      retrySameProvider: false,
+      shouldFallback: true,
+      shouldRetrySameProvider: false,
       breaker: "health",
       errorCode: ErrorCode.AI_1301,
     }))
     .with("BAD_REQUEST", () => ({
-      fallback: true,
-      retrySameProvider: false,
+      shouldFallback: true,
+      shouldRetrySameProvider: false,
       breaker: null,
       errorCode: ErrorCode.AI_1302,
     }))
     .with("BLOCKED", "TRUNCATED", () => ({
-      fallback: false,
-      retrySameProvider: false,
+      shouldFallback: false,
+      shouldRetrySameProvider: false,
       breaker: null,
       errorCode: ErrorCode.AI_1302,
     }))
     .with("INVALID_OUTPUT", () => ({
-      fallback: true,
-      retrySameProvider: true,
+      shouldFallback: true,
+      shouldRetrySameProvider: true,
       breaker: null,
       errorCode: ErrorCode.AI_1302,
     }))
     .with("UNAVAILABLE", "CIRCUIT_OPEN", () => ({
-      fallback: true,
-      retrySameProvider: false,
+      shouldFallback: true,
+      shouldRetrySameProvider: false,
       ...unavailable,
     }))
-    .with("HALTED", () => ({ fallback: false, retrySameProvider: false, ...unavailable }))
+    .with("HALTED", () => ({
+      shouldFallback: false,
+      shouldRetrySameProvider: false,
+      ...unavailable,
+    }))
     .with("USER_SPEND_LIMITED", () => ({
-      fallback: false,
-      retrySameProvider: false,
+      shouldFallback: false,
+      shouldRetrySameProvider: false,
       breaker: null,
       errorCode: ErrorCode.AI_1310,
     }))

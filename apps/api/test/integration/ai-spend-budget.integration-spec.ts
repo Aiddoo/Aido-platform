@@ -4,7 +4,7 @@ import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { AiSpendGuard } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.guard";
+import { AiSpendBudget } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
@@ -64,11 +64,11 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
   it("동시에 끝난 요청의 비용을 전역 일·월·사용자 일 행에 빠짐없이 더하고 경보는 한 번만 올린다", async () => {
     // Given
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendGuard(config, meter, alert, stubAccessTiers());
+    const budget = new AiSpendBudget(config, meter, alert, stubAccessTiers());
     // When
     await Promise.all(
       Array.from({ length: 20 }, (_, index) =>
-        guard.record(index % 2 === 0 ? "user-a" : "user-b", 60_000),
+        budget.record(index % 2 === 0 ? "user-a" : "user-b", 60_000),
       ),
     );
     // Then
@@ -90,13 +90,13 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
 
   it("재시작한 서버도 저장된 사용량으로 예산을 판단한다", async () => {
     // Given
-    await new AiSpendGuard(
+    await new AiSpendBudget(
       config,
       meter,
       new RecordingOperationalAlert(),
       stubAccessTiers(),
     ).record("user-a", 250_000);
-    const restarted = new AiSpendGuard(
+    const restarted = new AiSpendBudget(
       config,
       meter,
       new RecordingOperationalAlert(),
@@ -112,16 +112,16 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
 
   it("다음 UTC 날짜가 되면 일 예산을 새로 센다", async () => {
     // Given
-    const guard = new AiSpendGuard(
+    const budget = new AiSpendBudget(
       config,
       meter,
       new RecordingOperationalAlert(),
       stubAccessTiers(),
     );
-    await guard.record("user-a", 250_000);
+    await budget.record("user-a", 250_000);
     // When
     vi.setSystemTime(new Date("2026-11-06T00:00:01.000Z"));
-    const decision = await guard.decide({ taskClass: "interactive", userId: "user-a" });
+    const decision = await budget.decide({ taskClass: "interactive", userId: "user-a" });
     // Then
     expect(decision).toEqual({ type: "allowed" });
   });
@@ -141,10 +141,10 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
         subscriptionStatus: "FREE",
       });
       await client.insert(userTable).values(user);
-      const guard = new AiSpendGuard(config, meter, new RecordingOperationalAlert(), access);
-      await guard.record(user.id, 250_000);
+      const budget = new AiSpendBudget(config, meter, new RecordingOperationalAlert(), access);
+      await budget.record(user.id, 250_000);
       // When
-      const result = await guard.decide({ taskClass: "interactive", userId: user.id });
+      const result = await budget.decide({ taskClass: "interactive", userId: user.id });
       // Then
       expect(result).toEqual(decision);
     },

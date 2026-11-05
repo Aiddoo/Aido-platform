@@ -14,7 +14,7 @@ import {
   TODO_TIMEZONE_REBASE_QUEUE,
   TODO_TIMEZONE_REBASE_WORKER_POLICY,
   todoTimezoneRebaseJobSchema,
-} from "./todo-timezone-rebase.queue.constants.js";
+} from "./todo-timezone-rebase-queue.constants.js";
 
 export const TODO_TIMEZONE_REBASE_ALERT_KEY = "planning.todo-timezone-rebase-failed";
 

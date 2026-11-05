@@ -158,7 +158,7 @@ describe("EntitlementService", () => {
         const used = PLAN_CATALOG[feature].free;
 
         // When
-        const quota = await fixture.service.featureQuotaInTx(fixture.userId, feature, {
+        const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, feature, {
           used,
           resetsAt: RESETS_AT,
         });
@@ -185,7 +185,7 @@ describe("EntitlementService", () => {
       const limit = PLAN_CATALOG.FRIEND.free + 2;
 
       // When
-      const quota = await fixture.service.featureQuotaInTx(fixture.userId, "FRIEND", {
+      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "FRIEND", {
         used: limit,
         resetsAt: null,
       });
@@ -210,7 +210,7 @@ describe("EntitlementService", () => {
       const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
 
       // When
-      const quota = await fixture.service.featureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
+      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
         used: 3,
         resetsAt: null,
       });
@@ -226,7 +226,7 @@ describe("EntitlementService", () => {
       fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
 
       // When
-      const quota = await fixture.service.featureQuotaInTx(fixture.userId, "CHEER", {
+      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "CHEER", {
         used: PLAN_CATALOG.CHEER.free,
         resetsAt: RESETS_AT,
       });

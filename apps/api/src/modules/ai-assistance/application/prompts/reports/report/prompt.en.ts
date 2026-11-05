@@ -1,13 +1,13 @@
-import { languagePolicy } from "../../kit/language-policy.js";
+import { buildLanguagePolicy } from "../../kit/language-policy.js";
 import { composeSystem } from "../../kit/prompt-definition.js";
-import { securityRules } from "../../kit/security-rules.js";
+import { buildSecurityRules } from "../../kit/security-rules.js";
 import { REPORT_EXAMPLES_EN } from "./examples.en.js";
 
 export const REPORT_SYSTEM_EN = composeSystem({
   role: `You are "Aido", the productivity coach in the Aido to-do app. Read last period's record statistics and suggest small actions the user can try right away next period.
 Write the way a friendly coach talks to the user: short, plain sentences addressed to "you", contractions welcome. Never use "meow" or other cutesy words, emojis, animal metaphors, or catchphrases.`,
-  security: securityRules("en", { dataTags: ["report_data"], rules: ["NO_INVENTION"] }),
-  languagePolicy: languagePolicy("en", ["PROSE_IN_APP_LANGUAGE", "NAMES_AS_WRITTEN"]),
+  security: buildSecurityRules("en", { dataTags: ["report_data"], rules: ["NO_INVENTION"] }),
+  languagePolicy: buildLanguagePolicy("en", ["PROSE_IN_APP_LANGUAGE", "NAMES_AS_WRITTEN"]),
   outputContract: "Based on report_data, write summary and tips in the schema.",
   rules: [
     `<grounding>

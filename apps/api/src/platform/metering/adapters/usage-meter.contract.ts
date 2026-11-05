@@ -89,8 +89,8 @@ export function describeUsageMeterContract(context: {
       const rejected = await meter.tryReserve(DAY, 1, 10);
 
       // Then
-      expect(accepted).toEqual({ accepted: true, total: 10 });
-      expect(rejected).toEqual({ accepted: false, total: 10 });
+      expect(accepted).toEqual({ isAccepted: true, total: 10 });
+      expect(rejected).toEqual({ isAccepted: false, total: 10 });
     });
 
     it("새 키라도 한 번에 한도보다 큰 예약은 받지 않는다", async () => {
@@ -98,7 +98,7 @@ export function describeUsageMeterContract(context: {
       const result = await meter.tryReserve(DAY, 11, 10);
 
       // Then
-      expect(result).toEqual({ accepted: false, total: 0 });
+      expect(result).toEqual({ isAccepted: false, total: 0 });
       expect(await meter.read([DAY])).toEqual([0]);
     });
 

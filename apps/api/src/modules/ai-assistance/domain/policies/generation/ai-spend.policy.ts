@@ -1,5 +1,5 @@
 /** 사용자가 결과를 기다리는 요청(interactive)과 잡이 만드는 결과(background). 동시성·재시도·예산을 나눈다. */
-export const AI_TASK_CLASSES = ["interactive", "background"] as const;
+const AI_TASK_CLASSES = ["interactive", "background"] as const;
 
 export type AiTaskClass = (typeof AI_TASK_CLASSES)[number];
 
@@ -38,11 +38,11 @@ export type AiSpendDecision =
 export function decideAiSpend(input: {
   readonly taskClass: AiTaskClass;
   /** 킬 스위치(AI_GENERATION_MODE)가 이 분류의 생성을 켜 두었는지 */
-  readonly enabled: boolean;
+  readonly isEnabled: boolean;
   readonly spend: AiSpend;
   readonly limits: AiSpendLimits;
 }): AiSpendDecision {
-  const { taskClass, enabled, spend, limits } = input;
+  const { taskClass, isEnabled: enabled, spend, limits } = input;
   if (!enabled) {
     return { type: "halted", reason: "kill-switch" };
   }

@@ -7,7 +7,10 @@ import type { ExistingTodo } from "../../../../domain/policies/planning/action-p
 import { normalizeMemoDraft } from "../../../services/parsing/todo-draft.normalizer.js";
 import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definition.js";
 import { sanitizeTextForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
-import { type PlanningContextInput, planningContext } from "../../planning/planning-context.js";
+import {
+  type PlanningContextInput,
+  buildPlanningContext,
+} from "../../planning/planning-context.js";
 import { PARSE_MEMO_SYSTEM_EN } from "./prompt.en.js";
 import { PARSE_MEMO_SYSTEM_KO } from "./prompt.ko.js";
 import { type MemoDraft, memoDraftSchema } from "./schema.js";
@@ -28,9 +31,9 @@ export interface ParseMemoNormalizeContext {
 }
 
 export interface ParseMemoOutcome {
-  readonly data: ParsedMemoData;
+  readonly parsedMemo: ParsedMemoData;
   /** 메모 전체에 실행할 행동이 없었는지. 이 경우 사용량을 차감하지 않는다. */
-  readonly noAction: boolean;
+  readonly hasNoAction: boolean;
   /** 할 일 상한을 넘어 만들지 않은 할 일 수. 메모 원문은 그대로 남는다. */
   readonly omittedTodoCount: number;
   readonly warnings: readonly string[];
@@ -48,7 +51,7 @@ export const parseMemoPrompt: PromptDefinition<
   ParseMemoNormalizeContext
 > = {
   id: "parse-memo",
-  version: "parse-memo@6",
+  version: "parse-memo@7",
   taskClass: "interactive",
   // 30개 카테고리(이름 50자)·다가오는 할 일 30개와 5,000자 메모의 최대 user 턴이 약 13,800자다.
   maxInputChars: 15_000,
@@ -56,7 +59,7 @@ export const parseMemoPrompt: PromptDefinition<
   build: (input, locale) => ({
     system: SYSTEM[locale],
     prompt: composeUserTurn({
-      context: planningContext(input, locale),
+      context: buildPlanningContext(input, locale),
       input: wrapUntrusted("user_input", {
         memo: sanitizeTextForPrompt(input.content, MEMO_LIMITS.MAX_CONTENT_LENGTH),
       }),

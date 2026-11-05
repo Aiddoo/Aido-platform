@@ -9,12 +9,12 @@ import type {
 import { suggestionContextTranslations } from "../../../locale/suggestions/suggestion-context.locale.js";
 
 export interface ReportPromptInput {
-  readonly data: AggregatedReportData;
+  readonly reportData: AggregatedReportData;
   readonly periodLabel: string;
   readonly type: ReportType;
   /** 사용자 로컬 기간 첫날·마지막 날 (YYYY-MM-DD) */
   readonly period: { readonly start: string; readonly end: string };
-  readonly prevTips: readonly string[] | null;
+  readonly previousTips: readonly string[] | null;
 }
 
 const DAY_LABELS = {
@@ -32,7 +32,7 @@ function delta(current: number, previous: number | null): number | null {
  * 활동이 없는 기간은 LLM을 부르지 않으므로 활동 있는 기간만 다룬다.
  */
 export function buildReportContext(input: ReportPromptInput, locale: SupportedLocale) {
-  const { data } = input;
+  const { reportData: data } = input;
   const categories = data.categoryBreakdown.filter((category) => category.total > 0);
   const focus =
     categories.length >= 2
@@ -69,6 +69,6 @@ export function buildReportContext(input: ReportPromptInput, locale: SupportedLo
       streakDays: data.streakDays,
     },
     focus,
-    previousTips: input.prevTips,
+    previousTips: input.previousTips,
   };
 }
