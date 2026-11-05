@@ -94,16 +94,14 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     onCaptured,
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,
+    onFailed: (transcript) => {
+      if (methods.getValues('title').trim().length === 0) {
+        methods.setValue('title', getTranscriptText(transcript), { shouldDirty: true });
+      }
+    },
   });
 
   useEffect(() => () => planAbortRef.current?.abort(), []);
-
-  const failedStatus = session.state.status === 'failed';
-  useEffect(() => {
-    if (failedStatus && methods.getValues('title').trim().length === 0) {
-      methods.setValue('title', getTranscriptText(session.state.transcript), { shouldDirty: true });
-    }
-  }, [failedStatus, methods, session.state.transcript]);
 
   const start = async () => {
     const hasFailed = session.state.status === 'failed';

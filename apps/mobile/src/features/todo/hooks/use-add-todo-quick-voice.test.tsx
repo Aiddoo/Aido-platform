@@ -74,6 +74,9 @@ const WORKOUT_ACTION = {
   duplicateOfTodoId: null,
 };
 
+/** 실패 상태로 그릴 때마다 입력 칸에 있던 글자 */
+const titlesRenderedAsFailed: string[] = [];
+
 function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
   const methods = useForm<AddTodoFormValues>({
     defaultValues: { title: '', startDate: new Date(2026, 10, 5), repeat: null },
@@ -81,6 +84,9 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
   const quickVoice = useAddTodoQuickVoice({ methods, onExit });
   const title = useWatch({ control: methods.control, name: 'title' });
   const { state } = quickVoice;
+  if (state.status === 'failed') {
+    titlesRenderedAsFailed.push(title);
+  }
 
   return (
     <>
@@ -401,6 +407,19 @@ describe('useAddTodoQuickVoice', () => {
     });
   });
 
+  it('앱을 오프라인으로 열어 동의 상태를 모르면 마이크를 눌렀을 때 묻지 않고 듣기 시작한다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const { speechRecognizer } = await renderQuickVoice();
+
+    // When
+    await fireEvent.press(screen.getByTestId('start'));
+
+    // Then
+    await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+    onlineManager.setOnline(true);
+  });
+
   it('오프라인이어도 멈추지 않고 실패로 넘어가 글자를 입력 칸에 남긴다', async () => {
     // Given
     onlineManager.setOnline(false);
@@ -414,6 +433,21 @@ describe('useAddTodoQuickVoice', () => {
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
     onlineManager.setOnline(true);
+  });
+
+  it('정리에 실패하면 입력 칸이 빈 채로 그려지는 순간 없이 글자를 넣는다', async () => {
+    // Given
+    titlesRenderedAsFailed.length = 0;
+    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    httpClient.post.mockRejectedValue(new NetworkError());
+
+    // When
+    await speak(speechRecognizer);
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
+    expect(titlesRenderedAsFailed.length).toBeGreaterThan(0);
+    expect(titlesRenderedAsFailed.every((title) => title === '말한 내용')).toBe(true);
   });
 
   it('정리를 기다리다 그만두면 요청을 끊고 글자를 입력 칸으로 옮긴다', async () => {

@@ -41,7 +41,11 @@ import {
   type VoiceCaptureState,
   type VoicePauseCause,
 } from '../domains/voice-capture.model';
-import { getTranscriptText, isTranscriptEmpty } from '../domains/voice-transcript.model';
+import {
+  getTranscriptText,
+  isTranscriptEmpty,
+  type VoiceTranscript,
+} from '../domains/voice-transcript.model';
 import { getDurationBucket } from '../utils/analytics/duration-bucket';
 
 /** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
@@ -79,6 +83,11 @@ interface UseVoiceCaptureSessionOptions {
    * 거절하면 들은 글자를 남긴 채 실패 상태가 된다.
    */
   onCaptured: (transcript: string) => Promise<CapturedPlan | null>;
+  /**
+   * 실패 상태가 그려지기 전에 부른다. 글자를 입력 칸으로 옮기면 빈 칸이 먼저 보이지 않는다.
+   * 렌더 뒤의 effect에서 옮기면 Android에서 칸이 잠깐 비어 보인다.
+   */
+  onFailed?: (transcript: VoiceTranscript) => void;
 }
 
 export interface BeginOptions {
@@ -100,6 +109,7 @@ export function useVoiceCaptureSession({
   maxSeconds = QUICK_CAPTURE_MAX_SECONDS,
   onLimitReached,
   onCaptured,
+  onFailed,
 }: UseVoiceCaptureSessionOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const haptics = useHaptics();
@@ -256,6 +266,7 @@ export function useVoiceCaptureSession({
     }
 
     if (next.status === 'failed') {
+      onFailed?.(next.transcript);
       clearTimers();
       haptics.notify('error');
       trackEvent('voice_capture_failed', { mode, reason: next.reason });
@@ -446,6 +457,7 @@ export function useVoiceCaptureSession({
   }, [isListening, maxSeconds]);
 
   const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
+  const notifyPlanFailed = useEffectEvent((transcript: VoiceTranscript) => onFailed?.(transcript));
   const isPlanning = state.status === 'planning';
   useEffect(() => {
     if (!isPlanning) {
@@ -462,7 +474,8 @@ export function useVoiceCaptureSession({
       })
       .catch(() => {
         if (isCurrent) {
-          dispatch({ type: 'plan-failed' });
+          const { next } = dispatch({ type: 'plan-failed' });
+          notifyPlanFailed(next.transcript);
         }
       });
 
