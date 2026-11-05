@@ -1,3 +1,4 @@
+import type { TIME_FORMATS } from '@aido/api/vocabulary';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
@@ -11,7 +12,7 @@ export function toDateFormatLocale(language: ResolvedLanguage): DateFormatContex
   return language === 'ko' ? 'ko-KR' : 'en-US';
 }
 
-export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
+export type TimeFormat = (typeof TIME_FORMATS)[number];
 
 /** 시간대와 무관한 하루 중 시각 (0-23시, 0-59분) */
 export interface TimeOfDay {
