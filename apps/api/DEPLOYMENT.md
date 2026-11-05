@@ -56,7 +56,7 @@ job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`�
 
 ## 롤백의 범위
 
-workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 application graph·marker·DDL·업무 데이터 rollback이 아니다.
+workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 스키마와 업무 데이터를 되돌리지 않는다.
 
 **1.14.2 migration 뒤에는 이미지를 1.14.1 이하로만 되돌리지 않는다.** `drop_legacy_comment_path_and_retention_outbox`가 `TodoComment.path`·`depth`·`rootId` 열과 `RetentionPushOutbox`를 지웠다. 이전 이미지는 지운 열에 값을 쓰므로 댓글 작성이 실패한다. API를 되돌려야 하면 1.14.2 이상 이미지를 쓴다.
 
@@ -170,9 +170,9 @@ SELECT count(*) FROM "Notification" AS n JOIN "Todo" AS t ON t."id" = n."todoId"
 WHERE n."type" = 'TODO_REMINDER' AND t."startDate" >= CURRENT_DATE - 2;
 ```
 
-nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
+모든 과거 이미지의 스키마·동작 호환을 보장하지 않는다. 파괴적 DDL·데이터 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하지 않는다.
 
-새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 schema가 함께 바뀌는 릴리스는 해당 graph의 rollout 제한을 [migration.md](../../docs/server/migration.md)와 함께 확인한다.
+새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 스키마가 함께 바뀌는 릴리스는 그 릴리스 노트(`docs/releases`)의 제한을 함께 확인한다.
 
 ## 환경 설정과 공개 버전
 
@@ -197,8 +197,15 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 | WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY         | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
 | RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                               |
+| FEATURE_DISCOVERY_*                                               | 새 기능 소개. 규칙은 아래                                                                                         |
 
-운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
+새 기능 소개 값은 릴리스마다 맞춘다. `.env*.example`의 값은 옛 예시이므로 복사하지 않는다.
+
+- `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(`feature-discovery.registry.ts`의 `FEATURE_DISCOVERY_CAMPAIGN_ID`, 1.15.0은 `feature-discovery-2026-12`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.
+- `FEATURE_DISCOVERY_MIN_APP_VERSION`: 그 캠페인을 번들한 앱 버전이다(1.15.0).
+- `FEATURE_DISCOVERY_LAUNCHED_AT`: 끝이 `Z`인 UTC ISO로 쓴 그 릴리스의 배포 시각이다. 이후 가입자는 소개 대신 활성화 흐름을 본다.
+
+운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)·`planning.todo-timezone-rebase-failed`(시간대 재계산 실패)·`social.invite-reward.*`(초대 보상 재시도 소진)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
 
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
