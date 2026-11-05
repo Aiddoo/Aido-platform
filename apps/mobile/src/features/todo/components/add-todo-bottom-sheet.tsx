@@ -502,7 +502,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
         }
         isContentPanEnabled={
-          !VoiceCapturePolicy.isActive(voice.state) && voice.state.status !== 'planning'
+          !VoiceCapturePolicy.isActive(voice.state) &&
+          voice.state.status !== 'planning' &&
+          voice.state.status !== 'review'
         }
         footer={
           isFormStep ? (
