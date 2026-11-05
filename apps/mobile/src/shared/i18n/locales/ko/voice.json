@@ -25,6 +25,8 @@
     }
   },
   "listening": {
+    "languageChangeFailed": "언어를 바꾸지 못했어요. 듣던 언어로 이어 갈게요.",
+    "prompt": "말해보세요",
     "cancel": "취소",
     "done": "다 말했어요",
     "resume": "이어서 말하기",

@@ -18,12 +18,15 @@ export const LinearGradient = NothingToDraw;
 export const Path = NothingToDraw;
 export const RadialGradient = NothingToDraw;
 export const Rect = NothingToDraw;
+export const Shader = NothingToDraw;
 export const RoundedRect = NothingToDraw;
 export const BlurMask = NothingToDraw;
 export const SweepGradient = NothingToDraw;
 export const usePathValue = () => ({});
 export const vec = (x: number, y: number) => ({ x, y });
 export const Skia = {
+  Color: () => new Float32Array([1, 1, 1, 1]),
+  RuntimeEffect: { Make: () => ({}) },
   PathBuilder: { Make: createPathBuilder },
   XYWHRect: (x: number, y: number, width: number, height: number) => ({ x, y, width, height }),
   RRectXY: (rect: unknown, rx: number, ry: number) => ({ rect, rx, ry }),

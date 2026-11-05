@@ -1,5 +1,5 @@
-import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
-import type { SpeechEvent, SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useLogger } from '@src/bootstrap/providers/di-context';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
@@ -14,16 +14,14 @@ import { SentenceCaptionList } from '@src/features/voice/components/note/sentenc
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
 import { VoiceNoteMarkControl } from '@src/features/voice/components/note/voice-note-mark-control';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
-import {
-  useLiveWaveform,
-  WaveformTimeline,
-} from '@src/features/voice/components/note/waveform-timeline';
+import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { RecognitionLanguageToggle } from '@src/features/voice/components/quick-voice/recognition-language-toggle';
-import { VOICE_CLOCK_TICK_MS } from '@src/features/voice/constants/voice.constants';
+import { VOICE_NOTE_LOG_EVENT } from '@src/features/voice/constants/voice-note-log-events';
 import {
   VoiceCapturePolicy,
   type VoiceCaptureState,
 } from '@src/features/voice/domains/voice-capture.model';
+import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
 import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
@@ -31,6 +29,7 @@ import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-no
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
+import { errorMessageOf } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -51,7 +50,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
-import { Suspense, useEffect, useEffectEvent, useState } from 'react';
+import { Suspense, useEffect, useEffectEvent } from 'react';
 import { BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
@@ -62,9 +61,8 @@ function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
   useKeepAwake(undefined, KEEP_AWAKE_OPTIONS);
   const isCompact = useWindowSizeClass() === 'compact';
-  const fontScaledSize = useFontScaledSize();
-  const controlIconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
   const toast = useAppToast();
+  const logger = useLogger();
   const confirmDialog = useConfirmDialog();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
@@ -121,7 +119,7 @@ function VoiceNoteRecordScreen() {
   }, []);
 
   const handleClose = async () => {
-    if (state.status === 'finalizing' || state.status === 'planning') {
+    if (VoiceCapturePolicy.isWrappingUp(state)) {
       return;
     }
     if (!recording.hasText) {
@@ -170,8 +168,22 @@ function VoiceNoteRecordScreen() {
     }
   };
 
+  /** 닫기와 끝내기는 다시 누르면 되니 알리지 않고 진단만 남긴다 */
+  const logActionFailure = (action: 'close' | 'finish') => (error: unknown) => {
+    logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_ACTION_FAILED, {
+      action,
+      error: errorMessageOf(error),
+    });
+  };
+  const requestClose = () => {
+    handleClose().catch(logActionFailure('close'));
+  };
+  const requestFinish = () => {
+    handleFinishPress().catch(logActionFailure('finish'));
+  };
+
   const closeOnBackPress = useEffectEvent(() => {
-    handleClose().catch(() => undefined);
+    requestClose();
     return true;
   });
   useEffect(() => {
@@ -179,17 +191,9 @@ function VoiceNoteRecordScreen() {
     return () => subscription.remove();
   }, []);
 
-  const canResume =
-    VoiceCapturePolicy.canResume(state) && (limitMs == null || state.elapsedMs < limitMs);
-  const timer = (
-    <RecordingClock
-      state={state}
-      limitMs={limitMs}
-      label={state.status === 'paused' ? t('record.pausedLabel') : undefined}
-    />
-  );
+  const timer = <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />;
   const waveform = (
-    <RecordingWaveform
+    <VoiceNoteRecordScreen.Waveform
       isActive={state.status === 'listening'}
       bookmarksMs={recording.bookmarksMs}
     />
@@ -205,99 +209,23 @@ function VoiceNoteRecordScreen() {
   const footer = (
     <VStack gap={12} className="self-stretch">
       {match(state)
-        .with({ status: P.union('paused', 'failed') }, (stopped) => {
-          const hasHeard = VoiceCapturePolicy.canFinish(stopped);
-
-          return (
-            <VStack gap={12}>
-              <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
-                <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
-                  {stopped.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
-                </Text>
-                <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-                  {match(stopped)
-                    .with({ status: 'paused' }, ({ cause }) =>
-                      hasHeard
-                        ? t(`record.pausedDescription.${cause}`)
-                        : t(`record.pausedEmptyDescription.${cause}`),
-                    )
-                    .with(
-                      { status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') },
-                      () => t('record.failedPermission'),
-                    )
-                    .otherwise(() =>
-                      hasHeard ? t('record.failedDescription') : t('record.failedEmptyDescription'),
-                    )}
-                </Text>
-              </VStack>
-              <HStack gap={8}>
-                <Box flex={1}>
-                  {hasHeard ? (
-                    <Button
-                      size="large"
-                      variant="weak"
-                      color="dark"
-                      onPress={recording.finish}
-                      testID="voice-note-summarize"
-                    >
-                      {t('record.summarize')}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="large"
-                      variant="weak"
-                      color="dark"
-                      onPress={handleClose}
-                      testID="voice-note-stopped-close"
-                    >
-                      {t('record.close')}
-                    </Button>
-                  )}
-                </Box>
-                {canResume && (
-                  <Box flex={1}>
-                    <Button size="large" onPress={recording.resume} testID="voice-note-resume">
-                      {t('record.resume')}
-                    </Button>
-                  </Box>
-                )}
-              </HStack>
-            </VStack>
-          );
-        })
+        .with({ status: P.union('paused', 'failed') }, (stopped) => (
+          <VoiceNoteRecordScreen.Stopped
+            state={stopped}
+            canResume={VoiceCapturePolicy.canResumeWithinLimit(stopped, limitMs)}
+            onSummarize={recording.finish}
+            onClose={requestClose}
+            onResume={recording.resume}
+          />
+        ))
         .otherwise(() => (
-          <HStack align="start" className="w-full max-w-90 self-center">
-            <RecordControl
-              label={t('record.pause')}
-              onPress={recording.pause}
-              isDisabled={state.status !== 'listening'}
-              testID="voice-note-pause"
-            >
-              <PauseIcon
-                width={controlIconSize}
-                height={controlIconSize}
-                colorClassName="text-gray-7"
-              />
-            </RecordControl>
-            <RecordControl
-              label={t('record.finish')}
-              onPress={handleFinishPress}
-              isDisabled={state.status !== 'listening'}
-              isPrimary
-              testID="voice-note-finish"
-            >
-              <StopIcon
-                width={controlIconSize}
-                height={controlIconSize}
-                colorClassName="text-white dark:text-gray-9"
-              />
-            </RecordControl>
-            <VoiceNoteMarkControl
-              markCount={recording.markCount}
-              isListening={state.status === 'listening'}
-              onPress={recording.mark}
-            />
-          </HStack>
+          <VoiceNoteRecordScreen.Controls
+            isListening={state.status === 'listening'}
+            markCount={recording.markCount}
+            onPause={recording.pause}
+            onFinish={requestFinish}
+            onMark={recording.mark}
+          />
         ))}
       <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
         {t('record.privacy')}
@@ -309,12 +237,17 @@ function VoiceNoteRecordScreen() {
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
       <VoiceNoteHeader
         title={t('record.title')}
-        onClose={handleClose}
+        onClose={requestClose}
         right={
           <RecognitionLanguageToggle
             value={locale}
             onValueChange={(next) => {
-              handleLocaleChange(next).catch(() => undefined);
+              handleLocaleChange(next).catch((error: unknown) => {
+                logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
+                  error: errorMessageOf(error),
+                });
+                toast.error(t('record.languageChangeFailed'));
+              });
             }}
           />
         }
@@ -343,67 +276,155 @@ function VoiceNoteRecordScreen() {
 }
 
 /** 1초마다 시계만 다시 그린다. 자막과 조작 줄은 건드리지 않는다 */
-function RecordingClock({
+VoiceNoteRecordScreen.Clock = function Clock({
   state,
   limitMs,
-  label,
 }: {
   state: VoiceCaptureState;
   limitMs: number | null;
-  label?: string;
 }) {
-  const [now, setNow] = useState(() => Date.now());
-  const isListening = state.status === 'listening';
-
-  useEffect(() => {
-    if (!isListening) {
-      return;
-    }
-    setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), VOICE_CLOCK_TICK_MS);
-    return () => clearInterval(timer);
-  }, [isListening]);
+  const { t } = useTranslation('voiceNote');
+  const elapsedMs = useCaptureElapsedMs(state);
 
   return (
     <RecordingTimer
-      elapsedMs={VoiceCapturePolicy.getElapsedMs(state, now)}
+      elapsedMs={elapsedMs}
       limitMs={limitMs}
-      label={label}
+      label={state.status === 'paused' ? t('record.pausedLabel') : undefined}
     />
   );
-}
+};
 
-/** 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
-function RecordingWaveform({
+VoiceNoteRecordScreen.Waveform = function Waveform({
   isActive,
   bookmarksMs,
 }: {
   isActive: boolean;
   bookmarksMs: readonly number[];
 }) {
-  const speechRecognizer = useSpeechRecognizer();
-  const waveform = useLiveWaveform();
-  const { pushLevel } = waveform;
-
-  useEffect(() => {
-    if (!isActive) {
-      return;
-    }
-    return speechRecognizer.subscribe((event: SpeechEvent) => {
-      if (event.type === 'volume') {
-        pushLevel(event.level);
-      }
-    });
-  }, [isActive, pushLevel, speechRecognizer]);
-
   return (
-    <WaveformTimeline
-      waveform={waveform}
+    <RecognizerWaveform
+      isActive={isActive}
       flagIndexes={bookmarksMs.map(getBarIndexAt)}
       className="self-stretch"
     />
   );
-}
+};
+
+VoiceNoteRecordScreen.Controls = function Controls({
+  isListening,
+  markCount,
+  onPause,
+  onFinish,
+  onMark,
+}: {
+  isListening: boolean;
+  markCount: number;
+  onPause: () => void;
+  onFinish: () => void;
+  onMark: () => void;
+}) {
+  const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
+  const iconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
+
+  return (
+    <HStack align="start" className="w-full max-w-90 self-center">
+      <RecordControl
+        label={t('record.pause')}
+        onPress={onPause}
+        isDisabled={!isListening}
+        testID="voice-note-pause"
+      >
+        <PauseIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
+      </RecordControl>
+      <RecordControl
+        label={t('record.finish')}
+        onPress={onFinish}
+        isDisabled={!isListening}
+        isPrimary
+        testID="voice-note-finish"
+      >
+        <StopIcon width={iconSize} height={iconSize} colorClassName="text-white dark:text-gray-9" />
+      </RecordControl>
+      <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onMark} />
+    </HStack>
+  );
+};
+
+/** 멈췄거나 실패했을 때. 왜 멈췄는지 알리고 정리·닫기·이어 듣기를 고르게 한다 */
+VoiceNoteRecordScreen.Stopped = function Stopped({
+  state,
+  canResume,
+  onSummarize,
+  onClose,
+  onResume,
+}: {
+  state: Extract<VoiceCaptureState, { status: 'paused' | 'failed' }>;
+  canResume: boolean;
+  onSummarize: () => void;
+  onClose: () => void;
+  onResume: () => void;
+}) {
+  const { t } = useTranslation('voiceNote');
+  const hasHeard = VoiceCapturePolicy.canFinish(state);
+
+  return (
+    <VStack gap={12}>
+      <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
+        <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+          {state.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
+        </Text>
+        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+          {match(state)
+            .with({ status: 'paused' }, ({ cause }) =>
+              hasHeard
+                ? t(`record.pausedDescription.${cause}`)
+                : t(`record.pausedEmptyDescription.${cause}`),
+            )
+            .with({ status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') }, () =>
+              t('record.failedPermission'),
+            )
+            .otherwise(() =>
+              hasHeard ? t('record.failedDescription') : t('record.failedEmptyDescription'),
+            )}
+        </Text>
+      </VStack>
+      <HStack gap={8}>
+        <Box flex={1}>
+          {hasHeard ? (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onSummarize}
+              testID="voice-note-summarize"
+            >
+              {t('record.summarize')}
+            </Button>
+          ) : (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onClose}
+              testID="voice-note-stopped-close"
+            >
+              {t('record.close')}
+            </Button>
+          )}
+        </Box>
+        {canResume && (
+          <Box flex={1}>
+            <Button size="large" onPress={onResume} testID="voice-note-resume">
+              {t('record.resume')}
+            </Button>
+          </Box>
+        )}
+      </HStack>
+    </VStack>
+  );
+};
 
 export default function VoiceNoteRecordRoute() {
   return (

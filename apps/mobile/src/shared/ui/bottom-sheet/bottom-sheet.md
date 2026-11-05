@@ -45,6 +45,10 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 </KeyboardBottomSheet>;
 ```
 
+내용이 안쪽 스크롤을 직접 두면(빠른 말하기 자막) `isContentPanEnabled={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 손잡이로만
+움직이게 한다. 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다. 시트 테두리에 맞물리는 장식은 `backgroundDecoration`으로
+시트 면 뒤에 깐다.
+
 작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
 (키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
 
@@ -86,7 +90,7 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 </ModalBottomSheet>
 ```
 
-내용이 넘치면 스크롤 막대와 아래쪽 흐림이 나타나 더 있다는 걸 알린다. 넘치지 않으면 평소 모양 그대로다.
+내용이 넘치면 스크롤 막대와 heroui-native `ScrollShadow` 흐림이 나타나 더 있다는 걸 알린다. 넘치지 않으면 평소 모양 그대로다.
 
 ### 머리글 고정 (`hasFixedHeader`, `SheetHeaderLayout`)
 
@@ -176,7 +180,7 @@ bottom-sheet/
 ├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
 ├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
 ├── sheet-header-layout.tsx            # 머리글 고정 + 본문 스크롤 (hasFixedHeader 시트의 내용)
-├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·아래쪽 흐림을 보이는 시트 스크롤
+├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·`ScrollShadow` 흐림을 보이는 시트 스크롤
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
 ├── full-window-host-context.ts        # 시트가 내비게이터 위 전체 창(route·overlay)에 그려지는지

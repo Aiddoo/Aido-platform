@@ -49,8 +49,10 @@ export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
 /** 듣는 시간 시계를 다시 그리는 간격 */
 export const VOICE_CLOCK_TICK_MS = 1_000;
 
-/** 듣는 중 패널이 차지하는 화면 높이 비율 */
-export const LISTENING_PANEL_HEIGHT_RATIO = 0.56;
+export const LISTENING_PANEL_HEIGHT = { windowRatio: 0.56, min: 420 } as const;
+
+/** Android 일부 인식기는 말이 끝나면 음량 이벤트를 보내지 않는다(QA 로그). 이만큼 끊기면 소리 없음으로 본다 */
+export const VOICE_NO_VOLUME_GAP_MS = 300;
 
 /**
  * 구와 테두리 빛의 그라데이션 중간색. 팔레트에 없는 장식용 색이라 토큰 대신 여기 모은다.
@@ -64,32 +66,45 @@ export const VOICE_GRADIENT_COLORS = {
   glowCream: '#ffd0a8',
 } as const;
 
-export const VOICE_ORB = {
-  /** 원 반지름(R)에 대한 크기 비율. 음량에 따라 이 범위에서만 변한다 */
-  minRadiusRatio: 0.54,
-  maxRadiusRatio: 0.66,
-  /** 음량을 따라가는 속도. 클수록 빠르게 반응한다 */
-  smoothing: 0.08,
-  ringCount: 2,
-  ringPeriodMs: 2_600,
-  ringGrowRatio: 0.55,
-  /** 정지 상태(모션 줄이기·계획 중) 원 크기 */
-  restRadiusRatio: 0.58,
+export const VOICE_VISUAL = {
+  height: 84,
+  orbSize: 72,
+  attackMs: 70,
+  releaseMs: 520,
+  maxFrameMs: 50,
+  settleMs: 400,
 } as const;
 
-export const VOICE_WAVEFORM = {
-  barCount: 48,
-  barWidth: 3,
-  barGap: 3,
-  height: 36,
-  /** 샘플을 흘려보내는 간격 */
-  sampleIntervalMs: 50,
-  minBarRatio: 0.08,
+export const VOICE_VISUAL_BARS = {
+  /** 560pt 시트의 한쪽을 채우는 칸 수 */
+  maxCount: 40,
+  width: 3,
+  step: 6,
+  startOffset: 38,
+  minHeight: 3,
+  heightMargin: 22,
+  falloff: 0.45,
+  intervalMs: 70,
+  followMs: 37,
+  reducedMotionLevel: 0.12,
+  edgeOpacity: 0.35,
+} as const;
+
+export const VOICE_LIGHT_ORB = { radius: 22, growRatio: 0.22 } as const;
+
+export const VOICE_FRAME_BUDGET = {
+  /** 30fps 아래 */
+  slowFrameMs: 34,
+  sustainedSlowMs: 2_000,
+  /** 앱을 다녀오면 프레임이 크게 벌어진다. 기기 성능이 아니므로 세지 않는다 */
+  ignoreFrameMs: 500,
 } as const;
 
 export const VOICE_EDGE_GLOW = {
-  strokeWidth: 3,
-  blur: 10,
+  blur: 14,
+  rimWidth: 1.5,
   rotationPeriodMs: 5_000,
   minOpacity: 0.35,
+  attackMs: 90,
+  releaseMs: 700,
 } as const;

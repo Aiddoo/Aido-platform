@@ -1,14 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, CloseIcon, HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  HStack,
+  Text,
+  TextButton,
+  useKeyboardSheetBodyMaxHeight,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useEffect, useState } from 'react';
+import { Skeleton } from 'heroui-native';
+import { type ReactNode, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useWindowDimensions } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeIn,
   FadeOut,
@@ -20,11 +28,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import {
-  AUTO_FINISH_SILENCE_MS,
-  LISTENING_PANEL_HEIGHT_RATIO,
-  VOICE_CLOCK_TICK_MS,
-} from '../../constants/voice.constants';
+import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
 import {
   createPlanReviewFormValues,
   type PlanReviewFormValues,
@@ -35,16 +39,14 @@ import {
   VoiceCapturePolicy,
   type VoiceCaptureState,
 } from '../../domains/voice-capture.model';
-import { getTranscriptText, isTranscriptEmpty } from '../../domains/voice-transcript.model';
+import { isTranscriptEmpty } from '../../domains/voice-transcript.model';
+import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { formatMediaTime } from '../../utils/format-media-time';
+import { VoiceNoteHeader } from '../note/voice-note-header';
 import { PlanReview } from '../plan/plan-review';
-import { SheetEdgeGlow } from '../visualizers/sheet-edge-glow';
-import { VoiceOrb } from '../visualizers/voice-orb';
-import { Waveform } from '../visualizers/waveform';
+import { VoiceVisual } from '../visualizers/voice-visual';
 import { LiveTranscript } from './live-transcript';
 import { RecognitionLanguageToggle } from './recognition-language-toggle';
-
-const ORB_SIZE = 150;
 
 interface ListeningProps {
   state: VoiceCaptureState;
@@ -76,147 +78,111 @@ QuickVoicePanel.Listening = function Listening({
   onContinueAsVoiceNote,
 }: ListeningProps) {
   const { t } = useTranslation('voice');
-  const fontScaledSize = useFontScaledSize();
-  const { height: windowHeight } = useWindowDimensions();
   const isPaused = state.status === 'paused';
   const isListening = state.status === 'listening';
   const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, Date.now());
   const canFinish = VoiceCapturePolicy.canFinish(state);
-  const orbSize = Math.min(ORB_SIZE, windowHeight * 0.2);
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(150)}
-      style={{ minHeight: windowHeight * LISTENING_PANEL_HEIGHT_RATIO }}
+    <PanelFrame
+      center={<ListeningClock state={state} />}
+      right={<RecognitionLanguageToggle value={locale} onValueChange={onLocaleChange} />}
+      onClose={onCancel}
       testID="quick-voice-listening"
     >
-      <SheetEdgeGlow level={level} isActive={isListening} />
-      <VStack flex={1} gap={12}>
-        <HStack align="center" justify="between">
-          <ListeningClock state={state} />
-          <RecognitionLanguageToggle value={locale} onValueChange={onLocaleChange} />
-        </HStack>
+      <Box flex={1}>
+        <LiveTranscript
+          transcript={state.transcript}
+          placeholder={isPaused ? undefined : t('listening.prompt')}
+        />
+      </Box>
 
-        <Box className="min-h-24 flex-1">
-          <LiveTranscript transcript={state.transcript} />
+      {!isOverLimit && (
+        <Box className={cn(isPaused && 'opacity-60')}>
+          <VoiceVisual level={level} isActive={isListening} />
         </Box>
+      )}
 
-        <VStack align="center" gap={8}>
-          <VoiceOrb level={level} size={orbSize} isActive={isListening} />
-          <Waveform level={level} isActive={isListening && !isQuiet} />
-        </VStack>
-
-        {isOverLimit ? (
-          <VStack gap={8} testID="quick-voice-limit">
-            <VStack gap={4}>
-              <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
-                {canFinish ? t('limit.title') : t('limit.titleEmpty')}
-              </Text>
-              <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-                {canFinish ? t('limit.description') : t('limit.descriptionEmpty')}
-              </Text>
-            </VStack>
-            <HStack gap={8} align="center">
-              <CancelButton
-                onPress={onCancel}
-                label={t('listening.cancel')}
-                iconSize={fontScaledSize(18)}
-              />
-              <Box flex={1}>
-                {canFinish ? (
-                  <Button size="large" onPress={onFinish} testID="quick-voice-finish">
-                    {t('limit.finish')}
-                  </Button>
-                ) : (
-                  <Button
-                    size="large"
-                    onPress={onContinueAsVoiceNote}
-                    testID="quick-voice-continue-as-note"
-                  >
-                    {t('limit.continueAsNote')}
-                  </Button>
-                )}
-              </Box>
-            </HStack>
-            {canFinish && (
-              <Button
-                size="large"
-                variant="weak"
-                color="dark"
-                onPress={onContinueAsVoiceNote}
-                testID="quick-voice-continue-as-note"
-              >
-                {t('limit.continueAsNote')}
-              </Button>
-            )}
-          </VStack>
-        ) : isPaused ? (
-          <VStack gap={8}>
-            <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-              {t('listening.pausedHint')}
+      {isOverLimit ? (
+        <VStack gap={8} testID="quick-voice-limit">
+          <VStack gap={4}>
+            <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
+              {canFinish ? t('limit.title') : t('limit.titleEmpty')}
             </Text>
-            <HStack gap={8} align="center">
-              <CancelButton
-                onPress={onCancel}
-                label={t('listening.cancel')}
-                iconSize={fontScaledSize(18)}
-              />
-              {canFinish && (
-                <Box flex={1}>
-                  <Button
-                    size="large"
-                    variant="weak"
-                    color="dark"
-                    onPress={onFinish}
-                    testID="quick-voice-finish"
-                  >
-                    {t('listening.done')}
-                  </Button>
-                </Box>
-              )}
-              <Box flex={1}>
-                <Button size="large" onPress={onResume} testID="quick-voice-resume">
-                  {t('listening.resume')}
-                </Button>
-              </Box>
-            </HStack>
+            <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+              {canFinish ? t('limit.description') : t('limit.descriptionEmpty')}
+            </Text>
           </VStack>
-        ) : (
-          <VStack gap={8}>
-            <HStack gap={8} align="center">
-              <CancelButton
-                onPress={onCancel}
-                label={t('listening.cancel')}
-                iconSize={fontScaledSize(18)}
-              />
+          {canFinish ? (
+            <Button size="large" onPress={onFinish} testID="quick-voice-finish">
+              {t('limit.finish')}
+            </Button>
+          ) : (
+            <Button
+              size="large"
+              onPress={onContinueAsVoiceNote}
+              testID="quick-voice-continue-as-note"
+            >
+              {t('limit.continueAsNote')}
+            </Button>
+          )}
+          {canFinish && (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onContinueAsVoiceNote}
+              testID="quick-voice-continue-as-note"
+            >
+              {t('limit.continueAsNote')}
+            </Button>
+          )}
+        </VStack>
+      ) : isPaused ? (
+        <VStack gap={8}>
+          <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+            {t('listening.pausedHint')}
+          </Text>
+          <HStack gap={8} align="center">
+            {canFinish && (
               <Box flex={1}>
                 <Button
                   size="large"
-                  className="overflow-hidden"
-                  isDisabled={!canFinish}
+                  variant="weak"
+                  color="dark"
                   onPress={onFinish}
                   testID="quick-voice-finish"
                 >
-                  <SilenceFill isQuiet={isQuiet && canFinish} />
-                  <Text
-                    size="b4"
-                    weight="semibold"
-                    maxLines={1}
-                    className={cn('text-white dark:text-gray-9', !canFinish && 'opacity-40')}
-                  >
-                    {t('listening.done')}
-                  </Text>
+                  {t('listening.done')}
                 </Button>
               </Box>
-            </HStack>
-            <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-              {t('listening.autoFinishHint')}
-            </Text>
-          </VStack>
-        )}
-      </VStack>
-    </Animated.View>
+            )}
+            <Box flex={1}>
+              <Button size="large" onPress={onResume} testID="quick-voice-resume">
+                {t('listening.resume')}
+              </Button>
+            </Box>
+          </HStack>
+        </VStack>
+      ) : (
+        <VStack gap={8}>
+          <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+            {t('listening.autoFinishHint')}
+          </Text>
+          <Box className="overflow-hidden rounded-xl">
+            <Button
+              size="large"
+              isDisabled={!canFinish}
+              onPress={onFinish}
+              testID="quick-voice-finish"
+            >
+              {t('listening.done')}
+            </Button>
+            <SilenceFill isQuiet={isQuiet && canFinish} />
+          </Box>
+        </VStack>
+      )}
+    </PanelFrame>
   );
 };
 
@@ -229,36 +195,30 @@ QuickVoicePanel.Planning = function Planning({
   onCancel: () => void;
 }) {
   const { t } = useTranslation('voice');
-  const orbLevel = useSharedValue(0);
-  const text = getTranscriptText(state.transcript);
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(150)}
+    <PanelFrame
+      center={
+        <Text size="b4" weight="semibold" shade={7} maxLines={1}>
+          {t('planning.title')}
+        </Text>
+      }
+      onClose={onCancel}
       testID="quick-voice-planning"
     >
-      <VStack gap={16}>
-        <Text size="t3" weight="semibold" lineBreakStrategyIOS="hangul-word">
-          {`“${text}”`}
-        </Text>
-        <HStack gap={12} align="center">
-          <VoiceOrb level={orbLevel} size={32} isActive={false} />
-          <Text size="b3" shade={6}>
-            {t('planning.title')}
-          </Text>
-        </HStack>
-        <QuickVoicePanel.CardsLoading />
-        <TextButton
-          size="small"
-          className="self-center"
-          onPress={onCancel}
-          testID="quick-voice-planning-cancel"
-        >
-          {t('planning.cancel')}
-        </TextButton>
-      </VStack>
-    </Animated.View>
+      <Box flex={1}>
+        <LiveTranscript transcript={state.transcript} isWordFadeEnabled={false} />
+      </Box>
+      <QuickVoicePanel.CardsLoading />
+      <TextButton
+        size="small"
+        className="self-center"
+        onPress={onCancel}
+        testID="quick-voice-planning-cancel"
+      >
+        {t('planning.cancel')}
+      </TextButton>
+    </PanelFrame>
   );
 };
 
@@ -354,7 +314,7 @@ QuickVoicePanel.Failed = function Failed({
     <HStack
       gap={8}
       align="center"
-      className="rounded-xl bg-gray-2 px-3 py-3"
+      className="rounded-xl bg-gray-2 px-4 py-3"
       testID="quick-voice-failed"
     >
       <Text size="b4" shade={7} className="flex-1 shrink" lineBreakStrategyIOS="hangul-word">
@@ -383,47 +343,60 @@ QuickVoicePanel.Failed = function Failed({
   );
 };
 
-function ListeningClock({ state }: { state: VoiceCaptureState }) {
-  const [now, setNow] = useState(() => Date.now());
-  const isListening = state.status === 'listening';
+interface PanelFrameProps {
+  center: ReactNode;
+  right?: ReactNode;
+  onClose: () => void;
+  testID: string;
+  children: ReactNode;
+}
 
-  useEffect(() => {
-    if (!isListening) {
-      return;
-    }
-    const timer = setInterval(() => setNow(Date.now()), VOICE_CLOCK_TICK_MS);
-    return () => clearInterval(timer);
-  }, [isListening]);
+/** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
+function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProps) {
+  const { t } = useTranslation('voice');
+  const { height: windowHeight } = useWindowDimensions();
+  const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
+  const height = Math.min(
+    bodyMaxHeight,
+    Math.max(windowHeight * LISTENING_PANEL_HEIGHT.windowRatio, LISTENING_PANEL_HEIGHT.min),
+  );
 
   return (
-    <HStack gap={8} align="center">
-      <Box className="size-2 rounded-full bg-main" />
-      <Text size="b4" weight="semibold" shade={7} className="tabular-nums">
-        {formatMediaTime(VoiceCapturePolicy.getElapsedMs(state, now))}
-      </Text>
-    </HStack>
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(150)}
+      style={{ height }}
+      testID={testID}
+    >
+      <VStack flex={1} gap={16}>
+        <VoiceNoteHeader
+          center={center}
+          right={right}
+          onClose={onClose}
+          closeLabel={t('listening.cancel')}
+          closeTestID="quick-voice-cancel"
+        />
+        {children}
+      </VStack>
+    </Animated.View>
   );
 }
 
-function CancelButton({
-  onPress,
-  label,
-  iconSize,
-}: {
-  onPress: () => void;
-  label: string;
-  iconSize: number;
-}) {
+function ListeningClock({ state }: { state: VoiceCaptureState }) {
+  const elapsedMs = useCaptureElapsedMs(state);
+
   return (
-    <PressableFeedback
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      className="size-12 items-center justify-center rounded-full bg-gray-2"
-      testID="quick-voice-cancel"
-    >
-      <CloseIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
-    </PressableFeedback>
+    <HStack gap={8} align="center">
+      <Box
+        className={cn(
+          'size-2 rounded-full',
+          state.status === 'listening' ? 'bg-main' : 'bg-gray-4',
+        )}
+      />
+      <Text size="b4" weight="semibold" shade={7} className="tabular-nums">
+        {formatMediaTime(elapsedMs)}
+      </Text>
+    </HStack>
   );
 }
 
@@ -434,13 +407,11 @@ function SilenceFill({ isQuiet }: { isQuiet: boolean }) {
 
   useEffect(() => {
     progress.set(
-      isQuiet
-        ? withTiming(1, {
-            duration: isReducedMotion ? 0 : AUTO_FINISH_SILENCE_MS,
-            easing: Easing.linear,
-          })
+      isQuiet && !isReducedMotion
+        ? withTiming(1, { duration: AUTO_FINISH_SILENCE_MS, easing: Easing.linear })
         : 0,
     );
+    return () => cancelAnimation(progress);
   }, [isQuiet, isReducedMotion, progress]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.get() }] }));

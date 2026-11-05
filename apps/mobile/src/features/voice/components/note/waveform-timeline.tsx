@@ -1,11 +1,14 @@
 import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
+import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
+import type { SpeechEvent } from '@src/core/ports/speech-recognizer';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useCallback, useRef } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
+  cancelAnimation,
   Easing,
   type SharedValue,
   useDerivedValue,
@@ -14,6 +17,7 @@ import {
 } from 'react-native-reanimated';
 
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import { VOICE_NO_VOLUME_GAP_MS } from '../../constants/voice.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import {
@@ -49,6 +53,8 @@ export function useLiveWaveform(): LiveWaveform {
   const samplerRef = useRef<LevelSampler>(createLevelSampler());
   const barsRef = useRef<readonly number[]>([]);
   const barCountRef = useRef(0);
+
+  useEffect(() => () => cancelAnimation(shift), [shift]);
 
   const pushLevel = useCallback(
     (level: number) => {
@@ -218,4 +224,41 @@ export function WaveformTimeline({
       />
     </Box>
   );
+}
+
+interface RecognizerWaveformProps extends Omit<WaveformTimelineProps, 'waveform'> {
+  /** 듣지 않을 때는 음량을 받지 않아 파형이 멈춘다 */
+  isActive: boolean;
+}
+
+/** 인식기 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
+export function RecognizerWaveform({ isActive, ...timelineProps }: RecognizerWaveformProps) {
+  const speechRecognizer = useSpeechRecognizer();
+  const waveform = useLiveWaveform();
+  const { pushLevel } = waveform;
+
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    let lastVolumeAt = Date.now();
+    const unsubscribe = speechRecognizer.subscribe((event: SpeechEvent) => {
+      if (event.type === 'volume') {
+        lastVolumeAt = Date.now();
+        pushLevel(event.level);
+      }
+    });
+    const silenceTimer = setInterval(() => {
+      if (Date.now() - lastVolumeAt >= VOICE_NO_VOLUME_GAP_MS) {
+        pushLevel(0);
+      }
+    }, WAVEFORM_BAR.intervalMs / 2);
+
+    return () => {
+      unsubscribe();
+      clearInterval(silenceTimer);
+    };
+  }, [isActive, pushLevel, speechRecognizer]);
+
+  return <WaveformTimeline {...timelineProps} waveform={waveform} />;
 }

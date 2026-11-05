@@ -28,6 +28,7 @@ import {
   AUTO_FINISH_SILENCE_MS,
   QUICK_CAPTURE_MAX_SECONDS,
   SPEAKING_VOLUME_THRESHOLD,
+  VOICE_NO_VOLUME_GAP_MS,
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
 import {
@@ -125,6 +126,7 @@ export function useVoiceCaptureSession({
   const finalizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stallRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeGapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
   const isRecognizerRunningRef = useRef(false);
   /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
@@ -166,6 +168,13 @@ export function useVoiceCaptureSession({
     }
   };
 
+  const clearVolumeGap = () => {
+    if (volumeGapTimerRef.current != null) {
+      clearTimeout(volumeGapTimerRef.current);
+      volumeGapTimerRef.current = null;
+    }
+  };
+
   const clearDeferredStart = () => {
     if (deferredStartTimerRef.current != null) {
       clearTimeout(deferredStartTimerRef.current);
@@ -182,6 +191,8 @@ export function useVoiceCaptureSession({
 
   const clearTimers = () => {
     clearQuiet();
+    clearVolumeGap();
+    level.set(0);
     clearDeferredStart();
     clearStallRestart();
     if (finalizeTimerRef.current != null) {
@@ -376,6 +387,11 @@ export function useVoiceCaptureSession({
       })
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
         level.set(nextLevel);
+        clearVolumeGap();
+        volumeGapTimerRef.current = setTimeout(() => {
+          volumeGapTimerRef.current = null;
+          level.set(0);
+        }, VOICE_NO_VOLUME_GAP_MS);
         if (nextLevel >= SPEAKING_VOLUME_THRESHOLD) {
           markSpeaking();
         } else {

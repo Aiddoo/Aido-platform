@@ -311,6 +311,11 @@ export function isActive(state: VoiceCaptureState): boolean {
   );
 }
 
+/** 듣기를 끝내고 글자를 마무리하거나 정리하는 중이다. 이때는 닫거나 되돌릴 수 없다 */
+export function isWrappingUp(state: VoiceCaptureState): boolean {
+  return state.status === 'finalizing' || state.status === 'planning';
+}
+
 export function canFinish(state: VoiceCaptureState): boolean {
   const isStopped =
     state.status === 'paused' || (state.status === 'failed' && state.reason !== 'planning-failed');
@@ -334,6 +339,11 @@ export function canResume(state: VoiceCaptureState): boolean {
     )
     .with({ status: 'failed' }, () => true)
     .otherwise(() => false);
+}
+
+/** 한 번에 들을 수 있는 길이가 정해져 있으면 그 안에서만 이어 듣는다. 길이 제한이 없으면 null이다 */
+export function canResumeWithinLimit(state: VoiceCaptureState, limitMs: number | null): boolean {
+  return canResume(state) && (limitMs == null || state.elapsedMs < limitMs);
 }
 
 export function canRetryPlanning(state: VoiceCaptureState): boolean {
@@ -378,8 +388,10 @@ export const VoiceCapturePolicy = {
   shouldRestartSegment,
   shouldRestartStalledRecognizer,
   isActive,
+  isWrappingUp,
   canFinish,
   canResume,
+  canResumeWithinLimit,
   canRetryPlanning,
   shouldAutoFinish,
   isOverQuickLimit,

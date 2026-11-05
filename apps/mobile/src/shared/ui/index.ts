@@ -9,10 +9,13 @@ export {
   SheetHeaderLayout,
   SHEET_CONTENT_PADDING,
   SHEET_DETACHED_MARGIN,
+  SHEET_RADIUS,
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,
   SheetRouteScreen,
+  SheetScrollShadow,
   useDialogPortalTarget,
+  useKeyboardSheetBodyMaxHeight,
   useSheetLayout,
   useSheetRoute,
 } from './bottom-sheet';

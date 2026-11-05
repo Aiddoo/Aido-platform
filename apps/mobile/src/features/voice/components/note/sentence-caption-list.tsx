@@ -166,7 +166,7 @@ function SentenceCard({
         </Text>
         {sentence.isBookmarked && (
           <FlagIcon
-            colorClassName="accent-main"
+            colorClassName="text-main"
             width={14}
             height={14}
             accessibilityLabel={t('captions.marked')}

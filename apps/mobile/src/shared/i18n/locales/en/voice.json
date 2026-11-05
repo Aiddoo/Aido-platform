@@ -25,6 +25,8 @@
     }
   },
   "listening": {
+    "languageChangeFailed": "Couldn't switch languages. We'll keep listening in the current one.",
+    "prompt": "Go ahead, we're listening",
     "cancel": "Cancel",
     "done": "Done",
     "resume": "Keep talking",

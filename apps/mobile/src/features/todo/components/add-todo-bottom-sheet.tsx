@@ -6,6 +6,8 @@ import type { Todo } from '@src/features/todo/domains/todo.model';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
+import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
+import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -472,6 +474,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         onCloseStart={() => {
           isClosingRef.current = true;
         }}
+        backgroundDecoration={
+          voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
+        }
+        isContentPanEnabled={
+          !VoiceCapturePolicy.isActive(voice.state) && voice.state.status !== 'planning'
+        }
       >
         {match(voice.state)
           .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (

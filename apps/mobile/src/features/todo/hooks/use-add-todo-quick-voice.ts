@@ -4,6 +4,7 @@ import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import {
   PlanRequestPolicy,
   type PreparedPlanRequest,
@@ -20,6 +21,8 @@ import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-star
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
 import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { errorMessageOf } from '@src/shared/errors/to-error';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useTranslation } from '@src/shared/i18n';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
@@ -27,7 +30,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 
-import { TODO_LOG_EVENT } from '../constants/todo-log-events';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 
 interface UseAddTodoQuickVoiceOptions {
@@ -42,7 +44,9 @@ interface UseAddTodoQuickVoiceOptions {
  * 실패하면 들은 글자를 입력 칸에 남기고, 다시 정리할 때 같은 키를 써서 두 번 차감되지 않는다.
  */
 export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOptions) {
+  const { t: tVoice } = useTranslation('voice');
   const logger = useLogger();
+  const toast = useAppToast();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
   const aiConsent = useAiDataSharingConsentGate();
   const ensureMicrophonePermission = useMicrophonePermission();
@@ -201,10 +205,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
 
   const changeLocale = (nextLocale: SpeechLocale) => {
     applyLocale(nextLocale).catch((error: unknown) => {
-      logger.warn(TODO_LOG_EVENT.QUICK_VOICE_LOCALE_CHANGE_FAILED, {
-        locale: nextLocale,
-        error: errorMessageOf(error),
-      });
+      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: errorMessageOf(error) });
+      toast.error(tVoice('listening.languageChangeFailed'));
     });
   };
 
