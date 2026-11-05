@@ -76,7 +76,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     await flushPromises();
 
     // Then
-    expect(purchases.setFirebaseAppInstanceId).toHaveBeenCalledWith('instance-1');
+    expect(purchases.setAnalyticsId).toHaveBeenCalledWith('instance-1');
   });
 
   test('로그인 후 바뀐 사용자에게도 앱 인스턴스 ID를 다시 설정한다', async () => {
@@ -86,13 +86,13 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     const { manager, purchases } = createManager({ analytics });
     manager.configure('api-key');
     await flushPromises();
-    purchases.setFirebaseAppInstanceId.mockClear();
+    purchases.setAnalyticsId.mockClear();
 
     // When
     await manager.logIn('user-1');
 
     // Then
-    expect(purchases.setFirebaseAppInstanceId).toHaveBeenCalledWith('instance-1');
+    expect(purchases.setAnalyticsId).toHaveBeenCalledWith('instance-1');
   });
 
   test('앱 인스턴스 ID가 없으면 RevenueCat 속성을 건드리지 않는다', async () => {
@@ -104,7 +104,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     await flushPromises();
 
     // Then
-    expect(purchases.setFirebaseAppInstanceId).not.toHaveBeenCalled();
+    expect(purchases.setAnalyticsId).not.toHaveBeenCalled();
   });
 
   test('앱 인스턴스 ID 설정이 실패해도 예외 없이 경고만 남긴다', async () => {
@@ -123,6 +123,6 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
       SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED,
       { error: 'analytics disabled' },
     );
-    expect(purchases.setFirebaseAppInstanceId).not.toHaveBeenCalled();
+    expect(purchases.setAnalyticsId).not.toHaveBeenCalled();
   });
 });

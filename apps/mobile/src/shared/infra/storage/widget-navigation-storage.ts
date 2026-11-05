@@ -2,8 +2,8 @@ import type { WidgetNavigationStorage } from '@src/features/widget/bridge/widget
 import { noop } from 'es-toolkit';
 
 export const widgetNavigationStorage: WidgetNavigationStorage = {
-  getString: () => undefined,
+  get: () => undefined,
   set: noop,
-  delete: noop,
+  remove: noop,
   subscribe: () => noop,
 };

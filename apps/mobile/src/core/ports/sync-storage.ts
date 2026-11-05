@@ -1,12 +1,12 @@
 export interface SyncStorage {
-  getString(key: string): string | undefined;
+  get(key: string): string | undefined;
   set(key: string, value: string): void;
-  delete(key: string): void;
+  remove(key: string): void;
 }
 
 export interface EnumerableSyncStorage extends SyncStorage {
-  getAllKeys(): string[];
-  clearAll(): void;
+  keys(): string[];
+  clear(): void;
 }
 
 /** 값이 바뀔 때 알려 주는 저장소. 화면이 저장소 값을 직접 구독할 때 쓴다 */

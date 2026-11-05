@@ -1,4 +1,4 @@
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
@@ -15,7 +15,7 @@ const reduceMotion = createAccessibilitySettingStore({
   },
   onReadError: (error) => {
     logger.warn(ACCESSIBILITY_LOG_EVENT.REDUCE_MOTION_READ_FAILED, {
-      error: errorMessageOf(error),
+      error: getErrorMessage(error),
     });
   },
 });

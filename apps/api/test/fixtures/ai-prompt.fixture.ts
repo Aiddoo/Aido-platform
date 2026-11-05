@@ -7,12 +7,10 @@ export function readPromptBlock(prompt: string, tag: string) {
   return JSON.parse(json);
 }
 
-/** system 최상위 블록 이름을 순서대로 */
 export function topLevelTags(system: string): string[] {
   return [...system.matchAll(/^<([a-z_]+)>$/gm)].map((match) => match[1] ?? "");
 }
 
-/** examples 블록의 출력 JSON들 */
 export function exampleOutputs(system: string): unknown[] {
   return [...system.matchAll(/^(?:출력|Output): (\{.+\})$/gm)].map((match) =>
     JSON.parse(match[1] ?? ""),

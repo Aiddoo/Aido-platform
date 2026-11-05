@@ -8,7 +8,7 @@ import { isBusinessError } from './result';
  * `ParseError`는 개발자용 검증 메시지를 담으므로, 그 밖의 Error와 함께 `undefined`를 돌려
  * 호출부가 상황에 맞는 폴백 문구를 쓰게 한다.
  */
-export const userFacingMessageOf = (error: unknown): string | undefined => {
+export const getUserFacingMessage = (error: unknown): string | undefined => {
   if (error instanceof ParseError) {
     return undefined;
   }

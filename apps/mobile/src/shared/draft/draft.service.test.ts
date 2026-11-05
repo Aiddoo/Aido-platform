@@ -64,7 +64,7 @@ describe('DraftService', () => {
 
     service.removeExpired();
 
-    expect(storage.getAllKeys().sort()).toEqual([`aido_draft_v1:${freshKey.id}`, 'unrelated']);
+    expect(storage.keys().sort()).toEqual([`aido_draft_v1:${freshKey.id}`, 'unrelated']);
   });
 
   it('모두 지우면 어느 사용자의 초안도 남지 않는다', () => {

@@ -27,7 +27,6 @@ interface VoiceNotePlayerBarProps extends Omit<ComponentProps<typeof HStack>, 'c
   isRecordingAvailable: boolean;
 }
 
-/** 위쪽에 고정하는 미니 플레이어. 재생 버튼, 누르거나 끌어 옮기는 파형 스크러버, 시간으로 이뤄진다 */
 export function VoiceNotePlayerBar({
   player,
   levels,

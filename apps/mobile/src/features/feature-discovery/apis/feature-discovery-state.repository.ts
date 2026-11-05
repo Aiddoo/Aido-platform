@@ -43,7 +43,7 @@ export function isFeatureDiscoverySeen(
   identity: FeatureDiscoveryStateIdentity,
 ): boolean {
   try {
-    return storage.getString(featureDiscoverySeenKey(identity)) != null;
+    return storage.get(featureDiscoverySeenKey(identity)) != null;
   } catch {
     return true;
   }
@@ -77,7 +77,7 @@ export function isFeatureDiscoveryReentryVisible(
 ): boolean {
   let raw: string | undefined;
   try {
-    raw = storage.getString(featureDiscoveryReentryKey(identity));
+    raw = storage.get(featureDiscoveryReentryKey(identity));
   } catch {
     return false;
   }
@@ -99,7 +99,7 @@ export function dismissFeatureDiscoveryReentry(
   identity: FeatureDiscoveryStateIdentity,
 ): void {
   try {
-    storage.delete(featureDiscoveryReentryKey(identity));
+    storage.remove(featureDiscoveryReentryKey(identity));
   } catch {
     // 지우지 못하면 카드가 그대로 남아 다시 닫을 수 있다
   }

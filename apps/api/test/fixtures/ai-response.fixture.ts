@@ -86,7 +86,6 @@ export function createReportAiResponse(locale: "ko" | "en" = "ko") {
     : { summary: "이번 주에도 차근차근 기록을 쌓았어요.", tips: ["책 읽기 한 가지부터 시작해요."] };
 }
 
-/** parse-memo 모델 출력. 할 일 하나와 항목 하나 */
 export function createMemoDraftResponse(categoryId = 7) {
   return {
     todos: [{ ...createTodoDraftResponse(), categoryId, items: [{ title: "자료 준비" }] }],

@@ -1,6 +1,6 @@
 import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file-system';
 import type { Logger } from '@src/core/ports/logger';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import {
@@ -27,7 +27,6 @@ export interface VoiceRecordingRepository {
   remove(accountId: string, fileName: string): void;
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
-  /** 이 계정의 녹음 파일을 모두 지운다 */
   removeOwned(accountId: string): void;
   /** 초안이 가리키지 않고 보관 기한이 지난 파일을 지우고 지운 파일 이름을 돌려준다 */
   removeExpired(accountId: string, now: Date, referencedFileNames: ReadonlySet<string>): string[];
@@ -49,7 +48,7 @@ export function createVoiceRecordingRepository(
     try {
       files.removeFile(directory, name);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
     }
   };
 
@@ -57,7 +56,7 @@ export function createVoiceRecordingRepository(
     try {
       return files.listFiles(directory);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: getErrorMessage(error) });
       return [];
     }
   };
@@ -69,7 +68,7 @@ export function createVoiceRecordingRepository(
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'prepare',
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return null;
       }
@@ -84,7 +83,7 @@ export function createVoiceRecordingRepository(
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'move',
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return null;
       }
@@ -95,7 +94,7 @@ export function createVoiceRecordingRepository(
         return files.findFileUri(ownerDirectory(accountId), fileName);
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return undefined;
       }
@@ -112,7 +111,9 @@ export function createVoiceRecordingRepository(
       try {
         files.removeDirectory(ownerDirectory(accountId));
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: errorMessageOf(error) });
+        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
+          error: getErrorMessage(error),
+        });
       }
     },
 
@@ -135,7 +136,7 @@ export function createVoiceRecordingRepository(
           .forEach((name) => files.removeDirectory([...ROOT, name]));
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
       }
     },
@@ -145,7 +146,7 @@ export function createVoiceRecordingRepository(
         files.removeDirectory(ROOT);
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
       }
     },

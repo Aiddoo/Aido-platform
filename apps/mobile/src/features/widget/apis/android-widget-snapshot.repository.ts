@@ -10,7 +10,7 @@ import {
 export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
   return {
     getSnapshot(): WidgetSnapshot | null {
-      const raw = storage.getString(ANDROID_WIDGET_STORAGE_KEYS.snapshot);
+      const raw = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot);
       if (raw == null) {
         return null;
       }
@@ -23,13 +23,13 @@ export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
       }
     },
     getUserId(): string | null {
-      const userId = storage.getString(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
+      const userId = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
       return userId && userId.trim().length > 0 ? userId : null;
     },
     writeSnapshot(snapshot: WidgetSnapshot, userId: string | null): void {
       storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshot, JSON.stringify(snapshot));
       if (WidgetSnapshotPolicy.isLoggedOut(snapshot) || userId == null) {
-        storage.delete(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
+        storage.remove(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
         return;
       }
       storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId, userId);

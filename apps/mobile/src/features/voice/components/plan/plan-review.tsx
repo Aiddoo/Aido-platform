@@ -1,3 +1,4 @@
+import { useIdGenerator } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { CategoryHeaderPill } from '@src/features/todo/components/category-header-pill';
 import { SubTodoIndent } from '@src/features/todo/components/sub-todo-indent';
@@ -36,7 +37,6 @@ import {
 } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { randomUUID } from 'expo-crypto';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
 import {
@@ -126,6 +126,7 @@ export function PlanReview({
   style,
 }: PlanReviewProps) {
   const { t } = useTranslation(['voicePlan', 'subscription']);
+  const idGenerator = useIdGenerator();
   const { control, handleSubmit } = form;
   const { fields } = useFieldArray({ control, name: 'actions' });
   // 폼 전체가 아니라 목록을 다시 그릴 때 필요한 값만 구독한다. 카드 제목을 고치는 동안 화면 전체를 다시 그리지 않는다
@@ -165,7 +166,7 @@ export function PlanReview({
     const prepared = PlanRequestPolicy.preparePlanRequest({
       previous: previous == null ? null : { ...previous, input },
       input,
-      createIdempotencyKey: randomUUID,
+      createIdempotencyKey: idGenerator.create,
     });
     const rememberRequest = (request: PlanApplyRequest | null) => {
       memoryRequestRef.current = request;

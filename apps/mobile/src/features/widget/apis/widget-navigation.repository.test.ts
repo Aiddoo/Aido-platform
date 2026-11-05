@@ -9,12 +9,12 @@ function createStorage(): WidgetNavigationStorage {
   const values = new Map<string, string>();
   const listeners = new Set<() => void>();
   return {
-    getString: (key) => values.get(key),
+    get: (key) => values.get(key),
     set: (key, value) => {
       values.set(key, value);
       listeners.forEach((listener) => listener());
     },
-    delete: (key) => {
+    remove: (key) => {
       values.delete(key);
       listeners.forEach((listener) => listener());
     },

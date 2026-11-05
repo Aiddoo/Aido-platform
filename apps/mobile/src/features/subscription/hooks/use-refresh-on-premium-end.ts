@@ -1,5 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
@@ -27,7 +27,7 @@ export function useRefreshOnPremiumEnd(access: PremiumAccess) {
 
     refreshAfterPremiumEnded(queryClient).catch((error) =>
       logger.warn(SUBSCRIPTION_LOG_EVENT.PREMIUM_ENDED_REFRESH_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       }),
     );
   }, [access, now, queryClient, logger]);

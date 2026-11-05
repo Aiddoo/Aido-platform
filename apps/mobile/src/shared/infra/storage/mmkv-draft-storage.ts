@@ -28,11 +28,11 @@ export interface EncryptedStorageBootstrap {
 
 /** 초안 기능을 끈 상태. 저장은 버리고 복원은 항상 비어 있어 폼은 빈 값으로 동작한다. */
 export const disabledDraftStorage: EnumerableSyncStorage = {
-  getString: () => undefined,
+  get: () => undefined,
   set: () => undefined,
-  delete: () => undefined,
-  getAllKeys: () => [],
-  clearAll: () => undefined,
+  remove: () => undefined,
+  keys: () => [],
+  clear: () => undefined,
 };
 
 async function resolveEncryptionKey(secureStorage: Storage) {
@@ -53,11 +53,11 @@ function openEncryptedMmkv(id: string, key: string) {
 
 function toEnumerableSyncStorage(mmkv: ReturnType<typeof createMMKV>): EnumerableSyncStorage {
   return {
-    getString: (key) => mmkv.getString(key),
+    get: (key) => mmkv.getString(key),
     set: (key, value) => mmkv.set(key, value),
-    delete: (key) => mmkv.remove(key),
-    getAllKeys: () => mmkv.getAllKeys(),
-    clearAll: () => mmkv.clearAll(),
+    remove: (key) => mmkv.remove(key),
+    keys: () => mmkv.getAllKeys(),
+    clear: () => mmkv.clearAll(),
   };
 }
 

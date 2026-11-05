@@ -16,9 +16,14 @@ export interface PlaceName {
   district: string | null;
 }
 
+export interface LocationPermission {
+  isGranted: boolean;
+  canAskAgain: boolean;
+}
+
 export interface LocationGateway {
-  getPermission(): Promise<{ granted: boolean; canAskAgain: boolean }>;
-  requestPermission(): Promise<{ granted: boolean; canAskAgain: boolean }>;
+  getPermission(): Promise<LocationPermission>;
+  requestPermission(): Promise<LocationPermission>;
   getCoordinates(signal: AbortSignal): Promise<LocationCoordinates>;
   getPlace(
     coordinates: LocationCoordinates,

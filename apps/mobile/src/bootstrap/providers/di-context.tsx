@@ -2,6 +2,7 @@ import type { Analytics } from '@src/core/ports/analytics';
 import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { HapticsGateway } from '@src/core/ports/haptics';
+import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
@@ -68,6 +69,7 @@ export interface DIContainer {
   analytics: Analytics;
   errorReporter: ErrorReporter;
   haptics: HapticsGateway;
+  idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
   purchasesGateway: PurchasesGateway;
@@ -165,6 +167,7 @@ export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;
 export const useErrorReporter = () => useDI().errorReporter;
 export const useHaptics = () => useDI().haptics;
+export const useIdGenerator = () => useDI().idGenerator;
 export const useSpeechRecognizer = () => useDI().speechRecognizer;
 export const usePurchasesGateway = () => useDI().purchasesGateway;
 export const usePushNotificationGateway = () => useDI().pushNotificationGateway;

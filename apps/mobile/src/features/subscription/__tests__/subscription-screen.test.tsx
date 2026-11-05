@@ -68,7 +68,7 @@ function createEndingRewardState(): ScreenState {
 async function renderSubscriptionScreen(state: ScreenState | null) {
   const purchases = createPurchasesGatewayStub();
   // 요금제를 받는 중에 머물러 페이월 자리(요금제 요청)만 확인한다
-  purchases.getCurrentOffering.mockReturnValue(new Promise(() => {}));
+  purchases.getOffering.mockReturnValue(new Promise(() => {}));
   const analytics = createMockAnalytics();
   const sdkManager = new RevenueCatSdkManager({
     purchases,
@@ -130,7 +130,7 @@ describe('구독 화면', () => {
     const { purchases } = await renderSubscriptionScreen(state);
 
     // Then
-    expect(purchases.getCurrentOffering).toHaveBeenCalled();
+    expect(purchases.getOffering).toHaveBeenCalled();
     expect(screen.queryByTestId(/^subscription-receipt-/)).toBeNull();
   });
 
@@ -149,7 +149,7 @@ describe('구독 화면', () => {
 
       // Then
       expect(await screen.findByTestId(receiptTestId)).toBeTruthy();
-      expect(purchases.getCurrentOffering).not.toHaveBeenCalled();
+      expect(purchases.getOffering).not.toHaveBeenCalled();
       expect(screen.queryByTestId('subscription-paywall')).toBeNull();
     },
   );

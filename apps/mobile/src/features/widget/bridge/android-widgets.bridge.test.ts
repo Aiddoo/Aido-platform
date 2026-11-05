@@ -6,9 +6,9 @@ import { renderStoredAndroidWidget } from './android-widgets.bridge';
 
 jest.mock('@src/shared/infra/storage/widget-navigation-storage', () => ({
   widgetNavigationStorage: {
-    getString: () => undefined,
+    get: () => undefined,
     set: jest.fn(),
-    delete: jest.fn(),
+    remove: jest.fn(),
     subscribe: () => jest.fn(),
   },
 }));

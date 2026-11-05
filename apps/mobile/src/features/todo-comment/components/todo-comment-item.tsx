@@ -7,7 +7,7 @@ import {
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -433,10 +433,10 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
 
   const copyContent = async () => {
     try {
-      await clipboard.setString(comment.content ?? '');
+      await clipboard.copy(comment.content ?? '');
       toast.success(t('toasts.copied'));
     } catch (error) {
-      logger.warn(TODO_COMMENT_LOG_EVENT.COPY_FAILED, { error: errorMessageOf(error) });
+      logger.warn(TODO_COMMENT_LOG_EVENT.COPY_FAILED, { error: getErrorMessage(error) });
       toast.error(undefined, { fallback: t('toasts.copyFailed') });
     }
   };

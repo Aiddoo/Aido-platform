@@ -8,23 +8,16 @@ import { useNotificationResponseProcessor } from '@src/features/notification/hoo
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification.gateway';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery } from '@tanstack/react-query';
-import * as Notifications from 'expo-notifications';
 import { type PropsWithChildren, useReducer } from 'react';
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
 
 if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+  registerForegroundNotificationPresentation();
 }
 
 function NativeNotificationProvider({ children }: PropsWithChildren) {

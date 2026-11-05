@@ -1,6 +1,7 @@
 import {
   useErrorReporter,
   useHaptics,
+  useIdGenerator,
   useOfflineModelPromptRepository,
   useSpeechRecognizer,
   useVoiceNoteStorageService,
@@ -12,7 +13,6 @@ import { t } from '@src/shared/i18n';
 import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
 import { useConfirmDialog } from '@src/shared/ui';
 import { noop, sortBy } from 'es-toolkit';
-import { randomUUID } from 'expo-crypto';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -68,6 +68,7 @@ export function useVoiceNoteRecording({
   const confirmDialog = useConfirmDialog();
   const errorReporter = useErrorReporter();
   const haptics = useHaptics();
+  const idGenerator = useIdGenerator();
   const { trackEvent } = useTrack();
 
   const [seedNote] = useState(() =>
@@ -76,7 +77,11 @@ export function useVoiceNoteRecording({
   const [baseNote] = useState<VoiceNote>(
     () =>
       seedNote ??
-      VoiceNotePolicy.createVoiceNote({ draftId: randomUUID(), locale, createdAt: new Date() }),
+      VoiceNotePolicy.createVoiceNote({
+        draftId: idGenerator.create(),
+        locale,
+        createdAt: new Date(),
+      }),
   );
   const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
     seedNote == null

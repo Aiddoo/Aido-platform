@@ -101,7 +101,7 @@ describe('removePlaintextQueryCache', () => {
     removePlaintextQueryCache(plaintext);
 
     // Then
-    expect(plaintext.getAllKeys()).toEqual(['aido_activation_v1:user-1:campaign']);
+    expect(plaintext.keys()).toEqual(['aido_activation_v1:user-1:campaign']);
   });
 });
 

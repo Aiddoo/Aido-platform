@@ -1,4 +1,3 @@
-/** 이메일 발송의 운영 경보 key. */
 export const EmailAlertKey = {
   /** 발송 큐의 잡을 풀지 못해 버렸다. 암호화 키 교체나 롤백을 확인해야 한다. */
   DELIVERY_UNSEAL_FAILED: "notification.email.delivery-unseal-failed",

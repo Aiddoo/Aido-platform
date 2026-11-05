@@ -47,7 +47,7 @@ export function canChainComposer(mode: TodoCommentComposerMode, itemCount: numbe
   return mode.type !== 'edit' && itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE;
 }
 
-export function targetOf(mode: TodoCommentComposerMode): TodoComment | null {
+export function getComposerTarget(mode: TodoCommentComposerMode): TodoComment | null {
   return match(mode)
     .with({ type: 'new' }, () => null)
     .with({ type: 'reply' }, { type: 'edit' }, ({ target }) => target)
@@ -55,14 +55,14 @@ export function targetOf(mode: TodoCommentComposerMode): TodoComment | null {
 }
 
 /** 답글은 대상 글에 그대로 단다. 서버가 그 글이 속한 묶음 끝에 붙인다 */
-export function replyParentIdOf(mode: TodoCommentComposerMode): string | null {
+export function getReplyParentId(mode: TodoCommentComposerMode): string | null {
   return match(mode)
     .with({ type: 'reply' }, ({ target }) => target.id)
     .otherwise(() => null);
 }
 
 /** 초안은 새 댓글·답글은 할 일마다, 수정은 수정하는 글마다 나눈다 */
-export function draftTargetOf(todoId: number, mode: TodoCommentComposerMode) {
+export function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
   return match(mode)
     .with({ type: 'edit' }, ({ target }) => [todoId, 'edit', target.id] as const)
     .with({ type: 'reply' }, () => [todoId, 'reply'] as const)
@@ -70,7 +70,7 @@ export function draftTargetOf(todoId: number, mode: TodoCommentComposerMode) {
     .exhaustive();
 }
 
-export function draftSourceUpdatedAtOf(mode: TodoCommentComposerMode) {
+export function getDraftSourceUpdatedAt(mode: TodoCommentComposerMode) {
   return match(mode)
     .with({ type: 'edit' }, ({ target }) => (target.editedAt ?? target.createdAt).getTime())
     .otherwise(() => undefined);
@@ -112,7 +112,7 @@ export function prepareSubmission({
   };
 }
 
-export function trimmedContentsOf(
+export function getTrimmedContents(
   items: TodoCommentComposerForm['items'],
 ): [string, ...string[]] | null {
   const [first, ...rest] = items.map((item) => item.content.trim());
@@ -125,10 +125,10 @@ export const TodoCommentComposer = {
   edit: editComposer,
   canChain: canChainComposer,
   shouldCloseOnKeyboardHide,
-  targetOf,
-  replyParentIdOf,
-  draftTargetOf,
-  draftSourceUpdatedAtOf,
+  getComposerTarget,
+  getReplyParentId,
+  getDraftTarget,
+  getDraftSourceUpdatedAt,
   prepareSubmission,
-  trimmedContentsOf,
+  getTrimmedContents,
 } as const;

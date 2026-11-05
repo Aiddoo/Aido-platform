@@ -63,7 +63,7 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
   };
 
   const read = (accountId: string): StoreReviewState => {
-    const saved = storage.getString(storageKey(accountId));
+    const saved = storage.get(storageKey(accountId));
     if (saved == null) {
       return createEmptyStoreReviewState();
     }

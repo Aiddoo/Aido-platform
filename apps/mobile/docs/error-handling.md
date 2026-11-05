@@ -163,7 +163,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(예: `AuthErrors.
 
 "지금 못 읽는다"를 "토큰이 없다"로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. 반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다. 그래서 일시적 오류만 이 타입으로 승격하고, 영구 오류는 `AuthProvider`가 관측하고 미인증으로 폴백한다. 벤더 에러 판별(OSStatus 메시지 매칭)은 `secure-storage.ts`에만 두고, `auth-boot.ts`는 `isKeychainLockedError()`만 안다.
 
-## 던져진 값 다루기: toError / errorMessageOf
+## 던져진 값 다루기: toError / getErrorMessage
 
 RN 네이티브 브릿지와 서드파티 SDK는 `Error`가 아닌 값(문자열, `{ message }` 객체)을 던지기도 한다.
 
@@ -173,7 +173,7 @@ new Error(String(error));
 
 // ✅ 원본은 cause로 보존
 errorReporter.captureException(toError(error), { feature: 'auth' });
-logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, { error: errorMessageOf(error) });
+logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, { error: getErrorMessage(error) });
 logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry 이벤트 — captureException과 중복 금지
 ```
 

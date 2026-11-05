@@ -36,9 +36,9 @@ describe('TodoCommentComposer', () => {
 
     // When
     const parentIds = [
-      TodoCommentComposer.replyParentIdOf({ type: 'reply', target }),
-      TodoCommentComposer.replyParentIdOf({ type: 'new' }),
-      TodoCommentComposer.replyParentIdOf({ type: 'edit', target }),
+      TodoCommentComposer.getReplyParentId({ type: 'reply', target }),
+      TodoCommentComposer.getReplyParentId({ type: 'new' }),
+      TodoCommentComposer.getReplyParentId({ type: 'edit', target }),
     ];
 
     // Then
@@ -79,7 +79,7 @@ describe('TodoCommentComposer', () => {
 
   it('보낼 글은 앞뒤 공백을 지운다', () => {
     // When
-    const contents = TodoCommentComposer.trimmedContentsOf([
+    const contents = TodoCommentComposer.getTrimmedContents([
       { content: '  하나 ' },
       { content: '둘\n' },
     ]);
@@ -95,8 +95,8 @@ describe('TodoCommentComposer', () => {
 
     // When
     const sourceUpdatedAt = [
-      TodoCommentComposer.draftSourceUpdatedAtOf({ type: 'edit', target }),
-      TodoCommentComposer.draftSourceUpdatedAtOf({ type: 'reply', target }),
+      TodoCommentComposer.getDraftSourceUpdatedAt({ type: 'edit', target }),
+      TodoCommentComposer.getDraftSourceUpdatedAt({ type: 'reply', target }),
     ];
 
     // Then

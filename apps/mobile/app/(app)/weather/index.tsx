@@ -49,7 +49,7 @@ const COLUMN_MAX_WIDTH = 560;
 /** 헤더 아래로 페이드가 이어지는 길이 */
 const TOP_FADE_EXTENT = 40;
 const DEV_BADGE_BOTTOM = 8;
-const IS_IOS = process.env.EXPO_OS === 'ios';
+const IS_IOS = Platform.OS === 'ios';
 /** iOS 26부터는 투명 헤더 아래 내용을 시스템 스크롤 엣지 효과가 흐리므로 직접 그린 페이드를 쓰지 않는다. */
 const HAS_NATIVE_EDGE_EFFECT = IS_IOS && Number.parseInt(String(Platform.Version), 10) >= 26;
 

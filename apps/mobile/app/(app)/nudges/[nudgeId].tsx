@@ -60,7 +60,7 @@ function NudgeDetailScreen() {
   const isReceived = nudge.receiverId === me.id;
   const friendName = isReceived ? nudge.senderName : nudge.receiverName;
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
-  const status = NudgeInteractionPolicy.getStatus(nudge);
+  const status = NudgeInteractionPolicy.getNudgeInteractionStatus(nudge);
   const handleOpenThanksSheet = useSingleTap(() =>
     router.push(todoThanksSheetHref({ todoId: nudge.todoId })),
   );

@@ -1,6 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -39,14 +39,14 @@ export class SubscriptionService {
     }
 
     try {
-      const offering = await this.#purchases.getCurrentOffering();
+      const offering = await this.#purchases.getOffering();
       if (offering == null) {
         return err(SubscriptionErrors.offeringsUnavailable());
       }
       return ok(toSubscriptionOffering(offering));
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.OFFERINGS_FETCH_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return err(toSubscriptionError('offerings', error));
     }
@@ -58,11 +58,11 @@ export class SubscriptionService {
     }
 
     try {
-      const result = await this.#purchases.purchasePackage(identifier);
+      const result = await this.#purchases.purchase(identifier);
       return match(result)
         .returnType<Result<boolean, SubscriptionError>>()
-        .with({ type: 'purchased' }, ({ customerInfo }) =>
-          ok(CustomerInfoPolicy.hasStoreEntitlement(toCustomerInfo(customerInfo))),
+        .with({ type: 'purchased' }, ({ status }) =>
+          ok(CustomerInfoPolicy.hasStoreEntitlement(toCustomerInfo(status))),
         )
         .with({ type: 'package-not-found' }, () => err(SubscriptionErrors.offeringsUnavailable()))
         .exhaustive();
@@ -78,11 +78,11 @@ export class SubscriptionService {
     }
 
     try {
-      const customerInfo = toCustomerInfo(await this.#purchases.getCustomerInfo());
+      const customerInfo = toCustomerInfo(await this.#purchases.getStatus());
       return CustomerInfoPolicy.findStoreProductId(customerInfo, store);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return null;
     }
@@ -94,7 +94,7 @@ export class SubscriptionService {
     }
 
     try {
-      const customerInfo = toCustomerInfo(await this.#purchases.restorePurchases());
+      const customerInfo = toCustomerInfo(await this.#purchases.restore());
       return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo));
     } catch (error) {
       return err(toSubscriptionError('restore', error));
@@ -106,6 +106,6 @@ export class SubscriptionService {
     if (!this.#sdkManager.isConfigured()) {
       return noop;
     }
-    return this.#purchases.onCustomerInfoChange((dto) => listener(toCustomerInfo(dto)));
+    return this.#purchases.subscribe((dto) => listener(toCustomerInfo(dto)));
   };
 }

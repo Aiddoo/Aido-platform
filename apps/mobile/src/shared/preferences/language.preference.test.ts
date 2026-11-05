@@ -24,7 +24,7 @@ describe('readLanguageMode', () => {
   it('저장된 값이 없으면 system을 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
 
     // When
     const result = readLanguageMode(storage);
@@ -36,7 +36,7 @@ describe('readLanguageMode', () => {
   it.each(['system', 'ko', 'en'] as const)('%s가 저장되어 있으면 %s를 반환한다', (value) => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(value);
+    storage.get.mockReturnValue(value);
 
     // When
     const result = readLanguageMode(storage);
@@ -48,7 +48,7 @@ describe('readLanguageMode', () => {
   it('유효하지 않은 값이 저장되어 있으면 system을 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('invalid');
+    storage.get.mockReturnValue('invalid');
 
     // When
     const result = readLanguageMode(storage);

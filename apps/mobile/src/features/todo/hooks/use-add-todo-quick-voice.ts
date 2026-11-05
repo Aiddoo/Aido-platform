@@ -1,4 +1,8 @@
-import { useLogger, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import {
+  useIdGenerator,
+  useLogger,
+  useVoiceNoteStorageService,
+} from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
@@ -20,12 +24,11 @@ import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capt
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
 import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-note-href';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
@@ -46,6 +49,7 @@ interface UseAddTodoQuickVoiceOptions {
 export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOptions) {
   const { t: tVoice } = useTranslation('voice');
   const logger = useLogger();
+  const idGenerator = useIdGenerator();
   const toast = useAppToast();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
   const aiConsent = useAiDataSharingConsentGate();
@@ -67,7 +71,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     const request = PlanRequestPolicy.preparePlanRequest<CreateQuickPlanInput>({
       previous: planRequestRef.current,
       input: { text, source: 'voice' },
-      createIdempotencyKey: randomUUID,
+      createIdempotencyKey: idGenerator.create,
     });
     planRequestRef.current = request;
     setIsConsentRequired(false);
@@ -176,7 +180,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
       getRecordHref: () => {
         const { transcript, elapsedMs } = session.state;
         const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
-          draftId: randomUUID(),
+          draftId: idGenerator.create(),
           locale,
           createdAt: new Date(),
           transcript,
@@ -205,7 +209,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
 
   const changeLocale = (nextLocale: SpeechLocale) => {
     applyLocale(nextLocale).catch((error: unknown) => {
-      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: getErrorMessage(error) });
       toast.error(tVoice('listening.languageChangeFailed'));
     });
   };

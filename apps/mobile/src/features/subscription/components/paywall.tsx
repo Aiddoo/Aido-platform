@@ -186,7 +186,6 @@ Paywall.Benefits = function Benefits() {
   );
 };
 
-/** 아이콘 한 줄로 보여 주는 나머지 혜택 */
 Paywall.AdditionalBenefits = function AdditionalBenefits() {
   const { t } = useTranslation('subscription');
   const { locale } = useDateFormatContext();
@@ -249,7 +248,6 @@ const RENEWAL_NOTICE_KEYS = {
   googlePlay: 'paywall.renewalNotice.googlePlay',
 } as const satisfies Record<SubscriptionStore, string>;
 
-/** 결제 전 자동 갱신 조건과 스토어별 해지 경로 안내 */
 Paywall.RenewalNotice = function RenewalNotice() {
   const { t } = useTranslation('subscription');
   const store = getSubscriptionStore(Platform.OS);

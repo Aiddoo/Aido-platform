@@ -23,7 +23,6 @@ interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'childre
   hasTimeCoachmark?: boolean;
 }
 
-/** 핵심 포인트 목록. 누르면 그 시각부터 들려주고, 재생 중인 포인트는 배경으로 강조한다 */
 export function KeyPointList({
   keyPoints,
   activeKeyPointId,
@@ -40,10 +39,11 @@ export function KeyPointList({
   return (
     <VStack gap={4} {...stackProps}>
       {coachmarkKeyPointId != null && <KeyPointHintSpace />}
-      {keyPoints.map((keyPoint) => (
+      {keyPoints.map((keyPoint, index) => (
         <KeyPointList.Item
           key={keyPoint.id}
           keyPoint={keyPoint}
+          isSameTimeAsPrevious={hasSameTime(keyPoint, keyPoints[index - 1])}
           isActive={keyPoint.id === activeKeyPointId}
           isPlayable={onPressKeyPoint != null}
           hasTimeCoachmark={keyPoint.id === coachmarkKeyPointId}
@@ -51,6 +51,15 @@ export function KeyPointList({
         />
       ))}
     </VStack>
+  );
+}
+
+/** 한 문장에서 포인트가 여러 개 나오면 시각이 같다. 초 단위로 같게 보이면 같은 칩이 줄줄이 서지 않게 비교한다 */
+function hasSameTime(keyPoint: VoiceNoteKeyPoint, previous: VoiceNoteKeyPoint | undefined) {
+  return (
+    keyPoint.startMs != null &&
+    previous?.startMs != null &&
+    formatMediaTime(keyPoint.startMs) === formatMediaTime(previous.startMs)
   );
 }
 
@@ -67,6 +76,8 @@ interface KeyPointItemProps extends Omit<
   'children' | 'accessibilityLabel'
 > {
   keyPoint: VoiceNoteKeyPoint;
+  /** 칩을 숨기되 글자 시작선이 위 포인트와 맞게 자리는 남긴다. 눌러서 재생하는 건 그대로다 */
+  isSameTimeAsPrevious: boolean;
   isActive: boolean;
   isPlayable: boolean;
   hasTimeCoachmark: boolean;
@@ -74,6 +85,7 @@ interface KeyPointItemProps extends Omit<
 
 function KeyPointItem({
   keyPoint,
+  isSameTimeAsPrevious,
   isActive,
   isPlayable,
   hasTimeCoachmark,
@@ -88,7 +100,12 @@ function KeyPointItem({
       size="e1"
       weight="bold"
       tone="brand"
-      className="rounded-full bg-main/10 px-2 py-1 tabular-nums"
+      accessibilityElementsHidden={isSameTimeAsPrevious}
+      importantForAccessibility={isSameTimeAsPrevious ? 'no-hide-descendants' : 'auto'}
+      className={cn(
+        'rounded-full bg-main/10 px-2 py-1 tabular-nums',
+        isSameTimeAsPrevious && 'opacity-0',
+      )}
     >
       {time}
     </Text>

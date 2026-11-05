@@ -27,14 +27,14 @@ function parseDraftEntry(raw: string | undefined): DraftEntry | undefined {
 
 export function createDraftRepository(storage: EnumerableSyncStorage): DraftRepository {
   return {
-    find: (id) => parseDraftEntry(storage.getString(`${KEY_PREFIX}${id}`)),
+    find: (id) => parseDraftEntry(storage.get(`${KEY_PREFIX}${id}`)),
     save: (id, entry) => storage.set(`${KEY_PREFIX}${id}`, JSON.stringify(entry)),
-    remove: (id) => storage.delete(`${KEY_PREFIX}${id}`),
+    remove: (id) => storage.remove(`${KEY_PREFIX}${id}`),
     findAllIds: () =>
       storage
-        .getAllKeys()
+        .keys()
         .filter((key) => key.startsWith(KEY_PREFIX))
         .map((key) => key.slice(KEY_PREFIX.length)),
-    removeAll: () => storage.clearAll(),
+    removeAll: () => storage.clear(),
   };
 }

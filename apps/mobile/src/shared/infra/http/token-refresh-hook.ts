@@ -1,11 +1,11 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import ky, { type AfterResponseHook } from 'ky';
 
-import { pathnameOf } from './error-handler';
+import { getPathname } from './error-handler';
 import type { TokenRefresher } from './token-refresher';
 import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
@@ -62,7 +62,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
         severity: 'warning',
         feature: 'auth_cold_start',
         statusCode: 401,
-        endpoint: pathnameOf(request.url ?? ''),
+        endpoint: getPathname(request.url ?? ''),
       });
       return response;
     }
@@ -70,7 +70,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     // 읽기 실패는 "토큰 없음"이 아니다 — 아래 갱신 경로가 처리하게 넘긴다.
     const storedAccessToken = await tokenStore.readAccessToken().catch((error: unknown) => {
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.ACCESS_TOKEN_READ_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return null;
     });

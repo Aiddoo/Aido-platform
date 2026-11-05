@@ -8,15 +8,16 @@ import { CheckmarkIcon, PinFilledIcon, PinIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 /** 메모 화면 네이티브 헤더 버튼 아이콘. iOS는 SF Symbol, Android는 Material Symbol을 쓴다. */
 export const MEMO_TOOLBAR_ICON = {
-  pin: process.env.EXPO_OS === 'ios' ? 'pin' : Keep,
-  pinned: process.env.EXPO_OS === 'ios' ? 'pin.fill' : Keep,
-  save: process.env.EXPO_OS === 'ios' ? 'checkmark' : Check,
-  ai: process.env.EXPO_OS === 'ios' ? 'sparkles' : SmartToy,
-  convertToTodo: process.env.EXPO_OS === 'ios' ? 'checkmark.square' : CheckBox,
-  delete: process.env.EXPO_OS === 'ios' ? 'trash' : Delete,
+  pin: Platform.OS === 'ios' ? 'pin' : Keep,
+  pinned: Platform.OS === 'ios' ? 'pin.fill' : Keep,
+  save: Platform.OS === 'ios' ? 'checkmark' : Check,
+  ai: Platform.OS === 'ios' ? 'sparkles' : SmartToy,
+  convertToTodo: Platform.OS === 'ios' ? 'checkmark.square' : CheckBox,
+  delete: Platform.OS === 'ios' ? 'trash' : Delete,
 } as const;
 
 type MemoActionButtonProps = Omit<ComponentProps<typeof PressableFeedback>, 'children'> & {

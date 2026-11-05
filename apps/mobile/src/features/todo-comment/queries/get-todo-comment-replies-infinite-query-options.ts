@@ -9,8 +9,8 @@ import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import type { TodoCommentReplyPages } from '../utils/todo-comment-cache-pages';
 import {
   INITIAL_TODO_COMMENT_PAGE_PARAM,
-  nextPageParamOf,
-  previousPageParamOf,
+  getNextTodoCommentPageParam,
+  getPreviousTodoCommentPageParam,
   toRepliesQuery,
 } from '../utils/todo-comment-page-params';
 
@@ -42,8 +42,8 @@ export function getTodoCommentRepliesInfiniteQueryOptions(
           signal,
         ),
       ),
-    getNextPageParam: (lastPage) => nextPageParamOf(lastPage.pagination),
-    getPreviousPageParam: (firstPage) => previousPageParamOf(firstPage.pagination),
+    getNextPageParam: (lastPage) => getNextTodoCommentPageParam(lastPage.pagination),
+    getPreviousPageParam: (firstPage) => getPreviousTodoCommentPageParam(firstPage.pagination),
     enabled: isEnabled,
     staleTime: TODO_COMMENT_QUERY_TIMING.latestStaleTime,
     gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,

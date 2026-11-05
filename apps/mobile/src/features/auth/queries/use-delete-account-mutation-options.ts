@@ -9,7 +9,7 @@ import {
   usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { errorMessageOf, isApiError } from '@src/shared/errors';
+import { getErrorMessage, isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
@@ -33,11 +33,11 @@ export const useDeleteAccountMutationOptions = () => {
         const unregisterResult = await pushDeviceService.unregister();
         if (!unregisterResult.ok) {
           logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
-            error: errorMessageOf(unregisterResult.error),
+            error: getErrorMessage(unregisterResult.error),
           });
         }
       } catch (error) {
-        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error: errorMessageOf(error) });
+        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error: getErrorMessage(error) });
       }
 
       const result = await authService.deleteAccount(input);

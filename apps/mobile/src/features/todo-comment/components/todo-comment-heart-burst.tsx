@@ -45,7 +45,7 @@ const SPRING = { damping: 9, stiffness: 320, mass: 0.6 } as const;
 
 const DOT_COLOR_CLASS_NAMES = ['text-error', 'text-main'] as const;
 
-function dotColorClassNameOf(index: number) {
+function getDotColorClassName(index: number) {
   return index % 2 === 0 ? DOT_COLOR_CLASS_NAMES[0] : DOT_COLOR_CLASS_NAMES[1];
 }
 
@@ -172,7 +172,7 @@ export function TodoCommentHeartBurst({ burst }: { burst: TodoCommentHeartBurstV
             key={index}
             progress={burst.dots}
             angleDeg={index * DOT_ANGLE_STEP_DEG + DOT_ANGLE_OFFSET_DEG}
-            colorClassName={dotColorClassNameOf(index)}
+            colorClassName={getDotColorClassName(index)}
           />
         ))}
         <Animated.View style={[styles.bigHeart, bigStyle]}>

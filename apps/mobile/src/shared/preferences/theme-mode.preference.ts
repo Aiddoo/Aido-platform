@@ -9,7 +9,7 @@ export function isThemeMode(value: unknown): value is ThemeMode {
 }
 
 export function readThemeMode(storage: SyncStorage): ThemeMode {
-  const saved = storage.getString(KEY);
+  const saved = storage.get(KEY);
 
   if (isThemeMode(saved)) {
     return saved;

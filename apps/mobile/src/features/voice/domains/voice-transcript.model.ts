@@ -51,7 +51,6 @@ export function getFinalText(transcript: VoiceTranscript): string {
   return transcript.sentences.join(' ');
 }
 
-/** 아직 인식 중인 꼬리 */
 export function getInterimText(transcript: VoiceTranscript): string {
   return transcript.interim;
 }

@@ -57,7 +57,7 @@ export function createFeatureAttributionStore(
 
     consume({ accountId, feature }) {
       const key = attributionKey(accountId, feature);
-      const raw = storage.getString(key);
+      const raw = storage.get(key);
       if (!raw) {
         return null;
       }
@@ -66,18 +66,18 @@ export function createFeatureAttributionStore(
       try {
         decoded = JSON.parse(raw);
       } catch {
-        storage.delete(key);
+        storage.remove(key);
         return null;
       }
 
       const parsed = persistedAttributionSchema.safeParse(decoded);
       if (!parsed.success || parsed.data.feature !== feature || parsed.data.expiresAt < now()) {
-        storage.delete(key);
+        storage.remove(key);
         return null;
       }
 
       // 같은 JS 런루프에서 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다.
-      storage.delete(key);
+      storage.remove(key);
       return {
         campaignId: parsed.data.campaignId,
         feature: parsed.data.feature,

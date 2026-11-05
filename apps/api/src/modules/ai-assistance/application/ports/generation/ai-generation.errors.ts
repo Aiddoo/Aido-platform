@@ -42,7 +42,6 @@ export interface AiFailureRule {
 
 const unavailable = { breaker: null, errorCode: ErrorCode.AI_1301 } as const;
 
-/** 실패 종류별 처리 규칙의 단일 표. */
 export function resolveAiFailureRule(kind: AiFailureKind): AiFailureRule {
   return match(kind)
     .returnType<AiFailureRule>()

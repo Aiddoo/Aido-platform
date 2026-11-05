@@ -4,10 +4,12 @@ import { MicIcon } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-type QuickVoiceButtonProps = Omit<ComponentProps<typeof PressableFeedback>, 'children'>;
+type QuickVoiceButtonProps = Omit<
+  ComponentProps<typeof PressableFeedback>,
+  'children' | 'className' | 'style'
+>;
 
-/** 할 일 추가 시트의 말로 할 일 만들기 마이크 */
-export function QuickVoiceButton({ ...pressableProps }: QuickVoiceButtonProps) {
+export function QuickVoiceButton(pressableProps: QuickVoiceButtonProps) {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
 

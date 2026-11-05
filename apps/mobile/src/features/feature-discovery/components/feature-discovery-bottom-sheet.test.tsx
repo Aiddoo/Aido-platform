@@ -139,7 +139,7 @@ describe('FeatureDiscoveryBottomSheet', () => {
       throw new Error('bundled campaign missing');
     }
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('xlarge');
+    storage.get.mockReturnValue('xlarge');
     mockSafeAreaInsets = { top: 59, right: 0, bottom: 34, left: 0 };
     await act(async () => {
       await i18n.changeLanguage('en');

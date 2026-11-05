@@ -1,5 +1,5 @@
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { addNetworkStateListener, getNetworkStateAsync, type NetworkState } from 'expo-network';
 
@@ -25,7 +25,9 @@ export const expoNetworkStatusGateway: NetworkStatusGateway = {
         }
       })
       .catch((error: unknown) => {
-        logger.warn(NETWORK_STATUS_LOG_EVENT.INITIAL_READ_FAILED, { error: errorMessageOf(error) });
+        logger.warn(NETWORK_STATUS_LOG_EVENT.INITIAL_READ_FAILED, {
+          error: getErrorMessage(error),
+        });
       });
 
     return () => {

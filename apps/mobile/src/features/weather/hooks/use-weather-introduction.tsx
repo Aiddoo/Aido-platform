@@ -3,7 +3,7 @@ import {
   useLogger,
   useWeatherIntroductionService,
 } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
@@ -83,7 +83,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
           return accepted ? request() : undefined;
         })
         .catch((error) => {
-          logger.warn(WEATHER_LOG_EVENT.INTRODUCTION_FAILED, { error: errorMessageOf(error) });
+          logger.warn(WEATHER_LOG_EVENT.INTRODUCTION_FAILED, { error: getErrorMessage(error) });
         });
     });
     return () => cancelIdleCallback(task);

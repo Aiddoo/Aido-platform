@@ -53,9 +53,9 @@ describe('초대 코드 입력 화면', () => {
         analytics: createMockAnalytics(),
         errorReporter: createErrorReporterStub(),
         clipboard: {
-          hasString: () => Promise.resolve(true),
-          getString: () => Promise.resolve(CODE),
-          setString: () => Promise.resolve(),
+          hasContent: () => Promise.resolve(true),
+          paste: () => Promise.resolve(CODE),
+          copy: () => Promise.resolve(),
         },
         inviteService,
       },

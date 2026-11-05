@@ -1,7 +1,7 @@
 import { refreshTokensSchema } from '@aido/api';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
-import { errorMessageOf, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { getErrorMessage, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { TimeoutError as KyTimeoutError } from 'ky';
 import { z } from 'zod';
@@ -58,7 +58,7 @@ export const createTokenRefresher = ({
       refreshToken = await tokenStore.readRefreshToken();
     } catch (error) {
       // 키체인 접근 실패(기기 잠김 등)는 "토큰 없음"이 아니다. 세션을 끝내면 안 된다.
-      logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_READ_FAILED, { error: errorMessageOf(error) });
+      logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_READ_FAILED, { error: getErrorMessage(error) });
       throw new NetworkError();
     }
 
@@ -72,7 +72,7 @@ export const createTokenRefresher = ({
     } catch (error) {
       // 네트워크/타임아웃 — 서버는 회전하지 않았으므로 보유 토큰은 여전히 유효하다.
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       throw error instanceof KyTimeoutError ? new TimeoutError() : new NetworkError();
     }
@@ -93,7 +93,7 @@ export const createTokenRefresher = ({
       } catch (error) {
         // 저장 실패. 서버는 회전했지만 보유 토큰은 grace(10초) 안에서 아직 통한다.
         logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_PERSIST_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         throw new NetworkError();
       }

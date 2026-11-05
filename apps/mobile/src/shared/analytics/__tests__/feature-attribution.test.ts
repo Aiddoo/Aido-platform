@@ -14,9 +14,9 @@ describe('FeatureAttributionStore', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
-    storage.delete.mockImplementation((key) => values.delete(key));
+    storage.remove.mockImplementation((key) => values.delete(key));
     const attribution = createFeatureAttributionStore(storage, () => now);
 
     // When
@@ -97,9 +97,9 @@ describe('FeatureAttributionStore', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
-    storage.delete.mockImplementation((key) => values.delete(key));
+    storage.remove.mockImplementation((key) => values.delete(key));
     const attribution = createFeatureAttributionStore(storage, () => now);
     attribution.record({
       accountId: 'account-a',
@@ -117,9 +117,9 @@ describe('FeatureAttributionStore', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
-    storage.delete.mockImplementation((key) => values.delete(key));
+    storage.remove.mockImplementation((key) => values.delete(key));
     let currentTime = now;
     const attribution = createFeatureAttributionStore(storage, () => currentTime);
     attribution.record({
@@ -134,7 +134,7 @@ describe('FeatureAttributionStore', () => {
 
     // Then
     expect(result).toBeNull();
-    expect(storage.delete).toHaveBeenCalledWith(
+    expect(storage.remove).toHaveBeenCalledWith(
       'aido_feature_attribution_v1:account-a:friend_search',
     );
   });
@@ -142,7 +142,7 @@ describe('FeatureAttributionStore', () => {
   it('손상되거나 알 수 없는 기능의 저장값은 실패를 던지지 않고 삭제한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValueOnce('{broken').mockReturnValueOnce(
+    storage.get.mockReturnValueOnce('{broken').mockReturnValueOnce(
       JSON.stringify({
         campaignId: 'feature-discovery-2026-08',
         feature: 'raw-user-query',
@@ -154,16 +154,16 @@ describe('FeatureAttributionStore', () => {
     // When / Then
     expect(attribution.consume({ accountId: 'account-a', feature: 'memo_ai' })).toBeNull();
     expect(attribution.consume({ accountId: 'account-a', feature: 'memo_ai' })).toBeNull();
-    expect(storage.delete).toHaveBeenCalledTimes(2);
+    expect(storage.remove).toHaveBeenCalledTimes(2);
   });
 
   it('실제 성공에서는 계정 ID 없이 캠페인과 기능만 한 번 전송한다', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
-    storage.delete.mockImplementation((key) => values.delete(key));
+    storage.remove.mockImplementation((key) => values.delete(key));
     const attribution = createFeatureAttributionStore(storage, () => now);
     const analytics = createMockAnalytics();
     attribution.record({

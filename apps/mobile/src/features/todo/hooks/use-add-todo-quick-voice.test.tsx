@@ -193,8 +193,10 @@ async function speak(speechRecognizer: ReturnType<typeof createSpeechRecognizerS
   await act(async () => speechRecognizer.emit({ type: 'end' }));
 }
 
-const idempotencyKeyOf = (httpClient: ReturnType<typeof createMockHttpClient>, callIndex: number) =>
-  httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
+const getIdempotencyKey = (
+  httpClient: ReturnType<typeof createMockHttpClient>,
+  callIndex: number,
+) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
 describe('useAddTodoQuickVoice', () => {
   it('말이 끝나면 글자를 계획 API로 보내고 같은 시트의 고르는 단계로 넘어간다', async () => {
@@ -226,7 +228,7 @@ describe('useAddTodoQuickVoice', () => {
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
-    expect(idempotencyKeyOf(httpClient, 1)).toBe(idempotencyKeyOf(httpClient, 0));
+    expect(getIdempotencyKey(httpClient, 1)).toBe(getIdempotencyKey(httpClient, 0));
   });
 
   it('내용이 다르다는 오류(AI_1318) 뒤에는 새 키로 보낸다', async () => {
@@ -242,7 +244,7 @@ describe('useAddTodoQuickVoice', () => {
 
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
-    expect(idempotencyKeyOf(httpClient, 1)).not.toBe(idempotencyKeyOf(httpClient, 0));
+    expect(getIdempotencyKey(httpClient, 1)).not.toBe(getIdempotencyKey(httpClient, 0));
   });
 
   it('찾은 할 일이 없으면 직접 입력을 고를 때 들은 글자를 입력 칸으로 옮긴다', async () => {

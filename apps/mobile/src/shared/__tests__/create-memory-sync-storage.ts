@@ -6,17 +6,17 @@ export const createMemorySyncStorage = (): EnumerableSyncStorage & ObservableSyn
   const notify = (key: string) => listeners.get(key)?.forEach((listener) => listener());
 
   return {
-    getString: (key) => values.get(key),
+    get: (key) => values.get(key),
     set: (key, value) => {
       values.set(key, value);
       notify(key);
     },
-    delete: (key) => {
+    remove: (key) => {
       values.delete(key);
       notify(key);
     },
-    getAllKeys: () => [...values.keys()],
-    clearAll: () => {
+    keys: () => [...values.keys()],
+    clear: () => {
       const keys = [...values.keys()];
       values.clear();
       keys.forEach(notify);

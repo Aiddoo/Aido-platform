@@ -118,13 +118,13 @@ function useOwnedTexture(element: ReactElement, size: SkSize, deps: DependencyLi
   return texture;
 }
 
-function centerOf(sprite: ParticleSprite) {
+function getCenter(sprite: ParticleSprite) {
   return vec(sprite.x + sprite.width / 2, sprite.y + sprite.height / 2);
 }
 
 function buildCrystalPath(): SkPath {
   const { crystal } = PARTICLE_SPRITES;
-  const center = centerOf(crystal);
+  const center = getCenter(crystal);
   const builder = Skia.PathBuilder.Make();
   for (const index of range(CRYSTAL.arms)) {
     const angle = (index / CRYSTAL.arms) * Math.PI * 2;
@@ -149,7 +149,7 @@ function buildCrystalPath(): SkPath {
 }
 
 function buildLeafVeinPath(): SkPath {
-  const center = centerOf(PARTICLE_SPRITES.leaf);
+  const center = getCenter(PARTICLE_SPRITES.leaf);
   const halfLength = PARTICLE_SPRITES.leaf.width * LEAF.veinHalfLength;
   return Skia.PathBuilder.Make()
     .moveTo(center.x - halfLength, center.y)
@@ -161,11 +161,11 @@ export function useParticleTexture() {
   const { streak, dot, soft, ice, warm, leaf } = PARTICLE_SPRITES;
   const crystalPath = useMemo(buildCrystalPath, []);
   const leafVeinPath = useMemo(buildLeafVeinPath, []);
-  const dotCenter = centerOf(dot);
-  const softCenter = centerOf(soft);
-  const iceCenter = centerOf(ice);
-  const warmCenter = centerOf(warm);
-  const leafCenter = centerOf(leaf);
+  const dotCenter = getCenter(dot);
+  const softCenter = getCenter(soft);
+  const iceCenter = getCenter(ice);
+  const warmCenter = getCenter(warm);
+  const leafCenter = getCenter(leaf);
   return useOwnedTexture(
     <Group>
       <RoundedRect

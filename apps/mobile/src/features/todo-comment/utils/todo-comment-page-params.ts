@@ -10,11 +10,14 @@ import type { TodoCommentPageParam } from './todo-comment-cache-pages';
 
 export const INITIAL_TODO_COMMENT_PAGE_PARAM: TodoCommentPageParam = null;
 
-export function nextPageParamOf({ hasNext, nextCursor }: TodoCommentCursorPagination) {
+export function getNextTodoCommentPageParam({ hasNext, nextCursor }: TodoCommentCursorPagination) {
   return hasNext && nextCursor != null ? nextCursor : undefined;
 }
 
-export function previousPageParamOf({ hasPrevious, previousCursor }: TodoCommentCursorPagination) {
+export function getPreviousTodoCommentPageParam({
+  hasPrevious,
+  previousCursor,
+}: TodoCommentCursorPagination) {
   return hasPrevious && previousCursor != null ? previousCursor : undefined;
 }
 

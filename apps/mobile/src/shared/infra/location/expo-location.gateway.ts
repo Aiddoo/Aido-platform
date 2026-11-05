@@ -2,6 +2,7 @@ import {
   LocationUnavailableError,
   type LocationCoordinates,
   type LocationGateway,
+  type LocationPermission,
 } from '@src/core/ports/location-gateway';
 import * as Location from 'expo-location';
 
@@ -103,9 +104,17 @@ async function getPlace(coordinates: LocationCoordinates, signal: AbortSignal) {
   };
 }
 
+function toLocationPermission({
+  granted,
+  canAskAgain,
+}: Location.LocationPermissionResponse): LocationPermission {
+  return { isGranted: granted, canAskAgain };
+}
+
 export const expoLocationGateway: LocationGateway = {
-  getPermission: () => Location.getForegroundPermissionsAsync(),
-  requestPermission: () => Location.requestForegroundPermissionsAsync(),
+  getPermission: async () => toLocationPermission(await Location.getForegroundPermissionsAsync()),
+  requestPermission: async () =>
+    toLocationPermission(await Location.requestForegroundPermissionsAsync()),
   getCoordinates: async (signal) => {
     // 날씨는 약 5km 칸 단위라 최근 위치면 충분하다. 움직이지 않는 기기는 새 위치 업데이트가 오지 않아
     // watch만 기다리면 시간 초과가 나므로, 최근 위치가 없을 때만 새로 받는다.

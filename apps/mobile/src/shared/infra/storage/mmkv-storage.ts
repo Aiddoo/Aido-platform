@@ -5,11 +5,11 @@ import { createMMKV } from 'react-native-mmkv';
 // 써서 v3 데이터를 이어받는다. `.delete()` → `.remove()`.
 const mmkv = createMMKV();
 
-export const mmkvSyncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'getAllKeys'> = {
-  getString: (key) => mmkv.getString(key),
-  getAllKeys: () => mmkv.getAllKeys(),
+export const mmkvSyncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'> = {
+  get: (key) => mmkv.getString(key),
+  keys: () => mmkv.getAllKeys(),
   set: (key, value) => mmkv.set(key, value),
-  delete: (key) => mmkv.remove(key),
+  remove: (key) => mmkv.remove(key),
   subscribe: (key, listener) => {
     const subscription = mmkv.addOnValueChangedListener((changedKey) => {
       if (changedKey === key) {

@@ -1,5 +1,5 @@
 import { useHaptics, useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -43,7 +43,7 @@ export const useMarkAllAsReadMutationOptions = () => {
       notificationService
         .syncBadgeCount()
         .catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: errorMessageOf(error) }),
+          logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
         );
       haptics.notify('error');
     },

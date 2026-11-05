@@ -15,6 +15,5 @@ export interface PlanApplicationRecord {
 export interface PlanApplicationRepositoryPort {
   findByKey(userId: string, idempotencyKey: string): Promise<PlanApplicationRecord | null>;
   insert(record: PlanApplicationRecord): Promise<void>;
-  /** 지운 행 수를 돌려준다. */
   deleteCreatedBefore(cutoff: Date): Promise<number>;
 }

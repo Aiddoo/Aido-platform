@@ -6,7 +6,7 @@ describe('readCalendarViewMode', () => {
   it('저장된 값이 없으면 week를 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
 
     // When
     const result = readCalendarViewMode(storage);
@@ -18,7 +18,7 @@ describe('readCalendarViewMode', () => {
   it('week가 저장되어 있으면 week를 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('week');
+    storage.get.mockReturnValue('week');
 
     // When
     const result = readCalendarViewMode(storage);
@@ -30,7 +30,7 @@ describe('readCalendarViewMode', () => {
   it('month가 저장되어 있으면 month를 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('month');
+    storage.get.mockReturnValue('month');
 
     // When
     const result = readCalendarViewMode(storage);
@@ -42,7 +42,7 @@ describe('readCalendarViewMode', () => {
   it('유효하지 않은 값이 저장되어 있으면 week를 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('day');
+    storage.get.mockReturnValue('day');
 
     // When
     const result = readCalendarViewMode(storage);

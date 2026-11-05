@@ -128,7 +128,6 @@ export function loadVoiceNoteDigestGoldenCases(
   return readGoldenLines(voiceNoteDigestGoldenCaseSchema, goldenPath("voice-note-digest", variant));
 }
 
-/** 정규화한 계획을 비교용 기대값 모양으로 바꾼다. */
 export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClock) {
   return {
     todos: plan.todos.map((todo): PlannedTodoExpectation => {

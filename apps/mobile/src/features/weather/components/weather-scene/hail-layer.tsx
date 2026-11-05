@@ -119,7 +119,7 @@ export function HailLayer({ density, wind, width, height, isLowEndDevice, time }
   );
   const shardColor = Skia.Color(SHARD_COLOR);
   const shardColors = range(shardCount).map(() => shardColor);
-  const sidewaysOf = (index: number, cycle: number, bounce: number) => {
+  const getSideways = (index: number, cycle: number, bounce: number) => {
     'worklet';
     return (hashCycle(index, cycle, 2 + bounce) * 2 - 1) * BOUNCE_SIDEWAYS;
   };
@@ -179,13 +179,13 @@ export function HailLayer({ density, wind, width, height, isLowEndDevice, time }
     const reboundX =
       phase.bounce === 0 || firstBounce == null
         ? landX
-        : landX + sidewaysOf(index, cycle, 0) * ((2 * firstBounce.velocity) / firstBounce.gravity);
+        : landX + getSideways(index, cycle, 0) * ((2 * firstBounce.velocity) / firstBounce.gravity);
     placeSprite(
       transform,
       cos,
       sin,
       iceAnchor,
-      reboundX + sidewaysOf(index, cycle, phase.bounce) * phase.elapsed,
+      reboundX + getSideways(index, cycle, phase.bounce) * phase.elapsed,
       stone.floor - getBounceHeight(bounce, phase.elapsed),
     );
   });

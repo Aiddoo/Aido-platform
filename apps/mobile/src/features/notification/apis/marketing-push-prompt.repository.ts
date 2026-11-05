@@ -29,7 +29,7 @@ export function createMarketingPushPromptRepository(
   storage: SyncStorage,
 ): MarketingPushPromptRepository {
   const get = (): MarketingPushPromptState => {
-    const saved = storage.getString(MARKETING_PUSH_PROMPT_KEY);
+    const saved = storage.get(MARKETING_PUSH_PROMPT_KEY);
     if (!saved) {
       return { ...EMPTY_STATE };
     }

@@ -21,7 +21,7 @@ export function createWidgetNavigationRepository(
   let cachedCommand: WidgetNavigationCommand | null = null;
 
   const getPendingCommand = (): WidgetNavigationCommand | null => {
-    const raw = storage.getString(WIDGET_NAVIGATION_COMMAND_KEY);
+    const raw = storage.get(WIDGET_NAVIGATION_COMMAND_KEY);
     if (raw === cachedRaw) {
       return cachedCommand;
     }
@@ -66,7 +66,7 @@ export function createWidgetNavigationRepository(
       ) {
         return false;
       }
-      storage.delete(WIDGET_NAVIGATION_COMMAND_KEY);
+      storage.remove(WIDGET_NAVIGATION_COMMAND_KEY);
       return true;
     },
   };

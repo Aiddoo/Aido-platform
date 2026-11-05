@@ -27,7 +27,7 @@ export function createRecognitionLanguageRepository(
     find(userId) {
       try {
         const parsed = speechLocaleSchema.safeParse(
-          storage.getString(recognitionLanguageStorageKey(userId)),
+          storage.get(recognitionLanguageStorageKey(userId)),
         );
         return parsed.success ? parsed.data : undefined;
       } catch {

@@ -11,7 +11,7 @@ import { useDictation } from '../hooks/use-dictation';
 
 interface DictationButtonProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
-  'children' | 'onPress' | 'onChange'
+  'children' | 'onPress' | 'onChange' | 'className' | 'style'
 > {
   value: string;
   onChange: (value: string) => void;

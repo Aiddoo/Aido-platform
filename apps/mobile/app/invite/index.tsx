@@ -243,7 +243,7 @@ function PasteInviteCodeChip({ onPaste, ...props }: PasteInviteCodeChipProps) {
   });
 
   const handlePaste = async () => {
-    const text = await clipboard.getString();
+    const text = await clipboard.paste();
     setHasPasted(true);
     onPaste(text);
   };

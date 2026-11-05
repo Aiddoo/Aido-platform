@@ -1,6 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 
 import type { AuthService } from '../apis/auth.service';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
@@ -39,7 +39,7 @@ export const logOutDevice = async ({
       logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, { code: unregisterResult.error.code });
     }
   } catch (error) {
-    logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error: errorMessageOf(error) });
+    logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error: getErrorMessage(error) });
   }
 
   try {
@@ -48,6 +48,6 @@ export const logOutDevice = async ({
       logger.warn(AUTH_LOG_EVENT.LOGOUT_API_FAILED, { code: result.error.code });
     }
   } catch (error) {
-    logger.warn(AUTH_LOG_EVENT.LOGOUT_API_FAILED, { error: errorMessageOf(error) });
+    logger.warn(AUTH_LOG_EVENT.LOGOUT_API_FAILED, { error: getErrorMessage(error) });
   }
 };

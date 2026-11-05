@@ -67,7 +67,6 @@ function tierValue<T>(tier: AccessTier, values: { readonly free: T; readonly pre
     .exhaustive();
 }
 
-/** 무제한(null)은 그대로 두고 한도가 있으면 보너스 자리를 더한다. */
 function withBonus(limit: number | null, bonus: number): number | null {
   return limit == null ? null : limit + bonus;
 }
@@ -136,7 +135,6 @@ export function isQuotaFeature(feature: PlanFeature): feature is PlanQuotaFeatur
   return PLAN_CATALOG[feature].kind === "quota";
 }
 
-/** 한 번 쓸 때의 길이 상한 */
 export interface PerUseLimit {
   readonly maxSeconds: number;
   readonly maxCharacters: number;

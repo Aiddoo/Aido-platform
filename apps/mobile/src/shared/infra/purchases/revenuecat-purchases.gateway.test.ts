@@ -91,7 +91,7 @@ describe('revenueCatPurchasesGateway', () => {
     purchases.getOfferings.mockResolvedValue({ all: {}, current: null });
 
     // When
-    const result = await revenueCatPurchasesGateway.purchasePackage('$rc_monthly');
+    const result = await revenueCatPurchasesGateway.purchase('$rc_monthly');
 
     // Then
     expect(result).toEqual({ type: 'package-not-found' });
@@ -100,7 +100,7 @@ describe('revenueCatPurchasesGateway', () => {
 
   test('고객 정보 구독을 끝내면 SDK에 붙인 같은 리스너를 뗀다', () => {
     // Given
-    const unsubscribe = revenueCatPurchasesGateway.onCustomerInfoChange(jest.fn());
+    const unsubscribe = revenueCatPurchasesGateway.subscribe(jest.fn());
     const [attached] = purchases.addCustomerInfoUpdateListener.mock.calls[0] ?? [];
 
     // When

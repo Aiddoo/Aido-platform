@@ -45,7 +45,7 @@ export const nudgeInteractionStatusSchema = z.enum([
 ]);
 export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
 
-export function getNudgeInteractionStatus(
+export function getNudgeInteractionStatusFromFlags(
   isAvailable: boolean,
   isTodoCompleted: boolean,
   hasReply: boolean,
@@ -92,10 +92,10 @@ export interface NudgeThanksSummary {
   pendingRecipientCount: number;
 }
 
-export function getNudgeInteractionStatusOf(
+export function getNudgeInteractionStatus(
   nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
 ): NudgeInteractionStatus {
-  return getNudgeInteractionStatus(
+  return getNudgeInteractionStatusFromFlags(
     nudge.isAvailable,
     nudge.isTodoCompleted,
     nudge.replyKind != null,
@@ -144,7 +144,7 @@ export function getNudgeThanksSummary(
 }
 
 export const NudgeInteractionPolicy = {
-  getStatus: getNudgeInteractionStatusOf,
+  getNudgeInteractionStatus,
   isThankableTodo,
   isReplyable: isReplyableNudge,
   isThankable: isThankablePreview,

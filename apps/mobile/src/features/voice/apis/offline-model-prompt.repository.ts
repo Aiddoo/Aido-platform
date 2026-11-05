@@ -21,7 +21,7 @@ export function createOfflineModelPromptRepository(
   return {
     hasDeclined(userId, locale) {
       try {
-        return storage.getString(offlineModelDeclinedStorageKey(userId, locale)) != null;
+        return storage.get(offlineModelDeclinedStorageKey(userId, locale)) != null;
       } catch {
         return false;
       }

@@ -1,6 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import { debounce } from 'es-toolkit/compat';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
@@ -81,7 +81,7 @@ export function createVoiceNoteDraftRepository({
   };
 
   const read = (key: string): VoiceNote | undefined => {
-    const raw = storage.getString(key);
+    const raw = storage.get(key);
     if (raw == null) {
       return undefined;
     }
@@ -95,11 +95,11 @@ export function createVoiceNoteDraftRepository({
     } catch (error) {
       logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
         reason: 'invalid-json',
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     }
 
-    storage.delete(key);
+    storage.remove(key);
     return undefined;
   };
 
@@ -109,7 +109,7 @@ export function createVoiceNoteDraftRepository({
       replaceInSnapshot(accountId, note);
       notifyListeners();
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: getErrorMessage(error) });
     }
   };
 
@@ -124,7 +124,7 @@ export function createVoiceNoteDraftRepository({
   };
 
   const findKeys = (matches: (key: string) => boolean) =>
-    storage.getAllKeys().filter((key) => key.startsWith(KEY_PREFIX) && matches(key));
+    storage.keys().filter((key) => key.startsWith(KEY_PREFIX) && matches(key));
 
   const findAllOwned = (accountId: string) =>
     findKeys((key) => key.startsWith(createOwnerPrefix(accountId)))
@@ -186,7 +186,7 @@ export function createVoiceNoteDraftRepository({
     remove: (accountId, draftId) => {
       const key = createKey(accountId, draftId);
       cancelPending(key);
-      storage.delete(key);
+      storage.remove(key);
       notify();
     },
 
@@ -194,13 +194,13 @@ export function createVoiceNoteDraftRepository({
       const ownerPrefix = createOwnerPrefix(accountId);
       const isOtherOwner = (candidate: string) => !candidate.startsWith(ownerPrefix);
       cancelPendingWhere(isOtherOwner);
-      findKeys(isOtherOwner).forEach((key) => storage.delete(key));
+      findKeys(isOtherOwner).forEach((key) => storage.remove(key));
       notify();
     },
 
     removeAll: () => {
       cancelPendingWhere(() => true);
-      findKeys(() => true).forEach((key) => storage.delete(key));
+      findKeys(() => true).forEach((key) => storage.remove(key));
       notify();
     },
   };

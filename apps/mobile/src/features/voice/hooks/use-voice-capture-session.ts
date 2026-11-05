@@ -12,7 +12,7 @@ import type {
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import type {
   VoiceCaptureEntry,
   VoiceCaptureOutcome,
@@ -560,7 +560,7 @@ export function useVoiceCaptureSession({
       addBreadcrumb('capture.started', { mode, locale, on_device: isOnDevice });
       return true;
     } catch (error) {
-      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(errorMessageOf(error)), {
+      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(getErrorMessage(error)), {
         speech_error: 'unknown',
       });
       handleError('unknown');
@@ -634,7 +634,6 @@ export function useVoiceCaptureSession({
     isQuiet,
     begin,
     finish,
-    /** 사용자가 잠시 멈춘다 */
     pause: () => pause('user'),
     /** 알림을 눌러 다른 화면으로 가는 등 듣던 화면이 가려질 때 멈춘다. 들은 글자는 그대로 두고 돌아와 이어 듣는다 */
     interrupt: () => pause('interrupted'),

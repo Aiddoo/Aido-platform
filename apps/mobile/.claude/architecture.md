@@ -87,6 +87,7 @@ export interface HttpClient {
 | `SpeechRecognizer`        | `expoSpeechRecognizerGateway`(expo-speech-recognition)    | `shared/infra/speech/`                       |
 | `PurchasesGateway`        | `revenueCatPurchasesGateway`(react-native-purchases)      | `shared/infra/purchases/`                    |
 | `HapticsGateway`          | `expoHapticsGateway`(expo-haptics)                        | `shared/infra/haptics/`                      |
+| `IdGenerator`             | `expoIdGenerator`(expo-crypto)                            | `shared/infra/id-generator/`                 |
 
 > 위 표는 대표 포트이고 전체 목록은 `core/ports/`에 있다.
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`·`expo-speech-recognition`·`react-native-purchases`·`expo-haptics`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
@@ -947,6 +948,7 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(�
   - 라이브러리 자체가 React 훅이면 경계 훅 파일 하나에서만 import한다(`expo-audio`는 `use-voice-note-player.ts`, `expo-keep-awake`는 `use-keep-screen-awake.ts`).
   - React 밖 코드(시작 시 값, 위젯 진입점, 부트스트랩)는 DI 훅을 부를 수 없으니 `shared/infra`의 함수를 직접 import한다.
 - **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
+- **포트 이름은 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setFirebaseAppInstanceId` → `setAnalyticsId`, `setString` → `copy`). 라이브러리를 바꿀 때 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다.
 - **조립은 `bootstrap/providers/di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
 - **Mapper는 DI에 넣지 않는다.** DTO·OS 값을 모델로 바꾸는 순수 함수라 서비스가 직접 import한다.
 
@@ -965,18 +967,18 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(�
 ```typescript
 // core/ports/clipboard.ts
 export interface ClipboardGateway {
-  hasString(): Promise<boolean>;
-  getString(): Promise<string>;
-  setString(text: string): Promise<void>;
+  hasContent(): Promise<boolean>;
+  paste(): Promise<string>;
+  copy(text: string): Promise<void>;
 }
 
 // shared/infra/clipboard/expo-clipboard.gateway.ts
 import * as Clipboard from 'expo-clipboard';
 
 export const expoClipboardGateway: ClipboardGateway = {
-  hasString: () => Clipboard.hasStringAsync(),
-  getString: () => Clipboard.getStringAsync(),
-  setString: async (text) => {
+  hasContent: () => Clipboard.hasStringAsync(),
+  paste: () => Clipboard.getStringAsync(),
+  copy: async (text) => {
     await Clipboard.setStringAsync(text);
   },
 };
@@ -989,7 +991,7 @@ export const useClipboard = () => useDI().clipboard;
 
 // 컴포넌트
 const clipboard = useClipboard();
-await clipboard.setString(comment.content ?? '');
+await clipboard.copy(comment.content ?? '');
 ```
 
 라이브러리를 바꾸면 어댑터 파일과 `di-provider`의 조립만 바뀐다. 테스트 방법은 [testing-guide](./testing-guide.md#stub-우선-di-테스트)를 본다.

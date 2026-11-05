@@ -1,4 +1,4 @@
-import { errorMessageOf, toError } from './to-error';
+import { getErrorMessage, toError } from './to-error';
 
 describe('toError — 던져진 값을 Error로 정규화한다', () => {
   it('Error는 그대로 통과시킨다 (스택 보존)', () => {
@@ -48,14 +48,14 @@ describe('toError — 던져진 값을 Error로 정규화한다', () => {
   });
 });
 
-describe('errorMessageOf — 값의 모양이 아니라 내용으로 판단한다', () => {
+describe('getErrorMessage — 값의 모양이 아니라 내용으로 판단한다', () => {
   it.each([
     ['Error', new Error('from error'), 'from error'],
     ['문자열', 'from string', 'from string'],
     ['message 객체', { message: 'from object' }, 'from object'],
   ])('%s에서 메시지를 뽑는다', (_label, value, expected) => {
     // Given & When & Then
-    expect(errorMessageOf(value)).toBe(expected);
+    expect(getErrorMessage(value)).toBe(expected);
   });
 
   it('message가 없는 객체는 JSON으로 직렬화한다 ([object Object] 금지)', () => {
@@ -63,7 +63,7 @@ describe('errorMessageOf — 값의 모양이 아니라 내용으로 판단한�
     const value = { code: 'ERR_X', status: 500 };
 
     // When
-    const message = errorMessageOf(value);
+    const message = getErrorMessage(value);
 
     // Then
     expect(message).toBe('{"code":"ERR_X","status":500}');
@@ -75,7 +75,7 @@ describe('errorMessageOf — 값의 모양이 아니라 내용으로 판단한�
     const value = { message: '', code: 'ERR_X' };
 
     // When & Then
-    expect(errorMessageOf(value)).toBe('{"message":"","code":"ERR_X"}');
+    expect(getErrorMessage(value)).toBe('{"message":"","code":"ERR_X"}');
   });
 
   it('순환 참조에도 죽지 않는다', () => {
@@ -84,8 +84,8 @@ describe('errorMessageOf — 값의 모양이 아니라 내용으로 판단한�
     value.self = value;
 
     // When & Then — JSON.stringify가 던지므로 String()으로 폴백
-    expect(() => errorMessageOf(value)).not.toThrow();
-    expect(errorMessageOf(value)).toBe('[object Object]');
+    expect(() => getErrorMessage(value)).not.toThrow();
+    expect(getErrorMessage(value)).toBe('[object Object]');
   });
 
   it.each([
@@ -94,6 +94,6 @@ describe('errorMessageOf — 값의 모양이 아니라 내용으로 판단한�
     [42, '42'],
   ])('원시값(%p)도 문자열로 만든다', (value, expected) => {
     // Given & When & Then
-    expect(errorMessageOf(value)).toBe(expected);
+    expect(getErrorMessage(value)).toBe(expected);
   });
 });

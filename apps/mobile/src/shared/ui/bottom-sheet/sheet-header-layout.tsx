@@ -14,7 +14,6 @@ interface SheetHeaderLayoutProps {
   header: ReactNode;
   /** 내용이 길어 스크롤돼도 시트 아래에 남는 줄 */
   footer?: ReactNode;
-  /** 머리글·본문·아래 줄 사이 간격 */
   gap: number;
   children: ReactNode;
 }

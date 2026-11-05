@@ -14,7 +14,7 @@ interface ReceiptOptions {
 }
 
 /** 서버 /me 응답 모양 그대로 받아 앱 mapper를 거친 사용자로 영수증을 만든다 */
-function receiptOf(
+function createReceipt(
   me: CurrentUserResponse,
   { isStoreConfigured = true, now = NOW }: ReceiptOptions = {},
 ) {
@@ -25,7 +25,7 @@ describe('toSubscriptionReceiptViewModel', () => {
   describe('스토어 구독', () => {
     it('A. 보상 중에 구독했으면 다음 결제일은 스토어 만료로 보이고, 자동 갱신 중이라 쌓아 둔 보상은 날짜 없이 일수만 보인다', () => {
       // When
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.buyDuringReward);
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward);
 
       // Then 갱신마다 밀리는 보상 끝 날짜는 고정 날짜처럼 보이지 않게 뺀다
       expect(result).toEqual({
@@ -54,7 +54,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       ],
     ] as const)('%s 자동 갱신 중이라 쌓아 둔 %i일을 날짜 없이 보인다', (_case, me, days) => {
       // When
-      const result = receiptOf(me);
+      const result = createReceipt(me);
 
       // Then
       expect(result.rows).toContainEqual({ type: 'bankedReward', days, endsAt: null });
@@ -63,7 +63,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('E. 구독을 취소했고 보상이 쌓여 있으면 종료일과 보상을 보이고 내일 끝나도 끝남 안내를 하지 않는다', () => {
       // When 구독이 3월 10일에 끝나기 하루 전
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.cancelledWithBanked, {
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.cancelledWithBanked, {
         now: new Date('2028-03-09T03:00:00Z'),
       });
 
@@ -89,7 +89,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // When
-      const result = receiptOf(me, { now: new Date('2028-03-09T03:00:00Z') });
+      const result = createReceipt(me, { now: new Date('2028-03-09T03:00:00Z') });
 
       // Then
       expect(result.footnote).toEqual({
@@ -101,7 +101,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('자동 갱신 결제 예정 시각이 지났는데 갱신이 아직 반영되지 않았으면 지난 날짜 대신 갱신 확인 중으로 보인다', () => {
       // When 다음 결제 예정(3월 10일 13:00 KST) 1시간 뒤, 갱신 웹훅 전이다
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.buyDuringReward, {
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward, {
         now: new Date('2028-03-10T05:00:00Z'),
       });
 
@@ -111,7 +111,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('자동 갱신 결제 예정 시각 1분 전에는 다음 결제일을 그대로 보인다', () => {
       // When
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.buyDuringReward, {
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward, {
         now: new Date('2028-03-10T03:59:00Z'),
       });
 
@@ -124,7 +124,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('구독 상태만 ACTIVE이고 프리미엄 출처가 없으면 날짜 행 없이 구독 관리만 보인다', () => {
       // When
-      const result = receiptOf(createCurrentUserDto());
+      const result = createReceipt(createCurrentUserDto());
 
       // Then
       expect(result).toEqual({
@@ -140,7 +140,7 @@ describe('toSubscriptionReceiptViewModel', () => {
   describe('초대 보상', () => {
     it('D. 끝난 뒤 새 보상을 받았으면 이용 기간과 남은 일수를 보이고 무료 플랜으로 돌아가는 날을 안내한다', () => {
       // When
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.newRewardAfterEnded);
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.newRewardAfterEnded);
 
       // Then 결제 용어(다음 결제일·자동 갱신) 행이 없다
       expect(result).toEqual({
@@ -157,7 +157,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('B. 보상 중에 보상을 또 받으면 지금 보상, 이어서 받을 보상, 전체 끝을 함께 보인다', () => {
       // When
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.rewardDuringReward);
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.rewardDuringReward);
 
       // Then 남은 기간과 무료 플랜 안내는 전체 끝(3월 11일) 기준이다
       expect(result.rows).toEqual([
@@ -174,7 +174,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('B. 지금 보상이 내일 끝나도 보상이 이어지면 끝남 안내를 하지 않는다', () => {
       // When
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.rewardDuringReward, {
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.rewardDuringReward, {
         now: new Date('2028-03-03T03:00:00Z'),
       });
 
@@ -189,7 +189,9 @@ describe('toSubscriptionReceiptViewModel', () => {
       'E. 쌓아 둔 보상이 시작된 뒤 %s이면 남은 기간 행과 끝남 안내에 %s를 담는다',
       (_case, now, days, notice) => {
         // When
-        const result = receiptOf(PREMIUM_ME_EXAMPLES.bankedRewardStarted, { now: new Date(now) });
+        const result = createReceipt(PREMIUM_ME_EXAMPLES.bankedRewardStarted, {
+          now: new Date(now),
+        });
 
         // Then
         expect(result.rows).toContainEqual({ type: 'daysLeft', days, endingNotice: notice });
@@ -199,7 +201,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('스토어 결제를 쓸 수 없으면 구독 버튼을 보이지 않는다', () => {
       // When
-      const result = receiptOf(PREMIUM_ME_EXAMPLES.newRewardAfterEnded, {
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.newRewardAfterEnded, {
         isStoreConfigured: false,
       });
 
@@ -211,7 +213,7 @@ describe('toSubscriptionReceiptViewModel', () => {
   describe('관리자', () => {
     it('구독·보상이 없으면 출처 없이 계정 행만 보이고 구독·관리 버튼을 숨긴다', () => {
       // When
-      const result = receiptOf(
+      const result = createReceipt(
         createCurrentUserDto({
           role: 'ADMIN',
           premiumSource: null,
@@ -235,7 +237,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
     it('초대 보상을 받았으면 보상 기록을 보이지만 끝남 안내는 하지 않는다', () => {
       // When
-      const result = receiptOf(
+      const result = createReceipt(
         { ...PREMIUM_ME_EXAMPLES.newRewardAfterEnded, role: 'ADMIN' },
         { now: new Date('2028-03-11T03:00:00Z') },
       );

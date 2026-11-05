@@ -21,7 +21,6 @@ export interface PushNotificationResponse {
   data: Record<string, unknown>;
 }
 
-/** 앱이 켜진 동안 도착한 알림 */
 export interface ReceivedPushNotification {
   data: Record<string, unknown>;
 }
@@ -54,7 +53,6 @@ export interface PushNotificationGateway {
   getLastResponse(): PushNotificationResponse | null;
   /** 처리한 마지막 응답을 지운다. 지원하지 않는 환경에서는 throw할 수 있다 */
   clearLastResponse(): void;
-  /** 알림 버튼 묶음을 등록한다 */
   setCategory(category: PushNotificationCategory): Promise<void>;
   setBadgeCount(count: number): Promise<void>;
   openSettings(): Promise<void>;

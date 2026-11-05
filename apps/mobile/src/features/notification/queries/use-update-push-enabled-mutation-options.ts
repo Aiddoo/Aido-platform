@@ -5,7 +5,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-cache';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -43,7 +43,7 @@ export const useUpdatePushEnabledMutationOptions = () => {
         },
         (error: unknown) => {
           logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUEST_FAILED, {
-            error: errorMessageOf(error),
+            error: getErrorMessage(error),
           });
         },
       );

@@ -25,7 +25,7 @@ const errorEnvelopeSchema = z.object({
   }),
 });
 
-export const pathnameOf = (url: string): string => {
+export const getPathname = (url: string): string => {
   try {
     return new URL(url).pathname;
   } catch {
@@ -67,7 +67,7 @@ const recordFailureBreadcrumb = async (request: Request, response: Response): Pr
     message: 'API 요청 실패',
     data: {
       method: request.method,
-      path: pathnameOf(request.url),
+      path: getPathname(request.url),
       status: response.status,
       code,
       requestId: request.headers.get(REQUEST_ID_HEADER),

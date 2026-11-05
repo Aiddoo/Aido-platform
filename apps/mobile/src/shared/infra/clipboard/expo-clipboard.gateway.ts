@@ -2,9 +2,9 @@ import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import * as Clipboard from 'expo-clipboard';
 
 export const expoClipboardGateway: ClipboardGateway = {
-  hasString: () => Clipboard.hasStringAsync(),
-  getString: () => Clipboard.getStringAsync(),
-  setString: async (text) => {
+  hasContent: () => Clipboard.hasStringAsync(),
+  paste: () => Clipboard.getStringAsync(),
+  copy: async (text) => {
     await Clipboard.setStringAsync(text);
   },
 };

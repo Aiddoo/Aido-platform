@@ -14,7 +14,7 @@ import {
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Suspense, useState } from 'react';
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -23,9 +23,8 @@ import { NotificationBadgePolicy, type UnreadCount } from '../domains/notificati
 import { useGetUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
 
 // 읽지 않은 알림은 종을 채워 main으로 칠한다. 채운 기호에 점 자리가 뚫려 있어 같은 색이어도 점이 보인다
-const BELL_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
-const UNREAD_BELL_ICON =
-  process.env.EXPO_OS === 'ios' ? 'bell.badge.fill' : NotificationsUnreadFill;
+const BELL_ICON = Platform.OS === 'ios' ? 'bell' : Notifications;
+const UNREAD_BELL_ICON = Platform.OS === 'ios' ? 'bell.badge.fill' : NotificationsUnreadFill;
 
 const BELL_SWING = css.keyframes({
   '0%': { transform: [{ rotate: '0deg' }] },

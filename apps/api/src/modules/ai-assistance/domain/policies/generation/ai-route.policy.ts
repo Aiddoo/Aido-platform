@@ -43,7 +43,6 @@ function sumWeights(providers: readonly AiProviderId[]): number {
 }
 
 export interface AttemptTimeInput {
-  /** 이번 요청의 전체 경로 */
   readonly route: readonly AiProviderId[];
   readonly provider: AiProviderId;
   /** 뒤에 시도할 업체가 없다. 남은 시간을 모두 쓴다. */

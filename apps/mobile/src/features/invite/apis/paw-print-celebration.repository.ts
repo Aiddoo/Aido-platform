@@ -17,7 +17,7 @@ export function createPawPrintCelebrationRepository(
   const toKey = (userId: string) => `${PAW_PRINT_CELEBRATION_KEY_PREFIX}:${userId}`;
 
   return {
-    getCelebratedCount: (userId) => CelebratedCountSchema.parse(storage.getString(toKey(userId))),
+    getCelebratedCount: (userId) => CelebratedCountSchema.parse(storage.get(toKey(userId))),
     setCelebratedCount: (userId, count) => storage.set(toKey(userId), String(count)),
   };
 }

@@ -6,7 +6,7 @@ export interface PurchaseEntitlement {
   productIdentifier: string;
 }
 
-export interface PurchaseCustomerInfo {
+export interface PurchaseStatus {
   activeEntitlements: readonly PurchaseEntitlement[];
 }
 
@@ -30,7 +30,7 @@ export interface PurchaseOffering {
 }
 
 export type PurchasePackageResult =
-  | { type: 'purchased'; customerInfo: PurchaseCustomerInfo }
+  | { type: 'purchased'; status: PurchaseStatus }
   /** 지금 판매 중인 요금제에 그 패키지가 없다 */
   | { type: 'package-not-found' };
 
@@ -67,14 +67,14 @@ export interface PurchasesGateway {
   isAnonymous(): Promise<boolean>;
   logOut(): Promise<void>;
   setAttributes(attributes: Record<string, string | null>): Promise<void>;
-  setFirebaseAppInstanceId(appInstanceId: string): Promise<void>;
+  setAnalyticsId(analyticsId: string): Promise<void>;
   /** 판매 중인 요금제. 없으면 null. 실패하면 `PurchasesGatewayError`를 throw한다 */
-  getCurrentOffering(): Promise<PurchaseOffering | null>;
+  getOffering(): Promise<PurchaseOffering | null>;
   /** 실패하면 `PurchasesGatewayError`를 throw한다 */
-  purchasePackage(packageIdentifier: string): Promise<PurchasePackageResult>;
+  purchase(packageIdentifier: string): Promise<PurchasePackageResult>;
   /** 실패하면 `PurchasesGatewayError`를 throw한다 */
-  restorePurchases(): Promise<PurchaseCustomerInfo>;
-  getCustomerInfo(): Promise<PurchaseCustomerInfo>;
+  restore(): Promise<PurchaseStatus>;
+  getStatus(): Promise<PurchaseStatus>;
   /** 이 기기 구매·복원, 다른 기기 변경, 스토어 직접 취소를 알린다. 반환 함수로 구독을 끝낸다 */
-  onCustomerInfoChange(listener: (info: PurchaseCustomerInfo) => void): () => void;
+  subscribe(listener: (info: PurchaseStatus) => void): () => void;
 }

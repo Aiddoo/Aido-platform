@@ -100,12 +100,12 @@ export type PermissionResult = 'granted' | 'needs_permission' | 'denied';
 
 /** 권한 요청 자체가 실패하면(null) 다시 물을 수 있는 상태로 본다. */
 function toPermissionResult(
-  permission: { granted: boolean; canAskAgain: boolean } | null,
+  permission: { isGranted: boolean; canAskAgain: boolean } | null,
 ): PermissionResult {
   if (permission == null) {
     return 'needs_permission';
   }
-  if (permission.granted) {
+  if (permission.isGranted) {
     return 'granted';
   }
   return permission.canAskAgain ? 'needs_permission' : 'denied';

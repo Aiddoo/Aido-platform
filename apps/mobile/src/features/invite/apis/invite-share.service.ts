@@ -98,7 +98,7 @@ export class InviteShareService {
   }
 
   async #copyLink(content: InviteShareContent): Promise<InviteShareResult> {
-    await this.#clipboard.setString(content.link);
+    await this.#clipboard.copy(content.link);
     return { channel: 'copy_link', outcome: 'copied' };
   }
 }

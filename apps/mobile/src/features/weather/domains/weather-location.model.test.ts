@@ -131,9 +131,9 @@ describe('WeatherLocationPolicy.status', () => {
 
 describe('WeatherLocationPolicy.permissionResult', () => {
   it.each([
-    [{ granted: true, canAskAgain: true }, 'granted'],
-    [{ granted: false, canAskAgain: true }, 'needs_permission'],
-    [{ granted: false, canAskAgain: false }, 'denied'],
+    [{ isGranted: true, canAskAgain: true }, 'granted'],
+    [{ isGranted: false, canAskAgain: true }, 'needs_permission'],
+    [{ isGranted: false, canAskAgain: false }, 'denied'],
     [null, 'needs_permission'],
   ] as const)('권한 요청 결과 %o는 %s로 기록한다', (permission, expected) => {
     // When
