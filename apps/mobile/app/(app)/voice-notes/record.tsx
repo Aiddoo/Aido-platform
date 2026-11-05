@@ -8,7 +8,6 @@ import {
 } from '@src/features/voice/components/note/record-control';
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
-import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
 import { VoiceNoteMarkControl } from '@src/features/voice/components/note/voice-note-mark-control';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
@@ -31,6 +30,7 @@ import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen-awake';
@@ -40,6 +40,7 @@ import {
   HStack,
   PauseIcon,
   QueryErrorBoundary,
+  STACK_CLOSE_ICON,
   StopIcon,
   StyledSafeAreaView,
   Text,
@@ -47,8 +48,8 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { Stack, router } from 'expo-router';
+import { type ComponentProps, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
 import { match, P } from 'ts-pattern';
 
 const MARK_HINT_HEIGHT = 124;
@@ -79,6 +80,12 @@ function VoiceNoteRecordScreen() {
   });
   useOnScreenBlur(recording.interrupt);
   const { requestClose, requestFinish } = useVoiceNoteRecordExit(recording);
+  // 글자를 받을 때마다 recording이 새로 만들어진다. 헤더 옵션이 그때마다 바뀌면 내비게이터까지 다시 그려져 정체성을 고정한다
+  const close = useSingleTap(requestClose);
+  const changeLocaleRef = useRef(recording.changeLocale);
+  useLayoutEffect(() => {
+    changeLocaleRef.current = recording.changeLocale;
+  });
   const { state } = recording;
 
   useEffect(() => {
@@ -131,11 +138,22 @@ function VoiceNoteRecordScreen() {
 
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
-      <VoiceNoteHeader
-        title={t('record.title')}
-        onClose={requestClose}
-        right={<VoiceNoteRecordScreen.LanguageToggle onLocaleChange={recording.changeLocale} />}
+      <Stack.Screen
+        options={{
+          headerTitle: () => (
+            <VoiceNoteRecordScreen.LanguageToggle
+              onLocaleChange={(next) => changeLocaleRef.current(next)}
+            />
+          ),
+        }}
       />
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon={STACK_CLOSE_ICON}
+          accessibilityLabel={t('record.close')}
+          onPress={close}
+        />
+      </Stack.Toolbar>
       {isCompact ? (
         <>
           <VStack align="center" className={cn(state.status === 'paused' && 'opacity-60')}>
@@ -348,7 +366,7 @@ VoiceNoteRecordScreen.Stopped = function Stopped({
 
 export default function VoiceNoteRecordRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-white">
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
       <QueryErrorBoundary>
         <Suspense fallback={<VoiceNoteScreenLoading />}>
           <VoiceNoteRecordScreen />

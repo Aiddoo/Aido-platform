@@ -244,7 +244,7 @@ describe('녹음 화면', () => {
     const { storage } = await renderRecordScreen();
 
     // When
-    await fireEvent.press(screen.getByTestId('voice-note-close'));
+    await fireEvent.press(screen.getByLabelText('닫기'));
 
     // Then
     expect(router.back).toHaveBeenCalledTimes(1);
@@ -258,7 +258,7 @@ describe('녹음 화면', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByTestId('voice-note-close')).catch(jest.fn());
+      fireEvent.press(screen.getByLabelText('닫기')).catch(jest.fn());
     });
 
     // Then
@@ -276,7 +276,7 @@ describe('녹음 화면', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByTestId('voice-note-close')).catch(jest.fn());
+      fireEvent.press(screen.getByLabelText('닫기')).catch(jest.fn());
     });
 
     // Then
@@ -293,7 +293,7 @@ describe('녹음 화면', () => {
     await act(async () => speechRecognizer.emit({ type: 'end' }));
     await fireEvent.press(screen.getByTestId('voice-note-resume'));
     await act(async () => {
-      fireEvent.press(screen.getByTestId('voice-note-close')).catch(jest.fn());
+      fireEvent.press(screen.getByLabelText('닫기')).catch(jest.fn());
     });
 
     // When
