@@ -1,3 +1,5 @@
+import { toHHmm } from '@src/shared/utils/time';
+
 import {
   createDailyCompletionsDto,
   createTodoDto,
@@ -8,29 +10,56 @@ import { toDailyCompletionsResult, toTodo, toTodos } from './todo.mapper';
 jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
 
 describe('toTodo', () => {
-  test('scheduledTime ISO → 직렬화 가능한 timestamp 변환', () => {
+  test('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {
     // Given
-    const dto = createTodoDto({ scheduledTime: '2026-03-08T09:00:00.000Z' });
+    const dto = createTodoDto({
+      scheduledTime: '2026-03-08T01:00:00.000Z',
+      scheduledLocalTime: '10:00',
+    });
 
     // When
     const result = toTodo(dto);
 
     // Then
-    expect(result.scheduledAtMs).toBe(Date.parse('2026-03-08T09:00:00.000Z'));
+    expect(result.localTime).toBe('10:00');
     expect(JSON.parse(JSON.stringify(result))).toEqual(result);
     expect(result.id).toBe(dto.id);
     expect(result.title).toBe(dto.title);
   });
 
-  test('scheduledTime null → null', () => {
+  test('옛 서버 응답(칸 없음)은 순간을 기기 시간대로 읽는다', () => {
     // Given
-    const dto = createTodoDto({ scheduledTime: null });
+    const instant = '2026-03-08T01:00:00.000Z';
+    const dto = createTodoDto({ scheduledTime: instant, scheduledLocalTime: undefined });
 
     // When
     const result = toTodo(dto);
 
     // Then
-    expect(result.scheduledAtMs).toBeNull();
+    expect(result.localTime).toBe(toHHmm(new Date(instant)));
+  });
+
+  test('칸이 비어 있어도(재배포 전 옛 서버가 쓴 행) 순간을 기기 시간대로 읽는다', () => {
+    // Given
+    const instant = '2026-03-08T01:00:00.000Z';
+    const dto = createTodoDto({ scheduledTime: instant, scheduledLocalTime: null });
+
+    // When
+    const result = toTodo(dto);
+
+    // Then
+    expect(result.localTime).toBe(toHHmm(new Date(instant)));
+  });
+
+  test('시간 없는 할 일은 낡은 칸이 있어도 null이다', () => {
+    // Given
+    const dto = createTodoDto({ scheduledTime: null, scheduledLocalTime: '10:00' });
+
+    // When
+    const result = toTodo(dto);
+
+    // Then
+    expect(result.localTime).toBeNull();
   });
 
   test('isAllDay, completed, visibility 매핑', () => {

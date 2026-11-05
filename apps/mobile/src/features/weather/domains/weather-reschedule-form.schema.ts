@@ -24,7 +24,7 @@ export interface ScheduleChange {
 export interface TodoScheduleSnapshot {
   startDate: string;
   endDate: string | null;
-  scheduledAtMs: number | null;
+  localTime: string | null;
   isAllDay: boolean;
 }
 
@@ -56,8 +56,7 @@ export function toOriginalScheduleInput(todo: TodoScheduleSnapshot): TodoSchedul
   return {
     startDate: todo.startDate,
     endDate: todo.endDate,
-    scheduledTime:
-      todo.isAllDay || todo.scheduledAtMs == null ? null : toHHmm(new Date(todo.scheduledAtMs)),
+    scheduledTime: todo.isAllDay ? null : todo.localTime,
     isAllDay: todo.isAllDay,
   };
 }

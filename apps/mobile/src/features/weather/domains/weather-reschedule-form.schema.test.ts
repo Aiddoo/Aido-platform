@@ -79,19 +79,19 @@ describe('할 일 일정 입력 변환', () => {
 
   it('되돌릴 때는 원래 시각을, 종일이었다면 시각 없이 종일로 되돌린다', () => {
     // Given
-    const scheduledAtMs = new Date(2026, 10, 2, 16, 30).getTime();
+    const localTime = '16:30';
 
     // When
     const timed = toOriginalScheduleInput({
       startDate: '2026-11-02',
       endDate: '2026-11-03',
-      scheduledAtMs,
+      localTime,
       isAllDay: false,
     });
     const allDay = toOriginalScheduleInput({
       startDate: '2026-11-02',
       endDate: null,
-      scheduledAtMs,
+      localTime,
       isAllDay: true,
     });
 

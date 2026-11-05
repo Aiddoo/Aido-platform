@@ -13,7 +13,6 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { toDate } from '@src/shared/utils/date';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
@@ -32,15 +31,6 @@ import {
 export interface CreateTodoParams {
   input: CreateTodoInput;
   source: 'manual' | 'ai';
-}
-
-function parseScheduledTime(time: string, dateStr: string): Date {
-  const parts = time.split(':');
-  const hours = Number(parts[0]);
-  const minutes = Number(parts[1]);
-  const date = toDate(dateStr);
-  date.setHours(hours, minutes, 0, 0);
-  return date;
 }
 
 export const useCreateTodoMutationOptions = () => {
@@ -80,9 +70,7 @@ export const useCreateTodoMutationOptions = () => {
         endDate: input.endDate ?? null,
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
-        scheduledAtMs: input.scheduledTime
-          ? parseScheduledTime(input.scheduledTime, input.startDate).getTime()
-          : null,
+        localTime: input.scheduledTime ?? null,
         isAllDay: input.isAllDay,
         visibility: input.visibility ?? 'PUBLIC',
         recurrenceGroupId: null,

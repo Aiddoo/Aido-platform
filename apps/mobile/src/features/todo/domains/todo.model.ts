@@ -24,7 +24,8 @@ export const todoSchema = z.object({
   endDate: dateSchema.nullable(),
   category: todoCategorySchema,
   completed: z.boolean(),
-  scheduledAtMs: z.int().nullable(),
+  /** 사용자가 고른 벽시계(HH:mm). 어디서든 이 시각이라 표시와 수정 기본값은 이 값만 쓴다. 종일은 null */
+  localTime: z.iso.time({ precision: -1 }).nullable(),
   isAllDay: z.boolean(),
   visibility: todoVisibilitySchema,
   recurrenceGroupId: z.string().nullable(),

@@ -15,6 +15,7 @@ import {
   type TodoSummaryResponse,
   updateTodoResponseSchema,
 } from '@aido/api';
+import { toHHmm } from '@src/shared/utils/time';
 import { z } from 'zod';
 
 import type {
@@ -54,6 +55,14 @@ export const todoSeriesEnvelopeSchema = todoSeriesResponseSchema.extend({
   repeat: todoRepeatSchema.nullable().catch(null),
 });
 
+/** 옛 서버 응답에는 벽시계 칸이 없어 순간을 기기 시간대로 읽는다 */
+const toLocalTime = ({ scheduledTime, scheduledLocalTime }: TodoDto): string | null => {
+  if (scheduledTime == null) {
+    return null;
+  }
+  return scheduledLocalTime ?? toHHmm(new Date(scheduledTime));
+};
+
 export const toTodo = (dto: TodoDto): Todo => ({
   id: dto.id,
   title: dto.title,
@@ -61,7 +70,7 @@ export const toTodo = (dto: TodoDto): Todo => ({
   endDate: dto.endDate,
   category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
   completed: dto.completed,
-  scheduledAtMs: dto.scheduledTime == null ? null : Date.parse(dto.scheduledTime),
+  localTime: toLocalTime(dto),
   isAllDay: dto.isAllDay,
   visibility: dto.visibility,
   recurrenceGroupId: dto.recurrenceGroupId,

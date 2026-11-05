@@ -708,6 +708,52 @@ describe('할 일 낙관적 갱신', () => {
     expect(isInvalidated(LIST_DAY_3)).toBe(true);
   });
 
+  it('만드는 동안의 임시 행도 서버 응답도 고른 벽시계를 그대로 보여 준다', async () => {
+    // Given
+    const { httpClient, queryClient, mutations } = await renderMutations();
+    queryClient.setQueryData(LIST_DAY_1, toList([]));
+    queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
+      categories: [{ ...CATEGORY, sortOrder: 0, todoCount: 0 }],
+    });
+    const pending = createPendingResponse(
+      ok({
+        message: 'ok',
+        todo: createTodoDto({
+          id: 502,
+          startDate: DAY_1,
+          scheduledTime: '2026-03-08T01:00:00.000Z',
+          scheduledLocalTime: '10:00',
+        }),
+      }),
+    );
+    httpClient.post.mockReturnValue(pending.response);
+    const firstTodo = () => queryClient.getQueryData<TodoListResult>(LIST_DAY_1)?.todos[0];
+
+    // When
+    await act(async () => {
+      mutations()
+        .createTodo.mutateAsync({
+          input: {
+            title: '새 할 일',
+            startDate: DAY_1,
+            scheduledTime: '10:00',
+            isAllDay: false,
+            visibility: 'PUBLIC',
+            categoryId: CATEGORY.id,
+          },
+          source: 'manual',
+        })
+        .catch(() => undefined);
+    });
+    const optimisticTime = firstTodo()?.localTime;
+    pending.settle();
+    await flush();
+
+    // Then
+    expect(optimisticTime).toBe('10:00');
+    expect(firstTodo()).toMatchObject({ id: 502, localTime: '10:00' });
+  });
+
   it('여러 날 할 일을 다른 날짜에서 지우면 그 목록에서 바로 빠지고 시작일 목록도 낡은 값으로 표시한다', async () => {
     // Given
     const { httpClient, queryClient, mutations, isInvalidated } = await renderMutations();

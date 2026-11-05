@@ -3,8 +3,10 @@ import {
   type WeatherCondition,
   type WeatherRescheduleReason,
 } from '@aido/api';
+import { toDate } from '@src/shared/utils/date';
 import { formatDateKey, getZonedHour } from '@src/shared/utils/date-format';
 import { addDaysToDateKey } from '@src/shared/utils/date-key';
+import { getDateWithTime } from '@src/shared/utils/time';
 import { maxBy, orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -41,11 +43,15 @@ export interface BriefingTodo {
   subTodoProgress: BriefingSubTodoProgress;
 }
 
-/** 할 일 목록의 값을 브리핑 입력으로 바꾼다. 종일 할 일은 시각이 있어도 시간대를 정하지 않은 것으로 본다. */
+/**
+ * 할 일 목록의 값을 브리핑 입력으로 바꾼다. 종일 할 일은 시각이 있어도 시간대를 정하지 않은 것으로 본다.
+ * 할 일 시각은 어디서든 그 벽시계라 예보와 맞출 순간은 날짜 + 벽시계 + 기기 시간대로 만든다.
+ */
 function toBriefingTodo(todo: {
   id: number;
   title: string;
-  scheduledAtMs: number | null;
+  startDate: string;
+  localTime: string | null;
   isAllDay: boolean;
   completed: boolean;
   subTodoStats: { completed: number; total: number };
@@ -53,7 +59,10 @@ function toBriefingTodo(todo: {
   return {
     id: todo.id,
     title: todo.title,
-    scheduledAt: todo.isAllDay || todo.scheduledAtMs == null ? null : new Date(todo.scheduledAtMs),
+    scheduledAt:
+      todo.isAllDay || todo.localTime == null
+        ? null
+        : getDateWithTime(toDate(todo.startDate), todo.localTime, todo.localTime),
     completed: todo.completed,
     subTodoProgress: todo.subTodoStats.total > 0 ? todo.subTodoStats : null,
   };

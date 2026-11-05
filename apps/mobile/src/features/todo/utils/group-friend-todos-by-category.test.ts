@@ -17,7 +17,7 @@ describe('친구 할 일 목록 표시', () => {
     expect(twelveHour.map((group) => group.category.name)).toEqual(['기본', '스터디']);
     expect(twelveHour[0]?.todos[0]).toBe(first);
     expect(twentyFourHour[1]?.todos[0]).toBe(second);
-    expect(first.scheduledAtMs).toEqual(expect.any(Number));
+    expect(first.localTime).toEqual(expect.any(String));
     expect(first).not.toHaveProperty('formattedTime');
   });
 

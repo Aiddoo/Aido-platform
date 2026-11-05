@@ -349,17 +349,15 @@ describe('WeatherBriefingPolicy.rescheduleOptions 더위', () => {
 
 describe('WeatherBriefingPolicy.briefingTodo', () => {
   it.each([
-    [
-      { scheduledAtMs: Date.parse('2026-11-02T07:30:00.000Z'), isAllDay: false },
-      new Date('2026-11-02T07:30:00.000Z'),
-    ],
-    [{ scheduledAtMs: Date.parse('2026-11-02T07:30:00.000Z'), isAllDay: true }, null],
-    [{ scheduledAtMs: null, isAllDay: false }, null],
+    [{ localTime: '16:30', isAllDay: false }, new Date(2026, 10, 2, 16, 30)],
+    [{ localTime: '16:30', isAllDay: true }, null],
+    [{ localTime: null, isAllDay: false }, null],
   ])('%o는 브리핑 시각 %s로 본다', (schedule, expected) => {
     // When
     const todo = WeatherBriefingPolicy.briefingTodo({
       id: 1,
       title: '산책',
+      startDate: '2026-11-02',
       completed: false,
       subTodoStats: { completed: 0, total: 0 },
       ...schedule,
@@ -374,8 +372,9 @@ describe('WeatherBriefingPolicy.briefingTodo', () => {
     const base = {
       id: 1,
       title: '이사 준비',
+      startDate: '2026-11-02',
       completed: false,
-      scheduledAtMs: null,
+      localTime: null,
       isAllDay: true,
     };
 

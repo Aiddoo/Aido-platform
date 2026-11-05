@@ -1,5 +1,4 @@
 import { toDate, toNullableDate } from '@src/shared/utils/date';
-import { toHHmm } from '@src/shared/utils/time';
 
 import type { AddTodoFormInput } from '../domains/add-todo-form.schema';
 import type { TodoRepeat } from '../domains/todo-repeat.model';
@@ -13,10 +12,7 @@ export function toTodoEditFormValues(
     title: todo.title,
     startDate: toDate(todo.startDate),
     endDate: toNullableDate(todo.endDate),
-    scheduledTime:
-      todo.isAllDay || todo.scheduledAtMs == null
-        ? undefined
-        : toHHmm(new Date(todo.scheduledAtMs)),
+    scheduledTime: todo.isAllDay ? undefined : (todo.localTime ?? undefined),
     isAllDay: todo.isAllDay,
     categoryId: todo.category.id,
     visibility: todo.visibility,
