@@ -34,9 +34,46 @@ export interface HintPopoverContentProps extends Omit<
   children?: ReactNode;
 }
 
+interface HintPlacementInput {
+  placement: NonNullable<PopoverContentProps['placement']>;
+  trigger: { pageY: number; height: number } | null | undefined;
+  contentHeight: number | null | undefined;
+  windowHeight: number;
+  topInset: number;
+  bottomInset: number;
+  offset: number;
+}
+
+/**
+ * 말풍선이 상태바나 홈 표시줄과 겹치면 반대쪽으로 뒤집는다. 양쪽 다 모자라면 자리가 더 많은 쪽이다.
+ * 잴 수 있기 전과 옆으로 뜨는 말풍선은 요청한 방향 그대로다.
+ */
+export function getHintPlacement({
+  placement,
+  trigger,
+  contentHeight,
+  windowHeight,
+  topInset,
+  bottomInset,
+  offset,
+}: HintPlacementInput): HintPlacementInput['placement'] {
+  if (trigger == null || contentHeight == null || (placement !== 'top' && placement !== 'bottom')) {
+    return placement;
+  }
+  const needed = offset + contentHeight;
+  const roomAbove = trigger.pageY - topInset - HINT_SCREEN_INSET;
+  const roomBelow = windowHeight - bottomInset - HINT_SCREEN_INSET - trigger.pageY - trigger.height;
+  const room = placement === 'top' ? roomAbove : roomBelow;
+  const oppositeRoom = placement === 'top' ? roomBelow : roomAbove;
+  if (room >= needed || room >= oppositeRoom) {
+    return placement;
+  }
+  return placement === 'top' ? 'bottom' : 'top';
+}
+
 /**
  * 앱의 모든 안내 말풍선 모양. `Popover` 안에 `Popover.Trigger`와 나란히 둔다.
- * 아이콘·제목·작은 X가 한 줄이고 그 아래에 설명이 온다. 아래쪽에 자리가 없으면 위로 뒤집는다.
+ * 아이콘·제목·작은 X가 한 줄이고 그 아래에 설명이 온다. 안전 영역과 겹치면 반대쪽으로 뒤집는다.
  */
 export function HintPopoverContent({
   icon: Icon,
@@ -55,15 +92,18 @@ export function HintPopoverContent({
   const { t } = useTranslation('common');
   const fontScaledSize = useFontScaledSize();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const { bottom: bottomInset } = useSafeAreaInsets();
+  const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
   const { triggerPosition, contentLayout } = usePopover();
 
-  const hasNoRoomBelow =
-    placement === 'bottom' &&
-    triggerPosition != null &&
-    contentLayout != null &&
-    triggerPosition.pageY + triggerPosition.height + offset + contentLayout.height >
-      windowHeight - bottomInset - HINT_SCREEN_INSET;
+  const resolvedPlacement = getHintPlacement({
+    placement,
+    trigger: triggerPosition,
+    contentHeight: contentLayout?.height,
+    windowHeight,
+    topInset,
+    bottomInset,
+    offset,
+  });
   const closeSize = fontScaledSize(20);
   const descriptionText = description != null && (
     <Text
@@ -96,7 +136,7 @@ export function HintPopoverContent({
       {!isPassThrough && <Popover.Overlay testID="hint-popover-overlay" />}
       <Popover.Content
         presentation="popover"
-        placement={hasNoRoomBelow ? 'top' : placement}
+        placement={resolvedPlacement}
         align={align}
         avoidCollisions={avoidCollisions}
         offset={offset}

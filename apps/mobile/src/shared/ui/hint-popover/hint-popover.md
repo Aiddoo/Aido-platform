@@ -41,3 +41,7 @@ hint-popover/
 ├── hint-popover.md
 └── index.ts
 ```
+
+## 자리
+
+`placement` 쪽에 자리가 없어 상태바나 홈 표시줄과 겹치면 반대쪽으로 뒤집는다. 양쪽 다 모자라면 자리가 더 많은 쪽이다. 판단은 `getHintPlacement` 한 곳이다.
