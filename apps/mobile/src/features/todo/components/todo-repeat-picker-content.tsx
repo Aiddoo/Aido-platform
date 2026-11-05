@@ -457,8 +457,9 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
 
   return (
     <VStack gap={4} className="border-t border-gray-2 px-4 pt-3">
-      <HStack align="center" justify="between" gap={8} className="flex-wrap gap-y-2">
-        <HStack gap={4} align="center" className="shrink">
+      <HStack align="center" justify="between" gap={8}>
+        {/* 글자가 커지면 칩을 아래로 내리지 않고 기간 문구가 왼쪽 안에서 줄을 바꾼다 */}
+        <HStack gap={4} align="center" className="flex-1 flex-wrap">
           <Text size="b3" tone="neutral" shade={7}>
             {t('picker.repeatPeriod')}
           </Text>
@@ -492,7 +493,7 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
             )
             .exhaustive()}
         </HStack>
-        <HStack gap={6} align="center">
+        <HStack gap={6} align="center" className="shrink-0">
           <PresetChip
             label={t('picker.repeatForever')}
             isSelected={endType === 'NEVER'}
