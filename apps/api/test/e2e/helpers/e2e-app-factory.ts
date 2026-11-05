@@ -56,6 +56,7 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
@@ -221,12 +222,13 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakeOAuthTokenVerifierService)
     .overrideProvider(OAUTH_IDENTITY_PROVIDER_REGISTRY)
     .useFactory({
-      inject: [TypedConfigService],
-      factory: (configService: TypedConfigService) => {
+      inject: [TypedConfigService, OutboundPolicyRegistry],
+      factory: (configService: TypedConfigService, policies: OutboundPolicyRegistry) => {
         const delegates = createOAuthProviderRegistry(
           configService,
           fakeOAuthTokenVerifierService,
           new HttpClient({ retry: false, throwOnHttpError: false }),
+          policies,
         );
         fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(delegates);
         return fakeOAuthProviderRegistry.registry;

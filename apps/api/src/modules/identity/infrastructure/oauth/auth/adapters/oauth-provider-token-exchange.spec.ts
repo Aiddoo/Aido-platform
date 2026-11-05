@@ -1,10 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
-import { HttpClient } from "@nestjs/http-client";
+import { HttpClient, HttpNetworkError } from "@nestjs/http-client";
 import { type MockInstance, vi } from "vitest";
 
 import type { OAuthTokenVerifier } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { GoogleOAuthProvider } from "./google.oauth-provider.js";
 import { KakaoOAuthProvider } from "./kakao.oauth-provider.js";
@@ -31,8 +33,10 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
   let fetch: MockInstance<typeof globalThis.fetch>;
   const verifier: OAuthTokenVerifier = new FakeOAuthTokenVerifierService();
   const http = new HttpClient({ retry: false, throwOnHttpError: false });
+  let policies: OutboundPolicyRegistry;
 
   beforeEach(() => {
+    policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
     logger = new Logger("test");
     loggedError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
     fetch = vi.spyOn(globalThis, "fetch");
@@ -51,7 +55,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
           { status: 400 },
         ),
       );
-      const provider = new create(config, verifier, logger, http);
+      const provider = new create(config, verifier, logger, http, policies);
 
       // When
       const exchange = provider.exchangeCode("fixture-code-123");
@@ -69,6 +73,29 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     },
   );
 
+  it.each(providers)(
+    "$name 교환은 연결이 끊겨도 다시 보내지 않고, 실패가 이어져도 다음 로그인을 막지 않는다",
+    async ({ create }) => {
+      // Given
+      fetch.mockRejectedValue(new TypeError("fetch failed"));
+      const provider = new create(config, verifier, logger, http, policies);
+
+      // When
+      const failures = await Promise.allSettled(
+        Array.from({ length: 6 }, () => provider.exchangeCode("code")),
+      );
+
+      // Then
+      expect(fetch).toHaveBeenCalledTimes(6);
+      for (const failure of failures) {
+        expect(failure).toMatchObject({
+          status: "rejected",
+          reason: expect.any(HttpNetworkError),
+        });
+      }
+    },
+  );
+
   it("Kakao 오류 본문의 error_code(KOE)를 공급자 오류 코드로 쓴다", async () => {
     // Given
     fetch.mockResolvedValue(
@@ -78,7 +105,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     );
 
     // When
-    await new KakaoOAuthProvider(config, verifier, logger, http)
+    await new KakaoOAuthProvider(config, verifier, logger, http, policies)
       .exchangeCode("code")
       .catch(() => undefined);
 
@@ -91,7 +118,7 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
     fetch.mockResolvedValue(new Response(`<html>${SECRET_DESCRIPTION}</html>`, { status: 502 }));
 
     // When
-    await new GoogleOAuthProvider(config, verifier, logger, http)
+    await new GoogleOAuthProvider(config, verifier, logger, http, policies)
       .exchangeCode("code")
       .catch(() => undefined);
 

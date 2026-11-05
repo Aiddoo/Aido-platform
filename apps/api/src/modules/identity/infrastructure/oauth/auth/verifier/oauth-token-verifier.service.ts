@@ -12,9 +12,13 @@ import type { VerifiedProfile } from "#api/modules/identity/application/ports/au
 import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { readJson } from "#api/platform/http/read-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+
+import { KAKAO_OAUTH_POLICY, NAVER_OAUTH_POLICY } from "../oauth-outbound.policies.js";
 
 export type { VerifiedProfile };
 
@@ -69,6 +73,8 @@ export const OAUTH_PROVIDER_TIMEOUT_MS = 10_000;
 export class OAuthTokenVerifierService {
   readonly #logger = new Logger(OAuthTokenVerifierService.name);
   readonly #googleClient: OAuth2Client;
+  readonly #kakaoPolicy: OutboundPolicy;
+  readonly #naverPolicy: OutboundPolicy;
   #appleJWKS: RemoteJWKSet | null = null;
 
   private static readonly APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
@@ -82,7 +88,10 @@ export class OAuthTokenVerifierService {
   constructor(
     private readonly configService: TypedConfigService,
     @InjectHttpClient("oauth") private readonly http: HttpClient,
+    policies: OutboundPolicyRegistry,
   ) {
+    this.#kakaoPolicy = policies.get(KAKAO_OAUTH_POLICY);
+    this.#naverPolicy = policies.get(NAVER_OAUTH_POLICY);
     this.#googleClient = new OAuth2Client({
       clientId: this.configService.googleOAuth.clientId,
       // Google 공개키(cert) 조회도 같은 시간 제한을 쓴다
@@ -218,17 +227,17 @@ export class OAuthTokenVerifierService {
   // @see https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info
   async verifyKakaoToken(accessToken: string): Promise<VerifiedProfile> {
     try {
-      const { data: response } = await this.http.request(
-        OAuthTokenVerifierService.KAKAO_USER_INFO_URL,
-        {
+      const { data: response } = await this.#kakaoPolicy.execute((signal) =>
+        this.http.request(OAuthTokenVerifierService.KAKAO_USER_INFO_URL, {
           responseType: "response",
           retry: false,
           throwOnHttpError: false,
+          signal,
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
           },
-        },
+        }),
       );
 
       if (!response.ok) {
@@ -275,16 +284,16 @@ export class OAuthTokenVerifierService {
   // @see https://developers.naver.com/docs/login/profile/profile.md
   async verifyNaverToken(accessToken: string): Promise<VerifiedProfile> {
     try {
-      const { data: response } = await this.http.request(
-        OAuthTokenVerifierService.NAVER_USER_INFO_URL,
-        {
+      const { data: response } = await this.#naverPolicy.execute((signal) =>
+        this.http.request(OAuthTokenVerifierService.NAVER_USER_INFO_URL, {
           responseType: "response",
           retry: false,
           throwOnHttpError: false,
+          signal,
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        },
+        }),
       );
 
       if (!response.ok) {

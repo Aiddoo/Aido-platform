@@ -21,6 +21,7 @@ import { PlanningCategoriesModule } from "#api/modules/planning/planning-categor
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import {
   AUTH_ACCOUNT_REPOSITORY,
@@ -261,12 +262,18 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     // OAuth 신원 제공자 레지스트리 (provider → 벤더 어댑터 Map)
     {
       provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
-      inject: [TypedConfigService, OAuthTokenVerifierService, getHttpClientToken("oauth")],
+      inject: [
+        TypedConfigService,
+        OAuthTokenVerifierService,
+        getHttpClientToken("oauth"),
+        OutboundPolicyRegistry,
+      ],
       useFactory: (
         configService: TypedConfigService,
         tokenVerifier: OAuthTokenVerifierService,
         http: HttpClient,
-      ) => createOAuthProviderRegistry(configService, tokenVerifier, http),
+        policies: OutboundPolicyRegistry,
+      ) => createOAuthProviderRegistry(configService, tokenVerifier, http, policies),
     },
     JwtStrategy,
     JwtRefreshStrategy,
