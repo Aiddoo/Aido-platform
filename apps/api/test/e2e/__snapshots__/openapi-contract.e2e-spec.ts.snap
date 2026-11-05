@@ -7325,6 +7325,37 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           ],
           "type": "object",
         },
+        "multiDayTodos": {
+          "description": "조회 기간과 겹치는 여러 날 할 일. completions는 시작일에만 세므로 앱이 기간 안의 날에도 표시한다",
+          "items": {
+            "properties": {
+              "categoryColor": {
+                "description": "카테고리 색상",
+                "type": "string",
+              },
+              "completed": {
+                "description": "완료 여부",
+                "type": "boolean",
+              },
+              "endDate": {
+                "description": "할 일 끝 날짜 (YYYY-MM-DD)",
+                "type": "string",
+              },
+              "startDate": {
+                "description": "할 일 시작 날짜 (YYYY-MM-DD)",
+                "type": "string",
+              },
+            },
+            "required": [
+              "startDate",
+              "endDate",
+              "completed",
+              "categoryColor",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
         "totalCompleteDays": {
           "description": "100% 달성한 날 개수 (0 이상)",
           "maximum": 9007199254740991,

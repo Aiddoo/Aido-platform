@@ -1,16 +1,20 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, gte, lt } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 import { sumBy, uniq } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo } from "#api/platform/database/schema/index";
+import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   AggregateByDateRangeParams,
   TodoCompletionRepositoryPort,
 } from "../../../application/ports/daily-completions/todo-completion.repository.port.js";
-import type { TodoAggregateByDate } from "../../../domain/records/daily-completions/daily-completion.record.js";
+import type {
+  MultiDayTodoSpan,
+  TodoAggregateByDate,
+} from "../../../domain/records/daily-completions/daily-completion.record.js";
 
 @Injectable()
 export class DrizzleTodoCompletionRepository implements TodoCompletionRepositoryPort {
@@ -26,6 +30,44 @@ export class DrizzleTodoCompletionRepository implements TodoCompletionRepository
 
   aggregatePublicByDateRange(params: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]> {
     return this.#aggregate(params, true);
+  }
+
+  findMultiDayTodos(params: AggregateByDateRangeParams): Promise<MultiDayTodoSpan[]> {
+    return this.#findMultiDayTodos(params, false);
+  }
+
+  findPublicMultiDayTodos(params: AggregateByDateRangeParams): Promise<MultiDayTodoSpan[]> {
+    return this.#findMultiDayTodos(params, true);
+  }
+
+  /** `Todo_userId_startDate_endDate_idx`를 타는 쿼리 하나다. 날짜 칸 조건은 할 일 목록의 `todoDateCondition`과 같다. */
+  async #findMultiDayTodos(
+    params: AggregateByDateRangeParams,
+    publicOnly: boolean,
+  ): Promise<MultiDayTodoSpan[]> {
+    const rows = await this.db
+      .select({
+        startDate: todo.startDate,
+        endDate: todo.endDate,
+        completed: todo.completed,
+        categoryColor: todoCategory.color,
+      })
+      .from(todo)
+      .innerJoin(todoCategory, eq(todo.categoryId, todoCategory.id))
+      .where(
+        and(
+          eq(todo.userId, params.userId),
+          isNotNull(todo.endDate),
+          lt(todo.startDate, params.endDate),
+          gte(todo.endDate, params.startDate),
+          publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
+        ),
+      );
+    return rows.flatMap(({ endDate, startDate, ...row }) =>
+      endDate == null || endDate.getTime() <= startDate.getTime()
+        ? []
+        : [{ ...row, startDate: toDateString(startDate), endDate: toDateString(endDate) }],
+    );
   }
 
   async #aggregate(

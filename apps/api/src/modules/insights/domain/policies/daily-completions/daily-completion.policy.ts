@@ -3,6 +3,7 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 import type {
   DailyCompletionSummary,
   DailyCompletionsRange,
+  MultiDayTodoSpan,
   TodoAggregateByDate,
 } from "../../records/daily-completions/daily-completion.record.js";
 
@@ -32,9 +33,10 @@ export function toSummaries(aggregates: readonly TodoAggregateByDate[]): DailyCo
 export function buildDailyCompletionsRange(
   aggregates: readonly TodoAggregateByDate[],
   dateRange: { startDate: string; endDate: string },
+  multiDayTodos: readonly MultiDayTodoSpan[] = [],
 ): DailyCompletionsRange {
   const completions = toSummaries(aggregates);
   const totalCompleteDays = completions.filter((summary) => summary.isComplete).length;
 
-  return { completions, totalCompleteDays, dateRange: { ...dateRange } };
+  return { completions, totalCompleteDays, multiDayTodos, dateRange: { ...dateRange } };
 }

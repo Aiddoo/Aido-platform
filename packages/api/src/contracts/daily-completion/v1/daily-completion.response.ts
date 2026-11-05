@@ -58,10 +58,25 @@ export const dailyCompletionSummarySchema = z
 
 export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema>;
 
+export const multiDayTodoSpanSchema = z.object({
+  startDate: z.string().describe("할 일 시작 날짜 (YYYY-MM-DD)"),
+  endDate: z.string().describe("할 일 끝 날짜 (YYYY-MM-DD)"),
+  completed: z.boolean().describe("완료 여부"),
+  categoryColor: z.string().describe("카테고리 색상"),
+});
+
+export type MultiDayTodoSpan = z.infer<typeof multiDayTodoSpanSchema>;
+
 export const dailyCompletionsRangeResponseSchema = z
   .object({
     completions: z.array(dailyCompletionSummarySchema).describe("기간 내 일별 달성 요약 배열"),
     totalCompleteDays: z.number().int().min(0).describe("100% 달성한 날 개수 (0 이상)"),
+    multiDayTodos: z
+      .array(multiDayTodoSpanSchema)
+      .optional()
+      .describe(
+        "조회 기간과 겹치는 여러 날 할 일. completions는 시작일에만 세므로 앱이 기간 안의 날에도 표시한다",
+      ),
     dateRange: z
       .object({
         startDate: z.string().describe("조회 시작 날짜 (YYYY-MM-DD, 예: 2026-01-15)"),

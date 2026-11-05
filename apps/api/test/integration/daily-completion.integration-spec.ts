@@ -122,6 +122,59 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     await Promise.all(promises);
   }
 
+  describe("DailyCompletionRepository.findMultiDayTodos", () => {
+    async function createMultiDayTodo(
+      userId: string,
+      categoryId: number,
+      startDate: string,
+      endDate: string,
+      visibility: "PUBLIC" | "PRIVATE" = "PUBLIC",
+    ): Promise<void> {
+      await client.insert(todo).values({
+        userId,
+        categoryId,
+        title: "여러 날 할 일 fixture",
+        startDate: dayjs.utc(startDate).toDate(),
+        endDate: dayjs.utc(endDate).toDate(),
+        visibility,
+      });
+    }
+
+    const JANUARY = { startDate: new Date("2026-01-01"), endDate: new Date("2026-02-01") };
+
+    it("기간과 겹치는 여러 날 할 일만 찾고 하루짜리와 기간 밖은 뺀다", async () => {
+      // Given
+      const user = await createTestUser();
+      const categoryId = user.defaultCategoryId;
+      await createMultiDayTodo(user.id, categoryId, "2025-12-30", "2026-01-02");
+      await createMultiDayTodo(user.id, categoryId, "2026-01-30", "2026-02-03");
+      await createMultiDayTodo(user.id, categoryId, "2025-12-01", "2025-12-31");
+      await createMultiDayTodo(user.id, categoryId, "2026-02-01", "2026-02-03");
+      await createMultiDayTodo(user.id, categoryId, "2026-01-10", "2026-01-10");
+      await createTestTodo(user.id, categoryId, "2026-01-15");
+      // When
+      const result = await repository.findMultiDayTodos({ userId: user.id, ...JANUARY });
+      // Then
+      expect(result.map(({ startDate, endDate }) => [startDate, endDate]).sort()).toEqual([
+        ["2025-12-30", "2026-01-02"],
+        ["2026-01-30", "2026-02-03"],
+      ]);
+      expect(result[0]?.categoryColor).toEqual(expect.any(String));
+    });
+
+    it("친구에게는 공개 할 일만 준다", async () => {
+      // Given
+      const user = await createTestUser();
+      const categoryId = user.defaultCategoryId;
+      await createMultiDayTodo(user.id, categoryId, "2026-01-05", "2026-01-07");
+      await createMultiDayTodo(user.id, categoryId, "2026-01-10", "2026-01-12", "PRIVATE");
+      // When
+      const result = await repository.findPublicMultiDayTodos({ userId: user.id, ...JANUARY });
+      // Then
+      expect(result.map(({ startDate }) => startDate)).toEqual(["2026-01-05"]);
+    });
+  });
+
   describe("DailyCompletionRepository.aggregateByDateRange", () => {
     it("날짜 범위 내 Todo를 날짜별로 집계해야 한다", async () => {
       // Given
