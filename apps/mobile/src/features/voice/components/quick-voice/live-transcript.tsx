@@ -1,5 +1,5 @@
-import { Box, SheetScrollFade, Text } from '@src/shared/ui';
-import { type ComponentRef, useRef, useState } from 'react';
+import { Box, SheetScrollShadow, Text } from '@src/shared/ui';
+import { type ComponentRef, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
@@ -40,8 +40,6 @@ export function LiveTranscript({
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const isReducedMotion = useReducedMotion();
   const isFollowingRef = useRef(true);
-  const [isTopHidden, setIsTopHidden] = useState(false);
-  const [isBottomHidden, setIsBottomHidden] = useState(false);
   const finalText = getFinalText(transcript);
   const finalWords = splitWords(finalText);
   const interimWords = splitWords(getInterimText(transcript));
@@ -56,18 +54,13 @@ export function LiveTranscript({
   };
 
   return (
-    <Box flex={1}>
+    <SheetScrollShadow className="flex-1">
       <ScrollView
         ref={scrollRef}
         onContentSizeChange={() => {
           if (isFollowingRef.current) {
             scrollRef.current?.scrollToEnd({ animated: false });
           }
-        }}
-        scrollEventThrottle={16}
-        onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
-          setIsTopHidden(contentOffset.y > 0);
-          setIsBottomHidden(contentOffset.y + layoutMeasurement.height < contentSize.height - 1);
         }}
         onScrollBeginDrag={() => {
           isFollowingRef.current = false;
@@ -115,8 +108,6 @@ export function LiveTranscript({
           ))}
         </Box>
       </ScrollView>
-      {isTopHidden && <SheetScrollFade edge="top" />}
-      {isBottomHidden && <SheetScrollFade />}
-    </Box>
+    </SheetScrollShadow>
   );
 }

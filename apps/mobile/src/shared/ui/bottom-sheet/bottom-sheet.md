@@ -86,7 +86,7 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 </ModalBottomSheet>
 ```
 
-내용이 넘치면 스크롤 막대와 아래쪽 흐림이 나타나 더 있다는 걸 알린다. 넘치지 않으면 평소 모양 그대로다.
+내용이 넘치면 스크롤 막대와 heroui-native `ScrollShadow` 흐림이 나타나 더 있다는 걸 알린다. 넘치지 않으면 평소 모양 그대로다.
 
 ### 머리글 고정 (`hasFixedHeader`, `SheetHeaderLayout`)
 
@@ -176,7 +176,7 @@ bottom-sheet/
 ├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
 ├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
 ├── sheet-header-layout.tsx            # 머리글 고정 + 본문 스크롤 (hasFixedHeader 시트의 내용)
-├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·아래쪽 흐림을 보이는 시트 스크롤
+├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·`ScrollShadow` 흐림을 보이는 시트 스크롤
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
 ├── full-window-host-context.ts        # 시트가 내비게이터 위 전체 창(route·overlay)에 그려지는지

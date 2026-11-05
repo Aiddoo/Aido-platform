@@ -1,53 +1,28 @@
-import { type ComponentProps, type ReactNode, useRef, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ScrollShadow } from 'heroui-native';
+import type { ComponentProps, ReactNode } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
 
-import { cn } from '../../utils/cn';
-import { Box } from '../box';
-
 const FADE_HEIGHT = 32;
-const FADE_GRADIENT_ID = 'sheet-scroll-fade';
 
-export interface SheetScrollMetrics {
-  viewportHeight: number;
-  contentHeight: number;
-  offsetY: number;
-}
+type SheetScrollShadowProps = Omit<
+  ComponentProps<typeof ScrollShadow>,
+  'LinearGradientComponent' | 'color' | 'size'
+>;
 
-/** 스크롤 영역 아래에 아직 안 보인 내용이 남았는지. 소수점 오차로 끝에서 깜빡이지 않게 1은 봐준다 */
-export function hasContentBelow({ viewportHeight, contentHeight, offsetY }: SheetScrollMetrics) {
-  return viewportHeight > 0 && contentHeight - viewportHeight - offsetY > 1;
-}
-
-interface SheetScrollFadeProps {
-  /** 내용이 잘리는 쪽 */
-  edge?: 'top' | 'bottom';
-}
-
-/** 시트 안 스크롤 영역에서 내용이 잘리는 쪽을 시트 면 색으로 흐리게 덮는다 */
-export function SheetScrollFade({ edge = 'bottom' }: SheetScrollFadeProps) {
+/** 시트 안 스크롤을 감싸 잘리는 쪽을 시트 면 색으로 흐리게 덮는다. 넘치지 않으면 보이지 않는다 */
+export function SheetScrollShadow(props: SheetScrollShadowProps) {
   const { backgroundColor } = useResolveClassNames('bg-white dark:bg-gray-1');
-  const color = typeof backgroundColor === 'string' ? backgroundColor : undefined;
 
   return (
-    <Box
-      pointerEvents="none"
-      testID="sheet-scroll-fade"
-      className={cn('absolute inset-x-0', edge === 'bottom' ? 'bottom-0' : 'top-0')}
-      style={{ height: FADE_HEIGHT }}
-    >
-      <Svg width="100%" height="100%">
-        <Defs>
-          <LinearGradient id={FADE_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity={edge === 'bottom' ? 0 : 1} />
-            <Stop offset="1" stopColor={color} stopOpacity={edge === 'bottom' ? 1 : 0} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill={`url(#${FADE_GRADIENT_ID})`} />
-      </Svg>
-    </Box>
+    <ScrollShadow
+      {...props}
+      LinearGradientComponent={LinearGradient}
+      color={typeof backgroundColor === 'string' ? backgroundColor : undefined}
+      size={FADE_HEIGHT}
+    />
   );
 }
 
@@ -59,43 +34,20 @@ interface SheetScrollAreaProps extends Pick<
   children: ReactNode;
 }
 
-/**
- * 시트 내용의 세로 스크롤. 내용이 넘칠 때만 스크롤 막대와 아래쪽 흐림이 나타나 더 있다는 걸 알린다.
- * 넘치지 않으면 아무것도 더해지지 않아 평소 모양이 그대로다.
- */
+/** 시트 내용의 세로 스크롤. 넘칠 때만 스크롤 막대와 흐림이 나타나 더 있다는 걸 알린다 */
 export function SheetScrollArea({ style, contentContainerStyle, children }: SheetScrollAreaProps) {
-  const metricsRef = useRef<SheetScrollMetrics>({
-    viewportHeight: 0,
-    contentHeight: 0,
-    offsetY: 0,
-  });
-  const [isOverflowing, setIsOverflowing] = useState(false);
-  const [isContentBelow, setIsContentBelow] = useState(false);
-
-  const updateMetrics = (next: Partial<SheetScrollMetrics>) => {
-    metricsRef.current = { ...metricsRef.current, ...next };
-    setIsOverflowing(metricsRef.current.contentHeight - metricsRef.current.viewportHeight > 1);
-    setIsContentBelow(hasContentBelow(metricsRef.current));
-  };
-
   return (
-    <Box style={[styles.area, style]}>
+    <SheetScrollShadow style={[styles.area, style]}>
       <ScrollView
         testID="sheet-scroll-area"
         style={styles.scroll}
         contentContainerStyle={contentContainerStyle}
-        showsVerticalScrollIndicator={isOverflowing}
-        persistentScrollbar={isOverflowing}
+        persistentScrollbar
         bounces={false}
-        scrollEventThrottle={16}
-        onLayout={(event) => updateMetrics({ viewportHeight: event.nativeEvent.layout.height })}
-        onContentSizeChange={(_width, height) => updateMetrics({ contentHeight: height })}
-        onScroll={(event) => updateMetrics({ offsetY: event.nativeEvent.contentOffset.y })}
       >
         {children}
       </ScrollView>
-      {isContentBelow && <SheetScrollFade />}
-    </Box>
+    </SheetScrollShadow>
   );
 }
 
