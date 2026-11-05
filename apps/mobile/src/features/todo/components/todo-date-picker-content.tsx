@@ -95,7 +95,8 @@ interface QuickDateRowProps {
 }
 
 function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) {
-  const weekdayLabels = getWeekdayLabels();
+  const { i18n } = useTranslation();
+  const weekdayLabels = getWeekdayLabels(i18n.language);
   const tone = isSelected ? 'brand' : 'neutral';
 
   return (

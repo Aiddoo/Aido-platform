@@ -16,12 +16,11 @@ const getWeekdayStyle = (dayIndex: number): WeekdayStyle => {
 };
 
 export const CalendarWeekdayHeader = () => {
-  // 언어 변경 시 리렌더를 위해 useTranslation 구독
-  useTranslation();
+  const { i18n } = useTranslation();
 
   return (
     <HStack px={8}>
-      {getWeekdayLabels().map((label, dayIndex) => {
+      {getWeekdayLabels(i18n.language).map((label, dayIndex) => {
         const style = getWeekdayStyle(dayIndex);
 
         return (

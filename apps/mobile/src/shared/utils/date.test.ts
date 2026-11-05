@@ -265,6 +265,14 @@ describe('로케일 인지 포맷 (i18n)', () => {
     expect(getDayOfWeekLabel('SAT')).toBe('Sat');
   });
 
+  it('요일 라벨은 넘겨받은 언어로 만든다', () => {
+    // When
+    const labels = getWeekdayLabels('en');
+
+    // Then
+    expect(labels[0]).toBe('Sun');
+  });
+
   it('주 헤더는 넘겨받은 context의 언어로 만든다', () => {
     // Given: 앱 언어(i18n)는 ko
     const dateKey = '2026-07-07';
