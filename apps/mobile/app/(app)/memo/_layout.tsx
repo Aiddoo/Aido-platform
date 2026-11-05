@@ -11,8 +11,7 @@ export default function MemoLayout() {
     <Stack
       screenOptions={{
         ...screenOptions,
-        animation: 'fade_from_bottom',
-        animationDuration: 200,
+        animation: 'slide_from_bottom',
       }}
     >
       <Stack.Screen name="create" options={{ title: t('titles.create') }} />
