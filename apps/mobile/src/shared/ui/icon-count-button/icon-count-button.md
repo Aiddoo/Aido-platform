@@ -37,10 +37,11 @@ import { ICON_COUNT_BUTTON_ICON_SIZE, IconCountButton } from '@src/shared/ui';
 `PressableFeedback`의 props를 그대로 받습니다(`children` 제외). `className`과 `hitSlop`으로
 화면 밀도에 맞게 터치 상자를 조정할 수 있습니다.
 
-| Prop    | Type        | Description                                                     |
-| ------- | ----------- | --------------------------------------------------------------- |
-| `icon`  | `ReactNode` | 왼쪽에 놓일 글리프. 크기는 `ICON_COUNT_BUTTON_ICON_SIZE`를 쓴다 |
-| `count` | `number`    | **0이면 숫자를 숨긴다.** 100 이상은 `99+`로 접힌다              |
+| Prop           | Type                    | Description                                                     |
+| -------------- | ----------------------- | --------------------------------------------------------------- |
+| `icon`         | `ReactNode`             | 왼쪽에 놓일 글리프. 크기는 `ICON_COUNT_BUTTON_ICON_SIZE`를 쓴다 |
+| `count`        | `number`                | 표시는 `countDisplay`가 정한다                                  |
+| `countDisplay` | `'capped' \| 'compact'` | 기본 `capped`. [아래](#countdisplay)를 본다                     |
 
 ### 내보내는 상수
 

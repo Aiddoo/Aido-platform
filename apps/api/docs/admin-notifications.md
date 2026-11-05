@@ -2,7 +2,7 @@
 
 운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림 기준이다. 구현 정본은 `src/modules/operations/application/messages/notifications`다. 알림은 채널에 상관없는 모델(`AdminNotification`: 제목·본문·`severity`·필드·링크)로 만들고, `AdminNotifierPort`의 어댑터가 채널 형식으로 보낸다. 지금 어댑터는 Discord(webhook·embed 렌더링은 `infrastructure/adapters/notifications/discord-embed.renderer.ts`)와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 factory 표에 한 줄을 더해 붙인다.
 
-발송은 `admin-notification` 큐 잡으로 처리해 채널 실패가 회원가입·웹훅 처리를 막지 않는다. 일시 실패(429·5xx·연결 실패)만 큐가 2회까지 다시 시도하고, 채널이 거절한 요청(그 밖의 4xx)은 다시 보내지 않고 운영 경보(`operations.admin-notification.rejected`)를 올린다. webhook이 설정되지 않은 채널은 건너뛴다. 큐에 남은 이전 형식 잡(보관 24시간)은 한 릴리스 동안 info 알림으로 바꿔 받는다.
+발송은 `admin-notification` 큐 잡으로 처리해 채널 실패가 회원가입·웹훅 처리를 막지 않는다. 일시 실패(429·5xx·연결 실패)만 큐가 2회까지 다시 시도하고, 채널이 거절한 요청(그 밖의 4xx)은 다시 보내지 않고 운영 경보(`operations.admin-notification.rejected`)를 올린다. webhook이 설정되지 않은 채널은 건너뛴다. 큐에 남은 이전 형식 잡(보관 24시간)은 info 알림으로 바꿔 받고 [제거 시점](../../../docs/conventions/compatibility.md)은 1.15.1이다.
 
 `severity`는 채널 색으로 바뀐다: info 파랑·success 초록·warning 노랑·critical 빨강. 시각 필드는 채널이 보는 사람의 시간대로 보여 준다.
 

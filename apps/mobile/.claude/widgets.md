@@ -1,6 +1,6 @@
 # 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 3.2.0 · **Last Updated**: 2026-10-26 · **Owner**: Aido Mobile Team
+**Version**: 3.3.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
 
 iOS는 `expo-widgets`, Android는 `react-native-android-widget`의 공식 Expo config plugin과
 HeadlessJS API를 사용한다. 앱에서 Kotlin·Swift source나 dependency patch를 생성하지 않는다.
@@ -26,7 +26,7 @@ useWidgetSnapshotSync(authState)
 - 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다.
 - 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot과 iOS timeline payload에 추가하지 않는다.
 - 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다(통계·스트릭). 서버 날짜가 요청과 다르거나
-  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다.
+  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`get-todo-summary-query-options.ts`).
 - 렌더러는 전달받은 props만 사용한다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다.
@@ -64,11 +64,9 @@ ko 기기는 한국어, 그 밖의 언어는 영어로 표시한다. 영어는 �
 - 첫 동기화 전 로그인 안내의 iOS 번역도 같은 `Localizable.strings`에 둔다(아래 「디자인과 렌더링」).
 
 기존 `widget-storage`의 `aido_widget_snapshot_v1` key를 그대로 쓴다. 값은 v2 JSON이며, 이미 저장된
-v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. 기존 Expo
-SharedPreferences만 있고 MMKV snapshot이 없거나 현재 소유자를 알 수 없으면 개인 목록을
-추측하지 않고 앱 열기 안내를 표시한다. 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
-이 범위는 로그인·계정·할 일 데이터 호환성과 다르며, 업그레이드 전 위젯 표시 내용을 앱 실행
-전에 완전히 복원한다고 주장하지 않는다.
+v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. MMKV snapshot이 없거나 현재
+소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 표시한다. 앱이 현재 계정 요약을
+동기화한 뒤 정상 표시한다. 업그레이드 전 위젯 표시 내용을 앱 실행 전에 복원하지는 않는다.
 
 ## 날짜와 OS 갱신
 
@@ -148,7 +146,7 @@ pnpm lint && pnpm format:check && pnpm typecheck
 force-stop/fresh task와 따로 확인하며 실제 launcher tap 뒤 Activity/목적 화면과 뒤로가기를 검증한다.
 세 크기·라이트/다크·긴 문구·빈 상태·계정 전환·오프라인·생성 반복을 확인한다. OEM launcher,
 실물 기기 push, 실제 결제 영수증을 에뮬레이터 검증으로 대체해 통과했다고 주장하지 않는다.
-관측은 기존 ErrorReporter 포트를 사용하고 feature widget breadcrumb/error로 응집한다.
+관측은 `ErrorReporter` 포트의 `feature: 'widget'` 이벤트와 `category: 'widget'` breadcrumb로 모은다.
 
 ## 공식 근거
 

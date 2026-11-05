@@ -1,12 +1,12 @@
 # 레거시와 하위 호환
 
-내부 코드는 레거시 없이 현재 구조 하나로 유지하고, 하위 호환은 **배포된 앱·기기·운영 데이터가 보는 외부 계약**에서만 지킨다.
+내부 코드는 레거시 없이 현재 구조 하나로 유지하고, 하위 호환은 **배포된 앱·기기·운영 데이터가 보는 외부 계약**에서만 지킨다. 외부 계약은 추가만 한다.
 
 ## 1. 내부: 남기지 않는다
 
 - 바뀐 구현의 forwarding 파일·alias·re-export·쓰지 않는 export·옛 이름의 wrapper를 남기지 않는다. 실제 소비를 검색해 함께 지운다.
 - "혹시 몰라" 두는 분기·플래그·옛 경로를 만들지 않는다. 문서·주석에도 삭제된 경로를 현행 예제로 남기지 않는다.
-- 임시로 남겨야 하는 코드는 `@deprecated`와 제거 조건이 담긴 `TODO`를 함께 둔다(예: AI 프롬프트 v1의 `TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤`). 조건 없는 TODO는 쓰지 않는다.
+- 임시로 남겨야 하는 코드는 제거 조건을 코드와 아래 목록에 함께 적는다. 조건 없는 `TODO`는 쓰지 않는다.
 
 ## 2. 외부 계약: 바꾸지 않는다
 
@@ -18,7 +18,9 @@
 | 푸시 payload      | 의미 데이터만 보낸다. 새 앱은 `navigation`(kind별 화면·id)을, 구 앱은 함께 싣는 type·action·context·routing을 읽는다. 앱이 경로를 정하므로 라우트를 바꿔도 payload는 그대로다([Push](../../apps/api/docs/push-notifications.md)) |
 | 위젯 snapshot·URI | `aido_widget_snapshot_v1` key와 저장 JSON 버전 해석, `aido://feed?…`·`aido://todo/{id}` 형식([위젯](../../apps/mobile/.claude/widgets.md))                                                                                       |
 | 기기 저장 key     | SecureStore 토큰 key, MMKV key, 초안 key 형식. 바꾸면 기존 설치의 로그인·설정·초안을 잃는다                                                                                                                                      |
-| DB·queue·cache    | migration graph는 additive로 쌓는다. 파괴적 migration 뒤에는 이전 API 이미지로 되돌리지 못한다([배포](../../apps/api/DEPLOYMENT.md#롤백의-범위)). pg-boss job 이름·payload·Redis key/TTL은 소유 Context의 계약이다               |
+| DB·queue·cache    | 마이그레이션은 additive로 쌓는다. 파괴적 migration 뒤에는 이전 API 이미지로 되돌리지 못한다([배포](../../apps/api/DEPLOYMENT.md#롤백의-범위)). pg-boss job 이름·payload·Redis key/TTL은 소유 Context의 계약이다                  |
+
+새 기능은 추가 API로 낸다. 서버를 먼저 배포하고 앱을 낸다. 롤백 대상 서버에 없는 기능은 앱이 옛 서버를 만나도 깨지지 않게 처리한다(아래 표).
 
 구 앱 경로를 남긴 경우 지원 범위는 여기에 적는다.
 
@@ -28,12 +30,12 @@
 - `POST /v1/ai/parse-memo`의 `Idempotency-Key` 생략: 마지막 지원 앱 1.14.x. 헤더가 없으면 요청마다 차감한다. 1.15 앱은 항상 보낸다. 생략을 막는 것은 1.14.x 사용자가 사라진 뒤에 판단한다.
 - 메모 변환의 `isRecurring`·`recurrence`: 마지막 지원 앱 1.14.x. 서버가 Presentation에서 같은 `repeat`로 바꾼다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.16.0에서 `/recurring`과 같이 판단한다.
+- `POST`·`DELETE /v1/notifications/token`: 마지막 지원 앱 1.14.1. 1.14.2 앱부터 `PUT /v1/notifications/push-devices/{deviceId}`를 쓴다. 같은 UseCase로 위임한다.
 - `Todo.recurrenceGroupId`(DB 칸·응답): 영구. 출시 앱 응답의 필수 칸이다.
 - `Todo.scheduledTime`(응답): 영구. 출시 앱은 이 순간을 기기 시간대로 보여 준다. 시간대 재계산은 완료했거나 지난 할 일까지 모두 다시 쓰므로 옛 앱에서도 고른 시각으로 보인다. 재계산 전 1~2분만 옛 시간대의 시각으로 보인다.
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`): 1.15.1에서 지운다. 대기 잡 보관이 24시간이라 배포 순간의 잡만 해당한다.
-
-출시 앱이 아니라 서버 롤백 구간을 위한 1.15 앱 코드도 있다. 1.15 서버를 되돌려 1.15 앱이 옛 서버를 만나도 저장이 어긋나지 않게 한다. 1.15 서버 안정화를 확인한 뒤 1.16에서 지운다.
+  출시 앱이 아니라 서버 롤백 구간을 위한 1.15 앱 코드도 있다. 1.15 서버를 되돌려 1.15 앱이 옛 서버를 만나도 저장이 어긋나지 않게 한다. 1.15 서버 안정화를 확인한 뒤 1.16에서 지운다.
 
 | 코드(앱)                                              | 옛 서버에서 생기는 일                                                | 동작                                   |
 | ----------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- |

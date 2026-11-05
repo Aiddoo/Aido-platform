@@ -48,7 +48,7 @@ Turbo와 Docker build cache는 도구 기본 경로를 사용한다. gate는 변
 
 작업 중에는 변경한 동작의 target test와 필요한 lint/type/format을 실행하고, source가 바뀌지 않은 성공 검사를 반복하지 않는다. 공개 HTTP·OpenAPI·released-client fingerprint와 실제 DB/transaction 검사는 pre-push 훅(통합·계약 테스트)이 맡고, CI는 정적 검사와 build만 확인한다. 로컬 결과에는 command, source revision, seed, 파일/테스트 수, 실패·재실행 사유와 한계를 남긴다. coverage나 SDK schema 통과를 실제 vendor 품질/운영 배포 완료로 표현하지 않는다.
 
-수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [DEPLOYMENT.md](../../apps/api/DEPLOYMENT.md)의 동일 SHA 이미지·graph·health 절차를 따른다.
+수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [DEPLOYMENT.md](../../apps/api/DEPLOYMENT.md)의 동일 SHA 이미지·마이그레이션·health 절차를 따른다.
 
 ## 의존성·이미지 보안 검사
 

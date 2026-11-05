@@ -48,9 +48,9 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 - 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
   - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`, `isByTodoOwner`, `getUserTagLabel`, `getMentionName`
   - 권한: `canLikeComment`, `canReplyToComment`, `isEditableComment`, `canDeleteComment`, `isDeletingOthersComment`,
-    `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`
-  - 묶음: `getHiddenReplyCount`, `expandThread`, `getReplyFooter`, `flattenThreads`, `flattenReplies`, `getAnchor`
-  - 캐시 변환: `withLikeToggled`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`
+    `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`, `leavesTombstoneOnDelete`
+  - 묶음: `getHiddenReplyCount`, `expandThread`, `getReplyFooter`, `hasRepliesToShow`, `flattenThreads`, `flattenReplies`, `getAnchor`, `findCommentInThread`
+  - 캐시 변환: `withLikeToggled`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`, `withRepliesRemoved`
 - 화면 분기는 `getDisplayState`·`getReplyFooter`를 ts-pattern으로만 나눈다. 개수와 숨김을 화면에서 다시 세지 않는다.
 
 `domains/todo-comment-composer.model.ts`는 작성 세션만 맡는다. 모드 union, 폼 스키마(`todoCommentContentSchema`,
@@ -63,13 +63,14 @@ export function TodoDetailPane({ presentation }) {
   const composer = useForm({
     resolver: zodResolver(todoCommentComposerFormSchema),
     defaultValues: TodoCommentComposer.new(),
+    mode: 'onChange',
   });
   return (
     <FormProvider {...composer}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
-          <TodoDetailContent presentation={presentation} />{' '}
           {/* 제목 → 본문·정렬 → 묶음 목록 → 작성 바 */}
+          <TodoDetailContent presentation={presentation} />
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
     </FormProvider>
@@ -110,7 +111,7 @@ export function TodoDetailPane({ presentation }) {
   `xlarge`에서는 태그·시간을 둘째 줄로 내리고 `⋯`는 첫 줄 끝에 둔다. 시간은 `useMinuteNow` 기준이라 렌더 중 `new Date()`를 쓰지 않는다.
 - 본문: `@멘션`을 중첩 Text로 한 문단에 그린다. `replyTo.authorName`이 null이면(탈퇴·차단) 멘션 없이 본문만.
 - 묘비(`deleted`)·차단(`blockedAuthor`): 흐린 아바타 + 안내 문구. 좋아요·답글·`⋯` 없음.
-- `⋯`와 길게 누르기: 같은 heroui-native `Menu`. 내 글은 수정·복사 / 삭제, 남의 글은 복사 / 신고·차단,
+- `⋯`와 길게 누르기: 같은 heroui-native `Menu`에 `MenuActionItem`을 넣는다. 내 글은 수정·복사 / 삭제, 남의 글은 복사 / 신고·차단,
   내 할 일의 남의 글은 삭제도 보인다. 삭제는 항상 `useConfirmDialog`로 확인하고, 답글이 남는 댓글이면 묘비로 남는다고 안내한다.
   복사는 DI `useClipboard()` 게이트웨이를 쓴다.
 
@@ -120,7 +121,7 @@ export function TodoDetailPane({ presentation }) {
   한 번 탭은 아무 동작도 하지 않는다.
 - 애니메이션(`todo-comment-heart-burst.tsx` 상단 상수): 큰 하트 스프링 1.32 → 0.9 → 1 + 회전 −14°→6°→0°, 링 0.3→1.7,
   45° 간격 작은 하트 8개, 버튼 하트 0.6→1.35→1, 740ms부터 위로 26px 사라짐. 모두 shared value로 UI 스레드에서 돌고
-  JS로는 좋아요 요청과 진동(`Light`)만 넘긴다. 동작 줄이기면 큰 하트만 나타났다 사라진다.
+  JS로는 좋아요 요청과 진동(`haptics.impact('light')`)만 넘긴다. 동작 줄이기면 큰 하트만 나타났다 사라진다.
 - 이미 좋아요면 애니메이션만 나오고 요청은 보내지 않는다.
 - 안내 줄: 첫 묶음 위 "댓글을 두 번 탭하면 하트를 남길 수 있어요 🐾". 처음 더블탭하거나 닫으면 계정당 다시 보이지 않는다
   (`CoachmarkService`의 `comment-double-tap`, `usePendingCoachmark`).
@@ -141,7 +142,7 @@ export function TodoDetailPane({ presentation }) {
 
 ## Query, mutation, cache
 
-- 키(`constants/todo-comment-query-keys.ts`): `all → todo(todoId) → threads(sort, anchor) | replies(commentId, aroundReplyId)`.
+- 키(`constants/todo-comment-query-keys.ts`): `all → todo(todoId) → threadLists → threads(sort, anchorCommentId)`, `… → replyLists → thread(commentId) → replies(aroundReplyId)`.
 - 무효화·갱신은 `queries/todo-comment-cache.ts`만 거친다. 페이지 변환은 `utils/todo-comment-cache-pages.ts` 순수 함수다.
 - 좋아요: `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 스냅샷 → 묶음·답글 캐시 ±1 →
   실패 시 복원, 성공 시 서버 값으로 확정. 전체 invalidate는 하지 않는다.
@@ -154,17 +155,7 @@ export function TodoDetailPane({ presentation }) {
 
 ## 분석
 
-`telemetry-keys.ts`의 `TodoCommentEventMap`만 쓴다.
-
-| 이벤트                          | 매개변수                                            |
-| ------------------------------- | --------------------------------------------------- |
-| `todo_comment_created`          | `todo_id`, `is_reply`, `chain_size`                 |
-| `todo_comment_deleted`          | `todo_id`, `is_reply`                               |
-| `todo_comment_liked`            | `todo_id`, `is_liked`, `via`: `button`·`double_tap` |
-| `todo_comment_sorted`           | `todo_id`, `sort`                                   |
-| `todo_comment_replies_expanded` | `todo_id`, `loaded_count`                           |
-| `todo_comment_reply_started`    | `todo_id`, `target`: `comment`·`reply`              |
-| `todo_comment_hint_dismissed`   | `kind`: `double_tap`, `reason`: `close`·`used`      |
+`telemetry-keys.ts`의 `TodoCommentEventMap`만 쓴다. 이벤트와 매개변수는 [측정 계획](../docs/analytics-measurement-plan.md#1-2-이벤트-기능별)에 있다.
 
 ## 파일
 

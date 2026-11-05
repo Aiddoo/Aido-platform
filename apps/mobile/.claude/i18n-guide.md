@@ -1,6 +1,6 @@
 # i18n 가이드 (다국어)
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-07-07 · **Owner**: Aido Mobile Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
 
 한국어(소스 언어, 원문 보존) + 영어. i18next + react-i18next + expo-localization 기반.
 
@@ -17,7 +17,7 @@ src/shared/i18n/
 └── locales/{ko,en}/   # 네임스페이스별 카탈로그 (ko = 원문)
 ```
 
-**네임스페이스**: feature 1:1 (`todo, todoComment, auth, memo, friend, invite, notification, user, subscription, ai, achievement, inquiry, weather, widget, appIcon, appVersion, featureDiscovery, storeReview, voiceNote`) + 횡단 4개 (`common, errors, validation, settings`). 정본은 `resources.ts`다.
+**네임스페이스**: `resources.ts`가 정본이다. feature별(`todo`, `voice`, `voicePlan`, `voiceNote` 등)과 횡단 4개(`common`, `errors`, `validation`, `settings`)가 있다. 파일 이름은 kebab-case(`voice-plan.json`), namespace는 camelCase(`voicePlan`)다.
 
 **언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). 설정 화면: `app/(app)/settings/language.tsx`.
 
@@ -75,7 +75,10 @@ toast.error(t('friend:toast.sendFailed'));
 
   | 개념                                                  | ko                                     | en                                     |
   | ----------------------------------------------------- | -------------------------------------- | -------------------------------------- |
-  | 앱 이름                                               | 아이두                                 | Aido                                   |
+  | 앱 이름 (코드 식별자·개발 문서는 대상 아님)           | 아이두                                 | Aido                                   |
+  | 탭 / 머리글                                           | 마이 / 내 정보                         | Me / My account                        |
+  | 녹음 관리 화면                                        | 녹음 저장 공간                         | Recording storage                      |
+  | 마이 탭 횟수 요약 제목                                | 이번 달 남은 AI 횟수                   | AI uses left this month                |
   | 초대 보상 도장                                        | 발자국                                 | paw prints                             |
   | 친구 재촉                                             | 콕 / 콕 찌르기                         | nudge                                  |
   | 초대 보상 기간                                        | 프리미엄 7일                           | 7 days of Premium                      |
@@ -90,6 +93,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 - ko/en은 같은 키·같은 보간 변수로 함께 추가한다(`locale-parity.test.ts`).
 - **마침표**: 버튼·제목·칩·한 문장 토스트에는 찍지 않고, 시트·다이얼로그 설명은 문장마다 찍는다. en은 ko를 따른다.
+- **줄바꿈**: 창 제목·짧은 안내는 ko 문구에 `\n`을 넣어 문장 사이에서 나눈다. en은 필요할 때만 넣는다. Android에 단어 단위 줄바꿈 prop이 없어서다. 긴 글은 `WordWrapText`로 그린다.
 
   | 개념                         | ko                             | en                             | 쓰지 않는 말                               |
   | ---------------------------- | ------------------------------ | ------------------------------ | ------------------------------------------ |
@@ -125,26 +129,28 @@ toast.error(t('friend:toast.sendFailed'));
   | 남은 횟수                    | N번                            | N left                         |                                            |
   | 프리미엄                     | 프리미엄                       | Premium (항상 대문자)          | premium                                    |
 
+- **녹음 고지**: `녹음 파일은 아이두 서버로 보내지 않아요` / `Audio files aren't sent to Aido's servers`로 쓴다. `폰에서만`, `이 기기에만`, `기기에서만`은 쓰지 않는다. 기기 백업에 포함될 수 있고 네트워크 인식 경로가 있어서다.
 - **`음성 인식`**: 권한 이름과 Apple·Google 처리 고지에만 쓴다(설정 화면의 이름과 같아서). 그 밖의 안내는 `말을 글자로 바꿔요`처럼 쓰고 `인식`, `감지`, `텍스트`, `시간 초과`, `쿨다운`은 쓰지 않는다.
 - **`정리`**: AI로 요약·나누는 뜻으로만 쓴다. 오래된 것을 자동으로 없애는 일은 `삭제돼요`로 쓴다.
 - **듣기와 녹음**: `듣기`는 재생 뜻으로 남겨 두고, 녹음을 시작·이어 가는 버튼에는 쓰지 않는다.
 
 ### 기능 이름·한도·결제 유도
 
-기능 이름은 "무엇을 + 어떻게" 동사형으로 쓰고 기술 용어(AI 파싱, AI 사용 횟수, 인식, 쿼터, 크레딧)는 쓰지 않는다. 숫자는 서버 스냅샷(`featureQuota`)·`PLAN_CATALOG`를 보간 변수로 받는다. 한도 안내는 `useEntitlementGate` → `PremiumDialog` 하나로만 하고 화면마다 토스트·배너 문구를 따로 만들지 않는다.
+기능 이름은 "무엇을 + 어떻게" 동사형으로 쓰고 기술 용어(AI 파싱, AI 사용 횟수, 인식, 쿼터, 크레딧)는 쓰지 않는다. 숫자는 서버 스냅샷(`GET /v1/entitlements`)·`PLAN_CATALOG`를 보간 변수로 받는다. 한도 안내는 `useEntitlementGate` → `PremiumDialog` 하나로만 하고 화면마다 토스트·배너 문구를 따로 만들지 않는다. AI 표시 규칙은 [UI 규칙](ui-components.md#ai-기능-표시)에 있다.
 
-| 개념                                     | ko                                  | en                                |
-| ---------------------------------------- | ----------------------------------- | --------------------------------- |
-| 글·말·메모로 할 일 만들기 한도(AI_PARSE) | AI 할 일 만들기                     | AI to-dos                         |
-| 할 일 추가 시트의 마이크                 | 말로 할 일 만들기                   | Speak to add                      |
-| 메모에서 할 일로                         | 메모를 할 일로 나누기               | Turn memo into to-dos             |
-| 긴 녹음 정리(VOICE_NOTE)                 | 말로 메모하기                       | Voice notes                       |
-| 반복                                     | 반복 할 일 / 반복 끝내기            | repeating to-do / Stop repeating  |
-| 남은 횟수(알약)                          | N번 남음 / 이번 달 다 씀·오늘 다 씀 | N left / Used up this month·today |
-| 남은 횟수(문장)                          | 이번 달 N번 남았어요                | N left this month                 |
-| 차감 없음(미리 안내, 잘 안 되면)         | 잘 안 되면 횟수는 차감되지 않아요   | If it fails, it doesn't count     |
-| 차감 없음(실패 뒤 결과)                  | 횟수는 차감되지 않았어요            | This didn't count                 |
-| 프리미엄 버튼(대안 행동 다음)            | 프리미엄으로 넉넉하게 쓰기          | Get more with Premium             |
+| 개념                                     | ko                                       | en                                |
+| ---------------------------------------- | ---------------------------------------- | --------------------------------- |
+| 글·말·메모로 할 일 만들기 한도(AI_PARSE) | AI 할 일 만들기                          | AI to-dos                         |
+| 할 일 추가 시트의 마이크                 | 말로 할 일 만들기                        | Speak to add                      |
+| 메모에서 할 일로                         | 메모를 할 일로 나누기                    | Turn memo into to-dos             |
+| 긴 녹음 정리(VOICE_NOTE)                 | 말로 메모하기 (요약 행은 말로 메모 정리) | Voice notes                       |
+| 정리 버튼 보조 문구                      | 1번 사용 · 이번 달 N번 남음              | Uses 1 · N left this month        |
+| 반복                                     | 반복 할 일 / 반복 끝내기                 | repeating to-do / Stop repeating  |
+| 남은 횟수(알약)                          | N번 남음 / 이번 달 다 씀·오늘 다 씀      | N left / Used up this month·today |
+| 남은 횟수(문장)                          | 이번 달 N번 남았어요                     | N left this month                 |
+| 차감 없음(미리 안내, 잘 안 되면)         | 잘 안 되면 횟수는 차감되지 않아요        | If it fails, it doesn't count     |
+| 차감 없음(실패 뒤 결과)                  | 횟수는 차감되지 않았어요                 | This didn't count                 |
+| 프리미엄 버튼(대안 행동 다음)            | 프리미엄으로 넉넉하게 쓰기               | Get more with Premium             |
 
 - 한도 도달 제목은 `이번 달 {기능}를 다 썼어요`·`오늘 {기능}를 다 썼어요`, 설명은 `{날짜}에 다시 N번 생겨요. 프리미엄은 {혜택}.` 공식을 쓴다(`subscription:gate.*`). `모두 사용했어요`는 `다 썼어요`로 쓴다.
 - 한도 수치는 `월 10회`·`하루 3회`, 남은 횟수는 `N번`으로 쓴다. 표 형식 혜택 행은 `회당 3분`, 문장은 `한 번에 3분까지`로 쓴다. `무제한`은 정말 상한이 없는 것(콕 찌르기·친구)에만 쓰고, 공정 사용 상한이 있는 프리미엄 AI는 `넉넉하게(월 1,000회까지)`로 쓴다.

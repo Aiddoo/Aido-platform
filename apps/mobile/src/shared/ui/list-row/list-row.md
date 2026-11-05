@@ -37,18 +37,18 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 #### Props
 
-| Prop                | Type                                         | Default    | Description             |
-| ------------------- | -------------------------------------------- | ---------- | ----------------------- |
-| `left`              | `ReactNode`                                  | -          | 왼쪽 영역 컨텐츠        |
-| `contents`          | `ReactNode`                                  | -          | 중앙 영역 컨텐츠 (필수) |
-| `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠      |
-| `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩               |
-| `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩               |
-| `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리             |
-| `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬          |
-| `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬        |
-| `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태           |
-| `className`         | `string`                                     | -          | 추가 클래스명           |
+| Prop                | Type                                         | Default    | Description        |
+| ------------------- | -------------------------------------------- | ---------- | ------------------ |
+| `left`              | `ReactNode`                                  | -          | 왼쪽 영역 컨텐츠   |
+| `contents`          | `ReactNode`                                  | -          | 중앙 영역 컨텐츠   |
+| `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠 |
+| `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩          |
+| `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩          |
+| `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리        |
+| `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬     |
+| `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬   |
+| `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태      |
+| `className`         | `string`                                     | -          | 추가 클래스명      |
 
 #### Vertical Padding 크기
 
@@ -178,7 +178,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 | Prop      | Type                             | Default    | Description           |
 | --------- | -------------------------------- | ---------- | --------------------- |
-| `source`  | `ImageSourcePropType`            | -          | 이미지 소스 (필수)    |
+| `source`  | `ImageProps['source']`           | -          | 이미지 소스           |
 | `size`    | `'small' \| 'medium' \| 'large'` | `'medium'` | 이미지 크기           |
 | `rounded` | `boolean`                        | `true`     | 둥근 모서리 적용 여부 |
 
@@ -412,33 +412,4 @@ it('should render contents when provided', () => {
   // Then: contents가 화면에 표시된다
   expect(screen.getByText(contentsText)).toBeTruthy();
 });
-```
-
-## 마이그레이션 가이드
-
-### Icon 제거
-
-```tsx
-// Before
-<ListRow
-  right={
-    <ListRow.Icon>
-      <ArrowRightIcon />
-    </ListRow.Icon>
-  }
-/>
-
-// After
-<ListRow
-  right={<ArrowRightIcon />}
-/>
-```
-
-### Import 경로
-
-```tsx
-// Before
-import { ListRow } from '@src/shared/ui/list-row';
-// After
-import { ListRow } from '@src/shared/ui/list-row/list-row';
 ```
