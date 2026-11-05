@@ -7,6 +7,7 @@ import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/qui
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
+import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -477,6 +478,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         }}
         backgroundDecoration={
           voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
+        }
+        isContentPanEnabled={
+          !VoiceCapturePolicy.isActive(voice.state) && voice.state.status !== 'planning'
         }
       >
         {match(voice.state)

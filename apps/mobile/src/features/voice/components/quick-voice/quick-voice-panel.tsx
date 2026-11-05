@@ -1,13 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  HStack,
+  Text,
+  TextButton,
+  useKeyboardSheetBodyMaxHeight,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useWindowDimensions } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeIn,
   FadeOut,
@@ -21,8 +30,9 @@ import { match } from 'ts-pattern';
 
 import {
   AUTO_FINISH_SILENCE_MS,
-  LISTENING_PANEL_HEIGHT_RATIO,
+  LISTENING_PANEL_HEIGHT,
   VOICE_CLOCK_TICK_MS,
+  VOICE_ORB,
 } from '../../constants/voice.constants';
 import {
   createPlanReviewFormValues,
@@ -42,43 +52,6 @@ import { PlanReview } from '../plan/plan-review';
 import { VoiceOrb } from '../visualizers/voice-orb';
 import { LiveTranscript } from './live-transcript';
 import { RecognitionLanguageToggle } from './recognition-language-toggle';
-
-const ORB_MAX_SIZE = 132;
-const ORB_WINDOW_HEIGHT_RATIO = 0.16;
-
-interface PanelFrameProps {
-  center: ReactNode;
-  right?: ReactNode;
-  onClose: () => void;
-  testID: string;
-  children: ReactNode;
-}
-
-/** 듣기와 정리 중이 함께 쓰는 틀. 머리글 자리와 높이가 같아 상태가 바뀌어도 시트가 튀지 않는다 */
-function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProps) {
-  const { t } = useTranslation('voice');
-  const { height: windowHeight } = useWindowDimensions();
-
-  return (
-    <Animated.View
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(150)}
-      style={{ minHeight: windowHeight * LISTENING_PANEL_HEIGHT_RATIO }}
-      testID={testID}
-    >
-      <VStack flex={1} gap={16}>
-        <VoiceNoteHeader
-          center={center}
-          right={right}
-          onClose={onClose}
-          closeLabel={t('listening.cancel')}
-          closeTestID="quick-voice-cancel"
-        />
-        {children}
-      </VStack>
-    </Animated.View>
-  );
-}
 
 interface ListeningProps {
   state: VoiceCaptureState;
@@ -115,7 +88,7 @@ QuickVoicePanel.Listening = function Listening({
   const isListening = state.status === 'listening';
   const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, Date.now());
   const canFinish = VoiceCapturePolicy.canFinish(state);
-  const orbSize = Math.min(ORB_MAX_SIZE, windowHeight * ORB_WINDOW_HEIGHT_RATIO);
+  const orbSize = Math.min(VOICE_ORB.maxSize, windowHeight * VOICE_ORB.windowHeightRatio);
 
   return (
     <PanelFrame
@@ -124,7 +97,7 @@ QuickVoicePanel.Listening = function Listening({
       onClose={onCancel}
       testID="quick-voice-listening"
     >
-      <Box className="min-h-24 flex-1">
+      <Box flex={1}>
         <LiveTranscript
           transcript={state.transcript}
           placeholder={isPaused ? undefined : t('listening.prompt')}
@@ -241,7 +214,7 @@ QuickVoicePanel.Planning = function Planning({
       onClose={onCancel}
       testID="quick-voice-planning"
     >
-      <Box className="min-h-24 flex-1">
+      <Box flex={1}>
         <LiveTranscript transcript={state.transcript} isWordFadeEnabled={false} />
       </Box>
       <QuickVoicePanel.CardsLoading />
@@ -378,6 +351,48 @@ QuickVoicePanel.Failed = function Failed({
   );
 };
 
+interface PanelFrameProps {
+  center: ReactNode;
+  right?: ReactNode;
+  onClose: () => void;
+  testID: string;
+  children: ReactNode;
+}
+
+/**
+ * 듣기와 정리 중이 함께 쓰는 틀. 머리글 자리와 높이가 같아 상태가 바뀌어도 시트가 튀지 않는다.
+ * 높이가 정해져 있어 글자가 늘어도 시트가 커지지 않고, 머리글과 아래 조작은 그대로 보인 채 자막만 스크롤한다.
+ */
+function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProps) {
+  const { t } = useTranslation('voice');
+  const { height: windowHeight } = useWindowDimensions();
+  const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
+  const height = Math.min(
+    bodyMaxHeight,
+    Math.max(windowHeight * LISTENING_PANEL_HEIGHT.windowRatio, LISTENING_PANEL_HEIGHT.min),
+  );
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(150)}
+      style={{ height }}
+      testID={testID}
+    >
+      <VStack flex={1} gap={16}>
+        <VoiceNoteHeader
+          center={center}
+          right={right}
+          onClose={onClose}
+          closeLabel={t('listening.cancel')}
+          closeTestID="quick-voice-cancel"
+        />
+        {children}
+      </VStack>
+    </Animated.View>
+  );
+}
+
 function ListeningClock({ state }: { state: VoiceCaptureState }) {
   const [now, setNow] = useState(() => Date.now());
   const isListening = state.status === 'listening';
@@ -414,6 +429,7 @@ function SilenceFill({ isQuiet }: { isQuiet: boolean }) {
           })
         : 0,
     );
+    return () => cancelAnimation(progress);
   }, [isQuiet, isReducedMotion, progress]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.get() }] }));

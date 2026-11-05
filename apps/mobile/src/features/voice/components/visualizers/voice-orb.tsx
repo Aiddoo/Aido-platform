@@ -9,13 +9,6 @@ import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
 import { followLevel } from '../../utils/view-models/waveform.view-model';
 
-const HALO_RADIUS_RATIO = 1.15;
-const HALO_BLUR_RATIO = 0.12;
-const HALO_MAX_OPACITY = 0.55;
-const RING_MAX_OPACITY = 0.7;
-/** 말이 시작될 때 고리가 바로 퍼져 나가도록 조금 작은 음량에서도 움직이게 한다 */
-const RING_IDLE_SPEED = 0.2;
-
 interface VoiceOrbProps extends Omit<ComponentProps<typeof Canvas>, 'children'> {
   /** 0..1 음량. UI 스레드에서 읽으므로 React 렌더를 일으키지 않는다 */
   level: SharedValue<number>;
@@ -42,7 +35,7 @@ export function VoiceOrb({ level, size, isActive = true, style, ...canvasProps }
     const elapsed = frame.timeSincePreviousFrame ?? 0;
     const next = followLevel(smoothed.get(), level.get(), elapsed, VOICE_ORB);
     smoothed.set(next);
-    const speed = next > 0 ? RING_IDLE_SPEED + (1 - RING_IDLE_SPEED) * next : 0;
+    const speed = next > 0 ? VOICE_ORB.ringMinSpeed + (1 - VOICE_ORB.ringMinSpeed) * next : 0;
     phase.set((phase.get() + (elapsed / VOICE_ORB.ringPeriodMs) * speed) % 1);
   }, isMoving);
 
@@ -58,12 +51,14 @@ export function VoiceOrb({ level, size, isActive = true, style, ...canvasProps }
   const ringB = useDerivedValue(
     () => orbRadius.get() * (1 + ((phase.get() + 0.5) % 1) * VOICE_ORB.ringGrowRatio),
   );
-  const ringOpacityA = useDerivedValue(() => (1 - phase.get()) * smoothed.get() * RING_MAX_OPACITY);
-  const ringOpacityB = useDerivedValue(
-    () => (1 - ((phase.get() + 0.5) % 1)) * smoothed.get() * RING_MAX_OPACITY,
+  const ringOpacityA = useDerivedValue(
+    () => (1 - phase.get()) * smoothed.get() * VOICE_ORB.ringMaxOpacity,
   );
-  const haloRadius = useDerivedValue(() => orbRadius.get() * HALO_RADIUS_RATIO);
-  const haloOpacity = useDerivedValue(() => smoothed.get() * HALO_MAX_OPACITY);
+  const ringOpacityB = useDerivedValue(
+    () => (1 - ((phase.get() + 0.5) % 1)) * smoothed.get() * VOICE_ORB.ringMaxOpacity,
+  );
+  const haloRadius = useDerivedValue(() => orbRadius.get() * VOICE_ORB.haloRadiusRatio);
+  const haloOpacity = useDerivedValue(() => smoothed.get() * VOICE_ORB.haloMaxOpacity);
   const orbOpacity = useDerivedValue(() =>
     isMoving ? VOICE_ORB.quietOpacity + (1 - VOICE_ORB.quietOpacity) * smoothed.get() : 1,
   );
@@ -77,7 +72,7 @@ export function VoiceOrb({ level, size, isActive = true, style, ...canvasProps }
         {isMoving && (
           <>
             <Circle cx={radius} cy={radius} r={haloRadius} color={main} opacity={haloOpacity}>
-              <BlurMask blur={radius * HALO_BLUR_RATIO} style="normal" />
+              <BlurMask blur={radius * VOICE_ORB.haloBlurRatio} style="normal" />
             </Circle>
             <Circle
               cx={radius}

@@ -41,8 +41,11 @@ export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
 /** 듣는 시간 시계를 다시 그리는 간격 */
 export const VOICE_CLOCK_TICK_MS = 1_000;
 
-/** 듣는 중 패널이 차지하는 화면 높이 비율 */
-export const LISTENING_PANEL_HEIGHT_RATIO = 0.56;
+/** 듣는 중 패널의 높이. 글자가 늘어도 커지지 않고 자막만 안쪽에서 스크롤한다. 시트에 들어가는 높이를 넘지 않는다 */
+export const LISTENING_PANEL_HEIGHT = { windowRatio: 0.56, min: 420 } as const;
+
+/** 음량 이벤트가 이만큼 끊기면 소리가 없는 것으로 본다. 말이 끝나면 음량을 보내지 않는 인식기가 있다 */
+export const VOICE_NO_VOLUME_GAP_MS = 300;
 
 /**
  * 구와 테두리 빛의 그라데이션 중간색. 팔레트에 없는 장식용 색이라 토큰 대신 여기 모은다.
@@ -57,6 +60,9 @@ export const VOICE_GRADIENT_COLORS = {
 } as const;
 
 export const VOICE_ORB = {
+  /** 캔버스 크기. 화면 높이에 맞춰 줄어든다 */
+  maxSize: 132,
+  windowHeightRatio: 0.16,
   /** 원 반지름(R)에 대한 크기 비율. 음량에 따라 이 범위에서만 변한다 */
   minRadiusRatio: 0.4,
   maxRadiusRatio: 0.62,
@@ -66,6 +72,12 @@ export const VOICE_ORB = {
   /** 말소리 크기가 가장 클 때 고리가 한 번 퍼지는 시간 */
   ringPeriodMs: 1_100,
   ringGrowRatio: 0.55,
+  ringMaxOpacity: 0.7,
+  /** 소리가 조금만 있어도 고리가 움직이게 하는 최소 속도 */
+  ringMinSpeed: 0.2,
+  haloRadiusRatio: 1.15,
+  haloBlurRatio: 0.12,
+  haloMaxOpacity: 0.55,
   /** 조용할 때 원 밝기 */
   quietOpacity: 0.72,
 } as const;

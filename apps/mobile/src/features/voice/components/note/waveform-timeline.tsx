@@ -8,6 +8,7 @@ import { cn } from '@src/shared/utils/cn';
 import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
+  cancelAnimation,
   Easing,
   type SharedValue,
   useDerivedValue,
@@ -15,11 +16,8 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import {
-  SPEECH_LEVEL_THRESHOLD,
-  WAVEFORM_BAR,
-  WAVEFORM_NO_VOLUME_GAP_MS,
-} from '../../constants/voice-note.constants';
+import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import { VOICE_NO_VOLUME_GAP_MS } from '../../constants/voice.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import {
@@ -56,6 +54,8 @@ export function useLiveWaveform(): LiveWaveform {
   const samplerRef = useRef<LevelSampler>(createLevelSampler());
   const barsRef = useRef<readonly number[]>([]);
   const barCountRef = useRef(0);
+
+  useEffect(() => () => cancelAnimation(shift), [shift]);
 
   const pushLevel = useCallback(
     (level: number) => {
@@ -250,7 +250,7 @@ export function RecognizerWaveform({ isActive, ...timelineProps }: RecognizerWav
       }
     });
     const silenceTimer = setInterval(() => {
-      if (Date.now() - lastVolumeAt >= WAVEFORM_NO_VOLUME_GAP_MS) {
+      if (Date.now() - lastVolumeAt >= VOICE_NO_VOLUME_GAP_MS) {
         pushLevel(0);
       }
     }, WAVEFORM_BAR.intervalMs / 2);

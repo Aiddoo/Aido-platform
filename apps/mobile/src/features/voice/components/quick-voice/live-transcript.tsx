@@ -1,6 +1,6 @@
 import { Box, Text } from '@src/shared/ui';
 import { type ComponentRef, useRef } from 'react';
-import { ScrollView } from 'react-native';
+import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 
 import {
@@ -12,6 +12,8 @@ import {
 /** 이 개수를 넘으면 단어를 하나씩 등장시키지 않는다 */
 const MAX_ANIMATED_WORDS = 40;
 const WORD_FADE_MS = 450;
+/** 맨 아래에서 이만큼 안이면 끝까지 본 것으로 보고 다시 따라간다 */
+const FOLLOW_THRESHOLD_PX = 24;
 
 const splitWords = (text: string) => text.split(' ').filter((word) => word.length > 0);
 
@@ -24,6 +26,7 @@ interface LiveTranscriptProps {
 }
 
 /**
+ * 자막. 글자가 늘면 최신 줄을 따라가고, 사용자가 위로 올리면 멈췄다가 끝까지 내리면 다시 따라간다.
  * 확정된 글자는 진하게(흐림→선명으로 한 단어씩), 인식 중인 꼬리는 회색으로 보여준다.
  * Android에는 한글을 단어 단위로 줄바꿈하는 Text prop이 없다(`lineBreakStrategyIOS`는 iOS 전용, RN은
  * `LineBreakConfig`를 노출하지 않는다). 그래서 단어마다 따로 그려 음절 사이에서 끊기지 않게 한다.
@@ -35,16 +38,33 @@ export function LiveTranscript({
 }: LiveTranscriptProps) {
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const isReducedMotion = useReducedMotion();
-  const finalWords = splitWords(getFinalText(transcript));
+  const isFollowingRef = useRef(true);
+  const finalText = getFinalText(transcript);
+  const finalWords = splitWords(finalText);
   const interimWords = splitWords(getInterimText(transcript));
   const isAnimated =
     isWordFadeEnabled && !isReducedMotion && finalWords.length <= MAX_ANIMATED_WORDS;
   const isEmpty = finalWords.length === 0 && interimWords.length === 0;
 
+  const followIfAtEnd = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+    isFollowingRef.current =
+      contentOffset.y + layoutMeasurement.height >= contentSize.height - FOLLOW_THRESHOLD_PX;
+  };
+
   return (
     <ScrollView
       ref={scrollRef}
-      onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+      onContentSizeChange={() => {
+        if (isFollowingRef.current) {
+          scrollRef.current?.scrollToEnd({ animated: false });
+        }
+      }}
+      onScrollBeginDrag={() => {
+        isFollowingRef.current = false;
+      }}
+      onScrollEndDrag={followIfAtEnd}
+      onMomentumScrollEnd={followIfAtEnd}
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled
       testID="live-transcript"

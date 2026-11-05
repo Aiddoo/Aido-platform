@@ -1,5 +1,5 @@
 export { BottomSheet } from './bottom-sheet';
-export { KeyboardBottomSheet } from './keyboard-bottom-sheet';
+export { KeyboardBottomSheet, useKeyboardSheetBodyMaxHeight } from './keyboard-bottom-sheet';
 export { ModalBottomSheet } from './modal-bottom-sheet';
 export { SheetHeaderLayout } from './sheet-header-layout';
 export { SHEET_ROUTE_SCREEN_OPTIONS, type SheetRouteExit } from './sheet-route';

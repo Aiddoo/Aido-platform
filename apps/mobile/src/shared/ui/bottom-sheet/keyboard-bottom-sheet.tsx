@@ -50,6 +50,8 @@ interface KeyboardBottomSheetProps {
   footer?: ReactNode;
   /** 시트 면 뒤에 깔리는 장식. 시트 크기를 기준으로 absolute로 배치하고, 내용 위로는 올라오지 않는다 */
   backgroundDecoration?: ReactNode;
+  /** 내용을 끌어 시트를 움직일지. 내용이 안쪽 스크롤을 직접 두면 끄고 손잡이로만 움직이게 한다 */
+  isContentPanEnabled?: boolean;
 }
 
 /**
@@ -67,6 +69,7 @@ export const KeyboardBottomSheet = ({
   children,
   footer,
   backgroundDecoration,
+  isContentPanEnabled = true,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
@@ -83,7 +86,7 @@ export const KeyboardBottomSheet = ({
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
   const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
-  const bottomPadding = (insets.bottom || 20) + 4;
+  const bottomPadding = getContentBottomPadding(insets.bottom);
   // 키보드가 홈 인디케이터 영역을 덮는 동안에는 footer 아래 safe area 여백을 줄여 작은 화면(접은 Duo·SE)에서도
   // 입력 칸이 들어갈 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
   const isKeyboardShown = useSharedValue(false);
@@ -315,6 +318,7 @@ export const KeyboardBottomSheet = ({
         enableDynamicSizing
         maxDynamicContentSize={maxDynamicContentSize}
         enablePanDownToClose
+        enableContentPanningGesture={isContentPanEnabled}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         enableBlurKeyboardOnGesture
@@ -349,6 +353,24 @@ export const KeyboardBottomSheet = ({
   );
 };
 
+/** 내용 위아래 여백을 뺀, 시트 안에 한 번에 보일 수 있는 내용의 최대 높이. 안쪽 스크롤을 직접 두는 내용이 쓴다 */
+export function useKeyboardSheetBodyMaxHeight(): number {
+  const insets = useSafeAreaInsets();
+  const { topInset } = useSheetLayout({ minMargin: 0 });
+  const { height: windowHeight } = useWindowDimensions();
+
+  return (
+    getSheetMaxHeight(windowHeight, topInset, 0) -
+    HANDLE_HEIGHT -
+    CONTENT_PADDING_TOP -
+    getContentBottomPadding(insets.bottom)
+  );
+}
+
+function getContentBottomPadding(bottomInset: number) {
+  return (bottomInset || 20) + 4;
+}
+
 const SheetDecorationContext = createContext<ReactNode>(null);
 
 /**
@@ -372,6 +394,7 @@ function DecoratedSheetBackground({ pointerEvents, style }: BottomSheetBackgroun
   );
 }
 
+const CONTENT_PADDING_TOP = 20;
 const FOOTER_PADDING_TOP = 12;
 const FOOTER_KEYBOARD_GAP = 8;
 
@@ -380,7 +403,7 @@ const styles = StyleSheet.create({
     width: 36,
   },
   content: {
-    paddingTop: 20,
+    paddingTop: CONTENT_PADDING_TOP,
     paddingHorizontal: SHEET_CONTENT_PADDING,
   },
   footer: {

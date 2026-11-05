@@ -14,6 +14,7 @@ export {
   type SheetRouteExit,
   SheetRouteScreen,
   useDialogPortalTarget,
+  useKeyboardSheetBodyMaxHeight,
   useSheetLayout,
   useSheetRoute,
 } from './bottom-sheet';

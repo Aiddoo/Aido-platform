@@ -30,9 +30,6 @@ export const WAVEFORM_BAR = {
   maxLiveBars: 160,
 } as const;
 
-/** 음량 이벤트가 이만큼 끊기면 소리가 없는 것으로 보고 조용한 칸을 흘려보낸다. 말이 끝나면 음량을 보내지 않는 인식기가 있다 */
-export const WAVEFORM_NO_VOLUME_GAP_MS = 300;
-
 /** 이 값 이상이면 말한 구간으로 본다 */
 export const SPEECH_LEVEL_THRESHOLD = 0.2;
 

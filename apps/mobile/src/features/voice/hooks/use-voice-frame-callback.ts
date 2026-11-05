@@ -10,5 +10,6 @@ export function useVoiceFrameCallback(callback: (frame: FrameInfo) => void, isAc
 
   useEffect(() => {
     frameCallback.setActive(isActive);
+    return () => frameCallback.setActive(false);
   }, [frameCallback, isActive]);
 }
