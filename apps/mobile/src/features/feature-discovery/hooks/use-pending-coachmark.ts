@@ -3,16 +3,23 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import type { CoachmarkInput } from '../apis/coachmark.repository';
 
+interface PendingCoachmarkInput extends Omit<CoachmarkInput, 'accountId'> {
+  /** 내 정보를 아직 못 읽었으면 null이다. 그동안은 남은 안내가 없는 것으로 본다 */
+  accountId: string | null;
+}
+
 /** 쓰거나 닫아야 끝나는 안내가 아직 남았는지와, 끝내는 함수 */
-export function usePendingCoachmark({ accountId, kind }: CoachmarkInput) {
+export function usePendingCoachmark({ accountId, kind }: PendingCoachmarkInput) {
   const service = useCoachmarkService();
-  const isPending = useSyncExternalStore(service.subscribe, () =>
-    service.isPending({ accountId, kind }),
+  const isPending = useSyncExternalStore(
+    service.subscribe,
+    () => accountId != null && service.isPending({ accountId, kind }),
   );
-  const complete = useCallback(
-    () => service.complete({ accountId, kind }),
-    [accountId, kind, service],
-  );
+  const complete = useCallback(() => {
+    if (accountId != null) {
+      service.complete({ accountId, kind });
+    }
+  }, [accountId, kind, service]);
 
   return [isPending, complete] as const;
 }

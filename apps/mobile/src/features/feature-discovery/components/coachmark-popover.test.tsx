@@ -14,6 +14,7 @@ import { Text } from '@src/shared/ui';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
+import { useEffect } from 'react';
 import { Keyboard, type KeyboardEvent, View } from 'react-native';
 
 import { CoachmarkPopover } from './coachmark-popover';
@@ -85,6 +86,82 @@ async function renderCoachmarkOnHiddenTab() {
 }
 
 describe('CoachmarkPopover', () => {
+  it('내 정보를 읽은 뒤에도 대상을 다시 마운트하지 않아 누르던 탭을 잃지 않는다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    let resolveMe: (value: ReturnType<typeof ok>) => void = jest.fn();
+    httpClient.get.mockReturnValue(
+      new Promise((resolve) => {
+        resolveMe = resolve;
+      }),
+    );
+    const onMount = jest.fn();
+    const onUnmount = jest.fn();
+    const Target = () => {
+      useEffect(() => {
+        onMount();
+        return onUnmount;
+      }, []);
+
+      return <Text testID="target">마이크</Text>;
+    };
+    await renderUi(
+      <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
+        <Target />
+      </CoachmarkPopover>,
+      {
+        di: {
+          coachmarkService: new CoachmarkService(
+            createCoachmarkRepository(createMemorySyncStorage()),
+          ),
+          analytics: createMockAnalytics(),
+          userService: new UserService(httpClient),
+        },
+      },
+    );
+    expect(onMount).toHaveBeenCalledTimes(1);
+
+    // When
+    await act(async () => resolveMe(ok(createCurrentUserDto())));
+
+    // Then
+    expect(onMount).toHaveBeenCalledTimes(1);
+    expect(onUnmount).not.toHaveBeenCalled();
+  });
+
+  it('내 정보를 읽기 전에는 기능 소개에서 왔어도 열지 않는다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    httpClient.get.mockReturnValue(new Promise(() => undefined));
+    const analytics = createMockAnalytics();
+
+    // When
+    await renderUi(
+      <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
+        <Text testID="target">마이크</Text>
+      </CoachmarkPopover>,
+      {
+        di: {
+          coachmarkService: new CoachmarkService(
+            createCoachmarkRepository(createMemorySyncStorage()),
+          ),
+          analytics,
+          userService: new UserService(httpClient),
+        },
+      },
+    );
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 600);
+      });
+    });
+
+    // Then
+    expect(screen.getByTestId('target')).toBeTruthy();
+    expect(screen.queryByTestId('hint-popover')).toBeNull();
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
+  });
+
   describe('탭이나 화면의 포커스', () => {
     beforeEach(() => {
       jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {

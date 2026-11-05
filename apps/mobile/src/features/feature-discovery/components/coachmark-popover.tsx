@@ -38,25 +38,10 @@ interface CoachmarkPopoverProps
  * 기본은 바깥 탭이 말풍선만 닫는다. 첫 탭이 대상에 닿아야 하면 `isPassThrough`를 쓴다.
  * 탭은 앱 시작 때 함께 그려지고 말풍선은 맨 위 레이어에 뜨므로, 대상의 화면이 포커스를 얻고 자리를 잘 수 있을 때만 연다.
  * 그 전에는 소비하지도 않는다. 포커스를 읽으므로 route 안에만 둔다(루트 overlay에는 포커스 문맥이 없다).
- * 내 정보를 아직 못 읽었으면 대상만 그린다.
+ * 내 정보를 아직 못 읽었으면 열지 않는다. 읽은 뒤 대상이 다시 마운트되면 누르던 탭이 사라지므로 트리는 그대로 둔다.
  */
-export function CoachmarkPopover({ kind, children, ...popoverProps }: CoachmarkPopoverProps) {
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
-
-  if (me == null) {
-    return children;
-  }
-
-  return (
-    <CoachmarkPopover.Contents kind={kind} accountId={me.id} {...popoverProps}>
-      {children}
-    </CoachmarkPopover.Contents>
-  );
-}
-
-CoachmarkPopover.Contents = function Contents({
+export function CoachmarkPopover({
   kind,
-  accountId,
   title,
   description,
   isEnabled = true,
@@ -71,12 +56,14 @@ CoachmarkPopover.Contents = function Contents({
   isPassThrough,
   children,
   ...popoverProps
-}: CoachmarkPopoverProps & { accountId: string }) {
+}: CoachmarkPopoverProps) {
+  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+  const accountId = me?.id ?? null;
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isFocused = useIsFocused();
   const isSettled = useCoachmarkSettle(isFocused);
-  const isOpen = (isPending || isForced) && isEnabled && isSettled;
+  const isOpen = accountId != null && (isPending || isForced) && isEnabled && isSettled;
   const shownDismissKeyRef = useRef(dismissKey);
   /** 대상이 움직여 닫았다 다시 여는 것은 같은 노출이다. 사용자가 닫아야 끝난다 */
   const hasTrackedShownRef = useRef(false);
@@ -126,4 +113,4 @@ CoachmarkPopover.Contents = function Contents({
       />
     </Popover>
   );
-};
+}
