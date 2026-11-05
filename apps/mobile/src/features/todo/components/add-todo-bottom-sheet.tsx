@@ -14,6 +14,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   ActionChip,
   useActionChipIconSize,
@@ -599,16 +600,22 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 onRetryPlanning={voice.retryPlanning}
               />
               <FormField control={methods.control} name="title">
-                {({ onChange, value }) =>
+                {({ onChange, value }, { error }) =>
                   voice.state.status === 'failed' ? (
-                    // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다
+                    // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
+                    // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
                     <BottomSheetTextArea
                       ref={todoInputRef}
                       autoFocus={!voice.isRestarting}
                       placeholder={t('add.placeholder')}
                       value={value}
                       onChange={onChange}
-                      maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
+                      isInvalid={error != null}
+                      errorMessage={
+                        error == null
+                          ? undefined
+                          : resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+                      }
                       growsWithContent
                       textSize="b3"
                       preserveErrorSpace={false}
