@@ -55,7 +55,7 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 입력에 포커스해 키보드가 올라오면 시트가 포커스된 입력(위로 라벨, 아래로 입력 칸 테두리까지)을 `footer`·키보드 위로
 스크롤한다. 키보드가 다 올라온 뒤의 배치를 미리 구해 시트가 키보드를 따라 움직이는 프레임마다 UI 스레드에서 맞추므로
 키보드·시트·스크롤이 한 동작으로 움직인다. 보이는 높이가 라벨까지 담기엔 좁으면(접은 Duo·SE) 입력 칸 전체가 버튼 위에
-오는 쪽을 우선한다. 키보드가 떠 있는 동안 `footer` 아래 safe area 여백은 키보드가 덮으므로 줄인다.
+오는 쪽을 우선한다. 시트가 위쪽 한계까지 올라가 높이가 모자랄 때만 `footer` 아래 safe area 여백을 줄인다.
 
 ```tsx
 <KeyboardBottomSheet isOpen={isOpen} onOpenChange={setIsOpen} footer={<Button>신고하기</Button>}>
@@ -229,3 +229,7 @@ replace할 때 크기가 정해지기 전 위치로 열리지 않게 한다. Her
 - [React Native BackHandler](https://reactnative.dev/docs/backhandler)
 - [React useEffectEvent: listener와 최신 callback](https://react.dev/reference/react/useEffectEvent)
 - [Expo Router navigation](https://docs.expo.dev/router/basics/navigation/)
+
+## 열고 닫는 시간
+
+gorhom 시트(`BottomSheet`, `KeyboardBottomSheet`)는 `SHEET_ANIMATION_DURATION`(250ms)으로 움직인다. gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 약 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다. `ModalBottomSheet`는 gorhom이 아니고 자체 `withTiming`을 쓴다.
