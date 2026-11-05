@@ -1,5 +1,5 @@
 import type {
-  PurchaseCustomerInfo,
+  PurchaseStatus,
   PurchaseOffering,
   PurchasePackage,
   PurchasePackageType,
@@ -47,6 +47,6 @@ export function toSubscriptionOffering(offering: PurchaseOffering): Subscription
   };
 }
 
-export function toCustomerInfo(dto: PurchaseCustomerInfo): CustomerInfo {
+export function toCustomerInfo(dto: PurchaseStatus): CustomerInfo {
   return customerInfoSchema.parse(dto);
 }

@@ -27,7 +27,7 @@ export function ProfileCard() {
   const clipboard = useClipboard();
 
   const handleCopyUserTag = async () => {
-    const copied = await clipboard.setString(user.userTag).then(
+    const copied = await clipboard.copy(user.userTag).then(
       () => true,
       () => false,
     );

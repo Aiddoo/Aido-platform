@@ -8,9 +8,9 @@ const KEY = 'aido_store_review_prompt_v1:account-a';
 const createMemoryStorage = () => {
   const storage = createMockSyncStorage();
   const values = new Map<string, string>();
-  storage.getString.mockImplementation((key) => values.get(key));
+  storage.get.mockImplementation((key) => values.get(key));
   storage.set.mockImplementation((key, value) => values.set(key, value));
-  storage.delete.mockImplementation((key) => values.delete(key));
+  storage.remove.mockImplementation((key) => values.delete(key));
   return { storage, values };
 };
 
@@ -91,7 +91,7 @@ describe('StoreReviewRepository', () => {
   it('손상된 저장값은 안전한 빈 상태로 복구한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('{broken');
+    storage.get.mockReturnValue('{broken');
 
     // When
     const state = createStoreReviewRepository(storage).read('account-a');

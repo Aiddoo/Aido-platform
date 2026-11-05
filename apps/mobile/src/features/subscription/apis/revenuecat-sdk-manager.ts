@@ -126,7 +126,7 @@ export class RevenueCatSdkManager {
         return;
       }
 
-      await this.#purchases.setFirebaseAppInstanceId(appInstanceId);
+      await this.#purchases.setAnalyticsId(appInstanceId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED, {
         error: getErrorMessage(error),

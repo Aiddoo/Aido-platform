@@ -7,9 +7,9 @@ import { createAndroidWidgetSnapshotRepository } from './android-widget-snapshot
 function createStorage(): SyncStorage {
   const values = new Map<string, string>();
   return {
-    getString: (key) => values.get(key),
+    get: (key) => values.get(key),
     set: (key, value) => values.set(key, value),
-    delete: (key) => values.delete(key),
+    remove: (key) => values.delete(key),
   };
 }
 
@@ -41,7 +41,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
     repository.writeSnapshot(snapshot, 'current-user');
 
     // Then
-    expect(storage.getString('aido_widget_snapshot_v1')).toBe(JSON.stringify(snapshot));
+    expect(storage.get('aido_widget_snapshot_v1')).toBe(JSON.stringify(snapshot));
     expect(repository.getSnapshot()).toEqual(snapshot);
   });
 

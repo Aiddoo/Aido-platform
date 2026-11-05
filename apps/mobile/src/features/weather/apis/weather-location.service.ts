@@ -86,7 +86,7 @@ export async function resolveLocation(
 ): Promise<LocationReading> {
   const { gateway } = dependencies;
   const permission = await gateway.getPermission();
-  if (!permission.granted) {
+  if (!permission.isGranted) {
     return { status: permission.canAskAgain ? 'needsPermission' : 'denied' };
   }
 

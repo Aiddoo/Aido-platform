@@ -122,7 +122,7 @@ describe('LanguageSettingsScreen', () => {
   it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
     const { analytics } = await renderScreen({ storage });
 
     // When
@@ -140,7 +140,7 @@ describe('LanguageSettingsScreen', () => {
   it('시스템 설정 선택 시 기기 언어 기준으로 i18n 언어가 해석된다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('en');
+    storage.get.mockReturnValue('en');
     await renderScreen({ storage });
 
     // When
@@ -155,7 +155,7 @@ describe('LanguageSettingsScreen', () => {
     // Given
     await i18n.changeLanguage('en');
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('en');
+    storage.get.mockReturnValue('en');
 
     // When
     await renderScreen({ storage });

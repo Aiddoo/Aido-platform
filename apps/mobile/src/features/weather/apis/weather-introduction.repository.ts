@@ -12,7 +12,7 @@ export function createWeatherIntroductionRepository(
   storage: SyncStorage,
 ): WeatherIntroductionRepository {
   return {
-    hasSeenIntroduction: () => storage.getString(INTRODUCTION_KEY) === 'seen',
+    hasSeenIntroduction: () => storage.get(INTRODUCTION_KEY) === 'seen',
     markIntroductionSeen: () => {
       storage.set(INTRODUCTION_KEY, 'seen');
     },

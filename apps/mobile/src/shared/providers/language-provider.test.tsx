@@ -32,7 +32,7 @@ describe('useLanguage', () => {
   it('저장된 값이 없으면 system 모드로 초기화된다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
 
     // When
     const { result } = await renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
@@ -44,7 +44,7 @@ describe('useLanguage', () => {
   it('저장된 모드로 초기화된다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('en');
+    storage.get.mockReturnValue('en');
 
     // When
     const { result } = await renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
@@ -57,7 +57,7 @@ describe('useLanguage', () => {
   it('system 모드에서 기기 언어로 표시 언어를 해석한다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('system');
+    storage.get.mockReturnValue('system');
 
     // When
     const { result } = await renderHook(() => useLanguage(), {
@@ -71,7 +71,7 @@ describe('useLanguage', () => {
   it('setLanguageMode 호출 시 상태·스토리지·i18n 언어를 업데이트한다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
     const changeLanguageSpy = jest.spyOn(i18n, 'changeLanguage');
 
     const { result } = await renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
@@ -91,7 +91,7 @@ describe('useLanguage', () => {
   it('system 모드로 되돌리면 기기 언어 기준으로 i18n 언어를 변경한다', async () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('en');
+    storage.get.mockReturnValue('en');
     const changeLanguageSpy = jest.spyOn(i18n, 'changeLanguage');
 
     const { result } = await renderHook(() => useLanguage(), {

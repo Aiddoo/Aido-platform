@@ -15,7 +15,7 @@ describe('WeatherIntroductionRepository', () => {
     // Then
     expect(before).toBe(false);
     expect(repository.hasSeenIntroduction()).toBe(true);
-    expect(storage.getString('aido_weather_location_introduction_v1')).toBe('seen');
+    expect(storage.get('aido_weather_location_introduction_v1')).toBe('seen');
   });
 
   it('이전 버전에서 안내를 본 기록이 있으면 다시 보여 주지 않는다', () => {

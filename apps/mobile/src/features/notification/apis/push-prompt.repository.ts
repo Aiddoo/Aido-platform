@@ -15,7 +15,7 @@ export function createPushPromptRepository(storage: ObservableSyncStorage): Push
 
   return {
     getDismissedAt: (userId) => {
-      const saved = storage.getString(toKey(userId));
+      const saved = storage.get(toKey(userId));
       if (saved == null) {
         return null;
       }

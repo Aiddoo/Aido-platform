@@ -86,7 +86,7 @@ async function renderThreadWithReplies() {
         coachmarkService: new CoachmarkService(
           createCoachmarkRepository(createMemorySyncStorage()),
         ),
-        clipboard: { hasString: jest.fn(), getString: jest.fn(), setString: jest.fn() },
+        clipboard: { hasContent: jest.fn(), paste: jest.fn(), copy: jest.fn() },
         logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
         errorReporter: {
           captureException: jest.fn(),

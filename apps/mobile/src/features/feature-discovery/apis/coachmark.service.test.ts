@@ -6,9 +6,9 @@ import { CoachmarkService } from './coachmark.service';
 function createMemoryStorage(initial: Record<string, string> = {}): SyncStorage {
   const values = new Map(Object.entries(initial));
   return {
-    getString: (key) => values.get(key),
+    get: (key) => values.get(key),
     set: (key, value) => values.set(key, value),
-    delete: (key) => values.delete(key),
+    remove: (key) => values.delete(key),
   };
 }
 

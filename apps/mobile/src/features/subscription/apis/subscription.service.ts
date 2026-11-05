@@ -39,7 +39,7 @@ export class SubscriptionService {
     }
 
     try {
-      const offering = await this.#purchases.getCurrentOffering();
+      const offering = await this.#purchases.getOffering();
       if (offering == null) {
         return err(SubscriptionErrors.offeringsUnavailable());
       }
@@ -58,11 +58,11 @@ export class SubscriptionService {
     }
 
     try {
-      const result = await this.#purchases.purchasePackage(identifier);
+      const result = await this.#purchases.purchase(identifier);
       return match(result)
         .returnType<Result<boolean, SubscriptionError>>()
-        .with({ type: 'purchased' }, ({ customerInfo }) =>
-          ok(CustomerInfoPolicy.hasStoreEntitlement(toCustomerInfo(customerInfo))),
+        .with({ type: 'purchased' }, ({ status }) =>
+          ok(CustomerInfoPolicy.hasStoreEntitlement(toCustomerInfo(status))),
         )
         .with({ type: 'package-not-found' }, () => err(SubscriptionErrors.offeringsUnavailable()))
         .exhaustive();
@@ -78,7 +78,7 @@ export class SubscriptionService {
     }
 
     try {
-      const customerInfo = toCustomerInfo(await this.#purchases.getCustomerInfo());
+      const customerInfo = toCustomerInfo(await this.#purchases.getStatus());
       return CustomerInfoPolicy.findStoreProductId(customerInfo, store);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
@@ -94,7 +94,7 @@ export class SubscriptionService {
     }
 
     try {
-      const customerInfo = toCustomerInfo(await this.#purchases.restorePurchases());
+      const customerInfo = toCustomerInfo(await this.#purchases.restore());
       return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo));
     } catch (error) {
       return err(toSubscriptionError('restore', error));
@@ -106,6 +106,6 @@ export class SubscriptionService {
     if (!this.#sdkManager.isConfigured()) {
       return noop;
     }
-    return this.#purchases.onCustomerInfoChange((dto) => listener(toCustomerInfo(dto)));
+    return this.#purchases.subscribe((dto) => listener(toCustomerInfo(dto)));
   };
 }

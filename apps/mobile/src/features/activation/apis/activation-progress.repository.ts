@@ -46,7 +46,7 @@ export function createActivationProgressRepository(
   const get = (identity: ActivationIdentity): ActivationProgress => {
     let decoded: unknown;
     try {
-      const raw = storage.getString(activationProgressKey(identity));
+      const raw = storage.get(activationProgressKey(identity));
       if (!raw) {
         return { ...EMPTY_PROGRESS };
       }

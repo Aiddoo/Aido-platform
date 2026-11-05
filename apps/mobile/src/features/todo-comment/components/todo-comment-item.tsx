@@ -431,7 +431,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
 
   const copyContent = async () => {
     try {
-      await clipboard.setString(comment.content ?? '');
+      await clipboard.copy(comment.content ?? '');
       toast.success(t('toasts.copied'));
     } catch (error) {
       logger.warn(TODO_COMMENT_LOG_EVENT.COPY_FAILED, { error: getErrorMessage(error) });

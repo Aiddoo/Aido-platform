@@ -1,5 +1,5 @@
 import {
-  type PurchaseCustomerInfo,
+  type PurchaseStatus,
   type PurchaseFailureKind,
   type PurchasePackage,
   type PurchasePackageType,
@@ -93,7 +93,7 @@ const PURCHASE_PACKAGE_TYPE = {
   [PACKAGE_TYPE.WEEKLY]: 'OTHER',
 } as const satisfies Record<PACKAGE_TYPE, PurchasePackageType>;
 
-function toPurchaseCustomerInfo(info: CustomerInfo): PurchaseCustomerInfo {
+function toPurchaseStatus(info: CustomerInfo): PurchaseStatus {
   return {
     activeEntitlements: Object.values(info.entitlements.active).map((entitlement) => ({
       store: PURCHASE_STORE[entitlement.store],
@@ -136,9 +136,9 @@ export const revenueCatPurchasesGateway: PurchasesGateway = {
 
   setAttributes: (attributes) => Purchases.setAttributes(attributes),
 
-  setFirebaseAppInstanceId: (appInstanceId) => Purchases.setFirebaseAppInstanceID(appInstanceId),
+  setAnalyticsId: (analyticsId) => Purchases.setFirebaseAppInstanceID(analyticsId),
 
-  getCurrentOffering: () =>
+  getOffering: () =>
     withGatewayError(async () => {
       const { current } = await Purchases.getOfferings();
       if (current == null) {
@@ -151,7 +151,7 @@ export const revenueCatPurchasesGateway: PurchasesGateway = {
     }),
 
   // SDK가 요금제를 메모리에 캐시하므로 구매 때 다시 받아도 스토어에 다시 묻지 않는다
-  purchasePackage: (packageIdentifier) =>
+  purchase: (packageIdentifier) =>
     withGatewayError(async () => {
       const { current } = await Purchases.getOfferings();
       const rcPackage = current?.availablePackages.find(
@@ -161,16 +161,15 @@ export const revenueCatPurchasesGateway: PurchasesGateway = {
         return { type: 'package-not-found' } as const;
       }
       const { customerInfo } = await Purchases.purchasePackage(rcPackage);
-      return { type: 'purchased', customerInfo: toPurchaseCustomerInfo(customerInfo) } as const;
+      return { type: 'purchased', status: toPurchaseStatus(customerInfo) } as const;
     }),
 
-  restorePurchases: () =>
-    withGatewayError(async () => toPurchaseCustomerInfo(await Purchases.restorePurchases())),
+  restore: () => withGatewayError(async () => toPurchaseStatus(await Purchases.restorePurchases())),
 
-  getCustomerInfo: async () => toPurchaseCustomerInfo(await Purchases.getCustomerInfo()),
+  getStatus: async () => toPurchaseStatus(await Purchases.getCustomerInfo()),
 
-  onCustomerInfoChange: (listener) => {
-    const handleUpdate = (info: CustomerInfo) => listener(toPurchaseCustomerInfo(info));
+  subscribe: (listener) => {
+    const handleUpdate = (info: CustomerInfo) => listener(toPurchaseStatus(info));
     Purchases.addCustomerInfoUpdateListener(handleUpdate);
     return () => {
       Purchases.removeCustomerInfoUpdateListener(handleUpdate);

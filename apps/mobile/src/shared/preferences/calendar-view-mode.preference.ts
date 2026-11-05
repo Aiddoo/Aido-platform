@@ -5,7 +5,7 @@ export type CalendarViewMode = 'week' | 'month';
 const KEY = 'aido_calendar_view_mode';
 
 export function readCalendarViewMode(storage: SyncStorage): CalendarViewMode {
-  const saved = storage.getString(KEY);
+  const saved = storage.get(KEY);
 
   if (saved === 'week' || saved === 'month') {
     return saved;

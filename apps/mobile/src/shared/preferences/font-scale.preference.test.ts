@@ -22,7 +22,7 @@ describe('readFontScale', () => {
   it('저장된 값이 없으면 medium을 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
 
     // When
     const result = readFontScale(storage);
@@ -36,7 +36,7 @@ describe('readFontScale', () => {
     (value) => {
       // Given
       const storage = createMockSyncStorage();
-      storage.getString.mockReturnValue(value);
+      storage.get.mockReturnValue(value);
 
       // When
       const result = readFontScale(storage);
@@ -49,7 +49,7 @@ describe('readFontScale', () => {
   it('유효하지 않은 값이 저장되어 있으면 medium을 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('invalid');
+    storage.get.mockReturnValue('invalid');
 
     // When
     const result = readFontScale(storage);

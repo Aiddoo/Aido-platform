@@ -16,7 +16,7 @@ export function createAllDoneBannerRepository(
   const toKey = (userId: string) => `${ALL_DONE_BANNER_KEY_PREFIX}:${userId}`;
 
   return {
-    isDismissed: (userId, dateKey) => storage.getString(toKey(userId)) === dateKey,
+    isDismissed: (userId, dateKey) => storage.get(toKey(userId)) === dateKey,
     dismiss: (userId, dateKey) => storage.set(toKey(userId), dateKey),
     subscribe: (userId, listener) => storage.subscribe(toKey(userId), listener),
   };

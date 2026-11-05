@@ -81,7 +81,7 @@ export function createVoiceNoteDraftRepository({
   };
 
   const read = (key: string): VoiceNote | undefined => {
-    const raw = storage.getString(key);
+    const raw = storage.get(key);
     if (raw == null) {
       return undefined;
     }
@@ -99,7 +99,7 @@ export function createVoiceNoteDraftRepository({
       });
     }
 
-    storage.delete(key);
+    storage.remove(key);
     return undefined;
   };
 
@@ -124,7 +124,7 @@ export function createVoiceNoteDraftRepository({
   };
 
   const findKeys = (matches: (key: string) => boolean) =>
-    storage.getAllKeys().filter((key) => key.startsWith(KEY_PREFIX) && matches(key));
+    storage.keys().filter((key) => key.startsWith(KEY_PREFIX) && matches(key));
 
   const findAllOwned = (accountId: string) =>
     findKeys((key) => key.startsWith(createOwnerPrefix(accountId)))
@@ -186,7 +186,7 @@ export function createVoiceNoteDraftRepository({
     remove: (accountId, draftId) => {
       const key = createKey(accountId, draftId);
       cancelPending(key);
-      storage.delete(key);
+      storage.remove(key);
       notify();
     },
 
@@ -194,13 +194,13 @@ export function createVoiceNoteDraftRepository({
       const ownerPrefix = createOwnerPrefix(accountId);
       const isOtherOwner = (candidate: string) => !candidate.startsWith(ownerPrefix);
       cancelPendingWhere(isOtherOwner);
-      findKeys(isOtherOwner).forEach((key) => storage.delete(key));
+      findKeys(isOtherOwner).forEach((key) => storage.remove(key));
       notify();
     },
 
     removeAll: () => {
       cancelPendingWhere(() => true);
-      findKeys(() => true).forEach((key) => storage.delete(key));
+      findKeys(() => true).forEach((key) => storage.remove(key));
       notify();
     },
   };

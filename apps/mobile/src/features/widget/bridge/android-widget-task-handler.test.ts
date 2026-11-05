@@ -12,9 +12,9 @@ jest.mock('./android-widgets.bridge', () => ({ renderStoredAndroidWidget: jest.f
 function createHandler(isAppActive = false) {
   const values = new Map<string, string>();
   const storage: WidgetNavigationStorage = {
-    getString: (key) => values.get(key),
+    get: (key) => values.get(key),
     set: (key, value) => values.set(key, value),
-    delete: (key) => values.delete(key),
+    remove: (key) => values.delete(key),
     subscribe: () => () => {},
   };
   const navigationRepository = createWidgetNavigationRepository(storage);

@@ -112,9 +112,9 @@ React hook을 호출하지 않고 함수 입력과 출력만 검증할 수 있�
 function createClipboardFake(): ClipboardGateway {
   let copiedText = '';
   return {
-    hasString: async () => copiedText !== '',
-    getString: async () => copiedText,
-    setString: async (text) => {
+    hasContent: async () => copiedText !== '',
+    paste: async () => copiedText,
+    copy: async (text) => {
       copiedText = text;
     },
   };
@@ -128,7 +128,7 @@ await renderUi(<CopyTagButton tag="aido#1234" />, { di: { clipboard } });
 fireEvent.press(screen.getByRole('button'));
 
 // Then
-await waitFor(async () => expect(await clipboard.getString()).toBe('aido#1234'));
+await waitFor(async () => expect(await clipboard.paste()).toBe('aido#1234'));
 ```
 
 | 도구                                                    | 용도                                                                           |

@@ -16,7 +16,7 @@ export function createFriendStripHintRepository(
   const toKey = (userId: string) => `${FRIEND_STRIP_HINT_KEY_PREFIX}:${userId}`;
 
   return {
-    isDismissed: (userId) => storage.getString(toKey(userId)) != null,
+    isDismissed: (userId) => storage.get(toKey(userId)) != null,
     dismiss: (userId) => storage.set(toKey(userId), new Date().toISOString()),
     subscribe: (userId, listener) => storage.subscribe(toKey(userId), listener),
   };

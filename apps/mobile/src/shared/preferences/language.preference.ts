@@ -13,7 +13,7 @@ export function isLanguageMode(value: unknown): value is LanguageMode {
 }
 
 export function readLanguageMode(storage: SyncStorage): LanguageMode {
-  const saved = storage.getString(KEY);
+  const saved = storage.get(KEY);
 
   if (isLanguageMode(saved)) {
     return saved;

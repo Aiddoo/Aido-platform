@@ -44,7 +44,7 @@ describe('SubscriptionService', () => {
   test('보상 기간만 있는 계정은 복원해도 복원할 구매가 없다', async () => {
     // Given
     const { service, purchases } = createConfiguredService();
-    purchases.restorePurchases.mockResolvedValue({
+    purchases.restore.mockResolvedValue({
       activeEntitlements: [{ store: 'PROMOTIONAL', productIdentifier: 'rc_promo_premium' }],
     });
 

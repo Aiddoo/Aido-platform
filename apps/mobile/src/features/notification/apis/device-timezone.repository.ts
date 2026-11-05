@@ -20,7 +20,7 @@ export interface DeviceTimezoneRepository {
 export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTimezoneRepository {
   return {
     get: (userId) => {
-      const saved = storage.getString(DEVICE_TIMEZONE_KEY);
+      const saved = storage.get(DEVICE_TIMEZONE_KEY);
       if (saved == null) {
         return null;
       }
@@ -33,6 +33,6 @@ export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTime
     },
     save: (userId, deviceTimezone) =>
       storage.set(DEVICE_TIMEZONE_KEY, JSON.stringify({ userId, deviceTimezone })),
-    clear: () => storage.delete(DEVICE_TIMEZONE_KEY),
+    clear: () => storage.remove(DEVICE_TIMEZONE_KEY),
   };
 }

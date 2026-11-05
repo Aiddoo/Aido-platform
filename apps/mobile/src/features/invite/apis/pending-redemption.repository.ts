@@ -19,7 +19,7 @@ export function createPendingRedemptionRepository(
 ): PendingRedemptionRepository {
   return {
     get() {
-      const raw = storage.getString(PENDING_REDEMPTION_KEY);
+      const raw = storage.get(PENDING_REDEMPTION_KEY);
       if (raw == null) {
         return null;
       }
@@ -36,7 +36,7 @@ export function createPendingRedemptionRepository(
       storage.set(PENDING_REDEMPTION_KEY, JSON.stringify(pending));
     },
     clear() {
-      storage.delete(PENDING_REDEMPTION_KEY);
+      storage.remove(PENDING_REDEMPTION_KEY);
     },
   };
 }

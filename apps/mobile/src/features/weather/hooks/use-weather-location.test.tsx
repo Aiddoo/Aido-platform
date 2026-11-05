@@ -30,8 +30,8 @@ const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
 
 function createGateway(overrides: Partial<jest.Mocked<LocationGateway>> = {}) {
   const gateway: jest.Mocked<LocationGateway> = {
-    getPermission: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
-    requestPermission: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
+    getPermission: jest.fn().mockResolvedValue({ isGranted: true, canAskAgain: true }),
+    requestPermission: jest.fn().mockResolvedValue({ isGranted: true, canAskAgain: true }),
     getCoordinates: jest.fn().mockResolvedValue(SEOUL),
     getPlace: jest
       .fn()
@@ -87,8 +87,8 @@ describe('useWeatherLocation', () => {
     const gateway = createGateway({
       getPermission: jest
         .fn()
-        .mockResolvedValueOnce({ granted: false, canAskAgain: true })
-        .mockResolvedValue({ granted: true, canAskAgain: true }),
+        .mockResolvedValueOnce({ isGranted: false, canAskAgain: true })
+        .mockResolvedValue({ isGranted: true, canAskAgain: true }),
     });
     const { httpClient, wrapper, analytics, errorReporter } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
@@ -121,7 +121,7 @@ describe('useWeatherLocation', () => {
   it('다시 물을 수 없게 거부했으면 설정 열기 상태가 되고 오류로 보고하지 않는다', async () => {
     // Given
     const gateway = createGateway({
-      getPermission: jest.fn().mockResolvedValue({ granted: false, canAskAgain: false }),
+      getPermission: jest.fn().mockResolvedValue({ isGranted: false, canAskAgain: false }),
     });
     const { httpClient, wrapper, errorReporter } = setup(gateway);
 

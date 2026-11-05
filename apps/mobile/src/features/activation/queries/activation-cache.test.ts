@@ -19,9 +19,9 @@ import {
 function createService(): ActivationService {
   const values = new Map<string, string>();
   const storage: SyncStorage = {
-    getString: (key) => values.get(key),
+    get: (key) => values.get(key),
     set: (key, value) => values.set(key, value),
-    delete: (key) => values.delete(key),
+    remove: (key) => values.delete(key),
   };
   return new ActivationService(createActivationProgressRepository(storage));
 }

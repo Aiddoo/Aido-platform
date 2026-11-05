@@ -50,7 +50,7 @@ export function createCoachmarkRepository(
   return {
     isSeen(input) {
       try {
-        return storage.getString(coachmarkStorageKey(input)) != null;
+        return storage.get(coachmarkStorageKey(input)) != null;
       } catch {
         return true;
       }

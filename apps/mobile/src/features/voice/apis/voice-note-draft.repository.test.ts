@@ -125,7 +125,7 @@ describe('VoiceNoteDraftRepository', () => {
       VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED,
       expect.objectContaining({ reason: 'invalid-json' }),
     );
-    expect(storage.getString('aido_voice_note_draft_v1:user-1:draft-1')).toBeUndefined();
+    expect(storage.get('aido_voice_note_draft_v1:user-1:draft-1')).toBeUndefined();
   });
 
   test('형식이 맞지 않는 초안은 복원 실패를 남기고 버린다', () => {
@@ -168,7 +168,7 @@ describe('VoiceNoteDraftRepository', () => {
 
     // Then
     expect(repository.findAll('user-1')).toEqual([]);
-    expect(storage.getString('aido_draft_v1:user-1:memo')).toBe('keep');
+    expect(storage.get('aido_draft_v1:user-1:memo')).toBe('keep');
   });
 
   test('바뀌기 전까지 같은 목록을 돌려주고 바뀌면 구독자에게 알린다', () => {
@@ -211,7 +211,7 @@ describe('VoiceNoteDraftRepository', () => {
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1' }));
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-2' }));
     const before = repository.getSnapshot('user-1');
-    const getString = jest.spyOn(storage, 'getString');
+    const getString = jest.spyOn(storage, 'get');
 
     // When
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1', durationMs: 1_000 }));

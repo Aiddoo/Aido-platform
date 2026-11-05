@@ -19,7 +19,7 @@ describe('feature discovery 본 상태', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     const at = new Date('2026-08-02T00:00:00.000Z');
     const repository = createFeatureDiscoveryStateRepository(storage);
@@ -39,7 +39,7 @@ describe('feature discovery 본 상태', () => {
   it('다른 계정의 본 상태를 공유하지 않는다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockImplementation((key) =>
+    storage.get.mockImplementation((key) =>
       key.includes('user-1') ? '2026-08-02T00:00:00.000Z' : undefined,
     );
 
@@ -51,7 +51,7 @@ describe('feature discovery 본 상태', () => {
   it('저장소를 읽지 못하면 자동 노출을 fail closed 한다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockImplementation(() => {
+    storage.get.mockImplementation(() => {
       throw new Error('storage unavailable');
     });
 
@@ -65,7 +65,7 @@ describe('feature discovery 본 상태', () => {
   it('본 상태 기록에 실패하면 claim하지 않는다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
+    storage.get.mockReturnValue(undefined);
     storage.set.mockImplementation(() => {
       throw new Error('storage unavailable');
     });
@@ -86,7 +86,7 @@ describe('feature discovery 14일 재진입', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     claimFeatureDiscoverySeen(storage, {
       ...input,
@@ -107,7 +107,7 @@ describe('feature discovery 14일 재진입', () => {
     // Given
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     claimFeatureDiscoverySeen(storage, {
       ...input,
@@ -127,7 +127,7 @@ describe('feature discovery 14일 재진입', () => {
   it('손상된 시각은 fail closed로 숨긴다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('not-a-date');
+    storage.get.mockReturnValue('not-a-date');
 
     // When
     const result = isFeatureDiscoveryReentryVisible(storage, {
@@ -142,7 +142,7 @@ describe('feature discovery 14일 재진입', () => {
   it('저장소를 읽지 못하면 재진입 카드를 숨긴다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockImplementation(() => {
+    storage.get.mockImplementation(() => {
       throw new Error('storage unavailable');
     });
 
@@ -164,9 +164,9 @@ describe('feature discovery 재진입 카드 닫기', () => {
   const createStatefulStorage = () => {
     const storage = createMockSyncStorage();
     const values = new Map<string, string>();
-    storage.getString.mockImplementation((key) => values.get(key));
+    storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
-    storage.delete.mockImplementation((key) => values.delete(key));
+    storage.remove.mockImplementation((key) => values.delete(key));
     return storage;
   };
 
@@ -204,7 +204,7 @@ describe('feature discovery 재진입 카드 닫기', () => {
   it('이전 버전이 저장한 재진입 시각을 그대로 읽는다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(claimedAt.toISOString());
+    storage.get.mockReturnValue(claimedAt.toISOString());
 
     // When
     const result = isFeatureDiscoveryReentryVisible(storage, { ...input, now });
@@ -216,7 +216,7 @@ describe('feature discovery 재진입 카드 닫기', () => {
   it('저장소에서 지우지 못해도 앱을 멈추지 않는다', () => {
     // Given
     const storage = createMockSyncStorage();
-    storage.delete.mockImplementation(() => {
+    storage.remove.mockImplementation(() => {
       throw new Error('storage unavailable');
     });
 

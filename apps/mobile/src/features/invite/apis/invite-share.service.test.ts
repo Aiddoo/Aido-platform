@@ -21,11 +21,11 @@ function createService({
     shareFeed: kakaoShareFeed,
   };
   const systemShareGateway: SystemShareGateway = { share: systemShare };
-  const setString = jest.fn().mockResolvedValue(undefined);
+  const copy = jest.fn().mockResolvedValue(undefined);
   const clipboard: ClipboardGateway = {
-    hasString: jest.fn(),
-    getString: jest.fn(),
-    setString,
+    hasContent: jest.fn(),
+    paste: jest.fn(),
+    copy,
   };
   const addBreadcrumb = jest.fn();
   const errorReporter: ErrorReporter = {
@@ -44,7 +44,7 @@ function createService({
     }),
     kakaoShareFeed,
     systemShare,
-    setString,
+    copy,
     addBreadcrumb,
   };
 }
@@ -104,7 +104,7 @@ describe('InviteShareService', () => {
 
     it('카카오 공유와 OS 공유가 모두 실패하면 링크를 복사하고 copied를 반환한다', async () => {
       // Given
-      const { service, setString } = createService({
+      const { service, copy } = createService({
         kakaoShareFeed: jest.fn().mockRejectedValue(new Error('kakao')),
         systemShare: jest.fn().mockRejectedValue(new Error('share')),
       });
@@ -113,7 +113,7 @@ describe('InviteShareService', () => {
       const result = await service.share('kakao', content);
 
       // Then
-      expect(setString).toHaveBeenCalledWith('https://aido.kr/i/K7M2QX');
+      expect(copy).toHaveBeenCalledWith('https://aido.kr/i/K7M2QX');
       expect(result).toEqual({ channel: 'copy_link', outcome: 'copied' });
     });
 

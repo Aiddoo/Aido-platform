@@ -85,7 +85,7 @@ describe('openEncryptedMmkvStorage', () => {
 
     const { draftStorage } = await openEncryptedMmkvStorage(secureStorage);
 
-    expect(draftStorage.getString('aido_draft_v1:user-1:memo:create')).toBe('{"v":1}');
+    expect(draftStorage.get('aido_draft_v1:user-1:memo:create')).toBe('{"v":1}');
     expect(deleteMMKV).toHaveBeenCalledWith('aido.drafts');
   });
 

@@ -13,7 +13,7 @@ const presentable: WaitUntilPresentable = async () => true;
 const createFixture = () => {
   const storage = createMockSyncStorage();
   const values = new Map<string, string>();
-  storage.getString.mockImplementation((key) => values.get(key));
+  storage.get.mockImplementation((key) => values.get(key));
   storage.set.mockImplementation((key, value) => values.set(key, value));
   const repository = createStoreReviewRepository(storage);
   const gateway: jest.Mocked<AppStoreReviewGateway> = {

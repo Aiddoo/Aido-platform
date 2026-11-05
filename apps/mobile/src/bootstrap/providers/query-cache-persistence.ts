@@ -35,20 +35,20 @@ export const disabledQueryCacheStorage: QueryCacheStorage = {
 };
 
 export const createQueryCacheStorage = (storage: SyncStorage): QueryCacheStorage => {
-  const ownedKey = (key: string, ownerId = storage.getString(QUERY_CACHE_OWNER_KEY)) =>
+  const ownedKey = (key: string, ownerId = storage.get(QUERY_CACHE_OWNER_KEY)) =>
     ownerId == null ? null : `${key}:${encodeURIComponent(ownerId)}`;
 
   const removeOwnedCache = (ownerId: string | undefined) => {
     const key = ownedKey(QUERY_CACHE_STORAGE_KEY, ownerId);
     if (key != null) {
-      storage.delete(key);
+      storage.remove(key);
     }
   };
 
   return {
     getItem: (key) => {
       const owned = ownedKey(key);
-      return owned == null ? null : (storage.getString(owned) ?? null);
+      return owned == null ? null : (storage.get(owned) ?? null);
     },
     setItem: (key, value) => {
       const owned = ownedKey(key);
@@ -59,11 +59,11 @@ export const createQueryCacheStorage = (storage: SyncStorage): QueryCacheStorage
     removeItem: (key) => {
       const owned = ownedKey(key);
       if (owned != null) {
-        storage.delete(owned);
+        storage.remove(owned);
       }
     },
     setOwner: (userId) => {
-      const previousOwnerId = storage.getString(QUERY_CACHE_OWNER_KEY);
+      const previousOwnerId = storage.get(QUERY_CACHE_OWNER_KEY);
       if (previousOwnerId === userId) {
         return;
       }
@@ -71,19 +71,19 @@ export const createQueryCacheStorage = (storage: SyncStorage): QueryCacheStorage
       storage.set(QUERY_CACHE_OWNER_KEY, userId);
     },
     clear: () => {
-      removeOwnedCache(storage.getString(QUERY_CACHE_OWNER_KEY));
-      storage.delete(QUERY_CACHE_OWNER_KEY);
+      removeOwnedCache(storage.get(QUERY_CACHE_OWNER_KEY));
+      storage.remove(QUERY_CACHE_OWNER_KEY);
     },
   };
 };
 
 /** 암호화 이전에 기본 MMKV에 평문으로 남긴 캐시와 주인을 지운다 */
 export const removePlaintextQueryCache = (
-  storage: Pick<EnumerableSyncStorage, 'getAllKeys' | 'delete'>,
+  storage: Pick<EnumerableSyncStorage, 'keys' | 'remove'>,
 ): void => {
-  for (const key of storage.getAllKeys()) {
+  for (const key of storage.keys()) {
     if (key === QUERY_CACHE_OWNER_KEY || key.startsWith(`${QUERY_CACHE_STORAGE_KEY}:`)) {
-      storage.delete(key);
+      storage.remove(key);
     }
   }
 };

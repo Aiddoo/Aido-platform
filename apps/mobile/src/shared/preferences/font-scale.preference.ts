@@ -11,7 +11,7 @@ export function isFontScale(value: unknown): value is FontScale {
 }
 
 export function readFontScale(storage: SyncStorage): FontScale {
-  const saved = storage.getString(KEY);
+  const saved = storage.get(KEY);
 
   if (isFontScale(saved)) {
     return saved;
