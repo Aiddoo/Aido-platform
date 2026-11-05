@@ -117,7 +117,7 @@
 
 - **AI 키**: 운영 env에 키 3개를 넣고 `AI_PROVIDER_ORDER`를 정한다. 값은 문서에 쓰지 않는다. Claude 키는 워크스페이스 키로 새로 발급한다.
 - **마이그레이션**: 위 8개를 적용한다. 건수 확인 쿼리는 서버 배포 문서를 따른다.
-- **기능 소개 캠페인**: `FEATURE_DISCOVERY_CAMPAIGN_ID`를 앱에 번들된 `feature-discovery-2026-12`로, `FEATURE_DISCOVERY_MIN_APP_VERSION`을 `1.15.0`으로, `FEATURE_DISCOVERY_LAUNCHED_AT`을 1.15.0 배포 시각으로 맞춘다. `.env.example`의 값은 이전 캠페인이다.
+- **기능 소개 캠페인**: `FEATURE_DISCOVERY_CAMPAIGN_ID`를 앱에 번들된 `feature-discovery-2026-12`로, `FEATURE_DISCOVERY_MIN_APP_VERSION`을 `1.15.0`으로, `FEATURE_DISCOVERY_LAUNCHED_AT`을 1.15.0 배포 시각으로 맞춘다. `.env.example`의 `FEATURE_DISCOVERY_LAUNCHED_AT`은 예시 값이다.
 - **경보**: [서버 배포 문서](../../../apps/api/DEPLOYMENT.md#환경-설정과-공개-버전)의 태그로 Sentry 알림 규칙을 만든다. 없으면 경보가 사람에게 가지 않는다.
 - **권한**: 최종 Release APK를 `aapt2 dump permissions`로, Production `Info.plist`를 직접 확인한다. `app.config.ts` 평가 결과는 [개인정보 라벨](privacy-label.md#권한-점검)에 있다.
 - **심사 메모**: 데모 계정을 채워 스토어에 넣는다.
