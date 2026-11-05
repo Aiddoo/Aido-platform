@@ -10,6 +10,8 @@ const CONTAINER_PADDING_X = 16;
 const BUTTON_RADIUS = 12;
 const DEFAULT_BOTTOM_PADDING = 16;
 const STICKY_OFFSET = 0;
+/** 버튼(`xlarge` 56)이 키보드 위에 붙어도 포커스한 입력이 16 위에 보이게 스크롤 영역에 넘길 값 */
+export const KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET = 72;
 
 interface KeyboardAdaptiveButtonProps extends ButtonProps {
   enabled?: boolean;

@@ -7,4 +7,7 @@ export type {
   ButtonSize,
   ButtonVariant,
 } from './button.types';
-export { KeyboardAdaptiveButton } from './keyboard-adaptive-button';
+export {
+  KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET,
+  KeyboardAdaptiveButton,
+} from './keyboard-adaptive-button';

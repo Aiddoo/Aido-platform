@@ -8,10 +8,11 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
-  Button,
   H3,
   HStack,
   Input,
+  KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET,
+  KeyboardAdaptiveButton,
   ReadableContent,
   Spacing,
   TextButton,
@@ -70,6 +71,7 @@ function EmailLoginScreen() {
         />
         <ReadableContent flex={1}>
           <KeyboardAwareScrollView
+            bottomOffset={KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET}
             contentContainerStyle={{
               paddingHorizontal: 16,
               paddingBottom: 40,
@@ -131,17 +133,6 @@ function EmailLoginScreen() {
                 )}
               </FormField>
 
-              <Spacing size={16} />
-
-              <Button
-                testID="email-login-submit"
-                color="primary"
-                onPress={() => handleSubmitEmailLogin()}
-                isLoading={isSubmitting}
-              >
-                {t('emailLogin.submit')}
-              </Button>
-
               <Spacing size={24} />
 
               <HStack justify="center" align="center" gap={8}>
@@ -155,6 +146,15 @@ function EmailLoginScreen() {
               </HStack>
             </StyledSafeAreaView>
           </KeyboardAwareScrollView>
+
+          <KeyboardAdaptiveButton
+            testID="email-login-submit"
+            color="primary"
+            onPress={() => handleSubmitEmailLogin()}
+            isLoading={isSubmitting}
+          >
+            {t('emailLogin.submit')}
+          </KeyboardAdaptiveButton>
         </ReadableContent>
       </Box>
     </FormProvider>

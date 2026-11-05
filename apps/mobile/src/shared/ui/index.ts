@@ -24,6 +24,7 @@ export {
   type ButtonRadius,
   type ButtonSize,
   type ButtonVariant,
+  KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET,
   KeyboardAdaptiveButton,
 } from './button';
 export {
