@@ -8,6 +8,7 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
+import { RebaseTodoTimezone } from "#api/modules/planning/application/use-cases/todos/rebase-todo-timezone.use-case";
 import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/infrastructure/jobs/todos/todo-timezone-rebase.queue.constants";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todoSeries, userPreference } from "#api/platform/database/schema/index";
@@ -293,10 +294,12 @@ describe("떠 있는 시각 E2E", () => {
     const [call] = rebaseCalls();
     expect(call?.data).toEqual({ name: "rebase-todo-timezone", data: { userId } });
     expect(call?.options.startAfter?.getTime()).toBeGreaterThan(Date.now() - 60_000);
-    const stored = await ctx.testDatabase
-      .getClient()
-      .query.userPreference.findFirst({ where: { userId } });
-    expect(stored?.timezone).toBe(NEW_YORK);
+    await vi.waitFor(async () => {
+      const stored = await ctx.testDatabase
+        .getClient()
+        .query.userPreference.findFirst({ where: { userId } });
+      expect(stored?.timezone).toBe(NEW_YORK);
+    });
   });
 
   it("옛 경로 상한 안에서는 30개를 넘어도 그대로 만들고 벽시계를 채운다", async () => {
@@ -337,5 +340,127 @@ describe("떠 있는 시각 E2E", () => {
       .query.todo.findMany({ where: { userId, seriesId: { isNotNull: true } } });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((row) => row.scheduledLocalTime === "07:00")).toBe(true);
+  });
+});
+
+describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
+  let ctx: E2eTestContext;
+
+  beforeAll(async () => {
+    ctx = await createE2eApp();
+  }, 60000);
+  afterAll(async () => {
+    await destroyE2eApp(ctx);
+  });
+
+  it.each([
+    { name: "뉴욕", header: NEW_YORK, zone: NEW_YORK },
+    { name: "런던", header: "Europe/London", zone: "Europe/London" },
+    { name: "하와이", header: "Pacific/Honolulu", zone: "Pacific/Honolulu" },
+    { name: "UTC+14", header: "Pacific/Kiritimati", zone: "Pacific/Kiritimati" },
+    { name: "잘못된 헤더(저장값 서울)", header: "Mars/Phobos", zone: SEOUL },
+  ])("서울에서 만든 뒤 $name: 종류마다 맞는 값이다", async ({ header, zone }) => {
+    // Given
+    await ctx.reset();
+    const owner = await ctx.helpers.createVerifiedUser("table@example.com", "Test1234!");
+    const friend = await ctx.helpers.createVerifiedUser("table-friend@example.com", "Test1234!");
+    await ctx.helpers.createFriendship(friend, owner);
+    const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
+    const today = toDateString(todayInTimezone(SEOUL));
+    const future = addDaysToDateKey(today, 5);
+    const past = addDaysToDateKey(today, -5);
+    const client = ctx.testDatabase.getClient();
+    const server = ctx.app.getHttpServer();
+    const post = async (body: object) => {
+      const response = await request(server)
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .set("X-Timezone", SEOUL)
+        .send({ categoryId, isAllDay: false, scheduledTime: "10:00", ...body })
+        .expect(201);
+      return createTodoResponseSchema.parse(response.body.data);
+    };
+    const general = await post({ title: "일반", startDate: future });
+    const allDay = await post({
+      title: "종일",
+      startDate: future,
+      isAllDay: true,
+      scheduledTime: null,
+    });
+    const period = await post({
+      title: "기간",
+      startDate: future,
+      endDate: addDaysToDateKey(future, 2),
+    });
+    const repeating = await post({
+      title: "반복",
+      startDate: future,
+      repeat: { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
+    });
+    const completed = await post({ title: "완료", startDate: future });
+    await request(server)
+      .patch(`/v1/todos/${completed.todo.id}/complete`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .set("X-Timezone", SEOUL)
+      .send({ completed: true })
+      .expect(200);
+    const pastDay = await post({ title: "지난 날", startDate: past });
+    await client
+      .update(userPreference)
+      .set({ timezone: zone })
+      .where(eq(userPreference.userId, owner.userId));
+    // When
+    await ctx.module.get(RebaseTodoTimezone).execute({ userId: owner.userId });
+    const ownerRows = await request(server)
+      .get(`/v1/todos?startDate=${past}&endDate=${addDaysToDateKey(future, 3)}&size=50`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .set("X-Timezone", header)
+      .expect(200);
+    const friendRows = await request(server)
+      .get(`/v1/todos/friends/${owner.userId}?startDate=${future}&endDate=${future}&size=50`)
+      .set("Authorization", `Bearer ${friend.accessToken}`)
+      .set("X-Timezone", header)
+      .expect(200);
+    // Then
+    const items = new Map(
+      todoListResponseSchema.parse(ownerRows.body.data).items.map((item) => [item.id, item]),
+    );
+    const moved = parseLocalDateTime(future, "10:00", zone).toISOString();
+    const kept = parseLocalDateTime(future, "10:00", SEOUL).toISOString();
+    expect(items.get(general.todo.id)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: moved,
+      startDate: future,
+    });
+    expect(items.get(allDay.todo.id)).toMatchObject({
+      scheduledLocalTime: null,
+      scheduledTime: null,
+      startDate: future,
+    });
+    expect(items.get(period.todo.id)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: moved,
+    });
+    expect(items.get(repeating.todo.id)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: moved,
+    });
+    expect(items.get(completed.todo.id)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: kept,
+    });
+    expect(items.get(pastDay.todo.id)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: parseLocalDateTime(past, "10:00", SEOUL).toISOString(),
+    });
+    const friendItems = friendTodoListResponseSchema.parse(friendRows.body.data).items;
+    expect(friendItems.length).toBeGreaterThan(0);
+    expect(
+      friendItems.every((item) =>
+        item.scheduledTime == null
+          ? item.scheduledLocalTime == null
+          : item.scheduledLocalTime === "10:00",
+      ),
+    ).toBe(true);
   });
 });
