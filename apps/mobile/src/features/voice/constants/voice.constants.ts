@@ -19,6 +19,9 @@ export const AUTO_FINISH_SILENCE_MS = 2_500;
 /** 이 음량(0..1)을 넘으면 말하는 중으로 본다 */
 export const SPEAKING_VOLUME_THRESHOLD = 0.18;
 
+/** 음량이 커도 이만큼 새 글자가 없으면 말이 아니라 주변 소리로 본다. 시끄러운 곳에서도 자동으로 마무리되게 한다 */
+export const SPEECH_TEXT_GRACE_MS = 1_500;
+
 /**
  * 말소리 크기의 음량이 들리는데 글자가 오지 않으면 인식기가 멈춘 것으로 보고 다시 연다.
  * Android는 멈춘 동안 빈 구간 신호(`no-match`)도 `end`도 주지 않아 시간으로만 알 수 있다.

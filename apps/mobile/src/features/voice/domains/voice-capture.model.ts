@@ -6,6 +6,7 @@ import {
   AUTO_FINISH_SILENCE_MS,
   QUICK_CAPTURE_MAX_SECONDS,
   SPEAKING_VOLUME_THRESHOLD,
+  SPEECH_TEXT_GRACE_MS,
   VOICE_STALL_RESTART,
 } from '../constants/voice.constants';
 import { voicePlanSchema } from './voice-plan.model';
@@ -354,6 +355,13 @@ export function canRetryPlanning(state: VoiceCaptureState): boolean {
   );
 }
 
+export function isSpeaking(level: number, lastTextAt: number | null, now: number): boolean {
+  return (
+    level >= SPEAKING_VOLUME_THRESHOLD &&
+    (lastTextAt == null || now - lastTextAt < SPEECH_TEXT_GRACE_MS)
+  );
+}
+
 export function shouldAutoFinish(
   state: VoiceCaptureState,
   silentMs: number,
@@ -394,6 +402,7 @@ export const VoiceCapturePolicy = {
   canResumeWithinLimit,
   canRetryPlanning,
   shouldAutoFinish,
+  isSpeaking,
   isOverQuickLimit,
   shouldOfferVoiceNote,
   getElapsedMs,

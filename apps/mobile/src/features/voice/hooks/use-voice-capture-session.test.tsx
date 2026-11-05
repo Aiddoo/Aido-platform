@@ -100,6 +100,88 @@ describe('useVoiceCaptureSession', () => {
     expect(JSON.stringify(analytics.trackEvent.mock.calls)).not.toContain('장보기');
   });
 
+  describe('자동 마무리', () => {
+    const SAMPLE_MS = 50;
+    const LOUD = 0.6;
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    const startSpeaking = async () => {
+      const session = await renderSession();
+      await fireEvent.press(screen.getByTestId('begin'));
+      jest.useFakeTimers();
+      await act(async () => session.speechRecognizer.emit({ type: 'start' }));
+      return session;
+    };
+
+    const hearText = (
+      speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
+      transcript: string,
+    ) =>
+      act(async () => {
+        speechRecognizer.emit({ type: 'result', transcript, isFinal: false, segments: [] });
+      });
+
+    const hearVolume = (
+      speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
+      durationMs: number,
+    ) =>
+      act(async () => {
+        for (let elapsed = 0; elapsed < durationMs; elapsed += SAMPLE_MS) {
+          jest.advanceTimersByTime(SAMPLE_MS);
+          speechRecognizer.emit({ type: 'volume', level: LOUD });
+        }
+      });
+
+    it('주변이 시끄러워도 새 글자가 끊기면 약 4초 뒤 알아서 마무리한다', async () => {
+      // Given
+      const { speechRecognizer } = await startSpeaking();
+      await hearText(speechRecognizer, '내일 장보기');
+
+      // When
+      await hearVolume(speechRecognizer, 4_200);
+
+      // Then
+      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('글자가 계속 들어오면 말하는 중이라 끊지 않는다', async () => {
+      // Given
+      const { speechRecognizer } = await startSpeaking();
+
+      // When
+      for (const transcript of [
+        '내일',
+        '내일 장보기',
+        '내일 장보기 하고',
+        '내일 장보기 하고 운동',
+      ]) {
+        await hearText(speechRecognizer, transcript);
+        await hearVolume(speechRecognizer, 1_200);
+      }
+
+      // Then
+      expect(speechRecognizer.stop).not.toHaveBeenCalled();
+    });
+
+    it('음량 이벤트가 끊겨도 말이 멈춘 것으로 보고 마무리한다', async () => {
+      // Given
+      const { speechRecognizer } = await startSpeaking();
+      await hearText(speechRecognizer, '내일 장보기');
+      await hearVolume(speechRecognizer, 100);
+
+      // When
+      await act(async () => {
+        jest.advanceTimersByTime(3_000);
+      });
+
+      // Then
+      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('말이 없으면 서버로 넘기지 않고 처음으로 돌아간다', async () => {
     // Given
     const { speechRecognizer, onCaptured } = await renderSession();

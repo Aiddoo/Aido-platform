@@ -23,6 +23,28 @@ const ANDROID_CONTINUOUS_API_LEVEL = 33;
 /** SDK가 주는 음량 범위. 0 이하는 들리지 않는 소리다 */
 const VOLUME_RANGE = { min: -2, max: 10 } as const;
 const VOLUME_INTERVAL_MS = 50;
+/** 인식이 자주 틀리는 할 일 단어(실기기: "분기"를 "등기"로). 개인 정보가 아니라 네트워크 인식에도 보낸다 */
+const COMMON_SPEECH_HINTS = {
+  'ko-KR': [
+    '분기',
+    '보고서',
+    '회의록',
+    '기획안',
+    '제출',
+    '결재',
+    '예약',
+    '치과',
+    '헬스장',
+    '월수금',
+    '화목',
+    '오전',
+    '오후',
+    '다음 주',
+    '이번 주',
+    '장보기',
+  ],
+  'en-US': [],
+} as const satisfies Record<SpeechLocale, readonly string[]>;
 /** 16kHz 16bit mono WAV(약 1.9MB/분). Android는 이 형식으로만 저장한다 */
 const RECORDING_SAMPLE_RATE = 16_000;
 
@@ -109,16 +131,14 @@ function toRecognitionOptions({
   isOnDevice,
   recordingDirectory,
 }: SpeechStartOptions): ExpoSpeechRecognitionOptions {
+  const hints = [...COMMON_SPEECH_HINTS[locale], ...(isOnDevice ? contextualStrings : [])];
   const common: ExpoSpeechRecognitionOptions = {
     lang: locale,
     interimResults: true,
     maxAlternatives: 1,
     requiresOnDeviceRecognition: isOnDevice,
-    // 고유명사 힌트는 내 카테고리·할 일 이름이라 음성 인식 서비스로 나가는 네트워크 인식에는 보내지 않는다
-    ...(isOnDevice &&
-      contextualStrings.length > 0 && {
-        contextualStrings: [...contextualStrings],
-      }),
+    // 내 카테고리·할 일 이름은 음성 인식 서비스로 나가는 네트워크 인식에는 보내지 않는다
+    ...(hints.length > 0 && { contextualStrings: hints }),
   };
   const volumeChangeEventOptions = { enabled: true, intervalMillis: VOLUME_INTERVAL_MS };
 

@@ -80,6 +80,7 @@ describe('expoSpeechRecognizerGateway', () => {
       interimResults: true,
       maxAlternatives: 1,
       requiresOnDeviceRecognition: false,
+      contextualStrings: expect.arrayContaining(['분기']),
       continuous: false,
       iosTaskHint: 'dictation',
     });
@@ -101,7 +102,7 @@ describe('expoSpeechRecognizerGateway', () => {
         continuous: true,
         requiresOnDeviceRecognition: true,
         addsPunctuation: true,
-        contextualStrings: ['기획팀', '민지'],
+        contextualStrings: expect.arrayContaining(['분기', '기획팀', '민지']),
         iosTaskHint: 'dictation',
         // 침묵 길이는 SDK의 continuous에 맡긴다. 넘기면 12 이하의 10분 침묵을 덮어 세션이 짧아진다
         androidIntentOptions: { EXTRA_MASK_OFFENSIVE_WORDS: false },
@@ -198,7 +199,8 @@ describe('expoSpeechRecognizerGateway', () => {
 
     // Then
     const [options] = nativeModule.start.mock.calls.at(-1) ?? [];
-    expect(options?.contextualStrings).toBeUndefined();
+    expect(options?.contextualStrings).toContain('분기');
+    expect(options?.contextualStrings).not.toContain('기획팀');
     expect(options?.requiresOnDeviceRecognition).toBe(false);
   });
 

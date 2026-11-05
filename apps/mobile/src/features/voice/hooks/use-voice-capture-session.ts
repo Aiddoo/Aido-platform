@@ -27,7 +27,6 @@ import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import {
   AUTO_FINISH_SILENCE_MS,
   QUICK_CAPTURE_MAX_SECONDS,
-  SPEAKING_VOLUME_THRESHOLD,
   VOICE_NO_VOLUME_GAP_MS,
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
@@ -132,6 +131,8 @@ export function useVoiceCaptureSession({
   /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
   const isStopRequestedRef = useRef(false);
   const isQuietRef = useRef(false);
+  const lastTextAtRef = useRef<number | null>(null);
+  const lastTranscriptRef = useRef('');
   const lastStartedAtRef = useRef(0);
   const quickEndCountRef = useRef(0);
   const stallWatchRef = useRef(createVoiceStallWatch(0));
@@ -378,6 +379,10 @@ export function useVoiceCaptureSession({
       .with({ type: 'result' }, ({ transcript, isFinal }) => {
         dispatch({ type: 'result', result: { transcript, isFinal } });
         if (transcript.trim().length > 0) {
+          if (transcript !== lastTranscriptRef.current) {
+            lastTranscriptRef.current = transcript;
+            lastTextAtRef.current = Date.now();
+          }
           markSpeaking();
           // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
           if (!isStopRequestedRef.current) {
@@ -391,8 +396,9 @@ export function useVoiceCaptureSession({
         volumeGapTimerRef.current = setTimeout(() => {
           volumeGapTimerRef.current = null;
           level.set(0);
+          markSilence();
         }, VOICE_NO_VOLUME_GAP_MS);
-        if (nextLevel >= SPEAKING_VOLUME_THRESHOLD) {
+        if (VoiceCapturePolicy.isSpeaking(nextLevel, lastTextAtRef.current, Date.now())) {
           markSpeaking();
         } else {
           markSilence();
