@@ -29,3 +29,8 @@ export function parseScheduledTime(scheduledTime: string) {
   const [hour = 0, minute = 0] = scheduledTime.split(':').map(Number);
   return { hour, minute };
 }
+
+/** 제목 없이 내용만 있는 메모는 내용을 이름처럼 보인다 */
+export function getPlanMemoLabel(memo: { title: string; content: string }) {
+  return memo.title === '' ? memo.content : memo.title;
+}

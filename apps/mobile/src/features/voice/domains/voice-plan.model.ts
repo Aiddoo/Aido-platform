@@ -6,6 +6,7 @@ import {
   todoRepeatSchema,
 } from '@src/features/todo/domains/todo-repeat.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/utils/date-key';
+import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();
@@ -196,20 +197,22 @@ export function getPlanActionGroups(
   actions: readonly PlanGroupableAction[],
   fallbackCategoryId: number,
 ): PlanActionGroup[] {
-  const todoIndexes = new Map<number, number[]>();
-  const memoIndexes: number[] = [];
-  actions.forEach((action, index) => {
-    if (action.type === 'create-memo') {
-      memoIndexes.push(index);
-      return;
-    }
-    const categoryId = action.categoryId ?? fallbackCategoryId;
-    todoIndexes.set(categoryId, [...(todoIndexes.get(categoryId) ?? []), index]);
-  });
-  const groups: PlanActionGroup[] = [...todoIndexes].map(([categoryId, indexes]) => ({
-    categoryId,
-    indexes,
-  }));
+  const memoIndexes = actions.flatMap((action, index) =>
+    action.type === 'create-memo' ? [index] : [],
+  );
+  const todos = actions.flatMap((action, index) =>
+    action.type === 'create-memo'
+      ? []
+      : [{ index, categoryId: action.categoryId ?? fallbackCategoryId }],
+  );
+  const todosByCategory = groupBy(todos, ({ categoryId }) => categoryId);
+  // 숫자 키 객체는 오름차순으로 돌아 먼저 말한 카테고리 순서를 잃는다. 순서는 uniq로 따로 지킨다
+  const groups: PlanActionGroup[] = uniq(todos.map(({ categoryId }) => categoryId)).map(
+    (categoryId) => ({
+      categoryId,
+      indexes: (todosByCategory[categoryId] ?? []).map(({ index }) => index),
+    }),
+  );
   return memoIndexes.length === 0
     ? groups
     : [...groups, { categoryId: null, indexes: memoIndexes }];

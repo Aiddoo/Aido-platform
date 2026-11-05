@@ -56,6 +56,7 @@ import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model'
 import { isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/use-apply-action-plan-mutation-options';
 import {
+  getPlanMemoLabel,
   getPlanTodoSubtitle,
   parseScheduledTime,
   shouldShowPlanDate,
@@ -457,7 +458,7 @@ PlanReview.MemoRow = function PlanMemoRow({ index }: { index: number }) {
     return null;
   }
 
-  const label = memo.title === '' ? memo.content : memo.title;
+  const label = getPlanMemoLabel(memo);
 
   return (
     <TodoRow
