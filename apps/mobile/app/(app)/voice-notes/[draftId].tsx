@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
@@ -67,14 +68,14 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 /** 정리 중 미리보기에 보여 줄 앞부분 문장 수. 전체를 그릴 이유가 없다 */
@@ -221,7 +222,7 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
   const transcript = <ResultTranscript note={note} player={player} canPlay={parts.length > 0} />;
   const todos = (
     <QueryErrorBoundary>
-      <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+      <Suspense fallback={<PlanReview.Loading />}>
         <VoiceNotePlanPane note={note} />
       </Suspense>
     </QueryErrorBoundary>
@@ -344,7 +345,9 @@ function VoiceNotePlanPane({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
   const { drafts } = useVoiceNoteStorageService();
-  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const [{ data: categoriesResult }] = useSuspenseQueries({
+    queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
+  });
   const fallbackCategoryId = categoriesResult.categories[0]?.id;
   const planDraft = note.planDraft;
   const form = useForm<PlanReviewFormValues>({

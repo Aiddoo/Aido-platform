@@ -5,6 +5,7 @@ import {
 } from '@src/features/memo/hooks/use-memo-screen-params';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
 import { createMemoPlanDraftKey } from '@src/features/memo/utils/memo-plan-draft';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
@@ -19,12 +20,12 @@ import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave'
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Result, StyledSafeAreaView } from '@src/shared/ui';
+import { Box, QueryErrorBoundary, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 
 function AiReviewScreen() {
   const { t } = useTranslation('memo');
@@ -38,6 +39,7 @@ function AiReviewScreen() {
       useGetMemoQueryOptions({ memoId }),
       useGetMeQueryOptions(),
       useGetTodoCategoriesQueryOptions(),
+      useGetPreferenceQueryOptions(),
     ],
   });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
@@ -117,7 +119,13 @@ export default function AiReviewRoute() {
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
       <QueryErrorBoundary resetKeys={[params.data.memoId]}>
-        <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+        <Suspense
+          fallback={
+            <Box className="p-4">
+              <PlanReview.Loading />
+            </Box>
+          }
+        >
           <AiReviewScreen />
         </Suspense>
       </QueryErrorBoundary>

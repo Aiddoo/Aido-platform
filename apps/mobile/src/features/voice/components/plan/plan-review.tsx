@@ -21,6 +21,7 @@ import {
   QueryErrorBoundary,
   Result,
   Text,
+  TextSkeleton,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -33,8 +34,9 @@ import {
 } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { randomUUID } from 'expo-crypto';
-import { Checkbox } from 'heroui-native';
+import { Checkbox, Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useRef } from 'react';
 import {
   FormProvider,
@@ -61,6 +63,8 @@ import {
   shouldShowPlanDate,
 } from '../../utils/view-models/plan-todo.view-model';
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
+
+const LOADING_ROW_COUNT = 3;
 
 /** 저장 요청의 멱등 키와 내용 지문 */
 export interface PlanApplyRequest {
@@ -254,6 +258,28 @@ export function PlanReview({
     </FormProvider>
   );
 }
+
+/** 카드 수를 아직 몰라 흔한 개수로 그린다. 제목·안내·행 자리는 실제 검토 화면과 같다 */
+PlanReview.Loading = function Loading() {
+  return (
+    <VStack gap={16}>
+      <VStack gap={4}>
+        <TextSkeleton size="t3" className="w-2/3" />
+        <TextSkeleton size="b4" className="w-full" />
+      </VStack>
+      <VStack gap={8}>
+        {times(LOADING_ROW_COUNT, (index) => (
+          <TodoRow
+            key={index}
+            left={<Skeleton className="size-5 rounded-md" />}
+            top={<TextSkeleton size="b3" className="w-3/4" />}
+            right={<Skeleton className="size-6 rounded-full" />}
+          />
+        ))}
+      </VStack>
+    </VStack>
+  );
+};
 
 PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId: number }) {
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());

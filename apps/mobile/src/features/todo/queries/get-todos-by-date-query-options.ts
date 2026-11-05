@@ -4,7 +4,7 @@ import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence
 import { unwrap } from '@src/shared/errors/result';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { addDaysToDateKey } from '@src/shared/utils/date-key';
-import { keepPreviousData, queryOptions } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 
@@ -20,7 +20,6 @@ export function getTodosByDateQueryOptions(
     queryKey: TODO_QUERY_KEYS.listByDate({ date }),
     queryFn: async ({ signal }) =>
       unwrap(await todoService.getTodos({ startDate: date, endDate: date, size: 200 }, signal)),
-    placeholderData: keepPreviousData,
     ...(shouldPersistTodosByDate({ date, todayKey }) && PERSISTED_QUERY_OPTIONS),
   });
 }
