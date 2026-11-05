@@ -49,7 +49,8 @@ export const textAreaTextVariants = tv({
       filled: 'text-input-lg',
       line: 'text-input-lg',
       plain: 'text-b3',
-      bare: 'text-input-lg',
+      // 키보드에 바로 붙는 칸이다. 줄을 바꾼 새 줄이 칸 밖으로 나가 커서가 잠깐 잘리지 않게 한 줄 넘게 비워 둔다
+      bare: 'text-input-lg pb-10',
     },
   },
   defaultVariants: {
