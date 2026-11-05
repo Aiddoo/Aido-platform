@@ -25,6 +25,7 @@ export interface ConvertMemoToSingleTodoData {
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly repeat?: TodoRepeat | null;
+  readonly exemptFromSeriesLimit?: boolean;
   readonly items?: { title: string }[];
 }
 
@@ -92,6 +93,7 @@ export class ConvertMemoToTodos {
               visibility: todoData.visibility ?? "PUBLIC",
               items: todoData.items,
               repeat: todoData.repeat,
+              exemptFromSeriesLimit: todoData.exemptFromSeriesLimit,
             }),
           );
           this.#dependencies.afterCommit.register(staged.afterCommit);

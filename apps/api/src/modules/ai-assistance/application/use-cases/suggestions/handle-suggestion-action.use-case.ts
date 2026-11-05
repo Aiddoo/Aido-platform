@@ -140,6 +140,7 @@ export class HandleSuggestionAction {
           weekdays: days.data,
           end: { type: "UNTIL", date: endDate },
         },
+        exemptFromSeriesLimit: true,
       });
       this.#dependencies.afterCommit.register(staged.afterCommit);
       return {

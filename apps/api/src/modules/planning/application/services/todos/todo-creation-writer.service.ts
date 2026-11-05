@@ -109,12 +109,14 @@ export class TodoCreationWriter {
     });
     series.assertWithinPastLimit(at);
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
-    const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
-    if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
-      throw new ApplicationException(ErrorCode.TODO_0842, {
-        limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
-        activeCount,
-      });
+    if (data.exemptFromSeriesLimit !== true) {
+      const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
+      if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
+        throw new ApplicationException(ErrorCode.TODO_0842, {
+          limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          activeCount,
+        });
+      }
     }
     const activeInCategory = await this.#dependencies.todoRepository.countCategoryUsage(
       userId,

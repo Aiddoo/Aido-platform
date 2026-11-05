@@ -55405,7 +55405,6 @@ TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
 - \`count\`: 이번에 만든 할 일 수
 
 **제한사항**
-- 진행 중인 반복 할 일은 최대 30개
 - 카테고리 한도를 초과하면 전체 요청 거부",
       "operationId": "createRecurringTodo",
       "parameters": [
@@ -55588,41 +55587,11 @@ TODO_0812: 반복 할 일 생성 한도를 초과했습니다.",
         "403": {
           "content": {
             "application/json": {
-              "examples": {
-                "TODO_0813": {
-                  "summary": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
-                  "value": {
-                    "error": {
-                      "code": "TODO_0813",
-                      "details": null,
-                      "message": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
-                    },
-                    "success": false,
-                    "timestamp": 1700000000000,
-                  },
-                },
-                "TODO_0842": {
-                  "summary": "반복 할 일은 최대 30개까지 만들 수 있습니다.",
-                  "value": {
-                    "error": {
-                      "code": "TODO_0842",
-                      "details": null,
-                      "message": "반복 할 일은 최대 30개까지 만들 수 있습니다.",
-                    },
-                    "success": false,
-                    "timestamp": 1700000000000,
-                  },
-                },
-              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
-                        "enum": [
-                          "TODO_0813",
-                          "TODO_0842",
-                        ],
                         "example": "TODO_0813",
                         "type": "string",
                       },
@@ -55660,9 +55629,7 @@ TODO_0812: 반복 할 일 생성 한도를 초과했습니다.",
               },
             },
           },
-          "description": "TODO_0813: 반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.
-
-TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
+          "description": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
         },
         "404": {
           "content": {

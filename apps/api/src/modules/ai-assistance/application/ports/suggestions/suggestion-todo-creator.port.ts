@@ -10,6 +10,8 @@ export interface SuggestionTodoDraft {
   readonly scheduledTime?: string | null;
   readonly timezone: string;
   readonly repeat: TodoRepeat;
+  /** 제안은 기간이 정해진 반복이고 출시 앱도 쓰는 경로라 옛 서버에 없던 상한으로 거절하지 않는다. */
+  readonly exemptFromSeriesLimit: true;
 }
 
 /** 수락한 제안을 할 일로 만든다. 활성 UoW 안에서 저장하고 afterCommit은 커밋 뒤에만 실행되게 등록한다. */

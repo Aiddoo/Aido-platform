@@ -293,13 +293,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`count\`: 이번에 만든 할 일 수
 
 **제한사항**
-- 진행 중인 반복 할 일은 최대 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER}개
 - 카테고리 한도를 초과하면 전체 요청 거부`,
   })
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.TODO_0812)
-  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.TODO_0813, ErrorCode.TODO_0842])
+  @ApiForbiddenError(ErrorCode.TODO_0813)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   async createRecurring(
     @CurrentUser() user: CurrentUserPayload,
@@ -322,6 +321,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           weekdays: dto.daysOfWeek,
           end: { type: "UNTIL", date: dto.endDate },
         },
+        exemptFromSeriesLimit: true,
       })
       .catch((error: unknown) => {
         // 출시 앱 계약: 이 경로의 날짜 없음은 SYS_0002다. TODO_0843은 새 경로의 코드다.

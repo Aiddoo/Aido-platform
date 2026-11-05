@@ -365,6 +365,7 @@ export class MemoController {
                   end: { type: "UNTIL", date: todo.recurrence.endDate },
                 }
               : undefined),
+          exemptFromSeriesLimit: todo.repeat == null,
           items: todo.items,
         })),
       },
