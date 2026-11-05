@@ -14,7 +14,7 @@ import { Text } from '@src/shared/ui';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { View } from 'react-native';
+import { Keyboard, type KeyboardEvent, View } from 'react-native';
 
 import { CoachmarkPopover } from './coachmark-popover';
 
@@ -41,6 +41,14 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
 
   return { analytics };
 }
+
+const KEYBOARD_DID_SHOW: KeyboardEvent = {
+  duration: 250,
+  easing: 'keyboard',
+  startCoordinates: { screenX: 0, screenY: 800, width: 400, height: 300 },
+  endCoordinates: { screenX: 0, screenY: 500, width: 400, height: 300 },
+  isEventFromThisApp: true,
+};
 
 /** 말풍선은 포커스 뒤 450ms를 기다렸다가 연다 */
 const POPOVER_WAIT = { timeout: 2_000 };
@@ -138,6 +146,32 @@ describe('CoachmarkPopover', () => {
         expect.anything(),
       );
       expect(isPending()).toBe(true);
+    });
+
+    it('키보드가 올라와 대상이 움직이면 닫았다가 자리를 다시 재서 열고 노출은 한 번만 남긴다', async () => {
+      // Given
+      const addKeyboardListener = jest.spyOn(Keyboard, 'addListener');
+      const measure = jest.mocked(View.prototype.measure);
+      const { analytics, changeFocus, isPending } = await renderCoachmarkOnHiddenTab();
+      await changeFocus(true);
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+      measure.mockClear();
+
+      // When
+      await act(async () => {
+        addKeyboardListener.mock.calls
+          .filter(([event]) => event === 'keyboardDidShow')
+          .forEach(([_event, listener]) => listener(KEYBOARD_DID_SHOW));
+      });
+
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+      expect(measure).toHaveBeenCalled();
+      expect(isPending()).toBe(true);
+      expect(
+        analytics.trackEvent.mock.calls.filter(([name]) => name === 'coachmark_shown'),
+      ).toHaveLength(1);
     });
 
     it('닫아서 소비하지 않았으면 탭으로 돌아왔을 때 다시 연다', async () => {

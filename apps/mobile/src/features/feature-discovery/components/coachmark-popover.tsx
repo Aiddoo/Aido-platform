@@ -78,15 +78,19 @@ CoachmarkPopover.Contents = function Contents({
   const isSettled = useCoachmarkSettle(isFocused);
   const isOpen = (isPending || isForced) && isEnabled && isSettled;
   const shownDismissKeyRef = useRef(dismissKey);
+  /** 대상이 움직여 닫았다 다시 여는 것은 같은 노출이다. 사용자가 닫아야 끝난다 */
+  const hasTrackedShownRef = useRef(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasTrackedShownRef.current) {
+      hasTrackedShownRef.current = true;
       trackEvent('coachmark_shown', { kind });
     }
   }, [isOpen, kind, trackEvent]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && (isPending || isForced)) {
+      hasTrackedShownRef.current = false;
       trackEvent('coachmark_dismissed', { kind });
       complete();
       onDismiss?.();

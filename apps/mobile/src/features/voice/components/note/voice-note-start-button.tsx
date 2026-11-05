@@ -6,7 +6,7 @@ import { PressableFeedback } from 'heroui-native';
 
 import { useVoiceNoteStart } from '../../hooks/use-voice-note-start';
 
-/** 메모 탭 위쪽의 마이크. 메모 추가 버튼과 같은 크기로 나란히 둔다 */
+/** 메모 탭 위쪽의 마이크. 메모 추가 버튼과 같은 크기로 나란히 둔다. 화면 맨 위라 안내는 아래로 연다 */
 export function VoiceNoteStartButton() {
   const { t } = useTranslation('voiceNote');
   const fontScaledSize = useFontScaledSize();
@@ -17,6 +17,7 @@ export function VoiceNoteStartButton() {
       kind="voice-note-start"
       title={t('coach.noteStart.title')}
       description={t('coach.noteStart.description')}
+      placement="bottom"
     >
       <PressableFeedback
         onPress={() => start()}
