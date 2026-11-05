@@ -370,6 +370,20 @@ export function shouldAutoFinish(
   return canFinish(state) && silentMs >= silenceLimitMs;
 }
 
+export type VoiceBackAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
+
+/** 시트의 Android 뒤로 가기. 듣기·정리는 X와 같고, 고를 카드가 있으면 계획을 잃기 전에 묻는다. null이면 시트가 닫힌다 */
+export function getBackAction(state: VoiceCaptureState): VoiceBackAction | null {
+  return match(state)
+    .returnType<VoiceBackAction | null>()
+    .with({ status: 'review' }, ({ plan }) =>
+      plan.actions.length === 0 ? null : 'confirm-discard',
+    )
+    .with({ status: 'planning' }, () => 'cancel-planning')
+    .when(isActive, () => 'cancel-capture')
+    .otherwise(() => null);
+}
+
 export function isOverQuickLimit(
   state: VoiceCaptureState,
   now: number,
@@ -397,5 +411,6 @@ export const VoiceCapturePolicy = {
   isSpeaking,
   isOverQuickLimit,
   shouldOfferVoiceNote,
+  getBackAction,
   getElapsedMs,
 } as const;

@@ -59,6 +59,8 @@ interface KeyboardBottomSheetProps {
   backgroundDecoration?: ReactNode;
   /** 내용을 끌어 시트를 움직일지. 내용이 안쪽 스크롤을 직접 두면 끄고 손잡이로만 움직이게 한다 */
   isContentPanEnabled?: boolean;
+  /** Android 뒤로 가기에서 할 일. 없으면 시트를 닫는다 */
+  onBackPress?: () => void;
 }
 
 /**
@@ -77,6 +79,7 @@ export const KeyboardBottomSheet = ({
   footer,
   backgroundDecoration,
   isContentPanEnabled = true,
+  onBackPress,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
@@ -130,7 +133,7 @@ export const KeyboardBottomSheet = ({
     }, 500);
   }, []);
 
-  useAndroidSheetBackHandler(isOpen, closeSheet);
+  useAndroidSheetBackHandler(isOpen, onBackPress ?? closeSheet);
 
   const resizeSheet = useCallback(() => {
     if (isClosingRef.current) {

@@ -39,7 +39,12 @@
   },
   "review": {
     "restart": "다시 말하기",
-    "typeInstead": "직접 입력"
+    "typeInstead": "직접 입력",
+    "leaveTitle": "이 계획을 닫을까요?",
+    "leaveDescription": "닫으면 이 계획은 다시 볼 수 없어요.",
+    "leaveDescriptionCharged": "닫으면 이 계획은 다시 볼 수 없고, 쓴 횟수도 돌아오지 않아요.",
+    "leaveConfirm": "닫기",
+    "leaveCancel": "계속 고르기"
   },
   "failed": {
     "keptText": "들은 내용은 남겨뒀어요.\n이어서 말하거나 직접 고쳐주세요.",
