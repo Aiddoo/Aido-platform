@@ -174,7 +174,8 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
         },
         options,
       );
-      const { title, categoryId: _categoryId, ...schedule } = value.data;
+      // golden은 출시 응답 칸만 기대값으로 갖는다. 새 선택 칸 repeat은 비교하지 않는다.
+      const { title, categoryId: _categoryId, repeat: _repeat, ...schedule } = value.data;
       const {
         title: expectedTitle,
         categoryId: _expectedCategoryId,
@@ -258,18 +259,18 @@ function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
       );
       const picked = new Set(value.keyPoints.map(({ sentenceIndex }) => sentenceIndex));
       const score = scorePlan(golden.expected, toPlanExpectation(plan, clock));
+      const digestTexts = [value.title, value.summary, ...value.keyPoints.map(({ text }) => text)];
+      const isDigestInAppLanguage = isWrittenInLocale(digestTexts, golden.locale);
       return {
         meta,
         score: {
           ...score,
+          ...(!isDigestInAppLanguage && score.diff == null && { diff: { digestTexts } }),
           bookmarkRecall:
             bookmarked.length === 0
               ? 1
               : bookmarked.filter((index) => picked.has(index)).length / bookmarked.length,
-          isDigestInAppLanguage: isWrittenInLocale(
-            [value.title, value.summary, ...value.keyPoints.map(({ text }) => text)],
-            golden.locale,
-          ),
+          isDigestInAppLanguage,
         },
       };
     },
