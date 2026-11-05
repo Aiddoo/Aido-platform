@@ -5,7 +5,7 @@ import {
 } from "#test/fixtures/ai-response.fixture";
 
 import type { ScheduleDraft } from "../../types/parsing/todo-draft.types.js";
-import { resolveTodoSchedule } from "./resolve-todo-schedule.js";
+import { resolvePlanSchedule, resolveTodoSchedule } from "./resolve-todo-schedule.js";
 
 // 같은 순간을 두 시간대로 해석한다: 서울 2026-10-28(수) 10:00, LA 2026-10-27(화) 18:00
 const NOW = new Date("2026-10-28T01:00:00Z");
@@ -642,5 +642,63 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     // Then
     expect(result.recurrence?.endDate).toBe("2026-11-25");
     expect(result.repeat).toEqual({ frequency: "DAILY", end: { type: "NEVER" } });
+  });
+});
+
+describe("resolvePlanSchedule — 계획의 주말", () => {
+  // 2026-11-05 목요일, 2026-11-07 토요일, 2026-11-08 일요일 (서울)
+  const THURSDAY = { now: new Date("2026-11-05T01:00:00Z"), timeZone: "Asia/Seoul" };
+  const SATURDAY = { now: new Date("2026-11-07T01:00:00Z"), timeZone: "Asia/Seoul" };
+  const SUNDAY = { now: new Date("2026-11-08T01:00:00Z"), timeZone: "Asia/Seoul" };
+
+  it.each([
+    { name: "주중에 말한 주말은 다가오는 토요일", clock: THURSDAY, expected: "2026-11-07" },
+    { name: "토요일에 말한 주말은 오늘", clock: SATURDAY, expected: "2026-11-07" },
+    { name: "일요일에 말한 이번 주말은 오늘", clock: SUNDAY, expected: "2026-11-08" },
+  ])("$name 한 번이고 반복이 아니다", ({ clock, expected }) => {
+    // Given
+    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "THIS_WEEKEND" }) };
+    // When
+    const result = resolvePlanSchedule(input, clock);
+    // Then
+    expect(result).toMatchObject({
+      startDate: expected,
+      endDate: null,
+      isRecurring: false,
+      recurrence: null,
+      repeat: null,
+    });
+  });
+
+  it("다음 주말은 다음 주 토요일 한 번이다", () => {
+    // Given
+    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "NEXT_WEEKEND" }) };
+    // When
+    const result = resolvePlanSchedule(input, THURSDAY);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-11-14", repeat: null, recurrence: null });
+  });
+
+  it("주말마다는 끝 없는 반복이다", () => {
+    // Given
+    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "WEEKENDS" }) };
+    // When
+    const result = resolvePlanSchedule(input, THURSDAY);
+    // Then
+    expect(result.repeat).toEqual({
+      frequency: "WEEKLY",
+      interval: 1,
+      weekdays: ["SAT", "SUN"],
+      end: { type: "NEVER" },
+    });
+  });
+
+  it("출시 parse 응답의 이번 주말은 요일과 종료일을 그대로 준다", () => {
+    // Given
+    const input = draft({ repeat: { pattern: "THIS_WEEKEND" } });
+    // When
+    const result = resolveTodoSchedule(input, THURSDAY);
+    // Then
+    expect(result.recurrence).toEqual({ daysOfWeek: ["SAT", "SUN"], endDate: "2026-11-08" });
   });
 });

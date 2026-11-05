@@ -3,7 +3,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-  resolveTodoSchedule,
+  resolvePlanSchedule,
   type ScheduleClock,
 } from "../../../domain/services/parsing/resolve-todo-schedule.js";
 import type { NormalizedActionPlan } from "../../../domain/types/planning/action-plan-draft.types.js";
@@ -42,7 +42,7 @@ interface ActionPlanGeneratorDependencies {
 function toGeneratedPlan(plan: NormalizedActionPlan, clock: ScheduleClock): GeneratedActionPlan {
   return {
     todos: plan.todos.map((todo) => {
-      const { startDate, endDate, scheduledTime, repeat } = resolveTodoSchedule(
+      const { startDate, endDate, scheduledTime, repeat } = resolvePlanSchedule(
         todo.schedule,
         clock,
       );

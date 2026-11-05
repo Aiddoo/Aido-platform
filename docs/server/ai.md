@@ -22,8 +22,8 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | parse-memo        | `prompts/parsing/parse-memo`         | `parse-memo@6`        |
 | report            | `prompts/reports/report`             | `report@3`            |
 | suggestion        | `prompts/suggestions/suggestion`     | `suggestion@3`        |
-| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@5`        |
-| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@5` |
+| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@6`        |
+| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@6` |
 
 - 작업 폴더는 `prompt.ko.ts`·`prompt.en.ts`(고정 system), `examples.ko.ts`·`examples.en.ts`, `schema.ts`(LLM schema), `index.ts`(정의·입력 타입)다. 파싱·계획이 함께 쓰는 일정 표현 schema·규칙·기준 시각은 `prompts/parsing/schedule`, 계획 공통 규칙·맥락은 `prompts/planning`에 있다.
 - 캐시 친화 순서: system은 `<role>` `<security>` `<language_policy>` `<output_contract>` `<rules>` `<examples>`(사용자 값 없음, 업체 어댑터가 Claude `cacheControl`을 건다) → user 턴은 동적 `<context>`(기준 시각·요일·시간대, 카테고리 id·이름, 계획은 다가오는 할 일 30개) → 맨 끝에 사용자 입력 블록(`<user_input>`·`<transcript>`·`<report_data>`·`<suggestion_data>`). 과제 지시는 `<output_contract>`에 있어 입력 뒤에 지시가 오지 않는다.
@@ -45,7 +45,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ### 계획(quick-plan·voice-note-digest) 출력
 
 - 모델 출력은 `todos`(title, categoryId|null, date·endDate·time 일정 표현, repeat 표현, visibility `PRIVATE`|null, items, duplicateOfTodoId|null)와 `memo`(title, content 또는 null)다. 공개 계획 모양은 정규화(`NormalizedActionPlan`) 뒤에 만든다. 기한("금요일까지")은 date NONE + endDate, 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. 녹음 정리는 앱 언어의 title·summary·keyPoints(`{ text, sentenceIndex|null }`)를 더한다. 말한 언어가 달라도 이 셋은 앱 언어이고, 할 일 제목·항목과 메모만 말한 언어다. 모델은 날짜·시각을 계산하지 않고 표현만 낸다.
-- 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 시작일보다 뒤가 아닌 끝은 반복이 되지 않으므로 말하지 않은 것으로 보고 버린다(`REPEAT_END_NOT_AFTER_START`, 출시 앱용 `recurrence`는 기본 +4주). "30분 운동"처럼 한 번에 걸리는 시간은 제목에 남기고 반복 기간으로 쓰지 않으며, "이번"·"다음" 없는 "주말에"는 `WEEKENDS`다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
+- 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 시작일보다 뒤가 아닌 끝은 반복이 되지 않으므로 말하지 않은 것으로 보고 버린다(`REPEAT_END_NOT_AFTER_START`, 출시 앱용 `recurrence`는 기본 +4주). "30분 운동"처럼 한 번에 걸리는 시간은 제목에 남기고 반복 기간으로 쓰지 않는다. `WEEKENDS`는 "주말마다", "매주 주말", "weekends"처럼 되풀이를 말했을 때만이고, 그냥 "주말에"·"이번 주말"·"this weekend"(`THIS_WEEKEND`)와 "다음 주말"(`NEXT_WEEKEND`)은 계획에서 그 주말 토요일 한 번이다(`resolvePlanSchedule`, 일요일에 말한 이번 주말은 오늘). 출시 parse 응답의 `recurrence`와 `repeat`은 이 둘을 지금처럼 토·일 + 종료일로 준다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
 - 정규화(`application/services/planning/action-plan.normalizer.ts`): 할 일 앞의 `ACTION_PLAN_LIMITS.MAX_TODOS`(10)개·메모 1개, 하위 항목 `TODO_ITEM_LIMITS.MAX_PER_TODO`, 제목 200자, 모르는 카테고리·겹침 id → null, 반복이면 기간(endDate)을 버린다. 핵심 포인트는 5개, 문장 번호는 준 문장 범위 안의 값만 남긴다. 계획·요약·핵심 포인트가 모두 비면 빈 결과(`isEmptyActionPlan`·`isEmptyVoiceNoteDigest`)로 호출부가 환불한다.
 
 ### 계획 생성과 적용(voice)
