@@ -8,7 +8,7 @@
 import { TextArea } from '@src/shared/ui/text-area';
 
 // 기본
-<TextArea placeholder="내용을 입력하세요" />
+<TextArea value={message} onChange={setMessage} placeholder="내용을 입력하세요" />
 
 // 라벨
 <TextArea
@@ -37,6 +37,8 @@ import { TextArea } from '@src/shared/ui/text-area';
 
 | Prop                 | 타입                                      | 기본값     | 설명                                                                                  |
 | -------------------- | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| `value`              | `string`                                  | -          | 입력값 (필수)                                                                         |
+| `onChange`           | `(value: string) => void`                 | -          | 값 변경 콜백 (필수)                                                                   |
 | `variant`            | `'filled' \| 'line' \| 'plain' \| 'bare'` | `'filled'` | 입력 필드 스타일                                                                      |
 | `label`              | `string`                                  | -          | 라벨 텍스트                                                                           |
 | `isDisabled`         | `boolean`                                 | `false`    | 비활성화 상태                                                                         |

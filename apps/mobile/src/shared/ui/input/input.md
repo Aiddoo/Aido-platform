@@ -8,7 +8,7 @@
 import { Input } from '@src/shared/ui/input/input';
 
 // 기본
-<Input placeholder="이메일을 입력하세요" />
+<Input value={email} onChange={setEmail} placeholder="이메일을 입력하세요" />
 
 // 라벨 + 에러
 <Input
@@ -29,18 +29,21 @@ import { Input } from '@src/shared/ui/input/input';
 
 ## Props
 
-| Prop                | 타입                  | 기본값     | 설명                   |
-| ------------------- | --------------------- | ---------- | ---------------------- |
-| `variant`           | `'filled' \| 'line'`  | `'filled'` | 입력 필드 스타일       |
-| `size`              | `'medium' \| 'large'` | `'large'`  | 입력 필드 크기         |
-| `label`             | `string`              | -          | 라벨 텍스트            |
-| `isDisabled`        | `boolean`             | `false`    | 비활성화 상태          |
-| `isInvalid`         | `boolean`             | `false`    | 에러 상태              |
-| `errorMessage`      | `string`              | -          | 에러 메시지            |
-| `leftContent`       | `ReactNode`           | -          | 왼쪽 아이콘/컴포넌트   |
-| `rightContent`      | `ReactNode`           | -          | 오른쪽 아이콘/컴포넌트 |
-| `className`         | `string`              | -          | 컨테이너 추가 스타일   |
-| `...TextInputProps` | -                     | -          | `TextInput` 기본 props |
+| Prop                 | 타입                      | 기본값     | 설명                           |
+| -------------------- | ------------------------- | ---------- | ------------------------------ |
+| `value`              | `string`                  | -          | 입력값 (필수)                  |
+| `onChange`           | `(value: string) => void` | -          | 값 변경 콜백 (필수)            |
+| `variant`            | `'filled' \| 'line'`      | `'filled'` | 입력 필드 스타일               |
+| `size`               | `'medium' \| 'large'`     | `'large'`  | 입력 필드 크기                 |
+| `label`              | `string`                  | -          | 라벨 텍스트                    |
+| `isDisabled`         | `boolean`                 | `false`    | 비활성화 상태                  |
+| `isInvalid`          | `boolean`                 | `false`    | 에러 상태                      |
+| `errorMessage`       | `string`                  | -          | 에러 메시지                    |
+| `renderErrorMessage` | `boolean`                 | `true`     | 에러 메시지 영역을 그릴지 여부 |
+| `leftContent`        | `ReactNode`               | -          | 왼쪽 아이콘/컴포넌트           |
+| `rightContent`       | `ReactNode`               | -          | 오른쪽 아이콘/컴포넌트         |
+| `className`          | `string`                  | -          | 컨테이너 추가 스타일           |
+| `...TextInputProps`  | -                         | -          | `TextInput` 기본 props         |
 
 ## 스타일 (variant)
 
