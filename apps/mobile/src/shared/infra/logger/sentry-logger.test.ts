@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import * as Sentry from '@sentry/react-native';
 
 import { createSentryLogger, logEventFeature } from './sentry-logger';
@@ -108,4 +111,28 @@ describe('logEventFeature', () => {
       expect(logEventFeature(message)).toBeUndefined();
     },
   );
+
+  it('SENTRY_FEATURES에 없는 첫 마디는 태그로 보내지 않는다', () => {
+    // When / Then
+    expect(logEventFeature('unknown-feature.submit.failed')).toBeUndefined();
+  });
+
+  it('로그 이벤트 상수의 첫 마디는 모두 SENTRY_FEATURES에 있다', () => {
+    // Given
+    const srcRoot = join(__dirname, '../../..');
+    const logEventKeys = readdirSync(srcRoot, { recursive: true, encoding: 'utf8' })
+      .filter((path) => path.endsWith('log-events.ts'))
+      .flatMap((path) =>
+        [...readFileSync(join(srcRoot, path), 'utf8').matchAll(/: '([a-z0-9.-]+)'/g)].map(
+          ([, key]) => key ?? '',
+        ),
+      );
+
+    // When
+    const keysWithoutFeature = logEventKeys.filter((key) => logEventFeature(key) == null);
+
+    // Then
+    expect(logEventKeys.length).toBeGreaterThan(0);
+    expect(keysWithoutFeature).toEqual([]);
+  });
 });

@@ -8,6 +8,7 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { useConfirmDialog } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
@@ -66,7 +67,7 @@ export const usePurchaseMutationOptions = () => {
           if (reason != null) {
             trackEvent('purchase_failed', { reason });
           }
-          errorReporter.captureMessage('subscription_purchase_failed', {
+          errorReporter.captureMessage(SENTRY_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {
             feature: 'subscription',
             severity: 'warning',
             errorCode: failure.diagnosticCode,

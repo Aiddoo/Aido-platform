@@ -35,25 +35,52 @@ import type { TodoSuggestionReason } from '@src/features/weather/utils/view-mode
 
 /** Sentry `feature` 태그 값. snake_case만 쓰고 새 값은 여기에 먼저 추가한다. */
 export const SENTRY_FEATURES = [
+  'accessibility',
+  'ai',
   'app_icon',
+  'app_settings',
   'app_version',
   'auth',
   'auth_cold_start',
   'draft',
   'entitlement',
+  'env',
   'error_boundary',
+  'feature_attribution',
+  'feature_discovery',
+  'firebase_analytics',
   'invite',
   'lifecycle',
   'memo',
+  'network_status',
+  'notification',
+  'query_cache',
+  'root_error_boundary',
+  'store_review',
   'subscription',
+  'support_mail',
   'todo',
   'todo_comment',
   'todo_nudge',
+  'token_refresher',
   'voice',
+  'weather',
   'weather_location',
+  'web_browser',
   'widget',
 ] as const;
 export type SentryFeature = (typeof SENTRY_FEATURES)[number];
+
+/** `captureMessage`로 보내는 Sentry 이슈 제목. 알림 규칙이 이 값을 볼 수 있어 값을 바꾸지 않는다. */
+export const SENTRY_MESSAGES = {
+  AUTH_REFRESH_RETRY_REJECTED: 'auth_refresh_retry_rejected',
+  QUERY_BOUNDARY_AUTH_CONTAINED: 'query_boundary_auth_contained',
+  SESSION_EXPIRED: 'session_expired',
+  SUBSCRIPTION_PURCHASE_FAILED: 'subscription_purchase_failed',
+  SUBSCRIPTION_RESTORE_FAILED: 'subscription_restore_failed',
+  SUBSCRIPTION_STORE_UNAVAILABLE: 'subscription_store_unavailable',
+} as const;
+export type SentryMessage = (typeof SENTRY_MESSAGES)[keyof typeof SENTRY_MESSAGES];
 
 /** Sentry 태그 키. `ErrorReporterContext` 필드명과 같은 이름으로 변환된다. */
 export const SENTRY_TAGS = {

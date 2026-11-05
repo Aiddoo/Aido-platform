@@ -3,6 +3,7 @@ import type { TokenStore } from '@src/core/ports/token-store';
 import { getErrorMessage } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import { logger } from '@src/shared/infra/logger/global-logger';
+import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import ky, { type AfterResponseHook } from 'ky';
 
 import { getPathname } from './error-handler';
@@ -58,7 +59,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     }
 
     if (request.headers.has(RETRY_MARKER_HEADER)) {
-      errorReporter.captureMessage('auth_refresh_retry_rejected', {
+      errorReporter.captureMessage(SENTRY_MESSAGES.AUTH_REFRESH_RETRY_REJECTED, {
         severity: 'warning',
         feature: 'auth_cold_start',
         statusCode: 401,

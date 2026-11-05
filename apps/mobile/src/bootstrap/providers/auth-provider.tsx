@@ -6,6 +6,7 @@ import {
 } from '@src/features/widget/hooks/use-widget-snapshot-sync';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
+import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
@@ -160,7 +161,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       // 검색가능 1급 이벤트(원인 진단용) + 집계 이벤트(빈도 파악용, 타입 카탈로그 경유).
       // errorCode는 클라이언트의 결정 경로, serverErrorCode는 서버의 판정 — 별개 축이다.
-      errorReporter.captureMessage('session_expired', {
+      errorReporter.captureMessage(SENTRY_MESSAGES.SESSION_EXPIRED, {
         feature: 'auth',
         severity: sessionExpiredSeverity[reason],
         errorCode: reason,

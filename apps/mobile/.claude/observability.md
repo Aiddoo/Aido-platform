@@ -72,13 +72,15 @@ Issue로 묶이는 신호다. `severity`와 태그를 함께 넘긴다.
 
 ```ts
 errorReporter.captureException(error, { feature: 'error_boundary' });
-errorReporter.captureMessage('session_expired', {
+errorReporter.captureMessage(SENTRY_MESSAGES.SESSION_EXPIRED, {
   feature: 'auth',
   severity: sessionExpiredSeverity[reason],
   errorCode: reason,
   serverErrorCode,
 });
 ```
+
+`captureMessage`의 제목은 `SENTRY_MESSAGES`(`SentryMessage`)의 값만 쓴다. 알림 규칙이 볼 수 있어 값은 바꾸지 않는다.
 
 ### Breadcrumb: `addBreadcrumb`
 
@@ -127,6 +129,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 - `errorCode`는 클라이언트가 판단한 사유, `serverErrorCode`는 서버가 내려준 `@aido/api/errors` 코드다. 섞지 않는다.
 - `feature`는 `SENTRY_FEATURES`(`SentryFeature`)의 snake_case 값이다. 새 값은 거기에 먼저 더한다. 태그 키는 `SENTRY_TAGS`를 쓴다.
+- `logger.error`의 `feature` 태그는 이벤트 키의 첫 마디이고 `SENTRY_FEATURES` 안의 값만 보낸다. 새 첫 마디를 쓰는 로그 이벤트는 거기에도 더한다. 빠지면 `sentry-logger.test.ts`가 실패한다.
 
 ## Logger
 
