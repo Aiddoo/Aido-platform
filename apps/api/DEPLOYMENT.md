@@ -151,7 +151,7 @@ WHERE zone."userId" = t."userId"
 SELECT count(DISTINCT "recurrenceGroupId") AS series, count(*) AS rows FROM "Todo" WHERE "recurrenceGroupId" IS NOT NULL;
 ```
 
-**`todo_scheduled_local_time` 배포 전 확인**: 칸 채우기도 같은 트랜잭션에서 `Todo`를 잠근다. 일회용 PostgreSQL에서 전체 126만 행 중 시간 있는 63만 행을 채우는 데 10.9초였다(사용자 2만 명, 인덱스 그대로, 약 17µs/행). 앱 요청 제한이 10초이고 위 이관과 시간이 더해지므로 아래 건수가 20만을 넘으면 배포 전에 나눠 채운다. 건수가 그 아래면 그대로 실행한다.
+**`todo_scheduled_local_time` 배포 전 확인**: 칸 채우기도 같은 트랜잭션에서 `Todo`를 잠근다. 일회용 PostgreSQL에서 전체 126만 행 중 시간 있는 63만 행을 채우는 데 10.0~10.9초였다(사용자 2만 명, 인덱스 그대로, 약 17µs/행, 2회). 앱 요청 제한이 10초이고 위 이관과 시간이 더해지므로 아래 건수가 20만을 넘으면 배포 전에 나눠 채운다. 건수가 그 아래면 그대로 실행한다.
 
 ```sql
 SELECT count(*) FROM "Todo" WHERE "scheduledTime" IS NOT NULL;
