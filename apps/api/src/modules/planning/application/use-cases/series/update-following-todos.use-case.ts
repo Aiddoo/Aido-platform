@@ -34,6 +34,8 @@ import type { TodoSeriesEditEffects } from "../../services/series/todo-series-ed
 export interface UpdateFollowingTodosInput {
   readonly id: number;
   readonly userId: string;
+  /** 요청의 기기 시간대. 시간을 고칠 때만 그 시각의 시간대로 규칙에 저장한다. */
+  readonly timezone: string;
   readonly title?: string;
   readonly categoryId?: number;
   readonly visibility?: TodoVisibility;
@@ -166,11 +168,13 @@ export class UpdateFollowingTodos {
     const ruleChanged = rule != null && !rule.equals(series.getRule());
     const checklistChanged =
       input.checklist != null && !isEqual(input.checklist, series.getChecklistTemplate());
+    const scheduledLocalTime = resolveLocalTime(input);
     const details = {
       title: input.title,
       categoryId: input.categoryId,
       visibility: input.visibility,
-      scheduledLocalTime: resolveLocalTime(input),
+      scheduledLocalTime,
+      timezone: scheduledLocalTime == null ? undefined : input.timezone,
     };
 
     if (ruleChanged && !series.isActive()) {

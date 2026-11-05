@@ -61,6 +61,8 @@ export interface TodoSeriesChanges {
   readonly categoryId?: number;
   readonly visibility?: TodoVisibility;
   readonly scheduledLocalTime?: string | null;
+  /** 사용자가 시간을 고칠 때만 넘긴다. 그 시각은 이 시간대의 벽시계다. */
+  readonly timezone?: string;
   readonly checklistTemplate?: readonly ChecklistTemplateItem[];
   readonly rule?: RepeatRule;
 }
@@ -234,7 +236,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       // nullish-strict: null은 시간 지우기, undefined는 유지다
       scheduledLocalTime:
         changes.scheduledLocalTime === undefined ? scheduledLocalTime : changes.scheduledLocalTime,
-      timezone: this.props.timezone,
+      timezone: changes.timezone ?? this.props.timezone,
       rule,
       startDate: pivotDate,
       checklistTemplate: changes.checklistTemplate ?? checklistTemplate,
@@ -244,7 +246,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     return next;
   }
 
-  /** 규칙은 그대로 두고 제목·카테고리·공개·시간만 바꾼다. 바뀐 게 있으면 true다. */
+  /** 규칙은 그대로 두고 제목·카테고리·공개·시간(과 그 시간대)만 바꾼다. 바뀐 게 있으면 true다. */
   applyDetails(changes: Omit<TodoSeriesChanges, "rule" | "checklistTemplate">): boolean {
     let changed = false;
     if (changes.title != null && changes.title !== this.props.title) {
@@ -266,6 +268,10 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       changes.scheduledLocalTime !== this.props.scheduledLocalTime
     ) {
       this.props.scheduledLocalTime = changes.scheduledLocalTime;
+      changed = true;
+    }
+    if (changes.timezone != null && changes.timezone !== this.props.timezone) {
+      this.props.timezone = changes.timezone;
       changed = true;
     }
     return changed;

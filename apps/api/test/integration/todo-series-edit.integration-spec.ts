@@ -121,8 +121,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     return client.query.todoSeries.findFirst({ where: { id: seriesId } });
   }
 
-  function following(input: Omit<UpdateFollowingTodosInput, "userId">) {
-    return context.module.get(UpdateFollowingTodos).execute({ userId, ...input });
+  function following(input: Omit<UpdateFollowingTodosInput, "userId" | "timezone">) {
+    return context.module
+      .get(UpdateFollowingTodos)
+      .execute({ userId, timezone: "America/New_York", ...input });
   }
 
   function edit(

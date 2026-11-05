@@ -78,6 +78,7 @@ export class EditTodo {
     const followingInput = {
       id,
       userId,
+      timezone,
       title: data.title,
       categoryId: data.categoryId,
       visibility: data.visibility,
