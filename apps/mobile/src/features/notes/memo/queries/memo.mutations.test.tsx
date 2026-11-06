@@ -8,18 +8,16 @@ import {
   createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { ok } from '@src/shared/errors/result';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
-import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { toMemo } from '../apis/memo.mapper';
 import { MemoService } from '../apis/memo.service';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
@@ -141,20 +139,15 @@ describe('오프라인에서 AI 정리', () => {
       mutateAsync = useMutationCapture();
       return null;
     }
-    await renderUi(
-      <LocalDateProvider>
-        <OverlayProvider>
-          <Capture />
-        </OverlayProvider>
-      </LocalDateProvider>,
-      {
-        di: {
-          ...createMemoTestDi(httpClient),
-          haptics: createHapticsStub(),
-          draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
-        },
-      },
-    );
+    await renderUi(<Capture />, {
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({
+        httpClient,
+        haptics: createHapticsStub(),
+        draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+      }),
+    });
 
     // When
     const result = mutateAsync?.({ content: '메모', categoryId: 1, sourceUpdatedAt: 0 });
@@ -183,20 +176,16 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       mutateAsync = useMutationCapture();
       return null;
     }
-    await renderUi(
-      <OverlayProvider>
-        <Capture />
-      </OverlayProvider>,
-      {
-        di: {
-          ...createMemoTestDi(httpClient),
-          haptics: createHapticsStub(),
-          activationService: new ActivationService(
-            createActivationProgressRepository(createMemorySyncStorage()),
-          ),
-        },
-      },
-    );
+    await renderUi(<Capture />, {
+      withOverlay: true,
+      di: createTestDi({
+        httpClient,
+        haptics: createHapticsStub(),
+        activationService: new ActivationService(
+          createActivationProgressRepository(createMemorySyncStorage()),
+        ),
+      }),
+    });
 
     // When
     const result = mutateAsync?.({
@@ -238,7 +227,7 @@ describe('오프라인에서 메모 삭제', () => {
       return null;
     }
     await renderUi(<Capture />, {
-      di: { ...createMemoTestDi(httpClient), haptics: createHapticsStub() },
+      di: createTestDi({ httpClient, haptics: createHapticsStub() }),
     });
 
     // When

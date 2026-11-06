@@ -8,6 +8,7 @@ import {
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -15,14 +16,11 @@ import { DraftService } from '@src/shared/draft/draft.service';
 import { ApiError } from '@src/shared/errors/api-error';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { err, ok } from '@src/shared/errors/result';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 
 import { createMemo } from '../__tests__/memo.fixtures';
-import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import { MemoEditor } from './memo-editor';
 import { MemoList } from './memo-list';
@@ -67,28 +65,26 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
   const onLeave = jest.fn();
 
   await renderUi(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <Suspense fallback={null}>
-          {withList && <MemoList />}
-          <MemoEditor
-            toolbar={toolbar === 'stack' ? MemoEditor.StackToolbar : MemoEditor.PaneToolbar}
-            onLeave={onLeave}
-          />
-        </Suspense>
-      </OverlayProvider>
-    </LocalDateProvider>,
+    <Suspense fallback={null}>
+      {withList && <MemoList />}
+      <MemoEditor
+        toolbar={toolbar === 'stack' ? MemoEditor.StackToolbar : MemoEditor.PaneToolbar}
+        onLeave={onLeave}
+      />
+    </Suspense>,
     {
       queryClient,
-      di: {
-        ...createMemoTestDi(httpClient),
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({
+        httpClient,
         todoCategoryService: new TodoCategoryService(httpClient),
         draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
         voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
-      },
+      }),
     },
   );
 

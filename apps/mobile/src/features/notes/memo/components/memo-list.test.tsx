@@ -9,14 +9,12 @@ import {
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
-import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { MemoList } from './memo-list';
 
 const ACCOUNT_ID = 'account-1';
@@ -39,22 +37,20 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
   }
 
   await renderUi(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <Suspense fallback={null}>
-          <MemoList />
-        </Suspense>
-      </OverlayProvider>
-    </LocalDateProvider>,
+    <Suspense fallback={null}>
+      <MemoList />
+    </Suspense>,
     {
       queryClient,
-      di: {
-        ...createMemoTestDi(httpClient),
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({
+        httpClient,
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
         voiceNoteStorageService,
-      },
+      }),
     },
   );
 }

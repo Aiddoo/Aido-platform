@@ -3,6 +3,8 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import type { QueryClient } from '@tanstack/react-query';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
@@ -21,18 +23,25 @@ interface RenderUiOptions {
   di?: Partial<DIContainer>;
   /** 캐시 상태를 직접 들여다봐야 할 때만 넘긴다. 보통은 비워 둔다. */
   queryClient?: QueryClient;
+  /** 화면이 오늘 날짜를 읽으면 켠다 */
+  withLocalDate?: boolean;
+  /** 시트·다이얼로그를 띄우면 켠다 */
+  withOverlay?: boolean;
 }
 
 type RenderUiResult = Awaited<ReturnType<typeof render>> & { queryClient: QueryClient };
 
 export async function renderUi(
   ui: ReactElement,
-  { di, queryClient }: RenderUiOptions = {},
+  { di, queryClient, withLocalDate = false, withOverlay = false }: RenderUiOptions = {},
 ): Promise<RenderUiResult> {
   const client = queryClient ?? createTestQueryClient();
   const container = createTestDiContainer(di);
 
   function Harness({ children }: { children: ReactNode }) {
+    const overlaid = withOverlay ? <OverlayProvider>{children}</OverlayProvider> : children;
+    const dated = withLocalDate ? <LocalDateProvider>{overlaid}</LocalDateProvider> : overlaid;
+
     return (
       <GestureHandlerProvider>
         <StaticDIProvider container={container}>
@@ -41,7 +50,7 @@ export async function renderUi(
               <HeroUIProvider
                 config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
               >
-                {children}
+                {dated}
               </HeroUIProvider>
             </FontScaleProvider>
           </QueryClientProvider>

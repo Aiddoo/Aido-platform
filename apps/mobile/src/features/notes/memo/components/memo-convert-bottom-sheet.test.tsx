@@ -7,14 +7,12 @@ import {
   createMemorySyncStorage,
   createHttpClientStub,
 } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError } from '@src/shared/errors/api-error';
 import { err, ok } from '@src/shared/errors/result';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
 const MEMO = { id: 5, content: '장보기' };
@@ -25,28 +23,26 @@ async function renderSheet() {
   const onClose = jest.fn();
   const onConverted = jest.fn();
   await renderUi(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <MemoConvertBottomSheet
-          memo={MEMO}
-          selectedDate={new Date(2026, 10, 7)}
-          categoryId={1}
-          isOpen
-          onOpenChange={jest.fn()}
-          onClose={onClose}
-          onConverted={onConverted}
-        />
-      </OverlayProvider>
-    </LocalDateProvider>,
+    <MemoConvertBottomSheet
+      memo={MEMO}
+      selectedDate={new Date(2026, 10, 7)}
+      categoryId={1}
+      isOpen
+      onOpenChange={jest.fn()}
+      onClose={onClose}
+      onConverted={onConverted}
+    />,
     {
-      di: {
-        ...createMemoTestDi(httpClient),
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({
+        httpClient,
         todoCategoryService: new TodoCategoryService(httpClient),
         activationService: new ActivationService(
           createActivationProgressRepository(createMemorySyncStorage()),
         ),
         haptics: createHapticsStub(),
-      },
+      }),
     },
   );
 
