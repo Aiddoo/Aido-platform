@@ -69,7 +69,7 @@ export function TodoComposerChips({
       <VisibilityChip />
       {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
       <QueryErrorBoundary fallback={() => null}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ActionChip.Loading />}>
           <CategoryChip />
         </Suspense>
       </QueryErrorBoundary>

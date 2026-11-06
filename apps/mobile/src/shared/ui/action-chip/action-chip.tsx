@@ -1,6 +1,6 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { PressableProps } from 'react-native';
 
@@ -49,6 +49,11 @@ export function ActionChip({
     </PressableFeedback>
   );
 }
+
+/** 칩과 같은 높이로 자리를 잡아 카테고리를 읽은 뒤 칩 줄이 밀리지 않게 한다 */
+ActionChip.Loading = function Loading({ className }: { className?: string }) {
+  return <Skeleton className={cn('h-8 w-24 rounded-full', className)} />;
+};
 
 ActionChip.Icon = function Icon({
   as: IconComponent,

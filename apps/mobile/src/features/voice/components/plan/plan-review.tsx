@@ -357,6 +357,7 @@ PlanReview.TodoRow = function PlanTodoRow({
   const handlePress = () => {
     overlay.open(({ isOpen, close, unmount }) => (
       <QueryErrorBoundary fallback={() => null}>
+        {/* 카테고리와 설정을 읽은 뒤에야 시트가 올라온다. 닫힌 시트라 밀릴 화면이 없고 조회는 이 화면에서 이미 받아 둔 캐시다 */}
         <Suspense fallback={null}>
           <PlanTodoEditSheet
             todo={todo}

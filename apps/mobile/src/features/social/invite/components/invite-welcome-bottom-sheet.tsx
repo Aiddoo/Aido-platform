@@ -104,6 +104,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
           />
         )}
       >
+        {/* 수락 mutation이 내 정보를 이미 받아 캐시에서 바로 그린다. 기다릴 일이 거의 없어 자리를 잡지 않는다 */}
         <Suspense fallback={null}>
           <InviteWelcomeBottomSheet.Contents result={result} />
         </Suspense>
