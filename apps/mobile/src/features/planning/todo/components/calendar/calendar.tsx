@@ -1,18 +1,12 @@
 import { useCalendarViewMode } from '@src/features/planning/todo/hooks/use-calendar-view-mode';
 import { useFeedDate, useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
 import {
-  addMonths,
-  addWeeks,
   diffMonths,
   diffWeeks,
-  getMonthStart,
   getMonthWeeks,
-  getNextDay,
   getWeekDates,
   getWeekStart,
   isSameMonth,
-  withDayOfMonth,
-  withDayOfWeek,
 } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
@@ -27,6 +21,7 @@ import {
 } from '@src/shared/preferences/calendar-view-mode.preference';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import dayjs from 'dayjs';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -177,7 +172,10 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   const baseWeekRef = useRef(getWeekStart(selectedDate));
 
   const weekAtPage = useCallback(
-    (page: number) => addWeeks(baseWeekRef.current, page - CENTER_PAGE),
+    (page: number) =>
+      dayjs(baseWeekRef.current)
+        .add(page - CENTER_PAGE, 'week')
+        .toDate(),
     [],
   );
 
@@ -189,7 +187,7 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
 
   const handleChange = (page: number) => {
     const week = weekAtPage(page);
-    setSelectedDate(withDayOfWeek(week, selectedDate.getDay()));
+    setSelectedDate(dayjs(week).day(dayjs(selectedDate).day()).toDate());
   };
 
   return (
@@ -205,10 +203,13 @@ interface CalendarMonthPagerProps {
 
 function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
-  const baseMonthRef = useRef(getMonthStart(selectedDate));
+  const baseMonthRef = useRef(dayjs(selectedDate).startOf('month').toDate());
 
   const monthAtPage = useCallback(
-    (page: number) => addMonths(baseMonthRef.current, page - CENTER_PAGE),
+    (page: number) =>
+      dayjs(baseMonthRef.current)
+        .add(page - CENTER_PAGE, 'month')
+        .toDate(),
     [],
   );
 
@@ -220,7 +221,7 @@ function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
 
   const handleChange = (page: number) => {
     const month = monthAtPage(page);
-    setSelectedDate(withDayOfMonth(month, selectedDate.getDate()));
+    setSelectedDate(dayjs(month).date(dayjs(selectedDate).date()).toDate());
   };
 
   return (
@@ -387,7 +388,7 @@ function fillMonthGrid(weeks: Date[][]): Date[][] {
     if (!lastDate) {
       break;
     }
-    filled.push(getWeekDates(getNextDay(lastDate)));
+    filled.push(getWeekDates(dayjs(lastDate).add(1, 'day').toDate()));
   }
   return filled;
 }

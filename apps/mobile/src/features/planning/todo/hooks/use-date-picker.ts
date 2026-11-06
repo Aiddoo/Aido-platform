@@ -1,8 +1,5 @@
-import {
-  getMonthWeeks,
-  getNextMonth,
-  getPreviousMonth,
-} from '@src/features/planning/todo/utils/calendar-date';
+import { getMonthWeeks } from '@src/features/planning/todo/utils/calendar-date';
+import dayjs from 'dayjs';
 import { useMemo, useReducer } from 'react';
 import { match } from 'ts-pattern';
 
@@ -24,11 +21,11 @@ export const datePickerReducer = (
     .with({ type: 'selectDate' }, ({ date }) => ({ ...state, startDate: date }))
     .with({ type: 'prevMonth' }, () => ({
       ...state,
-      displayMonth: getPreviousMonth(state.displayMonth),
+      displayMonth: dayjs(state.displayMonth).subtract(1, 'month').toDate(),
     }))
     .with({ type: 'nextMonth' }, () => ({
       ...state,
-      displayMonth: getNextMonth(state.displayMonth),
+      displayMonth: dayjs(state.displayMonth).add(1, 'month').toDate(),
     }))
     .exhaustive();
 

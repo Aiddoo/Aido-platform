@@ -1,9 +1,4 @@
-import {
-  getNextDay,
-  isSameDay,
-  isSameMonth,
-  startOfDay,
-} from '@src/features/planning/todo/utils/calendar-date';
+import { isSameDay, isSameMonth } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { getWeekdayLabels } from '@src/shared/date/date-labels';
 import { toDateKey } from '@src/shared/date/instant';
@@ -22,6 +17,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
@@ -67,8 +63,8 @@ interface QuickDateOptionsProps {
 function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
   const { t } = useTranslation('todo');
   const today = useToday();
-  const todayStart = startOfDay(today);
-  const tomorrowStart = getNextDay(todayStart);
+  const todayStart = dayjs(today).startOf('day').toDate();
+  const tomorrowStart = dayjs(todayStart).add(1, 'day').toDate();
 
   return (
     <VStack gap={4}>
@@ -120,7 +116,7 @@ function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) 
         }
         right={
           <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
-            {weekdayLabels[date.getDay()]}
+            {weekdayLabels[dayjs(date).day()]}
           </Text>
         }
         horizontalPadding="medium"

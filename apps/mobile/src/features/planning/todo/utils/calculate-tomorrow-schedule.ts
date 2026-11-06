@@ -1,8 +1,5 @@
-import {
-  getNextDay,
-  isBeforeDay,
-  startOfDay,
-} from '@src/features/planning/todo/utils/calendar-date';
+import { isBeforeDay } from '@src/features/planning/todo/utils/calendar-date';
+import dayjs from 'dayjs';
 
 interface TomorrowSchedule {
   startDate: Date;
@@ -13,7 +10,7 @@ export const calculateTomorrowSchedule = (
   endDateObj: Date | null,
   today: Date,
 ): TomorrowSchedule => {
-  const tomorrow = getNextDay(startOfDay(today));
+  const tomorrow = dayjs(today).startOf('day').add(1, 'day').toDate();
   const isEndDateExpired = endDateObj != null && isBeforeDay(endDateObj, tomorrow);
 
   return {

@@ -72,34 +72,6 @@ export function getWeekStart(date: Date): Date {
   return getCalendarWeekBounds(date).start;
 }
 
-export function startOfDay(date: Date): Date {
-  return dayjs(date).startOf('day').toDate();
-}
-
-export function getMonthStart(date: Date): Date {
-  return dayjs(date).startOf('month').toDate();
-}
-
-export function getNextDay(date: Date): Date {
-  return dayjs(date).add(1, 'day').toDate();
-}
-
-export function getPreviousMonth(date: Date): Date {
-  return dayjs(date).subtract(1, 'month').toDate();
-}
-
-export function getNextMonth(date: Date): Date {
-  return dayjs(date).add(1, 'month').toDate();
-}
-
-export function addWeeks(date: Date, weeks: number): Date {
-  return dayjs(date).add(weeks, 'week').toDate();
-}
-
-export function addMonths(date: Date, months: number): Date {
-  return dayjs(date).add(months, 'month').toDate();
-}
-
 /** 두 날짜의 주 단위 차이 (date1 - date2, 앱 달력 주의 시작으로 정규화) */
 export function diffWeeks(date1: Date, date2: Date): number {
   return dayjs(getCalendarWeekBounds(date1).start).diff(getCalendarWeekBounds(date2).start, 'week');
@@ -108,16 +80,6 @@ export function diffWeeks(date1: Date, date2: Date): number {
 /** 두 날짜의 월 단위 차이 (date1 - date2, startOf('month') 기준으로 정규화) */
 export function diffMonths(date1: Date, date2: Date): number {
   return dayjs(date1).startOf('month').diff(dayjs(date2).startOf('month'), 'month');
-}
-
-/** 그 주 안에서 요일을 n번째로 이동 (0=일, 6=토) */
-export function withDayOfWeek(date: Date, dayOfWeek: number): Date {
-  return dayjs(date).day(dayOfWeek).toDate();
-}
-
-/** 그 달 안에서 날짜를 n일로 이동 (월말이면 자동 clamp, 예: 1/31 → 2월은 2/28) */
-export function withDayOfMonth(date: Date, dayOfMonth: number): Date {
-  return dayjs(date).date(dayOfMonth).toDate();
 }
 
 export function getWeekDates(weekStartDate: Date): Date[] {

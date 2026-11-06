@@ -1,9 +1,5 @@
-import {
-  addMonths,
-  addWeeks,
-  getMonthStart,
-  getWeekStart,
-} from '@src/features/planning/todo/utils/calendar-date';
+import { getWeekStart } from '@src/features/planning/todo/utils/calendar-date';
+import dayjs from 'dayjs';
 import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -11,8 +7,8 @@ import type { CalendarViewMode } from '../../components/calendar/calendar.types'
 
 export function shiftCalendarDate(viewMode: CalendarViewMode, date: Date, step: -1 | 1): Date {
   return match(viewMode)
-    .with('week', () => addWeeks(getWeekStart(date), step))
-    .with('month', () => addMonths(getMonthStart(date), step))
+    .with('week', () => dayjs(getWeekStart(date)).add(step, 'week').toDate())
+    .with('month', () => dayjs(date).startOf('month').add(step, 'month').toDate())
     .exhaustive();
 }
 
