@@ -98,18 +98,4 @@ describe('ListRow', () => {
       expect(screen.getByText(bottomText)).toBeTruthy();
     });
   });
-
-  describe('ListRow.Image', () => {
-    it('should render image with default size', async () => {
-      // Given: 기본 설정으로 이미지가 주어졌을 때
-      const imageSource = { uri: 'https://example.com/image.jpg' };
-      const testId = 'list-row-image';
-
-      // When: ListRow.Image를 렌더링하면
-      await render(<ListRow.Image source={imageSource} testID={testId} />);
-
-      // Then: 이미지가 화면에 표시된다
-      expect(screen.getByTestId(testId)).toBeTruthy();
-    });
-  });
 });

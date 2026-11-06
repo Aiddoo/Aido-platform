@@ -12,6 +12,8 @@ import {
   CalendarIcon,
   DashedDivider,
   DocsIcon,
+  FeatureMedia,
+  type FeatureMediaProps,
   H2,
   HStack,
   ListIcon,
@@ -25,7 +27,7 @@ import {
 import { formatCount } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Image, type ImageSourcePropType, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
 import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
@@ -207,7 +209,7 @@ Paywall.Terms = function Terms() {
 interface BenefitCardProps {
   title: string;
   description: string;
-  image: ImageSourcePropType;
+  image: FeatureMediaProps['source'];
 }
 
 function BenefitCard({ title, description, image }: BenefitCardProps) {
@@ -222,9 +224,7 @@ function BenefitCard({ title, description, image }: BenefitCardProps) {
         </Text>
       </VStack>
 
-      <Box className="w-full aspect-video rounded-xl overflow-hidden">
-        <Image source={image} className="size-full" resizeMode="cover" />
-      </Box>
+      <FeatureMedia source={image} alt="" ratio={16 / 9} className="rounded-xl" />
     </VStack>
   );
 }

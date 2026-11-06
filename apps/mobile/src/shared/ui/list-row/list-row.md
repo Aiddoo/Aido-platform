@@ -8,7 +8,6 @@
 ListRow/
 ├── ListRow.tsx          # 메인 컴포넌트
 ├── ListRowTexts.tsx     # 텍스트 서브 컴포넌트
-├── ListRowImage.tsx     # 이미지 서브 컴포넌트
 └── ListRow.test.tsx     # 테스트
 ```
 
@@ -24,7 +23,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 // 완전한 구성
 <ListRow
-  left={<ListRow.Image source={{ uri: 'avatar.jpg' }} />}
+  left={<UserAvatar alt="김용민" profileImage="avatar.jpg" />}
   contents={<ListRow.Texts type="2RowTypeA" top="김용민" bottom="시니어 개발자" />}
   right={<ArrowRightIcon />}
   horizontalPadding="medium"
@@ -170,46 +169,6 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 - `type`: `ListRow.Texts`와 같은 줄 구성
 - `topProps` / `middleProps` / `bottomProps`: `TextSkeletonProps`(`size`, `className`) — 실제 행에서 바꾼 크기만 다시 준다
 
-### ListRow.Image
-
-이미지를 표시하는 서브 컴포넌트입니다. React Native의 `ImageProps`를 확장합니다.
-
-#### Props
-
-| Prop      | Type                             | Default    | Description           |
-| --------- | -------------------------------- | ---------- | --------------------- |
-| `source`  | `ImageProps['source']`           | -          | 이미지 소스           |
-| `size`    | `'small' \| 'medium' \| 'large'` | `'medium'` | 이미지 크기           |
-| `rounded` | `boolean`                        | `true`     | 둥근 모서리 적용 여부 |
-
-#### Size 크기
-
-- `small`: 32x32px
-- `medium`: 48x48px
-- `large`: 64x64px
-
-#### 사용 예시
-
-```tsx
-// 기본 사용
-<ListRow.Image source={{ uri: 'https://example.com/avatar.jpg' }} />
-
-// 크기 지정
-<ListRow.Image
-  source={{ uri: 'https://example.com/avatar.jpg' }}
-  size="large"
-/>
-
-// 둥근 모서리 제거
-<ListRow.Image
-  source={{ uri: 'https://example.com/avatar.jpg' }}
-  rounded={false}
-/>
-
-// 로컬 이미지
-<ListRow.Image source={require('@assets/images/avatar.png')} />
-```
-
 ## 사용 예시
 
 ### 1. 기본 메뉴 아이템
@@ -226,7 +185,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 ```tsx
 <ListRow
-  left={<ListRow.Image source={{ uri: 'https://example.com/avatar.jpg' }} size="medium" />}
+  left={<UserAvatar alt="김용민" profileImage="https://example.com/avatar.jpg" />}
   contents={
     <ListRow.Texts
       type="2RowTypeA"
@@ -246,7 +205,14 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 ```tsx
 <ListRow
-  left={<ListRow.Image source={{ uri: 'https://example.com/project.jpg' }} size="large" />}
+  left={
+    <FeatureMedia
+      alt=""
+      source={{ uri: 'https://example.com/project.jpg' }}
+      ratio={1}
+      className="w-16"
+    />
+  }
   contents={
     <ListRow.Texts
       type="3RowTypeA"
@@ -384,14 +350,13 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 
 ## 성능 최적화
 
-- `ListRow.Image`는 `resizeMode="cover"` 기본 적용
 - 큰 리스트에서는 `React.memo` 사용 권장
 - 이미지는 적절한 크기로 최적화하여 사용
 
 ```tsx
 const MemoizedListRow = React.memo(({ item }) => (
   <ListRow
-    left={<ListRow.Image source={{ uri: item.avatar }} />}
+    left={<UserAvatar alt={item.name} profileImage={item.avatar} />}
     contents={<ListRow.Texts type="2RowTypeA" top={item.name} bottom={item.role} />}
   />
 ));

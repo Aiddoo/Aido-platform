@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
 
 import { Box } from '../box';
-import { ListRowImage } from './list-row-image';
 import { ListRowTexts } from './list-row-texts';
 
 export type ListRowVerticalPadding = 'small' | 'medium' | 'large' | 'xlarge';
@@ -90,4 +89,3 @@ export function ListRow({
 }
 
 ListRow.Texts = ListRowTexts;
-ListRow.Image = ListRowImage;
