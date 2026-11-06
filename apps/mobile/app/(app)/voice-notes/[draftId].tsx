@@ -18,18 +18,18 @@ import {
   useVoiceNoteDigest,
   type VoiceNoteDigestFailure,
 } from '@src/features/voice/hooks/use-voice-note-digest';
-import {
-  useVoiceNoteTab,
-  type VoiceNoteTab,
-  voiceNoteParamsSchema,
-  voiceNoteTabSchema,
-} from '@src/features/voice/hooks/use-voice-note-params';
+import { useVoiceNoteTab } from '@src/features/voice/hooks/use-voice-note-params';
 import {
   useVoiceNotePlayback,
   useVoiceNotePlayer,
   type VoiceNotePlayer,
 } from '@src/features/voice/hooks/use-voice-note-player';
 import { useVoiceNoteSaveMemo } from '@src/features/voice/hooks/use-voice-note-save-memo';
+import {
+  voiceNoteParamsSchema,
+  type VoiceNoteTab,
+  voiceNoteTabSchema,
+} from '@src/features/voice/schemas/voice-note-params.schema';
 import { getDurationBucket } from '@src/features/voice/utils/analytics/duration-bucket';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import {

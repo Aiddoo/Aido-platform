@@ -23,7 +23,7 @@ import { match } from 'ts-pattern';
 function SubscriptionScreen() {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const receipt = useSubscriptionReceipt();
-  const [view] = useSubscriptionViewParam();
+  const view = useSubscriptionViewParam();
 
   // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
   // 영수증은 서버 값으로만 그려 스토어가 실패해도 이용 중인 사람(관리자 포함)은 영수증을 본다.

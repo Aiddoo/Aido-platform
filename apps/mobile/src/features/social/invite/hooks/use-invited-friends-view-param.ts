@@ -1,15 +1,15 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useCallback } from 'react';
-import { z } from 'zod';
 
-export const InvitedFriendsViewSchema = z.enum(['all', 'waiting']);
-
-export type InvitedFriendsView = z.output<typeof InvitedFriendsViewSchema>;
+import {
+  invitedFriendsParamsSchema,
+  type InvitedFriendsView,
+} from '../schemas/invite-params.schema';
 
 /** 초대한 친구 목록 보기(?view=all|waiting) */
 export function useInvitedFriendsViewParam() {
-  const { view } = useLocalSearchParams();
-  const setView = useCallback((next: InvitedFriendsView) => router.setParams({ view: next }), []);
+  const [{ view }, setParams] = useRouteParams(invitedFriendsParamsSchema);
+  const setView = useCallback((next: InvitedFriendsView) => setParams({ view: next }), [setParams]);
 
-  return [InvitedFriendsViewSchema.catch('all').parse(view), setView] as const;
+  return [view, setView] as const;
 }

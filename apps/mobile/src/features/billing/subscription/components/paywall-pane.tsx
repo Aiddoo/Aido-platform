@@ -106,7 +106,7 @@ PlanPicker.Plans = function Plans({
   chosenPlanId,
   onChoose,
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
-  const [view] = useSubscriptionViewParam();
+  const view = useSubscriptionViewParam();
   const { trackEvent } = useTrack();
 
   // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
@@ -150,7 +150,7 @@ PlanPicker.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackPr
 function PurchaseButton({ chosenPlanId }: { chosenPlanId: string | undefined }) {
   const { t } = useTranslation('subscription');
   const purchase = useMutation(usePurchaseMutationOptions());
-  const [view] = useSubscriptionViewParam();
+  const view = useSubscriptionViewParam();
   const isOnline = useIsOnline();
   // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
   const { data: availability } = useQuery({

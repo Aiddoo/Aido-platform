@@ -1,23 +1,17 @@
-import { nudgeDirectionSchema } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useCallback } from 'react';
-import { z } from 'zod';
 
-const notificationDirectionSearchSchema = z.object({
-  direction: nudgeDirectionSchema.catch('received'),
-});
-
-type NotificationDirection = z.output<typeof notificationDirectionSearchSchema>['direction'];
+import {
+  type NotificationDirection,
+  notificationParamsSchema,
+} from '../schemas/notification-params.schema';
 
 /** 알림 URL의 `direction` param(받은 알림·보낸 콕)을 검증해 읽고 바꾼다. */
-export function useNotificationDirectionParam(): readonly [
-  NotificationDirection,
-  (direction: NotificationDirection) => void,
-] {
-  const { direction } = notificationDirectionSearchSchema.parse(useLocalSearchParams());
+export function useNotificationDirectionParam() {
+  const [{ direction }, setParams] = useRouteParams(notificationParamsSchema);
   const setDirection = useCallback(
-    (value: NotificationDirection) => router.setParams({ direction: value }),
-    [],
+    (next: NotificationDirection) => setParams({ direction: next }),
+    [setParams],
   );
 
   return [direction, setDirection] as const;

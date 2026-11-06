@@ -1,11 +1,11 @@
 import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
-import {
-  type InvitedFriendsView,
-  InvitedFriendsViewSchema,
-  useInvitedFriendsViewParam,
-} from '@src/features/social/invite/hooks/use-invited-friends-view-param';
+import { useInvitedFriendsViewParam } from '@src/features/social/invite/hooks/use-invited-friends-view-param';
 import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/get-invite-query-options';
 import { useGetInvitedFriendCountInfiniteQueryOptions } from '@src/features/social/invite/queries/get-invited-friends-infinite-query-options';
+import {
+  type InvitedFriendsView,
+  invitedFriendsViewSchema,
+} from '@src/features/social/invite/schemas/invite-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -86,7 +86,7 @@ function InvitedFriendFilterTabs({
   );
 
   const handleValueChange = (next: string) => {
-    const parsed = InvitedFriendsViewSchema.safeParse(next);
+    const parsed = invitedFriendsViewSchema.safeParse(next);
     if (parsed.success) {
       onValueChange(parsed.data);
     }

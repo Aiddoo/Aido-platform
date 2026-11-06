@@ -6,8 +6,8 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
-import type { InvitedFriendsView } from '../hooks/use-invited-friends-view-param';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/get-invited-friends-infinite-query-options';
+import type { InvitedFriendsView } from '../schemas/invite-params.schema';
 import { InvitedFriendRow } from './invited-friend-row';
 
 /**

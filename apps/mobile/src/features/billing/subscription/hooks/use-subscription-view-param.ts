@@ -1,15 +1,8 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback } from 'react';
-import { z } from 'zod';
+import { useLocalSearchParams } from 'expo-router';
 
-const SubscriptionViewSchema = z.enum(['status', 'plans']);
+import { subscriptionParamsSchema } from '../schemas/subscription-params.schema';
 
-export type SubscriptionView = z.output<typeof SubscriptionViewSchema>;
-
-/** 구독 화면 보기 상태. 보상 기간만 있는 사용자가 요금제를 고를 때 `plans`로 바뀐다. */
+/** 구독 화면 보기 상태. 보상 기간만 있는 사용자가 요금제를 고를 때 `plans`로 연다. 이 화면 안에서는 바꾸지 않는다. */
 export function useSubscriptionViewParam() {
-  const { view } = useLocalSearchParams();
-  const setView = useCallback((next: SubscriptionView) => router.setParams({ view: next }), []);
-
-  return [SubscriptionViewSchema.catch('status').parse(view), setView] as const;
+  return subscriptionParamsSchema.parse(useLocalSearchParams()).view;
 }

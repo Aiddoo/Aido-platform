@@ -7,7 +7,7 @@ import { match } from 'ts-pattern';
 
 import { useOpenSubscriptionManagement } from '../hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
-import type { SubscriptionView } from '../hooks/use-subscription-view-param';
+import type { SubscriptionView } from '../schemas/subscription-params.schema';
 import { PremiumNotice } from './premium-notice';
 import { RestorePurchaseButton } from './restore-purchase-button';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';

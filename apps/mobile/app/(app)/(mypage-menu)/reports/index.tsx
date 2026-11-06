@@ -10,6 +10,7 @@ import {
   SAMPLE_REPORT_IDS,
 } from '@src/features/insights/report/constants/sample-reports';
 import type { ReportType } from '@src/features/insights/report/domains/report.model';
+import { useReportTypeParam } from '@src/features/insights/report/hooks/use-report-type-param';
 import { useGetReportStatusQueryOptions } from '@src/features/insights/report/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/insights/report/queries/get-reports-query-options';
 import { invalidateAiReports } from '@src/features/insights/report/queries/report-cache';
@@ -28,25 +29,18 @@ import {
   Box,
 } from '@src/shared/ui';
 import { usePrefetchQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useCallback } from 'react';
+import { Suspense } from 'react';
 import { Image, RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
-
-function useReportType() {
-  const { type } = useLocalSearchParams();
-  const setType = useCallback((next: ReportType) => router.setParams({ type: next }), []);
-
-  return [reportTypeSchema.catch('WEEKLY').parse(type), setType] as const;
-}
 
 function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const canViewReports = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_REPORT');
-  const [reportType, setReportType] = useReportType();
+  const [reportType, setReportType] = useReportTypeParam();
   const [refreshing, onRefresh] = useRefresh(() => invalidateAiReports(queryClient));
 
   return (
@@ -153,7 +147,7 @@ function ReportTypeTab({ type }: { type: ReportType }) {
 function FreeReportPreview() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
-  const [reportType] = useReportType();
+  const [reportType] = useReportTypeParam();
   const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
 
   return (
@@ -170,7 +164,7 @@ function FreeReportPreview() {
 }
 
 function ReportList() {
-  const [reportType] = useReportType();
+  const [reportType] = useReportTypeParam();
   usePrefetchQuery(useGetReportStatusQueryOptions());
   const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type: reportType }));
 
@@ -189,7 +183,7 @@ function ReportList() {
 
 function PremiumPendingPreview() {
   const { t } = useTranslation('ai');
-  const [reportType] = useReportType();
+  const [reportType] = useReportTypeParam();
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
   const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
   const daysUntil = match(reportType)

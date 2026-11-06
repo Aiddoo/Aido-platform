@@ -1,4 +1,10 @@
 import { CategoryList } from '@src/features/planning/category/components/category-list';
+import { useCategorySettingsViewParam } from '@src/features/planning/category/hooks/use-category-settings-view-param';
+import {
+  CATEGORY_SETTINGS_VIEW,
+  type CategorySettingsView,
+  categorySettingsViewSchema,
+} from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -12,36 +18,20 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { PressableFeedback, Tabs } from 'heroui-native';
-import { Suspense, useCallback } from 'react';
-import { z } from 'zod';
-
-const View = {
-  edit: 'edit',
-  reorder: 'reorder',
-} as const;
-
-const viewSchema = z.enum(View);
-type View = z.infer<typeof viewSchema>;
+import { Suspense } from 'react';
 
 const VIEW_LABEL_KEYS = {
   edit: 'categorySettings.editTab',
   reorder: 'categorySettings.reorderTab',
-} as const satisfies Record<View, string>;
-
-function useView() {
-  const { view } = useLocalSearchParams();
-  const setView = useCallback((next: View) => router.setParams({ view: next }), []);
-
-  return [viewSchema.catch(View.edit).parse(view), setView] as const;
-}
+} as const satisfies Record<CategorySettingsView, string>;
 
 function TodoCategorySettingsScreen() {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('settings');
   const push = useSingleTap(router.push);
-  const [view, setView] = useView();
+  const [view, setView] = useCategorySettingsViewParam();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
@@ -53,7 +43,7 @@ function TodoCategorySettingsScreen() {
             <Tabs
               value={view}
               onValueChange={(value) => {
-                const parsed = viewSchema.safeParse(value);
+                const parsed = categorySettingsViewSchema.safeParse(value);
                 if (parsed.success) {
                   setView(parsed.data);
                 }
@@ -62,8 +52,8 @@ function TodoCategorySettingsScreen() {
             >
               <Tabs.List>
                 <Tabs.Indicator />
-                <ViewTab view={View.edit} />
-                <ViewTab view={View.reorder} />
+                <ViewTab view={CATEGORY_SETTINGS_VIEW.edit} />
+                <ViewTab view={CATEGORY_SETTINGS_VIEW.reorder} />
               </Tabs.List>
             </Tabs>
 
@@ -94,7 +84,7 @@ function TodoCategorySettingsScreen() {
 
 export default TodoCategorySettingsScreen;
 
-function ViewTab({ view }: { view: View }) {
+function ViewTab({ view }: { view: CategorySettingsView }) {
   const { t } = useTranslation('settings');
 
   return (

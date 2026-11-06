@@ -9,7 +9,7 @@ import type {
 } from '@aido/api';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
-import type { SubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
+import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/analytics/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/analytics/purchase-failed-reason';
 import type { CoachmarkKind } from '@src/features/device/coachmark/apis/coachmark.repository';

@@ -5,45 +5,41 @@ import { FriendList } from '@src/features/social/friend/components/friend-list';
 import { ReceivedRequestList } from '@src/features/social/friend/components/received-request-list';
 import { SentRequestList } from '@src/features/social/friend/components/sent-request-list';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
+import { useFriendListViewParam } from '@src/features/social/friend/hooks/use-friend-list-view-param';
+import {
+  FRIEND_LIST_VIEW,
+  type FriendListView,
+  friendListViewSchema,
+} from '@src/features/social/friend/schemas/friend-params.schema';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { type ReactNode, Suspense, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
-
-const TabView = {
-  friends: 'friends',
-  receiver: 'receiver',
-  sender: 'sender',
-} as const;
 
 const SEARCH_ICON = Platform.OS === 'ios' ? 'magnifyingglass' : Search;
 /** iOS는 글자 버튼(편집/완료), Android 툴바는 글자를 그리지 않아 아이콘을 쓴다. */
 const EDIT_ICON = Platform.OS === 'ios' ? undefined : Edit;
 const DONE_ICON = Platform.OS === 'ios' ? undefined : Check;
 
-const friendTabSchema = z.enum(TabView);
-type TabValue = z.infer<typeof friendTabSchema>;
-
 export default function FriendsScreen() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['friend', 'common']);
-  const [view, setView] = useView();
+  const [view, setView] = useFriendListViewParam();
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
 
   const handleTabChange = useCallback(
     (value: string) => {
-      const parsed = friendTabSchema.safeParse(value);
+      const parsed = friendListViewSchema.safeParse(value);
       if (!parsed.success) {
         return;
       }
       setView(parsed.data);
-      if (parsed.data !== TabView.friends) {
+      if (parsed.data !== FRIEND_LIST_VIEW.friends) {
         setIsEditMode(false);
       }
     },
@@ -61,7 +57,7 @@ export default function FriendsScreen() {
           {t('search.title')}
         </Stack.Toolbar.Button>
         <Stack.Toolbar.Button
-          hidden={view !== TabView.friends}
+          hidden={view !== FRIEND_LIST_VIEW.friends}
           icon={isEditMode ? DONE_ICON : EDIT_ICON}
           accessibilityLabel={isEditMode ? t('common:actions.done') : t('list.edit')}
           onPress={() => setIsEditMode(!isEditMode)}
@@ -73,13 +69,13 @@ export default function FriendsScreen() {
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
-          <FriendTab value={TabView.friends}>{t('tabs.friends')}</FriendTab>
-          <FriendTab value={TabView.receiver}>{t('tabs.received')}</FriendTab>
-          <FriendTab value={TabView.sender}>{t('tabs.sent')}</FriendTab>
+          <FriendTab value={FRIEND_LIST_VIEW.friends}>{t('tabs.friends')}</FriendTab>
+          <FriendTab value={FRIEND_LIST_VIEW.receiver}>{t('tabs.received')}</FriendTab>
+          <FriendTab value={FRIEND_LIST_VIEW.sender}>{t('tabs.sent')}</FriendTab>
         </Tabs.List>
         {match(view)
-          .with(TabView.friends, () => (
-            <FriendTabContent value={TabView.friends}>
+          .with(FRIEND_LIST_VIEW.friends, () => (
+            <FriendTabContent value={FRIEND_LIST_VIEW.friends}>
               <QueryErrorBoundary resetKeys={[view]} fallback={FriendList.Error}>
                 <Suspense fallback={<FriendList.Loading />}>
                   <FriendList />
@@ -87,8 +83,8 @@ export default function FriendsScreen() {
               </QueryErrorBoundary>
             </FriendTabContent>
           ))
-          .with(TabView.receiver, () => (
-            <FriendTabContent value={TabView.receiver}>
+          .with(FRIEND_LIST_VIEW.receiver, () => (
+            <FriendTabContent value={FRIEND_LIST_VIEW.receiver}>
               <QueryErrorBoundary resetKeys={[view]} fallback={ReceivedRequestList.Error}>
                 <Suspense fallback={<ReceivedRequestList.Loading />}>
                   <ReceivedRequestList />
@@ -96,8 +92,8 @@ export default function FriendsScreen() {
               </QueryErrorBoundary>
             </FriendTabContent>
           ))
-          .with(TabView.sender, () => (
-            <FriendTabContent value={TabView.sender}>
+          .with(FRIEND_LIST_VIEW.sender, () => (
+            <FriendTabContent value={FRIEND_LIST_VIEW.sender}>
               <QueryErrorBoundary resetKeys={[view]} fallback={SentRequestList.Error}>
                 <Suspense fallback={<SentRequestList.Loading />}>
                   <SentRequestList />
@@ -111,7 +107,7 @@ export default function FriendsScreen() {
   );
 }
 
-function FriendTab({ value, children }: { value: TabValue; children: string }) {
+function FriendTab({ value, children }: { value: FriendListView; children: string }) {
   return (
     <Tabs.Trigger value={value} className="py-3">
       {({ isSelected }) => (
@@ -125,7 +121,7 @@ function FriendTab({ value, children }: { value: TabValue; children: string }) {
   );
 }
 
-function FriendTabContent({ value, children }: { value: TabValue; children: ReactNode }) {
+function FriendTabContent({ value, children }: { value: FriendListView; children: ReactNode }) {
   return (
     <Tabs.Content value={value} className="flex-1">
       <Box flex={1} px={16}>
@@ -133,11 +129,4 @@ function FriendTabContent({ value, children }: { value: TabValue; children: Reac
       </Box>
     </Tabs.Content>
   );
-}
-
-function useView() {
-  const params = useLocalSearchParams();
-  const view = friendTabSchema.catch(TabView.friends).parse(params.view);
-  const setView = useCallback((view: TabValue) => router.setParams({ view }), []);
-  return [view, setView] as const;
 }
