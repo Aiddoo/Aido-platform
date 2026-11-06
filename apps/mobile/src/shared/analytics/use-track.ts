@@ -1,8 +1,9 @@
 import { useAnalytics, useFeatureAttribution } from '@src/bootstrap/providers/di-context';
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
-import type { AppEventMap, FeatureKey } from '@src/shared/observability/telemetry-keys';
+import type { FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { useCallback } from 'react';
 
+import type { TrackedEventMap } from './event-map';
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';
 
 /** `track()`의 hook 버전 — DI에서 Analytics를 받아 타입 이벤트만 전송한다. */
@@ -11,11 +12,11 @@ export const useTrack = () => {
   const featureAttribution = useFeatureAttribution();
 
   const trackEvent = useCallback(
-    <E extends keyof AppEventMap & string>(
+    <E extends keyof TrackedEventMap & string>(
       eventName: E,
-      ...args: AppEventMap[E] extends undefined
+      ...args: TrackedEventMap[E] extends undefined
         ? []
-        : [params: AppEventMap[E] & AnalyticsEventParams]
+        : [params: TrackedEventMap[E] & AnalyticsEventParams]
     ): void => {
       const [params] = args;
       analytics.trackEvent(eventName, params);

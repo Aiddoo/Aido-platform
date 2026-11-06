@@ -1,5 +1,5 @@
+export type { AppEventMap, TrackedEventMap } from './event-map';
 export type {
-  AppEventMap,
   FeatureHubSource,
   FeatureKey,
   FriendSearchLengthBucket,

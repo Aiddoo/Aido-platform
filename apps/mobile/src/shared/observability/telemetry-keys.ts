@@ -139,7 +139,7 @@ export const CLEARED_USER_PROPERTIES = {
  * GA 예약 구매 이벤트. 매출 원본은 RevenueCat이 Firebase로 보내는 `purchase`이고,
  * Firebase가 스토어 결제를 자동 수집하는 `in_app_purchase`도 있으므로 앱은 이 이름을 쓰지 않는다.
  */
-type GaReservedPurchaseEventName = 'purchase' | 'in_app_purchase' | 'refund';
+export type GaReservedPurchaseEventName = 'purchase' | 'in_app_purchase' | 'refund';
 
 // 새 이벤트는 해당 기능의 `*EventMap`에 먼저 정의한다 → `AppEventMap`으로 합쳐진다.
 
@@ -492,15 +492,6 @@ export interface BadgeEventMap {
   badge_opened_from_notification: undefined;
 }
 
-export interface MemoEventMap {
-  memo_created: undefined;
-  memo_updated: { memo_id: number };
-  memo_deleted: { memo_id: number };
-  memo_pin_toggled: { memo_id: number; is_pinned: boolean };
-  memo_converted_to_todo: { memo_id: number };
-  memo_converted_to_todos: { memo_id: number; todo_count: number; source: 'ai' };
-}
-
 export interface WeatherEventMap {
   weather_location_permission_result: { result: 'granted' | 'needs_permission' | 'denied' };
   weather_alert_opened: { severity: WeatherAlertSeverity };
@@ -523,7 +514,8 @@ export interface ConnectivityEventMap {
   offline_banner_shown: undefined;
 }
 
-export type AppEventMap = AuthEventMap &
+/** feature가 아직 `{feature}.events.ts`로 옮기지 않은 이벤트. 옮기는 대로 줄어든다 */
+export type LegacyEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
   FriendEventMap &
@@ -541,12 +533,5 @@ export type AppEventMap = AuthEventMap &
   UserEventMap &
   NotificationEventMap &
   BadgeEventMap &
-  MemoEventMap &
   WeatherEventMap &
   ConnectivityEventMap;
-
-/** 앱 이벤트가 GA 예약 구매 이벤트 이름을 쓰면 여기서 컴파일 오류가 난다 */
-export type AssertNoReservedPurchaseEvent<Name extends never> = Name;
-export type AppReservedPurchaseEventGuard = AssertNoReservedPurchaseEvent<
-  Extract<keyof AppEventMap, GaReservedPurchaseEventName>
->;
