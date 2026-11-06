@@ -371,6 +371,10 @@ export function useVoiceCaptureSession({
         const now = Date.now();
         dispatch({ type: 'start', at: now });
         stallWatchRef.current = createVoiceStallWatch(now, stallWatchRef.current.lastRestartAt);
+        // 준비 중에는 멈출 수 없어 백그라운드 전환이 무시된다. 뒤늦은 시작 신호로 몰래 듣지 않는다
+        if (AppState.currentState === 'background') {
+          pause('app-background');
+        }
       })
       .with({ type: 'result' }, ({ transcript, isFinal }) => {
         dispatch({ type: 'result', result: { transcript, isFinal } });
