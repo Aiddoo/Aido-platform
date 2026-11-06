@@ -1,7 +1,9 @@
 import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
 import { useInvitedFriendsViewParam } from '@src/features/social/invite/hooks/use-invited-friends-view-param';
-import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/get-invite-query-options';
-import { useGetInvitedFriendCountInfiniteQueryOptions } from '@src/features/social/invite/queries/get-invited-friends-infinite-query-options';
+import {
+  useGetInviteQueryOptions,
+  useGetInvitedFriendCountInfiniteQueryOptions,
+} from '@src/features/social/invite/queries/invite.queries';
 import {
   type InvitedFriendsView,
   invitedFriendsViewSchema,

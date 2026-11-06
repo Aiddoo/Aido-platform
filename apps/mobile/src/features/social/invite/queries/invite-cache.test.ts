@@ -3,7 +3,7 @@ import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { createInvite, createRedemptionResult } from '../__tests__/invite.factories';
+import { createInvite, createRedemptionResult } from '../__tests__/invite.fixtures';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import {
   getCachedInviteAvailability,

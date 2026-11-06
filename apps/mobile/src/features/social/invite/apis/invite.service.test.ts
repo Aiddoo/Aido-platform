@@ -8,7 +8,7 @@ import {
   createInviteDto,
   createPendingRedemption,
   INVALID_DTO,
-} from '../__tests__/invite.factories';
+} from '../__tests__/invite.fixtures';
 import { isInviteError } from '../domains/invite.error';
 import { createAllDoneBannerRepository } from './all-done-banner.repository';
 import { createInstallReferrerRepository } from './install-referrer.repository';

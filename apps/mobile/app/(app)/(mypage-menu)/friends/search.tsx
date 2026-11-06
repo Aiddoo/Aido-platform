@@ -1,5 +1,5 @@
 import { FriendSearchList } from '@src/features/social/friend/components/friend-search-list';
-import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/get-invite-availability-query-options';
+import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Input, QueryErrorBoundary, SearchIcon, StyledSafeAreaView } from '@src/shared/ui';
 import { usePrefetchQuery } from '@tanstack/react-query';

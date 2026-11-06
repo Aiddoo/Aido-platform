@@ -19,9 +19,9 @@ import type { ComponentProps } from 'react';
 
 import { createInviteShareContent } from '../domains/invite-share.model';
 import { InvitePolicy } from '../domains/invite.model';
-import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
-import { useRotateInviteCodeMutationOptions } from '../queries/use-rotate-invite-code-mutation-options';
-import { useShareInviteMutationOptions } from '../queries/use-share-invite-mutation-options';
+import { useRotateInviteCodeMutationOptions } from '../queries/invite.mutations';
+import { useShareInviteMutationOptions } from '../queries/invite.mutations';
+import { useGetInviteQueryOptions } from '../queries/invite.queries';
 
 /** 내 초대 코드와 링크. 코드는 길게 눌러 고를 수 있고 복사 버튼으로 링크를 복사한다 */
 export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VStack>) {

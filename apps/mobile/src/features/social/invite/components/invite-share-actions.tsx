@@ -19,8 +19,8 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { createInviteShareContent, type InviteShareChannel } from '../domains/invite-share.model';
 import { useCopiedFeedback } from '../hooks/use-copied-feedback';
-import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
-import { useShareInviteMutationOptions } from '../queries/use-share-invite-mutation-options';
+import { useShareInviteMutationOptions } from '../queries/invite.mutations';
+import { useGetInviteQueryOptions } from '../queries/invite.queries';
 
 /** 카카오톡 / 링크 복사 / 다른 앱 공유 */
 export function InviteShareActions(props: ComponentProps<typeof VStack>) {

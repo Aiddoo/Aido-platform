@@ -46,7 +46,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { InvitePolicy } from '../domains/invite.model';
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
-import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
+import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import {
   calculatePawPrintBoardWidth,
   calculatePawPrintGrid,
@@ -55,7 +55,7 @@ import {
   type PawPrintBoard,
   type PawPrintCell,
   type PawPrintState,
-} from '../utils/view-models/invite-paw-print-board.view-model';
+} from '../utils/invite-paw-print-board.view-model';
 import {
   fishBoneVariants,
   pawPrintIconVariants,

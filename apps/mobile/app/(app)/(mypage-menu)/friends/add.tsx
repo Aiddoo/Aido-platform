@@ -5,7 +5,7 @@ import {
   EMPTY_ADD_FRIEND_FORM_VALUES,
   USER_TAG_MAX_LENGTH,
 } from '@src/features/social/friend/schemas/add-friend-form.schema';
-import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/get-invite-availability-query-options';
+import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

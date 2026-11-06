@@ -12,8 +12,8 @@ import type { ComponentProps, ReactElement } from 'react';
 import { ScrollView } from 'react-native';
 
 import type { InvitedFriend } from '../domains/invited-friend.model';
-import { useGetInvitedFriendsInfiniteQueryOptions } from '../queries/get-invited-friends-infinite-query-options';
 import { invalidateInvite } from '../queries/invite-cache';
+import { useGetInvitedFriendsInfiniteQueryOptions } from '../queries/invite.queries';
 import { InvitedFriendRow } from './invited-friend-row';
 
 interface InvitedFriendListProps {

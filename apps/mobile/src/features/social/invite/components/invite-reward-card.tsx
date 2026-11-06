@@ -21,8 +21,8 @@ import { match, P } from 'ts-pattern';
 import { InvitePolicy } from '../domains/invite.model';
 import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
-import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
-import { createPawPrintBoard } from '../utils/view-models/invite-paw-print-board.view-model';
+import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import { createPawPrintBoard } from '../utils/invite-paw-print-board.view-model';
 import { inviteRewardDotVariants } from './invite-reward-card.variants';
 
 type InviteRewardCardProps = Omit<ComponentProps<typeof PressableFeedback>, 'onPress' | 'children'>;

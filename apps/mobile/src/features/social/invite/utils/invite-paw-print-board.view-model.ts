@@ -1,6 +1,6 @@
 import { chunk, clamp, range } from 'es-toolkit';
 
-import { type Invite, InvitePolicy } from '../../domains/invite.model';
+import { type Invite, InvitePolicy } from '../domains/invite.model';
 
 export type PawPrintState = 'stamped' | 'waiting' | 'empty' | 'milestone';
 

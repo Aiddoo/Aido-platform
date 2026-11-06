@@ -1,23 +1,30 @@
 import { INVITE_FRIENDSHIP } from '@aido/api';
-import { useHaptics, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
+import {
+  useHaptics,
+  useInviteService,
+  useLogger,
+  useInviteShareService,
+} from '@src/bootstrap/providers/di-context';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useTranslation } from '@src/shared/i18n';
+import { useTranslation, t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import { type InviteShareChannel, type InviteShareContent } from '../domains/invite-share.model';
 import {
   isInviteError,
   isTerminalRedeemFailure,
   toRedeemFailureReason,
 } from '../domains/invite.error';
-import type { InviteCode } from '../domains/invite.model';
-import { invalidateAfterRedeem, storeRedemptionResult } from './invite-cache';
+import { type InviteCode } from '../domains/invite.model';
+import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
 
 export function useRedeemInviteMutationOptions() {
   const haptics = useHaptics();
@@ -112,4 +119,66 @@ export function useRedeemInviteMutationOptions() {
 
 function isBusinessRedeemError(error: unknown) {
   return isApiError(error) || isInviteError(error);
+}
+
+export function useRotateInviteCodeMutationOptions() {
+  const haptics = useHaptics();
+  const inviteService = useInviteService();
+  const queryClient = useQueryClient();
+  const { success, error } = useAppToast();
+
+  return mutationOptions({
+    mutationFn: async () => unwrap(await inviteService.rotateInviteCode()),
+    onSuccess: (myInvite) => {
+      replaceMyInvite(queryClient, myInvite);
+      haptics.notify('success');
+      success(t('invite:toast.rotated'));
+    },
+    onError: (rotateError) => {
+      if (isApiError(rotateError)) {
+        error(rotateError.message);
+      }
+    },
+    // 네트워크·서버 장애는 화면 오류 경계가 맡는다
+    throwOnError: (rotateError) => !isApiError(rotateError),
+  });
+}
+
+interface ShareInviteVariables {
+  channel: InviteShareChannel;
+  content: InviteShareContent;
+}
+
+export function useShareInviteMutationOptions() {
+  const haptics = useHaptics();
+  const inviteShareService = useInviteShareService();
+  const { success, error } = useAppToast();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
+  const queryClient = useQueryClient();
+
+  return mutationOptions({
+    // 기기 안에서만 처리해 연결 상태와 무관하다
+    networkMode: 'always',
+    mutationFn: ({ channel, content }: ShareInviteVariables) =>
+      inviteShareService.share(channel, content),
+    onSuccess: ({ channel, outcome }) => {
+      if (outcome !== 'dismissed') {
+        trackEvent('invite_link_shared', { channel });
+        const accountId = getCachedMe(queryClient)?.id;
+        if (accountId != null) {
+          trackAttributedFeatureSuccess({ accountId, feature: 'friend_invite' });
+        }
+      }
+
+      if (outcome === 'copied') {
+        haptics.notify('success');
+        success(t('invite:toast.linkCopied'));
+      }
+    },
+    // 복사까지 실패하면 다시 시도하게만 알린다(공유는 화면 상태를 바꾸지 않는다)
+    onError: () => {
+      haptics.notify('error');
+      error(t('invite:toast.shareFailed'));
+    },
+  });
 }

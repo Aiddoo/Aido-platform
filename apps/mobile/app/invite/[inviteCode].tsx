@@ -10,8 +10,8 @@ import type { InviteCode } from '@src/features/social/invite/domains/invite.mode
 import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
 import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
-import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/get-invite-preview-query-options';
-import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/use-redeem-invite-mutation-options';
+import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
+import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,

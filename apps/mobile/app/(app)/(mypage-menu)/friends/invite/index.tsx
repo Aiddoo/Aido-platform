@@ -10,9 +10,9 @@ import { createInviteShareContent } from '@src/features/social/invite/domains/in
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { InvitePolicy } from '@src/features/social/invite/domains/invite.model';
 import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
-import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/get-invite-query-options';
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
-import { useShareInviteMutationOptions } from '@src/features/social/invite/queries/use-share-invite-mutation-options';
+import { useShareInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
+import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {

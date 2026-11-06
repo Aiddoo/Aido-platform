@@ -1,7 +1,7 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 
-import { createPendingRedemption, createRedemptionResult } from '../__tests__/invite.factories';
+import { createPendingRedemption, createRedemptionResult } from '../__tests__/invite.fixtures';
 import { isWithinDays, InviteRedemptionPolicy } from './invite-redemption.model';
 
 describe('isWithinDays', () => {

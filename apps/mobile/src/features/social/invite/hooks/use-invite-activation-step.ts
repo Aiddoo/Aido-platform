@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { InvitePolicy } from '../domains/invite.model';
-import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
+import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { useInviteAvailability } from './use-invite-availability';
 
 /** 시작 체크리스트의 친구 초대 단계. 초대 기능이 켜졌을 때만 보이고, 한 명이라도 가입하면 끝난다 */

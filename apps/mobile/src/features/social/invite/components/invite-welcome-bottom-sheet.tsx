@@ -42,7 +42,7 @@ import { match } from 'ts-pattern';
 
 import { type RedemptionResult, InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { useInviteWelcomeParams } from '../hooks/use-invite-welcome-params';
-import { getRedemptionResultQueryOptions } from '../queries/get-redemption-result-query-options';
+import { getRedemptionResultQueryOptions } from '../queries/invite.queries';
 
 type InviteWelcomeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,

@@ -8,8 +8,8 @@ import {
 } from '@src/features/social/invite/domains/invite.model';
 import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
-import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/get-clipboard-presence-query-options';
-import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/get-invite-preview-query-options';
+import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/invite.queries';
+import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

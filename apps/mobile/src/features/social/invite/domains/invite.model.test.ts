@@ -1,4 +1,4 @@
-import { createInvite } from '../__tests__/invite.factories';
+import { createInvite } from '../__tests__/invite.fixtures';
 import {
   classifyInvalidCharacter,
   findInvalidCharacters,

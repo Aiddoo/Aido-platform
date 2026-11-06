@@ -1,6 +1,6 @@
 import { orderBy, range } from 'es-toolkit';
 
-import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.factories';
+import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.fixtures';
 import {
   calculateActiveDaysLeft,
   calculateHiddenCount,

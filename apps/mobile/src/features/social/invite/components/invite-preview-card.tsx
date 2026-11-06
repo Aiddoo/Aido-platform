@@ -27,7 +27,7 @@ import { match, P } from 'ts-pattern';
 import { InvitePreviewPolicy } from '../domains/invite-preview.model';
 import type { InviteCode } from '../domains/invite.model';
 import { useInviteRouteParams } from '../hooks/use-invite-route-params';
-import { useGetInvitePreviewQueryOptions } from '../queries/get-invite-preview-query-options';
+import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 
 /** 초대 카드 위쪽. 누가 초대했는지를 가장 크게 보여 준다 */
 export function InvitePreviewCard() {
