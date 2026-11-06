@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('heroui-native', () => {
   const { View } = require('react-native');
   return {
+    Button: ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
     PressableFeedback: Object.assign(
       ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
       { Highlight: () => null },

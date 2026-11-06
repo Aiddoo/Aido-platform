@@ -7,10 +7,8 @@ import { buttonVariants } from './button.variants';
 jest.mock('heroui-native', () => {
   const { View } = require('react-native');
   return {
-    PressableFeedback: Object.assign(
-      ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
-      { Highlight: () => null },
-    ),
+    Button: ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
+    PressableFeedback: { Highlight: () => null },
     Spinner: () => <View testID="spinner" />,
   };
 });

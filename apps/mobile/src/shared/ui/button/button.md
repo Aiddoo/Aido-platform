@@ -2,6 +2,8 @@
 
 사용자 액션을 트리거하는 버튼 컴포넌트입니다.
 
+heroui `Button`(`feedbackVariant="scale"`) 위에 앱의 높이 4종, 색, `isLoading`을 얹은 얇은 확장이다. role `button`과 `accessibilityState.disabled`는 heroui가 넣는다. 크기·색·모서리는 `className`이 heroui 기본 클래스를 덮는다(Uniwind는 같은 우선순위면 뒤에 온 클래스가 이긴다). 눌림은 기존과 같은 옅은 회색 하이라이트이고, 비활성은 회색 면 + 글자 흐림이라 heroui의 비활성 투명도는 `disabled:opacity-100`으로 끈다.
+
 ## 사용법
 
 ```tsx

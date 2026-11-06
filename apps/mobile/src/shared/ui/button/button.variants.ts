@@ -15,7 +15,7 @@ export const highlightVariants = tv({
 });
 
 export const buttonVariants = tv({
-  base: 'items-center justify-center',
+  base: 'gap-0 disabled:opacity-100',
 
   variants: {
     size: {

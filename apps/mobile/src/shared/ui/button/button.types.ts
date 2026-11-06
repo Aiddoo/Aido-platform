@@ -1,4 +1,4 @@
-import type { PressableFeedback } from 'heroui-native';
+import type { Button } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { PressableProps } from 'react-native';
 
@@ -9,8 +9,8 @@ export type ButtonDisplay = 'inline' | 'block' | 'full';
 export type ButtonRadius = 'sm' | 'md' | 'lg' | 'full';
 
 export interface ButtonProps extends Omit<
-  ComponentProps<typeof PressableFeedback>,
-  'children' | 'onPress'
+  ComponentProps<typeof Button>,
+  'children' | 'onPress' | 'variant' | 'size' | 'isIconOnly' | 'feedbackVariant' | 'animation'
 > {
   children: ReactNode;
   onPress?: PressableProps['onPress'];
