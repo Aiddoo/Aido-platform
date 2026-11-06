@@ -1,7 +1,7 @@
+import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import type { TodoCategoryWithCount } from '@src/features/planning/category/schemas/todo-category.schema';
-import { ReorderCoachmark } from '@src/features/planning/todo/components/reorder-coachmark';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

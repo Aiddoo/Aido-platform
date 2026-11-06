@@ -38,6 +38,7 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
+import { ReorderCoachmark } from '../../../../device/coachmark/components/reorder-coachmark';
 import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
@@ -46,7 +47,6 @@ import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mu
 import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
 import { groupTodosByCategory } from '../../utils/group-todos-by-category';
-import { ReorderCoachmark } from '../reorder-coachmark';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {
   TODO_ROW_ACCESSIBILITY_ACTION,

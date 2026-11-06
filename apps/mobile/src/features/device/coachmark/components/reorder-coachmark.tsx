@@ -9,7 +9,7 @@ import { CloseButton } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { TODO_LOG_EVENT } from '../constants/todo-log-events';
+import { COACHMARK_LOG_EVENT } from '../constants/coachmark-log-events';
 
 type ReorderCoachmarkKind = 'todo' | 'category';
 
@@ -25,7 +25,7 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
     if (error == null) {
       return;
     }
-    logger.warn(TODO_LOG_EVENT.REORDER_COACHMARK_UNAVAILABLE, {
+    logger.warn(COACHMARK_LOG_EVENT.REORDER_COACHMARK_UNAVAILABLE, {
       kind,
       error: getErrorMessage(error),
     });
