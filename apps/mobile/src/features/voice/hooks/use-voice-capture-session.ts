@@ -1,9 +1,4 @@
-import {
-  useErrorReporter,
-  useHaptics,
-  useLogger,
-  useSpeechRecognizer,
-} from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type {
   SpeechErrorCode,
   SpeechEvent,
@@ -11,19 +6,13 @@ import type {
   SpeechMode,
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
-import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
-import type {
-  VoiceCaptureEntry,
-  VoiceCaptureOutcome,
-} from '@src/shared/observability/telemetry-keys';
+import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
 import { noop } from 'es-toolkit';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import {
   AUTO_FINISH_SILENCE_MS,
   QUICK_CAPTURE_MAX_SECONDS,
@@ -44,17 +33,10 @@ import {
   type VoiceRecognizerLinkEvent,
 } from '../domains/voice-capture.model';
 import { type VoiceTranscript, VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
-import { getDurationBucket } from '../utils/analytics/duration-bucket';
+import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 
 /** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
 const FINALIZE_TIMEOUT_MS = 1_500;
-
-const PAUSE_CAUSE_PARAMS = {
-  'app-background': 'app_background',
-  interrupted: 'interrupted',
-  user: 'user',
-  limit: 'limit',
-} as const satisfies Record<VoicePauseCause, string>;
 
 interface UseVoiceCaptureSessionOptions {
   entry: VoiceCaptureEntry;
@@ -97,9 +79,7 @@ export function useVoiceCaptureSession({
 }: UseVoiceCaptureSessionOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const haptics = useHaptics();
-  const logger = useLogger();
-  const errorReporter = useErrorReporter();
-  const { trackEvent } = useTrack();
+  const telemetry = useVoiceCaptureTelemetry({ entry, mode });
 
   const [state, setState] = useState<VoiceCaptureState>(createVoiceCaptureState);
   const level = useSharedValue(0);
@@ -128,10 +108,6 @@ export function useVoiceCaptureSession({
 
   const getStatus = () => stateRef.current.status;
 
-  const addBreadcrumb = (message: string, data?: Record<string, unknown>) => {
-    errorReporter.addBreadcrumb({ category: 'voice', message, data });
-  };
-
   const stopRecognizer = () => {
     updateLink({ type: 'stop-requested' });
     speechRecognizer.stop();
@@ -154,21 +130,10 @@ export function useVoiceCaptureSession({
     timers.clearAll();
   };
 
-  const trackFinished = (outcome: VoiceCaptureOutcome, at: VoiceCaptureState) => {
-    const durationBucket = getDurationBucket(VoiceCapturePolicy.getElapsedMs(at, Date.now()));
-    trackEvent('voice_capture_finished', {
-      mode,
-      outcome,
-      duration_bucket: durationBucket,
-      pause_count: at.pauseCount,
-    });
-    addBreadcrumb('capture.finished', { mode, duration_bucket: durationBucket });
-  };
-
   const handleFinalized = () => {
     timers.clear('finalize');
     const { next } = dispatch({ type: 'end' });
-    trackFinished(VoiceCapturePolicy.getCaptureOutcome(next), next);
+    telemetry.finished(VoiceCapturePolicy.getCaptureOutcome(next), next);
   };
 
   function finish() {
@@ -183,31 +148,30 @@ export function useVoiceCaptureSession({
       timers.set('finalize', handleFinalized, FINALIZE_TIMEOUT_MS);
       return;
     }
-    trackFinished(VoiceCapturePolicy.getCaptureOutcome(next), next);
+    telemetry.finished(VoiceCapturePolicy.getCaptureOutcome(next), next);
   }
 
   const handleError = (code: SpeechErrorCode) => {
     const { isStopRequested } = linkRef.current;
     const { previous, next } = dispatch({ type: 'error', code, at: Date.now(), isStopRequested });
-    const startOptions = startOptionsRef.current;
-    const context = { speech_error: code, on_device: startOptions?.isOnDevice };
+    const isOnDevice = startOptionsRef.current?.isOnDevice;
 
     if (VoiceCapturePolicy.isRecognizerFailure(previous, code, isStopRequested)) {
-      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(code), context);
+      telemetry.recognizerFailed(code, isOnDevice);
     } else {
-      logger.info(VOICE_LOG_EVENT.RECOGNIZER_EXPECTED_STOP, context);
+      telemetry.recognizerStopped(code, isOnDevice);
     }
 
     if (next.status === 'failed') {
       onFailed?.(next.transcript);
       clearTimers();
       haptics.notify('error');
-      trackEvent('voice_capture_failed', { mode, reason: next.reason });
+      telemetry.failed(next.reason);
       return;
     }
     if (next.status === 'paused' && previous.status !== 'paused') {
       clearTimers();
-      addBreadcrumb('capture.paused', { mode, cause: 'interrupted' });
+      telemetry.paused('interrupted');
     }
   };
 
@@ -232,9 +196,7 @@ export function useVoiceCaptureSession({
    */
   const restartStalledRecognizer = (now: number) => {
     updateLink({ type: 'stall-restarted', at: now });
-    const isOnDevice = startOptionsRef.current?.isOnDevice ?? false;
-    trackEvent('voice_recognizer_stalled', { mode, on_device: isOnDevice });
-    addBreadcrumb('capture.recognizer-stalled', { mode, on_device: isOnDevice });
+    telemetry.stalled(startOptionsRef.current?.isOnDevice ?? false);
     stopRecognizer();
     timers.set(
       'stallRestart',
@@ -333,7 +295,7 @@ export function useVoiceCaptureSession({
     }
     clearTimers();
     stopRecognizer();
-    addBreadcrumb('capture.paused', { mode, cause });
+    telemetry.paused(cause);
   };
 
   const pauseForBackground = useEffectEvent(() => pause('app-background'));
@@ -384,7 +346,7 @@ export function useVoiceCaptureSession({
     }
     let isCurrent = true;
     const text = VoiceTranscriptPolicy.getTranscriptText(stateRef.current.transcript);
-    addBreadcrumb('plan.requested', { mode });
+    telemetry.planRequested();
     runCaptured(text)
       .then((result) => {
         if (isCurrent) {
@@ -444,21 +406,13 @@ export function useVoiceCaptureSession({
       };
       startAfterRecognizerEnds();
       haptics.impact('light');
-      trackEvent('voice_capture_started', {
-        mode,
-        entry,
-        locale,
-        on_device: isOnDevice,
-      });
-      addBreadcrumb('capture.started', { mode, locale, on_device: isOnDevice });
+      telemetry.started(locale, isOnDevice);
       return true;
     } catch (error) {
       if (isUnmountedRef.current) {
         return false;
       }
-      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(getErrorMessage(error)), {
-        speech_error: 'unknown',
-      });
+      telemetry.capabilityCheckFailed(error);
       handleError('unknown');
       return false;
     }
@@ -471,11 +425,7 @@ export function useVoiceCaptureSession({
     }
     startAfterRecognizerEnds();
     if (previous.status === 'paused') {
-      trackEvent('voice_capture_resumed', {
-        mode,
-        cause: PAUSE_CAUSE_PARAMS[previous.cause],
-      });
-      addBreadcrumb('capture.resumed', { mode });
+      telemetry.resumed(previous.cause);
     }
   };
 
@@ -489,7 +439,7 @@ export function useVoiceCaptureSession({
       updateLink({ type: 'ended' });
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
-      trackFinished(
+      telemetry.finished(
         VoiceTranscriptPolicy.isTranscriptEmpty(previous.transcript) ? 'empty' : outcome,
         previous,
       );
@@ -515,7 +465,7 @@ export function useVoiceCaptureSession({
     }
     startOptionsRef.current = { ...startOptions, locale, isOnDevice: canRecognizeOnDevice };
     if (VoiceCapturePolicy.isActive(stateRef.current)) {
-      trackEvent('voice_capture_locale_changed', { mode, locale, on_device: canRecognizeOnDevice });
+      telemetry.localeChanged(locale, canRecognizeOnDevice);
     }
     if (getStatus() === 'listening') {
       stopRecognizer();
