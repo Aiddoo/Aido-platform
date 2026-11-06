@@ -9,6 +9,8 @@ import { useRecognitionLanguage } from './use-recognition-language';
 interface StartVoiceNoteOptions {
   onSubscribe?: () => void;
   getRecordHref?: () => Href;
+  /** 녹음 화면으로 넘어가는 방법. 기본은 지금 화면 위에 쌓는다 */
+  navigate?: (href: Href) => void;
 }
 
 export function useVoiceNoteStart() {
@@ -18,7 +20,7 @@ export function useVoiceNoteStart() {
   const [locale] = useRecognitionLanguage();
   const push = useSingleTap(router.push);
 
-  return async ({ onSubscribe, getRecordHref }: StartVoiceNoteOptions = {}) => {
+  return async ({ onSubscribe, getRecordHref, navigate = push }: StartVoiceNoteOptions = {}) => {
     if (!gate.guard({ onSubscribe })) {
       return;
     }
@@ -27,7 +29,7 @@ export function useVoiceNoteStart() {
       return;
     }
     if (await ensureMicrophonePermission('note', locale)) {
-      push(getRecordHref?.() ?? '/voice-notes/record');
+      navigate(getRecordHref?.() ?? '/voice-notes/record');
     }
   };
 }

@@ -75,9 +75,31 @@
     }
   },
   "v1_15_0": {
-    "summary": "말로 할 일 만들기, 말로 메모하기"
+    "summary": "말로 할 일 만들기, 말로 메모하기",
+    "voiceTodo": {
+      "title": "말로 할 일 만들기",
+      "description": "길게 말하면 할 일로 나눠 드려요",
+      "action": "지금 말해 보기",
+      "mediaLabel": "말로 할 일을 만드는 화면"
+    },
+    "voiceNote": {
+      "title": "말로 메모하기",
+      "description": "회의를 들려주면 요약과 할 일을 찾아 드려요",
+      "action": "메모 시작",
+      "mediaLabel": "말로 메모하는 화면"
+    }
   },
   "v1_14_0": {
-    "summary": "친구 초대"
+    "summary": "친구 초대",
+    "friendInvite": {
+      "title": "친구 초대하고 발자국 모으기",
+      "description": "초대한 친구도 나도 프리미엄을 받을 수 있어요",
+      "action": "초대하러 가기"
+    }
+  },
+  "list": {
+    "title": "새로운 기능",
+    "newBadge": "새 기능",
+    "unseenLabel": "아직 보지 않음"
   }
 }

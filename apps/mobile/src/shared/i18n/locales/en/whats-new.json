@@ -75,9 +75,31 @@
     }
   },
   "v1_15_0": {
-    "summary": "Speak to add, voice notes"
+    "summary": "Speak to add, voice notes",
+    "voiceTodo": {
+      "title": "Speak to add",
+      "description": "Say it all at once, and we'll split it into to-dos",
+      "action": "Try speaking now",
+      "mediaLabel": "Screen for making to-dos by voice"
+    },
+    "voiceNote": {
+      "title": "Make a voice note",
+      "description": "Let it hear your meeting for a summary and to-dos",
+      "action": "Start a note",
+      "mediaLabel": "Screen for making a voice note"
+    }
   },
   "v1_14_0": {
-    "summary": "Invite friends"
+    "summary": "Invite friends",
+    "friendInvite": {
+      "title": "Invite friends, collect paws",
+      "description": "You and your friend can both get Premium",
+      "action": "Start inviting"
+    }
+  },
+  "list": {
+    "title": "What's new",
+    "newBadge": "New",
+    "unseenLabel": "Not viewed yet"
   }
 }

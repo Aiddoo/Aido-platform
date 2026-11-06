@@ -61,6 +61,7 @@ function AppLayout() {
           options={{ animation: isCompact ? 'slide_from_right' : 'none' }}
         />
         <Stack.Screen name="weather" />
+        <Stack.Screen name="whats-new" />
         <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
         {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
         <Stack.Screen

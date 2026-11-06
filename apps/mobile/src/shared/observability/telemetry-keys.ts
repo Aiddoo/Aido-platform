@@ -225,6 +225,7 @@ export const FEATURE_KEYS = [
   'todo_creation',
   'friend_invite',
   'voice_quick',
+  'voice_note',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];

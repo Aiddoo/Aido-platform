@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -11,6 +12,9 @@ export const router = {
 };
 export const useLocalSearchParams = jest.fn();
 export const useIsFocused = jest.fn();
+export function useFocusEffect(effect: () => void | (() => void)) {
+  useEffect(effect, [effect]);
+}
 
 /**
  * clearMocks는 호출 기록만, restoreMocks는 spy만 되돌려 mockReturnValue가 다음 테스트로 샌다.
