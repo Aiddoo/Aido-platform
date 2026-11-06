@@ -298,6 +298,8 @@ FriendFeedTodos.Loading = function Loading() {
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
+        <Spacing size={8} />
+        <PokeBanner.Loading />
         <Spacing size={16} />
         <Box px={16}>
           <FriendTodoList.Loading />
