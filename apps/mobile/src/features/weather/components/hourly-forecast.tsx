@@ -12,6 +12,7 @@ import { Box, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
+import { Separator } from 'heroui-native';
 import { memo, type ReactNode } from 'react';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
@@ -103,7 +104,7 @@ export function HourlyForecast() {
         {summary != null && (
           <>
             <HourlyForecast.Summary summary={summary} context={context} />
-            <Box className="mx-4 mt-3 h-[0.5px] bg-on-sky/[0.18]" />
+            <Separator thickness={0.5} className="mx-4 mt-3 bg-on-sky/[0.18]" />
           </>
         )}
         <FlatList

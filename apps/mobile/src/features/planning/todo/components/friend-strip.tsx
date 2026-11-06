@@ -34,7 +34,7 @@ import {
 } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
-import { CloseButton, PressableFeedback, Skeleton } from 'heroui-native';
+import { CloseButton, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import {
   memo,
   type ReactNode,
@@ -526,8 +526,10 @@ function ItemGap() {
 
 function Divider() {
   return (
-    <Box
-      className="w-px bg-gray-2"
+    <Separator
+      orientation="vertical"
+      thickness={1}
+      className="bg-gray-2"
       style={{
         height: DIVIDER_HEIGHT,
         marginTop: (AVATAR_FRAME_SIZE - DIVIDER_HEIGHT) / 2,

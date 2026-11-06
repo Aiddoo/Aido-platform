@@ -4,10 +4,11 @@ import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherRainIcon } from '@src/shared/ui/icon';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
+import { Separator } from 'heroui-native';
 import { useEffect } from 'react';
 import Animated, {
   cancelAnimation,
@@ -106,7 +107,7 @@ export function NextHourPrecipitation() {
           </Text>
         )}
       </VStack>
-      <Box className="mt-3 h-[0.5px] bg-on-sky/[0.18]" />
+      <Separator thickness={0.5} className="mt-3 bg-on-sky/[0.18]" />
       <NextHourPrecipitation.Chart minutes={data.nextHour.minutes} summary={summary} />
     </WeatherCard>
   );

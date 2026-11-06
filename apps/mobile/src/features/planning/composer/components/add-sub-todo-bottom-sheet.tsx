@@ -39,7 +39,7 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Popover, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
+import { Popover, PressableFeedback, Separator, Skeleton, Spinner } from 'heroui-native';
 import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -129,7 +129,7 @@ AddSubTodoBottomSheet.Loading = function Loading() {
   return (
     <VStack gap={12}>
       <Skeleton className="h-12 w-full rounded-xl" />
-      <Box className="h-px bg-gray-2" />
+      <Separator thickness={1} className="bg-gray-2" />
       <Skeleton className="h-9 w-24 self-end rounded-4xl" />
     </VStack>
   );
@@ -236,7 +236,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
         )}
       </FormField>
 
-      <Box className="h-px bg-gray-2" />
+      <Separator thickness={1} className="bg-gray-2" />
 
       <HStack gap={8} align="center">
         {subTodo != null && (

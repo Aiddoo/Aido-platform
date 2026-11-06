@@ -9,7 +9,7 @@ import { useLanguage } from '@src/shared/providers/language-provider';
 import { AiIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/format';
 import { useQuery } from '@tanstack/react-query';
-import { Popover, PressableFeedback } from 'heroui-native';
+import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { useState } from 'react';
 
 export function QuickVoiceInfo() {
@@ -82,7 +82,8 @@ QuickVoiceInfo.Contents = function Contents({
           {t('info.examples')}
         </Text>
       </VStack>
-      <VStack gap={4} className="border-t border-border pt-2">
+      <Separator thickness={1} className="bg-border" />
+      <VStack gap={4}>
         {remaining != null && (
           <Text size="b4" shade={7} className="tabular-nums" lineBreakStrategyIOS="hangul-word">
             {t('info.remaining', { amount: formatCount(remaining, locale) })}

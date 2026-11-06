@@ -27,7 +27,6 @@ import {
   useConfirmDialog,
   BottomSheetInput,
   BottomSheetTextArea,
-  Box,
   HStack,
   KeyboardBottomSheet,
   ModalBottomSheet,
@@ -37,6 +36,7 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
+import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Suspense, useState } from 'react';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
@@ -305,7 +305,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       footer={
         isFormStep ? (
           <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
-            <Box className="h-px bg-gray-2" />
+            <Separator thickness={1} className="bg-gray-2" />
 
             <HStack gap={8} align="center" justify="end">
               {props.mode === 'create' && (

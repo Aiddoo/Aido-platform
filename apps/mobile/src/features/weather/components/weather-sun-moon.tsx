@@ -4,6 +4,7 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
+import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { MOON_PHASE_LABEL_KEYS, SUN_EVENT_LABEL_KEYS } from '../constants/weather-labels';
@@ -133,7 +134,7 @@ export function WeatherSunMoon() {
           />
         </HStack>
       )}
-      <Box className="mt-3.5 h-[0.5px] bg-on-sky/[0.18]" />
+      <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
       <HStack gap={12} align="center" className="mt-3.5">
         <WeatherMoonIcon phase={today.moonPhase} latitude={data.location.latitude} />
         <VStack className="min-w-0 flex-1" accessible>
