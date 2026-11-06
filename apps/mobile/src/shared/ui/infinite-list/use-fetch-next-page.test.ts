@@ -2,7 +2,9 @@ import { renderHook } from '@testing-library/react-native';
 
 import { useFetchNextPage } from './use-fetch-next-page';
 
-function createParams(overrides: Partial<Parameters<typeof useFetchNextPage>[0]> = {}) {
+type Params = Parameters<typeof useFetchNextPage>[0];
+
+function createParams(overrides: Partial<Params> = {}) {
   return {
     hasNextPage: true,
     isFetchingNextPage: false,
@@ -98,5 +100,48 @@ describe('useFetchNextPage', () => {
 
     // Then
     expect(params.fetchNextPage).toHaveBeenCalledTimes(2);
+  });
+
+  it('실패 뒤 당겨서 새로고침으로 오류가 풀리면 끝 근처에서도 다음 페이지를 한 번 다시 부른다', async () => {
+    // Given
+    const params = createParams({ isFetchNextPageError: true });
+    const { rerender } = await renderHook((props: Params) => useFetchNextPage(props), {
+      initialProps: params,
+    });
+
+    // When
+    await rerender({ ...params, isFetchNextPageError: false });
+
+    // Then
+    expect(params.fetchNextPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('재시도가 성공해 오류가 풀린 때는 다음 페이지를 더 부르지 않는다', async () => {
+    // Given
+    const params = createParams({ isFetchNextPageError: true });
+    const { rerender } = await renderHook((props: Params) => useFetchNextPage(props), {
+      initialProps: params,
+    });
+    await rerender({ ...params, isFetchingNextPage: true });
+
+    // When
+    await rerender({ ...params, isFetchingNextPage: false, isFetchNextPageError: false });
+
+    // Then
+    expect(params.fetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('오류가 풀려도 다음 페이지가 없으면 부르지 않는다', async () => {
+    // Given
+    const params = createParams({ isFetchNextPageError: true, hasNextPage: false });
+    const { rerender } = await renderHook((props: Params) => useFetchNextPage(props), {
+      initialProps: params,
+    });
+
+    // When
+    await rerender({ ...params, isFetchNextPageError: false });
+
+    // Then
+    expect(params.fetchNextPage).not.toHaveBeenCalled();
   });
 });

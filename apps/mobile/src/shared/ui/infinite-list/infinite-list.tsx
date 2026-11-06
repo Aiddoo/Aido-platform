@@ -16,7 +16,7 @@ const END_REACHED_THRESHOLD = 0.5;
 
 export interface InfiniteListProps<T> extends Omit<
   FlashListProps<T>,
-  'onEndReached' | 'refreshControl' | 'ListFooterComponent'
+  'onEndReached' | 'onEndReachedThreshold' | 'refreshControl' | 'ListFooterComponent'
 > {
   ref?: Ref<FlashListRef<T>>;
   hasNextPage: boolean;
@@ -33,6 +33,7 @@ export function InfiniteList<T>({
   fetchNextPage,
   refreshing,
   onRefresh,
+  progressViewOffset,
   ...props
 }: InfiniteListProps<T>) {
   const { color: tint } = useResolveClassNames('text-main');
@@ -61,6 +62,7 @@ export function InfiniteList<T>({
           <RefreshControl
             refreshing={refreshing ?? false}
             onRefresh={onRefresh}
+            progressViewOffset={progressViewOffset}
             tintColor={tint}
             colors={tint == null ? undefined : [tint]}
           />
@@ -81,6 +83,14 @@ export function InfiniteListFooter({
 }) {
   const { t } = useTranslation('common');
 
+  if (isFetchingNextPage) {
+    return (
+      <Flex py={16} align="center">
+        <Spinner size="sm" />
+      </Flex>
+    );
+  }
+
   if (isFetchNextPageError) {
     return (
       <Flex py={8} align="center">
@@ -97,14 +107,6 @@ export function InfiniteListFooter({
             </Text>
           </HStack>
         </PressableFeedback>
-      </Flex>
-    );
-  }
-
-  if (isFetchingNextPage) {
-    return (
-      <Flex py={16} align="center">
-        <Spinner size="sm" />
       </Flex>
     );
   }
