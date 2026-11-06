@@ -1,4 +1,4 @@
-import type { User } from '@src/features/identity/user/domains/user.model';
+import type { User } from '@src/features/identity/user/schemas/user.schema';
 
 import { type WhatsNewConfig, WhatsNewPolicy, isSemanticVersionAtLeast } from './whats-new.model';
 

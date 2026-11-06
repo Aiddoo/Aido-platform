@@ -1,16 +1,18 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { type CurrentUserResponse, toUser } from '@src/features/identity/user/apis/user.mapper';
+import { toUser } from '@src/features/identity/user/apis/user.mapper';
+import type { CurrentUserResponse } from '@src/features/identity/user/schemas/user.schema';
+import { type Instant, toInstant } from '@src/shared/date/instant';
 
 import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';
 
 const SEOUL = 'Asia/Seoul';
 // 2028년 3월 1일 12:00 KST
-const NOW = new Date('2028-03-01T03:00:00Z');
+const NOW = toInstant('2028-03-01T03:00:00Z');
 
 interface ReceiptOptions {
   isStoreConfigured?: boolean;
-  now?: Date;
+  now?: Instant;
 }
 
 /** 서버 /me 응답 모양 그대로 받아 앱 mapper를 거친 사용자로 영수증을 만든다 */
@@ -31,7 +33,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       expect(result).toEqual({
         variant: 'paid',
         rows: [
-          { type: 'nextBillingDate', date: new Date('2028-03-10T04:00:00.000Z') },
+          { type: 'nextBillingDate', date: toInstant('2028-03-10T04:00:00.000Z') },
           { type: 'autoRenewal', willRenew: true },
           { type: 'bankedReward', days: 5, endsAt: null },
         ],
@@ -64,14 +66,14 @@ describe('toSubscriptionReceiptViewModel', () => {
     it('E. 구독을 취소했고 보상이 쌓여 있으면 종료일과 보상을 보이고 내일 끝나도 끝남 안내를 하지 않는다', () => {
       // When 구독이 3월 10일에 끝나기 하루 전
       const result = createReceipt(PREMIUM_ME_EXAMPLES.cancelledWithBanked, {
-        now: new Date('2028-03-09T03:00:00Z'),
+        now: toInstant('2028-03-09T03:00:00Z'),
       });
 
       // Then
       expect(result.rows).toEqual([
-        { type: 'subscriptionEndsOn', date: new Date('2028-03-10T04:00:00.000Z') },
+        { type: 'subscriptionEndsOn', date: toInstant('2028-03-10T04:00:00.000Z') },
         { type: 'autoRenewal', willRenew: false },
-        { type: 'bankedReward', days: 7, endsAt: new Date('2028-03-17T04:00:00.000Z') },
+        { type: 'bankedReward', days: 7, endsAt: toInstant('2028-03-17T04:00:00.000Z') },
       ]);
       expect(result.endingNotice).toBeNull();
     });
@@ -89,12 +91,12 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // When
-      const result = createReceipt(me, { now: new Date('2028-03-09T03:00:00Z') });
+      const result = createReceipt(me, { now: toInstant('2028-03-09T03:00:00Z') });
 
       // Then
       expect(result.footnote).toEqual({
         type: 'returnsToFreePlan',
-        date: new Date('2028-03-10T04:00:00.000Z'),
+        date: toInstant('2028-03-10T04:00:00.000Z'),
       });
       expect(result.endingNotice).toBe('tomorrow');
     });
@@ -102,7 +104,7 @@ describe('toSubscriptionReceiptViewModel', () => {
     it('자동 갱신 결제 예정 시각이 지났는데 갱신이 아직 반영되지 않았으면 지난 날짜 대신 갱신 확인 중으로 보인다', () => {
       // When 다음 결제 예정(3월 10일 13:00 KST) 1시간 뒤, 갱신 웹훅 전이다
       const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward, {
-        now: new Date('2028-03-10T05:00:00Z'),
+        now: toInstant('2028-03-10T05:00:00Z'),
       });
 
       // Then
@@ -112,13 +114,13 @@ describe('toSubscriptionReceiptViewModel', () => {
     it('자동 갱신 결제 예정 시각 1분 전에는 다음 결제일을 그대로 보인다', () => {
       // When
       const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward, {
-        now: new Date('2028-03-10T03:59:00Z'),
+        now: toInstant('2028-03-10T03:59:00Z'),
       });
 
       // Then
       expect(result.rows[0]).toEqual({
         type: 'nextBillingDate',
-        date: new Date('2028-03-10T04:00:00.000Z'),
+        date: toInstant('2028-03-10T04:00:00.000Z'),
       });
     });
 
@@ -146,10 +148,10 @@ describe('toSubscriptionReceiptViewModel', () => {
       expect(result).toEqual({
         variant: 'reward',
         rows: [
-          { type: 'rewardPeriod', endsAt: new Date('2028-03-12T04:00:00.000Z') },
+          { type: 'rewardPeriod', endsAt: toInstant('2028-03-12T04:00:00.000Z') },
           { type: 'daysLeft', days: 11, endingNotice: null },
         ],
-        footnote: { type: 'returnsToFreePlan', date: new Date('2028-03-12T04:00:00.000Z') },
+        footnote: { type: 'returnsToFreePlan', date: toInstant('2028-03-12T04:00:00.000Z') },
         primaryAction: 'subscribe',
         endingNotice: null,
       });
@@ -161,21 +163,21 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then 남은 기간과 무료 플랜 안내는 전체 끝(3월 11일) 기준이다
       expect(result.rows).toEqual([
-        { type: 'rewardPeriod', endsAt: new Date('2028-03-04T04:00:00.000Z') },
+        { type: 'rewardPeriod', endsAt: toInstant('2028-03-04T04:00:00.000Z') },
         { type: 'bankedReward', days: 7, endsAt: null },
-        { type: 'overallPeriod', endsAt: new Date('2028-03-11T04:00:00.000Z') },
+        { type: 'overallPeriod', endsAt: toInstant('2028-03-11T04:00:00.000Z') },
         { type: 'daysLeft', days: 10, endingNotice: null },
       ]);
       expect(result.footnote).toEqual({
         type: 'returnsToFreePlan',
-        date: new Date('2028-03-11T04:00:00.000Z'),
+        date: toInstant('2028-03-11T04:00:00.000Z'),
       });
     });
 
     it('B. 지금 보상이 내일 끝나도 보상이 이어지면 끝남 안내를 하지 않는다', () => {
       // When
       const result = createReceipt(PREMIUM_ME_EXAMPLES.rewardDuringReward, {
-        now: new Date('2028-03-03T03:00:00Z'),
+        now: toInstant('2028-03-03T03:00:00Z'),
       });
 
       // Then
@@ -190,7 +192,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       (_case, now, days, notice) => {
         // When
         const result = createReceipt(PREMIUM_ME_EXAMPLES.bankedRewardStarted, {
-          now: new Date(now),
+          now: toInstant(now),
         });
 
         // Then
@@ -239,13 +241,13 @@ describe('toSubscriptionReceiptViewModel', () => {
       // When
       const result = createReceipt(
         { ...PREMIUM_ME_EXAMPLES.newRewardAfterEnded, role: 'ADMIN' },
-        { now: new Date('2028-03-11T03:00:00Z') },
+        { now: toInstant('2028-03-11T03:00:00Z') },
       );
 
       // Then
       expect(result.rows).toEqual([
         { type: 'account' },
-        { type: 'rewardRecord', endsAt: new Date('2028-03-12T04:00:00.000Z') },
+        { type: 'rewardRecord', endsAt: toInstant('2028-03-12T04:00:00.000Z') },
       ]);
       expect(result.endingNotice).toBeNull();
       expect(result.primaryAction).toBeNull();

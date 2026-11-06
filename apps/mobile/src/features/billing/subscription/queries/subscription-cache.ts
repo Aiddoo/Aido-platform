@@ -1,4 +1,4 @@
-import { PREMIUM_SOURCE } from '@aido/api';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import {
   getCachedMe,
@@ -17,6 +17,11 @@ export function isPremiumDependentQuery(query: Pick<Query, 'meta'>) {
 /** 프리미엄에 따라 한도·사용량·접근이 달라지는 쿼리를 다시 불러온다. */
 function invalidatePremiumDependentQueries(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ predicate: isPremiumDependentQuery });
+}
+
+function isStorePremiumReflected(queryClient: QueryClient) {
+  const premiumAccess = getCachedMe(queryClient)?.premiumAccess;
+  return premiumAccess != null && PremiumAccessPolicy.isStoreSubscribed(premiumAccess);
 }
 
 /** 프리미엄 기간이 끝나는 순간에는 서버 이벤트가 없어 내 정보와 의존 쿼리를 한 번 다시 불러온다 */
@@ -66,12 +71,12 @@ export async function syncMeUntilStorePremium(
   { delays = STORE_PREMIUM_SYNC_DELAYS, wait = delay }: SyncStorePremiumOptions = {},
 ) {
   for (const ms of delays) {
-    if (getCachedMe(queryClient)?.premiumAccess.source === PREMIUM_SOURCE.STORE) {
+    if (isStorePremiumReflected(queryClient)) {
       return true;
     }
     await wait(ms);
     await refetchMe(queryClient);
   }
 
-  return getCachedMe(queryClient)?.premiumAccess.source === PREMIUM_SOURCE.STORE;
+  return isStorePremiumReflected(queryClient);
 }

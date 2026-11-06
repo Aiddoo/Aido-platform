@@ -1,4 +1,5 @@
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
+import { toInstant } from '@src/shared/date/instant';
 
 import {
   createEntitlementSnapshot,
@@ -9,7 +10,7 @@ import { EntitlementPolicy } from './entitlement.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
-const NOW = new Date('2026-11-15T00:00:00.000Z');
+const NOW = toInstant('2026-11-15T00:00:00.000Z');
 
 describe('EntitlementPolicy', () => {
   describe('등급별 판단', () => {
@@ -76,9 +77,9 @@ describe('EntitlementPolicy', () => {
     });
 
     it.each([
-      ['지난 초기화 시각', new Date('2026-11-01T00:00:00.000Z'), 'allow'],
+      ['지난 초기화 시각', toInstant('2026-11-01T00:00:00.000Z'), 'allow'],
       ['지금과 같은 초기화 시각', NOW, 'allow'],
-      ['앞으로의 초기화 시각', new Date('2026-12-01T00:00:00.000Z'), 'limit-reached'],
+      ['앞으로의 초기화 시각', toInstant('2026-12-01T00:00:00.000Z'), 'limit-reached'],
       ['초기화 시각 없음', null, 'limit-reached'],
     ] as const)('남은 횟수가 0일 때 %s이면 %s다', (_label, resetsAt, expected) => {
       // Given
@@ -199,7 +200,7 @@ describe('EntitlementPolicy', () => {
       const notice = EntitlementPolicy.getResetNotice(
         snapshot,
         'NUDGE',
-        new Date('2026-11-05T14:00:00Z'),
+        toInstant('2026-11-05T14:00:00Z'),
         SEOUL,
       );
 
@@ -215,12 +216,12 @@ describe('EntitlementPolicy', () => {
       const notice = EntitlementPolicy.getResetNotice(
         snapshot,
         'AI_PARSE',
-        new Date('2026-11-10T03:00:00Z'),
+        toInstant('2026-11-10T03:00:00Z'),
         SEOUL,
       );
 
       // Then
-      expect(notice).toEqual({ type: 'date', date: new Date('2026-11-30T15:00:00.000Z') });
+      expect(notice).toEqual({ type: 'date', date: toInstant('2026-11-30T15:00:00.000Z') });
     });
 
     it('KST 기준 월초 초기화가 다른 시간대에서 오늘 안이면 오늘이다', () => {
@@ -231,7 +232,7 @@ describe('EntitlementPolicy', () => {
       const notice = EntitlementPolicy.getResetNotice(
         snapshot,
         'AI_PARSE',
-        new Date('2026-11-30T09:00:00Z'),
+        toInstant('2026-11-30T09:00:00Z'),
         LOS_ANGELES,
       );
 
@@ -245,7 +246,7 @@ describe('EntitlementPolicy', () => {
       ['지난 초기화 시각', createEntitlementSnapshot(), 'NUDGE'],
     ] as const)('%s이면 안내하지 않는다', (_case, snapshot, feature) => {
       // Given
-      const now = new Date('2026-12-02T00:00:00Z');
+      const now = toInstant('2026-12-02T00:00:00Z');
 
       // When
       const notice = EntitlementPolicy.getResetNotice(snapshot, feature, now, SEOUL);

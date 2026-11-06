@@ -1,10 +1,8 @@
 import { useHaptics, useInviteService } from '@src/bootstrap/providers/di-context';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
-import {
-  type PremiumAccess,
-  PremiumAccessPolicy,
-} from '@src/features/identity/user/domains/premium-access.model';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

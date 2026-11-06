@@ -1,4 +1,5 @@
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
 import { calculateDaysLeft, PremiumAccessPolicy } from './premium-access.model';
@@ -9,8 +10,8 @@ const LOS_ANGELES = 'America/Los_Angeles';
 describe('calculateDaysLeft', () => {
   it('자정 직전이면 끝나는 날까지 1일을 반환한다', () => {
     // Given
-    const endsAt = new Date('2026-11-01T05:30:00Z'); // 11월 1일 14:30 KST
-    const now = new Date('2026-10-31T14:59:59Z'); // 10월 31일 23:59:59 KST
+    const endsAt = toInstant('2026-11-01T05:30:00Z'); // 11월 1일 14:30 KST
+    const now = toInstant('2026-10-31T14:59:59Z'); // 10월 31일 23:59:59 KST
 
     // When
     const result = calculateDaysLeft(endsAt, now, SEOUL);
@@ -21,8 +22,8 @@ describe('calculateDaysLeft', () => {
 
   it('자정이 지나 끝나는 날이 되면 0일을 반환한다', () => {
     // Given
-    const endsAt = new Date('2026-11-01T05:30:00Z');
-    const now = new Date('2026-10-31T15:00:00Z'); // 11월 1일 00:00 KST
+    const endsAt = toInstant('2026-11-01T05:30:00Z');
+    const now = toInstant('2026-10-31T15:00:00Z'); // 11월 1일 00:00 KST
 
     // When
     const result = calculateDaysLeft(endsAt, now, SEOUL);
@@ -33,8 +34,8 @@ describe('calculateDaysLeft', () => {
 
   it('서머타임이 끝나 25시간인 날을 지나도 달력 일수를 반환한다', () => {
     // Given 2026-11-01 미국 서머타임 종료
-    const now = new Date('2026-10-31T19:00:00Z'); // 10월 31일 12:00 PDT
-    const endsAt = new Date('2026-11-02T20:00:00Z'); // 11월 2일 12:00 PST
+    const now = toInstant('2026-10-31T19:00:00Z'); // 10월 31일 12:00 PDT
+    const endsAt = toInstant('2026-11-02T20:00:00Z'); // 11월 2일 12:00 PST
 
     // When
     const result = calculateDaysLeft(endsAt, now, LOS_ANGELES);
@@ -45,8 +46,8 @@ describe('calculateDaysLeft', () => {
 
   it('윤년 2월 29일을 하루로 센 일수를 반환한다', () => {
     // Given
-    const now = new Date('2028-02-28T03:00:00Z');
-    const endsAt = new Date('2028-03-01T03:00:00Z');
+    const now = toInstant('2028-02-28T03:00:00Z');
+    const endsAt = toInstant('2028-03-01T03:00:00Z');
 
     // When
     const result = calculateDaysLeft(endsAt, now, SEOUL);
@@ -57,8 +58,8 @@ describe('calculateDaysLeft', () => {
 
   it('이미 지난 날이면 0일을 반환한다', () => {
     // Given
-    const endsAt = new Date('2026-10-20T00:00:00Z');
-    const now = new Date('2026-10-25T00:00:00Z');
+    const endsAt = toInstant('2026-10-20T00:00:00Z');
+    const now = toInstant('2026-10-25T00:00:00Z');
 
     // When
     const result = calculateDaysLeft(endsAt, now, SEOUL);
@@ -98,7 +99,7 @@ describe('calculateDaysLeft 달력 경계', () => {
     ],
   ] as const)('%s 남은 달력 일수를 반환한다', (_case, timeZone, now, endsAt, expected) => {
     // When
-    const result = calculateDaysLeft(new Date(endsAt), new Date(now), timeZone);
+    const result = calculateDaysLeft(toInstant(endsAt), toInstant(now), timeZone);
 
     // Then
     expect(result).toBe(expected);
@@ -156,13 +157,17 @@ describe('PremiumAccessPolicy', () => {
     });
   });
 
-  describe('daysLeft', () => {
+  describe('getDaysLeft', () => {
     it('끝나는 시각이 없으면 null을 반환한다', () => {
       // Given
       const access = createPremiumAccess({ endsAt: null });
 
       // When
-      const result = PremiumAccessPolicy.daysLeft(access, new Date('2026-10-25T00:00:00Z'), SEOUL);
+      const result = PremiumAccessPolicy.getDaysLeft(
+        access,
+        toInstant('2026-10-25T00:00:00Z'),
+        SEOUL,
+      );
 
       // Then
       expect(result).toBeNull();
@@ -173,77 +178,96 @@ describe('PremiumAccessPolicy', () => {
       const access = createPremiumAccess();
 
       // When
-      const result = PremiumAccessPolicy.daysLeft(access, new Date('2026-10-25T03:00:00Z'), SEOUL);
+      const result = PremiumAccessPolicy.getDaysLeft(
+        access,
+        toInstant('2026-10-25T03:00:00Z'),
+        SEOUL,
+      );
 
       // Then 11월 1일 - 10월 25일 = 7일
       expect(result).toBe(7);
     });
   });
 
-  describe('endingNotice', () => {
+  describe('isExpiringSoon', () => {
     it.each([
-      ['내일 끝나면 tomorrow', '2026-10-31T01:00:00Z', 'tomorrow'],
-      ['끝나는 날 아침이면 today', '2026-10-31T23:00:00Z', 'today'],
-      ['끝나기 1ms 전이면 today', '2026-11-01T05:29:59.999Z', 'today'],
-      ['끝나는 시각과 같으면 null', '2026-11-01T05:30:00.000Z', null],
-      ['끝나고 1ms 뒤면 null', '2026-11-01T05:30:00.001Z', null],
-      ['이틀 남았으면 null', '2026-10-30T01:00:00Z', null],
-    ] as const)('자동 갱신 없이 %s을 반환한다', (_case, now, expected) => {
+      ['내일 끝나면 true', '2026-10-31T01:00:00Z', true],
+      ['끝나는 날 아침이면 true', '2026-10-31T23:00:00Z', true],
+      ['끝나기 1ms 전이면 true', '2026-11-01T05:29:59.999Z', true],
+      ['끝나는 시각과 같으면 false', '2026-11-01T05:30:00.000Z', false],
+      ['끝나고 1ms 뒤면 false', '2026-11-01T05:30:00.001Z', false],
+      ['이틀 남았으면 false', '2026-10-30T01:00:00Z', false],
+    ] as const)('자동 갱신 없이 %s를 반환한다', (_case, now, expected) => {
       // Given 11월 1일 14:30 KST에 끝나는 보상 기간
       const access = createPremiumAccess();
 
       // When
-      const result = PremiumAccessPolicy.endingNotice(access, new Date(now), SEOUL);
+      const result = PremiumAccessPolicy.isExpiringSoon(access, toInstant(now), SEOUL);
 
       // Then
       expect(result).toBe(expected);
     });
 
-    it('자동 갱신되면 내일 끝나도 null을 반환한다', () => {
+    it('끝나는 시각이 없으면 false를 반환한다', () => {
+      // Given
+      const access = createPremiumAccess({ source: null, endsAt: null, periodEndsAt: null });
+
+      // When
+      const result = PremiumAccessPolicy.isExpiringSoon(
+        access,
+        toInstant('2026-10-31T01:00:00Z'),
+        SEOUL,
+      );
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('자동 갱신되면 내일 끝나도 false를 반환한다', () => {
       // Given
       const access = createPremiumAccess({ source: 'STORE', willRenew: true });
 
       // When
-      const result = PremiumAccessPolicy.endingNotice(
+      const result = PremiumAccessPolicy.isExpiringSoon(
         access,
-        new Date('2026-10-31T01:00:00Z'),
+        toInstant('2026-10-31T01:00:00Z'),
         SEOUL,
       );
 
       // Then
-      expect(result).toBeNull();
+      expect(result).toBe(false);
     });
 
-    it('구독을 취소했어도 이어서 받을 보상이 남았으면 null을 반환한다', () => {
+    it('구독을 취소했어도 이어서 받을 보상이 남았으면 false를 반환한다', () => {
       // Given 스토어 구독이 내일 끝나지만 보상 7일이 이어진다
       const access = createPremiumAccess({ source: 'STORE', willRenew: false, bankedDays: 7 });
 
       // When
-      const result = PremiumAccessPolicy.endingNotice(
+      const result = PremiumAccessPolicy.isExpiringSoon(
         access,
-        new Date('2026-10-31T01:00:00Z'),
+        toInstant('2026-10-31T01:00:00Z'),
         SEOUL,
       );
 
       // Then
-      expect(result).toBeNull();
+      expect(result).toBe(false);
     });
 
     it.each([
       // 2028-02-29T15:00Z = 3월 1일 00:00 KST = 2월 29일 07:00 PST
-      [SEOUL, '2028-02-29T14:00:00Z', 'tomorrow'],
-      [LOS_ANGELES, '2028-02-29T14:00:00Z', 'today'],
+      [SEOUL, '2028-02-29T14:00:00Z', 1],
+      [LOS_ANGELES, '2028-02-29T14:00:00Z', 0],
     ] as const)(
-      '윤년 2월 29일 경계에서 %s 기준 %s에는 %s를 반환한다',
+      '윤년 2월 29일 경계에서 %s 기준 %s에는 남은 일수 %i를 반환한다',
       (timeZone, now, expected) => {
         // Given
         const access = createPremiumAccess({
-          endsAt: new Date('2028-02-29T15:00:00Z'),
-          periodEndsAt: new Date('2028-02-29T15:00:00Z'),
+          endsAt: toInstant('2028-02-29T15:00:00Z'),
+          periodEndsAt: toInstant('2028-02-29T15:00:00Z'),
         });
 
         // When
-        const result = PremiumAccessPolicy.endingNotice(access, new Date(now), timeZone);
+        const result = PremiumAccessPolicy.getDaysLeft(access, toInstant(now), timeZone);
 
         // Then
         expect(result).toBe(expected);
@@ -251,53 +275,11 @@ describe('PremiumAccessPolicy', () => {
     );
   });
 
-  describe('purchaseSuccessMessage', () => {
-    it.each([
-      ['GRANT', 'purchaseSuccessWithReward'],
-      ['STORE', 'purchaseSuccess'],
-      [null, 'purchaseSuccess'],
-    ] as const)('구매 전 출처가 %s면 %s를 반환한다', (source, expected) => {
-      // Given
-      const access = createPremiumAccess({ source });
-
-      // When
-      const result = PremiumAccessPolicy.purchaseSuccessMessage(access);
-
-      // Then
-      expect(result).toBe(expected);
-    });
-
-    it('내 정보를 아직 불러오지 않았으면 purchaseSuccess를 반환한다', () => {
-      // When
-      const result = PremiumAccessPolicy.purchaseSuccessMessage(undefined);
-
-      // Then
-      expect(result).toBe('purchaseSuccess');
-    });
-  });
-
-  describe('restoreEmptyMessage', () => {
-    it.each([
-      ['GRANT', 'restoreEmptyWithReward'],
-      ['STORE', 'restoreEmpty'],
-      [null, 'restoreEmpty'],
-    ] as const)('출처가 %s면 %s를 반환한다', (source, expected) => {
-      // Given
-      const access = createPremiumAccess({ source });
-
-      // When
-      const result = PremiumAccessPolicy.restoreEmptyMessage(access);
-
-      // Then
-      expect(result).toBe(expected);
-    });
-  });
-
   describe('hasChanged', () => {
     it('같은 시각을 새 Date로 받았으면 false를 반환한다', () => {
       // Given
       const previous = createPremiumAccess();
-      const next = createPremiumAccess({ endsAt: new Date('2026-11-01T05:30:00Z') });
+      const next = createPremiumAccess({ endsAt: toInstant('2026-11-01T05:30:00Z') });
 
       // When
       const result = PremiumAccessPolicy.hasChanged(previous, next);
@@ -308,8 +290,8 @@ describe('PremiumAccessPolicy', () => {
 
     it.each([
       ['출처', { source: null }],
-      ['전체 끝', { endsAt: new Date('2026-11-08T05:30:00Z') }],
-      ['지금 기간의 끝', { periodEndsAt: new Date('2026-11-08T05:30:00Z') }],
+      ['전체 끝', { endsAt: toInstant('2026-11-08T05:30:00Z') }],
+      ['지금 기간의 끝', { periodEndsAt: toInstant('2026-11-08T05:30:00Z') }],
       ['자동 갱신', { willRenew: true }],
       ['이어서 받을 보상', { bankedDays: 7 }],
     ] as const)('%s가 바뀌면 true를 반환한다', (_field, overrides) => {
@@ -350,8 +332,8 @@ describe('PremiumAccessPolicy', () => {
       // When
       const result = PremiumAccessPolicy.hasEndedSince(
         access,
-        new Date(lastCheckedAt),
-        new Date(now),
+        toInstant(lastCheckedAt),
+        toInstant(now),
       );
 
       // Then
@@ -361,15 +343,15 @@ describe('PremiumAccessPolicy', () => {
     it('쌓아 둔 보상이 남아도 지금 기간이 끝나면 true다', () => {
       // Given 지금 보상은 11월 1일에 끝나고 이어서 받을 7일이 있다
       const access = createPremiumAccess({
-        endsAt: new Date('2026-11-08T05:30:00Z'),
+        endsAt: toInstant('2026-11-08T05:30:00Z'),
         bankedDays: 7,
       });
 
       // When
       const result = PremiumAccessPolicy.hasEndedSince(
         access,
-        new Date('2026-11-01T05:29:00Z'),
-        new Date('2026-11-01T05:31:00Z'),
+        toInstant('2026-11-01T05:29:00Z'),
+        toInstant('2026-11-01T05:31:00Z'),
       );
 
       // Then
@@ -383,8 +365,8 @@ describe('PremiumAccessPolicy', () => {
       // When
       const result = PremiumAccessPolicy.hasEndedSince(
         access,
-        new Date('2026-10-01T00:00:00Z'),
-        new Date('2026-12-01T00:00:00Z'),
+        toInstant('2026-10-01T00:00:00Z'),
+        toInstant('2026-12-01T00:00:00Z'),
       );
 
       // Then
@@ -394,40 +376,40 @@ describe('PremiumAccessPolicy', () => {
     it('끝났다고 판단하는 순간 남은 기간 안내도 사라져 표시와 경계가 같다', () => {
       // Given
       const access = createPremiumAccess();
-      const justBefore = new Date('2026-11-01T05:29:00Z');
-      const atEnd = new Date('2026-11-01T05:30:00Z');
+      const justBefore = toInstant('2026-11-01T05:29:00Z');
+      const atEnd = toInstant('2026-11-01T05:30:00Z');
 
       // When
       const hasEnded = PremiumAccessPolicy.hasEndedSince(access, justBefore, atEnd);
 
       // Then
       expect(hasEnded).toBe(true);
-      expect(PremiumAccessPolicy.endingNotice(access, justBefore, SEOUL)).toBe('today');
-      expect(PremiumAccessPolicy.endingNotice(access, atEnd, SEOUL)).toBeNull();
+      expect(PremiumAccessPolicy.isExpiringSoon(access, justBefore, SEOUL)).toBe(true);
+      expect(PremiumAccessPolicy.isExpiringSoon(access, atEnd, SEOUL)).toBe(false);
     });
   });
 
-  describe('recentGrantEndedAt', () => {
+  describe('getRecentGrantEndedAt', () => {
     it('D. 보상이 끝나 무료로 돌아왔으면 서버가 준 끝난 시각을 반환한다', () => {
       // Given
       const { premiumAccess } = toUser(PREMIUM_ME_EXAMPLES.endedReward);
 
       // When
-      const result = PremiumAccessPolicy.recentGrantEndedAt(premiumAccess);
+      const result = PremiumAccessPolicy.getRecentGrantEndedAt(premiumAccess);
 
       // Then
-      expect(result).toEqual(new Date('2028-03-04T04:00:00.000Z'));
+      expect(result).toEqual(toInstant('2028-03-04T04:00:00.000Z'));
     });
 
     it('다시 프리미엄이면 지난 보상이 끝난 것을 알리지 않는다', () => {
       // Given 끝난 시각이 남아 있어도 지금은 보상 기간이다
       const premiumAccess = createPremiumAccess({
         source: 'GRANT',
-        grantEndedAt: new Date('2028-03-04T04:00:00.000Z'),
+        grantEndedAt: toInstant('2028-03-04T04:00:00.000Z'),
       });
 
       // When
-      const result = PremiumAccessPolicy.recentGrantEndedAt(premiumAccess);
+      const result = PremiumAccessPolicy.getRecentGrantEndedAt(premiumAccess);
 
       // Then
       expect(result).toBeNull();

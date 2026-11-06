@@ -1,25 +1,23 @@
-import { PREMIUM_SOURCE, USER_ROLE } from '@aido/api';
 import type {
   PremiumSourceProperty,
   UserPropertyMap,
 } from '@src/shared/observability/telemetry-keys';
-import { match } from 'ts-pattern';
 
-import type { User } from '../domains/user.model';
+import { PremiumAccessPolicy } from '../domains/premium-access.model';
+import { UserPolicy } from '../domains/user.model';
+import type { User } from '../schemas/user.schema';
 
 type AnalyticsUser = Pick<User, 'role' | 'isPremium' | 'premiumAccess' | 'subscriptionStatus'>;
 
 /** ADMIN은 출처와 무관하게 admin이다. 그 밖에는 지금 유효한 프리미엄 출처를 그대로 쓴다 */
-function toPremiumSourceProperty({ role, premiumAccess }: AnalyticsUser): PremiumSourceProperty {
-  if (role === USER_ROLE.ADMIN) {
+function toPremiumSourceProperty(user: AnalyticsUser): PremiumSourceProperty {
+  if (UserPolicy.isAdmin(user)) {
     return 'admin';
   }
-  return match(premiumAccess.source)
-    .returnType<PremiumSourceProperty>()
-    .with(PREMIUM_SOURCE.STORE, () => 'store')
-    .with(PREMIUM_SOURCE.GRANT, () => 'grant')
-    .with(null, () => 'none')
-    .exhaustive();
+  if (PremiumAccessPolicy.isStoreSubscribed(user.premiumAccess)) {
+    return 'store';
+  }
+  return PremiumAccessPolicy.isGrantOnly(user.premiumAccess) ? 'grant' : 'none';
 }
 
 /**
@@ -28,7 +26,7 @@ function toPremiumSourceProperty({ role, premiumAccess }: AnalyticsUser): Premiu
  */
 export function toUserAnalyticsProperties(user: AnalyticsUser): UserPropertyMap {
   return {
-    is_premium: user.role === USER_ROLE.ADMIN || user.isPremium,
+    is_premium: UserPolicy.hasPremiumAccess(user),
     subscription_status: user.subscriptionStatus,
     premium_source: toPremiumSourceProperty(user),
   };

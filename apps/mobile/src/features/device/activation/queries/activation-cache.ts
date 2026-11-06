@@ -1,7 +1,7 @@
 import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import { getCachedWhatsNewConfig } from '@src/features/app-config/whats-new/queries/whats-new-cache';
-import type { User } from '@src/features/identity/user/domains/user.model';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import type { User } from '@src/features/identity/user/schemas/user.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';
 import { type Instant, toInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';

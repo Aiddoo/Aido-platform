@@ -1,6 +1,6 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { UserService } from '@src/features/identity/user/apis/user.service';
-import type { User } from '@src/features/identity/user/domains/user.model';
+import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';

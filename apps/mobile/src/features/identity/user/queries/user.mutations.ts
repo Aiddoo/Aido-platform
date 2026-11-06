@@ -1,6 +1,5 @@
-import type { UpdateProfileInput } from '@aido/api';
 import { useHaptics, useUserService } from '@src/bootstrap/providers/di-context';
-import type { User } from '@src/features/identity/user/domains/user.model';
+import type { ProfileChange, User } from '@src/features/identity/user/schemas/user.schema';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -17,7 +16,7 @@ export const useUpdateProfileMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async (input: UpdateProfileInput) => {
+    mutationFn: async (input: ProfileChange) => {
       const result = await userService.updateProfile(input);
       return unwrap(result);
     },

@@ -1,8 +1,7 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import {
-  type PremiumAccess,
-  PremiumAccessPolicy,
-} from '@src/features/identity/user/domains/premium-access.model';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
+import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
+import { toInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,7 +17,8 @@ import { refreshAfterPremiumEnded } from '../queries/subscription-cache';
 export function useRefreshOnPremiumEnd(access: PremiumAccess) {
   const queryClient = useQueryClient();
   const logger = useLogger();
-  const now = useMinuteNow();
+  const minuteNow = useMinuteNow();
+  const now = toInstant(minuteNow.toISOString());
   const lastCheckedAtRef = useRef(now);
 
   useEffect(() => {

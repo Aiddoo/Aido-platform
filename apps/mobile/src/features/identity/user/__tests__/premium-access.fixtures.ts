@@ -1,16 +1,14 @@
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import {
-  type CurrentUserResponse,
-  CurrentUserSchema,
-} from '@src/features/identity/user/apis/user.mapper';
+import { toInstant } from '@src/shared/date/instant';
 
-import type { PremiumAccess } from '../domains/premium-access.model';
+import type { PremiumAccess } from '../schemas/premium-access.schema';
+import { type CurrentUserResponse, currentUserResponseSchema } from '../schemas/user.schema';
 
 export const createPremiumAccess = (overrides?: Partial<PremiumAccess>): PremiumAccess => ({
   source: 'GRANT',
   // 11월 1일 14:30 KST
-  endsAt: new Date('2026-11-01T05:30:00Z'),
-  periodEndsAt: new Date('2026-11-01T05:30:00Z'),
+  endsAt: toInstant('2026-11-01T05:30:00Z'),
+  periodEndsAt: toInstant('2026-11-01T05:30:00Z'),
   willRenew: false,
   bankedDays: 0,
   grantEndedAt: null,
@@ -19,7 +17,7 @@ export const createPremiumAccess = (overrides?: Partial<PremiumAccess>): Premium
 
 /** 서버 /me 응답을 @aido/api 계약으로 검증해 만든다. 서버가 보낼 수 없는 모양은 여기서 실패한다 */
 const premiumMe = (overrides: Partial<CurrentUserResponse>) =>
-  CurrentUserSchema.parse(
+  currentUserResponseSchema.parse(
     createCurrentUserDto({
       subscriptionStatus: 'ACTIVE',
       isPremium: overrides.premiumSource != null,

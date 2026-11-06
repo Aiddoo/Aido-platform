@@ -14,7 +14,7 @@ import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscrip
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/purchase-failed-reason';
 import type { CoachmarkKind } from '@src/features/device/coachmark/apis/coachmark.repository';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/domains/oauth.model';
-import type { SubscriptionStatus } from '@src/features/identity/user/domains/user.model';
+import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
 import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';
 import type { InviteLinkSource } from '@src/features/social/invite/domains/invite-redemption.model';

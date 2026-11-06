@@ -73,7 +73,7 @@ function GrantEnded() {
   const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const dateFormatContext = useDateFormatContext();
-  const grantEndedAt = PremiumAccessPolicy.recentGrantEndedAt(user.premiumAccess);
+  const grantEndedAt = PremiumAccessPolicy.getRecentGrantEndedAt(user.premiumAccess);
 
   if (grantEndedAt == null) {
     return null;

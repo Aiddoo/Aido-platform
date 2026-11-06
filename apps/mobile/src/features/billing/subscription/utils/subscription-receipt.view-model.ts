@@ -1,32 +1,35 @@
-import { PREMIUM_SOURCE } from '@aido/api';
 import {
   hasPassed,
-  type PremiumAccess,
   PremiumAccessPolicy,
-  type PremiumEndingNotice,
 } from '@src/features/identity/user/domains/premium-access.model';
-import type { User } from '@src/features/identity/user/domains/user.model';
-import { match, P } from 'ts-pattern';
+import { UserPolicy } from '@src/features/identity/user/domains/user.model';
+import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
+import type { User } from '@src/features/identity/user/schemas/user.schema';
+import type { Instant } from '@src/shared/date/instant';
+import { match } from 'ts-pattern';
+
+/** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
+export type PremiumEndingNotice = 'tomorrow' | 'today';
 
 /** 영수증 출처. 관리자, 스토어 구독(결제), 초대 보상 기간 */
 type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';
 
 export type SubscriptionReceiptRow =
   | { type: 'account' }
-  | { type: 'rewardRecord'; endsAt: Date }
-  | { type: 'nextBillingDate'; date: Date }
+  | { type: 'rewardRecord'; endsAt: Instant }
+  | { type: 'nextBillingDate'; date: Instant }
   /** 결제 예정 시각이 지났는데 스토어 갱신이 아직 서버에 반영되지 않았다(최대 유예 3시간) */
   | { type: 'renewalPending' }
-  | { type: 'subscriptionEndsOn'; date: Date }
+  | { type: 'subscriptionEndsOn'; date: Instant }
   | { type: 'autoRenewal'; willRenew: boolean }
-  | { type: 'rewardPeriod'; endsAt: Date }
-  | { type: 'bankedReward'; days: number; endsAt: Date | null }
-  | { type: 'overallPeriod'; endsAt: Date }
+  | { type: 'rewardPeriod'; endsAt: Instant }
+  | { type: 'bankedReward'; days: number; endsAt: Instant | null }
+  | { type: 'overallPeriod'; endsAt: Instant }
   | { type: 'daysLeft'; days: number; endingNotice: PremiumEndingNotice | null };
 
 /** 영수증 아래 한 줄. "그다음엔 어떻게 되나"가 행만으로 드러나지 않을 때만 붙인다 */
 type SubscriptionReceiptFootnote =
-  | { type: 'returnsToFreePlan'; date: Date }
+  | { type: 'returnsToFreePlan'; date: Instant }
   | { type: 'rewardStartsAfterSubscription'; days: number }
   | { type: 'manageAutoRenewalInStore' };
 
@@ -48,11 +51,21 @@ export type SubscriptionReceiptViewModel =
 
 interface SubscriptionReceiptContext {
   isStoreConfigured: boolean;
-  now: Date;
+  now: Instant;
   timeZone: string;
 }
 
-function toBankedRows(access: PremiumAccess, endsAt: Date | null): SubscriptionReceiptRow[] {
+function toEndingNotice(
+  access: PremiumAccess,
+  { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
+): PremiumEndingNotice | null {
+  if (!PremiumAccessPolicy.isExpiringSoon(access, now, timeZone)) {
+    return null;
+  }
+  return PremiumAccessPolicy.getDaysLeft(access, now, timeZone) === 0 ? 'today' : 'tomorrow';
+}
+
+function toBankedRows(access: PremiumAccess, endsAt: Instant | null): SubscriptionReceiptRow[] {
   return PremiumAccessPolicy.hasBankedDays(access)
     ? [{ type: 'bankedReward', days: access.bankedDays, endsAt }]
     : [];
@@ -75,8 +88,8 @@ function toAdminReceipt(access: PremiumAccess): SubscriptionReceiptViewModel {
 
 function toBillingRow(
   access: PremiumAccess,
-  periodEndsAt: Date,
-  now: Date,
+  periodEndsAt: Instant,
+  now: Instant,
 ): SubscriptionReceiptRow {
   if (!access.willRenew) {
     return { type: 'subscriptionEndsOn', date: periodEndsAt };
@@ -86,7 +99,7 @@ function toBillingRow(
     : { type: 'nextBillingDate', date: periodEndsAt };
 }
 
-function toPaidRows(access: PremiumAccess, now: Date): SubscriptionReceiptRow[] {
+function toPaidRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRow[] {
   const { periodEndsAt } = access;
   if (periodEndsAt == null) {
     return [];
@@ -121,7 +134,7 @@ function toPaidReceipt(
     rows: toPaidRows(access, now),
     footnote: toPaidFootnote(access),
     primaryAction: 'manage',
-    endingNotice: PremiumAccessPolicy.endingNotice(access, now, timeZone),
+    endingNotice: toEndingNotice(access, { now, timeZone }),
   };
 }
 
@@ -130,7 +143,7 @@ function toRewardRows(
   { now, timeZone }: SubscriptionReceiptContext,
 ): SubscriptionReceiptRow[] {
   const { endsAt, periodEndsAt } = access;
-  const daysLeft = PremiumAccessPolicy.daysLeft(access, now, timeZone);
+  const daysLeft = PremiumAccessPolicy.getDaysLeft(access, now, timeZone);
   if (endsAt == null || periodEndsAt == null || daysLeft == null) {
     return [];
   }
@@ -145,7 +158,7 @@ function toRewardRows(
     {
       type: 'daysLeft',
       days: daysLeft,
-      endingNotice: PremiumAccessPolicy.endingNotice(access, now, timeZone),
+      endingNotice: toEndingNotice(access, { now, timeZone }),
     },
   ];
 }
@@ -159,7 +172,7 @@ function toRewardReceipt(
     rows: toRewardRows(access, context),
     footnote: access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt },
     primaryAction: context.isStoreConfigured ? 'subscribe' : null,
-    endingNotice: PremiumAccessPolicy.endingNotice(access, context.now, context.timeZone),
+    endingNotice: toEndingNotice(access, context),
   };
 }
 
@@ -173,9 +186,11 @@ export function toSubscriptionReceiptViewModel(
 ): SubscriptionReceiptViewModel {
   const access = user.premiumAccess;
 
-  return match({ role: user.role, source: access.source })
-    .with({ role: 'ADMIN' }, () => toAdminReceipt(access))
-    .with({ source: PREMIUM_SOURCE.GRANT }, () => toRewardReceipt(access, context))
-    .with({ source: P.union(PREMIUM_SOURCE.STORE, null) }, () => toPaidReceipt(access, context))
-    .exhaustive();
+  return match(user)
+    .when(UserPolicy.isAdmin, () => toAdminReceipt(access))
+    .when(
+      () => PremiumAccessPolicy.isGrantOnly(access),
+      () => toRewardReceipt(access, context),
+    )
+    .otherwise(() => toPaidReceipt(access, context));
 }

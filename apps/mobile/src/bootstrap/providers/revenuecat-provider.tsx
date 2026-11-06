@@ -6,9 +6,9 @@ import {
 import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
-import type { PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
 import { ENV } from '@src/shared/config/env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';

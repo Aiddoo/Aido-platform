@@ -1,7 +1,7 @@
 import type { UpdateProfileResponse } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { CurrentUserResponse } from '../apis/user.mapper';
+import type { CurrentUserResponse } from '../schemas/user.schema';
 
 const generateCurrentUserDto = (): CurrentUserResponse => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',

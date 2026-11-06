@@ -1,5 +1,6 @@
 import { entitlementSnapshotSchema, PLAN_FEATURE_KEYS } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
+import { toInstant } from '@src/shared/date/instant';
 import { ApiError } from '@src/shared/errors/api-error';
 
 import {
@@ -16,7 +17,7 @@ import {
 } from './entitlement.mapper';
 
 describe('toEntitlementSnapshot', () => {
-  it('초기화 시각을 Date로 바꾸고 모든 기능 한도를 옮긴다', () => {
+  it('초기화 시각을 Instant로 옮기고 모든 기능 한도를 옮긴다', () => {
     // Given
     const dto = createEntitlementSnapshotDto({ used: { AI_PARSE: 3 } });
 
@@ -32,7 +33,7 @@ describe('toEntitlementSnapshot', () => {
       used: 3,
       remaining: 7,
       period: 'month',
-      resetsAt: new Date(MONTHLY_RESETS_AT),
+      resetsAt: toInstant(MONTHLY_RESETS_AT),
       isFairUse: false,
       perUse: null,
     });

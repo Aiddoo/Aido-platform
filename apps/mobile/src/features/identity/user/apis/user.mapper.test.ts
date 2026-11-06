@@ -1,4 +1,5 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.fixtures';
 import { toUpdateProfileResult, toUser } from './user.mapper';
@@ -46,8 +47,8 @@ describe('toUser', () => {
       PREMIUM_ME_EXAMPLES.buyDuringReward,
       {
         source: 'STORE',
-        endsAt: new Date('2028-03-15T07:00:00.000Z'),
-        periodEndsAt: new Date('2028-03-10T04:00:00.000Z'),
+        endsAt: toInstant('2028-03-15T07:00:00.000Z'),
+        periodEndsAt: toInstant('2028-03-10T04:00:00.000Z'),
         willRenew: true,
         bankedDays: 5,
         grantEndedAt: null,
@@ -58,8 +59,8 @@ describe('toUser', () => {
       PREMIUM_ME_EXAMPLES.rewardDuringReward,
       {
         source: 'GRANT',
-        endsAt: new Date('2028-03-11T04:00:00.000Z'),
-        periodEndsAt: new Date('2028-03-04T04:00:00.000Z'),
+        endsAt: toInstant('2028-03-11T04:00:00.000Z'),
+        periodEndsAt: toInstant('2028-03-04T04:00:00.000Z'),
         willRenew: false,
         bankedDays: 7,
         grantEndedAt: null,
@@ -74,7 +75,7 @@ describe('toUser', () => {
         periodEndsAt: null,
         willRenew: false,
         bankedDays: 0,
-        grantEndedAt: new Date('2028-03-04T04:00:00.000Z'),
+        grantEndedAt: toInstant('2028-03-04T04:00:00.000Z'),
       },
     ],
   ] as const)('%s', (_case, dto, expected) => {

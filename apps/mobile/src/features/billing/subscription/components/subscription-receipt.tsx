@@ -1,5 +1,5 @@
-import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { formatDateLabel } from '@src/shared/date/date-format';
+import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -19,6 +19,7 @@ import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/format';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
+import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
@@ -26,7 +27,12 @@ import { toPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
-export function SubscriptionReceipt() {
+interface SubscriptionReceiptProps {
+  /** 보상 기간 영수증 모서리에 찍는 장식. 어떤 도장인지는 화면이 정한다 */
+  rewardStamp?: ReactNode;
+}
+
+export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
   const { t } = useTranslation('subscription');
   const { variant, rows, footnote } = useSubscriptionReceipt();
   const dateFormatContext = useDateFormatContext();
@@ -34,12 +40,14 @@ export function SubscriptionReceipt() {
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
   const receiptDateLabel = variant === 'paid' ? 'fullDate' : 'monthDay';
-  const formatReceiptDate = (date: Date) =>
+  const formatReceiptDate = (date: Instant) =>
     formatDateLabel(date, receiptDateLabel, dateFormatContext);
 
   return (
     <ScallopedContainer>
-      {variant === 'reward' && <InvitePawPrintBoard.Stamp className="absolute right-4 top-4" />}
+      {variant === 'reward' && rewardStamp != null && (
+        <Box className="absolute right-4 top-4">{rewardStamp}</Box>
+      )}
 
       <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>
         <HStack gap={16} className="items-center">
@@ -174,7 +182,7 @@ SubscriptionReceipt.Loading = function Loading() {
 
 interface ReceiptDetailRowProps {
   row: SubscriptionReceiptRow;
-  formatDate: (date: Date) => string;
+  formatDate: (date: Instant) => string;
 }
 
 type ReceiptValueTone = 'default' | 'brand' | 'muted';

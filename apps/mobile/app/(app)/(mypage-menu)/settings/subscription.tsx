@@ -7,6 +7,7 @@ import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks
 import { useSubscriptionViewParam } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
+import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import {
   QueryErrorBoundary,
@@ -33,7 +34,9 @@ function SubscriptionScreen() {
     view,
   })
     .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => <PaywallPane />)
-    .with({ hasFullAccess: true }, () => <SubscriberPane />)
+    .with({ hasFullAccess: true }, () => (
+      <SubscriberPane rewardStamp={<InvitePawPrintBoard.Stamp />} />
+    ))
     .exhaustive();
 }
 

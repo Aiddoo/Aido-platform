@@ -1,4 +1,5 @@
 import { formatDateLabel } from '@src/shared/date/date-format';
+import { toInstant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { formatCount } from '@src/shared/utils/format';
@@ -24,7 +25,7 @@ export function useRefillSentence() {
       const notice = EntitlementPolicy.getResetNotice(
         snapshot,
         feature,
-        new Date(),
+        toInstant(new Date().toISOString()),
         dateFormatContext.timeZone,
       );
       if (limit == null || notice == null) {

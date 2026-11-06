@@ -9,6 +9,7 @@ import {
   calculateDaysLeft,
   hasPassed,
 } from '@src/features/identity/user/domains/premium-access.model';
+import { type Instant, instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
@@ -29,7 +30,7 @@ export const featureQuotaSchema = z.object({
   used: z.int().nonnegative().nullable(),
   remaining: z.int().nonnegative().nullable(),
   period: quotaPeriodSchema.nullable(),
-  resetsAt: z.date().nullable(),
+  resetsAt: instantSchema.nullable(),
   isFairUse: z.boolean(),
   perUse: z
     .object({ maxSeconds: z.int().positive(), maxCharacters: z.int().positive() })
@@ -54,7 +55,7 @@ type QuotaStatus =
   | { type: 'remaining'; count: number; period: QuotaPeriod }
   | { type: 'used-up'; period: QuotaPeriod };
 
-type QuotaResetNotice = { type: 'today' } | { type: 'tomorrow' } | { type: 'date'; date: Date };
+type QuotaResetNotice = { type: 'today' } | { type: 'tomorrow' } | { type: 'date'; date: Instant };
 
 /** 프리미엄 기능을 모두 쓸 수 있는지. 관리자는 구독이 없어도 모든 기능을 쓴다 */
 function hasFullAccess(snapshot: EntitlementSnapshot): boolean {
@@ -77,7 +78,7 @@ function isFeatureLocked(snapshot: EntitlementSnapshot, feature: EntitlementFeat
 function getAccessDecision(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
-  now: Date,
+  now: Instant,
 ): AccessDecision {
   const quota = findFeatureQuota(snapshot, feature);
   if (quota == null) {
@@ -130,7 +131,7 @@ function getQuotaStatus(snapshot: EntitlementSnapshot, feature: EntitlementFeatu
 function getResetNotice(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
-  now: Date,
+  now: Instant,
   timeZone: string,
 ): QuotaResetNotice | null {
   const quota = findFeatureQuota(snapshot, feature);

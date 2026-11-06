@@ -1,5 +1,6 @@
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
+import { toInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -102,7 +103,13 @@ export function useEntitlementGate(
         if (snapshot == null) {
           return true;
         }
-        return match(EntitlementPolicy.getAccessDecision(snapshot, feature, new Date()))
+        return match(
+          EntitlementPolicy.getAccessDecision(
+            snapshot,
+            feature,
+            toInstant(new Date().toISOString()),
+          ),
+        )
           .with('allow', () => true)
           .with('limit-reached', 'locked', (decision) => {
             open(feature, decision, 'precheck', options);

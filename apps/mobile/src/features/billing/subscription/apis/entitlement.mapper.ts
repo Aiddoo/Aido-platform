@@ -6,6 +6,7 @@ import {
   quotaErrorDetailsSchema,
 } from '@aido/api';
 import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { toInstant } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors/api-error';
 import { mapValues, pick } from 'es-toolkit';
 
@@ -25,7 +26,7 @@ export const toFeatureQuota = (dto: FeatureQuotaDto): FeatureQuota =>
     used: dto.used,
     remaining: dto.remaining,
     period: dto.period,
-    resetsAt: dto.resetsAt == null ? null : new Date(dto.resetsAt),
+    resetsAt: dto.resetsAt == null ? null : toInstant(dto.resetsAt),
     isFairUse: dto.isFairUse,
     perUse:
       dto.perUse == null

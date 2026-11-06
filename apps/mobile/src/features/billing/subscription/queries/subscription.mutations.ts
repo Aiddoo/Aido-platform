@@ -47,10 +47,11 @@ export const usePurchaseMutationOptions = () => {
         toast.toast(t('subscription:toast.purchaseSyncPending'));
         return;
       }
+      // 보상 기간 중에 구독하면 남은 보상이 구독 뒤로 미뤄진다는 것을 함께 알린다
       toast.success(
-        t(
-          `subscription:toast.${PremiumAccessPolicy.purchaseSuccessMessage(context.previousAccess)}`,
-        ),
+        context.previousAccess != null && PremiumAccessPolicy.isGrantOnly(context.previousAccess)
+          ? t('subscription:toast.purchaseSuccessWithReward')
+          : t('subscription:toast.purchaseSuccess'),
       );
     },
     onError: (error) =>
@@ -115,10 +116,12 @@ export const useRestoreMutationOptions = () => {
         }
         toast.success(t('subscription:toast.restoreSuccess'));
       } else {
+        // 복원할 구매가 없어도 보상 기간은 그대로라는 것을 알린다
+        const premiumAccess = getCachedMe(queryClient)?.premiumAccess;
         toast.success(
-          t(
-            `subscription:toast.${PremiumAccessPolicy.restoreEmptyMessage(getCachedMe(queryClient)?.premiumAccess)}`,
-          ),
+          premiumAccess != null && PremiumAccessPolicy.isGrantOnly(premiumAccess)
+            ? t('subscription:toast.restoreEmptyWithReward')
+            : t('subscription:toast.restoreEmpty'),
         );
       }
     },

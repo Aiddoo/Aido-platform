@@ -2,6 +2,7 @@ import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -13,7 +14,12 @@ import { RestorePurchaseButton } from './restore-purchase-button';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
 import { SubscriptionReceipt } from './subscription-receipt';
 
-export function SubscriberPane() {
+interface SubscriberPaneProps {
+  /** 보상 기간 영수증에 찍는 도장 */
+  rewardStamp?: ReactNode;
+}
+
+export function SubscriberPane({ rewardStamp }: SubscriberPaneProps) {
   const { t } = useTranslation('subscription');
   const { primaryAction } = useSubscriptionReceipt();
   const openSubscriptionManagement = useOpenSubscriptionManagement();
@@ -26,7 +32,7 @@ export function SubscriberPane() {
 
         <PremiumNotice.Ending />
 
-        <SubscriptionReceipt />
+        <SubscriptionReceipt rewardStamp={rewardStamp} />
 
         <Spacing size={16} />
 
