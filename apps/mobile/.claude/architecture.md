@@ -897,7 +897,7 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | ------------------------ | ---------------------------------- | ------------------------------------ |
 | 일회성 네이티브 기능     | 포트 + 어댑터                      | `useClipboard()`, `useHaptics()`     |
 | 서버 데이터              | `HttpClient` → 서비스 → 쿼리 옵션  | `useGetMemoQueryOptions()`           |
-| 로컬 저장값              | `SyncStorage` → 저장소 → 서비스    | `usePushPromptService()`             |
+| 로컬 저장값              | `SyncStorage` → 저장소 → 서비스    | `useCoachmarkService()`              |
 | 값 하나 읽고 쓰는 저장소 | `SyncStorage` → 저장소             | `useRecognitionLanguageRepository()` |
 | 이벤트 스트림            | 포트의 `subscribe`, 해제 함수 반환 | `useSpeechRecognizer()`              |
 | 관측                     | 포트                               | `useLogger()`, `useAnalytics()`      |

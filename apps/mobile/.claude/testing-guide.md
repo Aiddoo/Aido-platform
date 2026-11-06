@@ -125,13 +125,11 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 const gateway = createPushNotificationGatewayStub({
   requestPermission: jest.fn(async () => createPushPermissionResponse({ status: 'granted' })),
 });
-const pushPromptService = new PushPromptService(
-  createPushPromptRepository(createMemorySyncStorage()),
-);
+const pushPromptRepository = createPushPromptRepository(createMemorySyncStorage());
 
 // When
 await renderUi(<PushPermissionCard />, {
-  di: { pushPromptService, pushDeviceService: new PushDeviceService(gateway /* … */) },
+  di: { pushPromptRepository, pushDeviceService: new PushDeviceService(gateway /* … */) },
   queryClient,
 });
 ```
