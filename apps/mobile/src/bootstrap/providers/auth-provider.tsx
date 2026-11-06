@@ -4,6 +4,7 @@ import {
   useWidgetSnapshotSync,
   type WidgetSyncAuthState,
 } from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
+import { usePendingRevocationFlush } from '@src/features/identity/auth/hooks/use-pending-revocation-flush';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
@@ -165,6 +166,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       track(analytics, 'session_expired', { reason });
     });
   }, [errorReporter, analytics, applyStatus]);
+
+  usePendingRevocationFlush();
 
   // 홈 위젯 스냅샷 동기화 — 인증 상태를 아는 이 Provider가 유일한 통합 지점
   // (팀 규칙: 크로스커팅 리스너는 상태 주인 Provider에 통합, null-render 컴포넌트 금지)

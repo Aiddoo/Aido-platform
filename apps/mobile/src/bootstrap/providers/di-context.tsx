@@ -28,6 +28,7 @@ import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
+import type { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
 import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import type { UserService } from '@src/features/identity/user/apis/user.service';
@@ -83,6 +84,8 @@ export interface DIContainer {
   sessionManager: SessionManager;
   /** 세션이 끝난 뒤 기기에 남은 계정 데이터를 정리한다 */
   sessionCleanupService: SessionCleanupService;
+  /** 오프라인 로그아웃 뒤 온라인이 되면 서버 세션과 푸시 기기를 푼다 */
+  sessionRevocationService: SessionRevocationService;
   /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
   tokenRefresher: TokenRefresher;
   featureAttribution: FeatureAttributionStore;
@@ -166,6 +169,7 @@ export const useClipboard = () => useDI().clipboard;
 export const useNetworkStatus = () => useDI().networkStatus;
 export const useTokenStore = () => useDI().tokenStore;
 export const useSessionCleanupService = () => useDI().sessionCleanupService;
+export const useSessionRevocationService = () => useDI().sessionRevocationService;
 export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;

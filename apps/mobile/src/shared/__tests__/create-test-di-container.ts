@@ -94,6 +94,9 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get sessionCleanupService() {
       return dependency('sessionCleanupService');
     },
+    get sessionRevocationService() {
+      return dependency('sessionRevocationService');
+    },
     get tokenRefresher() {
       return dependency('tokenRefresher');
     },

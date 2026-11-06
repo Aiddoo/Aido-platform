@@ -17,6 +17,7 @@ import { PushDeviceService } from '@src/features/notification/apis/push-device.s
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createErrorReporterStub,
+  createMemoryStorage,
   createMemorySyncStorage,
   createMemoryTokenStore,
   createAnalyticsStub,
@@ -34,8 +35,10 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { AuthService } from '../apis/auth.service';
+import { createPendingRevocationRepository } from '../apis/pending-revocation.repository';
 import { SessionCleanupService } from '../apis/session-cleanup.service';
 import { createSessionQueryCache } from '../apis/session-query-cache';
+import { SessionRevocationService } from '../apis/session-revocation.service';
 
 export const ACCOUNT_A_TOKENS: AuthTokenPair = {
   accessToken: 'access-a',
@@ -65,6 +68,14 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
   const queryCacheStorage: QueryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
   const errorReporter = createErrorReporterStub();
   const writeSnapshot = jest.fn(async () => undefined);
+  const pendingRevocation = createPendingRevocationRepository(createMemoryStorage());
+  const requestRefresh = jest.fn<Promise<Response>, [string]>();
+  const sessionRevocationService = new SessionRevocationService({
+    repository: pendingRevocation,
+    requestRefresh,
+    publicHttpClient: publicHttp,
+    logger: silentLogger,
+  });
   const sessionCleanupService = new SessionCleanupService({
     queryCache: createSessionQueryCache(queryClient),
     persistedQueryCache: queryCacheStorage,
@@ -95,6 +106,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     draftService,
     queryCacheStorage,
     sessionCleanupService,
+    sessionRevocationService,
     ...di,
   });
 
@@ -143,6 +155,8 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     queryCacheStorage,
     errorReporter,
     writeSnapshot,
+    pendingRevocation,
+    requestRefresh,
     container,
     Wrapper,
     renderSession,

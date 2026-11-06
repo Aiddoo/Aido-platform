@@ -20,8 +20,10 @@ import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
+import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -179,10 +181,13 @@ export function DIProvider({
 
     // 단일 리프레셔: 인스턴스가 갈라지면 single-flight mutex가 분리되어
     // 동시 회전이 서버의 토큰 패밀리를 소모한다.
-    const tokenRefresher = createTokenRefresher({
-      tokenStore,
-      requestRefresh: createRefreshTokensRequest({ appVersion, appBuild }),
-      sessionEpoch,
+    const requestRefresh = createRefreshTokensRequest({ appVersion, appBuild });
+    const tokenRefresher = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch });
+    const sessionRevocationService = new SessionRevocationService({
+      repository: createPendingRevocationRepository(storage),
+      requestRefresh,
+      publicHttpClient,
+      logger,
     });
 
     const authKyInstance = createAuthClient({
@@ -356,6 +361,7 @@ export function DIProvider({
       tokenStore,
       sessionManager,
       sessionCleanupService,
+      sessionRevocationService,
       tokenRefresher,
       featureAttribution,
       draftService,

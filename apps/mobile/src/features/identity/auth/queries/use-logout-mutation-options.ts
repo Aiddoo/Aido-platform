@@ -5,6 +5,8 @@ import {
   useHaptics,
   useLogger,
   usePushDeviceService,
+  useSessionRevocationService,
+  useTokenStore,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { mutationOptions, onlineManager } from '@tanstack/react-query';
@@ -17,6 +19,8 @@ export const useLogoutMutationOptions = () => {
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
   const pushDeviceService = usePushDeviceService();
+  const tokenStore = useTokenStore();
+  const sessionRevocationService = useSessionRevocationService();
   const logger = useLogger();
 
   const { setStatus } = useAuth();
@@ -29,6 +33,8 @@ export const useLogoutMutationOptions = () => {
         isOnline: onlineManager.isOnline(),
         authService,
         pushDeviceService,
+        tokenStore,
+        sessionRevocationService,
         logger,
       }),
     onError: () => {

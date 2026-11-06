@@ -147,6 +147,129 @@ describe('로그아웃', () => {
   });
 });
 
+describe('오프라인 로그아웃 뒤 복귀', () => {
+  const ROTATED_A = { accessToken: 'access-a2', refreshToken: 'refresh-a2' };
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  function respondWithRotatedTokens() {
+    return new Response(JSON.stringify({ data: ROTATED_A }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  async function logOutOffline() {
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.requestRefresh.mockImplementation(async () => respondWithRotatedTokens());
+    session.publicHttp.post.mockImplementation(async (url) =>
+      url === 'v1/auth/logout'
+        ? ok({ message: '로그아웃되었습니다.' })
+        : ok(createAuthTokensDto({ accessToken: 'access-b', refreshToken: 'refresh-b' })),
+    );
+    const rendered = await session.renderSession(
+      () => ({
+        status: useAuth().status,
+        logout: useMutation(useLogoutMutationOptions()),
+        login: useMutation(useEmailLoginMutationOptions()),
+      }),
+      'authenticated',
+    );
+    await act(async () => {
+      onlineManager.setOnline(false);
+      await rendered.result.current.logout.mutateAsync();
+    });
+    await waitFor(() => expect(rendered.result.current.status).toBe('unauthenticated'));
+    return { session, ...rendered };
+  }
+
+  it('로그아웃하면 토큰은 지우고 해제할 세션만 기록한다', async () => {
+    // Given·When
+    const { session } = await logOutOffline();
+
+    // Then
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.readAccessToken()).resolves.toBeNull();
+    await expect(session.pendingRevocation.get()).resolves.toMatchObject({
+      refreshToken: ACCOUNT_A_TOKENS.refreshToken,
+    });
+    expect(session.requestRefresh).not.toHaveBeenCalled();
+  });
+
+  it('연결이 돌아오면 서버 세션을 풀고 기록을 지운다', async () => {
+    // Given
+    const { session } = await logOutOffline();
+
+    // When
+    await act(async () => {
+      onlineManager.setOnline(true);
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    await waitFor(() =>
+      expect(session.publicHttp.post).toHaveBeenCalledWith(
+        'v1/auth/logout',
+        undefined,
+        expect.objectContaining({
+          headers: { Authorization: `Bearer ${ROTATED_A.accessToken}` },
+        }),
+      ),
+    );
+    expect(session.authHttp.post).not.toHaveBeenCalled();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await expect(session.pendingRevocation.get()).resolves.toBeNull();
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+  });
+
+  it('복귀해도 세션을 되살리지 않고 로그아웃 상태를 유지한다', async () => {
+    // Given
+    const { session, result } = await logOutOffline();
+
+    // When
+    await act(async () => {
+      onlineManager.setOnline(true);
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await expect(session.pendingRevocation.get()).resolves.toBeNull();
+
+    // Then
+    expect(result.current.status).toBe('unauthenticated');
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+  });
+
+  it('다른 계정으로 로그인한 뒤 해제가 실패해도 그 계정을 로그아웃시키지 않는다', async () => {
+    // Given
+    const { session, result } = await logOutOffline();
+    await act(async () => {
+      onlineManager.setOnline(true);
+      session.requestRefresh.mockImplementation(async () => new Response(null, { status: 401 }));
+      await result.current.login.mutateAsync({ email: 'b@aido.app', password: 'password-1' });
+    });
+
+    // When
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await expect(session.pendingRevocation.get()).resolves.toBeNull();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    expect(session.requestRefresh).toHaveBeenCalledWith(ACCOUNT_A_TOKENS.refreshToken);
+    expect(result.current.status).toBe('authenticated');
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBe('refresh-b');
+  });
+});
+
 describe('탈퇴', () => {
   const useDeleteProbe = () => ({
     status: useAuth().status,
@@ -369,6 +492,8 @@ describe('로그아웃과 늦은 갱신', () => {
       isOnline: true,
       authService,
       pushDeviceService: { unregister: async () => ok(undefined) },
+      tokenStore,
+      sessionRevocationService: { record: async () => undefined },
       logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
     });
 

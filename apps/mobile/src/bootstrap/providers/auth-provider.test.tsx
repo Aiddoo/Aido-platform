@@ -1,8 +1,10 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
+import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
@@ -13,6 +15,7 @@ import {
   createTestDiContainer,
   createHttpClientStub,
   createMockTokenStore,
+  createMemoryStorage,
   createMemorySyncStorage,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -69,10 +72,12 @@ describe('AuthProvider', () => {
   let unsubscribes: Array<() => void>;
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
   let writeSnapshot: jest.Mock;
+  let requestRefresh: jest.Mock<Promise<Response>, [string]>;
 
   beforeEach(() => {
     jest.useFakeTimers();
     writeSnapshot = jest.fn().mockResolvedValue(undefined);
+    requestRefresh = jest.fn();
     tokenStore = createMockTokenStore();
     errorReporter = createMockErrorReporter();
     analytics = createAnalyticsStub();
@@ -123,6 +128,12 @@ describe('AuthProvider', () => {
             voiceNotes: createVoiceNoteStorageServiceFake(),
             deviceTimezone: deviceTimezoneService,
             logger: { warn: jest.fn() },
+          }),
+          sessionRevocationService: new SessionRevocationService({
+            repository: createPendingRevocationRepository(createMemoryStorage()),
+            requestRefresh,
+            publicHttpClient: createHttpClientStub(),
+            logger: { info: jest.fn(), warn: jest.fn() },
           }),
         })}
       >
@@ -261,6 +272,18 @@ describe('AuthProvider', () => {
       await expectStatus('authenticated');
       expect(tokenStore.save).not.toHaveBeenCalled();
       expect(tokenStore.clear).not.toHaveBeenCalled();
+    });
+
+    it('해제할 세션이 없으면 시작할 때 갱신 요청을 보내지 않는다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+
+      // When
+      await renderProvider();
+
+      // Then
+      await expectStatus('authenticated');
+      expect(requestRefresh).not.toHaveBeenCalled();
     });
   });
 
