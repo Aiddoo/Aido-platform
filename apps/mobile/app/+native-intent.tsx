@@ -1,7 +1,7 @@
 import {
   createInviteLinkOpenStamp,
   resolveInviteSystemPath,
-} from '@src/features/social/invite/utils/navigation/invite-system-path';
+} from '@src/features/social/invite/utils/invite-link';
 import { ENV } from '@src/shared/config/env';
 
 const stampInviteLinkOpen = createInviteLinkOpenStamp();

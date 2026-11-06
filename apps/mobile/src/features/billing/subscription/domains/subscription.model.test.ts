@@ -2,6 +2,7 @@ import {
   getAnnualDiscountPercent,
   getMonthlyEquivalent,
   getSelectedPlan,
+  SubscriptionPolicy,
   type SubscriptionOffering,
   type SubscriptionPlan,
 } from './subscription.model';
@@ -71,5 +72,33 @@ describe('구독 가격 계산', () => {
     const result = getMonthlyEquivalent(price);
     // Then
     expect(result).toBeCloseTo(expected, 2);
+  });
+});
+
+describe('SubscriptionPolicy.getManagementUrl', () => {
+  test.each([
+    [
+      'android',
+      { productId: 'premium_monthly', applicationId: 'com.aido.mobile' },
+      'https://play.google.com/store/account/subscriptions?sku=premium_monthly&package=com.aido.mobile',
+    ],
+    [
+      'android',
+      { productId: null, applicationId: 'com.aido.mobile' },
+      'https://play.google.com/store/account/subscriptions',
+    ],
+    [
+      'android',
+      { productId: 'premium_monthly', applicationId: null },
+      'https://play.google.com/store/account/subscriptions',
+    ],
+    [
+      'ios',
+      { productId: 'premium_monthly', applicationId: 'com.aido.mobile' },
+      'https://apps.apple.com/account/subscriptions',
+    ],
+    ['web', { productId: null, applicationId: null }, null],
+  ] as const)('%s %o → %s', (platform, target, url) => {
+    expect(SubscriptionPolicy.getManagementUrl(platform, target)).toBe(url);
   });
 });

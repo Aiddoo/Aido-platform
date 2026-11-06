@@ -6,7 +6,7 @@ import * as Application from 'expo-application';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
-import { createSubscriptionManagementUrl } from '../utils/navigation/subscription-management-url';
+import { SubscriptionPolicy } from '../domains/subscription.model';
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/view-models/subscription-failure.view-model';
 import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 
@@ -22,7 +22,7 @@ export function useOpenSubscriptionManagement() {
       Platform.OS === 'android'
         ? await subscriptionService.getActiveStoreProductId('PLAY_STORE')
         : null;
-    const url = createSubscriptionManagementUrl(Platform.OS, {
+    const url = SubscriptionPolicy.getManagementUrl(Platform.OS, {
       productId,
       applicationId: Application.applicationId,
     });
