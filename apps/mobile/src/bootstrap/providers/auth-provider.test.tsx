@@ -10,6 +10,7 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createAnalyticsStub,
   createTestDiContainer,
@@ -127,6 +128,7 @@ describe('AuthProvider', () => {
             drafts: draftService,
             voiceNotes: createVoiceNoteStorageServiceFake(),
             deviceTimezone: deviceTimezoneService,
+            pendingRedemption: createPendingRedemptionRepository(createMemorySyncStorage()),
             logger: { warn: jest.fn() },
           }),
           sessionRevocationService: new SessionRevocationService({

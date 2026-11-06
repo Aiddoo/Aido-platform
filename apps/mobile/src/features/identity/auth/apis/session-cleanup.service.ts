@@ -1,5 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import type { PendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
@@ -23,6 +24,8 @@ interface SessionCleanupPorts {
   drafts: Pick<DraftService, 'removeAll'>;
   voiceNotes: Pick<VoiceNoteStorageService, 'removeAll'>;
   deviceTimezone: Pick<DeviceTimezoneService, 'clear'>;
+  /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다 */
+  pendingRedemption: Pick<PendingRedemptionRepository, 'clear'>;
   logger: Pick<Logger, 'warn'>;
 }
 
@@ -45,6 +48,7 @@ export class SessionCleanupService {
     this.#run('drafts', () => this.#ports.drafts.removeAll());
     this.#run('voice-notes', () => this.#ports.voiceNotes.removeAll());
     this.#run('device-timezone', () => this.#ports.deviceTimezone.clear());
+    this.#run('pending-redemption', () => this.#ports.pendingRedemption.clear());
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */

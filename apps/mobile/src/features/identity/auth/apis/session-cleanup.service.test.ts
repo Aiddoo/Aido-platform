@@ -17,6 +17,7 @@ function createPorts() {
       drafts: { removeAll: record('drafts') },
       voiceNotes: { removeAll: record('voiceNotes') },
       deviceTimezone: { clear: record('deviceTimezone') },
+      pendingRedemption: { clear: record('pendingRedemption') },
       logger: { warn: jest.fn() },
     },
   };
@@ -38,6 +39,7 @@ describe('SessionCleanupService', () => {
       'drafts',
       'voiceNotes',
       'deviceTimezone',
+      'pendingRedemption',
     ]);
   });
 
@@ -80,6 +82,7 @@ describe('SessionCleanupService', () => {
       'drafts',
       'voiceNotes',
       'deviceTimezone',
+      'pendingRedemption',
     ]);
     expect(ports.logger.warn).toHaveBeenCalledWith(
       expect.any(String),

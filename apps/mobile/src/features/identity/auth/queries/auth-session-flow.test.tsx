@@ -270,6 +270,62 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
   });
 });
 
+describe('대기 중인 초대', () => {
+  const PENDING_INVITE = {
+    inviteCode: 'K7M2QX',
+    source: 'universal_link',
+    savedAt: new Date('2026-11-07T00:00:00.000Z'),
+  } as const;
+
+  it('로그아웃하면 지워 다음 계정이 앞사람의 초대를 받지 않는다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockResolvedValue(ok({}));
+    session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
+    session.pendingRedemption.save(PENDING_INVITE);
+    const { result } = await session.renderSession(
+      () => ({ status: useAuth().status, logout: useMutation(useLogoutMutationOptions()) }),
+      'authenticated',
+    );
+    expect(session.pendingRedemption.get()).not.toBeNull();
+
+    // When
+    await act(async () => {
+      await result.current.logout.mutateAsync();
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.pendingRedemption.get()).toBeNull();
+  });
+
+  it('세션이 만료되면 남겨 다시 로그인한 뒤 이어서 받는다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.pendingRedemption.save(PENDING_INVITE);
+    const { result } = await session.renderSession(() => useAuth().status, 'authenticated');
+
+    // When
+    await act(() => emitSessionExpired({ reason: 'refresh-rejected' }));
+
+    // Then
+    await waitFor(() => expect(result.current).toBe('unauthenticated'));
+    expect(session.pendingRedemption.get()).toMatchObject({ inviteCode: 'K7M2QX' });
+  });
+
+  it('로그인 전 미인증으로 시작해도 지우지 않는다', async () => {
+    // Given
+    const session = createAuthSession();
+    session.pendingRedemption.save(PENDING_INVITE);
+
+    // When
+    await session.renderSession(() => useAuth().status, 'unauthenticated');
+
+    // Then
+    expect(session.pendingRedemption.get()).toMatchObject({ inviteCode: 'K7M2QX' });
+  });
+});
+
 describe('탈퇴', () => {
   const useDeleteProbe = () => ({
     status: useAuth().status,

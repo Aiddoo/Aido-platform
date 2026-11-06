@@ -229,10 +229,11 @@ export function DIProvider({
     const whatsNewStateService = new WhatsNewStateService(whatsNewStateRepository);
 
     // Invite
+    const pendingRedemptionRepository = createPendingRedemptionRepository(mmkvSyncStorage);
     const inviteService = new InviteService({
       publicHttpClient,
       authHttpClient,
-      pendingRedemptionRepository: createPendingRedemptionRepository(mmkvSyncStorage),
+      pendingRedemptionRepository,
       installReferrerRepository: createInstallReferrerRepository(
         mmkvSyncStorage,
         expoInstallReferrerGateway,
@@ -345,6 +346,7 @@ export function DIProvider({
       drafts: draftService,
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: deviceTimezoneService,
+      pendingRedemption: pendingRedemptionRepository,
       logger,
     });
 

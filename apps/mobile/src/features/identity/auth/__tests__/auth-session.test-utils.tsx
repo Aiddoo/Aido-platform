@@ -15,6 +15,7 @@ import { createDeviceTimezoneRepository } from '@src/features/notification/apis/
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createErrorReporterStub,
   createMemoryStorage,
@@ -68,6 +69,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
   const queryCacheStorage: QueryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
   const errorReporter = createErrorReporterStub();
   const writeSnapshot = jest.fn(async () => undefined);
+  const pendingRedemption = createPendingRedemptionRepository(createMemorySyncStorage());
   const pendingRevocation = createPendingRevocationRepository(createMemoryStorage());
   const requestRefresh = jest.fn<Promise<Response>, [string]>();
   const sessionRevocationService = new SessionRevocationService({
@@ -84,6 +86,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     deviceTimezone: new DeviceTimezoneService(
       createDeviceTimezoneRepository(createMemorySyncStorage()),
     ),
+    pendingRedemption,
     logger: silentLogger,
   });
 
@@ -155,6 +158,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     queryCacheStorage,
     errorReporter,
     writeSnapshot,
+    pendingRedemption,
     pendingRevocation,
     requestRefresh,
     container,
