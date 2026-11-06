@@ -48,6 +48,9 @@ export const VOICE_CLOCK_TICK_MS = 1_000;
 
 export const LISTENING_PANEL_HEIGHT = { windowRatio: 0.56, min: 420 } as const;
 
+/** 이 안에 end가 이만큼 연달아 오면 다시 열어도 소용없는 세션이다 */
+export const VOICE_RESTART_LOOP = { windowMs: 400, limit: 4 } as const;
+
 /** Android 일부 인식기는 말이 끝나면 음량 이벤트를 보내지 않는다(QA 로그). 이만큼 끊기면 소리 없음으로 본다 */
 export const VOICE_NO_VOLUME_GAP_MS = 300;
 

@@ -33,25 +33,21 @@ import {
 import {
   type CapturedPlan,
   createVoiceCaptureState,
-  createVoiceStallWatch,
+  createVoiceRecognizerLink,
+  reduceRecognizerLink,
   reduceVoiceCapture,
   type VoiceCaptureEvent,
   type VoiceCaptureSeed,
   VoiceCapturePolicy,
   type VoiceCaptureState,
   type VoicePauseCause,
-  withStallRestart,
-  withTextHeard,
-  withVolumeSample,
+  type VoiceRecognizerLinkEvent,
 } from '../domains/voice-capture.model';
 import { type VoiceTranscript, VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 import { getDurationBucket } from '../utils/analytics/duration-bucket';
 
 /** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
 const FINALIZE_TIMEOUT_MS = 1_500;
-/** 이 안에 end가 이만큼 연달아 오면 다시 열어도 소용없는 세션이다 */
-const RESTART_LOOP_WINDOW_MS = 400;
-const RESTART_LOOP_LIMIT = 4;
 
 const PAUSE_CAUSE_PARAMS = {
   'app-background': 'app_background',
@@ -115,16 +111,8 @@ export function useVoiceCaptureSession({
   const deferredStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stallRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeGapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
-  const isRecognizerRunningRef = useRef(false);
-  /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
-  const isStopRequestedRef = useRef(false);
+  const linkRef = useRef(createVoiceRecognizerLink());
   const isQuietRef = useRef(false);
-  const lastTextAtRef = useRef<number | null>(null);
-  const lastTranscriptRef = useRef('');
-  const lastStartedAtRef = useRef(0);
-  const quickEndCountRef = useRef(0);
-  const stallWatchRef = useRef(createVoiceStallWatch(0));
   /** 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜면 아무도 끄지 못한다 */
   const isUnmountedRef = useRef(false);
 
@@ -138,6 +126,10 @@ export function useVoiceCaptureSession({
     return { previous, next };
   }, []);
 
+  const updateLink = (event: VoiceRecognizerLinkEvent) => {
+    linkRef.current = reduceRecognizerLink(linkRef.current, event);
+  };
+
   const getStatus = () => stateRef.current.status;
 
   const addBreadcrumb = (message: string, data?: Record<string, unknown>) => {
@@ -145,7 +137,7 @@ export function useVoiceCaptureSession({
   };
 
   const stopRecognizer = () => {
-    isStopRequestedRef.current = true;
+    updateLink({ type: 'stop-requested' });
     speechRecognizer.stop();
   };
 
@@ -246,7 +238,7 @@ export function useVoiceCaptureSession({
   };
 
   const handleError = (code: SpeechErrorCode) => {
-    const isStopRequested = isStopRequestedRef.current;
+    const { isStopRequested } = linkRef.current;
     const { previous, next } = dispatch({ type: 'error', code, at: Date.now(), isStopRequested });
     const startOptions = startOptionsRef.current;
     const context = { speech_error: code, on_device: startOptions?.isOnDevice };
@@ -276,15 +268,11 @@ export function useVoiceCaptureSession({
       return;
     }
     const now = Date.now();
-    quickEndCountRef.current =
-      now - lastStartedAtRef.current < RESTART_LOOP_WINDOW_MS ? quickEndCountRef.current + 1 : 0;
-    if (quickEndCountRef.current >= RESTART_LOOP_LIMIT) {
+    if (VoiceCapturePolicy.isRestartLooping(linkRef.current, now)) {
       handleError('client');
       return;
     }
-    lastStartedAtRef.current = now;
-    isRecognizerRunningRef.current = true;
-    isStopRequestedRef.current = false;
+    updateLink({ type: 'segment-restarted', at: now });
     speechRecognizer.start(startOptions);
   };
 
@@ -294,7 +282,7 @@ export function useVoiceCaptureSession({
    * abort는 녹음 파일을 마무리하지만 바로 새로 시작하면 Android가 파일을 버린다.
    */
   const restartStalledRecognizer = (now: number) => {
-    stallWatchRef.current = withStallRestart(now);
+    updateLink({ type: 'stall-restarted', at: now });
     const isOnDevice = startOptionsRef.current?.isOnDevice ?? false;
     trackEvent('voice_recognizer_stalled', { mode, on_device: isOnDevice });
     addBreadcrumb('capture.recognizer-stalled', { mode, on_device: isOnDevice });
@@ -309,14 +297,11 @@ export function useVoiceCaptureSession({
 
   const watchRecognizerStall = (nextLevel: number) => {
     const now = Date.now();
-    stallWatchRef.current = withVolumeSample(stallWatchRef.current, nextLevel, now);
+    updateLink({ type: 'volume-sampled', level: nextLevel, at: now });
+    const { isStopRequested, stallWatch } = linkRef.current;
     if (
-      !isStopRequestedRef.current &&
-      VoiceCapturePolicy.shouldRestartStalledRecognizer(
-        stateRef.current,
-        stallWatchRef.current,
-        now,
-      )
+      !isStopRequested &&
+      VoiceCapturePolicy.shouldRestartStalledRecognizer(stateRef.current, stallWatch, now)
     ) {
       restartStalledRecognizer(now);
     }
@@ -324,7 +309,7 @@ export function useVoiceCaptureSession({
 
   /** 앞 구간이 끝나지 않았는데 다시 열면 Android가 파일을 마무리하지 않고 버린다. `end`까지 미룬다 */
   const startAfterRecognizerEnds = () => {
-    if (!isRecognizerRunningRef.current) {
+    if (!linkRef.current.isRunning) {
       startPrepared();
       return;
     }
@@ -337,18 +322,13 @@ export function useVoiceCaptureSession({
     if (startOptions == null || getStatus() !== 'preparing') {
       return;
     }
-    lastStartedAtRef.current = Date.now();
-    quickEndCountRef.current = 0;
-    stallWatchRef.current = createVoiceStallWatch(lastStartedAtRef.current);
-    isRecognizerRunningRef.current = true;
-    isStopRequestedRef.current = false;
+    updateLink({ type: 'start-requested', at: Date.now() });
     speechRecognizer.start(startOptions);
   }
 
   const handleEvent = useEffectEvent((event: SpeechEvent) => {
     if (event.type === 'end') {
-      isRecognizerRunningRef.current = false;
-      isStopRequestedRef.current = false;
+      updateLink({ type: 'ended' });
       clearStallRestart();
     }
     if (!VoiceCapturePolicy.isActive(stateRef.current)) {
@@ -358,7 +338,7 @@ export function useVoiceCaptureSession({
       .with({ type: 'start' }, () => {
         const now = Date.now();
         dispatch({ type: 'start', at: now });
-        stallWatchRef.current = createVoiceStallWatch(now, stallWatchRef.current.lastRestartAt);
+        updateLink({ type: 'started', at: now });
         // 준비 중에는 멈출 수 없어 백그라운드 전환이 무시된다. 뒤늦은 시작 신호로 몰래 듣지 않는다
         if (AppState.currentState === 'background') {
           pause('app-background');
@@ -367,15 +347,8 @@ export function useVoiceCaptureSession({
       .with({ type: 'result' }, ({ transcript, isFinal }) => {
         dispatch({ type: 'result', result: { transcript, isFinal } });
         if (transcript.trim().length > 0) {
-          if (transcript !== lastTranscriptRef.current) {
-            lastTranscriptRef.current = transcript;
-            lastTextAtRef.current = Date.now();
-          }
+          updateLink({ type: 'text-heard', transcript, at: Date.now() });
           clearQuiet();
-          // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
-          if (!isStopRequestedRef.current) {
-            stallWatchRef.current = withTextHeard(stallWatchRef.current, Date.now());
-          }
         }
       })
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
@@ -386,7 +359,7 @@ export function useVoiceCaptureSession({
           level.set(0);
           markSilence();
         }, VOICE_NO_VOLUME_GAP_MS);
-        if (VoiceCapturePolicy.isSpeaking(nextLevel, lastTextAtRef.current, Date.now())) {
+        if (VoiceCapturePolicy.isSpeaking(nextLevel, linkRef.current.lastTextAt, Date.now())) {
           clearQuiet();
         } else {
           markSilence();
@@ -498,8 +471,7 @@ export function useVoiceCaptureSession({
 
   const failPreparing = useEffectEvent(() => {
     speechRecognizer.abort();
-    isRecognizerRunningRef.current = false;
-    isStopRequestedRef.current = false;
+    updateLink({ type: 'ended' });
     handleError('client');
   });
 
@@ -586,8 +558,7 @@ export function useVoiceCaptureSession({
     if (VoiceCapturePolicy.isActive(previous)) {
       speechRecognizer.abort();
       // abort는 바로 끝난 것으로 본다. 다음 시작은 어댑터가 abort 뒤에 차례로 처리한다
-      isRecognizerRunningRef.current = false;
-      isStopRequestedRef.current = false;
+      updateLink({ type: 'ended' });
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
       trackFinished(

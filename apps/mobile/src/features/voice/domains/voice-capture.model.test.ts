@@ -2,7 +2,9 @@ import { createCaptureState, createTranscript } from '../__tests__/voice.factori
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import {
   createVoiceCaptureState,
+  createVoiceRecognizerLink,
   createVoiceStallWatch,
+  reduceRecognizerLink,
   reduceVoiceCapture,
   type VoiceStallWatch,
   VoiceCapturePolicy,
@@ -804,5 +806,116 @@ describe('getRemainingCaptureMs', () => {
 
     // Then
     expect(remainingMs).toBe(0);
+  });
+});
+
+describe('reduceRecognizerLink', () => {
+  it('시작을 맡기면 달리는 중이 되고 앞 구간의 멈춤 요청과 재시작 횟수를 지운다', () => {
+    // Given
+    const link = {
+      ...createVoiceRecognizerLink(),
+      isStopRequested: true,
+      quickEndCount: 3,
+    };
+
+    // When
+    const next = reduceRecognizerLink(link, { type: 'start-requested', at: NOW });
+
+    // Then
+    expect(next).toMatchObject({
+      isRunning: true,
+      isStopRequested: false,
+      quickEndCount: 0,
+      lastStartedAt: NOW,
+    });
+  });
+
+  it('end를 받으면 달리지 않고 멈춤 요청도 지운다', () => {
+    // Given
+    const link = reduceRecognizerLink(
+      reduceRecognizerLink(createVoiceRecognizerLink(), { type: 'start-requested', at: NOW }),
+      { type: 'stop-requested' },
+    );
+
+    // When
+    const next = reduceRecognizerLink(link, { type: 'ended' });
+
+    // Then
+    expect(next).toMatchObject({ isRunning: false, isStopRequested: false });
+  });
+
+  it('같은 글자가 다시 오면 마지막 글자 시각을 옮기지 않는다', () => {
+    // Given
+    const heard = reduceRecognizerLink(createVoiceRecognizerLink(), {
+      type: 'text-heard',
+      transcript: '장보기',
+      at: NOW,
+    });
+
+    // When
+    const repeated = reduceRecognizerLink(heard, {
+      type: 'text-heard',
+      transcript: '장보기',
+      at: NOW + 1_000,
+    });
+
+    // Then
+    expect(repeated.lastTextAt).toBe(NOW);
+  });
+
+  it('stop 뒤의 마지막 글자는 다시 연 간격을 지우지 않는다', () => {
+    // Given
+    const link = reduceRecognizerLink(
+      reduceRecognizerLink(createVoiceRecognizerLink(), { type: 'stall-restarted', at: NOW }),
+      { type: 'stop-requested' },
+    );
+
+    // When
+    const next = reduceRecognizerLink(link, {
+      type: 'text-heard',
+      transcript: '마지막 글자',
+      at: NOW + 500,
+    });
+
+    // Then
+    expect(next.stallWatch.lastRestartAt).toBe(NOW);
+  });
+
+  it('인식기 시작 신호는 다시 연 간격을 남기고 감시를 새로 센다', () => {
+    // Given
+    const link = reduceRecognizerLink(createVoiceRecognizerLink(), {
+      type: 'stall-restarted',
+      at: NOW,
+    });
+
+    // When
+    const next = reduceRecognizerLink(link, { type: 'started', at: NOW + 200 });
+
+    // Then
+    expect(next.stallWatch).toMatchObject({ lastTextAt: NOW + 200, lastRestartAt: NOW });
+  });
+});
+
+describe('isRestartLooping', () => {
+  it('400ms 안에 네 번째로 끝나면 다시 열어도 소용없다고 본다', () => {
+    // Given
+    const link = { lastStartedAt: NOW, quickEndCount: 3 };
+
+    // When
+    const isLooping = VoiceCapturePolicy.isRestartLooping(link, NOW + 399);
+
+    // Then
+    expect(isLooping).toBe(true);
+  });
+
+  it('간격이 벌어지면 횟수와 상관없이 다시 연다', () => {
+    // Given
+    const link = { lastStartedAt: NOW, quickEndCount: 3 };
+
+    // When
+    const isLooping = VoiceCapturePolicy.isRestartLooping(link, NOW + 400);
+
+    // Then
+    expect(isLooping).toBe(false);
   });
 });
