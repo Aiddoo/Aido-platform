@@ -7,7 +7,8 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -16,7 +17,6 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import type { TodoCategoriesResult } from '../domains/todo-category.model';
 import type { OptimisticTodo } from '../domains/todo.model';
 import {
   appendTodoToList,

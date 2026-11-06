@@ -1,5 +1,5 @@
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
-import type { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
+import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';

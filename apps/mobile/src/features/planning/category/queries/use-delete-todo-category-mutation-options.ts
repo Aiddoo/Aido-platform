@@ -1,6 +1,7 @@
 import type { DeleteTodoCategoryQuery } from '@aido/api';
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
-import type { TodoCategoriesResult } from '@src/features/planning/todo/domains/todo-category.model';
+import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
+import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -10,7 +11,6 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import { invalidateTodos } from './todo-cache';
 
 interface DeleteTodoCategoryParams {
   id: number;

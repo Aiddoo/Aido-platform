@@ -5,7 +5,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';

@@ -1,5 +1,6 @@
+import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
+
 import type { SubTodo } from '../../domains/sub-todo.model';
-import type { TodoCategory } from '../../domains/todo-category.model';
 import type { Todo } from '../../domains/todo.model';
 
 /** 시트 route의 대상 할 일. 목록에서 사라졌으면(삭제·다른 날짜) null. */

@@ -10,8 +10,8 @@ import { PreferenceService } from '@src/features/identity/preference/apis/prefer
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-category-query-keys';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createErrorReporterStub,
   createHapticsStub,

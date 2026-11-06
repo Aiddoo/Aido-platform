@@ -1,6 +1,7 @@
 import type { UpdateTodoCategoryInput } from '@aido/api';
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
-import type { TodoCategoriesResult } from '@src/features/planning/todo/domains/todo-category.model';
+import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -9,7 +10,6 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 
 interface UpdateTodoCategoryParams {
   id: number;

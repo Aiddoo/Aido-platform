@@ -1,4 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
@@ -38,7 +40,6 @@ import { match } from 'ts-pattern';
 
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
-import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub-todos-mutation-options';
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
@@ -51,7 +52,6 @@ import {
   todoActionsSheetHref,
   todoCreateSheetHref,
 } from '../../utils/navigation/todo-sheet-href';
-import { CategoryHeaderPill } from '../category-header-pill';
 import { ReorderCoachmark } from '../reorder-coachmark';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {

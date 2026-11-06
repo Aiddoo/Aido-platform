@@ -1,4 +1,4 @@
-import { CategoryList } from '@src/features/planning/todo/components/category-list';
+import { CategoryList } from '@src/features/planning/category/components/category-list';
 import { todoCategoryCreateSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

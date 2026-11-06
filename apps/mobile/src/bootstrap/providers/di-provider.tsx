@@ -33,10 +33,10 @@ import { NotificationService } from '@src/features/notification/apis/notificatio
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
 import { PushPromptService } from '@src/features/notification/apis/push-prompt.service';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createFriendStripHintRepository } from '@src/features/planning/todo/apis/friend-strip-hint.repository';
 import { FriendStripHintService } from '@src/features/planning/todo/apis/friend-strip-hint.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
-import { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { FriendService } from '@src/features/social/friend/apis/friend.service';
 import { createAllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';

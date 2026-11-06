@@ -12,16 +12,16 @@ import {
   updateTodoResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
+import { toFollowingCategoryRequest } from '@src/features/planning/todo/apis/todo-series.mapper';
+import { toTodo } from '@src/features/planning/todo/apis/todo.mapper';
+import type { TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import type { TodoCategoriesResult, TodoCategory } from '../domains/todo-category.model';
-import type { TodoUpdateScope } from '../domains/todo-repeat.model';
-import type { Todo } from '../domains/todo.model';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
-import { toFollowingCategoryRequest } from './todo-series.mapper';
-import { toTodo } from './todo.mapper';
 
 export class TodoCategoryService {
   readonly #httpClient: HttpClient;

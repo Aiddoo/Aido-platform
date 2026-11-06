@@ -4,7 +4,11 @@ import { findLimitedFeature } from '@src/features/billing/subscription/apis/enti
 import type {
   OptimisticTodoCategoryWithCount,
   TodoCategoriesResult,
-} from '@src/features/planning/todo/domains/todo-category.model';
+} from '@src/features/planning/category/domains/todo-category.model';
+import {
+  createOptimisticId,
+  invalidateTodos,
+} from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -13,7 +17,6 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import { createOptimisticId, invalidateTodos } from './todo-cache';
 
 export const useCreateTodoCategoryMutationOptions = () => {
   const haptics = useHaptics();

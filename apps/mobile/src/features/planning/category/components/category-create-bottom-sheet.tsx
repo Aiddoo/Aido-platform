@@ -1,7 +1,8 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useCreateTodoCategoryMutationOptions } from '@src/features/planning/todo/queries/use-create-todo-category-mutation-options';
+import { useCreateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-create-todo-category-mutation-options';
+import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -18,7 +19,6 @@ import type { ComponentProps } from 'react';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
 import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category-colors';
-import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
 import { CategoryColorInput } from './category-color-input';
 
 type CategoryCreateBottomSheetProps = Omit<

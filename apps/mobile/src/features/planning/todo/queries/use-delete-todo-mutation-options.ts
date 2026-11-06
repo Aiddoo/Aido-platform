@@ -1,5 +1,5 @@
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';

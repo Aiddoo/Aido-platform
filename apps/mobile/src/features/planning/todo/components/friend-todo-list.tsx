@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
@@ -40,7 +41,6 @@ import { useFeedDate } from '../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
 import { toFriendCategoryGroups } from '../utils/group-friend-todos-by-category';
-import { CategoryHeaderPill } from './category-header-pill';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 

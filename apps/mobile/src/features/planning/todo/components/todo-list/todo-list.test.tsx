@@ -5,6 +5,8 @@ import { createStoreReviewRepository } from '@src/features/device/store-review/a
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createErrorReporterStub,
   createMockAnalytics,
@@ -23,9 +25,7 @@ import { ScrollViewContainer } from 'react-native-reorderable-list';
 
 import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.factories';
 import { SubTodoService } from '../../apis/sub-todo.service';
-import { TodoCategoryService } from '../../apis/todo-category.service';
 import { TodoService } from '../../apis/todo.service';
-import { TODO_CATEGORY_QUERY_KEYS } from '../../constants/todo-category-query-keys';
 import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';
 import type { Todo } from '../../domains/todo.model';
 import { updateCachedTodo } from '../../queries/todo-cache';

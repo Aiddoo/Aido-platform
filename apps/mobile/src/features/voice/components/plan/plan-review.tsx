@@ -1,6 +1,7 @@
 import { useIdGenerator } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
-import { CategoryHeaderPill } from '@src/features/planning/todo/components/category-header-pill';
+import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { SubTodoIndent } from '@src/features/planning/todo/components/sub-todo-indent';
 import {
   TodoCheckbox,
@@ -9,7 +10,6 @@ import {
   TodoRow,
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import {
   formatDateKeyLabel,

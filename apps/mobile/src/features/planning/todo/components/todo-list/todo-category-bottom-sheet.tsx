@@ -1,3 +1,4 @@
+import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -20,7 +21,6 @@ import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-q
 import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
-import { CategorySelectInput } from '../category-select-input';
 
 type TodoCategoryBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,

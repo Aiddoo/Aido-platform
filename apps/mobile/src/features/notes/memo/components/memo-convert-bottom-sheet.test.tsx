@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
-import { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import {
   createHapticsStub,
   createMemorySyncStorage,

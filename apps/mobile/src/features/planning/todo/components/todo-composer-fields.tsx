@@ -1,3 +1,5 @@
+import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { toNullableDate } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
 import { toDateKey } from '@src/shared/date/instant';
@@ -34,9 +36,7 @@ import { useResolveClassNames } from 'uniwind';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { TodoPolicy } from '../domains/todo.model';
-import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { formatRepeatSummary } from '../utils/format-repeat-summary';
-import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
 import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
 import { TodoTimePickerContent } from './todo-time-picker-content';

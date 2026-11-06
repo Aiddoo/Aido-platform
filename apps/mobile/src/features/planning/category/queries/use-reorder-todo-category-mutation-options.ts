@@ -1,12 +1,12 @@
 import type { ReorderTodoCategoryInput } from '@aido/api';
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { invalidateWidgetSummary } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import { invalidateWidgetSummary } from './todo-cache';
 
 interface ReorderTodoCategoryParams {
   id: number;

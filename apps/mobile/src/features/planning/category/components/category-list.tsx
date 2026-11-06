@@ -1,6 +1,8 @@
-import type { TodoCategoryWithCount } from '@src/features/planning/todo/domains/todo-category.model';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
-import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/todo/queries/use-reorder-todo-category-mutation-options';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-reorder-todo-category-mutation-options';
+import { ReorderCoachmark } from '@src/features/planning/todo/components/reorder-coachmark';
+import { todoCategoryEditSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -26,9 +28,7 @@ import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-r
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { todoCategoryEditSheetHref } from '../utils/navigation/todo-sheet-href';
 import { CategoryDeleteDialog } from './category-delete-dialog';
-import { ReorderCoachmark } from './reorder-coachmark';
 
 export type CategoryListMode = 'edit' | 'reorder';
 

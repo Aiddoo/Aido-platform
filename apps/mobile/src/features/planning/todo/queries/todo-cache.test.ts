@@ -1,7 +1,7 @@
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { invalidateFeedTodos, invalidateTodos, syncDailyCompletionWithList } from './todo-cache';
 

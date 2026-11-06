@@ -1,6 +1,6 @@
-import type { TodoCategoryWithCount } from '@src/features/planning/todo/domains/todo-category.model';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
-import { useDeleteTodoCategoryMutationOptions } from '@src/features/planning/todo/queries/use-delete-todo-category-mutation-options';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { useDeleteTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-delete-todo-category-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,

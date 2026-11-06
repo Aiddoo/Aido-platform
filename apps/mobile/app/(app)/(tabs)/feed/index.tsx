@@ -5,6 +5,7 @@ import { ActivationChecklist } from '@src/features/device/activation/components/
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
@@ -18,7 +19,6 @@ import { useFeedActionParam } from '@src/features/planning/todo/hooks/use-feed-a
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
 import { useFeedDateParam } from '@src/features/planning/todo/hooks/use-feed-date-param';
 import { useFeedFriendIdParam } from '@src/features/planning/todo/hooks/use-feed-friend-id-param';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,

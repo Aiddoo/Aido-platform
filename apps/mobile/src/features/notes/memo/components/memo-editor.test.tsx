@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createMemorySyncStorage,

@@ -10,6 +10,7 @@ import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-quer
 import type { Consent } from '@src/features/identity/auth/domains/auth.model';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import { VoiceService } from '@src/features/voice/apis/voice.service';
 import {
@@ -36,7 +37,6 @@ import { router } from 'expo-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { Pressable, TextInput } from 'react-native';
 
-import { TodoCategoryService } from '../apis/todo-category.service';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 

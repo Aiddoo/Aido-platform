@@ -4,8 +4,8 @@ import { createActivationProgressRepository } from '@src/features/device/activat
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
-import { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-category-query-keys';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,

@@ -1,3 +1,7 @@
+import {
+  createTodoDto,
+  INVALID_DTO as INVALID_TODO_DTO,
+} from '@src/features/planning/todo/__tests__/todo.factories';
 import { createMockHttpClient } from '@src/shared/__tests__';
 
 import {
@@ -6,7 +10,6 @@ import {
   createTodoCategoryListDto,
   INVALID_DTO,
 } from '../__tests__/todo-category.factories';
-import { createTodoDto, INVALID_DTO as INVALID_TODO_DTO } from '../__tests__/todo.factories';
 import { TodoCategoryService } from './todo-category.service';
 
 describe('TodoCategoryService', () => {

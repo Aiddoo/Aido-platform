@@ -3,6 +3,7 @@ import { createActivationProgressRepository } from '@src/features/device/activat
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
@@ -21,7 +22,6 @@ import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories
 import { createTodoApiError, createTodoDto } from '../__tests__/todo.factories';
 import { SubTodoService } from '../apis/sub-todo.service';
 import { TodoService } from '../apis/todo.service';
-import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type {
   DailyCompletionsResult,

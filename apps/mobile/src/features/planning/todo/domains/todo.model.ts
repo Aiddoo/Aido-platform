@@ -1,10 +1,10 @@
 import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import { todoCategorySchema as categorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { range, sortBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
-import { todoCategorySchema as categorySchema } from './todo-category.model';
 import { todoRepeatSchema } from './todo-repeat.model';
 
 const dateSchema = z.iso.date();
