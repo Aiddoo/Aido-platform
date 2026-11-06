@@ -1,7 +1,7 @@
 import { toDateKey, toEpochMs } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 
@@ -16,9 +16,8 @@ const MIN_BAR_HEIGHT = 2;
 export function WeatherRescheduleTimeline({ hours }: { hours: HourlyForecastEntry[] }) {
   const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
-  const todayHours = hours.filter(
-    (hour) => toDateKey(hour.startsAt, getDeviceTimezone()) === todayKey,
-  );
+  const { timeZone } = useDateFormatContext();
+  const todayHours = hours.filter((hour) => toDateKey(hour.startsAt, timeZone) === todayKey);
 
   if (todayHours.length === 0) {
     return null;

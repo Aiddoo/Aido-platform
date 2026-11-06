@@ -15,10 +15,10 @@ import {
 } from '@src/features/weather/queries/weather.queries';
 import { weatherRescheduleFormSchema } from '@src/features/weather/schemas/weather-reschedule-form.schema';
 import { weatherRescheduleParamsSchema } from '@src/features/weather/schemas/weather-reschedule-params.schema';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   BottomSheet,
@@ -103,6 +103,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
   const { t } = useTranslation('weather');
   const [{ todoIds, reason }, setParams] = useWeatherRescheduleParams();
   const todayKey = useTodayKey();
+  const { timeZone } = useDateFormatContext();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
@@ -122,7 +123,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
         : [
             WeatherBriefingPolicy.toBriefingTodo(todo, {
               date: todayKey,
-              timeZone: getDeviceTimezone(),
+              timeZone: timeZone,
             }),
           ];
     }),
@@ -166,7 +167,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
             todo={todo}
             options={WeatherBriefingPolicy.getRescheduleOptions(report.hourly, todo, {
               now,
-              timeZone: getDeviceTimezone(),
+              timeZone: timeZone,
               reason,
             })}
             reason={reason}

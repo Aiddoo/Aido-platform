@@ -17,7 +17,6 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowRightIcon,
   Button,
@@ -98,7 +97,7 @@ export function WeatherBriefing() {
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
   const now = useMinuteNow();
-  const deviceTimeZone = getDeviceTimezone();
+  const { timeZone: deviceTimeZone } = useDateFormatContext();
   const state = toBriefingState(report, { now, deviceTimeZone });
 
   if (report == null || state === 'loading') {
@@ -382,6 +381,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
 }) {
   const translate = useBriefingCopy();
   const todayKey = useTodayKey();
+  const { timeZone } = useDateFormatContext();
   const push = useSingleTap(router.push);
   const { trackEvent } = useTrack();
 
@@ -392,8 +392,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
       params: {
         date: todayKey,
         title: translate(action.title),
-        time:
-          action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt, getDeviceTimezone()),
+        time: action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt, timeZone),
       },
     });
   };
