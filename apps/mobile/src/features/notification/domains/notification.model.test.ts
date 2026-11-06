@@ -1,4 +1,5 @@
-import { type Notification, NotificationPolicy } from './notification.model';
+import { type Notification } from '../schemas/notification.schema';
+import { NotificationPolicy } from './notification.model';
 
 const baseNotification: Notification = {
   id: 1,

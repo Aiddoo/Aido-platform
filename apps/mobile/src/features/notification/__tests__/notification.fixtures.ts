@@ -13,7 +13,7 @@ import type {
 } from '@src/core/ports/push-notification-gateway';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { PushPermission } from '../domains/push-permission.model';
+import type { PushPermission } from '../schemas/push-permission.schema';
 
 const generateNotificationListResponseDto = (): NotificationListResponse => ({
   notifications: [

@@ -1,20 +1,6 @@
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-import type { NotificationType } from '../../domains/notification.model';
-
-const notificationCategoryKeySchema = z.enum([
-  'friend',
-  'nudge',
-  'cheer',
-  'achievement',
-  'todo',
-  'reminder',
-  'ai',
-  'notice',
-  'social',
-]);
-export type NotificationCategoryKey = z.infer<typeof notificationCategoryKeySchema>;
+import type { NotificationCategoryKey, NotificationType } from '../../schemas/notification.schema';
 
 export const getCategoryKey = (type: NotificationType): NotificationCategoryKey =>
   match<NotificationType, NotificationCategoryKey>(type)

@@ -3,8 +3,8 @@ import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/re
 import { match, P } from 'ts-pattern';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { NotificationListResult } from '../domains/notification.model';
 import { notificationListQueryParamsSchema } from '../schemas/notification-list-query-params.schema';
+import type { NotificationListResult } from '../schemas/notification.schema';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 

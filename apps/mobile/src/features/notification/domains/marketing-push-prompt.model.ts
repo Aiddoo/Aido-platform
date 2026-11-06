@@ -1,13 +1,7 @@
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 
-/** 마케팅 푸시 옵트인 배너의 도배 방지 상태 */
-export interface MarketingPushPromptState {
-  /** 마지막으로 노출한 시각 (ISO 8601, 노출 전이면 null) */
-  lastPromptedAt: string | null;
-  /** 누적 노출 횟수 */
-  count: number;
-}
+import type { MarketingPushPromptState } from '../schemas/marketing-push-prompt.schema';
 
 const COOLDOWN_DAYS = 14;
 /** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */

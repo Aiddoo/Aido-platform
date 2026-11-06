@@ -10,7 +10,7 @@ import {
   NOTIFICATION_QUERY_KEYS,
   type NotificationListFilters,
 } from '../constants/notification-query-keys';
-import type { NotificationListResult } from '../domains/notification.model';
+import type { NotificationListResult } from '../schemas/notification.schema';
 
 type NotificationQueryParams = NotificationListFilters;
 

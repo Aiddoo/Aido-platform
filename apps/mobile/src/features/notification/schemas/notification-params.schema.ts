@@ -2,7 +2,7 @@ import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { nudgeDirectionSchema } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { z } from 'zod';
 
-import { notificationCategorySchema } from '../domains/notification.model';
+import { notificationCategorySchema } from './notification.schema';
 
 /** 알림 화면의 분류(`?category=`)와 받은 알림·보낸 콕(`?direction=`) */
 export const notificationParamsSchema = z.object({

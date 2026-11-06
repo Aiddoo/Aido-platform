@@ -2,7 +2,7 @@ import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
-import type { NotificationContext, NotificationType } from '../domains/notification.model';
+import type { NotificationContext, NotificationType } from '../schemas/notification.schema';
 import { resolveNotificationDestination } from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';

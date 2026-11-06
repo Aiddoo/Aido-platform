@@ -1,7 +1,4 @@
-import { z } from 'zod';
-
-const unreadCountSchema = z.int().nonnegative();
-export type UnreadCount = z.infer<typeof unreadCountSchema>;
+export type UnreadCount = number;
 
 function hasUnread(unreadCount: UnreadCount) {
   return unreadCount > 0;

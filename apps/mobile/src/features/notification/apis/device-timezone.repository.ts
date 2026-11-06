@@ -1,14 +1,8 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { z } from 'zod';
 
-import { type DeviceTimezone, deviceTimezoneSchema } from '../domains/device-timezone.model';
+import { type DeviceTimezone, savedDeviceTimezoneSchema } from '../schemas/device-timezone.schema';
 
 const DEVICE_TIMEZONE_KEY = 'aido_device_timezone_v1';
-
-const savedDeviceTimezoneSchema = z.object({
-  userId: z.string(),
-  deviceTimezone: deviceTimezoneSchema,
-});
 
 export interface DeviceTimezoneRepository {
   get(userId: string): DeviceTimezone | null;

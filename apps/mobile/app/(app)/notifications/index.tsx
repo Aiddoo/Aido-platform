@@ -2,12 +2,12 @@ import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
+import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
+import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
 import {
   type NotificationCategory,
   notificationCategorySchema,
-} from '@src/features/notification/domains/notification.model';
-import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
-import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
+} from '@src/features/notification/schemas/notification.schema';
 import {
   nudgeDirectionSchema,
   type NudgeDirection,

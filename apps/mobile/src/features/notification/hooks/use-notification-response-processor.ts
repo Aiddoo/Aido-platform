@@ -8,7 +8,8 @@ import { AppState } from 'react-native';
 
 import { toPushNotificationPayload } from '../apis/notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { NotificationPolicy, type PushNotificationPayload } from '../domains/notification.model';
+import { NotificationPolicy } from '../domains/notification.model';
+import { type PushNotificationPayload } from '../schemas/notification.schema';
 import type { useNotificationResponseHandler } from './use-notification-response-handler';
 
 type PendingNotificationResponse = {

@@ -2,15 +2,15 @@ import {
   type NotificationInboxResponse,
   type NotificationInboxItem as ServerNotification,
   notificationRoutingSchema,
-  pushNotificationDataSchema,
 } from '@aido/api';
 
-import type {
-  Notification,
-  NotificationListResult,
-  NotificationRouting,
-  PushNotificationPayload,
-} from '../domains/notification.model';
+import {
+  type Notification,
+  type NotificationListResult,
+  type NotificationRouting,
+  type PushNotificationPayload,
+  pushNotificationPayloadSchema,
+} from '../schemas/notification.schema';
 
 export function toNotification(server: ServerNotification): Notification {
   const routing = toNotificationRouting(server.metadata);
@@ -40,48 +40,24 @@ function toNotificationRouting(metadata: unknown): NotificationRouting | undefin
   return hasRoutingValue ? parsed.data : undefined;
 }
 
-export const toNotificationListResult = (
+export function toNotificationListResult(
   server: NotificationInboxResponse,
-): NotificationListResult => ({
-  notifications: server.notifications.map(toNotification),
-  unreadCount: server.unreadCount,
-  hasMore: server.hasMore,
-  nextCursor: server.nextCursor,
-});
+): NotificationListResult {
+  return {
+    notifications: server.notifications.map(toNotification),
+    unreadCount: server.unreadCount,
+    hasMore: server.hasMore,
+    nextCursor: server.nextCursor,
+  };
+}
 
 export type PushNotificationPayloadResult =
   | { success: true; payload: PushNotificationPayload }
   | { success: false; error: Error };
 
 export function toPushNotificationPayload(data: unknown): PushNotificationPayloadResult {
-  const parsed = pushNotificationDataSchema.safeParse(data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error };
-  }
-
-  const {
-    notificationId,
-    type,
-    action,
-    context,
-    routing,
-    campaignKey,
-    variantId,
-    purpose,
-    marketingOptOutToken,
-  } = parsed.data;
-  return {
-    success: true,
-    payload: {
-      notificationId,
-      type,
-      action,
-      context,
-      routing,
-      campaignKey,
-      variantId,
-      purpose,
-      marketingOptOutToken,
-    },
-  };
+  const parsed = pushNotificationPayloadSchema.safeParse(data);
+  return parsed.success
+    ? { success: true, payload: parsed.data }
+    : { success: false, error: parsed.error };
 }

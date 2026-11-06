@@ -1,23 +1,8 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-const pushPermissionSchema = z.object({
-  status: z.enum(PUSH_PERMISSION_STATUS),
-  canAskAgain: z.boolean(),
-});
-
-export type PushPermission = z.infer<typeof pushPermissionSchema>;
-
-const pushDeviceSchema = z.object({
-  permission: pushPermissionSchema,
-  hasActiveToken: z.boolean(),
-  reportedAt: z.date(),
-});
-
-/** 서버가 저장한 이 기기의 상태 */
-export type PushDevice = z.infer<typeof pushDeviceSchema>;
+import type { PushPermission } from '../schemas/push-permission.schema';
 
 export const PUSH_PERMISSION_STEP = {
   ASK: 'ASK',
@@ -32,7 +17,7 @@ type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMIS
 export const PUSH_PROMPT_SNOOZE_DAYS = 14;
 
 /** iOS 임시 허용(provisional·ephemeral)도 알림이 조용히 도착하므로 허용으로 본다 */
-export function isDeliveryAllowed(permission: PushPermission): boolean {
+function isDeliveryAllowed(permission: PushPermission): boolean {
   return (
     permission.status === PUSH_PERMISSION_STATUS.GRANTED ||
     permission.status === PUSH_PERMISSION_STATUS.PROVISIONAL

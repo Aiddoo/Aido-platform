@@ -5,7 +5,7 @@ import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscrip
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/purchase-failed-reason';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/schemas/oauth.schema';
 import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
-import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';
+import type { TimezoneOffsetBucket } from '@src/features/notification/schemas/device-timezone.schema';
 import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '@src/features/voice/domains/voice.error';
 

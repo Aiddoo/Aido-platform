@@ -4,14 +4,15 @@ import { parseWeatherRescheduleUrl } from '@src/features/weather/utils/weather-r
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
-import { z } from 'zod';
 
-import type {
-  NotificationAction,
-  NotificationContext,
-  NotificationRouting,
-  NotificationType,
-} from '../domains/notification.model';
+import {
+  type NotificationAction,
+  type NotificationContext,
+  type NotificationDestinationRouting,
+  notificationDestinationRoutingSchema,
+  type NotificationRouting,
+  type NotificationType,
+} from '../schemas/notification.schema';
 
 export type NotificationDestination =
   | { kind: 'none' }
@@ -25,59 +26,6 @@ export interface NotificationDestinationSource {
   routing?: NotificationRouting;
   action?: NotificationAction;
 }
-
-/** 서버(1.13.0+)가 할 일 알림에 싣는 할 일 주인·날짜. 예전 알림에는 없다. */
-const todoTargetShape = {
-  todoOwnerId: z.string().min(1).optional().catch(undefined),
-  todoDate: z.iso.date().optional().catch(undefined),
-};
-
-const routingSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal(NOTIFICATION_TYPE.TODO_SHARED),
-    todoId: z.number().int().positive(),
-    commentId: z.cuid().optional().catch(undefined),
-    ...todoTargetShape,
-  }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.FOLLOW_NEW) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.FOLLOW_ACCEPTED), friendId: z.string() }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.CHEER_RECEIVED), friendId: z.string() }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.FRIEND_COMPLETED), friendId: z.string() }),
-  z.object({
-    type: z.literal(NOTIFICATION_TYPE.NUDGE_RECEIVED),
-    friendId: z.string().min(1).optional(),
-    todoId: z.number().int().positive().optional(),
-    nudgeId: z.number().int().positive().optional(),
-    ...todoTargetShape,
-  }),
-  z.object({
-    type: z.literal(NOTIFICATION_TYPE.NUDGE_REPLIED),
-    nudgeId: z.number().int().positive().optional(),
-  }),
-  z.object({
-    type: z.literal(NOTIFICATION_TYPE.NUDGE_THANKED),
-    nudgeId: z.number().int().positive().optional(),
-  }),
-  z.object({
-    type: z.literal(NOTIFICATION_TYPE.TODO_REMINDER),
-    todoId: z.number().int().positive().optional(),
-    ...todoTargetShape,
-  }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.WEATHER_MORNING) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.WEATHER_EVENING) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.NUDGE_SUGGEST), friendId: z.string() }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.WEEKLY_ACHIEVEMENT) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.WEEKLY_REPORT) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.MONTHLY_REPORT) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.AI_SUGGESTION) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.PREMIUM_GRANT_ENDING) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_JOINED) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_REWARDED) }),
-  z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_PROGRESS) }),
-  z.object({ type: z.literal('FEED') }),
-]);
-
-type ResolvedNotificationRoute = z.infer<typeof routingSchema>;
 
 const FEED_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
   NOTIFICATION_TYPE.DAILY_COMPLETE,
@@ -173,7 +121,7 @@ function toNoticeDestination(url: string | undefined, today?: string): Notificat
 
 function parseNotificationRouting(
   source: NotificationDestinationSource,
-): ResolvedNotificationRoute | null {
+): NotificationDestinationRouting | null {
   const candidate = {
     type: FEED_NOTIFICATION_TYPES.has(source.type) ? 'FEED' : source.type,
     todoId: source.context?.todoId,
@@ -183,7 +131,7 @@ function parseNotificationRouting(
     todoOwnerId: source.routing?.todoOwnerId,
     todoDate: source.routing?.todoDate,
   };
-  const result = routingSchema.safeParse(candidate);
+  const result = notificationDestinationRoutingSchema.safeParse(candidate);
 
   return result.success ? result.data : null;
 }
@@ -193,7 +141,7 @@ function toExternalDestination(kind: 'browser' | 'webview', url?: string): Notif
 }
 
 function toRouteDestination(
-  routing: ResolvedNotificationRoute,
+  routing: NotificationDestinationRouting,
   { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
 ): NotificationDestination {
   const toTodoFeed = (target: TodoTarget) => toTodoFeedTarget(target, viewerId);

@@ -152,6 +152,12 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/device/coachmark/constants/',
   'apps/mobile/src/features/device/coachmark/domains/',
   'apps/mobile/src/features/device/coachmark/hooks/',
+  'apps/mobile/src/features/notification/components/',
+  'apps/mobile/src/features/notification/constants/',
+  'apps/mobile/src/features/notification/domains/',
+  'apps/mobile/src/features/notification/hooks/',
+  'apps/mobile/src/features/notification/queries/',
+  'apps/mobile/src/features/notification/utils/',
   'apps/mobile/src/features/device/store-review/constants/',
   'apps/mobile/src/features/device/store-review/domains/',
   'apps/mobile/src/features/device/store-review/hooks/',
@@ -175,9 +181,6 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/social/nudge/constants/',
   'apps/mobile/src/features/social/nudge/queries/',
   'apps/mobile/src/features/social/nudge/utils/',
-  'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
-  'apps/mobile/src/features/notification/domains/notification.model.ts',
-  'apps/mobile/src/features/notification/domains/push-permission.model.ts',
   'apps/mobile/src/features/billing/subscription/domains/customer-info.model.ts',
   'apps/mobile/src/features/billing/subscription/domains/entitlement.model.ts',
   'apps/mobile/src/features/engagement/comment/domains/todo-comment.model.ts',
@@ -242,6 +245,13 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/social/invite/constants/',
   'apps/mobile/src/features/social/invite/queries/',
   'apps/mobile/src/features/social/invite/utils/',
+  // hooks의 route 파라미터 스키마는 공용 파라미터 훅으로 옮길 때 함께 옮긴다
+  'apps/mobile/src/features/notification/apis/',
+  'apps/mobile/src/features/notification/components/',
+  'apps/mobile/src/features/notification/constants/',
+  'apps/mobile/src/features/notification/domains/',
+  'apps/mobile/src/features/notification/queries/',
+  'apps/mobile/src/features/notification/utils/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

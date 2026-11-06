@@ -1,4 +1,4 @@
-import type { MarketingPushPromptState } from '../domains/marketing-push-prompt.model';
+import type { MarketingPushPromptState } from '../schemas/marketing-push-prompt.schema';
 import type { MarketingPushPromptRepository } from './marketing-push-prompt.repository';
 
 export class MarketingPushPromptService {

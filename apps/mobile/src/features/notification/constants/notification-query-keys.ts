@@ -1,4 +1,4 @@
-import type { NotificationCategory } from '../domains/notification.model';
+import type { NotificationCategory } from '../schemas/notification.schema';
 
 export interface NotificationListFilters {
   category?: NotificationCategory;

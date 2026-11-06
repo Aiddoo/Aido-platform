@@ -21,7 +21,7 @@ import {
 import { PushDeviceService } from '../apis/push-device.service';
 import { createPushPromptRepository } from '../apis/push-prompt.repository';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { PushPermission } from '../domains/push-permission.model';
+import type { PushPermission } from '../schemas/push-permission.schema';
 import { PushPermissionCard } from './push-permission-card';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };

@@ -28,14 +28,11 @@ import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import {
-  type Notification,
-  type NotificationCategory,
-  NotificationPolicy,
-} from '../domains/notification.model';
+import { NotificationPolicy } from '../domains/notification.model';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
+import { type Notification, type NotificationCategory } from '../schemas/notification.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { getCategoryKey } from '../utils/view-models/notification-category.view-model';
 import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';

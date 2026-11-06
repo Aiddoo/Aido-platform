@@ -1,10 +1,7 @@
 import { isEqual } from 'es-toolkit';
 
-import {
-  type DeviceTimezone,
-  type DeviceTimezoneChange,
-  DeviceTimezonePolicy,
-} from '../domains/device-timezone.model';
+import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
+import { type DeviceTimezone, type DeviceTimezoneChange } from '../schemas/device-timezone.schema';
 import type { DeviceTimezoneRepository } from './device-timezone.repository';
 
 export class DeviceTimezoneService {

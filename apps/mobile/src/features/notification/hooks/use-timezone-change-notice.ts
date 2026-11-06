@@ -16,7 +16,8 @@ import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useEffect, useEffectEvent } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { type DeviceTimezoneChange, DeviceTimezonePolicy } from '../domains/device-timezone.model';
+import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
+import { type DeviceTimezoneChange } from '../schemas/device-timezone.schema';
 
 const UPCOMING_TODO_WINDOW_DAYS = 31;
 const UPCOMING_TODO_PAGE_SIZE = 200;

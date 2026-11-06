@@ -4,16 +4,13 @@ import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import type { ApiError } from '@src/shared/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { ok, type Result } from '@src/shared/errors/result';
 import { isEqual, noop } from 'es-toolkit';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import {
-  isDeliveryAllowed,
-  type PushDevice,
-  type PushPermission,
-} from '../domains/push-permission.model';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
+import type { PushDevice, PushPermission } from '../schemas/push-permission.schema';
 import type { DeviceIdService } from './device-id.service';
 import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
 
@@ -82,7 +79,9 @@ export class PushDeviceService {
   > => {
     await this.#ensureChannel();
     const permission = await this.readPermission();
-    const token = isDeliveryAllowed(permission) ? await this.#issueToken() : null;
+    const token = PushPermissionPolicy.isDeliveryAllowed(permission)
+      ? await this.#issueToken()
+      : null;
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();
@@ -105,23 +104,21 @@ export class PushDeviceService {
 
     const request = this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input);
     this.#reportInFlight = request;
-    const result = await request.finally(() => {
-      if (this.#reportInFlight === request) {
-        this.#reportInFlight = null;
-      }
-    });
+    const result = parseApiResponse(
+      await request.finally(() => {
+        if (this.#reportInFlight === request) {
+          this.#reportInFlight = null;
+        }
+      }),
+      pushDeviceResponseSchema,
+      toPushDevice,
+      '[PushDeviceService] Invalid reportPushDevice response',
+    );
     if (!result.ok) {
       return result;
     }
 
-    const parsed = pushDeviceResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[PushDeviceService] Invalid reportPushDevice response: ${parsed.error.message}`,
-      );
-    }
-
-    const device = toPushDevice(parsed.data);
+    const device = result.value;
     this.#lastReported = { deviceId, input, timeZone, device };
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORTED, {
       ...permission,

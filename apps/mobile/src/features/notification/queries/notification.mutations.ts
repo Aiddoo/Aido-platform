@@ -13,7 +13,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { PushPermission } from '../domains/push-permission.model';
+import type { PushPermission } from '../schemas/push-permission.schema';
 import {
   invalidatePushPermission,
   optimisticallyMarkNotificationsRead,
