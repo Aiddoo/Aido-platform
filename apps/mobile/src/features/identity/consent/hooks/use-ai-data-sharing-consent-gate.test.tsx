@@ -37,9 +37,21 @@ const RENEWAL_NOTICE = '지금 답하지 않아도 전처럼 쓸 수 있어요.'
 function ConsentGateProbe() {
   const gate = useAiDataSharingConsentGate();
   const [result, setResult] = useState('');
+  const [settledCount, setSettledCount] = useState(0);
 
   return (
     <>
+      <Button
+        onPress={() => {
+          [1, 2].forEach(async () => {
+            await gate.ensureAgreed();
+            setSettledCount((count) => count + 1);
+          });
+        }}
+      >
+        두 번 시작
+      </Button>
+      <Text>{`끝난 요청 ${settledCount}개`}</Text>
       <Button onPress={async () => setResult(JSON.stringify(await gate.ensureAgreed()))}>
         시작
       </Button>
@@ -163,6 +175,16 @@ describe('useAiDataSharingConsentGate', () => {
       await waitFor(() => expect(screen.getByTestId('ai-consent-later')).not.toBeDisabled());
       expect(screen.getByTestId('ai-consent-sheet')).toBeTruthy();
     });
+  });
+
+  test('안내가 떠 있는 동안 한 번 더 시작해도 두 요청이 모두 답을 받고 끝난다', async () => {
+    // Given 안내가 열린 채 마이크를 한 번 더 눌렀다
+    await renderGate({});
+    fireEvent.press(screen.getByText('두 번 시작'));
+    fireEvent.press(await screen.findByTestId('ai-consent-later'));
+
+    // When / Then 앞 요청이 시트에 밀려 영영 끝나지 않으면 두 번째까지만 센다
+    await screen.findByText('끝난 요청 2개');
   });
 
   test('듣기 전 확인에서 미응답이 나중에를 누르면 멈추라고 알리고 다시 물으면 또 안내한다', async () => {

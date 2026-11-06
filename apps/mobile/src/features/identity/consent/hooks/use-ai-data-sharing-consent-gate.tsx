@@ -10,12 +10,18 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useOverlay } from '@src/shared/ui';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
-import { withTimeout } from 'es-toolkit';
+import { noop, withTimeout } from 'es-toolkit';
+import { useEffect, useRef } from 'react';
 
 import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
 
 /** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
 export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;
+
+interface PendingAgreement {
+  promise: Promise<boolean>;
+  settle: (isAgreed: boolean) => void;
+}
 
 export interface AiConsentCheck {
   readonly isAgreed: boolean;
@@ -57,6 +63,15 @@ export function useAiDataSharingConsentGate() {
   const consentQueryOptions = useGetConsentQueryOptions();
   const meQueryOptions = useGetMeQueryOptions();
 
+  const pendingAgreementRef = useRef<PendingAgreement | null>(null);
+
+  useEffect(
+    () => () => {
+      pendingAgreementRef.current?.settle(false);
+    },
+    [],
+  );
+
   const logConsentCheckFailure = (error: unknown) =>
     logger.warn(CONSENT_LOG_EVENT.CONSENT_CHECK_FAILED, { error: getErrorMessage(error) });
 
@@ -67,21 +82,43 @@ export function useAiDataSharingConsentGate() {
       logConsentCheckFailure,
     );
 
-  /** 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다 */
-  const requestAgreement = ({ isRenewal = false }: { isRenewal?: boolean } = {}) =>
-    overlay.openAsync<boolean>(({ isOpen, close, unmount }) => (
-      <AiConsentBottomSheet
-        isOpen={isOpen}
-        isRenewal={isRenewal}
-        onOpenChange={(open) => {
-          if (!open) {
-            close(false);
-          }
-        }}
-        onExit={unmount}
-        onAgree={() => close(true)}
-      />
-    ));
+  /**
+   * 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다.
+   * 이미 떠 있으면 같은 답을 기다린다. overlay는 close 없이 지워지면(같은 훅으로 다시 열기, 쓰는 화면 unmount)
+   * 약속을 끝내지 않아 기다리던 쪽이 영원히 멈추므로, 화면이 사라질 때 false로 끝낸다.
+   */
+  const requestAgreement = ({ isRenewal = false }: { isRenewal?: boolean } = {}) => {
+    if (pendingAgreementRef.current != null) {
+      return pendingAgreementRef.current.promise;
+    }
+
+    let settle: (isAgreed: boolean) => void = noop;
+    const promise = new Promise<boolean>((resolve) => {
+      settle = resolve;
+    });
+    pendingAgreementRef.current = { promise, settle };
+    promise.then(() => {
+      pendingAgreementRef.current = null;
+    });
+
+    overlay
+      .openAsync<boolean>(({ isOpen, close, unmount }) => (
+        <AiConsentBottomSheet
+          isOpen={isOpen}
+          isRenewal={isRenewal}
+          onOpenChange={(open) => {
+            if (!open) {
+              close(false);
+            }
+          }}
+          onExit={unmount}
+          onAgree={() => close(true)}
+        />
+      ))
+      .then(settle);
+
+    return promise;
+  };
 
   /**
    * 이전 안내에 동의한 사람에게 바뀐 안내를 계정마다 한 번 보여 준다. 나중에를 눌러도 서버로 보내지 않아
