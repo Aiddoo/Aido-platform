@@ -732,3 +732,77 @@ describe('VoiceCapturePolicy', () => {
     expect(next.transcript).toEqual({ sentences: ['앞에서 한 말'], interim: '이어서 한 말' });
   });
 });
+
+describe('isRecognizerFailure', () => {
+  const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
+
+  it.each(['audio-capture', 'busy', 'service-not-allowed', 'unknown', 'client'] as const)(
+    '듣는 중의 %s는 앱이 고칠 수 없어 실패로 본다',
+    (code) => {
+      // When
+      const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, code, false);
+
+      // Then
+      expect(isFailure).toBe(true);
+    },
+  );
+
+  it.each(['no-speech', 'aborted', 'network', 'not-allowed'] as const)(
+    '%s는 사용자나 환경 때문이라 실패로 남기지 않는다',
+    (code) => {
+      // When
+      const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, code, false);
+
+      // Then
+      expect(isFailure).toBe(false);
+    },
+  );
+
+  it('앱이 멈춘 구간의 client는 멈춤 응답이라 실패가 아니다', () => {
+    // When
+    const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, 'client', true);
+
+    // Then
+    expect(isFailure).toBe(false);
+  });
+});
+
+describe('getCaptureOutcome', () => {
+  it('정리 단계로 갔으면 completed, 아니면 empty다', () => {
+    // When
+    const planning = VoiceCapturePolicy.getCaptureOutcome({ status: 'planning' });
+    const idle = VoiceCapturePolicy.getCaptureOutcome({ status: 'idle' });
+
+    // Then
+    expect(planning).toBe('completed');
+    expect(idle).toBe('empty');
+  });
+});
+
+describe('getRemainingCaptureMs', () => {
+  it('앞서 들은 시간과 지금 구간을 뺀 만큼 남는다', () => {
+    // Given
+    const state = createCaptureState({
+      status: 'listening',
+      listeningSince: NOW,
+      elapsedMs: 4_000,
+    });
+
+    // When
+    const remainingMs = VoiceCapturePolicy.getRemainingCaptureMs(state, 10, NOW + 1_000);
+
+    // Then
+    expect(remainingMs).toBe(5_000);
+  });
+
+  it('한도를 넘겼으면 0이다', () => {
+    // Given
+    const state = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 12_000 });
+
+    // When
+    const remainingMs = VoiceCapturePolicy.getRemainingCaptureMs(state, 10, NOW);
+
+    // Then
+    expect(remainingMs).toBe(0);
+  });
+});

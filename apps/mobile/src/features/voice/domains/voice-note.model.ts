@@ -13,7 +13,9 @@ import {
   createPlanReviewDraft,
   planReviewDraftSchema,
 } from './plan-review-form.schema';
+import type { VoiceCaptureSeed } from './voice-capture.model';
 import { isTodoAction, type PlannedMemo, type VoiceNoteDigestResult } from './voice-plan.model';
+import { createVoiceTranscript } from './voice-transcript.model';
 
 const SPEECH_LOCALES = ['ko-KR', 'en-US'] as const satisfies readonly SpeechLocale[];
 
@@ -338,6 +340,14 @@ export function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKe
     );
 }
 
+/** 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다 */
+export function toCaptureSeed(note: Pick<VoiceNote, 'sentences' | 'durationMs'>): VoiceCaptureSeed {
+  return {
+    transcript: createVoiceTranscript({ sentences: note.sentences.map(({ text }) => text) }),
+    elapsedMs: note.durationMs,
+  };
+}
+
 export function findRecordingIndexAt(
   recordings: readonly { startMs: number }[],
   positionMs: number,
@@ -382,6 +392,7 @@ export const VoiceNotePolicy = {
   canDigest,
   canPlayRecording,
   findKeyPointAt,
+  toCaptureSeed,
   findRecordingIndexAt,
   findSentenceIndexAt,
   getPlanStatus,

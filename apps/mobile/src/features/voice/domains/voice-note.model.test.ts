@@ -564,3 +564,20 @@ describe('VoiceNotePolicy 문장 계산', () => {
     expect(empty).toBe(0);
   });
 });
+
+describe('toCaptureSeed', () => {
+  test('저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다', () => {
+    // Given
+    const note = createVoiceNoteFixture({
+      durationMs: 90_000,
+      sentences: [createVoiceNoteSentence({ text: '앞에서 한 말.' })],
+    });
+
+    // When
+    const seed = VoiceNotePolicy.toCaptureSeed(note);
+
+    // Then
+    expect(seed.transcript).toEqual({ sentences: ['앞에서 한 말.'], interim: '' });
+    expect(seed.elapsedMs).toBe(90_000);
+  });
+});

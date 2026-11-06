@@ -29,7 +29,6 @@ import {
   VoiceNotePolicy,
   type VoiceNoteRecording,
 } from '../domains/voice-note.model';
-import { VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 interface UseVoiceNoteRecordingOptions {
@@ -362,15 +361,7 @@ export function useVoiceNoteRecording({
       locale: startLocale,
       contextualStrings,
       recordingDirectory: storage.recordings.prepareDirectory(accountId),
-      seed:
-        seedNote == null
-          ? undefined
-          : {
-              transcript: VoiceTranscriptPolicy.createVoiceTranscript({
-                sentences: seedNote.sentences.map(({ text }) => text),
-              }),
-              elapsedMs: seedNote.durationMs,
-            },
+      seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
     });
     hasBegunRef.current = hasBegun;
   };

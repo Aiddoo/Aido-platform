@@ -53,15 +53,6 @@ const FINALIZE_TIMEOUT_MS = 1_500;
 const RESTART_LOOP_WINDOW_MS = 400;
 const RESTART_LOOP_LIMIT = 4;
 
-/** 이 오류가 나면 앱이 고칠 일이 아니라 버그·기기 문제라 Sentry 이벤트로 남긴다 */
-const FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
-  'audio-capture',
-  'client',
-  'busy',
-  'service-not-allowed',
-  'unknown',
-]);
-
 const PAUSE_CAUSE_PARAMS = {
   'app-background': 'app_background',
   interrupted: 'interrupted',
@@ -219,7 +210,7 @@ export function useVoiceCaptureSession({
       finalizeTimerRef.current = null;
     }
     const { next } = dispatch({ type: 'end' });
-    trackFinished(next.status === 'planning' ? 'completed' : 'empty', next);
+    trackFinished(VoiceCapturePolicy.getCaptureOutcome(next), next);
   };
 
   function finish() {
@@ -237,7 +228,7 @@ export function useVoiceCaptureSession({
       }, FINALIZE_TIMEOUT_MS);
       return;
     }
-    trackFinished(next.status === 'planning' ? 'completed' : 'empty', next);
+    trackFinished(VoiceCapturePolicy.getCaptureOutcome(next), next);
   }
 
   const markSilence = () => {
@@ -260,10 +251,7 @@ export function useVoiceCaptureSession({
     const startOptions = startOptionsRef.current;
     const context = { speech_error: code, on_device: startOptions?.isOnDevice };
 
-    if (
-      FAILURE_CODES.has(code) &&
-      !VoiceCapturePolicy.isStopAcknowledgement(previous, code, isStopRequested)
-    ) {
+    if (VoiceCapturePolicy.isRecognizerFailure(previous, code, isStopRequested)) {
       logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(code), context);
     } else {
       logger.info(VOICE_LOG_EVENT.RECOGNIZER_EXPECTED_STOP, context);
@@ -470,9 +458,12 @@ export function useVoiceCaptureSession({
     if (maxSeconds == null) {
       return;
     }
-    const remainingMs =
-      maxSeconds * 1_000 - VoiceCapturePolicy.getElapsedMs(stateRef.current, Date.now());
-    const timer = setTimeout(() => handleLimitReached(), Math.max(0, remainingMs));
+    const remainingMs = VoiceCapturePolicy.getRemainingCaptureMs(
+      stateRef.current,
+      maxSeconds,
+      Date.now(),
+    );
+    const timer = setTimeout(() => handleLimitReached(), remainingMs);
 
     return () => clearTimeout(timer);
   }, [isListening, maxSeconds]);

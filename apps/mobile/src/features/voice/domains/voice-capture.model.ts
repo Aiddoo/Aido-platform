@@ -134,6 +134,23 @@ export function isStopAcknowledgement(
   );
 }
 
+/** 이 오류가 나면 앱이 고칠 일이 아니라 버그·기기 문제라 Sentry 이벤트로 남긴다 */
+const RECOGNIZER_FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
+  'audio-capture',
+  'client',
+  'busy',
+  'service-not-allowed',
+  'unknown',
+]);
+
+export function isRecognizerFailure(
+  state: VoiceCaptureState,
+  code: SpeechErrorCode,
+  isStopRequested: boolean,
+): boolean {
+  return RECOGNIZER_FAILURE_CODES.has(code) && !isStopAcknowledgement(state, code, isStopRequested);
+}
+
 export function reduceVoiceCapture(
   state: VoiceCaptureState,
   event: VoiceCaptureEvent,
@@ -377,6 +394,20 @@ export function getDismissAction(state: VoiceCaptureState): VoiceDismissAction |
     .otherwise(() => null);
 }
 
+/** 듣기를 끝낸 뒤의 상태로 결과를 나눈다. 글자가 있으면 정리로 가고 없으면 처음으로 돌아간다 */
+export function getCaptureOutcome(state: Pick<VoiceCaptureState, 'status'>): 'completed' | 'empty' {
+  return state.status === 'planning' ? 'completed' : 'empty';
+}
+
+/** 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다 */
+export function getRemainingCaptureMs(
+  state: VoiceCaptureState,
+  maxSeconds: number,
+  now: number,
+): number {
+  return Math.max(0, maxSeconds * 1_000 - getElapsedMs(state, now));
+}
+
 export function isOverQuickLimit(
   state: VoiceCaptureState,
   now: number,
@@ -391,6 +422,9 @@ export function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boo
 
 export const VoiceCapturePolicy = {
   isStopAcknowledgement,
+  isRecognizerFailure,
+  getCaptureOutcome,
+  getRemainingCaptureMs,
   shouldRestartSegment,
   shouldRestartStalledRecognizer,
   isActive,
