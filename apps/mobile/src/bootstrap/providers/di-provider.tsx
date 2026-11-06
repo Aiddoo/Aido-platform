@@ -2,8 +2,7 @@ import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
-import { createWhatsNewStateRepository } from '@src/features/app-config/whats-new/apis/whats-new-state.repository';
-import { WhatsNewStateService } from '@src/features/app-config/whats-new/apis/whats-new-state.service';
+import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
@@ -225,8 +224,7 @@ export function DIProvider({
       expoApplicationMetadataGateway,
       expoAppStoreGateway,
     );
-    const whatsNewStateRepository = createWhatsNewStateRepository(mmkvSyncStorage);
-    const whatsNewStateService = new WhatsNewStateService(whatsNewStateRepository);
+    const whatsNewRepository = createWhatsNewRepository(mmkvSyncStorage);
 
     // Invite
     const pendingRedemptionRepository = createPendingRedemptionRepository(mmkvSyncStorage);
@@ -385,7 +383,7 @@ export function DIProvider({
       appIconService: new AppIconService(expoAppIconGateway),
       friendService,
       featureCampaignService,
-      whatsNewStateService,
+      whatsNewRepository,
       inviteService,
       inviteShareService,
       inquiryService,

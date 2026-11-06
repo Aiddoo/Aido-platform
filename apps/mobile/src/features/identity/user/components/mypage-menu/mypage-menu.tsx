@@ -1,4 +1,4 @@
-import { useWhatsNewStateService } from '@src/bootstrap/providers/di-context';
+import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 import {
   filterAvailableCampaign,
@@ -6,6 +6,7 @@ import {
 } from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { useWhatsNewHub } from '@src/features/app-config/whats-new/hooks/use-whats-new-hub';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { toInstant } from '@src/shared/date/instant';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -75,7 +76,7 @@ function Activity() {
   const { t } = useTranslation(['user', 'whatsNew']);
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useWhatsNewHub();
-  const whatsNewState = useWhatsNewStateService();
+  const whatsNewRepository = useWhatsNewRepository();
   const isInviteAvailable = useInviteAvailability();
   // 소개할 기능이 모두 꺼져 있으면 새로운 기능 항목을 숨긴다
   const campaign = filterAvailableCampaign(getBundledWhatsNewCampaign(WHATS_NEW_CAMPAIGN_ID), {
@@ -86,10 +87,10 @@ function Activity() {
     if (!campaign || !user) {
       return;
     }
-    whatsNewState.claimSeen({
-      userId: user.id,
-      campaignId: campaign.id,
-    });
+    whatsNewRepository.claimSeen(
+      { userId: user.id, campaignId: campaign.id },
+      toInstant(new Date().toISOString()),
+    );
     openHub({
       accountId: user.id,
       campaign,

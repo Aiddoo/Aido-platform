@@ -154,8 +154,8 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get featureCampaignService() {
       return dependency('featureCampaignService');
     },
-    get whatsNewStateService() {
-      return dependency('whatsNewStateService');
+    get whatsNewRepository() {
+      return dependency('whatsNewRepository');
     },
     get inquiryService() {
       return dependency('inquiryService');

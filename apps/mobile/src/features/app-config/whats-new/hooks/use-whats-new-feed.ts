@@ -1,5 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useWhatsNewStateService } from '@src/bootstrap/providers/di-context';
+import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { getNativeAppVersion } from '@src/features/app-config/whats-new/apis/native-app-version';
 import { WhatsNewPolicy } from '@src/features/app-config/whats-new/domains/whats-new.model';
@@ -9,6 +9,8 @@ import {
 } from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { toInstant } from '@src/shared/date/instant';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
@@ -32,7 +34,8 @@ export function useWhatsNewFeed({
   const appVersion = useMemo(getNativeAppVersion, []);
   const isStable = useStableFeedForeground();
   const { openHub } = useWhatsNewHub();
-  const stateService = useWhatsNewStateService();
+  const repository = useWhatsNewRepository();
+  const now = toInstant(useMinuteNow().toISOString());
   const [_refreshCount, refreshState] = useReducer((value: number) => value + 1, 0);
 
   const isInviteAvailable = useInviteAvailability();
@@ -51,7 +54,7 @@ export function useWhatsNewFeed({
         : null,
     [accountId, campaign],
   );
-  const hasSeen = identity ? stateService.isSeen(identity) : true;
+  const hasSeen = identity ? repository.isSeen(identity) : true;
   const canAutoOpen =
     isAuthenticated &&
     !isWeatherIntroductionPending &&
@@ -67,7 +70,7 @@ export function useWhatsNewFeed({
       const opened = claimAndOpenWhatsNew({
         canAutoOpen,
         isStable,
-        claim: () => stateService.claimSeen(identity),
+        claim: () => repository.claimSeen(identity, toInstant(new Date().toISOString())),
         open: () =>
           openHub({
             accountId,
@@ -81,13 +84,13 @@ export function useWhatsNewFeed({
     });
 
     return () => cancelIdleCallback(task);
-  }, [accountId, campaign, canAutoOpen, identity, isStable, openHub, stateService]);
+  }, [accountId, campaign, canAutoOpen, identity, isStable, openHub, repository]);
 
   const isReentryVisible =
     config?.enabled === true &&
     identity != null &&
     campaign != null &&
-    stateService.isReentryVisible(identity);
+    WhatsNewPolicy.isReentryVisible(repository.getReentryOpenedAt(identity), now);
 
   const openFromReentry = useCallback(() => {
     if (!accountId || !campaign) {
@@ -104,9 +107,9 @@ export function useWhatsNewFeed({
     if (identity == null) {
       return;
     }
-    stateService.dismissReentry(identity);
+    repository.dismissReentry(identity);
     refreshState();
-  }, [identity, stateService]);
+  }, [identity, repository]);
 
   return {
     isReentryVisible,
