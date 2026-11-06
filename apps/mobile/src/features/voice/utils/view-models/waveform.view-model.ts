@@ -121,6 +121,12 @@ export function followLevel(
   return current + (target - current) * (1 - Math.exp(-elapsedMs / followMs));
 }
 
+/** 재생 비율까지 칠할 칸 수. 칸이 바뀔 때만 경로를 다시 만들려고 UI 스레드에서 먼저 센다 */
+export function getPlayedBarCount(ratio: number, barCount: number): number {
+  'worklet';
+  return Math.ceil(ratio * barCount);
+}
+
 export function resampleLevels(levels: readonly number[], count: number): number[] {
   if (count <= 0 || levels.length === 0) {
     return [];

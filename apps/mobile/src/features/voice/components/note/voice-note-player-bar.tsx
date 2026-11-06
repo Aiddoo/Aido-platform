@@ -1,20 +1,30 @@
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
+import { SECOND_MS } from '@src/shared/constants/time.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { clamp } from 'es-toolkit';
+import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, useState } from 'react';
+import { type ComponentProps, useEffect, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  clamp,
+  type SharedValue,
+  useAnimatedReaction,
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useVoiceNotePlayback, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { resampleLevels } from '../../utils/view-models/waveform.view-model';
+import { getPlayedBarCount, resampleLevels } from '../../utils/view-models/waveform.view-model';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
+const RADIUS = WAVEFORM_BAR.width / 2;
 const BAR_VERTICAL_SHARE = 0.8;
 const FLAG = { poleWidth: 2, width: 6, height: 6 } as const;
 
@@ -35,10 +45,42 @@ export function VoiceNotePlayerBar({
   ...stackProps
 }: VoiceNotePlayerBarProps) {
   const { t } = useTranslation('voiceNote');
-  const playback = useVoiceNotePlayback(player, (current) => current);
-  const [dragRatio, setDragRatio] = useState<number | null>(null);
-  const positionRatio = playback.durationMs > 0 ? playback.positionMs / playback.durationMs : 0;
-  const shownMs = dragRatio == null ? playback.positionMs : dragRatio * playback.durationMs;
+  const isPlaying = useVoiceNotePlayback(player, (playback) => playback.isPlaying);
+  const isLoaded = useVoiceNotePlayback(player, (playback) => playback.isLoaded);
+  const durationMs = useVoiceNotePlayback(player, (playback) => playback.durationMs);
+  const positionText = useVoiceNotePlayback(player, ({ positionMs }) =>
+    formatMediaTime(positionMs),
+  );
+  const positionRatio = useSharedValue(0);
+  const dragRatio = useSharedValue<number | null>(null);
+  const [dragSeconds, setDragSeconds] = useState<number | null>(null);
+
+  // 재생 위치는 100ms마다 바뀐다. 렌더를 거치지 않고 UI 스레드 값만 바꾼다
+  useEffect(() => {
+    const syncPositionRatio = () => {
+      const playback = player.getPlayback();
+      positionRatio.set(playback.durationMs > 0 ? playback.positionMs / playback.durationMs : 0);
+    };
+    syncPositionRatio();
+
+    return player.subscribe(syncPositionRatio);
+  }, [player, positionRatio]);
+
+  // 드래그는 터치마다 온다. 글자는 초가 바뀔 때만 JS로 넘겨 다시 그린다
+  useAnimatedReaction(
+    () => {
+      const ratio = dragRatio.get();
+      return ratio == null ? null : Math.floor((ratio * durationMs) / SECOND_MS);
+    },
+    (seconds, previousSeconds) => {
+      if (seconds !== previousSeconds) {
+        scheduleOnRN(setDragSeconds, seconds);
+      }
+    },
+  );
+
+  const shownText = dragSeconds == null ? positionText : formatMediaTime(dragSeconds * SECOND_MS);
+  const durationText = formatMediaTime(durationMs);
 
   if (!isRecordingAvailable) {
     return (
@@ -61,13 +103,13 @@ export function VoiceNotePlayerBar({
     >
       <PressableFeedback
         accessibilityRole="button"
-        accessibilityLabel={playback.isPlaying ? t('player.pause') : t('player.play')}
-        isDisabled={!playback.isLoaded}
+        accessibilityLabel={isPlaying ? t('player.pause') : t('player.play')}
+        isDisabled={!isLoaded}
         hitSlop={4}
         onPress={player.togglePlay}
         className="size-9 items-center justify-center rounded-full bg-main"
       >
-        {playback.isPlaying ? (
+        {isPlaying ? (
           <PauseIcon colorClassName="accent-white" width={14} height={14} />
         ) : (
           <PlayIcon colorClassName="accent-white" width={14} height={14} />
@@ -76,23 +118,50 @@ export function VoiceNotePlayerBar({
       <Scrubber
         levels={levels}
         flagIndexes={flagIndexes}
-        ratio={dragRatio ?? positionRatio}
+        positionRatio={positionRatio}
+        dragRatio={dragRatio}
         accessibilityLabel={t('player.position')}
         accessibilityValue={{
-          text: t('player.positionValue', {
-            position: formatMediaTime(shownMs),
-            duration: formatMediaTime(playback.durationMs),
-          }),
+          text: t('player.positionValue', { position: shownText, duration: durationText }),
         }}
-        onDrag={setDragRatio}
-        onSeek={(ratio) => player.seekTo(ratio * playback.durationMs)}
+        onSeek={(ratio) => {
+          player.seekTo(ratio * durationMs).catch(noop);
+        }}
         className="flex-1"
       />
       <Text size="e1" shade={7} maxLines={1} className="tabular-nums">
-        {formatMediaTime(shownMs)} / {formatMediaTime(playback.durationMs)}
+        {shownText} / {durationText}
       </Text>
     </HStack>
   );
+}
+
+function getDragRatio(x: number, width: number) {
+  'worklet';
+  return width > 0 ? clamp(x / width, 0, 1) : 0;
+}
+
+function addBars(
+  target: SkPathBuilder,
+  bars: readonly number[],
+  from: number,
+  to: number,
+  canvasHeight: number,
+) {
+  'worklet';
+  for (let index = from; index < Math.min(to, bars.length); index += 1) {
+    const height = Math.max(
+      canvasHeight * WAVEFORM_BAR.minHeightRatio,
+      (bars[index] ?? 0) * canvasHeight * BAR_VERTICAL_SHARE,
+    );
+    target.addRRect(
+      Skia.RRectXY(
+        Skia.XYWHRect(index * STEP, (canvasHeight - height) / 2, WAVEFORM_BAR.width, height),
+        RADIUS,
+        RADIUS,
+      ),
+    );
+  }
 }
 
 interface ScrubberProps extends Omit<
@@ -102,67 +171,78 @@ interface ScrubberProps extends Omit<
   levels: readonly number[];
   flagIndexes: readonly number[];
   /** 0..1 재생 위치 */
-  ratio: number;
-  onDrag: (ratio: number | null) => void;
-  onSeek: (ratio: number) => Promise<void>;
+  positionRatio: SharedValue<number>;
+  /** 0..1 끌고 있는 위치. 끌지 않으면 null */
+  dragRatio: SharedValue<number | null>;
+  onSeek: (ratio: number) => void;
 }
 
 function Scrubber({
   levels,
   flagIndexes,
-  ratio,
-  onDrag,
+  positionRatio,
+  dragRatio,
   onSeek,
   className,
   ...boxProps
 }: ScrubberProps) {
   const playedColor = useSkiaColor('text-main');
   const restColor = useSkiaColor('text-gray-4');
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const barCount = Math.floor(size.width / STEP);
-  const toRatio = (x: number) => (size.width > 0 ? clamp(x / size.width, 0, 1) : 0);
+  const [{ width, height }, setSize] = useState({ width: 0, height: 0 });
+  const barCount = Math.floor(width / STEP);
+  const bars = useMemo(() => resampleLevels(levels, barCount), [levels, barCount]);
 
   const gesture = Gesture.Pan()
-    .runOnJS(true)
+    .withTestId('voice-note-scrubber')
     .minDistance(0)
-    .onBegin((event) => onDrag(toRatio(event.x)))
-    .onUpdate((event) => onDrag(toRatio(event.x)))
+    .onBegin((event) => {
+      'worklet';
+      dragRatio.set(getDragRatio(event.x, width));
+    })
+    .onUpdate((event) => {
+      'worklet';
+      dragRatio.set(getDragRatio(event.x, width));
+    })
     .onFinalize((event) => {
-      onDrag(null);
-      onSeek(toRatio(event.x)).catch(() => undefined);
+      'worklet';
+      dragRatio.set(null);
+      scheduleOnRN(onSeek, getDragRatio(event.x, width));
     });
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
   };
 
-  const radius = WAVEFORM_BAR.width / 2;
-  const playedPath = Skia.PathBuilder.Make();
-  const restPath = Skia.PathBuilder.Make();
-  resampleLevels(levels, barCount).forEach((level, index) => {
-    const height = Math.max(
-      size.height * WAVEFORM_BAR.minHeightRatio,
-      level * size.height * BAR_VERTICAL_SHARE,
-    );
-    (index / barCount < ratio ? playedPath : restPath).addRRect(
-      Skia.RRectXY(
-        Skia.XYWHRect(index * STEP, (size.height - height) / 2, WAVEFORM_BAR.width, height),
-        radius,
-        radius,
-      ),
-    );
+  // 칸 수가 그대로면 값이 같아 아래 경로를 다시 만들지 않는다. 드래그 중에도 칸이 바뀔 때만 그린다
+  const playedBarCount = useDerivedValue(() =>
+    getPlayedBarCount(dragRatio.get() ?? positionRatio.get(), barCount),
+  );
+
+  const playedPath = useDerivedValue(() => {
+    const target = Skia.PathBuilder.Make();
+    addBars(target, bars, 0, playedBarCount.get(), height);
+    return target.build();
   });
 
-  const flagPath = Skia.PathBuilder.Make();
-  flagIndexes.forEach((flagIndex) => {
-    const x = Math.floor((flagIndex / Math.max(levels.length, 1)) * barCount) * STEP;
-    flagPath.addRect(Skia.XYWHRect(x, 0, FLAG.poleWidth, size.height * 0.45));
-    flagPath
-      .moveTo(x + FLAG.poleWidth, 0)
-      .lineTo(x + FLAG.poleWidth + FLAG.width, FLAG.height / 2)
-      .lineTo(x + FLAG.poleWidth, FLAG.height)
-      .close();
+  const restPath = useDerivedValue(() => {
+    const target = Skia.PathBuilder.Make();
+    addBars(target, bars, playedBarCount.get(), bars.length, height);
+    return target.build();
   });
+
+  const flagPath = useMemo(() => {
+    const target = Skia.PathBuilder.Make();
+    flagIndexes.forEach((flagIndex) => {
+      const x = Math.floor((flagIndex / Math.max(levels.length, 1)) * barCount) * STEP;
+      target.addRect(Skia.XYWHRect(x, 0, FLAG.poleWidth, height * 0.45));
+      target
+        .moveTo(x + FLAG.poleWidth, 0)
+        .lineTo(x + FLAG.poleWidth + FLAG.width, FLAG.height / 2)
+        .lineTo(x + FLAG.poleWidth, FLAG.height)
+        .close();
+    });
+    return target.build();
+  }, [flagIndexes, levels.length, barCount, height]);
 
   return (
     <GestureDetector gesture={gesture}>
@@ -173,9 +253,9 @@ function Scrubber({
         {...boxProps}
       >
         <Canvas style={{ flex: 1 }}>
-          <Path path={restPath.build()} color={restColor} />
-          <Path path={playedPath.build()} color={playedColor} />
-          <Path path={flagPath.build()} color={playedColor} />
+          <Path path={restPath} color={restColor} />
+          <Path path={playedPath} color={playedColor} />
+          <Path path={flagPath} color={playedColor} />
         </Canvas>
       </Box>
     </GestureDetector>

@@ -7,6 +7,7 @@ import {
   createLevelSampler,
   createSpeechLevels,
   getFlagBarIndexes,
+  getPlayedBarCount,
   getTimelineLevel,
   resampleLevels,
   withFlagBars,
@@ -158,5 +159,20 @@ describe('appendLevelSample', () => {
     // Then
     expect(first.bar).toBeNull();
     expect(second.bar).toBe(0.7);
+  });
+});
+
+describe('getPlayedBarCount', () => {
+  test.each([
+    { ratio: 0, expected: 0 },
+    { ratio: 0.25, expected: 25 },
+    { ratio: 0.251, expected: 26 },
+    { ratio: 1, expected: 100 },
+  ])('$ratio이면 100칸 중 $expected칸을 칠한다', ({ ratio, expected }) => {
+    // When
+    const count = getPlayedBarCount(ratio, 100);
+
+    // Then
+    expect(count).toBe(expected);
   });
 });
