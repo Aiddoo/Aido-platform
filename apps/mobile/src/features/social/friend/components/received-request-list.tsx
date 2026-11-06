@@ -4,10 +4,10 @@ import { Box, Button, DocsIcon, HStack, InfiniteList, Text, TextSkeleton } from 
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
-import type { FriendRequest } from '../domains/friend.model';
 import { useAcceptRequestMutationOptions } from '../queries/friend.mutations';
 import { useRejectRequestMutationOptions } from '../queries/friend.mutations';
 import { useGetReceivedRequestsQueryOptions } from '../queries/friend.queries';
+import type { FriendRequest } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function ReceivedRequestList() {

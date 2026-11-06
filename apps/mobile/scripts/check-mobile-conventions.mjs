@@ -167,6 +167,11 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/assistant/suggestion/constants/',
   'apps/mobile/src/features/assistant/suggestion/domains/',
   'apps/mobile/src/features/assistant/suggestion/queries/',
+  'apps/mobile/src/features/social/friend/components/',
+  'apps/mobile/src/features/social/friend/constants/',
+  'apps/mobile/src/features/social/friend/domains/',
+  'apps/mobile/src/features/social/friend/queries/',
+  'apps/mobile/src/features/social/friend/utils/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -223,6 +228,11 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/assistant/suggestion/constants/',
   'apps/mobile/src/features/assistant/suggestion/queries/',
   'apps/mobile/src/features/assistant/suggestion/utils/',
+  'apps/mobile/src/features/social/friend/apis/',
+  'apps/mobile/src/features/social/friend/components/',
+  'apps/mobile/src/features/social/friend/constants/',
+  'apps/mobile/src/features/social/friend/queries/',
+  'apps/mobile/src/features/social/friend/utils/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

@@ -1,4 +1,6 @@
-import type { FriendUser } from '../domains/friend.model';
+import { toInstant } from '@src/shared/date/instant';
+
+import type { FriendUser } from '../schemas/friend.schema';
 import { findFriendById } from './find-friend-by-id';
 
 const createFriend = (id: string): FriendUser => ({
@@ -7,7 +9,7 @@ const createFriend = (id: string): FriendUser => ({
   userTag: 'ABCD1234',
   name: '친구',
   profileImage: null,
-  friendsSince: new Date('2026-10-03T00:00:00Z'),
+  friendsSince: toInstant('2026-10-03T00:00:00.000Z'),
 });
 
 describe('무한 쿼리 페이지에서 친구 선택', () => {

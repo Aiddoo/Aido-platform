@@ -37,7 +37,7 @@ describe('useGetUserSearchQueryOptions', () => {
     expect(httpClient.get).not.toHaveBeenCalled();
   });
 
-  test('유효한 검색어면 결과를 view-model(displayName/actionState)로 매핑한다', async () => {
+  test('유효한 검색어면 서버가 준 결과를 그대로 읽는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createSearchUsersDto() });
@@ -58,10 +58,7 @@ describe('useGetUserSearchQueryOptions', () => {
       signal: expect.any(AbortSignal),
     });
     const firstItem = result.current.data?.pages[0]?.items[0];
-    expect(firstItem?.displayName).toBe('홍길동');
-    expect(firstItem?.actionState).toBe('add');
-    // 이미 친구인 항목은 actionState=friend
-    const friendItem = result.current.data?.pages[0]?.items.find((u) => u.userTag === 'IJKL9012');
-    expect(friendItem?.actionState).toBe('friend');
+    expect(firstItem?.name).toBe('홍길동');
+    expect(firstItem?.isFriend).toBe(false);
   });
 });

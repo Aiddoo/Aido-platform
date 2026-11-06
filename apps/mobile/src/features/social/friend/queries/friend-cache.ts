@@ -2,7 +2,7 @@ import type { Page } from '@src/shared/types/page.types';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import type { SearchedUser } from '../domains/friend.model';
+import type { SearchedUser } from '../schemas/friend.schema';
 
 /** 친구 요청 상태가 바뀐 사용자를 모든 검색 결과 캐시에서 함께 갱신한다. */
 export function patchSearchedUser(

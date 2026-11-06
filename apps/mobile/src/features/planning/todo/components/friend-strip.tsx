@@ -4,7 +4,7 @@ import { CoachmarkPopover } from '@src/features/device/coachmark/components/coac
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
-import type { FriendUserViewModel } from '@src/features/social/friend/utils/view-models/friend-user.view-model';
+import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useTrack } from '@src/shared/analytics';
@@ -60,7 +60,8 @@ const DRAW_DISTANCE = 600;
  */
 export function FriendStrip() {
   const { t } = useTranslation('todo');
-  const listRef = useRef<FlashListRef<FriendUserViewModel>>(null);
+  const { t: tFriend } = useTranslation('friend');
+  const listRef = useRef<FlashListRef<FriendUser>>(null);
   const [isListLoaded, setIsListLoaded] = useState(false);
   const { width, height } = useFriendStripItemSize();
   const friendsQueryOptions = useGetFriendsInfiniteQueryOptions();
@@ -104,7 +105,7 @@ export function FriendStrip() {
             renderItem={({ item: friend }) => (
               <FriendStrip.Item
                 friendId={friend.id}
-                name={friend.displayName}
+                name={friend.name ?? tFriend('fallbackName')}
                 profileImage={friend.profileImage}
                 width={width}
               />
@@ -348,8 +349,8 @@ function SelectedFriendReveal({
   friends,
   isListLoaded,
 }: {
-  listRef: RefObject<FlashListRef<FriendUserViewModel> | null>;
-  friends: readonly FriendUserViewModel[];
+  listRef: RefObject<FlashListRef<FriendUser> | null>;
+  friends: readonly FriendUser[];
   isListLoaded: boolean;
 }) {
   const [selectedFriendId] = useFeedFriendParam();

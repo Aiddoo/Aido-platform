@@ -4,9 +4,9 @@ import { Box, Button, DocsIcon, InfiniteList, Text, TextSkeleton } from '@src/sh
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
-import type { FriendRequest } from '../domains/friend.model';
 import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
 import { useGetSentRequestsQueryOptions } from '../queries/friend.queries';
+import type { FriendRequest } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function SentRequestList() {

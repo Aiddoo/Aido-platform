@@ -2,182 +2,70 @@ import {
   createFriendsListDto,
   createReceivedRequestsDto,
   createSearchUsersDto,
-  createSendFriendRequestDto,
   createSentRequestsDto,
 } from '../__tests__/friend.fixtures';
 import {
-  toFriendRequest,
-  toFriendRequestsPage,
-  toFriendsPage,
-  toFriendUser,
-  toSearchedUsersPage,
-  toSendRequestResult,
-} from './friend.mapper';
-
-jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
-
-describe('toFriendUser', () => {
-  test('friendsSince ISO → Date 변환', () => {
-    // Given
-    const dto = createFriendsListDto().friends[0];
-    if (!dto) {
-      throw new Error('Expected friend DTO');
-    }
-
-    // When
-    const result = toFriendUser(dto);
-
-    // Then
-    expect(result.friendsSince).toBeInstanceOf(Date);
-    expect(result.friendsSince.toISOString()).toBe('2026-01-15T00:00:00.000Z');
-    expect(result.id).toBe(dto.id);
-    expect(result.userTag).toBe(dto.userTag);
-    expect(result.followId).toBe(dto.followId);
-  });
-
-  test('null 이름/프로필 유지', () => {
-    // Given
-    const dto = createFriendsListDto().friends[1];
-    if (!dto) {
-      throw new Error('Expected friend DTO');
-    }
-
-    // When
-    const result = toFriendUser(dto);
-
-    // Then
-    expect(result.name).toBeNull();
-    expect(result.profileImage).toBeNull();
-  });
-});
-
-describe('toFriendRequest', () => {
-  test('requestedAt ISO → Date 변환', () => {
-    // Given
-    const dto = createReceivedRequestsDto().requests[0];
-    if (!dto) {
-      throw new Error('Expected request DTO');
-    }
-
-    // When
-    const result = toFriendRequest(dto);
-
-    // Then
-    expect(result.requestedAt).toBeInstanceOf(Date);
-    expect(result.requestedAt.toISOString()).toBe('2026-03-01T10:00:00.000Z');
-    expect(result.id).toBe(dto.id);
-    expect(result.userTag).toBe(dto.userTag);
-  });
-});
+  friendRequestsPageSchema,
+  friendsPageSchema,
+  searchedUsersPageSchema,
+} from '../schemas/friend.schema';
+import { toFriendRequestsPage, toFriendsPage, toSearchedUsersPage } from './friend.mapper';
 
 describe('toFriendsPage', () => {
-  test('배열 변환 + totalCount/hasMore', () => {
+  test('친구 목록과 totalCount, hasMore를 옮기고 친구가 된 시각은 순간으로 읽는다', () => {
     // Given
-    const dto = createFriendsListDto();
+    const dto = friendsPageSchema.parse(createFriendsListDto());
 
     // When
-    const result = toFriendsPage(dto);
+    const page = toFriendsPage(dto);
 
     // Then
-    expect(result.items).toHaveLength(2);
-    expect(result.items[0]?.friendsSince).toBeInstanceOf(Date);
-    expect(result.totalCount).toBe(2);
-    expect(result.hasMore).toBe(false);
+    expect(page.items).toHaveLength(dto.friends.length);
+    expect(page.items[0]?.friendsSince).toBe('2026-01-15T00:00:00.000Z');
+    expect(page.totalCount).toBe(dto.totalCount);
+    expect(page.hasMore).toBe(dto.hasMore);
   });
 
-  test('빈 배열', () => {
+  test('이름과 프로필이 없는 친구도 null 그대로 둔다', () => {
     // Given
-    const dto = createFriendsListDto({ friends: [], totalCount: 0 });
+    const dto = friendsPageSchema.parse(createFriendsListDto());
 
     // When
-    const result = toFriendsPage(dto);
+    const page = toFriendsPage(dto);
 
     // Then
-    expect(result.items).toEqual([]);
-    expect(result.totalCount).toBe(0);
+    expect(page.items[1]?.name).toBeNull();
+    expect(page.items[1]?.profileImage).toBeNull();
   });
 });
 
 describe('toFriendRequestsPage', () => {
-  test('ReceivedRequests 변환', () => {
+  test('받은 요청과 보낸 요청을 같은 모양으로 옮긴다', () => {
     // Given
-    const dto = createReceivedRequestsDto();
+    const received = friendRequestsPageSchema.parse(createReceivedRequestsDto());
+    const sent = friendRequestsPageSchema.parse(createSentRequestsDto());
 
     // When
-    const result = toFriendRequestsPage(dto);
+    const receivedPage = toFriendRequestsPage(received);
+    const sentPage = toFriendRequestsPage(sent);
 
     // Then
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]?.requestedAt).toBeInstanceOf(Date);
-    expect(result.totalCount).toBe(1);
-  });
-
-  test('SentRequests 변환', () => {
-    // Given
-    const dto = createSentRequestsDto();
-
-    // When
-    const result = toFriendRequestsPage(dto);
-
-    // Then
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]?.name).toBe('이영희');
-  });
-});
-
-describe('toSendRequestResult', () => {
-  test('autoAccepted 매핑', () => {
-    // Given
-    const dto = createSendFriendRequestDto({ autoAccepted: true });
-
-    // When
-    const result = toSendRequestResult(dto);
-
-    // Then
-    expect(result.autoAccepted).toBe(true);
+    expect(receivedPage.items).toHaveLength(received.requests.length);
+    expect(sentPage.items).toHaveLength(sent.requests.length);
+    expect(receivedPage.items[0]?.requestedAt).toBe(received.requests[0]?.requestedAt);
   });
 });
 
 describe('toSearchedUsersPage', () => {
   test('관계 flag를 보존하고 nextCursor를 전달한다', () => {
     // Given
-    const dto = createSearchUsersDto({ nextCursor: 'next-cursor-abc', hasMore: true });
+    const dto = searchedUsersPageSchema.parse(createSearchUsersDto());
 
     // When
-    const result = toSearchedUsersPage(dto);
+    const page = toSearchedUsersPage(dto);
 
     // Then
-    expect(result.items).toHaveLength(4);
-    expect(result.hasMore).toBe(true);
-    expect(result.nextCursor).toBe('next-cursor-abc');
-    const pending = result.items.find((u) => u.userTag === 'EFGH5678');
-    expect(pending?.requestPending).toBe(true);
-    const friend = result.items.find((u) => u.userTag === 'IJKL9012');
-    expect(friend?.isFriend).toBe(true);
-  });
-
-  test('동명이인을 서로 다른 항목으로 매핑한다', () => {
-    // Given
-    const dto = createSearchUsersDto();
-
-    // When
-    const result = toSearchedUsersPage(dto);
-
-    // Then
-    const hongs = result.items.filter((u) => u.name === '홍길동');
-    expect(hongs).toHaveLength(2);
-    expect(hongs[0]?.id).not.toBe(hongs[1]?.id);
-  });
-
-  test('빈 결과도 정상 매핑한다', () => {
-    // Given
-    const dto = createSearchUsersDto({ items: [], totalCount: 0, hasMore: false });
-
-    // When
-    const result = toSearchedUsersPage(dto);
-
-    // Then
-    expect(result.items).toHaveLength(0);
-    expect(result.totalCount).toBe(0);
+    expect(page.items.map((user) => user.isFriend)).toEqual(dto.items.map((user) => user.isFriend));
+    expect(page.nextCursor).toBe(dto.nextCursor);
   });
 });

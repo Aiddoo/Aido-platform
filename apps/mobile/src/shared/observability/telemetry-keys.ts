@@ -32,6 +32,7 @@ export const SENTRY_FEATURES = [
   'feature_attribution',
   'feature_discovery',
   'firebase_analytics',
+  'friend',
   'inquiry',
   'invite',
   'lifecycle',
@@ -184,15 +185,6 @@ interface TodoCommentEventMap {
   todo_comment_replies_expanded: { todo_id: number; loaded_count: number };
   todo_comment_reply_started: { todo_id: number; target: 'comment' | 'reply' };
   todo_comment_hint_dismissed: { kind: 'double_tap'; reason: 'close' | 'used' };
-}
-
-interface FriendEventMap {
-  friend_request_sent: undefined;
-  friend_request_cancelled: undefined;
-  friend_request_accepted: undefined;
-  friend_request_rejected: undefined;
-  friend_removed: undefined;
-  friend_reordered: undefined;
 }
 
 interface NudgeEventMap {
@@ -463,7 +455,6 @@ interface ConnectivityEventMap {
 export type LegacyEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
-  FriendEventMap &
   InviteEventMap &
   NudgeEventMap &
   GrowthEventMap &

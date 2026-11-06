@@ -1,18 +1,18 @@
-import { type ReorderFriendInput } from '@aido/api';
 import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { type FriendUser } from '@src/features/social/friend/domains/friend.model';
+import { type FriendUser } from '@src/features/social/friend/schemas/friend.schema';
 import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { getCachedInviteAvailability } from '@src/features/social/invite/queries/invite-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
-import { unwrap, isBusinessError } from '@src/shared/errors/result';
+import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { type Page } from '@src/shared/types/page.types';
 import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/react-query';
@@ -20,10 +20,11 @@ import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { FriendPolicy } from '../domains/friend.model';
+import type { ReorderFriendInput } from '../schemas/friend.schema';
 import { invalidateFriends, patchSearchedUser } from './friend-cache';
 
-export const useAcceptRequestMutationOptions = () => {
-  const haptics = useHaptics();
+export function useAcceptRequestMutationOptions() {
+  const showFailure = useMutationFailure();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -39,14 +40,12 @@ export const useAcceptRequestMutationOptions = () => {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
     },
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: (error) => showFailure(error),
   });
-};
+}
 
-export const useCancelRequestMutationOptions = () => {
-  const haptics = useHaptics();
+export function useCancelRequestMutationOptions() {
+  const showFailure = useMutationFailure();
   const friendService = useFriendService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -61,14 +60,12 @@ export const useCancelRequestMutationOptions = () => {
       trackEvent('friend_request_cancelled');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: (error) => showFailure(error),
   });
-};
+}
 
-export const useRejectRequestMutationOptions = () => {
-  const haptics = useHaptics();
+export function useRejectRequestMutationOptions() {
+  const showFailure = useMutationFailure();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -84,14 +81,12 @@ export const useRejectRequestMutationOptions = () => {
       toast.success(t('friend:toast.requestRejected'));
       trackEvent('friend_request_rejected');
     },
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: (error) => showFailure(error),
   });
-};
+}
 
-export const useRemoveFriendMutationOptions = () => {
-  const haptics = useHaptics();
+export function useRemoveFriendMutationOptions() {
+  const showFailure = useMutationFailure();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -131,8 +126,8 @@ export const useRemoveFriendMutationOptions = () => {
 
       return { previousData };
     },
-    onError: (_error, _userId, context) => {
-      haptics.notify('error');
+    onError: (error, _userId, context) => {
+      showFailure(error);
 
       if (context?.previousData) {
         queryClient.setQueryData(friendsQueryKey, context.previousData);
@@ -146,15 +141,15 @@ export const useRemoveFriendMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
     },
   });
-};
+}
 
 interface ReorderFriendParams {
   followId: string;
   input: ReorderFriendInput;
 }
 
-export const useReorderFriendMutationOptions = () => {
-  const haptics = useHaptics();
+export function useReorderFriendMutationOptions() {
+  const showFailure = useMutationFailure();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -168,23 +163,26 @@ export const useReorderFriendMutationOptions = () => {
       trackEvent('friend_reordered');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
-    onError: () => {
-      haptics.notify('error');
+    onError: (error) => {
+      showFailure(error);
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
   });
-};
+}
 
-export const useSendRequestByTagMutationOptions = () => {
+export function useSendRequestByTagMutationOptions() {
   const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure();
   const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
   const openMyInvite = useOpenMyInvite();
 
   return mutationOptions({
+    // 저장 후 떠나는 폼이라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 입력값을 남긴 채 안내한다
+    networkMode: 'always',
     mutationFn: async (userTag: string) => {
       const result = await friendService.sendRequestByTag(userTag);
       return unwrap(result);
@@ -210,16 +208,15 @@ export const useSendRequestByTagMutationOptions = () => {
       toast.success(t('friend:toast.requestSent'));
     },
     onError: (err) => {
-      haptics.notify('error');
-
       if (findLimitedFeature(err) != null) {
+        haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
         const details = isApiError(err) ? err.details : undefined;
         gate.handleError(
           err,
           match(
-            FriendPolicy.friendLimitDialog(
+            FriendPolicy.getFriendLimitDialog(
               details,
               getCachedInviteAvailability(queryClient),
               knownLimit,
@@ -241,9 +238,7 @@ export const useSendRequestByTagMutationOptions = () => {
         return;
       }
 
-      toast.error(isBusinessError(err) ? err : undefined, {
-        fallback: t('friend:toast.requestFailed'),
-      });
+      showFailure(err, t('friend:toast.requestFailed'));
     },
   });
-};
+}

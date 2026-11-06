@@ -21,7 +21,7 @@ import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
 import { useSendRequestByTagMutationOptions } from '../queries/friend.mutations';
 import { useGetUserSearchQueryOptions } from '../queries/friend.queries';
-import type { SearchedUserViewModel } from '../utils/view-models/searched-user.view-model';
+import type { SearchedUser } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function FriendSearchList({ query }: { query: string }) {
@@ -36,7 +36,7 @@ export function FriendSearchList({ query }: { query: string }) {
   });
   useFriendSearchTracking(debouncedQuery);
 
-  if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery })) {
+  if (!FriendPolicy.hasValidSearchQuery({ query: normalizedQuery })) {
     return <FriendSearchList.Prompt />;
   }
   if (!isSettled || search.isPending) {
@@ -61,10 +61,12 @@ export function FriendSearchList({ query }: { query: string }) {
   );
 }
 
-FriendSearchList.Item = function Item({ user }: { user: SearchedUserViewModel }) {
+FriendSearchList.Item = function Item({ user }: { user: SearchedUser }) {
+  const { t } = useTranslation('friend');
+
   return (
     <UserList.Item
-      displayName={user.displayName}
+      displayName={user.name ?? t('fallbackName')}
       subtitle={formatUserHashtag(user.userTag)}
       profileImage={user.profileImage}
       right={<FriendSearchList.Action key={user.id} user={user} />}
@@ -73,13 +75,13 @@ FriendSearchList.Item = function Item({ user }: { user: SearchedUserViewModel })
 };
 
 /** 목록이 행을 재활용해도 처리 중 상태가 다른 사용자로 넘어가지 않게 사용자마다 새로 만든다 */
-FriendSearchList.Action = function Action({ user }: { user: SearchedUserViewModel }) {
+FriendSearchList.Action = function Action({ user }: { user: SearchedUser }) {
   const { t } = useTranslation('friend');
   const sendRequest = useMutation(useSendRequestByTagMutationOptions());
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
   const isProcessing = sendRequest.isPending || cancelRequest.isPending;
 
-  return match(user.actionState)
+  return match(FriendPolicy.getRequestState(user))
     .with('friend', () => <CheckIcon width={20} height={20} colorClassName="text-gray-4" />)
     .with('pending', () => (
       <Button
@@ -93,7 +95,7 @@ FriendSearchList.Action = function Action({ user }: { user: SearchedUserViewMode
         {t('search.action.cancel')}
       </Button>
     ))
-    .with('add', () => (
+    .with('none', () => (
       <Button
         variant="fill"
         color="primary"

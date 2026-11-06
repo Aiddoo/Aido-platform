@@ -6,7 +6,7 @@ import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { useFriendScreenParams } from '@src/features/social/friend/hooks/use-friend-screen-params';
 import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
-import type { FriendUserViewModel } from '@src/features/social/friend/utils/view-models/friend-user.view-model';
+import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
 import { RemindNudgeBottomSheet } from '@src/features/social/nudge/components/nudge-bottom-sheet';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
@@ -80,8 +80,9 @@ export function FriendTodoList() {
   );
 }
 
-function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
+function RemindNudgeButton({ friend }: { friend: FriendUser }) {
   const { t } = useTranslation('todo');
+  const { t: tFriend } = useTranslation('friend');
   const overlay = useOverlay();
   const { data: cooldownInfo } = useQuery(
     useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
@@ -91,7 +92,7 @@ function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
   const openRemindNudgeSheet = () => {
     overlay.open(({ isOpen, close, unmount }) => (
       <RemindNudgeBottomSheet
-        receiver={friend}
+        receiver={{ ...friend, displayName: friend.name ?? tFriend('fallbackName') }}
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -122,6 +123,7 @@ function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
 
 FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const { t } = useTranslation('todo');
+  const { t: tFriend } = useTranslation('friend');
   const { data: friend } = useScreenFriend();
   const [date] = useFeedDateParam();
   const today = useToday();
@@ -173,7 +175,7 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
           />
           {canNudgeTodo && friend != null && (
             <TodoNudgeButton
-              receiver={friend}
+              receiver={{ ...friend, displayName: friend.name ?? tFriend('fallbackName') }}
               todo={todo}
               className="min-h-0 py-1.5"
               hitSlop={COMPACT_ACTION_HIT_SLOP}

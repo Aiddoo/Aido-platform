@@ -138,7 +138,7 @@ describe('FriendService', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.items).toHaveLength(2);
-        expect(result.value.items[0]?.friendsSince).toBeInstanceOf(Date);
+        expect(result.value.items[0]?.friendsSince).toEqual(expect.stringMatching(/^2026-/));
       }
     });
 
@@ -181,7 +181,7 @@ describe('FriendService', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.items).toHaveLength(1);
-        expect(result.value.items[0]?.requestedAt).toBeInstanceOf(Date);
+        expect(result.value.items[0]?.requestedAt).toEqual(expect.stringMatching(/^2026-/));
       }
     });
 
@@ -226,7 +226,7 @@ describe('FriendService', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.items).toHaveLength(1);
-        expect(result.value.items[0]?.requestedAt).toBeInstanceOf(Date);
+        expect(result.value.items[0]?.requestedAt).toEqual(expect.stringMatching(/^2026-/));
       }
     });
 
@@ -333,7 +333,7 @@ describe('FriendService', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.followId).toBe(dto.friend.followId);
-        expect(result.value.friendsSince).toBeInstanceOf(Date);
+        expect(result.value.friendsSince).toEqual(expect.stringMatching(/^2026-/));
       }
     });
 

@@ -54,7 +54,7 @@ import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
 import { useRemoveFriendMutationOptions } from '../queries/friend.mutations';
 import { useReorderFriendMutationOptions } from '../queries/friend.mutations';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
-import type { FriendUserViewModel } from '../utils/view-models/friend-user.view-model';
+import type { FriendUser } from '../schemas/friend.schema';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
 import { UserList } from './user-list';
 
@@ -134,14 +134,15 @@ export function FriendList() {
 }
 
 interface FriendListItemProps {
-  friend: FriendUserViewModel;
+  friend: FriendUser;
 }
 
 FriendList.Item = function Item({ friend }: FriendListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const fontScaledSize = useFontScaledSize();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'friend']);
+  const displayName = friend.name ?? t('friend:fallbackName');
   const [isEditMode] = useFriendListEditMode();
   const removeMutation = useMutation(useRemoveFriendMutationOptions());
   const overlay = useOverlay();
@@ -197,15 +198,15 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
           <ListRow
             left={
               <UserAvatar
-                alt={friend.displayName}
+                alt={displayName}
                 className="size-10"
                 profileImage={friend.profileImage}
               />
             }
-            contents={<ListRow.Texts type="1RowTypeA" top={friend.displayName} />}
+            contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
             right={
               !isEditMode ? (
-                <FriendModerationMenu userId={friend.id} displayName={friend.displayName} />
+                <FriendModerationMenu userId={friend.id} displayName={displayName} />
               ) : !isActive ? (
                 <Animated.View
                   entering={FadeInRight.duration(ANIMATION.duration.normal)}

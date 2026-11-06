@@ -1,9 +1,13 @@
-import { type UserTagParam, userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/social/friend/queries/friend.mutations';
+import {
+  addFriendFormSchema,
+  EMPTY_ADD_FRIEND_FORM_VALUES,
+  USER_TAG_MAX_LENGTH,
+} from '@src/features/social/friend/schemas/add-friend-form.schema';
 import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/get-invite-availability-query-options';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -17,45 +21,38 @@ import {
   StyledSafeAreaView,
   Box,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, usePrefetchQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider, useFormState, useForm } from 'react-hook-form';
+import { Controller, useForm, useFormState } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 
 function AddFriendScreen() {
-  const { showBoundary } = useErrorBoundary();
-
   const goBack = useSingleTap(router.back);
 
   const { t } = useTranslation('friend');
-  const sendRequestMutation = useMutation(useSendRequestByTagMutationOptions());
+  const reportUnexpectedError = useReportUnexpectedError('friend');
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
   // 친구 한도 안내에 초대로 자리를 늘리는 길을 보여 줄지 미리 알아 둔다
   usePrefetchQuery(useGetInviteAvailabilityQueryOptions());
 
-  const formMethods = useForm({
-    resolver: zodResolver(userTagParamSchema),
-    defaultValues: { userTag: '' },
+  const form = useForm({
+    resolver: zodResolver(addFriendFormSchema),
+    defaultValues: EMPTY_ADD_FRIEND_FORM_VALUES,
     mode: 'onChange',
   });
-  const { control, handleSubmit } = formMethods;
-  const { isSubmitting, isValid } = useFormState({ control });
+  const { isSubmitting, isValid } = useFormState({ control: form.control });
 
-  const handleSubmitFriendRequest = async (values: UserTagParam) => {
+  const submit = form.handleSubmit(async ({ userTag }) => {
     try {
-      await sendRequestMutation.mutateAsync(values.userTag, {
-        onSuccess: () => goBack(),
-      });
+      await sendRequest.mutateAsync(userTag);
+      goBack();
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
-  };
+  });
 
   return (
-    <FormProvider {...formMethods}>
+    <>
       <Box className="flex-1 bg-white">
         <ScrollView
           className="flex-1"
@@ -77,9 +74,12 @@ function AddFriendScreen() {
 
             <Spacing size={24} />
 
-            <FormField control={control} name="userTag">
-              {({ onChange, value }, { error }) => (
+            <Controller
+              control={form.control}
+              name="userTag"
+              render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
                 <Input
+                  ref={ref}
                   testID="friend-tag-input"
                   label={t('add.tagLabel')}
                   placeholder="ABC12345"
@@ -88,27 +88,27 @@ function AddFriendScreen() {
                   onChange={(text) => onChange(text.toUpperCase())}
                   autoFocus
                   {...ASCII_CODE_TEXT_INPUT_PROPS}
-                  maxLength={userTagParamSchema.shape.userTag.maxLength ?? undefined}
+                  maxLength={USER_TAG_MAX_LENGTH}
                   submitBehavior="submit"
                   returnKeyType="done"
-                  isInvalid={!!error}
+                  isInvalid={error != null}
                   errorMessage={resolveValidationMessage(error, {
                     default: 'userTag.pattern',
                     byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
                   })}
                   onSubmitEditing={() => {
                     if (isValid) {
-                      handleSubmit(handleSubmitFriendRequest)();
+                      submit();
                     }
                   }}
                 />
               )}
-            </FormField>
+            />
           </StyledSafeAreaView>
         </ScrollView>
 
         <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(handleSubmitFriendRequest)()}
+          onPress={() => submit()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
           testID="friend-tag-submit"
@@ -116,11 +116,10 @@ function AddFriendScreen() {
           {t('add.submit')}
         </KeyboardAdaptiveButton>
       </Box>
-    </FormProvider>
+    </>
   );
 }
 
-/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
 export default function AddFriendRoute() {
   return (
     <QueryErrorBoundary>

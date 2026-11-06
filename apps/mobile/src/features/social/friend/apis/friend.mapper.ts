@@ -1,73 +1,27 @@
-import type {
-  FriendRequestUser as FriendRequestDTO,
-  FriendsListResponse,
-  FriendUser as FriendUserDTO,
-  ReceivedRequestsResponse,
-  SearchUser as SearchedUserDTO,
-  SearchUsersResponse,
-  SendFriendRequestResponse,
-  SentRequestsResponse,
-} from '@aido/api';
 import type { Page } from '@src/shared/types/page.types';
 
 import type {
   FriendRequest,
+  FriendRequestsPageDto,
+  FriendsPageDto,
   FriendUser,
   SearchedUser,
-  SendRequestResult,
-} from '../domains/friend.model';
+  SearchedUsersPageDto,
+} from '../schemas/friend.schema';
 
-// DTO → Domain 변환
+export function toFriendsPage(dto: FriendsPageDto): Page<FriendUser> {
+  return { items: dto.friends, totalCount: dto.totalCount, hasMore: dto.hasMore };
+}
 
-export const toFriendUser = (dto: FriendUserDTO): FriendUser => ({
-  id: dto.id,
-  userTag: dto.userTag,
-  name: dto.name,
-  profileImage: dto.profileImage,
-  followId: dto.followId,
-  friendsSince: new Date(dto.friendsSince),
-});
+export function toFriendRequestsPage(dto: FriendRequestsPageDto): Page<FriendRequest> {
+  return { items: dto.requests, totalCount: dto.totalCount, hasMore: dto.hasMore };
+}
 
-export const toFriendRequest = (dto: FriendRequestDTO): FriendRequest => ({
-  id: dto.id,
-  userTag: dto.userTag,
-  name: dto.name,
-  profileImage: dto.profileImage,
-  requestedAt: new Date(dto.requestedAt),
-});
-
-export const toFriendsPage = (dto: FriendsListResponse): Page<FriendUser> => ({
-  items: dto.friends.map(toFriendUser),
-  totalCount: dto.totalCount,
-  hasMore: dto.hasMore,
-});
-
-export const toFriendRequestsPage = (
-  dto: ReceivedRequestsResponse | SentRequestsResponse,
-): Page<FriendRequest> => ({
-  items: dto.requests.map(toFriendRequest),
-  totalCount: dto.totalCount,
-  hasMore: dto.hasMore,
-});
-
-export const toSendRequestResult = (dto: SendFriendRequestResponse): SendRequestResult => ({
-  autoAccepted: dto.autoAccepted,
-});
-
-const toSearchedUser = (dto: SearchedUserDTO): SearchedUser => ({
-  id: dto.id,
-  userTag: dto.userTag,
-  name: dto.name,
-  profileImage: dto.profileImage,
-  isFollowing: dto.isFollowing,
-  isFollower: dto.isFollower,
-  isFriend: dto.isFriend,
-  requestPending: dto.requestPending,
-});
-
-export const toSearchedUsersPage = (dto: SearchUsersResponse): Page<SearchedUser> => ({
-  items: dto.items.map(toSearchedUser),
-  totalCount: dto.totalCount,
-  hasMore: dto.hasMore,
-  nextCursor: dto.nextCursor,
-});
+export function toSearchedUsersPage(dto: SearchedUsersPageDto): Page<SearchedUser> {
+  return {
+    items: dto.items,
+    totalCount: dto.totalCount,
+    hasMore: dto.hasMore,
+    nextCursor: dto.nextCursor,
+  };
+}
