@@ -94,48 +94,6 @@ function VoiceNoteRecordScreen() {
     });
   }, []);
 
-  const clock = <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />;
-  const waveform = (
-    <RecognizerWaveform
-      level={recording.level}
-      isActive={state.status === 'listening'}
-      bookmarksMs={recording.bookmarksMs}
-      className="self-stretch"
-    />
-  );
-  const captions = (
-    <VoiceNoteRecordScreen.Captions
-      sentences={recording.sentences}
-      interimText={recording.interimText}
-    />
-  );
-  const footer = (
-    <VStack gap={12} className="self-stretch">
-      {match(state)
-        .with({ status: P.union('paused', 'failed') }, (stopped) => (
-          <VoiceNoteRecordScreen.Stopped
-            state={stopped}
-            canResume={VoiceCapturePolicy.canResumeWithinLimit(stopped, limitMs)}
-            onSummarize={recording.finish}
-            onClose={requestClose}
-            onResume={recording.resume}
-          />
-        ))
-        .otherwise(() => (
-          <VoiceNoteRecordScreen.Controls
-            isListening={state.status === 'listening'}
-            markCount={recording.markCount}
-            onPause={recording.pause}
-            onFinish={requestFinish}
-            onMark={recording.mark}
-          />
-        ))}
-      <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-        {t('record.privacy')}
-      </Text>
-    </VStack>
-  );
-
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
       <Stack.Screen
@@ -157,25 +115,116 @@ function VoiceNoteRecordScreen() {
       {isCompact ? (
         <>
           <VStack align="center" className={cn(state.status === 'paused' && 'opacity-60')}>
-            {clock}
+            <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />
           </VStack>
-          {waveform}
-          {captions}
-          {footer}
+          <RecognizerWaveform
+            level={recording.level}
+            isActive={state.status === 'listening'}
+            bookmarksMs={recording.bookmarksMs}
+            className="self-stretch"
+          />
+          <VoiceNoteRecordScreen.Captions
+            sentences={recording.sentences}
+            interimText={recording.interimText}
+          />
+          <VoiceNoteRecordScreen.Footer
+            state={state}
+            limitMs={limitMs}
+            markCount={recording.markCount}
+            onPause={recording.pause}
+            onFinish={requestFinish}
+            onMark={recording.mark}
+            onSummarize={recording.finish}
+            onClose={requestClose}
+            onResume={recording.resume}
+          />
         </>
       ) : (
         <HStack flex={1} gap={20}>
           <VStack flex={1} gap={12} justify="center" align="center">
-            {clock}
-            {waveform}
-            {footer}
+            <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />
+            <RecognizerWaveform
+              level={recording.level}
+              isActive={state.status === 'listening'}
+              bookmarksMs={recording.bookmarksMs}
+              className="self-stretch"
+            />
+            <VoiceNoteRecordScreen.Footer
+              state={state}
+              limitMs={limitMs}
+              markCount={recording.markCount}
+              onPause={recording.pause}
+              onFinish={requestFinish}
+              onMark={recording.mark}
+              onSummarize={recording.finish}
+              onClose={requestClose}
+              onResume={recording.resume}
+            />
           </VStack>
-          <VStack flex={1}>{captions}</VStack>
+          <VStack flex={1}>
+            <VoiceNoteRecordScreen.Captions
+              sentences={recording.sentences}
+              interimText={recording.interimText}
+            />
+          </VStack>
         </HStack>
       )}
     </VStack>
   );
 }
+
+interface VoiceNoteRecordFooterProps {
+  state: VoiceCaptureState;
+  limitMs: number | null;
+  markCount: number;
+  onPause: () => void;
+  onFinish: () => void;
+  onMark: () => void;
+  onSummarize: () => void;
+  onClose: () => void;
+  onResume: () => void;
+}
+
+VoiceNoteRecordScreen.Footer = function Footer({
+  state,
+  limitMs,
+  markCount,
+  onPause,
+  onFinish,
+  onMark,
+  onSummarize,
+  onClose,
+  onResume,
+}: VoiceNoteRecordFooterProps) {
+  const { t } = useTranslation('voiceNote');
+
+  return (
+    <VStack gap={12} className="self-stretch">
+      {match(state)
+        .with({ status: P.union('paused', 'failed') }, (stopped) => (
+          <VoiceNoteRecordScreen.Stopped
+            state={stopped}
+            canResume={VoiceCapturePolicy.canResumeWithinLimit(stopped, limitMs)}
+            onSummarize={onSummarize}
+            onClose={onClose}
+            onResume={onResume}
+          />
+        ))
+        .otherwise(() => (
+          <VoiceNoteRecordScreen.Controls
+            isListening={state.status === 'listening'}
+            markCount={markCount}
+            onPause={onPause}
+            onFinish={onFinish}
+            onMark={onMark}
+          />
+        ))}
+      <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+        {t('record.privacy')}
+      </Text>
+    </VStack>
+  );
+};
 
 /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
 VoiceNoteRecordScreen.LanguageToggle = function LanguageToggle({
