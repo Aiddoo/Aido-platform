@@ -33,6 +33,18 @@ describe('VoiceRecordingRepository', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
   });
 
+  test('옮기기 전의 파일을 URI로 지운다', () => {
+    // Given
+    const { files, repository } = createRepository();
+    const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav');
+
+    // When
+    repository.removeSource(sourceUri);
+
+    // Then
+    expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
+  });
+
   test('옮기지 못하면 save-failed를 남기고 null을 돌려줘 글자만 남게 한다', async () => {
     // Given
     const { files, logger, repository } = createRepository();

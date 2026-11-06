@@ -63,6 +63,13 @@ export const expoLocalFileSystemGateway: LocalFileSystem = {
     }
   },
 
+  removeFileAt: (uri) => {
+    const file = new File(uri);
+    if (file.exists) {
+      file.delete();
+    }
+  },
+
   removeDirectory: (directory) => {
     const target = openDirectory(directory);
     if (target.exists) {

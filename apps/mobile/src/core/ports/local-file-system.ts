@@ -20,5 +20,7 @@ export interface LocalFileSystem {
   /** 같은 이름이 있으면 덮어쓰고 새 URI를 돌려준다 */
   moveFile(sourceUri: string, directory: readonly string[], name: string): Promise<string>;
   removeFile(directory: readonly string[], name: string): void;
+  /** 앱이 이름을 정하지 않은 파일(인식기가 쓴 녹음 등)을 URI로 지운다 */
+  removeFileAt(uri: string): void;
   removeDirectory(directory: readonly string[]): void;
 }

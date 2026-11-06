@@ -23,6 +23,8 @@ export interface VoiceRecordingRepository {
   save(input: SaveRecordingInput): Promise<string | null>;
   findUri(accountId: string, fileName: string): string | undefined;
   remove(accountId: string, fileName: string): void;
+  /** 초안으로 옮기기 전의 파일을 지운다. 이미 지운 초안의 늦은 파일이 정리 때까지 남지 않게 한다 */
+  removeSource(sourceUri: string): void;
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
   removeOwned(accountId: string): void;
@@ -98,6 +100,16 @@ export function createVoiceRecordingRepository(
     },
 
     remove: (accountId, fileName) => removeSafely(ownerDirectory(accountId), fileName),
+
+    removeSource: (sourceUri) => {
+      try {
+        files.removeFileAt(sourceUri);
+      } catch (error) {
+        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
+          error: getErrorMessage(error),
+        });
+      }
+    },
 
     getFileSizes: (accountId) =>
       Object.fromEntries(

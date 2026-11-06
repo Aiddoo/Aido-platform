@@ -875,6 +875,93 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 
+  describe('화면을 떠난 뒤 늦게 온 녹음 파일', () => {
+    const renderListening = async () => {
+      const speechRecognizer = createSpeechRecognizerStub();
+      const files = createLocalFileSystemFake();
+      const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+      const storage = createVoiceNoteStorageServiceFake(files);
+      const { unmount } = await renderUi(
+        <OverlayProvider>
+          <RecordingProbe
+            maxSeconds={null}
+            onLimitReached={jest.fn()}
+            onFinished={jest.fn()}
+            onEmpty={jest.fn()}
+          />
+        </OverlayProvider>,
+        {
+          di: {
+            speechRecognizer,
+            voiceNoteStorageService: storage,
+            analytics: createMockAnalytics(),
+            errorReporter: createErrorReporterStub(),
+            haptics: createHapticsStub(),
+            logger,
+          },
+        },
+      );
+      await start(speechRecognizer);
+      await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
+      await say(speechRecognizer, '첫 문장.');
+      const draftId = screen.getByTestId('draft-id').props.children;
+      return { speechRecognizer, files, uri, storage, unmount, draftId };
+    };
+
+    test('지운 초안의 파일은 받는 즉시 지운다', async () => {
+      // Given
+      const { speechRecognizer, files, uri } = await renderListening();
+      await fireEvent.press(screen.getByTestId('discard'));
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+
+      // Then
+      expect(files.hasFile(RECORDING_DIRECTORY, 'recording_a.wav')).toBe(false);
+    });
+
+    test('지우고 화면까지 내려간 뒤에 온 파일도 지우고 구독을 푼다', async () => {
+      // Given
+      const { speechRecognizer, files, uri, storage, unmount } = await renderListening();
+      await fireEvent.press(screen.getByTestId('discard'));
+      await act(async () => unmount());
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+
+      // Then
+      expect(files.hasFile(RECORDING_DIRECTORY, 'recording_a.wav')).toBe(false);
+      expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+      expect(speechRecognizer.getListenerCount()).toBe(0);
+    });
+
+    test('끝내지 않고 떠났어도 초안이 남아 있으면 파일을 그 초안에 더한다', async () => {
+      // Given 스와이프로 나가 듣던 세션이 끊겼다
+      const { speechRecognizer, uri, storage, unmount, draftId } = await renderListening();
+      await act(async () => unmount());
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+      await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+      // Then
+      expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
+      expect(speechRecognizer.getListenerCount()).toBe(0);
+    });
+
+    test('파일이 끝내 오지 않으면 30초 뒤 구독을 푼다', async () => {
+      // Given
+      const { speechRecognizer, unmount } = await renderListening();
+      await act(async () => unmount());
+
+      // When
+      await act(async () => jest.advanceTimersByTime(30_100));
+
+      // Then
+      expect(speechRecognizer.getListenerCount()).toBe(0);
+    });
+  });
+
   test('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecording();

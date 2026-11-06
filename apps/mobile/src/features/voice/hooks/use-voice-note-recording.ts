@@ -203,7 +203,9 @@ export function useVoiceNoteRecording({
   const receiveRecording = (uri: string) => {
     const startMs = segmentStartsRef.current.get(uri) ?? currentSegmentStartRef.current;
     segmentStartsRef.current.delete(uri);
-    if (!hasDiscardedRef.current) {
+    if (hasDiscardedRef.current) {
+      storage.recordings.removeSource(uri);
+    } else {
       pendingSavesRef.current = [...pendingSavesRef.current, saveRecording(uri, startMs)];
     }
     if (segmentStartsRef.current.size === 0) {
@@ -211,9 +213,12 @@ export function useVoiceNoteRecording({
     }
   };
 
-  /** 기다리는 시간을 넘겨 화면이 내려간 뒤에 온 파일도 초안에 더한다. 받으면 끝내고, 오지 않아도 잠시 뒤 끝낸다 */
+  /**
+   * 화면이 내려간 뒤에 온 파일도 받는다. 초안에 더하고, 지운 초안이면 바로 지운다.
+   * 사용자가 끝내지 않고 떠나도 녹음을 잃지 않는다. 받으면 끝내고, 오지 않아도 잠시 뒤 끝낸다.
+   */
   const keepListeningForLateRecordings = () => {
-    if (!hasHandedOffRef.current || segmentStartsRef.current.size === 0) {
+    if (segmentStartsRef.current.size === 0) {
       return;
     }
     const stop = () => {

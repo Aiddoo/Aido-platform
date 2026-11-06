@@ -93,6 +93,10 @@ export function createLocalFileSystemFake(): LocalFileSystemFake {
     removeFile: (directory, name) => {
       directories.get(toKey(directory))?.delete(name);
     },
+    removeFileAt: (uri) => {
+      const { directory, name } = readUriName(uri);
+      directories.get(toKey(directory))?.delete(name);
+    },
     removeDirectory: (directory) => {
       const prefix = toKey(directory);
       for (const key of [...directories.keys()]) {
