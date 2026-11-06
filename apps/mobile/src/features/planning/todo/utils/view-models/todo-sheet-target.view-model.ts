@@ -1,4 +1,4 @@
-import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
+import type { TodoCategory } from '@src/features/planning/category/schemas/todo-category.schema';
 
 import type { SubTodo } from '../../domains/sub-todo.model';
 import type { Todo } from '../../domains/todo.model';

@@ -1,7 +1,7 @@
 import {
   createTodoCategoryDto,
   createTodoCategoryWithCountDto,
-} from '../__tests__/todo-category.factories';
+} from '../__tests__/todo-category.fixtures';
 import {
   toTodoCategory,
   toTodoCategoryWithCount,

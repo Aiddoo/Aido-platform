@@ -1,8 +1,8 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
-import { useUpdateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-update-todo-category-mutation-options';
+import { useUpdateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import type { TodoCategory } from '@src/features/planning/category/schemas/todo-category.schema';
 import { useTodoCategoryScreenParams } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { findSheetCategory } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { isBusinessError } from '@src/shared/errors/result';

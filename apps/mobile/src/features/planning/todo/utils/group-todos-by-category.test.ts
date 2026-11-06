@@ -1,4 +1,4 @@
-import { createTodoCategoryWithCountDto } from '@src/features/planning/category/__tests__/todo-category.factories';
+import { createTodoCategoryWithCountDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 
 import { createTodoDto } from '../__tests__/todo.factories';
 import { toTodo } from '../apis/todo.mapper';

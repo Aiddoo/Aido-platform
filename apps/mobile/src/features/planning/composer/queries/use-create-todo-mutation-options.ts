@@ -8,7 +8,7 @@ import {
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
+import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {

@@ -1,6 +1,6 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import type { WhatsNewCardId } from '@src/features/app-config/whats-new/domains/whats-new.registry';
-import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category-colors';
+import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import { TodoCheckbox, TodoLabel, TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useTranslation } from '@src/shared/i18n';
 import {

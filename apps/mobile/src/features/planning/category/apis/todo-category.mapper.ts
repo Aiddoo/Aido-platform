@@ -3,7 +3,7 @@ import type {
   TodoCategoryWithCount as TodoCategoryWithCountDTO,
 } from '@aido/api';
 
-import type { TodoCategory, TodoCategoryWithCount } from '../domains/todo-category.model';
+import type { TodoCategory, TodoCategoryWithCount } from '../schemas/todo-category.schema';
 
 /** TodoCategoryWithCount DTO → TodoCategoryWithCount 도메인 모델 (목록 조회용) */
 export const toTodoCategoryWithCount = (dto: TodoCategoryWithCountDTO): TodoCategoryWithCount => ({

@@ -1,4 +1,4 @@
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import {
   useTodoCreateCategoryParam,
   useTodoCreatePrefillParam,

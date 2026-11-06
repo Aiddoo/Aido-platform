@@ -1,4 +1,4 @@
-import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/schemas/todo-category.schema';
 import { groupBy } from 'es-toolkit';
 
 import type { Todo } from '../domains/todo.model';

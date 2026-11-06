@@ -20,7 +20,7 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { TodoCategoriesResult, TodoCategory } from '../domains/todo-category.model';
+import type { TodoCategoriesResult, TodoCategory } from '../schemas/todo-category.schema';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
 
 export class TodoCategoryService {

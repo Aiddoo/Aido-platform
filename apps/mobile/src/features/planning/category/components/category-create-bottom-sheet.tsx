@@ -1,7 +1,7 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useCreateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-create-todo-category-mutation-options';
+import { useCreateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -17,7 +17,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
-import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category-colors';
+import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category.constants';
 import { CategoryColorInput } from './category-color-input';
 
 type CategoryCreateBottomSheetProps = Omit<

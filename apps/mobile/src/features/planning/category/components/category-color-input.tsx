@@ -3,7 +3,7 @@ import { cn } from '@src/shared/utils/cn';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { CATEGORY_COLORS } from '../constants/todo-category-colors';
+import { CATEGORY_COLORS } from '../constants/todo-category.constants';
 
 interface CategoryColorInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,

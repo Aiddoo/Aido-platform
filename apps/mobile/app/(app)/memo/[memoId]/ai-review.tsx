@@ -5,7 +5,7 @@ import { useMemoScreenParams } from '@src/features/notes/memo/hooks/use-memo-par
 import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
 import { memoScreenParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
 import { createMemoPlanDraftKey } from '@src/features/notes/memo/utils/memo-plan-draft';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import {
   planReviewFormSchema,

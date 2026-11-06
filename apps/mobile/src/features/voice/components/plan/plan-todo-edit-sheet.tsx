@@ -1,7 +1,7 @@
 import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
 import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
 import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';

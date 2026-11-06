@@ -1,4 +1,4 @@
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { getCachedTodoTitles } from '@src/features/planning/todo/queries/todo-cache';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';

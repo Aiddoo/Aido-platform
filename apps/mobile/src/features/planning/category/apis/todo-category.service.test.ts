@@ -9,7 +9,7 @@ import {
   createTodoCategoryDto,
   createTodoCategoryListDto,
   INVALID_DTO,
-} from '../__tests__/todo-category.factories';
+} from '../__tests__/todo-category.fixtures';
 import { TodoCategoryService } from './todo-category.service';
 
 describe('TodoCategoryService', () => {

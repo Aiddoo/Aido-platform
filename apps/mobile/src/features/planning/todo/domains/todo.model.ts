@@ -1,5 +1,5 @@
 import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import { todoCategorySchema as categorySchema } from '@src/features/planning/category/domains/todo-category.model';
+import { todoCategorySchema as categorySchema } from '@src/features/planning/category/schemas/todo-category.schema';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { orderBy, range, uniq } from 'es-toolkit';
 import { z } from 'zod';

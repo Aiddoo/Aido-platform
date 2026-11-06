@@ -1,6 +1,6 @@
-import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
-import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-reorder-todo-category-mutation-options';
+import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/schemas/todo-category.schema';
 import { ReorderCoachmark } from '@src/features/planning/todo/components/reorder-coachmark';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
