@@ -1,18 +1,18 @@
-import { userPreferenceSchema } from '@aido/api';
-import type { z } from 'zod';
+import type { Preference } from '../schemas/preference.schema';
 
-const preferenceSchema = userPreferenceSchema.omit({ timezone: true });
-export type Preference = z.infer<typeof preferenceSchema>;
-
-function isWeatherEnabled(preference: Preference) {
+function isWeatherEnabled(
+  preference: Pick<Preference, 'weatherMorningEnabled' | 'weatherEveningEnabled'>,
+) {
   return preference.weatherMorningEnabled || preference.weatherEveningEnabled;
 }
 
-function isPushDisabled(preference: Preference) {
+function isPushDisabled(preference: Pick<Preference, 'pushEnabled'>) {
   return !preference.pushEnabled;
 }
 
-function isWeatherDisabled(preference: Preference) {
+function isWeatherDisabled(
+  preference: Pick<Preference, 'pushEnabled' | 'weatherMorningEnabled' | 'weatherEveningEnabled'>,
+) {
   return isPushDisabled(preference) || !isWeatherEnabled(preference);
 }
 

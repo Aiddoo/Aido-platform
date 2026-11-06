@@ -1,4 +1,3 @@
-import type { UpdatePreferenceInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { useHaptics, usePreferenceService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
@@ -9,9 +8,9 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
-import type { Preference } from '../domains/preference.model';
+import type { Preference, PreferenceChange } from '../schemas/preference.schema';
 
-type UpdatePreferenceArgs = UpdatePreferenceInput & {
+type UpdatePreferenceArgs = PreferenceChange & {
   /** 여러 필드를 한 번에 바꾸는 토글을 설정 하나로 집계할 때 쓴다. */
   trackAs?: 'weatherEnabled';
 };
