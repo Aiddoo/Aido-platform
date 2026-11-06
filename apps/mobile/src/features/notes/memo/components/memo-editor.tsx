@@ -23,6 +23,8 @@ import {
   DocsIcon,
   Flex,
   HStack,
+  IconButton,
+  type IconButtonProps,
   MenuActionItem,
   MoreIcon,
   PinFilledIcon,
@@ -50,14 +52,8 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
-import { Menu, PressableFeedback, Separator, Spinner } from 'heroui-native';
-import {
-  type ComponentProps,
-  type ComponentType,
-  type ReactNode,
-  useLayoutEffect,
-  useState,
-} from 'react';
+import { Menu, Separator, Spinner } from 'heroui-native';
+import { type ComponentType, useLayoutEffect, useState } from 'react';
 import { type Control, Controller, useForm, useFormState } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -471,25 +467,7 @@ function MemoAiParsingBadge() {
   );
 }
 
-interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
-  icon: ReactNode;
-  accessibilityLabel: string;
-}
-
-function MemoActionButton({ icon, className, ...props }: MemoActionButtonProps) {
-  return (
-    <PressableFeedback
-      accessibilityRole="button"
-      hitSlop={4}
-      className={cn('items-center justify-center p-2', className)}
-      {...props}
-    >
-      {icon}
-    </PressableFeedback>
-  );
-}
-
-type MemoActionProps = Omit<MemoActionButtonProps, 'icon' | 'accessibilityLabel'>;
+type MemoActionProps = Omit<IconButtonProps, 'icon' | 'accessibilityLabel'>;
 
 interface MemoPinButtonProps extends MemoActionProps {
   isPinned: boolean;
@@ -499,7 +477,7 @@ function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
   const { t } = useTranslation('memo');
 
   return (
-    <MemoActionButton
+    <IconButton
       accessibilityLabel={t(isPinned ? 'detail.unpin' : 'detail.pin')}
       icon={
         isPinned ? (
@@ -521,9 +499,10 @@ function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonPr
   const { t } = useTranslation('common');
 
   return (
-    <MemoActionButton
+    <IconButton
       accessibilityLabel={t('actions.save')}
-      className={cn('rounded-full', isHighlighted && 'bg-main', className)}
+      hitSlop={4}
+      className={cn('min-h-9 min-w-9 rounded-full', isHighlighted && 'bg-main', className)}
       icon={
         <CheckmarkIcon
           width={20}
@@ -550,7 +529,7 @@ function MemoMoreMenu({
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
       <Menu.Trigger asChild>
-        <MemoActionButton
+        <IconButton
           testID="memo-more"
           accessibilityLabel={t('memo:detail.more')}
           accessibilityState={{ expanded: isOpen }}

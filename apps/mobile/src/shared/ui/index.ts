@@ -120,6 +120,7 @@ export {
   ToastWarningIcon,
   TrashIcon,
 } from './icon';
+export { IconButton, type IconButtonProps } from './icon-button';
 export * from './icon-count-button';
 export { InlineNotice, type InlineNoticeProps } from './inline-notice';
 export {
