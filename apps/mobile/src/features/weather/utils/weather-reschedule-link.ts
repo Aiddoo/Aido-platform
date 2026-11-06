@@ -27,8 +27,13 @@ export function parseWeatherRescheduleUrl(url: string | undefined) {
   if (!params.success) {
     return null;
   }
+  return toWeatherRescheduleHref(params.data);
+}
+
+/** 옮기기 시트 경로. 읽을 때와 같은 형식으로 URL 값을 만든다. */
+export function toWeatherRescheduleHref(params: z.output<typeof weatherRescheduleParamsSchema>) {
   return {
     pathname: WEATHER_RESCHEDULE_DEEP_LINK,
-    params: z.encode(weatherRescheduleParamsSchema, params.data),
+    params: z.encode(weatherRescheduleParamsSchema, params),
   } as const;
 }

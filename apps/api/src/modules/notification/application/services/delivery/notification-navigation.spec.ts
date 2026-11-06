@@ -1,4 +1,13 @@
-import { buildWeatherRescheduleDeepLink, NOTICE_DEEP_LINK_PATH } from "@aido/api";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import {
+  buildWeatherRescheduleDeepLink,
+  NOTICE_DEEP_LINK_PATH,
+  NOTIFICATION_NAVIGATION_KIND,
+  NOTIFICATION_TYPE,
+  type NotificationNavigation,
+} from "@aido/api";
 
 import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
 import { toNotificationNavigation } from "./notification-navigation.js";
@@ -188,5 +197,48 @@ describe("toNotificationNavigation — 푸시 이동 문맥", () => {
 
     // When / Then
     expect(toNotificationNavigation(input)).toBeUndefined();
+  });
+});
+
+interface NavigationCase {
+  readonly name: string;
+  readonly source: Parameters<typeof toNotificationNavigation>[0];
+  readonly navigation: NotificationNavigation | null;
+  readonly knownDifference?: string;
+}
+
+/** 앱 test와 함께 읽는 대조표. 앱이 구 필드로 고르는 곳과 서버 navigation을 한 표로 묶는다. */
+const NAVIGATION_CASES: readonly NavigationCase[] = JSON.parse(
+  readFileSync(
+    resolve(
+      import.meta.dirname,
+      "../../../../../../../../packages/api/test-fixtures/notification-navigation.cases.json",
+    ),
+    "utf8",
+  ),
+);
+
+describe("서버·앱 대조표", () => {
+  it("31개 알림 타입이 모두 대조표에 있다", () => {
+    // Given
+    const types = new Set(NAVIGATION_CASES.map(({ source }) => source.type));
+
+    // When / Then
+    expect(Object.values(NOTIFICATION_TYPE).filter((type) => !types.has(type))).toEqual([]);
+  });
+
+  it("19개 navigation kind가 모두 대조표에 있다", () => {
+    // Given
+    const kinds = new Set(NAVIGATION_CASES.map(({ navigation }) => navigation?.kind));
+
+    // When / Then
+    expect(Object.values(NOTIFICATION_NAVIGATION_KIND).filter((kind) => !kinds.has(kind))).toEqual(
+      [],
+    );
+  });
+
+  it.each(NAVIGATION_CASES)("$name", ({ source, navigation }) => {
+    // Given / When / Then
+    expect(toNotificationNavigation(source) ?? null).toEqual(navigation);
   });
 });

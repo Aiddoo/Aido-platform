@@ -1,6 +1,9 @@
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { WeatherEntry } from '@src/features/weather/schemas/weather-entry-params.schema';
-import { parseWeatherRescheduleUrl } from '@src/features/weather/utils/weather-reschedule-link';
+import {
+  parseWeatherRescheduleUrl,
+  toWeatherRescheduleHref,
+} from '@src/features/weather/utils/weather-reschedule-link';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
@@ -10,6 +13,7 @@ import {
   type NotificationContext,
   type NotificationDestinationRouting,
   notificationDestinationRoutingSchema,
+  type NotificationNavigation,
   type NotificationRouting,
   type NotificationType,
 } from '../schemas/notification.schema';
@@ -87,6 +91,91 @@ export function resolveNotificationDestination(
   return routing == null
     ? NO_DESTINATION
     : toRouteDestination(routing, { today, windowSizeClass, viewerId });
+}
+
+/**
+ * 서버가 푸시에 실어 보낸 목적지를 앱 경로로 바꾼다. 구 필드로 고른 곳과 같아야 하며,
+ * `packages/api/test-fixtures/notification-navigation.cases.json`으로 서버·앱·구 필드를 함께 묶는다.
+ */
+export function fromNavigation(
+  navigation: NotificationNavigation,
+  { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
+): NotificationDestination {
+  const feedDate = today ? 'today' : undefined;
+  return (
+    match(navigation)
+      .returnType<NotificationDestination>()
+      .with({ kind: 'NONE' }, () => NO_DESTINATION)
+      .with({ kind: 'EXTERNAL_URL', presentation: 'BROWSER' }, ({ url }) => ({
+        kind: 'browser',
+        url,
+      }))
+      .with({ kind: 'EXTERNAL_URL', presentation: 'WEBVIEW' }, ({ url }) => ({
+        kind: 'webview',
+        url,
+      }))
+      .with({ kind: 'FEED' }, () => ({
+        kind: 'route',
+        href: { pathname: '/feed', params: { date: feedDate } },
+      }))
+      // 응원은 지금처럼 친구 피드로 연다. cheerId는 이동에 쓰지 않는다
+      .with({ kind: P.union('FRIEND_FEED', 'CHEER') }, ({ friendId }) => ({
+        kind: 'route',
+        href: { pathname: '/feed', params: { friendId, date: feedDate } },
+      }))
+      .with({ kind: 'FRIENDS' }, () => ({ kind: 'route', href: '/friends' }))
+      .with({ kind: 'FRIEND_REQUESTS' }, () => ({
+        kind: 'route',
+        href: { pathname: '/friends', params: { view: 'receiver' } },
+      }))
+      .with({ kind: 'TODO' }, ({ todoId, ...target }) => ({
+        kind: 'route',
+        href: toTodoDetailRoute(windowSizeClass, {
+          todoId,
+          ...toTodoFeedTarget(target, viewerId),
+        }),
+      }))
+      .with({ kind: 'TODO_COMMENT' }, ({ todoId, commentId, ...target }) => ({
+        kind: 'route',
+        href: toTodoDetailRoute(windowSizeClass, {
+          todoId,
+          comment: commentId,
+          ...toTodoFeedTarget(target, viewerId),
+        }),
+      }))
+      .with({ kind: 'NUDGE' }, ({ nudgeId }) => ({
+        kind: 'route',
+        href: { pathname: '/nudges/[nudgeId]', params: { nudgeId } },
+      }))
+      .with({ kind: 'WEATHER' }, () => ({
+        kind: 'route',
+        href: {
+          pathname: '/weather',
+          params: { entry: 'notification' satisfies WeatherEntry },
+        },
+      }))
+      .with({ kind: 'WEATHER_RESCHEDULE' }, ({ todoIds, reason }) => ({
+        kind: 'route',
+        href: toWeatherRescheduleHref({ todoIds, reason }),
+      }))
+      .with({ kind: 'ACHIEVEMENTS' }, () => ({ kind: 'route', href: '/achievements' }))
+      .with({ kind: 'REPORTS' }, () => ({ kind: 'route', href: '/reports' }))
+      .with({ kind: 'SUGGESTIONS' }, () => ({ kind: 'route', href: '/suggestions' }))
+      .with({ kind: 'INVITE' }, () => ({
+        kind: 'route',
+        href: { pathname: '/friends/invite' },
+      }))
+      .with({ kind: 'SUBSCRIPTION' }, () => ({
+        kind: 'route',
+        href: { pathname: '/settings/subscription' },
+      }))
+      .with({ kind: 'NOTIFICATIONS' }, () => ({ kind: 'route', href: '/notifications' }))
+      .with({ kind: 'NOTIFICATION_SETTINGS' }, () => ({
+        kind: 'route',
+        href: '/settings/notifications',
+      }))
+      .exhaustive()
+  );
 }
 
 /** 공지의 앱 경로는 아는 화면만 연다. 모르는 경로, 상세 id·프리미엄 확인이 필요한 경로는 이동하지 않는다. */

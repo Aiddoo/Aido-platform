@@ -2,6 +2,7 @@ import {
   notificationActionSchema,
   notificationContextSchema,
   notificationInboxResponseSchema,
+  type NotificationNavigation as NotificationNavigationContract,
   notificationRoutingSchema,
   notificationTypeSchema,
   pushNotificationDataSchema,
@@ -30,6 +31,8 @@ export type NotificationCategoryKey =
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
+
+export type NotificationNavigation = NotificationNavigationContract;
 
 export const pushNotificationPayloadSchema = pushNotificationDataSchema.omit({
   dispatchId: true,

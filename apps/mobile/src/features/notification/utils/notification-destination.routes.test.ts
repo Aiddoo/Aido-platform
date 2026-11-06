@@ -5,7 +5,8 @@ import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 
-import { resolveNotificationDestination } from './notification-destination';
+import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
+import { fromNavigation, resolveNotificationDestination } from './notification-destination';
 
 const APP_DIRECTORY = join(__dirname, '../../../../app');
 const ROUTE_GROUP = /^\(.+\)$/;
@@ -51,6 +52,22 @@ describe('알림 목적지와 라우트 파일', () => {
         { type, context: CONTEXT, action: { type: 'DEEP_LINK' } },
         { windowSizeClass, today: '2026-11-06' },
       );
+
+      // Then
+      if (destination.kind === 'route') {
+        expect(routePathnames).toContain(getHrefPathname(destination.href));
+      }
+    });
+  });
+
+  it.each(
+    NAVIGATION_CASES.flatMap(({ name, navigation }) =>
+      navigation == null ? [] : [{ name, navigation }],
+    ),
+  )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
+    WINDOW_SIZE_CLASSES.forEach((windowSizeClass) => {
+      // When
+      const destination = fromNavigation(navigation, { windowSizeClass, today: '2026-11-06' });
 
       // Then
       if (destination.kind === 'route') {

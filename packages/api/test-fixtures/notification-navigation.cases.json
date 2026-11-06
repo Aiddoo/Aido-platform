@@ -1,0 +1,842 @@
+[
+  {
+    "name": "친구 신청은 받은 신청 목록",
+    "source": {
+      "type": "FOLLOW_NEW"
+    },
+    "navigation": {
+      "kind": "FRIEND_REQUESTS"
+    }
+  },
+  {
+    "name": "친구 수락은 그 친구 피드",
+    "source": {
+      "type": "FOLLOW_ACCEPTED",
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "FRIEND_FEED",
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "친구 ID 없는 수락은 이동 없음",
+    "source": {
+      "type": "FOLLOW_ACCEPTED"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "할 일 콕은 콕 상세",
+    "source": {
+      "type": "NUDGE_RECEIVED",
+      "nudgeId": 7,
+      "todoId": 42,
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "NUDGE",
+      "nudgeId": 7
+    }
+  },
+  {
+    "name": "콕 ID 없는 할 일 콕은 할 일 상세",
+    "source": {
+      "type": "NUDGE_RECEIVED",
+      "todoId": 42,
+      "friendId": "cmfriend00000000000000001",
+      "routing": {
+        "todoOwnerId": "cmfriend00000000000000001",
+        "todoDate": "2026-11-03"
+      }
+    },
+    "navigation": {
+      "kind": "TODO",
+      "todoId": 42,
+      "todoOwnerId": "cmfriend00000000000000001",
+      "todoDate": "2026-11-03"
+    }
+  },
+  {
+    "name": "할 일 없는 콕은 보낸 친구 피드",
+    "source": {
+      "type": "NUDGE_RECEIVED",
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "FRIEND_FEED",
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "콕 ID가 있어도 할 일이 없으면 보낸 친구 피드",
+    "source": {
+      "type": "NUDGE_RECEIVED",
+      "nudgeId": 7,
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "FRIEND_FEED",
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "재료 없는 콕은 내 피드",
+    "source": {
+      "type": "NUDGE_RECEIVED"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "콕 답장은 콕 상세",
+    "source": {
+      "type": "NUDGE_REPLIED",
+      "nudgeId": 7
+    },
+    "navigation": {
+      "kind": "NUDGE",
+      "nudgeId": 7
+    }
+  },
+  {
+    "name": "콕 ID 없는 답장은 알림 목록",
+    "source": {
+      "type": "NUDGE_REPLIED"
+    },
+    "navigation": {
+      "kind": "NOTIFICATIONS"
+    }
+  },
+  {
+    "name": "콕 고마움은 콕 상세",
+    "source": {
+      "type": "NUDGE_THANKED",
+      "nudgeId": 7
+    },
+    "navigation": {
+      "kind": "NUDGE",
+      "nudgeId": 7
+    }
+  },
+  {
+    "name": "콕 ID 없는 고마움은 알림 목록",
+    "source": {
+      "type": "NUDGE_THANKED"
+    },
+    "navigation": {
+      "kind": "NOTIFICATIONS"
+    }
+  },
+  {
+    "name": "응원은 응원과 보낸 친구",
+    "source": {
+      "type": "CHEER_RECEIVED",
+      "cheerId": 3,
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "CHEER",
+      "cheerId": 3,
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "응원 ID 없는 응원은 친구 피드",
+    "source": {
+      "type": "CHEER_RECEIVED",
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "FRIEND_FEED",
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "친구 ID 없는 응원은 이동 없음",
+    "source": {
+      "type": "CHEER_RECEIVED"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "DAILY_COMPLETE는 FEED 화면",
+    "source": {
+      "type": "DAILY_COMPLETE"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "친구 전체 완료는 친구 피드",
+    "source": {
+      "type": "FRIEND_COMPLETED",
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "FRIEND_FEED",
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "친구 ID 없는 전체 완료는 이동 없음",
+    "source": {
+      "type": "FRIEND_COMPLETED"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "할 일 리마인더는 주인과 날짜를 실은 상세",
+    "source": {
+      "type": "TODO_REMINDER",
+      "todoId": 42,
+      "routing": {
+        "todoOwnerId": "cmfriend00000000000000001",
+        "todoDate": "2026-11-03"
+      }
+    },
+    "navigation": {
+      "kind": "TODO",
+      "todoId": 42,
+      "todoOwnerId": "cmfriend00000000000000001",
+      "todoDate": "2026-11-03"
+    }
+  },
+  {
+    "name": "주인 없는 할 일 리마인더는 상세",
+    "source": {
+      "type": "TODO_REMINDER",
+      "todoId": 42
+    },
+    "navigation": {
+      "kind": "TODO",
+      "todoId": 42
+    }
+  },
+  {
+    "name": "할 일 없는 리마인더는 내 피드",
+    "source": {
+      "type": "TODO_REMINDER"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "서버 계약을 통과하지 못하는 할 일 ID는 navigation을 싣지 않는다",
+    "source": {
+      "type": "TODO_REMINDER",
+      "todoId": -1
+    },
+    "navigation": null
+  },
+  {
+    "name": "서버 계약을 통과하지 못하는 할 일 날짜는 navigation을 싣지 않는다",
+    "source": {
+      "type": "TODO_REMINDER",
+      "todoId": 42,
+      "routing": {
+        "todoDate": "2026-13-40"
+      }
+    },
+    "navigation": null
+  },
+  {
+    "name": "댓글 알림은 댓글 위치",
+    "source": {
+      "type": "TODO_SHARED",
+      "todoId": 42,
+      "routing": {
+        "commentId": "cmt92zn3n000b7voxx9quc2th",
+        "threadRootId": "cmt92zn3n000a7voxx9quc2th",
+        "activityKind": "REPLY",
+        "todoOwnerId": "cmfriend00000000000000001",
+        "todoDate": "2026-11-03"
+      }
+    },
+    "navigation": {
+      "kind": "TODO_COMMENT",
+      "todoId": 42,
+      "commentId": "cmt92zn3n000b7voxx9quc2th",
+      "threadCommentId": "cmt92zn3n000a7voxx9quc2th",
+      "activityKind": "REPLY",
+      "todoOwnerId": "cmfriend00000000000000001",
+      "todoDate": "2026-11-03"
+    }
+  },
+  {
+    "name": "주인 없는 댓글 알림도 댓글 위치",
+    "source": {
+      "type": "TODO_SHARED",
+      "todoId": 42,
+      "routing": {
+        "commentId": "cmt92zn3n000b7voxx9quc2th",
+        "threadRootId": "cmt92zn3n000b7voxx9quc2th",
+        "activityKind": "LIKE"
+      }
+    },
+    "navigation": {
+      "kind": "TODO_COMMENT",
+      "todoId": 42,
+      "commentId": "cmt92zn3n000b7voxx9quc2th",
+      "threadCommentId": "cmt92zn3n000b7voxx9quc2th",
+      "activityKind": "LIKE"
+    }
+  },
+  {
+    "name": "댓글 재료가 없는 공유는 상세",
+    "source": {
+      "type": "TODO_SHARED",
+      "todoId": 42
+    },
+    "navigation": {
+      "kind": "TODO",
+      "todoId": 42
+    }
+  },
+  {
+    "name": "할 일 없는 공유는 이동 없음",
+    "source": {
+      "type": "TODO_SHARED"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "routing에 commentId만 있는 옛 댓글 알림",
+    "source": {
+      "type": "TODO_SHARED",
+      "todoId": 42,
+      "routing": {
+        "commentId": "cmt92zn3n000b7voxx9quc2th"
+      }
+    },
+    "navigation": {
+      "kind": "TODO",
+      "todoId": 42
+    },
+    "knownDifference": "구 필드는 댓글 위치로 열고 서버 navigation은 재료가 모자라 상세로 연다. 서버는 세 재료를 모두 싣는 알림만 만든다"
+  },
+  {
+    "name": "MORNING_REMINDER는 FEED 화면",
+    "source": {
+      "type": "MORNING_REMINDER"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "EVENING_REMINDER는 FEED 화면",
+    "source": {
+      "type": "EVENING_REMINDER"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "WEEKLY_ACHIEVEMENT는 ACHIEVEMENTS 화면",
+    "source": {
+      "type": "WEEKLY_ACHIEVEMENT"
+    },
+    "navigation": {
+      "kind": "ACHIEVEMENTS"
+    }
+  },
+  {
+    "name": "WEEKLY_REPORT는 REPORTS 화면",
+    "source": {
+      "type": "WEEKLY_REPORT"
+    },
+    "navigation": {
+      "kind": "REPORTS"
+    }
+  },
+  {
+    "name": "MONTHLY_REPORT는 REPORTS 화면",
+    "source": {
+      "type": "MONTHLY_REPORT"
+    },
+    "navigation": {
+      "kind": "REPORTS"
+    }
+  },
+  {
+    "name": "AI_SUGGESTION는 SUGGESTIONS 화면",
+    "source": {
+      "type": "AI_SUGGESTION"
+    },
+    "navigation": {
+      "kind": "SUGGESTIONS"
+    }
+  },
+  {
+    "name": "공지 /feed",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/feed"
+      }
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "공지 /achievements",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/achievements"
+      }
+    },
+    "navigation": {
+      "kind": "ACHIEVEMENTS"
+    }
+  },
+  {
+    "name": "공지 /weather",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    }
+  },
+  {
+    "name": "공지 /friends",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/friends"
+      }
+    },
+    "navigation": {
+      "kind": "FRIENDS"
+    }
+  },
+  {
+    "name": "공지 /friends/invite",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/friends/invite"
+      }
+    },
+    "navigation": {
+      "kind": "INVITE"
+    }
+  },
+  {
+    "name": "공지 /settings/subscription",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/settings/subscription"
+      }
+    },
+    "navigation": {
+      "kind": "SUBSCRIPTION"
+    }
+  },
+  {
+    "name": "공지 /settings/notifications",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/settings/notifications"
+      }
+    },
+    "navigation": {
+      "kind": "NOTIFICATION_SETTINGS"
+    }
+  },
+  {
+    "name": "공지의 모르는 경로는 이동 없음",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/todos/1"
+      }
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "경로 없는 공지는 이동 없음",
+    "source": {
+      "type": "SYSTEM_NOTICE"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "전체 발송 /feed",
+    "source": {
+      "type": "ADMIN_BROADCAST",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/feed"
+      }
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "경로 없는 전체 발송은 이동 없음",
+    "source": {
+      "type": "ADMIN_BROADCAST"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "개별 발송 /achievements",
+    "source": {
+      "type": "ADMIN_TARGETED",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/achievements"
+      }
+    },
+    "navigation": {
+      "kind": "ACHIEVEMENTS"
+    }
+  },
+  {
+    "name": "경로 없는 개별 발송은 이동 없음",
+    "source": {
+      "type": "ADMIN_TARGETED"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "브라우저 링크",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "BROWSER",
+        "url": "https://aido.kr/notice"
+      }
+    },
+    "navigation": {
+      "kind": "EXTERNAL_URL",
+      "url": "https://aido.kr/notice",
+      "presentation": "BROWSER"
+    }
+  },
+  {
+    "name": "앱 안 브라우저 링크",
+    "source": {
+      "type": "ADMIN_TARGETED",
+      "action": {
+        "type": "WEBVIEW",
+        "url": "https://aido.kr/notice"
+      }
+    },
+    "navigation": {
+      "kind": "EXTERNAL_URL",
+      "url": "https://aido.kr/notice",
+      "presentation": "WEBVIEW"
+    }
+  },
+  {
+    "name": "http(s)가 아닌 링크는 이동 없음",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "BROWSER",
+        "url": "javascript:alert(1)"
+      }
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "주소 없는 링크는 이동 없음",
+    "source": {
+      "type": "SYSTEM_NOTICE",
+      "action": {
+        "type": "WEBVIEW"
+      }
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "NONE 액션은 타입과 상관없이 이동 없음",
+    "source": {
+      "type": "TODO_REMINDER",
+      "todoId": 42,
+      "action": {
+        "type": "NONE"
+      }
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "WINBACK는 FEED 화면",
+    "source": {
+      "type": "WINBACK"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "SOCIAL_DIGEST는 FEED 화면",
+    "source": {
+      "type": "SOCIAL_DIGEST"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "콕 제안은 친구 피드",
+    "source": {
+      "type": "NUDGE_SUGGEST",
+      "friendId": "cmfriend00000000000000001"
+    },
+    "navigation": {
+      "kind": "FRIEND_FEED",
+      "friendId": "cmfriend00000000000000001"
+    }
+  },
+  {
+    "name": "친구 ID 없는 콕 제안은 이동 없음",
+    "source": {
+      "type": "NUDGE_SUGGEST"
+    },
+    "navigation": {
+      "kind": "NONE"
+    }
+  },
+  {
+    "name": "LUNCH_NUDGE는 FEED 화면",
+    "source": {
+      "type": "LUNCH_NUDGE"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "STREAK_AT_RISK는 FEED 화면",
+    "source": {
+      "type": "STREAK_AT_RISK"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "WEATHER_MORNING는 WEATHER 화면",
+    "source": {
+      "type": "WEATHER_MORNING"
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    }
+  },
+  {
+    "name": "아침 날씨의 더위 옮기기 링크",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=12,15&reason=heat"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER_RESCHEDULE",
+      "todoIds": [12, 15],
+      "reason": "heat"
+    }
+  },
+  {
+    "name": "이유 없는 옮기기 링크는 비",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=12"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER_RESCHEDULE",
+      "todoIds": [12],
+      "reason": "rain"
+    }
+  },
+  {
+    "name": "잘못된 할 일 목록의 옮기기 링크는 날씨 화면",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=a,0"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    }
+  },
+  {
+    "name": "옮기기 링크의 모르는 이유",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=12&reason=snow"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    },
+    "knownDifference": "구 필드는 비로 옮기기 화면을 열고 서버는 날씨 화면을 연다. 서버는 알려진 이유만 링크에 싣는다"
+  },
+  {
+    "name": "옮기기 링크의 지수 표기 할 일 ID",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=1e2"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER_RESCHEDULE",
+      "todoIds": [100],
+      "reason": "rain"
+    },
+    "knownDifference": "구 필드는 거부해 날씨 화면을 열고 서버는 Number로 읽어 수용한다. 서버는 정수 ID만 링크에 싣는다"
+  },
+  {
+    "name": "옮기기 링크의 앞자리 0 할 일 ID",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=0012"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER_RESCHEDULE",
+      "todoIds": [12],
+      "reason": "rain"
+    },
+    "knownDifference": "구 필드는 거부해 날씨 화면을 열고 서버는 Number로 읽어 수용한다. 서버는 앞자리 0 없는 ID만 링크에 싣는다"
+  },
+  {
+    "name": "끝이 쉼표인 옮기기 링크는 날씨 화면",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=12,"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    }
+  },
+  {
+    "name": "한도를 넘은 옮기기 링크는 날씨 화면",
+    "source": {
+      "type": "WEATHER_MORNING",
+      "action": {
+        "type": "DEEP_LINK",
+        "url": "/weather/reschedule?todoIds=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59"
+      }
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    }
+  },
+  {
+    "name": "WEATHER_EVENING는 WEATHER 화면",
+    "source": {
+      "type": "WEATHER_EVENING"
+    },
+    "navigation": {
+      "kind": "WEATHER"
+    }
+  },
+  {
+    "name": "INVITE_JOINED는 INVITE 화면",
+    "source": {
+      "type": "INVITE_JOINED"
+    },
+    "navigation": {
+      "kind": "INVITE"
+    }
+  },
+  {
+    "name": "INVITE_REWARDED는 INVITE 화면",
+    "source": {
+      "type": "INVITE_REWARDED"
+    },
+    "navigation": {
+      "kind": "INVITE"
+    }
+  },
+  {
+    "name": "INVITE_PROGRESS는 INVITE 화면",
+    "source": {
+      "type": "INVITE_PROGRESS"
+    },
+    "navigation": {
+      "kind": "INVITE"
+    }
+  },
+  {
+    "name": "INVITE_QUALIFY_REMINDER는 FEED 화면",
+    "source": {
+      "type": "INVITE_QUALIFY_REMINDER"
+    },
+    "navigation": {
+      "kind": "FEED"
+    }
+  },
+  {
+    "name": "PREMIUM_GRANT_ENDING는 SUBSCRIPTION 화면",
+    "source": {
+      "type": "PREMIUM_GRANT_ENDING"
+    },
+    "navigation": {
+      "kind": "SUBSCRIPTION"
+    }
+  }
+]
