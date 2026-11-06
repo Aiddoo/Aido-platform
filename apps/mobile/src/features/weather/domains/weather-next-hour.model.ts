@@ -1,6 +1,8 @@
 import { HOUR_MS } from '@src/shared/constants/time.constants';
+import { toEpochMs } from '@src/shared/date/instant';
 
-import { type HourlyForecastEntry, isWetHour } from './weather-report.model';
+import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
+import { isWetHour } from './weather-report.model';
 
 /** 분 단위 예보가 없는 지역은 이 시간 안의 시간별 예보로만 곧 올 비를 알린다. */
 const HOURLY_OUTLOOK_RANGE_HOURS = 6;
@@ -18,14 +20,14 @@ function getHourlyPrecipitationOutlook(
   const until = now.getTime() + HOURLY_OUTLOOK_RANGE_HOURS * HOUR_MS;
   const hour = hourly.find(
     (candidate) =>
-      candidate.startsAt.getTime() + HOUR_MS > now.getTime() &&
-      candidate.startsAt.getTime() < until &&
+      toEpochMs(candidate.startsAt) + HOUR_MS > now.getTime() &&
+      toEpochMs(candidate.startsAt) < until &&
       isWetHour(candidate),
   );
   if (hour == null) {
     return null;
   }
-  return { hour, isOngoing: hour.startsAt.getTime() <= now.getTime() };
+  return { hour, isOngoing: toEpochMs(hour.startsAt) <= now.getTime() };
 }
 
 export const WeatherNextHourPolicy = {

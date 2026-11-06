@@ -1,4 +1,4 @@
-import type { WeatherCondition } from '@aido/api';
+import type { WeatherCondition } from '@aido/api/vocabulary';
 import { Box } from '@src/shared/ui';
 import { Image, type ImageSource } from 'expo-image';
 import { type ComponentProps, useState } from 'react';

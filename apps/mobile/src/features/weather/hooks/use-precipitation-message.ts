@@ -1,5 +1,6 @@
-import type { WeatherPrecipitationType } from '@aido/api';
+import type { WeatherPrecipitationType } from '@aido/api/vocabulary';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
+import { type Instant } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
@@ -34,7 +35,7 @@ export function usePrecipitationMessage({
   const dateFormat = useLocationDateFormat(timeZone);
   const localTime = useLocalTimeLabel(timeZone, now);
 
-  const formatMoment = (date: Date, precision: PrecipitationPrecision) =>
+  const formatMoment = (date: Instant, precision: PrecipitationPrecision) =>
     localTime(
       match(precision)
         .with('minute', () => formatClockTime(date, timeFormat, dateFormat))

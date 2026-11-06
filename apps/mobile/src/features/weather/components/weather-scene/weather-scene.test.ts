@@ -1,4 +1,5 @@
 import { WEATHER_CONDITIONS, type WeatherCondition } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 import {
@@ -28,7 +29,7 @@ const createInput = (overrides: Partial<WeatherSceneInput> = {}): WeatherSceneIn
   precipitationIntensity: 0,
   cloudCover: 0,
   windSpeed: 0,
-  observedAt: new Date('2026-11-03T12:00:00.000Z'),
+  observedAt: toInstant('2026-11-03T12:00:00.000Z'),
   latitude: 37.5,
   ...overrides,
 });
@@ -351,7 +352,7 @@ describe('달의 위상', () => {
     ['2000-02-05T06:51:00.000Z', 0],
   ])('%s의 위상은 %p에 가깝다', (iso, expected) => {
     // When
-    const phase = getMoonPhase(new Date(iso));
+    const phase = getMoonPhase(toInstant(iso));
     // Then
     expect(Math.min(Math.abs(phase - expected), 1 - Math.abs(phase - expected))).toBeLessThan(0.01);
   });

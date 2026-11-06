@@ -1,5 +1,6 @@
-import type { WeatherRescheduleReason } from '@aido/api';
-import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
+import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api/vocabulary';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
@@ -11,7 +12,8 @@ import {
   type HourRange,
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
-import { type HourlyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 
 /** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
 function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
@@ -45,7 +47,7 @@ export type BriefingAction =
       reason: TodoSuggestionReason;
       label: BriefingCopy;
       title: BriefingCopy;
-      scheduledAt: Date | null;
+      scheduledAt: Instant | null;
     };
 
 export interface BriefingView {
@@ -61,8 +63,8 @@ export interface BriefingViewDeps {
   hourly: readonly HourlyForecastEntry[];
   now: Date;
   timeZone: string;
-  formatClock: (date: Date) => string;
-  formatHour: (date: Date) => string;
+  formatClock: (date: Instant) => string;
+  formatHour: (date: Instant) => string;
   formatDegrees: (celsius: number) => string;
   formatChance: (percent: number) => string;
 }
@@ -74,7 +76,7 @@ export type BriefingState = 'loading' | 'hidden' | 'visible';
  * 6시간 넘게 갱신되지 않았거나, 위치 벽시계가 기기와 달라 기기 시각인 할 일과 맞춰 보면 헷갈리면 숨긴다.
  */
 export function toBriefingState(
-  report: { location: { timezone: string }; fetchedAt: Date } | undefined,
+  report: { location: { timezone: string }; fetchedAt: Instant } | undefined,
   { now, deviceTimeZone }: { now: Date; deviceTimeZone: string },
 ): BriefingState {
   if (report == null) {
@@ -252,8 +254,8 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
       const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, now);
       const isInRange = (todo: ForecastTodo) =>
-        todo.scheduledAt.getTime() >= hours.startsAt.getTime() &&
-        todo.scheduledAt.getTime() < hours.endsAt.getTime();
+        toEpochMs(todo.scheduledAt) >= toEpochMs(hours.startsAt) &&
+        toEpochMs(todo.scheduledAt) < toEpochMs(hours.endsAt);
       const isEmpty = todos.length === 0;
       return {
         headline: { key: isEmpty ? 'briefing.clear.emptyTitle' : 'briefing.clear.title' },

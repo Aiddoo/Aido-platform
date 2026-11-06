@@ -1,4 +1,4 @@
-import type { WeatherMoonPhase } from '@aido/api';
+import type { WeatherMoonPhase } from '@aido/api/vocabulary';
 import { clamp, round } from 'es-toolkit';
 
 /** 위상을 한 바퀴 0~1로 둔 값. 0은 삭, 0.5는 보름이다. */

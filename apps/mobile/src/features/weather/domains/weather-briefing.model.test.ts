@@ -1,4 +1,5 @@
 import type { WeatherHourlyForecast } from '@aido/api';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
@@ -34,7 +35,7 @@ function createTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
   return {
     id: 1,
     title: '산책',
-    scheduledAt: new Date('2026-11-02T07:30:00.000Z'),
+    scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
     completed: false,
     subTodoProgress: null,
     ...overrides,
@@ -71,7 +72,7 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
       expect.objectContaining({
         todoId: 1,
         title: '산책',
-        scheduledAt: new Date('2026-11-02T07:30:00.000Z'),
+        scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
         hour: expect.objectContaining({ precipitationChance: 70, precipitationType: 'RAIN' }),
       }),
     ]);
@@ -82,7 +83,7 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
     const todos = range(7).map((index) =>
       createTodo({
         id: index + 1,
-        scheduledAt: new Date(Date.parse('2026-11-02T05:30:00.000Z') + index * 60 * 60_000),
+        scheduledAt: fromEpochMs(Date.parse('2026-11-02T05:30:00.000Z') + index * 60 * 60_000),
         completed: index === 2,
       }),
     );
@@ -103,7 +104,7 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
     const todos = [
       createTodo({
         id: 1,
-        scheduledAt: new Date('2026-11-02T07:30:00.000Z'),
+        scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
         completed: true,
       }),
     ];
@@ -138,8 +139,8 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
 
     expect(briefing.kind).toBe('stormy');
     expect(briefing.kind === 'stormy' && briefing.range).toEqual({
-      startsAt: new Date('2026-11-02T07:00:00.000Z'),
-      endsAt: new Date('2026-11-02T10:00:00.000Z'),
+      startsAt: toInstant('2026-11-02T07:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T10:00:00.000Z'),
     });
   });
 
@@ -174,8 +175,8 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
       expect.objectContaining({
         kind: 'hot',
         range: {
-          startsAt: new Date('2026-11-02T07:00:00.000Z'),
-          endsAt: new Date('2026-11-02T09:00:00.000Z'),
+          startsAt: toInstant('2026-11-02T07:00:00.000Z'),
+          endsAt: toInstant('2026-11-02T09:00:00.000Z'),
         },
         peakApparentTemperature: 39,
       }),
@@ -193,7 +194,7 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
     expect(briefing).toEqual(
       expect.objectContaining({
         kind: 'rainLater',
-        startsAt: new Date('2026-11-03T04:00:00.000Z'),
+        startsAt: toInstant('2026-11-03T04:00:00.000Z'),
         day: 'tomorrow',
         dayPart: 'afternoon',
         isSnow: false,
@@ -210,7 +211,7 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
     ];
     const briefing = WeatherBriefingPolicy.toWeatherBriefing(
       createReport(hours),
-      [createTodo({ scheduledAt: new Date('2026-11-02T13:30:00.000Z') })],
+      [createTodo({ scheduledAt: toInstant('2026-11-02T13:30:00.000Z') })],
       CLOCK,
     );
 
@@ -235,8 +236,8 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
       kind: 'clear',
       todos: [],
       range: {
-        startsAt: new Date('2026-11-02T06:00:00.000Z'),
-        endsAt: new Date('2026-11-02T09:00:00.000Z'),
+        startsAt: toInstant('2026-11-02T06:00:00.000Z'),
+        endsAt: toInstant('2026-11-02T09:00:00.000Z'),
       },
     });
   });
@@ -273,12 +274,12 @@ describe('WeatherBriefingPolicy.getRescheduleOptions', () => {
     // When
     const options = WeatherBriefingPolicy.getRescheduleOptions(
       hourly,
-      { scheduledAt: new Date('2026-11-02T07:30:00.000Z') },
+      { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
       { now: NOW, timeZone: 'Asia/Seoul' },
     );
 
     // Then
-    expect(options.map((option) => option.startsAt.toISOString())).toEqual([
+    expect(options.map((option) => option.startsAt)).toEqual([
       '2026-11-02T10:00:00.000Z',
       '2026-11-02T12:00:00.000Z',
       '2026-11-02T13:00:00.000Z',
@@ -296,7 +297,7 @@ describe('WeatherBriefingPolicy.getRescheduleOptions', () => {
     // When
     const options = WeatherBriefingPolicy.getRescheduleOptions(
       rainyHours,
-      { scheduledAt: new Date('2026-11-02T07:30:00.000Z') },
+      { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
       { now: NOW, timeZone: 'Asia/Seoul' },
     );
 
@@ -313,14 +314,12 @@ describe('WeatherBriefingPolicy.getRescheduleOptions', () => {
     // When
     const options = WeatherBriefingPolicy.getRescheduleOptions(
       lateHours,
-      { scheduledAt: new Date('2026-11-02T13:30:00.000Z') },
+      { scheduledAt: toInstant('2026-11-02T13:30:00.000Z') },
       { now: new Date('2026-11-02T13:10:00.000Z'), timeZone: 'Asia/Seoul' },
     );
 
     // Then
-    expect(options.map((option) => option.startsAt.toISOString())).toEqual([
-      '2026-11-02T14:00:00.000Z',
-    ]);
+    expect(options.map((option) => option.startsAt)).toEqual(['2026-11-02T14:00:00.000Z']);
   });
 });
 
@@ -338,11 +337,11 @@ describe('WeatherBriefingPolicy.getRescheduleOptions 더위', () => {
 
     const options = WeatherBriefingPolicy.getRescheduleOptions(
       hotHours,
-      { scheduledAt: new Date('2026-11-02T07:30:00.000Z') },
+      { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
       { now: NOW, timeZone: 'Asia/Seoul', reason: 'heat' },
     );
 
-    expect(options.map((option) => option.startsAt.toISOString())).toEqual([
+    expect(options.map((option) => option.startsAt)).toEqual([
       '2026-11-02T09:00:00.000Z',
       '2026-11-02T10:00:00.000Z',
       '2026-11-02T11:00:00.000Z',
@@ -360,7 +359,7 @@ describe('WeatherBriefingPolicy.toBriefingTodo', () => {
   };
 
   it.each([
-    [{ localTime: '16:30', isAllDay: false }, new Date('2026-11-02T07:30:00.000Z')],
+    [{ localTime: '16:30', isAllDay: false }, '2026-11-02T07:30:00.000Z'],
     [{ localTime: '16:30', isAllDay: true }, null],
     [{ localTime: null, isAllDay: false }, null],
   ])('%o는 브리핑 시각 %s로 본다', (schedule, expected) => {
@@ -380,7 +379,7 @@ describe('WeatherBriefingPolicy.toBriefingTodo', () => {
     );
 
     // Then 시작일이 아니라 오늘 16:30이라 지난 시각으로 버려지지 않는다
-    expect(todo.scheduledAt).toEqual(new Date('2026-11-02T07:30:00.000Z'));
+    expect(todo.scheduledAt).toEqual('2026-11-02T07:30:00.000Z');
     expect(WeatherBriefingPolicy.toWeatherBriefing(report, [todo], CLOCK).kind === 'rainy').toBe(
       true,
     );
@@ -396,8 +395,8 @@ describe('WeatherBriefingPolicy.toBriefingTodo', () => {
     });
 
     // Then 11월은 로스앤젤레스가 UTC-8이다
-    expect(seoul.scheduledAt).toEqual(new Date('2026-11-02T07:30:00.000Z'));
-    expect(losAngeles.scheduledAt).toEqual(new Date('2026-11-03T00:30:00.000Z'));
+    expect(seoul.scheduledAt).toEqual('2026-11-02T07:30:00.000Z');
+    expect(losAngeles.scheduledAt).toEqual('2026-11-03T00:30:00.000Z');
   });
 
   it('서머타임이 끝나는 날에도 벽시계 그대로의 순간을 만든다', () => {
@@ -408,7 +407,7 @@ describe('WeatherBriefingPolicy.toBriefingTodo', () => {
     );
 
     // Then 표준시 UTC-8로 읽는다
-    expect(todo.scheduledAt).toEqual(new Date('2026-11-01T23:00:00.000Z'));
+    expect(todo.scheduledAt).toEqual('2026-11-01T23:00:00.000Z');
   });
 
   it('하위 할 일이 있으면 진행을, 없으면 null을 담는다', () => {
@@ -432,14 +431,14 @@ describe('WeatherBriefingPolicy.toBriefingTodo', () => {
 
 describe('WeatherBriefingPolicy.getSuggestedStartAt', () => {
   const RANGE = {
-    startsAt: new Date('2026-11-02T06:00:00.000Z'),
-    endsAt: new Date('2026-11-02T08:00:00.000Z'),
+    startsAt: toInstant('2026-11-02T06:00:00.000Z'),
+    endsAt: toInstant('2026-11-02T08:00:00.000Z'),
   };
 
   it('추천 시간대가 이미 시작됐으면 다음 정시를 제안한다', () => {
     // Given 15~17시 추천 When 15:26에 고르면 Then 16시다
     expect(WeatherBriefingPolicy.getSuggestedStartAt(RANGE, NOW)).toEqual(
-      new Date('2026-11-02T07:00:00.000Z'),
+      '2026-11-02T07:00:00.000Z',
     );
   });
 

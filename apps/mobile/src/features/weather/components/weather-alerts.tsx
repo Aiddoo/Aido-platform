@@ -1,6 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
+import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
@@ -9,12 +10,13 @@ import { ArrowRightIcon, Box, HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 
-import { type WeatherAlert, WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import type { WeatherAlert } from '../schemas/weather-report.schema';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -73,7 +75,7 @@ WeatherAlerts.Item = function Item({
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(timeZone);
   const localTime = useLocalTimeLabel(timeZone, now);
-  const time = (date: Date) => localTime(formatClockTime(date, timeFormat, dateFormat));
+  const time = (date: Instant) => localTime(formatClockTime(date, timeFormat, dateFormat));
   const period = isInEffect
     ? t('alerts.until', { time: time(alert.expiresAt) })
     : t('alerts.startsAt', { time: time(alert.effectiveAt) });

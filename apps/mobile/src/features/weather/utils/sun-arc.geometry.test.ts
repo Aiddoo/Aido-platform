@@ -1,8 +1,10 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { getSunArcPosition, isSunBelowHorizon } from './sun-arc.geometry';
 
 const SUNRISE = new Date('2026-11-01T21:51:00.000Z');
 const SUNSET = new Date('2026-11-02T08:28:00.000Z');
-const DAY = { sunrise: SUNRISE, sunset: SUNSET };
+const DAY = { sunrise: toInstant(SUNRISE.toISOString()), sunset: toInstant(SUNSET.toISOString()) };
 
 describe('getSunArcPosition', () => {
   it('일출·한낮·일몰에 궤적의 왼쪽 지평선·꼭대기·오른쪽 지평선에 있다', () => {

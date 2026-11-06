@@ -8,6 +8,7 @@ import {
   type TimeFormat,
 } from '@src/shared/date/date-format';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -25,7 +26,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { PRECIPITATION_CHANCE_TEXT_CLASS, TODO_DOT_COLOR } from '../constants/weather-colors';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { getTemperatureColor } from '../constants/weather-temperature-colors';
-import { type DailyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
@@ -33,6 +34,7 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import {
   type TemperatureBar,
   toTemperatureBars,
@@ -310,7 +312,7 @@ DailyForecast.Details = function Details({
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
   const degrees = (celsius: number) => formatTemperature(celsius, unit);
-  const clock = (date: Date) => formatClockTime(date, format.timeFormat, format.dateFormat);
+  const clock = (date: Instant) => formatClockTime(date, format.timeFormat, format.dateFormat);
   const hour = (value: number) => formatHourLabel(value, format.timeFormat, format.dateFormat);
   const wind = day.windSpeedMax ?? day.windGustMax;
   const facts = compact([

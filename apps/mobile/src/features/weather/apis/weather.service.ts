@@ -8,8 +8,8 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { RegisteredLocation } from '../domains/weather-location.model';
-import type { WeatherReport } from '../domains/weather-report.model';
+import type { RegisteredLocation } from '../schemas/weather-location.schema';
+import type { WeatherReport } from '../schemas/weather-report.schema';
 import { toRegisteredLocation, toWeatherReport } from './weather.mapper';
 
 export class WeatherService {

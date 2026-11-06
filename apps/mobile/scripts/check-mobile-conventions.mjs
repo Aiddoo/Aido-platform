@@ -95,6 +95,12 @@ const QUERY_HOOK_NAMES = new Set([
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
 const CLIENT_OWNED_MODEL_PATHS = [
+  'apps/mobile/src/features/weather/components/',
+  'apps/mobile/src/features/weather/constants/',
+  'apps/mobile/src/features/weather/domains/',
+  'apps/mobile/src/features/weather/hooks/',
+  'apps/mobile/src/features/weather/queries/',
+  'apps/mobile/src/features/weather/utils/',
   'apps/mobile/src/features/notes/memo/components/',
   'apps/mobile/src/features/notes/memo/constants/',
   'apps/mobile/src/features/notes/memo/domains/',

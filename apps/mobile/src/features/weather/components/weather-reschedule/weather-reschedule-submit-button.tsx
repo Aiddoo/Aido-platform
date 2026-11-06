@@ -6,6 +6,7 @@ import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as translate, useTranslation } from '@src/shared/i18n';
@@ -19,16 +20,17 @@ import {
   toOriginalScheduleInput,
   toRescheduleOutcome,
   toRescheduleTargets,
-  type WeatherRescheduleFormValues,
-} from '../../domains/weather-reschedule-form.schema';
+} from '../../domains/weather-reschedule.model';
 import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
 import { useRescheduleTodoMutationOptions } from '../../queries/use-reschedule-todo-mutation-options';
+import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
 export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation('weather');
   const toast = useAppToast();
   const queryClient = useQueryClient();
+  const { timeZone } = useDateFormatContext();
   const showFailure = useMutationFailure(translate('todo:toast.updateFailedRetry'));
   const logger = useLogger();
   const { trackEvent } = useTrack();
@@ -74,7 +76,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
       targets.map(({ todo, startsAt }) =>
         updateSchedule.mutateAsync({
           todoId: todo.id,
-          input: toMovedScheduleInput(todo, startsAt),
+          input: toMovedScheduleInput(todo, startsAt, timeZone),
         }),
       ),
     );

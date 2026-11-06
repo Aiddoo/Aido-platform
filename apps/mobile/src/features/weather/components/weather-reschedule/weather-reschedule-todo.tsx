@@ -1,4 +1,4 @@
-import type { WeatherRescheduleReason } from '@aido/api';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -8,10 +8,8 @@ import { useFormContext } from 'react-hook-form';
 
 import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
 import type { ForecastTodo, RescheduleOption } from '../../domains/weather-briefing.model';
-import {
-  toSelectionKey,
-  type WeatherRescheduleFormValues,
-} from '../../domains/weather-reschedule-form.schema';
+import { toSelectionKey } from '../../domains/weather-reschedule.model';
+import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
 
 interface WeatherRescheduleTodoProps {
@@ -53,7 +51,7 @@ export function WeatherRescheduleTodo({
         <FormField
           control={control}
           name={`selections.${toSelectionKey(todo.todoId)}`}
-          defaultValue={recommended.startsAt.toISOString()}
+          defaultValue={recommended.startsAt}
         >
           {({ value, onChange }) => (
             <WeatherRescheduleTimeInput

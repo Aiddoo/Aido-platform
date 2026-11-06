@@ -1,14 +1,13 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
-import { toDateKey } from '@src/shared/date/instant';
+import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
 import { round, sumBy } from 'es-toolkit';
 
-import {
-  type AirPollutant,
-  type AirQuality,
-  type DailyForecastEntry,
-  type HourlyForecastEntry,
-  selectUpcomingHours,
-} from './weather-report.model';
+import type {
+  AirQuality,
+  DailyForecastEntry,
+  HourlyForecastEntry,
+} from '../schemas/weather-report.schema';
+import { type AirPollutant, selectUpcomingHours } from './weather-report.model';
 
 function pickPollutant(
   airQuality: Pick<AirQuality, 'pm10' | 'pm25'>,
@@ -51,8 +50,8 @@ function isMuggy(humidity: number): boolean {
 const SUNSCREEN_UV_INDEX = 3;
 
 interface TimeWindow {
-  startsAt: Date;
-  endsAt: Date;
+  startsAt: Instant;
+  endsAt: Instant;
 }
 
 /** 오늘(위치 시간대) 남은 시간 중 자외선 차단이 필요한 첫 시각~마지막 시각. 없으면 null이다. */
@@ -70,7 +69,7 @@ function getSunscreenWindow(
   if (first == null || last == null) {
     return null;
   }
-  return { startsAt: first.startsAt, endsAt: new Date(last.startsAt.getTime() + HOUR_MS) };
+  return { startsAt: first.startsAt, endsAt: fromEpochMs(toEpochMs(last.startsAt) + HOUR_MS) };
 }
 
 const NEXT_DAY_HOURS = 24;
@@ -88,9 +87,9 @@ function sumNextDayPrecipitation(hourly: readonly HourlyForecastEntry[], now: Da
 }
 
 export type NextSunEvent =
-  | { kind: 'sunrise'; at: Date }
-  | { kind: 'sunset'; at: Date }
-  | { kind: 'sunriseTomorrow'; at: Date };
+  | { kind: 'sunrise'; at: Instant }
+  | { kind: 'sunset'; at: Instant }
+  | { kind: 'sunriseTomorrow'; at: Instant };
 
 /** 오늘 아직 지나지 않은 일출·일몰, 둘 다 지났으면 내일 일출. 모두 없으면 null이다. */
 function getNextSunEvent(
@@ -98,10 +97,10 @@ function getNextSunEvent(
   tomorrow: Pick<DailyForecastEntry, 'sunrise'> | null,
   now: Date,
 ): NextSunEvent | null {
-  if (today.sunrise != null && now.getTime() < today.sunrise.getTime()) {
+  if (today.sunrise != null && now.getTime() < toEpochMs(today.sunrise)) {
     return { kind: 'sunrise', at: today.sunrise };
   }
-  if (today.sunset != null && now.getTime() < today.sunset.getTime()) {
+  if (today.sunset != null && now.getTime() < toEpochMs(today.sunset)) {
     return { kind: 'sunset', at: today.sunset };
   }
   if (tomorrow?.sunrise != null) {
@@ -121,7 +120,7 @@ function getDaylightDuration(day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>
   }
   const totalMinutes = Math.max(
     0,
-    Math.round((day.sunset.getTime() - day.sunrise.getTime()) / MINUTE_MS),
+    Math.round((toEpochMs(day.sunset) - toEpochMs(day.sunrise)) / MINUTE_MS),
   );
   return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
 }

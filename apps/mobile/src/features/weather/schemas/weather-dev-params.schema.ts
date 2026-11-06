@@ -1,4 +1,4 @@
-import { WEATHER_CONDITIONS } from '@aido/api';
+import { WEATHER_CONDITIONS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 export const weatherDevParamsSchema = z.object({

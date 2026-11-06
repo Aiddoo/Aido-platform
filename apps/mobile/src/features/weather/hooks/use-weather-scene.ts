@@ -1,3 +1,4 @@
+import { fromEpochMs } from '@src/shared/date/instant';
 import { useQuery } from '@tanstack/react-query';
 
 import {
@@ -19,7 +20,7 @@ const DEFAULT_SCENE_INPUT: WeatherSceneInput = {
   precipitationIntensity: 0,
   cloudCover: 0,
   windSpeed: 0,
-  observedAt: new Date(),
+  observedAt: fromEpochMs(Date.now()),
   latitude: 0,
 };
 

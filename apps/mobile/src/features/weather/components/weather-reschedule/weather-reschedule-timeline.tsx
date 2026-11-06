@@ -1,11 +1,12 @@
-import { toDateKey } from '@src/shared/date/instant';
+import { toDateKey, toEpochMs } from '@src/shared/date/instant';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 
-import { type HourlyForecastEntry, WeatherReportPolicy } from '../../domains/weather-report.model';
+import { WeatherReportPolicy } from '../../domains/weather-report.model';
+import type { HourlyForecastEntry } from '../../schemas/weather-report.schema';
 import { toUnitPosition } from '../../utils/weather-bar.geometry';
 
 const CHART_HEIGHT = 40;
@@ -33,7 +34,7 @@ export function WeatherRescheduleTimeline({ hours }: { hours: HourlyForecastEntr
     >
       {todayHours.map((hour) => (
         <Box
-          key={hour.startsAt.getTime()}
+          key={toEpochMs(hour.startsAt)}
           flex={1}
           className={cn(
             'rounded-sm',

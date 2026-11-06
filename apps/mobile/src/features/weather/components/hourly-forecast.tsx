@@ -5,6 +5,7 @@ import {
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/date-format';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -26,13 +27,13 @@ import {
   WEATHER_CONDITION_LABEL_KEYS,
 } from '../constants/weather-labels';
 import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
-import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { type HourlyTimelineItem, toHourlyTimeline } from '../utils/hourly-timeline.view-model';
 import {
   formatDegrees,
@@ -77,8 +78,8 @@ interface TimelineContext {
 
 function timelineKey(item: HourlyTimelineItem): string {
   return item.kind === 'hour'
-    ? String(item.hour.startsAt.getTime())
-    : `${item.kind}-${item.at.getTime()}`;
+    ? String(toEpochMs(item.hour.startsAt))
+    : `${item.kind}-${toEpochMs(item.at)}`;
 }
 
 export function HourlyForecast() {
@@ -137,7 +138,7 @@ HourlyForecast.Summary = function Summary({
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
   const localTime = useLocalTimeLabel(dateFormat.timeZone, now);
-  const hourLabel = (date: Date) => localTime(formatInstantHour(date, timeFormat, dateFormat));
+  const hourLabel = (date: Instant) => localTime(formatInstantHour(date, timeFormat, dateFormat));
 
   const sentence = match(summary)
     .with({ kind: 'precipitationOngoing' }, ({ precipitationType, endsAt, endsOnLaterDay }) => {
@@ -283,7 +284,7 @@ function SunCell({
   context: { dateFormat, timeFormat },
 }: {
   kind: 'sunrise' | 'sunset';
-  at: Date;
+  at: Instant;
   width: number;
   context: TimelineContext;
 }) {

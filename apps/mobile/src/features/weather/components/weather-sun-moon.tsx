@@ -1,5 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatClockTime, formatDateKeyLabel } from '@src/shared/date/date-format';
+import { type Instant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
@@ -33,7 +34,7 @@ export function WeatherSunMoon() {
   const now = useMinuteNow();
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const localTime = useLocalTimeLabel(data.location.timezone, now);
-  const formatTime = (date: Date) => formatClockTime(date, preference.timeFormat, dateFormat);
+  const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
   const today = WeatherReportPolicy.findTodayForecast(data, now);
   if (today == null) {
     return null;

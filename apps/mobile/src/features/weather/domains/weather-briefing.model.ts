@@ -5,19 +5,22 @@ import {
 } from '@aido/api/vocabulary';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { getZonedHour, toDateKey } from '@src/shared/date/instant';
+import {
+  type Instant,
+  fromEpochMs,
+  getZonedHour,
+  toDate,
+  toDateKey,
+  toEpochMs,
+} from '@src/shared/date/instant';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import { maxBy, orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import {
-  type DailyForecastEntry,
-  type HourlyForecastEntry,
-  isFrozenPrecipitation,
-  isWetHour,
-} from './weather-report.model';
+import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
+import { isFrozenPrecipitation, isWetHour } from './weather-report.model';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -42,7 +45,7 @@ type BriefingSubTodoProgress = { completed: number; total: number } | null;
 export interface BriefingTodo {
   id: number;
   title: string;
-  scheduledAt: Date | null;
+  scheduledAt: Instant | null;
   completed: boolean;
   subTodoProgress: BriefingSubTodoProgress;
 }
@@ -69,7 +72,7 @@ function toBriefingTodo(
     scheduledAt:
       todo.isAllDay || todo.localTime == null
         ? null
-        : dayjs.tz(`${date} ${todo.localTime}`, timeZone).toDate(),
+        : fromEpochMs(dayjs.tz(`${date} ${todo.localTime}`, timeZone).valueOf()),
     completed: todo.completed,
     subTodoProgress: todo.subTodoStats.total > 0 ? todo.subTodoStats : null,
   };
@@ -79,7 +82,7 @@ function toBriefingTodo(
 export interface ForecastTodo {
   todoId: number;
   title: string;
-  scheduledAt: Date;
+  scheduledAt: Instant;
   /** 브리핑에서 체크해도 줄이 사라지지 않도록 완료한 할 일도 남긴다. 옮기기 대상에서는 뺀다. */
   completed: boolean;
   subTodoProgress: BriefingSubTodoProgress;
@@ -87,15 +90,15 @@ export interface ForecastTodo {
 }
 
 export interface RescheduleOption {
-  startsAt: Date;
+  startsAt: Instant;
   precipitationChance: number;
   apparentTemperature: number;
   isRecommended: boolean;
 }
 
 export interface HourRange {
-  startsAt: Date;
-  endsAt: Date;
+  startsAt: Instant;
+  endsAt: Instant;
 }
 
 type BriefingDay = 'today' | 'tomorrow';
@@ -109,7 +112,7 @@ export type BriefingResult =
   | {
       kind: 'rainLater';
       todos: ForecastTodo[];
-      startsAt: Date;
+      startsAt: Instant;
       day: BriefingDay;
       dayPart: DayPart;
       isSnow: boolean;
@@ -132,10 +135,10 @@ interface BriefingClock {
   timeZone: string;
 }
 
-function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Date): number {
-  const time = at.getTime();
+function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant | Date): number {
+  const time = toDate(at).getTime();
   return hourly.findIndex(
-    (hour) => hour.startsAt.getTime() <= time && time < hour.startsAt.getTime() + HOUR_MS,
+    (hour) => toEpochMs(hour.startsAt) <= time && time < toEpochMs(hour.startsAt) + HOUR_MS,
   );
 }
 
@@ -175,7 +178,10 @@ function toHourRange(
   }
   const startHour = hourly[first] ?? anchorHour;
   const endHour = hourly[last] ?? anchorHour;
-  return { startsAt: startHour.startsAt, endsAt: new Date(endHour.startsAt.getTime() + HOUR_MS) };
+  return {
+    startsAt: startHour.startsAt,
+    endsAt: fromEpochMs(toEpochMs(endHour.startsAt) + HOUR_MS),
+  };
 }
 
 /** 지금 이후로 시각이 정해진 할 일을 그 시각의 예보와 묶는다. 완료 여부는 남기고, 예보 범위 밖이면 뺀다. */
@@ -185,7 +191,7 @@ function getForecastTodos(
   now: Date,
 ): ForecastTodo[] {
   return todos.flatMap((todo) => {
-    if (todo.scheduledAt == null || todo.scheduledAt.getTime() < now.getTime()) {
+    if (todo.scheduledAt == null || toEpochMs(todo.scheduledAt) < now.getTime()) {
       return [];
     }
     const hour = hourly[findHourIndexAt(hourly, todo.scheduledAt)];
@@ -279,8 +285,8 @@ function toHotBriefing(
   }
   const hotHours = hourly.filter(
     (hour) =>
-      hour.startsAt.getTime() >= range.startsAt.getTime() &&
-      hour.startsAt.getTime() < range.endsAt.getTime(),
+      toEpochMs(hour.startsAt) >= toEpochMs(range.startsAt) &&
+      toEpochMs(hour.startsAt) < toEpochMs(range.endsAt),
   );
   const peak = maxBy(hotHours, (hour) => hour.apparentTemperature);
   return {
@@ -335,7 +341,7 @@ function toClearBriefing(
   const todayKey = toDateKey(now, timeZone);
   const daylightHours = hourly.filter(
     (hour) =>
-      hour.startsAt.getTime() + HOUR_MS > now.getTime() &&
+      toEpochMs(hour.startsAt) + HOUR_MS > now.getTime() &&
       hour.isDaylight &&
       toDateKey(hour.startsAt, timeZone) === todayKey,
   );
@@ -427,10 +433,11 @@ function getRescheduleOptions(
 ): RescheduleOption[] {
   const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
   const distance = (hour: HourlyForecastEntry) =>
-    Math.abs(hour.startsAt.getTime() - todo.scheduledAt.getTime());
+    Math.abs(toEpochMs(hour.startsAt) - toEpochMs(todo.scheduledAt));
   const sameDayHours = hourly.filter(
     (hour) =>
-      hour.startsAt.getTime() > now.getTime() && toDateKey(hour.startsAt, timeZone) === todoDateKey,
+      toEpochMs(hour.startsAt) > now.getTime() &&
+      toDateKey(hour.startsAt, timeZone) === todoDateKey,
   );
   const ordered = match(reason)
     .with('rain', () =>
@@ -457,10 +464,10 @@ function getRescheduleOptions(
 }
 
 /** 추천 시간대 안에서 아직 시작하지 않은 첫 정시. 이미 모두 지났으면 제안하지 않는다. */
-function getSuggestedStartAt(range: HourRange, now: Date): Date | null {
+function getSuggestedStartAt(range: HourRange, now: Date): Instant | null {
   const nextHour = Math.ceil(now.getTime() / HOUR_MS) * HOUR_MS;
-  const startsAt = Math.max(range.startsAt.getTime(), nextHour);
-  return startsAt < range.endsAt.getTime() ? new Date(startsAt) : null;
+  const startsAt = Math.max(toEpochMs(range.startsAt), nextHour);
+  return startsAt < toEpochMs(range.endsAt) ? fromEpochMs(startsAt) : null;
 }
 
 export const WeatherBriefingPolicy = {

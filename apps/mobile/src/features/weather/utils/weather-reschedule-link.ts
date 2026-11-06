@@ -1,4 +1,4 @@
-import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api';
+import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';

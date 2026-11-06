@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import {
   createHourlyForecastDto,
   createWeatherReport,
@@ -41,7 +43,7 @@ describe('toHourlyTimeline', () => {
     });
     const report = {
       ...base,
-      daily: base.daily.map((day) => ({ ...day, sunset: new Date('2026-11-02T08:00:00.000Z') })),
+      daily: base.daily.map((day) => ({ ...day, sunset: toInstant('2026-11-02T08:00:00.000Z') })),
     };
 
     // When

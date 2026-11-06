@@ -8,12 +8,9 @@ import type { Logger } from '@src/core/ports/logger';
 import { isApiError, isBusinessError, toError, unwrap } from '@src/shared/errors';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import {
-  type Coordinates,
-  type LocationReading,
-  WeatherLocationPolicy,
-} from '../domains/weather-location.model';
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { WeatherErrorCode } from '../domains/weather.error';
+import type { Coordinates, LocationReading } from '../schemas/weather-location.schema';
 import type { WeatherService } from './weather.service';
 
 export interface WeatherLocationDependencies {

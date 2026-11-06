@@ -6,7 +6,7 @@ import { createWeatherReportDto } from '../__tests__/weather-report.factories';
 import { WeatherService } from './weather.service';
 
 describe('WeatherService.getReport', () => {
-  it('v2 날씨를 요청하고 시각을 Date로 바꾼 리포트를 돌려준다', async () => {
+  it('v2 날씨를 요청하고 시각을 Instant로 바꾼 리포트를 돌려준다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createWeatherReportDto() });
@@ -18,7 +18,7 @@ describe('WeatherService.getReport', () => {
 
     // Then
     expect(httpClient.get).toHaveBeenCalledWith('v2/weather', { signal });
-    expect(result.ok && result.value.fetchedAt).toEqual(new Date('2026-11-02T06:20:00.000Z'));
+    expect(result.ok && result.value.fetchedAt).toEqual('2026-11-02T06:20:00.000Z');
   });
 
   it('응답이 공유 계약과 다르면 ParseError를 던진다', async () => {

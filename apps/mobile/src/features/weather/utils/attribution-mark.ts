@@ -1,4 +1,4 @@
-import type { AttributionInfo } from '../domains/weather-report.model';
+import type { AttributionInfo } from '../schemas/weather-report.schema';
 
 export type AttributionBackground = 'light' | 'dark';
 

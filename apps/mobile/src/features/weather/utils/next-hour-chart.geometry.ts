@@ -1,7 +1,7 @@
 import { area, curveMonotoneX, line } from 'd3-shape';
 import { clamp, sumBy, zip } from 'es-toolkit';
 
-import type { MinuteForecast } from '../domains/weather-report.model';
+import type { MinuteForecast } from '../schemas/weather-report.schema';
 
 /** 그래프 좌표계. 화면에서는 viewBox로 폭에 맞춰 같은 비율로 늘린다. */
 export const NEXT_HOUR_CHART_SIZE = { width: 326, height: 92, baseline: 84, top: 8 } as const;

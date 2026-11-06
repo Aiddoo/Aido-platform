@@ -1,18 +1,16 @@
 import { HOUR_MS } from '@src/shared/constants/time.constants';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 
-import {
-  type HourlyForecastEntry,
-  WeatherReportPolicy,
-  type WeatherReport,
-} from '../domains/weather-report.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { HourlyForecastEntry, WeatherReport } from '../schemas/weather-report.schema';
 
 export type HourlyTimelineItem =
   | { kind: 'hour'; hour: HourlyForecastEntry; isNow: boolean }
-  | { kind: 'sunrise' | 'sunset'; at: Date };
+  | { kind: 'sunrise' | 'sunset'; at: Instant };
 
 function getTimelineTime(item: HourlyTimelineItem): number {
-  return item.kind === 'hour' ? item.hour.startsAt.getTime() : item.at.getTime();
+  return item.kind === 'hour' ? toEpochMs(item.hour.startsAt) : toEpochMs(item.at);
 }
 
 /** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
@@ -25,8 +23,9 @@ export function toHourlyTimeline(
   if (last == null) {
     return [];
   }
-  const rangeEnd = last.startsAt.getTime() + HOUR_MS;
-  const isInRange = (date: Date) => date.getTime() > now.getTime() && date.getTime() < rangeEnd;
+  const rangeEnd = toEpochMs(last.startsAt) + HOUR_MS;
+  const isInRange = (date: Instant) =>
+    toEpochMs(date) > now.getTime() && toEpochMs(date) < rangeEnd;
 
   const hourItems = hours.map((hour, index): HourlyTimelineItem => ({
     kind: 'hour',

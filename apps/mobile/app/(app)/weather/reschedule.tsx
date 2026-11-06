@@ -8,12 +8,12 @@ import { WeatherRescheduleTodo } from '@src/features/weather/components/weather-
 import { RESCHEDULE_COPY_KEYS } from '@src/features/weather/constants/weather-labels';
 import { WeatherBriefingPolicy } from '@src/features/weather/domains/weather-briefing.model';
 import { WeatherReportPolicy } from '@src/features/weather/domains/weather-report.model';
-import { weatherRescheduleFormSchema } from '@src/features/weather/domains/weather-reschedule-form.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '@src/features/weather/queries/get-weather-report-query-options';
+import { weatherRescheduleFormSchema } from '@src/features/weather/schemas/weather-reschedule-form.schema';
 import { weatherRescheduleParamsSchema } from '@src/features/weather/schemas/weather-reschedule-params.schema';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';

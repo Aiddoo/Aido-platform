@@ -6,9 +6,10 @@ import * as Linking from 'expo-linking';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import { type PlaceName, WeatherLocationPolicy } from '../domains/weather-location.model';
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { useGetWeatherLocationQueryOptions } from '../queries/get-weather-location-query-options';
 import { refetchWeatherLocation } from '../queries/weather-cache';
+import type { PlaceName } from '../schemas/weather-location.schema';
 
 export type WeatherLocation =
   | { status: 'checking' }

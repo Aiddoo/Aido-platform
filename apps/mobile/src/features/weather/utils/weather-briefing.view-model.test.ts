@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.factories';
 import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import {
@@ -17,8 +19,8 @@ const DEPS: BriefingViewDeps = {
   hourly: report.hourly,
   now: NOW,
   timeZone: 'Asia/Seoul',
-  formatClock: (date) => `clock:${date.toISOString()}`,
-  formatHour: (date) => `hour:${date.toISOString()}`,
+  formatClock: (date) => `clock:${date}`,
+  formatHour: (date) => `hour:${date}`,
   formatDegrees: (celsius) => `${celsius}°`,
   formatChance: (percent) => `${percent}%`,
 };
@@ -27,7 +29,7 @@ function createTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
   return {
     id: 1,
     title: '산책',
-    scheduledAt: new Date('2026-11-02T07:30:00.000Z'),
+    scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
     completed: false,
     subTodoProgress: null,
     ...overrides,

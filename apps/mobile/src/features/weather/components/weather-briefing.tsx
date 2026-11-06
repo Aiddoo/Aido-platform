@@ -1,4 +1,4 @@
-import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api';
+import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api/vocabulary';
 import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
@@ -40,12 +40,12 @@ import { z } from 'zod';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
-import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
 import { toWeatherBriefingKind } from '../utils/analytics/weather-analytics';
 import {

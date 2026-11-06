@@ -12,7 +12,7 @@ describe('WeatherNextHourPolicy.getHourlyPrecipitationOutlook', () => {
 
     const outlook = WeatherNextHourPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
 
-    expect(outlook?.hour.startsAt).toEqual(new Date('2026-11-02T07:00:00.000Z'));
+    expect(outlook?.hour.startsAt).toEqual('2026-11-02T07:00:00.000Z');
     expect(outlook?.hour.precipitationChance).toBe(70);
     expect(outlook?.isOngoing).toBe(false);
   });

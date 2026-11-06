@@ -15,8 +15,9 @@ import { type Query, type QueryClient, queryOptions, useQuery } from '@tanstack/
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
-import { type LocationReading, WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { WeatherReport } from '../domains/weather-report.model';
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import type { LocationReading } from '../schemas/weather-location.schema';
+import type { WeatherReport } from '../schemas/weather-report.schema';
 
 const LOCATION_STALE_TIME_MS = 30 * 60_000;
 

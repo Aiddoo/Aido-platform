@@ -7,14 +7,14 @@ import { pick } from 'es-toolkit';
 
 import type { WeatherSceneInput } from '../components/weather-scene/weather-scene';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
-import type { LocationReading } from '../domains/weather-location.model';
-import type { WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
 import {
   applyDevWeatherOverride,
   type DevWeatherOverride,
   useDevWeatherOverride,
 } from '../hooks/use-dev-weather-override';
+import type { LocationReading } from '../schemas/weather-location.schema';
+import type { WeatherReport } from '../schemas/weather-report.schema';
 import { useWeatherLocationRevision } from './get-weather-location-query-options';
 import { removeOutdatedWeatherReports } from './weather-cache';
 

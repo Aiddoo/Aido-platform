@@ -1,4 +1,4 @@
-import type { WeatherCondition } from '@aido/api';
+import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { createStyledIcon } from '@src/shared/ui/icon/create-styled-icon';
 import { round } from 'es-toolkit';

@@ -1,4 +1,4 @@
-import type { WeatherMoonPhase } from '@aido/api';
+import type { WeatherMoonPhase } from '@aido/api/vocabulary';
 import { useId } from 'react';
 import Svg, {
   Circle,

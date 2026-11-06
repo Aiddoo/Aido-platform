@@ -1,4 +1,4 @@
-import type { WeatherCondition } from '@aido/api';
+import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

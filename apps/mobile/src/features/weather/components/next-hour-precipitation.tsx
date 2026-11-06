@@ -26,7 +26,7 @@ import {
   type HourlyPrecipitationOutlook,
   WeatherNextHourPolicy,
 } from '../domains/weather-next-hour.model';
-import { type MinuteForecast, WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { usePrecipitationMessage } from '../hooks/use-precipitation-message';
@@ -34,6 +34,7 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import type { MinuteForecast } from '../schemas/weather-report.schema';
 import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';

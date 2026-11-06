@@ -132,10 +132,11 @@ export function formatDateKeyCompactRange(
 
 /** 로케일 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM", 24시간제: "18:30"). */
 export function formatClockTime(
-  date: Date,
+  value: Date | Instant,
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
+  const date = toDate(value);
   if (!isValidDate(date)) {
     return '';
   }
@@ -173,7 +174,7 @@ export function formatHourLabel(
 
 /** 순간이 놓인 시각을 정시로 표시한다. 시는 context 시간대로 읽는다 (서울 15:20 → "오후 3시"). */
 export function formatInstantHour(
-  date: Date,
+  date: Date | Instant,
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {

@@ -1,8 +1,10 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { createWeatherReportDto } from '../__tests__/weather-report.factories';
 import { toWeatherReport } from './weather.mapper';
 
 describe('toWeatherReport', () => {
-  it('ISO 시각을 Date로 한 번만 바꾸고 날짜 key는 문자열로 둔다', () => {
+  it('ISO 시각을 Instant로 한 번만 바꾸고 날짜 key는 문자열로 둔다', () => {
     // Given
     const dto = createWeatherReportDto();
 
@@ -10,9 +12,9 @@ describe('toWeatherReport', () => {
     const report = toWeatherReport(dto);
 
     // Then
-    expect(report.current.observedAt).toEqual(new Date('2026-11-02T06:26:00.000Z'));
-    expect(report.hourly[0]?.startsAt).toEqual(new Date('2026-11-02T06:00:00.000Z'));
-    expect(report.daily[0]?.sunrise).toEqual(new Date('2026-11-01T21:51:00.000Z'));
+    expect(report.current.observedAt).toEqual('2026-11-02T06:26:00.000Z');
+    expect(report.hourly[0]?.startsAt).toEqual('2026-11-02T06:00:00.000Z');
+    expect(report.daily[0]?.sunrise).toEqual('2026-11-01T21:51:00.000Z');
     expect(report.daily[0]?.date).toBe('2026-11-02');
   });
 
@@ -58,7 +60,7 @@ describe('toWeatherReport', () => {
 
     // Then
     expect(report.nextHour?.periods[0]).toMatchObject({
-      startsAt: new Date('2026-11-02T06:43:00.000Z'),
+      startsAt: toInstant('2026-11-02T06:43:00.000Z'),
       endsAt: null,
     });
   });

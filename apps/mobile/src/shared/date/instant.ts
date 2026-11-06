@@ -26,6 +26,11 @@ export function toInstant(value: string): Instant {
   return instantSchema.parse(value);
 }
 
+/** 에포크 밀리초에서 순간을 만든다 */
+export function fromEpochMs(ms: number): Instant {
+  return toInstant(new Date(ms).toISOString());
+}
+
 /** 에포크 밀리초. 오프셋이 달라도 같은 순간이면 같은 값이다 */
 export function toEpochMs(instant: Instant): number {
   return Date.parse(instant);
@@ -61,7 +66,8 @@ export function toDateKey(value: Date | Instant, timeZone: string): string {
   return year && month && day ? `${year}-${month}-${day}` : '';
 }
 
-export function getZonedHour(date: Date, timeZone: string): number {
+export function getZonedHour(value: Date | Instant, timeZone: string): number {
+  const date = toDate(value);
   if (!isValidDate(date)) {
     return Number.NaN;
   }
@@ -86,7 +92,12 @@ export function toHHmm(value: Date | Instant, timeZone: string): string {
 }
 
 /** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */
-export function hasSameWallClock(date: Date, timeZone: string, otherTimeZone: string): boolean {
+export function hasSameWallClock(
+  value: Date | Instant,
+  timeZone: string,
+  otherTimeZone: string,
+): boolean {
+  const date = toDate(value);
   if (!isValidDate(date)) {
     return true;
   }

@@ -1,7 +1,7 @@
 import type { WeatherHourlyForecast, WeatherReportResponse } from '@aido/api';
 
 import { toWeatherReport } from '../apis/weather.mapper';
-import type { WeatherReport } from '../domains/weather-report.model';
+import type { WeatherReport } from '../schemas/weather-report.schema';
 
 const HOUR_MS = 60 * 60_000;
 

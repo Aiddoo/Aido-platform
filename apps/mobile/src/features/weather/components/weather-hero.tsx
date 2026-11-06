@@ -1,6 +1,7 @@
 import catAnchorImage from '@assets/images/cat_weather_anchor.png';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
+import { toDate, type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -21,8 +22,7 @@ import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanima
 import { match, P } from 'ts-pattern';
 
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
-import type { PlaceName } from '../domains/weather-location.model';
-import { type DailyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
 import {
   isConnectionError,
   isLocationNotRegisteredError,
@@ -34,6 +34,8 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import type { PlaceName } from '../schemas/weather-location.schema';
+import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import { toWeatherReportFailedCause } from '../utils/analytics/weather-analytics';
 import { getForeignCountryName } from '../utils/country-name';
 import {
@@ -310,12 +312,18 @@ WeatherHero.RestOfDay = function RestOfDay({
 };
 
 /** 30분 넘게 갱신되지 않은 데이터는 오류가 아니라 받은 시각만 조용히 알린다. */
-WeatherHero.StaleNotice = function StaleNotice({ fetchedAt, now }: { fetchedAt: Date; now: Date }) {
+WeatherHero.StaleNotice = function StaleNotice({
+  fetchedAt,
+  now,
+}: {
+  fetchedAt: Instant;
+  now: Date;
+}) {
   const { t } = useTranslation('weather');
   const dateFormat = useDateFormatContext();
   return (
     <Text size="b4" align="center" className="mt-1 text-on-sky/[0.78]" style={HERO_TEXT_SHADOW}>
-      {t('hero.stale', { relative: formatRelativeTimeLabel(fetchedAt, now, dateFormat) })}
+      {t('hero.stale', { relative: formatRelativeTimeLabel(toDate(fetchedAt), now, dateFormat) })}
     </Text>
   );
 };

@@ -1,4 +1,4 @@
-import type { WeatherRescheduleReason } from '@aido/api';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -34,7 +34,7 @@ export function WeatherRescheduleTimeInput({
     <RadioGroup value={value} onValueChange={onChange} className="gap-0" {...props}>
       {options.map((option) => (
         <RescheduleTimeOption
-          key={option.startsAt.toISOString()}
+          key={option.startsAt}
           option={option}
           reason={reason}
           timeFormat={timeFormat}
@@ -67,12 +67,7 @@ function RescheduleTimeOption({ option, reason, timeFormat, ...props }: Reschedu
 
   return (
     <Box>
-      <IconRadioItem
-        value={option.startsAt.toISOString()}
-        label={time}
-        description={description}
-        {...props}
-      />
+      <IconRadioItem value={option.startsAt} label={time} description={description} {...props} />
       {option.isRecommended && (
         <Box className="absolute right-14 top-0 h-full justify-center" pointerEvents="none">
           <Chip size="sm" color="accent" variant="soft">

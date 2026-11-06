@@ -1,4 +1,5 @@
 import type { WeatherHourlyForecast } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
@@ -32,7 +33,7 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
     expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
-      endsAt: new Date('2026-11-02T08:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T08:00:00.000Z'),
       endsOnLaterDay: false,
     });
   });
@@ -50,7 +51,7 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
     expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toMatchObject({
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
-      endsAt: new Date('2026-11-02T07:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T07:00:00.000Z'),
     });
   });
 
@@ -73,7 +74,7 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
     expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'precipitationUpcoming',
       precipitationType: 'RAIN',
-      startsAt: new Date('2026-11-02T16:00:00.000Z'),
+      startsAt: toInstant('2026-11-02T16:00:00.000Z'),
       startsOnLaterDay: true,
       skyBefore: 'cloudy',
     });
@@ -101,7 +102,7 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
       kind: 'skyChange',
       from: 'clear',
       to: 'cloudy',
-      changesAt: new Date('2026-11-02T09:00:00.000Z'),
+      changesAt: toInstant('2026-11-02T09:00:00.000Z'),
       changesOnLaterDay: false,
     });
   });
@@ -120,7 +121,7 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
     expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'steady',
       sky: 'cloudy',
-      peak: { extreme: 'highest', at: new Date('2026-11-02T07:00:00.000Z'), temperature: 16 },
+      peak: { extreme: 'highest', at: toInstant('2026-11-02T07:00:00.000Z'), temperature: 16 },
     });
   });
 

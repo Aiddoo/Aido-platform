@@ -2,11 +2,8 @@ import { readQueryKeyParams } from '@src/shared/utils/query-key-params';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
-import {
-  type LocationReading,
-  type RegisteredLocation,
-  WeatherLocationPolicy,
-} from '../domains/weather-location.model';
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import type { LocationReading, RegisteredLocation } from '../schemas/weather-location.schema';
 import { weatherReportQueryParamsSchema } from '../schemas/weather-report-query-params.schema';
 
 /**

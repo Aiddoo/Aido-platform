@@ -1,4 +1,5 @@
 import type { WeatherAlert as WeatherAlertDto, WeatherNextHourPeriod } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 
 import {
   createHanoiReportDto,
@@ -59,12 +60,14 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
       kind: 'upcoming',
       precision: 'minute',
       precipitationType: 'RAIN',
-      startsAt: new Date('2026-11-02T06:43:00.000Z'),
-      endsAt: new Date('2026-11-02T08:00:00.000Z'),
+      startsAt: toInstant('2026-11-02T06:43:00.000Z'),
+      endsAt: toInstant('2026-11-02T08:00:00.000Z'),
       endPrecision: 'hour',
       endsOnLaterDay: false,
     });
-    expect(WeatherReportPolicy.getMinutesUntil(new Date('2026-11-02T06:43:00.000Z'), NOW)).toBe(17);
+    expect(WeatherReportPolicy.getMinutesUntil(toInstant('2026-11-02T06:43:00.000Z'), NOW)).toBe(
+      17,
+    );
   });
 
   it('비 구간이 이미 시작됐으면 지금 오는 비로 보고 구간 끝 시각을 그침 시각으로 쓴다', () => {
@@ -88,7 +91,7 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
     expect(window).toEqual({
       kind: 'ongoing',
       precipitationType: 'RAIN',
-      endsAt: new Date('2026-11-02T06:50:00.000Z'),
+      endsAt: toInstant('2026-11-02T06:50:00.000Z'),
       endPrecision: 'minute',
       endsOnLaterDay: false,
     });
@@ -145,8 +148,8 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
       kind: 'upcoming',
       precision: 'hour',
       precipitationType: 'RAIN',
-      startsAt: new Date('2026-11-02T07:00:00.000Z'),
-      endsAt: new Date('2026-11-02T09:00:00.000Z'),
+      startsAt: toInstant('2026-11-02T07:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T09:00:00.000Z'),
       endPrecision: 'hour',
       endsOnLaterDay: false,
     });
@@ -165,7 +168,7 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
     // Then
     expect(window).toMatchObject({
       kind: 'ongoing',
-      endsAt: new Date('2026-11-02T07:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T07:00:00.000Z'),
     });
   });
 
@@ -202,7 +205,7 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
     // Then
     expect(window).toMatchObject({
       kind: 'ongoing',
-      endsAt: new Date('2026-11-02T15:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T15:00:00.000Z'),
       endsOnLaterDay: expected,
     });
   });
@@ -219,7 +222,7 @@ describe('WeatherReportPolicy.selectUpcomingHours', () => {
     const hours = WeatherReportPolicy.selectUpcomingHours(report.hourly, NOW);
 
     // Then
-    expect(hours.map((hour) => hour.startsAt.toISOString())).toEqual([
+    expect(hours.map((hour) => hour.startsAt)).toEqual([
       '2026-11-02T06:00:00.000Z',
       '2026-11-02T07:00:00.000Z',
     ]);
@@ -294,8 +297,8 @@ describe('WeatherReportPolicy.getSunEvents', () => {
     // Then
     expect(events).toEqual({
       kind: 'regular',
-      sunrise: new Date('2026-11-01T21:51:00.000Z'),
-      sunset: new Date('2026-11-02T08:28:00.000Z'),
+      sunrise: toInstant('2026-11-01T21:51:00.000Z'),
+      sunset: toInstant('2026-11-02T08:28:00.000Z'),
     });
   });
 
@@ -417,8 +420,8 @@ describe('지역별 리포트 프리셋', () => {
       kind: 'upcoming',
       precision: 'hour',
       precipitationType: 'RAIN',
-      startsAt: new Date('2026-11-02T07:00:00.000Z'),
-      endsAt: new Date('2026-11-02T09:00:00.000Z'),
+      startsAt: toInstant('2026-11-02T07:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T09:00:00.000Z'),
       endPrecision: 'hour',
       endsOnLaterDay: false,
     });
@@ -521,6 +524,6 @@ describe('오프라인에서 저장한 리포트를 실제 지금 기준으로 �
     // Given 06:00~13:00 시간별 예보 When 13:10 기준으로 고르면 Then 13시 칸만 남는다
     const hours = WeatherReportPolicy.selectUpcomingHours(restored.hourly, now);
 
-    expect(hours.map((hour) => hour.startsAt.toISOString())).toEqual(['2026-11-02T13:00:00.000Z']);
+    expect(hours.map((hour) => hour.startsAt)).toEqual(['2026-11-02T13:00:00.000Z']);
   });
 });

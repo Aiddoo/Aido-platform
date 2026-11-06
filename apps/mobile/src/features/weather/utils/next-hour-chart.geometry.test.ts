@@ -1,3 +1,4 @@
+import { fromEpochMs } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from './next-hour-chart.geometry';
@@ -6,7 +7,7 @@ const START = Date.parse('2026-11-02T06:26:00.000Z');
 
 function createMinutes(intensities: readonly number[]) {
   return intensities.map((precipitationIntensity, index) => ({
-    startsAt: new Date(START + index * 60_000),
+    startsAt: fromEpochMs(START + index * 60_000),
     precipitationChance: precipitationIntensity > 0 ? 80 : 0,
     precipitationIntensity,
   }));

@@ -1,5 +1,6 @@
-import type { WeatherCondition } from '@aido/api';
+import type { WeatherCondition } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time.constants';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -37,7 +38,7 @@ const WEATHER_SCENE_PRECIPITATION_KINDS = [
   'hail',
 ] as const;
 
-export type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
+type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
 
 /** 날씨마다 하나씩 두는 대표 대기 효과 */
 const WEATHER_SCENE_ATMOSPHERES = [
@@ -50,7 +51,7 @@ const WEATHER_SCENE_ATMOSPHERES = [
   'frost',
 ] as const;
 
-export type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
+type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
 
 const WEATHER_SCENE_SUNS = ['hidden', 'bright', 'diffuse', 'blazing'] as const;
 
@@ -103,7 +104,7 @@ export type WeatherSceneInput = {
   precipitationIntensity: number;
   cloudCover: number;
   windSpeed: number;
-  observedAt: Date;
+  observedAt: Instant;
   latitude: number;
 };
 
@@ -276,8 +277,8 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
 }
 
 /** 기준 삭에서 지난 날수를 삭망월로 나눈 나머지로 그 시각의 위상(0~1)을 구한다. */
-export function getMoonPhase(date: Date): number {
-  const days = (date.getTime() - KNOWN_NEW_MOON_MS) / DAY_MS;
+export function getMoonPhase(observedAt: Instant): number {
+  const days = (toEpochMs(observedAt) - KNOWN_NEW_MOON_MS) / DAY_MS;
   const cycles = days / SYNODIC_MONTH_DAYS;
   return cycles - Math.floor(cycles);
 }

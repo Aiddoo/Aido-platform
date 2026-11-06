@@ -193,6 +193,45 @@ describe('serializeQueryCache', () => {
     expect(restored).toMatchObject({ memo: { createdAt: new Date(1793923200000) } });
   });
 
+  it('날씨 리포트의 Instant 시각은 복원 뒤에도 같은 문자열이고 옛 $date 값은 Date로 되살아난다', () => {
+    // Given 새 버전이 저장한 리포트와, 옛 버전이 저장한 같은 모양의 리포트
+    const current = {
+      fetchedAt: '2026-11-02T06:20:00.000Z',
+      hourly: [{ startsAt: '2026-11-02T06:00:00.000Z' }],
+      daily: [{ sunrise: '2026-11-01T21:51:00+00:00', sunset: null }],
+    };
+    const legacy = JSON.stringify({
+      timestamp: 1,
+      buster: '1:1.14.0',
+      clientState: { mutations: [], queries: [] },
+      report: {
+        fetchedAt: { $date: 1793600400000 },
+        hourly: [{ startsAt: { $date: 1793599200000 } }],
+        daily: [{ sunrise: { $date: 1793569860000 }, sunset: null }],
+      },
+    });
+    const client = {
+      timestamp: 1,
+      buster: '1:1.15.0',
+      clientState: { mutations: [], queries: [] },
+      report: current,
+    };
+
+    // When
+    const restoredCurrent = deserializeQueryCache(serializeQueryCache(client));
+    const restoredLegacy = deserializeQueryCache(legacy);
+
+    // Then
+    expect(restoredCurrent).toEqual(client);
+    expect(restoredLegacy).toMatchObject({
+      report: {
+        fetchedAt: new Date(1793600400000),
+        hourly: [{ startsAt: new Date(1793599200000) }],
+        daily: [{ sunrise: new Date(1793569860000), sunset: null }],
+      },
+    });
+  });
+
   it('달력 날짜와 벽시계 시각 문자열은 복원 뒤에도 문자열 그대로다', () => {
     // Given
     const todo = {

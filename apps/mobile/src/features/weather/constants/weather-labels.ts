@@ -1,11 +1,11 @@
-import type { WeatherRescheduleReason } from '@aido/api';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import type {
   WeatherAirQualitySource,
   WeatherCondition,
   WeatherMoonPhase,
   WeatherPrecipitationType,
   WeatherPressureTrend,
-} from '@aido/api';
+} from '@aido/api/vocabulary';
 
 import type {
   CloudCoverLevel,

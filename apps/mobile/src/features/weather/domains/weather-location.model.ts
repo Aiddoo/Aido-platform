@@ -1,37 +1,8 @@
-import { weatherLocationSchema } from '@aido/api';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-const registeredLocationSchema = weatherLocationSchema;
-export type RegisteredLocation = z.infer<typeof registeredLocationSchema>;
+import type { Coordinates, LocationReading, PlaceName } from '../schemas/weather-location.schema';
 
-const coordinatesSchema = weatherLocationSchema.pick({ latitude: true, longitude: true });
-export type Coordinates = z.infer<typeof coordinatesSchema>;
-
-/**
- * 리포트 캐시 리비전. 서버에 저장된 위치로 바로 받는 첫 리포트가 0이고,
- * 등록으로 위치가 실제로 바뀌었을 때만 1씩 올려 리포트를 다시 받는다.
- */
-const revisionSchema = z.int().nonnegative();
 export const SAVED_LOCATION_REVISION = 0;
-
-/** 기기 위치에서 읽은 지명. 큰 제목은 도시, 작은 위치 줄은 동네다. */
-const placeNameSchema = z.object({ city: z.string(), district: z.string().nullable() });
-export type PlaceName = z.infer<typeof placeNameSchema>;
-
-const locationReadingSchema = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('needsPermission') }),
-  z.object({ status: z.literal('denied') }),
-  z.object({ status: z.literal('unavailable'), revision: revisionSchema }),
-  z.object({
-    status: z.literal('located'),
-    registered: registeredLocationSchema,
-    place: placeNameSchema.nullable(),
-    countryCode: z.string().nullable(),
-    revision: revisionSchema,
-  }),
-]);
-export type LocationReading = z.infer<typeof locationReadingSchema>;
 
 /** 약 1km(위도 0.01°) 안에서의 이동은 같은 날씨 격자로 보고 서버에 다시 등록하지 않는다. */
 const RELOCATION_THRESHOLD_DEGREES = 0.01;

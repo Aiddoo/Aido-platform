@@ -1,11 +1,6 @@
-import { toHHmm } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
-import { z } from 'zod';
+import { type Instant, toHHmm, toInstant } from '@src/shared/date/instant';
 
-export const weatherRescheduleFormSchema = z.object({
-  /** 선택 키(`toSelectionKey`) → 옮길 시작 시각(ISO). 옮기지 않을 할 일은 목록에서 빼므로 값이 없다. */
-  selections: z.record(z.string(), z.iso.datetime()),
-});
+import type { WeatherRescheduleFormValues } from '../schemas/weather-reschedule-form.schema';
 
 /**
  * 폼 필드 이름(`selections.<키>`)에 쓰는 할 일 키.
@@ -15,11 +10,9 @@ export function toSelectionKey(todoId: number): string {
   return `todo-${todoId}`;
 }
 
-export type WeatherRescheduleFormValues = z.infer<typeof weatherRescheduleFormSchema>;
-
 export interface ScheduleChange {
   todoId: number;
-  startsAt: Date;
+  startsAt: Instant;
 }
 
 export interface TodoScheduleSnapshot {
@@ -42,12 +35,13 @@ export interface TodoScheduleInput {
  */
 export function toMovedScheduleInput(
   todo: Pick<TodoScheduleSnapshot, 'startDate' | 'endDate'>,
-  startsAt: Date,
+  startsAt: Instant,
+  timeZone: string,
 ): TodoScheduleInput {
   return {
     startDate: todo.startDate,
     endDate: todo.endDate,
-    scheduledTime: toHHmm(startsAt, getDeviceTimezone()),
+    scheduledTime: toHHmm(startsAt, timeZone),
     isAllDay: false,
   };
 }
@@ -69,13 +63,13 @@ export function toScheduleChanges(
 ): ScheduleChange[] {
   return todoIds.flatMap((todoId) => {
     const selection = selections[toSelectionKey(todoId)];
-    return selection == null ? [] : [{ todoId, startsAt: new Date(selection) }];
+    return selection == null ? [] : [{ todoId, startsAt: toInstant(selection) }];
   });
 }
 
 export interface RescheduleTarget<TTodo> {
   todo: TTodo;
-  startsAt: Date;
+  startsAt: Instant;
 }
 
 /**

@@ -1,73 +1,26 @@
 import {
-  weatherAirQualitySchema,
-  weatherAlertSchema,
-  weatherAttributionSchema,
-  weatherCurrentConditionsSchema,
-  weatherDailyForecastSchema,
-  weatherHourlyForecastSchema,
-  weatherLocationSchema,
-  weatherMinuteForecastSchema,
-  weatherNextHourPeriodSchema,
   WEATHER_BRIEFING_RULES,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
   type WeatherPrecipitationType,
-} from '@aido/api';
+} from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
-import { hasSameWallClock, toDateKey } from '@src/shared/date/instant';
-import { z } from 'zod';
+import {
+  type Instant,
+  fromEpochMs,
+  hasSameWallClock,
+  toDateKey,
+  toEpochMs,
+} from '@src/shared/date/instant';
 
-const currentWeatherSchema = weatherCurrentConditionsSchema.extend({
-  observedAt: z.date(),
-});
-export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
-
-const minuteForecastSchema = weatherMinuteForecastSchema.extend({ startsAt: z.date() });
-export type MinuteForecast = z.infer<typeof minuteForecastSchema>;
-
-const nextHourPeriodSchema = weatherNextHourPeriodSchema.extend({
-  startsAt: z.date(),
-  endsAt: z.date().nullable(),
-});
-
-const nextHourForecastSchema = z.object({
-  periods: z.array(nextHourPeriodSchema),
-  minutes: z.array(minuteForecastSchema),
-});
-type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
-
-const hourlyForecastSchema = weatherHourlyForecastSchema.extend({ startsAt: z.date() });
-export type HourlyForecastEntry = z.infer<typeof hourlyForecastSchema>;
-
-const dailyForecastSchema = weatherDailyForecastSchema.extend({
-  sunrise: z.date().nullable(),
-  sunset: z.date().nullable(),
-  moonrise: z.date().nullable(),
-  moonset: z.date().nullable(),
-});
-export type DailyForecastEntry = z.infer<typeof dailyForecastSchema>;
-
-const weatherAlertModelSchema = weatherAlertSchema.extend({
-  effectiveAt: z.date(),
-  expiresAt: z.date(),
-});
-export type WeatherAlert = z.infer<typeof weatherAlertModelSchema>;
-
-const airQualitySchema = weatherAirQualitySchema;
-export type AirQuality = z.infer<typeof airQualitySchema>;
-
-const weatherReportModelSchema = z.object({
-  location: weatherLocationSchema,
-  current: currentWeatherSchema,
-  nextHour: nextHourForecastSchema.nullable(),
-  hourly: z.array(hourlyForecastSchema),
-  daily: z.array(dailyForecastSchema),
-  alerts: z.array(weatherAlertModelSchema),
-  airQuality: airQualitySchema.nullable(),
-  attribution: weatherAttributionSchema,
-  fetchedAt: z.date(),
-});
-export type WeatherReport = z.infer<typeof weatherReportModelSchema>;
-export type AttributionInfo = WeatherReport['attribution'];
+import type {
+  AirQuality,
+  CurrentWeather,
+  DailyForecastEntry,
+  HourlyForecastEntry,
+  NextHourForecast,
+  WeatherAlert,
+  WeatherReport,
+} from '../schemas/weather-report.schema';
 
 const NEXT_HOUR_RANGE_MS = HOUR_MS;
 const STALE_AFTER_MS = 30 * MINUTE_MS;
@@ -84,7 +37,7 @@ export function isWetHour(hour: HourlyForecastEntry): boolean {
 }
 
 function hourEndsAt(hour: HourlyForecastEntry): number {
-  return hour.startsAt.getTime() + HOUR_MS;
+  return toEpochMs(hour.startsAt) + HOUR_MS;
 }
 
 export function selectUpcomingHours(
@@ -104,7 +57,7 @@ export type PrecipitationWindow =
   | {
       kind: 'ongoing';
       precipitationType: WeatherPrecipitationType | null;
-      endsAt: Date | null;
+      endsAt: Instant | null;
       endPrecision: PrecipitationPrecision;
       endsOnLaterDay: boolean;
     }
@@ -112,8 +65,8 @@ export type PrecipitationWindow =
       kind: 'upcoming';
       precision: PrecipitationPrecision;
       precipitationType: WeatherPrecipitationType | null;
-      startsAt: Date;
-      endsAt: Date | null;
+      startsAt: Instant;
+      endsAt: Instant | null;
       endPrecision: PrecipitationPrecision;
       endsOnLaterDay: boolean;
     };
@@ -122,15 +75,18 @@ function getNextHourHorizon(nextHour: NextHourForecast, now: Date): number {
   const lastMinute = nextHour.minutes.at(-1);
   return lastMinute == null
     ? now.getTime() + NEXT_HOUR_RANGE_MS
-    : lastMinute.startsAt.getTime() + MINUTE_MS;
+    : toEpochMs(lastMinute.startsAt) + MINUTE_MS;
 }
 
-function findFirstDryHourStart(hourly: readonly HourlyForecastEntry[], after: number): Date | null {
-  const dryHour = hourly.find((hour) => hour.startsAt.getTime() >= after && !isWetHour(hour));
+function findFirstDryHourStart(
+  hourly: readonly HourlyForecastEntry[],
+  after: number,
+): Instant | null {
+  const dryHour = hourly.find((hour) => toEpochMs(hour.startsAt) >= after && !isWetHour(hour));
   return dryHour?.startsAt ?? null;
 }
 
-function isLaterDay(endsAt: Date | null, now: Date, timeZone: string): boolean {
+function isLaterDay(endsAt: Instant | null, now: Date, timeZone: string): boolean {
   return endsAt != null && toDateKey(endsAt, timeZone) !== toDateKey(now, timeZone);
 }
 
@@ -138,15 +94,15 @@ function toWindow(
   report: PrecipitationSource,
   now: Date,
   wet: {
-    startsAt: Date;
-    endsAt: Date | null;
+    startsAt: Instant;
+    endsAt: Instant | null;
     precision: PrecipitationPrecision;
     endPrecision: PrecipitationPrecision;
     precipitationType: WeatherPrecipitationType | null;
   },
 ): PrecipitationWindow {
   const endsOnLaterDay = isLaterDay(wet.endsAt, now, report.location.timezone);
-  if (wet.startsAt.getTime() <= now.getTime()) {
+  if (toEpochMs(wet.startsAt) <= now.getTime()) {
     return {
       kind: 'ongoing',
       precipitationType: wet.precipitationType,
@@ -170,7 +126,7 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Date): Precipi
     const period = nextHour.periods.find(
       (candidate) =>
         candidate.condition === 'PRECIPITATION' &&
-        (candidate.endsAt == null || candidate.endsAt.getTime() > nowMs),
+        (candidate.endsAt == null || toEpochMs(candidate.endsAt) > nowMs),
     );
     if (period != null) {
       return toWindow(report, now, {
@@ -189,7 +145,7 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Date): Precipi
     return { kind: 'dry' };
   }
   return toWindow(report, now, {
-    startsAt: new Date(Math.max(wetHour.startsAt.getTime(), searchFrom)),
+    startsAt: fromEpochMs(Math.max(toEpochMs(wetHour.startsAt), searchFrom)),
     endsAt: findFirstDryHourStart(hourly, hourEndsAt(wetHour)),
     precision: 'hour',
     endPrecision: 'hour',
@@ -197,17 +153,17 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Date): Precipi
   });
 }
 
-function getMinutesUntil(target: Date, now: Date): number {
-  return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / MINUTE_MS));
+function getMinutesUntil(target: Instant, now: Date): number {
+  return Math.max(0, Math.ceil((toEpochMs(target) - now.getTime()) / MINUTE_MS));
 }
 
 function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
-  return now.getTime() - report.fetchedAt.getTime() > STALE_AFTER_MS;
+  return now.getTime() - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */
 function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
-  return now.getTime() - report.fetchedAt.getTime() > NOWCAST_EXPIRES_AFTER_MS;
+  return now.getTime() - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
 }
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
@@ -228,11 +184,11 @@ function findTodayForecast(
  * 아직 발효 전인 특보는 미리 알 수 있도록 남긴다.
  */
 function selectActiveAlerts(alerts: readonly WeatherAlert[], now: Date): WeatherAlert[] {
-  return alerts.filter((alert) => alert.expiresAt.getTime() > now.getTime());
+  return alerts.filter((alert) => toEpochMs(alert.expiresAt) > now.getTime());
 }
 
 function isAlertInEffect(alert: WeatherAlert, now: Date): boolean {
-  return alert.effectiveAt.getTime() <= now.getTime();
+  return toEpochMs(alert.effectiveAt) <= now.getTime();
 }
 
 export type AirPollutant = 'pm10' | 'pm25';
@@ -285,7 +241,7 @@ function getUvLevel(uvIndex: number): UvLevel {
 export type TemperatureUnit = 'celsius' | 'fahrenheit';
 
 type SunEvents =
-  | { kind: 'regular'; sunrise: Date | null; sunset: Date | null }
+  | { kind: 'regular'; sunrise: Instant | null; sunset: Instant | null }
   | { kind: 'polarDay' }
   | { kind: 'polarNight' };
 

@@ -1,14 +1,10 @@
-import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
-import { toDateKey } from '@src/shared/date/instant';
+import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api/vocabulary';
+import { type Instant, toDateKey } from '@src/shared/date/instant';
 import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import {
-  type HourlyForecastEntry,
-  isWetHour,
-  selectUpcomingHours,
-  type WeatherReport,
-} from './weather-report.model';
+import type { HourlyForecastEntry, WeatherReport } from '../schemas/weather-report.schema';
+import { isWetHour, selectUpcomingHours } from './weather-report.model';
 
 /** 요약 문장은 앞으로 하루 안의 강수만 말한다. */
 const PRECIPITATION_RANGE_HOURS = 24;
@@ -22,7 +18,7 @@ export type HourlySky = (typeof HOURLY_SKIES)[number];
 
 interface TemperaturePeak {
   extreme: 'highest' | 'lowest';
-  at: Date;
+  at: Instant;
   temperature: number;
 }
 
@@ -30,13 +26,13 @@ export type HourlySummary =
   | {
       kind: 'precipitationOngoing';
       precipitationType: WeatherPrecipitationType;
-      endsAt: Date | null;
+      endsAt: Instant | null;
       endsOnLaterDay: boolean;
     }
   | {
       kind: 'precipitationUpcoming';
       precipitationType: WeatherPrecipitationType;
-      startsAt: Date;
+      startsAt: Instant;
       startsOnLaterDay: boolean;
       skyBefore: HourlySky;
     }
@@ -44,7 +40,7 @@ export type HourlySummary =
       kind: 'skyChange';
       from: HourlySky;
       to: HourlySky;
-      changesAt: Date;
+      changesAt: Instant;
       changesOnLaterDay: boolean;
     }
   | { kind: 'steady'; sky: HourlySky; peak: TemperaturePeak | null };
@@ -150,7 +146,7 @@ function summarizeHourly(
     return null;
   }
   const todayKey = toDateKey(now, report.location.timezone);
-  const isLaterDay = (date: Date) => toDateKey(date, report.location.timezone) !== todayKey;
+  const isLaterDay = (date: Instant) => toDateKey(date, report.location.timezone) !== todayKey;
 
   // 지금 관측된 강수가 있으면 시간별 확률이 낮아도 '내리는 중'으로 말한다.
   const currentPrecipitation =

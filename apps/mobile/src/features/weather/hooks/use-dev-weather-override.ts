@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
-import type { WeatherReport } from '../domains/weather-report.model';
 import { weatherDevParamsSchema } from '../schemas/weather-dev-params.schema';
+import type { WeatherReport } from '../schemas/weather-report.schema';
 
 export type DevWeatherOverride = Pick<WeatherReport['current'], 'condition' | 'isDaylight'>;
 

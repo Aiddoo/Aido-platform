@@ -1,4 +1,4 @@
-import type { CurrentWeather } from '../domains/weather-report.model';
+import type { CurrentWeather } from '../schemas/weather-report.schema';
 
 export const WEATHER_QUERY_KEYS = {
   all: ['weather'] as const,

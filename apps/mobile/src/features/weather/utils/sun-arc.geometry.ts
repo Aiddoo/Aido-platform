@@ -1,7 +1,8 @@
 import { DAY_MS } from '@src/shared/constants/time.constants';
+import { toEpochMs } from '@src/shared/date/instant';
 import { round } from 'es-toolkit';
 
-import type { DailyForecastEntry } from '../domains/weather-report.model';
+import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import { toUnitPosition } from './weather-bar.geometry';
 import type { DialPoint } from './weather-dial.geometry';
 
@@ -55,8 +56,8 @@ export function getSunArcPosition(
   if (sunrise == null || sunset == null) {
     return null;
   }
-  const rise = sunrise.getTime();
-  const set = sunset.getTime();
+  const rise = toEpochMs(sunrise);
+  const set = toEpochMs(sunset);
   const current = now.getTime();
   const halfNight = (DAY_MS - (set - rise)) / 2;
   if (current < rise) {
@@ -79,5 +80,5 @@ export function isSunBelowHorizon(
   if (day.sunrise == null || day.sunset == null) {
     return false;
   }
-  return now.getTime() < day.sunrise.getTime() || now.getTime() > day.sunset.getTime();
+  return now.getTime() < toEpochMs(day.sunrise) || now.getTime() > toEpochMs(day.sunset);
 }
