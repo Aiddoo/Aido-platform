@@ -1,14 +1,15 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
-import type { SpeechErrorCode, SpeechEvent } from '@src/core/ports/speech-recognizer';
+import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { tDynamic } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { noop } from 'es-toolkit';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
 import { useMicrophonePermission } from './use-microphone-permission';
+import { useSpeechEvent } from './use-speech-event';
 
 interface UseDictationOptions {
   /** 인식 중 글자가 바뀔 때마다 지금까지 들은 문장 전체를 준다 */
@@ -36,7 +37,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const hasFailedRef = useRef(false);
   const isStopRequestedRef = useRef(false);
 
-  const handleEvent = useEffectEvent((event: SpeechEvent) => {
+  useSpeechEvent((event) => {
     if (!isSessionOwnerRef.current) {
       return;
     }
@@ -77,11 +78,9 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
 
   useEffect(() => {
     isMountedRef.current = true;
-    const unsubscribe = speechRecognizer.subscribe(handleEvent);
 
     return () => {
       isMountedRef.current = false;
-      unsubscribe();
       if (isSessionOwnerRef.current) {
         isSessionOwnerRef.current = false;
         speechRecognizer.abort();

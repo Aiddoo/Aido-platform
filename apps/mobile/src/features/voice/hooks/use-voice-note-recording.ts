@@ -6,7 +6,7 @@ import {
   useSpeechRecognizer,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
-import type { SpeechEvent, SpeechLocale } from '@src/core/ports/speech-recognizer';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
@@ -29,6 +29,7 @@ import {
   VoiceNotePolicy,
   type VoiceNoteRecording,
 } from '../domains/voice-note.model';
+import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 interface UseVoiceNoteRecordingOptions {
@@ -237,7 +238,7 @@ export function useVoiceNoteRecording({
     const timer = setTimeout(stop, VOICE_RECORDING_LATE_WAIT_MS);
   };
 
-  const handleSpeechEvent = useEffectEvent((event: SpeechEvent) => {
+  useSpeechEvent((event) => {
     match(event)
       .with({ type: 'start' }, () => {
         currentSegmentStartRef.current = session.getElapsedMs();
@@ -265,11 +266,9 @@ export function useVoiceNoteRecording({
 
   useEffect(() => {
     isUnmountedRef.current = false;
-    const unsubscribe = speechRecognizer.subscribe(handleSpeechEvent);
 
     return () => {
       isUnmountedRef.current = true;
-      unsubscribe();
       keepListeningForLateRecordings();
     };
     // 파일 받기는 ref만 읽어 화면이 내려간 뒤에도 그대로 동작한다

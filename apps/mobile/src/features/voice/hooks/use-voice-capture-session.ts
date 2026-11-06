@@ -1,7 +1,6 @@
 import { useHaptics, useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type {
   SpeechErrorCode,
-  SpeechEvent,
   SpeechLocale,
   SpeechMode,
   SpeechStartOptions,
@@ -33,6 +32,7 @@ import {
   type VoiceRecognizerLinkEvent,
 } from '../domains/voice-capture.model';
 import { type VoiceTranscript, VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
+import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 
 /** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
@@ -240,7 +240,7 @@ export function useVoiceCaptureSession({
     speechRecognizer.start(startOptions);
   }
 
-  const handleEvent = useEffectEvent((event: SpeechEvent) => {
+  useSpeechEvent((event) => {
     if (event.type === 'end') {
       updateLink({ type: 'ended' });
       timers.clear('stallRestart');
@@ -302,7 +302,6 @@ export function useVoiceCaptureSession({
 
   useEffect(() => {
     isUnmountedRef.current = false;
-    const unsubscribe = speechRecognizer.subscribe(handleEvent);
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'background') {
         pauseForBackground();
@@ -311,7 +310,6 @@ export function useVoiceCaptureSession({
 
     return () => {
       isUnmountedRef.current = true;
-      unsubscribe();
       appStateSubscription.remove();
       clearTimers();
       if (VoiceCapturePolicy.isActive(stateRef.current)) {

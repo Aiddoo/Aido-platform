@@ -885,6 +885,23 @@ describe('useVoiceCaptureSession', () => {
     );
   });
 
+  it('화면이 내려가면 구독을 먼저 풀고 인식기를 끊어 끊김 이벤트가 세션에 오지 않는다', async () => {
+    // Given
+    const { speechRecognizer, unmount } = await renderSession();
+    await fireEvent.press(screen.getByTestId('begin'));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+    const listenerCountsAtAbort: number[] = [];
+    speechRecognizer.abort.mockImplementation(() => {
+      listenerCountsAtAbort.push(speechRecognizer.getListenerCount());
+    });
+
+    // When
+    await act(async () => unmount());
+
+    // Then
+    expect(listenerCountsAtAbort).toEqual([0]);
+  });
+
   describe('기능 확인을 기다리는 사이 화면이 내려가면', () => {
     const FULL = {
       isAvailable: true,
