@@ -7,7 +7,6 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 import { isEqual, noop } from 'es-toolkit';
-import { Platform } from 'react-native';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import {
@@ -77,15 +76,10 @@ export class PushDeviceService {
   /**
    * 이 기기의 권한과 토큰을 서버에 알린다. 이번 세션에 같은 값을 이미 보냈으면 요청하지 않는다.
    * 서버는 시간대를 요청 헤더에서 읽으므로 기기 시간대가 바뀌어도 다시 보낸다.
-   * 웹은 푸시 기기가 아니라 보내지 않고 null을 돌려준다.
    */
   report = async ({ force = false }: { force?: boolean } = {}): Promise<
     Result<PushDevice | null, ApiError>
   > => {
-    if (Platform.OS === 'web') {
-      return ok(null);
-    }
-
     await this.#ensureChannel();
     const permission = await this.readPermission();
     const token = isDeliveryAllowed(permission) ? await this.#issueToken() : null;

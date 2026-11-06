@@ -12,15 +12,12 @@ import { registerForegroundNotificationPresentation } from '@src/shared/infra/no
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery } from '@tanstack/react-query';
 import { type PropsWithChildren, useReducer } from 'react';
-import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
 
-if (Platform.OS !== 'web') {
-  registerForegroundNotificationPresentation();
-}
+registerForegroundNotificationPresentation();
 
-function NativeNotificationProvider({ children }: PropsWithChildren) {
+export function NotificationProvider({ children }: PropsWithChildren) {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const handleNotificationResponse = useNotificationResponseHandler();
@@ -48,11 +45,3 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
 
   return children;
 }
-
-// 웹은 푸시 기기가 아니어서 권한·토큰·배지를 다루지 않는다
-function WebNotificationProvider({ children }: PropsWithChildren) {
-  return children;
-}
-
-export const NotificationProvider =
-  Platform.OS === 'web' ? WebNotificationProvider : NativeNotificationProvider;

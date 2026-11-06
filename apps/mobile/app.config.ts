@@ -289,12 +289,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       googleServicesFile: './google-services.json',
     },
 
-    // Web
-    web: {
-      bundler: 'metro',
-      output: 'static',
-    },
-
     // Plugins
     plugins: [
       './plugins/withJitpackFilter',

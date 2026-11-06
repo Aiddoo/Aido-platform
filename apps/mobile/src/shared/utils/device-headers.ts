@@ -9,9 +9,6 @@ const getDeviceType = () => {
   if (Platform.OS === 'ios') {
     return 'IOS';
   }
-  if (Platform.OS === 'web') {
-    return 'WEB';
-  }
   return 'ANDROID';
 };
 

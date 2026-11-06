@@ -7,7 +7,7 @@ import * as Application from 'expo-application';
 import * as Updates from 'expo-updates';
 import { type PropsWithChildren, useEffect, useState } from 'react';
 import type { AppStateStatus } from 'react-native';
-import { AppState, Platform } from 'react-native';
+import { AppState } from 'react-native';
 
 import {
   createQueryCacheBuster,
@@ -25,14 +25,12 @@ import { shouldRetryQuery } from './query-retry';
  *
  * @see https://tanstack.com/query/latest/docs/framework/react/react-native#refetch-on-app-focus
  */
-if (Platform.OS !== 'web') {
-  focusManager.setEventListener((handleFocus) => {
-    const subscription = AppState.addEventListener('change', (status: AppStateStatus) => {
-      handleFocus(status === 'active');
-    });
-    return () => subscription.remove();
+focusManager.setEventListener((handleFocus) => {
+  const subscription = AppState.addEventListener('change', (status: AppStateStatus) => {
+    handleFocus(status === 'active');
   });
-}
+  return () => subscription.remove();
+});
 
 const MIN_STALE_TIME = 1000 * 60 * 5; // 5 minutes
 const MIN_GC_TIME = 1000 * 60 * 6; // 6 minutes

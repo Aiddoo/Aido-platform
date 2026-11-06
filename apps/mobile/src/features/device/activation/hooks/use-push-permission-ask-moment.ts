@@ -2,7 +2,6 @@ import { PushPermissionPolicy } from '@src/features/notification/domains/push-pe
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/get-push-permission-query-options';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Platform } from 'react-native';
 
 import { ActivationPolicy } from '../domains/activation.model';
 import { useActivationProgress } from './use-activation-progress';
@@ -16,7 +15,7 @@ export function usePushPermissionAskMoment() {
   const activation = useActivationProgress();
   const { data: permission } = useQuery({
     ...useGetPushPermissionQueryOptions(),
-    enabled: activation.isAuthenticated && Platform.OS !== 'web',
+    enabled: activation.isAuthenticated,
   });
   const [completedKey, setCompletedKey] = useState<string | null>(null);
 
