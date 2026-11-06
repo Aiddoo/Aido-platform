@@ -2,8 +2,6 @@ import { AppVersionCheck } from '@src/features/app-config/app-version/components
 import { QuotaSummary } from '@src/features/billing/subscription/components/quota-summary';
 import { useDeleteAccountMutationOptions } from '@src/features/identity/auth/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/use-logout-mutation-options';
-import { InviteRewardCard } from '@src/features/social/invite/components/invite-reward-card';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -22,7 +20,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Suspense } from 'react';
+import { type ReactNode, Suspense } from 'react';
 
 import { UserPolicy } from '../../domains/user.model';
 import { useMyPageMenuNavigation } from '../../hooks/use-mypage-menu-navigation';
@@ -30,9 +28,14 @@ import { useGetMeQueryOptions } from '../../queries/user.queries';
 import { MyPageMenu } from '../mypage-menu/mypage-menu';
 import { ProfileCard } from '../profile-card';
 
-export function MyPagePane() {
+interface MyPagePaneProps {
+  /** 위층 기능이라 route가 조립해 넘긴다 */
+  inviteCard: ReactNode;
+  whatsNewItem: ReactNode;
+}
+
+export function MyPagePane({ inviteCard, whatsNewItem }: MyPagePaneProps) {
   const { t } = useTranslation('user');
-  const isInviteAvailable = useInviteAvailability();
 
   return (
     <>
@@ -47,16 +50,9 @@ export function MyPagePane() {
           </Suspense>
         </QueryErrorBoundary>
 
-        {/* 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */}
-        {isInviteAvailable && (
-          <QueryErrorBoundary fallback={InviteRewardCard.Error}>
-            <Suspense fallback={<InviteRewardCard.Loading />}>
-              <InviteRewardCard />
-            </Suspense>
-          </QueryErrorBoundary>
-        )}
+        {inviteCard}
 
-        <MyPageMenu.Activity />
+        <MyPageMenu.Activity whatsNewItem={whatsNewItem} />
 
         <QuotaSummary />
 

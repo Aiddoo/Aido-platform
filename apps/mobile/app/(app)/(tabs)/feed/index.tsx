@@ -25,6 +25,7 @@ import {
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
+import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { PokeBanner } from '@src/features/social/nudge/components/poke-banner';
 import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
@@ -80,8 +81,10 @@ function MyFeed() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   const weatherIntroduction = useWeatherIntroduction();
+  const isInviteAvailable = useInviteAvailability();
   const whatsNew = useWhatsNewFeed({
     isWeatherIntroductionPending: weatherIntroduction.isPending,
+    isInviteAvailable,
   });
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),

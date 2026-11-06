@@ -1,78 +1,10 @@
 {
-  "hub": {
-    "title": "What's new",
-    "description": "Meet what's new in Aido.",
-    "sheetLabel": "What's new",
-    "closeLabel": "Close What's new"
-  },
   "entry": {
     "mypage": "What's new",
     "feedTitle": "See what's new",
     "feedDescription": "You can reopen it here for 14 days",
     "openLabel": "Open What's new",
     "dismissLabel": "Dismiss What's new card"
-  },
-  "cards": {
-    "friendInvite": {
-      "title": "Invite friends and\ncollect paw prints",
-      "description": "Send a link on KakaoTalk. Your friend gets {{inviteeDays}} days of Premium right when they join. You get {{inviterDays}} days of Premium and can add 1 more friend once they complete to-dos on {{activeDays}} different days",
-      "cta": "Start inviting",
-      "ctaLabel": "Open Invite friends"
-    },
-    "voiceSay": {
-      "title": "Say everything\non your mind",
-      "description": "No typing needed. Say several things at once."
-    },
-    "voicePlan": {
-      "title": "AI fills in dates\nand repeats for you",
-      "description": "Repeats, date ranges, times, subtasks, and private to-dos are picked up and filled in."
-    },
-    "voiceFacts": {
-      "title": "Audio files aren't sent\nto Aido's servers",
-      "description": "Try it free {{freeCount}} times a month. If it fails, it doesn't count.",
-      "cta": "Try it now",
-      "ctaLabel": "Speak to add from the new to-do sheet"
-    }
-  },
-  "previews": {
-    "listening": "Listening",
-    "example": "“<vitamins>Vitamins every morning at 8</vitamins>, <gym>gym Mon Wed Fri at 7 PM</gym>, <trip>business trip next Monday to Wednesday</trip>, <groceries>groceries: milk, eggs, tofu</groceries>, and <meeting>prep the team meeting Friday at 3, just for me</meeting>”",
-    "rows": {
-      "vitamins": {
-        "title": "Take vitamins",
-        "detail": "8:00 AM · Every day"
-      },
-      "gym": {
-        "title": "Gym",
-        "detail": "7:00 PM · Mon·Wed·Fri"
-      },
-      "trip": {
-        "title": "Business trip",
-        "detail": "Date range · 3 days"
-      },
-      "groceries": {
-        "title": "Groceries",
-        "detail": "3 subtasks · milk, eggs, tofu"
-      },
-      "meeting": {
-        "title": "Prep team meeting",
-        "detail": "Fri 3:00 PM · Private"
-      }
-    },
-    "facts": {
-      "privacy": {
-        "title": "Audio files aren't sent to Aido's servers",
-        "description": "Only the text is used. Apple or Google speech recognition may turn your speech into text."
-      },
-      "free": {
-        "title": "Free to try",
-        "description": "If it fails, it doesn't count. You'll see what's left next to the mic."
-      },
-      "same": {
-        "title": "Just like to-dos you type",
-        "description": "Reminders, repeats, and subtasks work the same."
-      }
-    }
   },
   "v1_15_0": {
     "summary": "Speak to add, voice notes",

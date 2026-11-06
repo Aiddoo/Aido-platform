@@ -1,12 +1,3 @@
-import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
-import { WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
-import {
-  filterAvailableCampaign,
-  getBundledWhatsNewCampaign,
-} from '@src/features/app-config/whats-new/domains/whats-new.registry';
-import { useWhatsNewHub } from '@src/features/app-config/whats-new/hooks/use-whats-new-hub';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
-import { toInstant } from '@src/shared/date/instant';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,7 +8,6 @@ import {
   CrownIcon,
   EditIcon,
   FlagIcon,
-  InfoIcon,
   KoreanIcon,
   ListIcon,
   MemoIcon,
@@ -28,14 +18,12 @@ import {
   SettingsCard,
   type StyledIconType,
 } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
-import { type ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 import {
   type MyPageMenuPathname,
   useMyPageMenuNavigation,
 } from '../../hooks/use-mypage-menu-navigation';
-import { useGetMeQueryOptions } from '../../queries/user.queries';
 
 const MENU_ICON_SIZE = 20;
 
@@ -72,31 +60,8 @@ function MyPageMenuIcon({ Icon }: { Icon: StyledIconType }) {
   );
 }
 
-function Activity() {
-  const { t } = useTranslation(['user', 'whatsNew']);
-  const { data: user } = useQuery(useGetMeQueryOptions());
-  const { openHub } = useWhatsNewHub();
-  const whatsNewRepository = useWhatsNewRepository();
-  const isInviteAvailable = useInviteAvailability();
-  // 소개할 기능이 모두 꺼져 있으면 새로운 기능 항목을 숨긴다
-  const campaign = filterAvailableCampaign(getBundledWhatsNewCampaign(WHATS_NEW_CAMPAIGN_ID), {
-    isInviteAvailable,
-  });
-
-  const openWhatsNew = () => {
-    if (!campaign || !user) {
-      return;
-    }
-    whatsNewRepository.claimSeen(
-      { userId: user.id, campaignId: campaign.id },
-      toInstant(new Date().toISOString()),
-    );
-    openHub({
-      accountId: user.id,
-      campaign,
-      source: 'mypage',
-    });
-  };
+function Activity({ whatsNewItem }: { whatsNewItem: ReactNode }) {
+  const { t } = useTranslation('user');
 
   return (
     <SettingsCard label={t('mypage.sections.activity')}>
@@ -113,17 +78,8 @@ function Activity() {
         label={t('mypage.items.categories')}
         pathname="/settings/category-settings"
       />
-      {campaign != null && (
-        <>
-          <SettingsCard.Separator />
-          <SettingsCard.Item
-            testID="whats-new-open"
-            icon={<MyPageMenuIcon Icon={InfoIcon} />}
-            label={t('whatsNew:entry.mypage')}
-            onPress={openWhatsNew}
-          />
-        </>
-      )}
+      <SettingsCard.Separator />
+      {whatsNewItem}
       <SettingsCard.Separator />
       <MyPageMenuItem
         Icon={FlagIcon}

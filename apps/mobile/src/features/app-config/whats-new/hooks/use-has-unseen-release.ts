@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
 import { useQuery } from '@tanstack/react-query';
 

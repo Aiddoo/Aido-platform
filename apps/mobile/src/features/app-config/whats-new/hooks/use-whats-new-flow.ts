@@ -3,7 +3,7 @@ import {
   useLogger,
   useWhatsNewRepository,
 } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { toInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
