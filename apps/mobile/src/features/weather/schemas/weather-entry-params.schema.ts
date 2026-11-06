@@ -8,7 +8,3 @@ export type WeatherEntry = (typeof WEATHER_ENTRIES)[number];
 export const weatherEntryParamSchema = z.object({
   entry: z.enum(WEATHER_ENTRIES).optional().catch(undefined),
 });
-
-export function weatherHref(entry: WeatherEntry) {
-  return { pathname: '/weather', params: { entry } } as const;
-}

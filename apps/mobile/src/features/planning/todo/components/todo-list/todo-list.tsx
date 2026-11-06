@@ -46,12 +46,6 @@ import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mu
 import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
 import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
-import {
-  subTodoCreateSheetHref,
-  subTodoActionsSheetHref,
-  todoActionsSheetHref,
-  todoCreateSheetHref,
-} from '../../utils/navigation/todo-sheet-href';
 import { ReorderCoachmark } from '../reorder-coachmark';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {
@@ -133,7 +127,7 @@ function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
 
   return (
     <PressableFeedback
-      onPress={() => push(todoCreateSheetHref({ date, categoryId }))}
+      onPress={() => push({ pathname: '/todo/new', params: { date, categoryId } })}
       hitSlop={8}
       className="self-start"
     >
@@ -206,12 +200,17 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
 
   const handleCommentsPress = () => selectTodo(todo.id);
 
-  const handleActionsPress = () => push(todoActionsSheetHref({ todoId: todo.id, date }));
+  const handleActionsPress = () =>
+    push({ pathname: '/todo/[todoId]/actions', params: { todoId: todo.id, date } });
 
-  const handleAddSubTodoPress = () => push(subTodoCreateSheetHref({ todoId: todo.id, date }));
+  const handleAddSubTodoPress = () =>
+    push({ pathname: '/todo/[todoId]/sub-todos/new', params: { todoId: todo.id, date } });
 
   const handleSubTodoMorePress = (subTodo: SubTodo) =>
-    push(subTodoActionsSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }));
+    push({
+      pathname: '/todo/[todoId]/sub-todos/[subTodoId]/actions',
+      params: { todoId: todo.id, subTodoId: subTodo.id, date },
+    });
 
   const subTodoReorderableList = useReorderableList({
     items: todo.subTodos,

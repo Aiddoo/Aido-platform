@@ -2,7 +2,6 @@ import type { TodoCategoryWithCount } from '@src/features/planning/category/doma
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-reorder-todo-category-mutation-options';
 import { ReorderCoachmark } from '@src/features/planning/todo/components/reorder-coachmark';
-import { todoCategoryEditSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -123,7 +122,12 @@ CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
                     color="dark"
                     size="small"
                     display="inline"
-                    onPress={() => push(todoCategoryEditSheetHref({ categoryId: category.id }))}
+                    onPress={() =>
+                      push({
+                        pathname: '/todo-categories/[categoryId]/edit',
+                        params: { categoryId: category.id },
+                      })
+                    }
                   >
                     {t('actions.edit')}
                   </Button>

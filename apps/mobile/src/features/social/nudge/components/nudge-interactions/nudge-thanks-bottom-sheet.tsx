@@ -2,7 +2,6 @@ import { ErrorCode } from '@aido/api/errors';
 import { FlashList } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -45,7 +44,7 @@ type NudgeThanksBottomSheetProps = Omit<
 export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoScreenParams();
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
   const handleClose = () => sheet.close();
 
   return (

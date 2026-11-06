@@ -15,15 +15,12 @@ import { FriendStrip } from '@src/features/planning/todo/components/friend-strip
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
 import { FeedDateProvider } from '@src/features/planning/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
-import { useFeedActionParam } from '@src/features/planning/todo/hooks/use-feed-action-param';
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
-import { useFeedDateParam } from '@src/features/planning/todo/hooks/use-feed-date-param';
-import { useFeedFriendIdParam } from '@src/features/planning/todo/hooks/use-feed-friend-id-param';
+import { useFeedParams } from '@src/features/planning/todo/hooks/use-feed-params';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
-import { todoCreateSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { PokeBanner } from '@src/features/social/nudge/components/poke-banner';
@@ -50,13 +47,12 @@ import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
 export default function FeedScreen() {
-  const [date, setDate] = useFeedDateParam();
-  const [friendId] = useFeedFriendIdParam();
+  const { date, friendId, selectDate } = useFeedParams();
 
   return (
     <>
       <NotificationBell.Toolbar />
-      <FeedDateProvider date={date} onDateChange={setDate}>
+      <FeedDateProvider date={date} onDateChange={selectDate}>
         <AdaptivePane
           primary={
             <FeedListPane>
@@ -152,7 +148,7 @@ function MyFeed() {
 /** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
 function AddTodoRequestEntry() {
   const { t } = useTranslation(['widget', 'common']);
-  const [action, setAction] = useFeedActionParam();
+  const { action, clearAction } = useFeedParams();
   const selectedDateKey = useFeedDateKey();
   const isRequested = action === 'add-todo';
   const categories = useQuery({
@@ -167,11 +163,11 @@ function AddTodoRequestEntry() {
       return;
     }
     const frameId = requestAnimationFrame(() => {
-      setAction(undefined);
-      router.push(todoCreateSheetHref({ date: selectedDateKey, categoryId }));
+      clearAction();
+      router.push({ pathname: '/todo/new', params: { date: selectedDateKey, categoryId } });
     });
     return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDateKey, setAction]);
+  }, [isRequested, categoryId, selectedDateKey, clearAction]);
 
   const createEntryStatus = !isRequested
     ? ('idle' as const)
@@ -210,7 +206,7 @@ function AddTodoRequestEntry() {
           button={
             <Result.Button
               onPress={() => {
-                setAction(undefined);
+                clearAction();
                 router.navigate('/settings/category-settings');
               }}
             >
@@ -330,11 +326,11 @@ FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
 
 /** 더는 친구가 아닌 사람의 피드는 같은 화면의 내 피드로 돌린다. */
 function MyFeedRedirect() {
-  const [_friendId, setFriendId] = useFeedFriendIdParam();
+  const { selectFriend } = useFeedParams();
 
   useEffect(() => {
-    setFriendId(undefined);
-  }, [setFriendId]);
+    selectFriend(undefined);
+  }, [selectFriend]);
 
   return null;
 }

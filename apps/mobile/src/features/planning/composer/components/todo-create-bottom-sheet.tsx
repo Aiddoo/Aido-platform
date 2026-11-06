@@ -5,7 +5,6 @@ import {
   useTodoCreateVoiceHintParam,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { resolveSheetCategoryId } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { toDate } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
@@ -34,7 +33,7 @@ export function TodoCreateBottomSheet() {
 }
 
 TodoCreateBottomSheet.Form = function Form() {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
   const [date] = useTodoSheetDateParam();
   const [requestedCategoryId] = useTodoCreateCategoryParam();
   const [prefill] = useTodoCreatePrefillParam();
@@ -73,7 +72,7 @@ TodoCreateBottomSheet.Form = function Form() {
 
 TodoCreateBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>

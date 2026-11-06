@@ -20,7 +20,6 @@ import { match, P } from 'ts-pattern';
 import { InvitePolicy } from '../domains/invite.model';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
-import { myInviteHref } from '../utils/navigation/invite-href';
 import { createPawPrintBoard } from '../utils/view-models/invite-paw-print-board.view-model';
 import { inviteRewardDotVariants } from './invite-reward-card.variants';
 
@@ -48,7 +47,7 @@ export function InviteRewardCard({ className, ...props }: InviteRewardCardProps)
       onPress={() => openMyInvite('mypage_card', navigate)}
       className={cn(
         'rounded-[20px] p-4',
-        isSelected(myInviteHref().pathname) ? 'bg-gray-3 dark:bg-gray-2' : 'bg-gray-1',
+        isSelected('/friends/invite') ? 'bg-gray-3 dark:bg-gray-2' : 'bg-gray-1',
         className,
       )}
       {...props}

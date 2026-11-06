@@ -1,15 +1,14 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 
-import { voiceNoteRecordHref } from '../utils/navigation/voice-note-href';
 import { useMicrophonePermission } from './use-microphone-permission';
 import { useRecognitionLanguage } from './use-recognition-language';
 
 interface StartVoiceNoteOptions {
   onSubscribe?: () => void;
-  getRecordHref?: () => ReturnType<typeof voiceNoteRecordHref>;
+  getRecordHref?: () => Href;
 }
 
 export function useVoiceNoteStart() {
@@ -28,7 +27,7 @@ export function useVoiceNoteStart() {
       return;
     }
     if (await ensureMicrophonePermission('note', locale)) {
-      push(getRecordHref?.() ?? voiceNoteRecordHref());
+      push(getRecordHref?.() ?? '/voice-notes/record');
     }
   };
 }

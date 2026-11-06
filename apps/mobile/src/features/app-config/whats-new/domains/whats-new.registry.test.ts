@@ -17,6 +17,17 @@ describe('getBundledWhatsNewCampaign', () => {
     expect(card?.route).toBe('/todo/new?voiceHint=1');
   });
 
+  it('친구 초대 카드는 내 초대 화면을 연다', () => {
+    // Given
+    const campaign = getBundledWhatsNewCampaign(WHATS_NEW_CAMPAIGN_ID);
+
+    // When
+    const card = campaign?.cards.find(({ id }) => id === 'friend_invite');
+
+    // Then
+    expect(card?.route).toBe('/friends/invite');
+  });
+
   it('2026-12 캠페인은 말로 할 일 만들기 카드 3장에 친구 초대 카드를 이어 반환한다', () => {
     // When
     const campaign = getBundledWhatsNewCampaign(WHATS_NEW_CAMPAIGN_ID);

@@ -1,10 +1,6 @@
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
-import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
-import { createFeedHref } from '@src/features/planning/todo/utils/feed-route';
-import { createTodoDetailHref } from '@src/features/planning/todo/utils/navigation/todo-detail-href';
-import { myInviteHref } from '@src/features/social/invite/utils/navigation/invite-href';
-import { weatherHref } from '@src/features/weather/utils/navigation/weather-href';
-import { parseWeatherRescheduleUrl } from '@src/features/weather/utils/navigation/weather-reschedule-href';
+import type { WeatherEntry } from '@src/features/weather/schemas/weather-entry-params.schema';
+import { parseWeatherRescheduleUrl } from '@src/features/weather/utils/weather-reschedule-link';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
@@ -15,7 +11,7 @@ import type {
   NotificationContext,
   NotificationRouting,
   NotificationType,
-} from '../../domains/notification.model';
+} from '../domains/notification.model';
 
 export type NotificationDestination =
   | { kind: 'none' }
@@ -149,10 +145,25 @@ export function resolveNotificationDestination(
 function toNoticeDestination(url: string | undefined, today?: string): NotificationDestination {
   const feedDate = today ? 'today' : undefined;
   return match(url)
-    .with('/feed', () => ({ kind: 'route' as const, href: createFeedHref({ date: feedDate }) }))
-    .with('/friends/invite', () => ({ kind: 'route' as const, href: myInviteHref() }))
-    .with('/settings/subscription', () => ({ kind: 'route' as const, href: subscriptionHref() }))
-    .with('/weather', () => ({ kind: 'route' as const, href: weatherHref('notification') }))
+    .with('/feed', () => ({
+      kind: 'route' as const,
+      href: { pathname: '/feed' as const, params: { date: feedDate } },
+    }))
+    .with('/friends/invite', () => ({
+      kind: 'route' as const,
+      href: { pathname: '/friends/invite' as const },
+    }))
+    .with('/settings/subscription', () => ({
+      kind: 'route' as const,
+      href: { pathname: '/settings/subscription' as const },
+    }))
+    .with('/weather', () => ({
+      kind: 'route' as const,
+      href: {
+        pathname: '/weather' as const,
+        params: { entry: 'notification' satisfies WeatherEntry },
+      },
+    }))
     .with('/achievements', '/friends', '/settings/notifications', (href) => ({
       kind: 'route' as const,
       href,
@@ -206,27 +217,30 @@ function toRouteDestination(
       }))
       .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER'), todoId: P.number }, (routing) => ({
         kind: 'route' as const,
-        href: createTodoDetailHref(windowSizeClass, {
+        href: toTodoDetailRoute(windowSizeClass, {
           todoId: routing.todoId,
           ...toTodoFeed(routing),
         }),
       }))
       .with({ type: 'NUDGE_RECEIVED', friendId: P.string }, ({ friendId }) => ({
         kind: 'route' as const,
-        href: createFeedHref({ friendId, date: feedDate }),
+        href: { pathname: '/feed' as const, params: { friendId, date: feedDate } },
       }))
       .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER') }, () => ({
         kind: 'route' as const,
-        href: createFeedHref({ date: feedDate }),
+        href: { pathname: '/feed' as const, params: { date: feedDate } },
       }))
       .with({ type: P.union('WEATHER_MORNING', 'WEATHER_EVENING') }, () => ({
         kind: 'route' as const,
-        href: weatherHref('notification'),
+        href: {
+          pathname: '/weather' as const,
+          params: { entry: 'notification' satisfies WeatherEntry },
+        },
       }))
       // 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치(`?comment=`)로 연다. 펼친 화면은 피드 pane이다
       .with({ type: 'TODO_SHARED' }, (routing) => ({
         kind: 'route' as const,
-        href: createTodoDetailHref(windowSizeClass, {
+        href: toTodoDetailRoute(windowSizeClass, {
           todoId: routing.todoId,
           comment: routing.commentId,
           ...toTodoFeed(routing),
@@ -238,7 +252,7 @@ function toRouteDestination(
         },
         ({ friendId }) => ({
           kind: 'route' as const,
-          href: createFeedHref({ friendId, date: feedDate }),
+          href: { pathname: '/feed' as const, params: { friendId, date: feedDate } },
         }),
       )
       .with({ type: 'FOLLOW_NEW' }, () => ({
@@ -259,15 +273,15 @@ function toRouteDestination(
       }))
       .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED', 'INVITE_PROGRESS') }, () => ({
         kind: 'route' as const,
-        href: myInviteHref(),
+        href: { pathname: '/friends/invite' as const },
       }))
       .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
         kind: 'route' as const,
-        href: subscriptionHref(),
+        href: { pathname: '/settings/subscription' as const },
       }))
       .with({ type: 'FEED' }, () => ({
         kind: 'route' as const,
-        href: createFeedHref({ date: feedDate }),
+        href: { pathname: '/feed' as const, params: { date: feedDate } },
       }))
       .exhaustive()
   );
@@ -282,4 +296,29 @@ interface TodoTarget {
 function toTodoFeedTarget({ todoOwnerId, todoDate }: TodoTarget, viewerId?: string) {
   const isFriendTodo = todoOwnerId != null && viewerId != null && todoOwnerId !== viewerId;
   return { friendId: isFriendTodo ? todoOwnerId : undefined, date: todoDate };
+}
+
+interface TodoDetailTarget {
+  todoId: number;
+  /** 열 때 바로 보일 댓글 대화 */
+  comment?: string;
+  /** 친구의 할 일이면 그 친구. 내 할 일이거나 모르면 비운다 */
+  friendId?: string;
+  /** 할 일 날짜(YYYY-MM-DD). 모르면 피드의 기본 날짜다 */
+  date?: string;
+}
+
+/**
+ * 알림에서 할 일 상세를 여는 곳. 목록에서 고를 때와 같은 기준으로
+ * 접힌 화면은 상세 화면을 push하고, 펼친 화면은 피드 상세 pane에 고른다.
+ * 펼친 화면의 목록 pane은 그 할 일의 주인(친구 피드)과 날짜를 보여 준다.
+ */
+function toTodoDetailRoute(
+  windowSizeClass: WindowSizeClass,
+  { todoId, comment, friendId, date }: TodoDetailTarget,
+) {
+  if (windowSizeClass === 'compact') {
+    return { pathname: '/todo/[todoId]' as const, params: { todoId, comment } };
+  }
+  return { pathname: '/feed' as const, params: { friendId, date, todoId, comment } };
 }

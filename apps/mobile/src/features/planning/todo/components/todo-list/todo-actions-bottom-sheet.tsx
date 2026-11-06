@@ -48,12 +48,6 @@ import { useStopTodoSeriesMutationOptions } from '../../queries/use-stop-todo-se
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
-import {
-  TODO_SHEET_FALLBACK_HREF,
-  todoActionSheetHref,
-  type TodoSheetAction,
-  todoThanksSheetHref,
-} from '../../utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 
 type TodoActionsBottomSheetProps = Omit<
@@ -62,7 +56,7 @@ type TodoActionsBottomSheetProps = Omit<
 >;
 
 export function TodoActionsBottomSheet(props: TodoActionsBottomSheetProps) {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
@@ -114,8 +108,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   const editValues = toTodoEditFormValues(todo);
   const isTodoToday = isDateToday(editValues.startDate, today);
 
-  const openActionSheet = (action: TodoSheetAction) =>
-    onClose({ type: 'replace', href: todoActionSheetHref(action, { todoId: todo.id, date }) });
+  const sheetParams = { todoId: todo.id, date };
 
   const handleScheduleToggle = () => {
     const { startDate, endDate } = isTodoToday
@@ -185,14 +178,22 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
               <ThanksSummaryRow
                 todoId={todo.id}
                 onThanksPress={() =>
-                  onClose({ type: 'replace', href: todoThanksSheetHref({ todoId: todo.id }) })
+                  onClose({
+                    type: 'replace',
+                    href: { pathname: '/todo/[todoId]/thanks', params: { todoId: todo.id } },
+                  })
                 }
               />
             </Suspense>
           </QueryErrorBoundary>
         )}
         <PressableFeedback
-          onPress={() => openActionSheet('edit')}
+          onPress={() =>
+            onClose({
+              type: 'replace',
+              href: { pathname: '/todo/[todoId]/edit', params: sheetParams },
+            })
+          }
           isDisabled={deleteMutation.isPending}
         >
           <ListRow
@@ -211,7 +212,12 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
         </PressableFeedback>
 
         <PressableFeedback
-          onPress={() => openActionSheet('date')}
+          onPress={() =>
+            onClose({
+              type: 'replace',
+              href: { pathname: '/todo/[todoId]/date', params: sheetParams },
+            })
+          }
           isDisabled={deleteMutation.isPending}
         >
           <ListRow
@@ -234,7 +240,12 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
         </PressableFeedback>
 
         <PressableFeedback
-          onPress={() => openActionSheet('time')}
+          onPress={() =>
+            onClose({
+              type: 'replace',
+              href: { pathname: '/todo/[todoId]/time', params: sheetParams },
+            })
+          }
           isDisabled={deleteMutation.isPending}
         >
           <ListRow
@@ -257,7 +268,12 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
         </PressableFeedback>
 
         <PressableFeedback
-          onPress={() => openActionSheet('category')}
+          onPress={() =>
+            onClose({
+              type: 'replace',
+              href: { pathname: '/todo/[todoId]/category', params: sheetParams },
+            })
+          }
           isDisabled={deleteMutation.isPending}
         >
           <ListRow

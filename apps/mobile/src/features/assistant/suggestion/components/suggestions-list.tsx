@@ -1,5 +1,4 @@
 import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
-import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import {
   formatDateLabel,
@@ -37,7 +36,6 @@ import {
   useGetSuggestionsQueryOptions,
 } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
-import { suggestionCategorySheetHref } from '../utils/navigation/suggestion-sheet-href';
 
 const SUGGESTION_LOADING_COUNT = 2;
 
@@ -139,7 +137,10 @@ SuggestionsList.Item = function Item({
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
   const handleOpenCategorySheet = () =>
-    push(suggestionCategorySheetHref({ suggestionId: suggestion.id }));
+    push({
+      pathname: '/suggestions/[suggestionId]/category',
+      params: { suggestionId: suggestion.id },
+    });
 
   return (
     <Box className="py-2">
@@ -263,7 +264,7 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
 
         <Spacing size={16} />
 
-        <Button size="medium" onPress={() => push(subscriptionHref())}>
+        <Button size="medium" onPress={() => push('/settings/subscription')}>
           {t('suggestions.paywall.subscribeCta')}
         </Button>
       </Box>

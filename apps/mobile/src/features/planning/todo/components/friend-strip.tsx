@@ -48,7 +48,7 @@ import {
 } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
-import { useFeedFriendIdParam } from '../hooks/use-feed-friend-id-param';
+import { useFeedParams } from '../hooks/use-feed-params';
 import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll';
 
 /** 아바타 40 + 양쪽 선택 링 2 + 링 안쪽 여백 2. 선택 여부와 관계없이 늘 같은 크기다 */
@@ -166,7 +166,7 @@ FriendStrip.Item = memo(function Item({
 }: FriendStripItemProps) {
   const haptics = useHaptics();
   const { t } = useTranslation('todo');
-  const [selectedFriendId, setSelectedFriendId] = useFeedFriendIdParam();
+  const { friendId: selectedFriendId, selectFriend: setSelectedFriendId } = useFeedParams();
   const isSelected = selectedFriendId === friendId;
   const selectFriend = useSingleTap((nextFriendId: string | undefined) => {
     haptics.selection();
@@ -406,7 +406,7 @@ function SelectedFriendReveal({
   friends: readonly FriendUserViewModel[];
   isListLoaded: boolean;
 }) {
-  const [selectedFriendId] = useFeedFriendIdParam();
+  const { friendId: selectedFriendId } = useFeedParams();
   const { width } = useFriendStripItemSize();
   const hasRevealedRef = useRef(false);
   const selectedIndex = friends.findIndex((friend) => friend.id === selectedFriendId);

@@ -10,7 +10,6 @@ import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invi
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/get-clipboard-presence-query-options';
 import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/get-invite-preview-query-options';
-import { inviteCardHref } from '@src/features/social/invite/utils/navigation/invite-href';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -116,7 +115,10 @@ function InviteCodeEntryScreen() {
       if (openedAt == null) {
         trackEvent('invite_link_opened', { source: 'code_entry' });
       }
-      router.replace(inviteCardHref(inviteCode, 'code_entry'));
+      router.replace({
+        pathname: '/invite/[inviteCode]',
+        params: { inviteCode, source: 'code_entry' },
+      });
     } catch (error) {
       // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 오류 경계가 맡는다
       if (!isBusinessError(error)) {

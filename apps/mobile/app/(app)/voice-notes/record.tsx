@@ -25,7 +25,6 @@ import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-no
 import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
-import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -72,7 +71,8 @@ function VoiceNoteRecordScreen() {
     entry,
     maxSeconds,
     onLimitReached: () => notifyLimit(recording),
-    onFinished: (draftId) => router.replace(voiceNoteHref(draftId)),
+    onFinished: (draftId) =>
+      router.replace({ pathname: '/voice-notes/[draftId]', params: { draftId } }),
     onEmpty: () => {
       toast.warning(t('record.empty'));
       router.back();

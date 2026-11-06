@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 
-import type { NotificationDestination } from '../utils/navigation/notification-destination';
+import type { NotificationDestination } from '../utils/notification-destination';
 
 export function useNotificationNavigation() {
   const openUrl = useOpenUrl();

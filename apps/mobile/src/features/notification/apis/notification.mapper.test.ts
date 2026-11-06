@@ -1,5 +1,5 @@
 import { createNotificationListResponseDto } from '../__tests__/notification.factories';
-import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
+import { resolveNotificationDestination } from '../utils/notification-destination';
 import {
   toNotification,
   toNotificationListResult,

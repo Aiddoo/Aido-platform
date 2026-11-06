@@ -11,7 +11,7 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushNotificationPayload } from '../domains/notification.model';
 import { optimisticallyMarkNotificationsRead } from '../queries/notification-cache';
-import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
+import { resolveNotificationDestination } from '../utils/notification-destination';
 import { useNotificationNavigation } from './use-notification-navigation';
 
 export type NotificationResponseInput = {

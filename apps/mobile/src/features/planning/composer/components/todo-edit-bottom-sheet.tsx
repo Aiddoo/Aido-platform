@@ -2,7 +2,6 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -33,7 +32,7 @@ export function TodoEditBottomSheet() {
 }
 
 TodoEditBottomSheet.Form = function Form() {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
@@ -89,7 +88,7 @@ TodoEditBottomSheet.SeriesForm = function SeriesForm({
 
 TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>

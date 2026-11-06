@@ -19,10 +19,6 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useSuggestionScreenParams } from '../hooks/use-suggestion-screen-params';
 import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
-import {
-  SUGGESTION_ACCEPTED_HREF,
-  SUGGESTION_SHEET_FALLBACK_HREF,
-} from '../utils/navigation/suggestion-sheet-href';
 import { findSheetSuggestion } from '../utils/view-models/suggestion-category.view-model';
 
 type SuggestionCategoryBottomSheetProps = Omit<
@@ -32,7 +28,7 @@ type SuggestionCategoryBottomSheetProps = Omit<
 
 /** 제안을 받아들일 카테고리를 고르는 시트. 대상은 `/suggestions/[suggestionId]/category` route에서 읽는다. */
 export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomSheetProps) {
-  const sheet = useSheetRoute(SUGGESTION_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/suggestions');
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
@@ -90,7 +86,7 @@ SuggestionCategoryBottomSheet.Content = function Content({
           .catch(() => null);
 
         if (accepted) {
-          onClose({ type: 'back-then-replace', href: SUGGESTION_ACCEPTED_HREF });
+          onClose({ type: 'back-then-replace', href: '/feed' });
         }
       }}
       submitLabel={t('suggestions.category.submit')}

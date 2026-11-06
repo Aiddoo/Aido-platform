@@ -24,7 +24,6 @@ import { VOICE_NOTE_PREVIEW_COUNT } from '../../constants/voice-note.constants';
 import { type VoiceNote, VoiceNotePolicy } from '../../domains/voice-note.model';
 import { useVoiceNotes } from '../../hooks/use-voice-notes';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { voiceNoteHref, voiceNoteListHref } from '../../utils/navigation/voice-note-href';
 
 export function VoiceNoteDraftList() {
   const { t } = useTranslation('voiceNote');
@@ -47,7 +46,7 @@ export function VoiceNoteDraftList() {
             size="small"
             variant="arrow"
             hitSlop={12}
-            onPress={() => push(voiceNoteListHref())}
+            onPress={() => push('/voice-notes')}
             testID="voice-note-draft-all"
           >
             {t('drafts.viewAll', { amount: notes.length })}
@@ -91,7 +90,9 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
 
   return (
     <PressableFeedback
-      onPress={() => push(voiceNoteHref(note.draftId))}
+      onPress={() =>
+        push({ pathname: '/voice-notes/[draftId]', params: { draftId: note.draftId } })
+      }
       accessibilityRole="button"
       className="rounded-2xl bg-gray-1 px-3 py-3"
       testID="voice-note-draft"

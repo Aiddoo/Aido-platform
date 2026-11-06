@@ -29,10 +29,6 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
 import {
-  subTodoEditSheetHref,
-  TODO_SHEET_FALLBACK_HREF,
-} from '../../utils/navigation/todo-sheet-href';
-import {
   findSheetSubTodo,
   findSheetTodo,
 } from '../../utils/view-models/todo-sheet-target.view-model';
@@ -43,7 +39,7 @@ type SubTodoActionsBottomSheetProps = Omit<
 >;
 
 export function SubTodoActionsBottomSheet(props: SubTodoActionsBottomSheetProps) {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
@@ -108,7 +104,10 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
         onPress={() =>
           onClose({
             type: 'replace',
-            href: subTodoEditSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }),
+            href: {
+              pathname: '/todo/[todoId]/sub-todos/[subTodoId]/edit',
+              params: { todoId: todo.id, subTodoId: subTodo.id, date },
+            },
           })
         }
         isDisabled={isDeleting}

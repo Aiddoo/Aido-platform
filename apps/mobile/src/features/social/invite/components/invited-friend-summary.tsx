@@ -6,8 +6,8 @@ import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
+import type { InvitedFriendsView } from '../hooks/use-invited-friends-view-param';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/get-invited-friends-infinite-query-options';
-import { invitedFriendsHref } from '../utils/navigation/invite-href';
 import { InvitedFriendRow } from './invited-friend-row';
 
 /**
@@ -17,7 +17,12 @@ import { InvitedFriendRow } from './invited-friend-row';
 export function InvitedFriendSummary({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation('invite');
   const { data } = useSuspenseInfiniteQuery(useGetInvitedFriendSummaryInfiniteQueryOptions());
-  const openInvitedFriends = useSingleTap(() => router.push(invitedFriendsHref()));
+  const openInvitedFriends = useSingleTap(() =>
+    router.push({
+      pathname: '/friends/invite/invitees',
+      params: { view: 'all' satisfies InvitedFriendsView },
+    }),
+  );
 
   return (
     <InvitedFriendSummaryFrame className={className} {...props}>

@@ -15,7 +15,7 @@ import {
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
-import { weatherHref } from '../utils/navigation/weather-href';
+import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
 import { WeatherIcon } from './weather-icon';
 
 const selectBadge = (report: WeatherReport) => ({
@@ -65,7 +65,9 @@ WeatherForecastBadge.Item = function Item({
 
   return (
     <PressableFeedback
-      onPress={() => push(weatherHref('feed_badge'))}
+      onPress={() =>
+        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
+      }
       accessibilityRole="button"
       accessibilityLabel={t('badge.temperature', { temperature, serviceName })}
       hitSlop={4}
@@ -94,7 +96,9 @@ WeatherForecastBadge.Entry = function Entry() {
 
   return (
     <PressableFeedback
-      onPress={() => push(weatherHref('feed_badge'))}
+      onPress={() =>
+        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
+      }
       accessibilityRole="button"
       accessibilityLabel={t('badge.entry')}
       hitSlop={4}

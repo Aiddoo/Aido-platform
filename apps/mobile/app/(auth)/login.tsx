@@ -5,7 +5,6 @@ import { useOpenAppleLoginMutationOptions } from '@src/features/identity/auth/qu
 import { useOpenGoogleLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-google-login-mutation-options';
 import { useOpenKakaoLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-kakao-login-mutation-options';
 import { useOpenNaverLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-naver-login-mutation-options';
-import { inviteCodeEntryHref } from '@src/features/social/invite/utils/navigation/invite-href';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
@@ -136,7 +135,7 @@ function LoginScreen() {
 
         {/* iOS는 설치 전 링크의 코드를 넘길 수 없어 웹에서 본 코드를 여기서 입력한다 */}
         <HStack justify="center" pb={40}>
-          <TextButton size="small" variant="underline" onPress={() => push(inviteCodeEntryHref())}>
+          <TextButton size="small" variant="underline" onPress={() => push('/invite')}>
             {t('invite:entry.haveInviteCode')}
           </TextButton>
         </HStack>

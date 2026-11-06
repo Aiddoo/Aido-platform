@@ -1,7 +1,6 @@
 import { reportTypeSchema } from '@aido/api';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
-import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { ReportCard } from '@src/features/insights/report/components/report-card';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
@@ -163,7 +162,7 @@ function FreeReportPreview() {
         <ReportCard report={sampleReport} isSample isLast />
       </Box>
 
-      <Button size="medium" onPress={() => push(subscriptionHref())}>
+      <Button size="medium" onPress={() => push('/settings/subscription')}>
         {t('report.list.subscribeCta')}
       </Button>
     </VStack>

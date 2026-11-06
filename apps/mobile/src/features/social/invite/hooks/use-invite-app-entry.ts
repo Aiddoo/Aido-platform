@@ -6,8 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
-import { inviteCardHref } from '../utils/navigation/invite-href';
-
 const selectUserId = (user: User) => user.id;
 
 /**
@@ -46,7 +44,10 @@ export function useInviteAppEntry() {
       }
 
       openedPendingKeyRef.current = pendingKey;
-      router.navigate(inviteCardHref(pending.inviteCode, pending.source));
+      router.navigate({
+        pathname: '/invite/[inviteCode]',
+        params: { inviteCode: pending.inviteCode, source: pending.source },
+      });
     });
 
     return () => cancelAnimationFrame(frameId);

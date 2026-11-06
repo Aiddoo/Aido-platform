@@ -1,6 +1,5 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -81,7 +80,7 @@ export function RemindNudgeBottomSheet({
 /** route(`/users/[userId]/nudge`)로 띄운 독촉 콕 시트. 받는 사람은 route에서 읽는다 */
 RemindNudgeBottomSheet.Route = function Route() {
   const { userId, name } = useRemindNudgeRouteParams();
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <RemindNudgeBottomSheet

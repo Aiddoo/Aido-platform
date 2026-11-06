@@ -1,5 +1,4 @@
 import { CategoryList } from '@src/features/planning/category/components/category-list';
-import { todoCategoryCreateSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -68,7 +67,7 @@ function TodoCategorySettingsScreen() {
               </Tabs.List>
             </Tabs>
 
-            <PressableFeedback onPress={() => push(todoCategoryCreateSheetHref())}>
+            <PressableFeedback onPress={() => push('/todo-categories/new')}>
               <HStack align="center" gap={4}>
                 <PlusIcon
                   width={fontScaledSize(18)}

@@ -3,7 +3,6 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetFriendQueryOptions } from '@src/features/social/friend/queries/get-friend-query-options';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/get-remind-nudge-cooldown-query-options';
-import { remindNudgeSheetHref } from '@src/features/social/nudge/utils/navigation/nudge-href';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -190,7 +189,12 @@ function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
         name: displayName,
         count: InvitedFriendPolicy.activeDaysLeft(friend),
       })}
-      onPress={() => push(remindNudgeSheetHref({ id: friend.userId, displayName }))}
+      onPress={() =>
+        push({
+          pathname: '/users/[userId]/nudge',
+          params: { userId: friend.userId, name: displayName },
+        })
+      }
     />
   );
 }

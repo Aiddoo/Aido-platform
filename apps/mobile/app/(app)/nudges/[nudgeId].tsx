@@ -1,12 +1,7 @@
 import type { NudgeReplyKind } from '@aido/api';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
-import { todoThanksSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import {
-  blockUserConfirmHref,
-  userReportSheetHref,
-} from '@src/features/social/moderation/utils/navigation/moderation-href';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import {
   type NudgeInteraction,
@@ -63,7 +58,7 @@ function NudgeDetailScreen() {
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
   const status = NudgeInteractionPolicy.getNudgeInteractionStatus(nudge);
   const handleOpenThanksSheet = useSingleTap(() =>
-    router.push(todoThanksSheetHref({ todoId: nudge.todoId })),
+    router.push({ pathname: '/todo/[todoId]/thanks', params: { todoId: nudge.todoId } }),
   );
   const handleOpenTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
@@ -352,17 +347,21 @@ function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
       <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('menu.more')}>
         <Stack.Toolbar.MenuAction
           icon={STACK_MENU_ICON.report}
-          onPress={() =>
-            push(
-              userReportSheetHref({
-                target: UserReportPolicy.nudgeMessageTarget({
-                  nudgeId: nudge.id,
-                  senderId: nudge.senderId,
-                }),
-                displayName: nudge.senderName,
-              }),
-            )
-          }
+          onPress={() => {
+            const target = UserReportPolicy.nudgeMessageTarget({
+              nudgeId: nudge.id,
+              senderId: nudge.senderId,
+            });
+            push({
+              pathname: '/users/[userId]/report',
+              params: {
+                userId: target.targetUserId,
+                name: nudge.senderName,
+                targetType: target.targetType,
+                targetId: target.targetId,
+              },
+            });
+          }}
         >
           {t('menu.report')}
         </Stack.Toolbar.MenuAction>
@@ -370,7 +369,10 @@ function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
           icon={STACK_MENU_ICON.block}
           destructive
           onPress={() =>
-            push(blockUserConfirmHref({ userId: nudge.senderId, displayName: nudge.senderName }))
+            push({
+              pathname: '/users/[userId]/block',
+              params: { userId: nudge.senderId, name: nudge.senderName },
+            })
           }
         >
           {t('block.action')}

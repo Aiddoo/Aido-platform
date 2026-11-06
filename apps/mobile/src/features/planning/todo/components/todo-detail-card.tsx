@@ -26,7 +26,6 @@ import { Suspense } from 'react';
 import { TodoPolicy, type TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
-import { todoThanksSheetHref } from '../utils/navigation/todo-sheet-href';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
@@ -190,7 +189,9 @@ function TodoDetailThanksSummary({ detail }: TodoDetailSectionProps) {
       <Suspense fallback={<ThanksSummaryRow.Loading />}>
         <ThanksSummaryRow
           todoId={detail.todo.id}
-          onThanksPress={() => push(todoThanksSheetHref({ todoId: detail.todo.id }))}
+          onThanksPress={() =>
+            push({ pathname: '/todo/[todoId]/thanks', params: { todoId: detail.todo.id } })
+          }
         />
       </Suspense>
     </QueryErrorBoundary>

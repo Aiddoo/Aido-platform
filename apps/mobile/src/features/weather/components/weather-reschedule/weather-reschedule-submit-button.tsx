@@ -17,10 +17,7 @@ import {
   toRescheduleTargets,
   type WeatherRescheduleFormValues,
 } from '../../domains/weather-reschedule-form.schema';
-import {
-  useRescheduleReasonParam,
-  useRescheduleTodoIdsParam,
-} from '../../hooks/use-weather-reschedule-params';
+import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
 import { useRescheduleTodoMutationOptions } from '../../queries/use-reschedule-todo-mutation-options';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
@@ -29,8 +26,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
   const toast = useAppToast();
   const logger = useLogger();
   const { trackEvent } = useTrack();
-  const [todoIds] = useRescheduleTodoIdsParam();
-  const [reason] = useRescheduleReasonParam();
+  const { todoIds, reason } = useWeatherRescheduleParams();
   const { handleSubmit, control } = useFormContext<WeatherRescheduleFormValues>();
   const { isSubmitting } = useFormState({ control });
   const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: useTodayKey() }));

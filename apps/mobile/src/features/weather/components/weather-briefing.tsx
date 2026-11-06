@@ -1,3 +1,4 @@
+import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api';
 import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import {
@@ -7,10 +8,6 @@ import {
 } from '@src/features/planning/todo/components/todo-row';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/use-toggle-todo-mutation-options';
-import {
-  todoActionsSheetHref,
-  todoCreateSheetHref,
-} from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import { toHHmm } from '@src/shared/date/instant';
@@ -39,6 +36,7 @@ import { router } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { Fragment, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
@@ -48,8 +46,8 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
 import { toWeatherBriefingKind } from '../utils/analytics/weather-analytics';
-import { createWeatherRescheduleHref } from '../utils/navigation/weather-reschedule-href';
 import {
   type BriefingAction,
   type BriefingCopy,
@@ -249,7 +247,8 @@ WeatherBriefing.Item = function Item({
   const { todo, tone } = row;
   const time = formatClockTime(todo.scheduledAt, timeFormat, dateFormat);
   const advice = translate(row.advice);
-  const openActions = () => push(todoActionsSheetHref({ todoId: todo.todoId, date: todayKey }));
+  const openActions = () =>
+    push({ pathname: '/todo/[todoId]/actions', params: { todoId: todo.todoId, date: todayKey } });
   const chip = (
     <WeatherBriefingChip
       condition={row.chipCondition}
@@ -391,14 +390,15 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
 
   const handlePress = () => {
     trackEvent('weather_todo_suggestion_opened', { reason: action.reason });
-    push(
-      todoCreateSheetHref({
+    push({
+      pathname: '/todo/new',
+      params: {
         date: todayKey,
         title: translate(action.title),
         time:
           action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt, getDeviceTimezone()),
-      }),
-    );
+      },
+    });
   };
 
   return (
@@ -449,6 +449,12 @@ function useOpenReschedule(action: RescheduleAction) {
       todo_count: action.todoIds.length,
       reason: action.reason,
     });
-    push(createWeatherRescheduleHref(action.todoIds, action.reason));
+    push({
+      pathname: WEATHER_RESCHEDULE_DEEP_LINK,
+      params: z.encode(weatherRescheduleParamsSchema, {
+        todoIds: action.todoIds,
+        reason: action.reason,
+      }),
+    });
   };
 }

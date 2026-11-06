@@ -16,7 +16,6 @@ import {
   recordWhatsNewDismissed,
   recordWhatsNewImpression,
 } from '../utils/whats-new.analytics';
-import { navigateToWhatsNewCard } from '../utils/whats-new.navigation';
 
 interface OpenWhatsNewHubInput {
   accountId: string;
@@ -69,12 +68,10 @@ export function useWhatsNewHub() {
             source,
           });
           close();
-          navigateToWhatsNewCard(
-            {
-              push: (route) => push(route),
-            },
-            cardId,
-          );
+          const route = campaign.cards.find((card) => card.id === cardId)?.route;
+          if (route != null) {
+            push(route);
+          }
         };
 
         return (

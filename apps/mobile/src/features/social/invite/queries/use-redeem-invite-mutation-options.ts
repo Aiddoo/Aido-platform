@@ -1,6 +1,5 @@
 import { INVITE_FRIENDSHIP } from '@aido/api';
 import { useHaptics, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
-import { createFeedHref } from '@src/features/planning/todo/utils/feed-route';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -18,7 +17,6 @@ import {
   toRedeemFailureReason,
 } from '../domains/invite.error';
 import type { InviteCode } from '../domains/invite.model';
-import { inviteWelcomeSheetHref, myInviteHref } from '../utils/navigation/invite-href';
 import { invalidateAfterRedeem, storeRedemptionResult } from './invite-cache';
 
 export function useRedeemInviteMutationOptions() {
@@ -48,27 +46,31 @@ export function useRedeemInviteMutationOptions() {
       // 이미 받은 초대를 다시 수락했으면 보상을 새로 받은 것처럼 환영 시트를 띄우지 않는다
       if (InviteRedemptionPolicy.isAlreadyAccepted(result)) {
         toast(t('card.alreadyAccepted'));
-        router.replace(
-          createFeedHref(
+        router.replace({
+          pathname: '/feed',
+          params:
             InviteRedemptionPolicy.friendship(result) === INVITE_FRIENDSHIP.FRIENDS
               ? { friendId: result.inviter.userId }
               : {},
-          ),
-        );
+        });
         return;
       }
 
       // 이미 친구면 축하할 것이 없어 바로 친구 할 일로 간다
       match(InviteRedemptionPolicy.welcomeVariant(result))
         .with('already-friends', () =>
-          router.replace(createFeedHref({ friendId: result.inviter.userId })),
+          router.replace({ pathname: '/feed', params: { friendId: result.inviter.userId } }),
         )
         .with(
           'friends-with-reward',
           'requested-with-reward',
           'friends-only',
           'requested-only',
-          () => router.replace(inviteWelcomeSheetHref(result.inviter.userId)),
+          () =>
+            router.replace({
+              pathname: '/invite-welcome/[friendId]',
+              params: { friendId: result.inviter.userId },
+            }),
         )
         .exhaustive();
     },
@@ -89,7 +91,7 @@ export function useRedeemInviteMutationOptions() {
 
       match(reason)
         // 내 링크를 연 경우에는 내 초대 화면으로 보내 친구에게 보내게 한다
-        .with('self', () => router.replace(myInviteHref()))
+        .with('self', () => router.replace('/friends/invite'))
         .with(
           'invalid_code',
           'not_found',

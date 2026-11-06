@@ -20,7 +20,6 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { TodoPolicy } from '../../domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
-import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
 import { toTodoEditFormValues } from '../../utils/to-todo-edit-form-values';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 import { TodoDatePickerContent } from '../todo-date-picker-content';
@@ -31,7 +30,7 @@ type TodoDateBottomSheetProps = Omit<
 >;
 
 export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>

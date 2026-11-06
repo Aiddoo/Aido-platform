@@ -23,7 +23,6 @@ import {
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
 import { getPremiumGateAnalyticsFeature } from '../utils/analytics/premium-gate-feature';
-import { subscriptionHref } from '../utils/navigation/subscription-href';
 import { toPremiumBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
 import { useRefillSentence } from './use-refill-sentence';
 
@@ -91,7 +90,7 @@ export function useEntitlementGate(
               trackEvent('limit_reached_cta_tapped', { feature: analyticsFeature, surface });
             }
             onSubscribe?.();
-            router.navigate(subscriptionHref());
+            router.navigate('/settings/subscription');
           }}
         />
       ));

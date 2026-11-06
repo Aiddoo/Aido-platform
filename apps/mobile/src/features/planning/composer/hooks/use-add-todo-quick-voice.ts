@@ -23,7 +23,6 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
-import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
@@ -192,10 +191,13 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
         }
         session.handOff();
         onExit();
-        return voiceNoteRecordHref({
-          draftId: note.sentences.length > 0 ? note.draftId : undefined,
-          entry: 'quick_voice_upgrade',
-        });
+        return {
+          pathname: '/voice-notes/record',
+          params: {
+            draftId: note.sentences.length > 0 ? note.draftId : undefined,
+            entry: 'quick_voice_upgrade',
+          },
+        };
       },
     });
   };

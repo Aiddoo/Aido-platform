@@ -3,7 +3,6 @@ import {
   type PremiumAccess,
   PremiumAccessPolicy,
 } from '@src/features/billing/subscription/domains/premium-access.model';
-import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -587,7 +586,7 @@ function KeepPremiumButton({ premiumAccess }: { premiumAccess: PremiumAccess }) 
       size="medium"
       display="inline"
       accessibilityHint={t('pawPrintBoard.keepPremiumHint')}
-      onPress={() => navigate(subscriptionHref())}
+      onPress={() => navigate('/settings/subscription')}
     >
       {t('pawPrintBoard.keepPremium')}
     </Button>

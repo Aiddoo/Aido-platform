@@ -9,15 +9,12 @@ import { RESCHEDULE_COPY_KEYS } from '@src/features/weather/constants/weather-la
 import { WeatherBriefingPolicy } from '@src/features/weather/domains/weather-briefing.model';
 import { WeatherReportPolicy } from '@src/features/weather/domains/weather-report.model';
 import { weatherRescheduleFormSchema } from '@src/features/weather/domains/weather-reschedule-form.schema';
-import {
-  useRescheduleReasonParam,
-  useRescheduleTodoIdsParam,
-} from '@src/features/weather/hooks/use-weather-reschedule-params';
+import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '@src/features/weather/queries/get-weather-report-query-options';
-import { rescheduleTodoIdsParamSchema } from '@src/features/weather/utils/navigation/weather-reschedule-href';
+import { weatherRescheduleParamsSchema } from '@src/features/weather/schemas/weather-reschedule-params.schema';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -49,7 +46,7 @@ const WEATHER_HREF = '/weather';
 const LOADING_TODO_COUNT = 2;
 
 export default function WeatherRescheduleSheetRoute() {
-  const params = rescheduleTodoIdsParamSchema.safeParse(useLocalSearchParams());
+  const params = weatherRescheduleParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href={WEATHER_HREF} />;
@@ -105,8 +102,7 @@ function WeatherRescheduleSheet() {
 
 function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
   const { t } = useTranslation('weather');
-  const [todoIds, setTodoIds] = useRescheduleTodoIdsParam();
-  const [reason] = useRescheduleReasonParam();
+  const { todoIds, reason, setTodoIds } = useWeatherRescheduleParams();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },

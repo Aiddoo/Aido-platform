@@ -5,7 +5,6 @@ import {
   userReportFormSchema,
 } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -41,7 +40,6 @@ import { match } from 'ts-pattern';
 import { toReportFailureAction } from '../domains/moderation.error';
 import type { UserReportTarget } from '../domains/user-report.model';
 import { useReportContentMutationOptions } from '../queries/use-report-content-mutation-options';
-import { blockUserConfirmHref } from '../utils/navigation/moderation-href';
 
 const TARGET_CAPTION_KEYS = {
   PROFILE: 'report.caption.PROFILE',
@@ -72,7 +70,7 @@ export function ReportReasonBottomSheet({
   const { t } = useTranslation('moderation');
   const { showBoundary } = useErrorBoundary();
   const { success, error: showErrorToast } = useAppToast();
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
   const reportContent = useMutation(useReportContentMutationOptions());
   const formMethods = useForm({
     resolver: zodResolver(userReportFormSchema),
@@ -102,9 +100,10 @@ export function ReportReasonBottomSheet({
       action: {
         label: t('report.toastBlockAction'),
         onPress: () =>
-          router.push(
-            blockUserConfirmHref({ userId: target.targetUserId, displayName: targetDisplayName }),
-          ),
+          router.push({
+            pathname: '/users/[userId]/block',
+            params: { userId: target.targetUserId, name: targetDisplayName },
+          }),
       },
     });
   };

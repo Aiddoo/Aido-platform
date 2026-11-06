@@ -7,7 +7,7 @@ import { match } from 'ts-pattern';
 
 import { useOpenSubscriptionManagement } from '../hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
-import { subscriptionHref } from '../utils/navigation/subscription-href';
+import type { SubscriptionView } from '../hooks/use-subscription-view-param';
 import { PremiumNotice } from './premium-notice';
 import { RestorePurchaseButton } from './restore-purchase-button';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
@@ -32,7 +32,14 @@ export function SubscriberPane() {
 
         {match(primaryAction)
           .with('subscribe', () => (
-            <Button onPress={() => router.push(subscriptionHref({ view: 'plans' }))}>
+            <Button
+              onPress={() =>
+                router.push({
+                  pathname: '/settings/subscription',
+                  params: { view: 'plans' satisfies SubscriptionView },
+                })
+              }
+            >
               {t('subscriber.subscribeAfterGrantButton')}
             </Button>
           ))

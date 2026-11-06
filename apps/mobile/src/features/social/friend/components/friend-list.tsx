@@ -5,10 +5,6 @@ import { useInviteAvailability } from '@src/features/social/invite/hooks/use-inv
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import type { BlockTarget } from '@src/features/social/moderation/domains/user-block.model';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import {
-  blockUserConfirmHref,
-  userReportSheetHref,
-} from '@src/features/social/moderation/utils/navigation/moderation-href';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -255,20 +251,21 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
           <MenuActionItem
             icon={FlagIcon}
             title={t('menu.report')}
-            onPress={() =>
-              push(
-                userReportSheetHref({
-                  target: UserReportPolicy.profileTarget({ userId }),
-                  displayName,
-                }),
-              )
-            }
+            onPress={() => {
+              const target = UserReportPolicy.profileTarget({ userId });
+              push({
+                pathname: '/users/[userId]/report',
+                params: { userId, name: displayName, targetType: target.targetType },
+              });
+            }}
           />
           <MenuActionItem
             icon={BlockIcon}
             title={t('block.action')}
             variant="danger"
-            onPress={() => push(blockUserConfirmHref({ userId, displayName }))}
+            onPress={() =>
+              push({ pathname: '/users/[userId]/block', params: { userId, name: displayName } })
+            }
           />
         </Menu.Content>
       </Menu.Portal>

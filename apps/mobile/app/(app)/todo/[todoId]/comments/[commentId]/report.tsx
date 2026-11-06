@@ -1,5 +1,4 @@
 import { findCachedTodoComment } from '@src/features/engagement/comment/queries/todo-comment-cache';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import {
@@ -36,7 +35,7 @@ function CommentReportSheet() {
   const author = findCachedTodoComment({ queryClient, todoId, commentId })?.author;
 
   if (author == null) {
-    return <Redirect href={TODO_SHEET_FALLBACK_HREF} />;
+    return <Redirect href="/feed" />;
   }
 
   return (

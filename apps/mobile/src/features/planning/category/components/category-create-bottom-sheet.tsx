@@ -2,7 +2,6 @@ import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/ap
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-create-todo-category-mutation-options';
-import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -28,7 +27,7 @@ type CategoryCreateBottomSheetProps = Omit<
 
 export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps) {
   const reportUnexpectedError = useReportUnexpectedError('todo');
-  const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/settings/category-settings');
 
   const { t } = useTranslation(['todo', 'common']);
   const createMutation = useMutation(useCreateTodoCategoryMutationOptions());

@@ -19,7 +19,6 @@ import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
-import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 
 type TodoCategoryBottomSheetProps = Omit<
@@ -28,7 +27,7 @@ type TodoCategoryBottomSheetProps = Omit<
 >;
 
 export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>

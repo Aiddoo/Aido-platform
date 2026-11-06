@@ -7,7 +7,6 @@ import { signUpFormSchema } from '@src/features/identity/auth/domains/sign-up-fo
 import { useRegisterMutationOptions } from '@src/features/identity/auth/queries/use-register-mutation-options';
 import { useResendVerificationMutationOptions } from '@src/features/identity/auth/queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '@src/features/identity/auth/queries/use-verify-email-mutation-options';
-import { inviteCodeEntryHref } from '@src/features/social/invite/utils/navigation/invite-href';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -55,7 +54,7 @@ function SignUpScreen() {
   const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
-  const openInviteCodeEntry = useSingleTap(() => router.push(inviteCodeEntryHref()));
+  const openInviteCodeEntry = useSingleTap(() => router.push('/invite'));
 
   const submitRegister = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...input }) => {
     if (!termsAgreed || !privacyAgreed) {

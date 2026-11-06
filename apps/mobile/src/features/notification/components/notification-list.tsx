@@ -3,7 +3,6 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import { userReportSheetHref } from '@src/features/social/moderation/utils/navigation/moderation-href';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -37,7 +36,7 @@ import {
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/get-notifications-infinite-query-options';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
-import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
+import { resolveNotificationDestination } from '../utils/notification-destination';
 import { getCategoryKey } from '../utils/view-models/notification-category.view-model';
 import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';
 import { NotificationListRow } from './notification-list-row';
@@ -152,13 +151,18 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
   const handleReportCheer =
     receivedCheer == null
       ? undefined
-      : () =>
-          push(
-            userReportSheetHref({
-              target: UserReportPolicy.cheerMessageTarget(receivedCheer),
-              displayName: receivedCheer.senderName ?? t('moderation:fallbackName'),
-            }),
-          );
+      : () => {
+          const target = UserReportPolicy.cheerMessageTarget(receivedCheer);
+          push({
+            pathname: '/users/[userId]/report',
+            params: {
+              userId: target.targetUserId,
+              name: receivedCheer.senderName ?? t('moderation:fallbackName'),
+              targetType: target.targetType,
+              targetId: target.targetId,
+            },
+          });
+        };
 
   return (
     <NotificationListRow

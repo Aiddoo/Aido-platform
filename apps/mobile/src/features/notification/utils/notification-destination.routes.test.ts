@@ -7,7 +7,7 @@ import type { Href } from 'expo-router';
 
 import { resolveNotificationDestination } from './notification-destination';
 
-const APP_DIRECTORY = join(__dirname, '../../../../../app');
+const APP_DIRECTORY = join(__dirname, '../../../../app');
 const ROUTE_GROUP = /^\(.+\)$/;
 const WINDOW_SIZE_CLASSES: readonly WindowSizeClass[] = ['compact', 'expanded'];
 const CONTEXT = { todoId: 1, nudgeId: 1, friendId: 'friend-1' };

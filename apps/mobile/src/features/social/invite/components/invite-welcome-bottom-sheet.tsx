@@ -3,10 +3,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/get-push-permission-query-options';
 import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/use-request-push-permission-mutation-options';
-import {
-  createFeedAddTodoHref,
-  createFeedHref,
-} from '@src/features/planning/todo/utils/feed-route';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BellFilledIcon,
@@ -56,13 +52,13 @@ type InviteWelcomeBottomSheetProps = Omit<
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   const { t } = useTranslation('common');
   const { friendId } = useInviteWelcomeParams();
-  const sheet = useSheetRoute(createFeedHref());
+  const sheet = useSheetRoute('/feed');
   const { data: result } = useQuery(getRedemptionResultQueryOptions({ inviterId: friendId }));
 
   // 수락 응답 없이 열리면(앱을 다시 켠 뒤, 형식이 틀린 링크 등) 보여 줄 내용이 없어 바로 닫는다
   useEffect(() => {
     if (result == null) {
-      sheet.exit({ type: 'replace', href: createFeedHref() });
+      sheet.exit({ type: 'replace', href: '/feed' });
     }
   }, [result, sheet]);
 
@@ -78,11 +74,16 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
       footer={
         <InviteWelcomeBottomSheet.Actions
           result={result}
-          onCreateFirstTodo={() => sheet.close({ type: 'replace', href: createFeedAddTodoHref() })}
+          onCreateFirstTodo={() =>
+            sheet.close({
+              type: 'replace',
+              href: { pathname: '/feed', params: { action: 'add-todo' } },
+            })
+          }
           onOpenFriendFeed={() =>
             sheet.close({
               type: 'replace',
-              href: createFeedHref({ friendId: result.inviter.userId }),
+              href: { pathname: '/feed', params: { friendId: result.inviter.userId } },
             })
           }
           onDismiss={() => sheet.close()}

@@ -1,12 +1,12 @@
 import { buildWeatherRescheduleDeepLink } from '@aido/api';
+import { z } from 'zod';
 
-import {
-  parseWeatherRescheduleUrl,
-  rescheduleTodoIdsParamSchema,
-  toRescheduleTodoIdsParam,
-} from './weather-reschedule-href';
+import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
+import { parseWeatherRescheduleUrl } from './weather-reschedule-link';
 
-describe('rescheduleTodoIdsParamSchema', () => {
+const rescheduleTodoIdsParamSchema = weatherRescheduleParamsSchema.pick({ todoIds: true });
+
+describe('weatherRescheduleParamsSchema', () => {
   it.each([
     ['12,15', [12, 15]],
     ['7', [7]],
@@ -40,10 +40,11 @@ describe('rescheduleTodoIdsParamSchema', () => {
 
   it('할 일 id 목록을 같은 형식의 URL 값으로 되돌린다', () => {
     // When
-    const param = toRescheduleTodoIdsParam([12, 15]);
+    const { todoIds } = z.encode(rescheduleTodoIdsParamSchema, { todoIds: [12, 15] });
 
     // Then
-    expect(rescheduleTodoIdsParamSchema.parse({ todoIds: param }).todoIds).toEqual([12, 15]);
+    expect(todoIds).toBe('12,15');
+    expect(rescheduleTodoIdsParamSchema.parse({ todoIds }).todoIds).toEqual([12, 15]);
   });
 });
 

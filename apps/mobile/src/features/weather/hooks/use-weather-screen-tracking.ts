@@ -3,11 +3,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import type { WeatherLocationStatus } from '../domains/weather-location.model';
+import { weatherEntryParamSchema } from '../schemas/weather-entry-params.schema';
 import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
 } from '../utils/analytics/weather-analytics';
-import { weatherEntryParamSchema } from '../utils/navigation/weather-href';
 
 /**
  * 날씨 화면이 열릴 때 진입점을, 위치 확인이 처음 끝났을 때 그 결과를 한 번씩 남긴다.

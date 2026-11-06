@@ -1,4 +1,3 @@
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -13,7 +12,7 @@ import { useBlockUserMutationOptions } from '../queries/use-block-user-mutation-
 export function BlockUserConfirmDialog() {
   const { t } = useTranslation(['moderation', 'common']);
   const { userId, name } = useBlockUserRouteParams();
-  const dialog = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const dialog = useSheetRoute('/feed');
   const blockUser = useMutation(useBlockUserMutationOptions());
 
   return (

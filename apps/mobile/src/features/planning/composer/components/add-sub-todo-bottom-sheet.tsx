@@ -9,7 +9,6 @@ import {
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/use-delete-sub-todo-mutation-options';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import {
   findSheetSubTodo,
   findSheetTodo,
@@ -59,7 +58,7 @@ type AddSubTodoBottomSheetProps = Omit<
 };
 
 export function AddSubTodoBottomSheet({ mode, ...props }: AddSubTodoBottomSheetProps) {
-  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/feed');
 
   return (
     <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>

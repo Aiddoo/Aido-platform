@@ -4,7 +4,6 @@ import type { TodoCategory } from '@src/features/planning/category/domains/todo-
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { useUpdateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/use-update-todo-category-mutation-options';
 import { useTodoCategoryScreenParams } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { findSheetCategory } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -37,7 +36,7 @@ type CategoryEditBottomSheetProps = Omit<
 >;
 
 export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
-  const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
+  const sheet = useSheetRoute('/settings/category-settings');
 
   return (
     <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>

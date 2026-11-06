@@ -7,7 +7,7 @@ import {
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
 } from '../../domains/weather.error';
-import type { WeatherEntry } from '../navigation/weather-href';
+import type { WeatherEntry } from '../../schemas/weather-entry-params.schema';
 
 /** 진입점 파라미터가 없으면(딥 링크·다른 화면에서 되돌아옴) other로 센다 */
 export type WeatherOpenedEntry = WeatherEntry | 'other';

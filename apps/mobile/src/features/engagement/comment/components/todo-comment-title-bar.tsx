@@ -2,7 +2,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/get-todo-details-query-options';
-import { todoActionsSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -140,7 +139,7 @@ function TodoActionsButton() {
 
   return (
     <PressableFeedback
-      onPress={() => push(todoActionsSheetHref({ todoId, date }))}
+      onPress={() => push({ pathname: '/todo/[todoId]/actions', params: { todoId, date } })}
       className="size-11 items-center justify-center rounded-full"
       accessibilityRole="button"
       accessibilityLabel={t('actions.more')}

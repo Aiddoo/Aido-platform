@@ -28,7 +28,6 @@ import { InvitePreviewPolicy } from '../domains/invite-preview.model';
 import type { InviteCode } from '../domains/invite.model';
 import { useInviteRouteParams } from '../hooks/use-invite-route-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/get-invite-preview-query-options';
-import { inviteCodeEntryHref } from '../utils/navigation/invite-href';
 
 /** 초대 카드 위쪽. 누가 초대했는지를 가장 크게 보여 준다 */
 export function InvitePreviewCard() {
@@ -114,10 +113,7 @@ function EnterCodeButton() {
   const { t } = useTranslation('invite');
 
   return (
-    <Result.Button
-      testID="invite-result-enter-code"
-      onPress={() => router.replace(inviteCodeEntryHref())}
-    >
+    <Result.Button testID="invite-result-enter-code" onPress={() => router.replace('/invite')}>
       {t('result.enterCode')}
     </Result.Button>
   );

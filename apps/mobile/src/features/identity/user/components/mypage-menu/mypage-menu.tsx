@@ -5,7 +5,6 @@ import {
   getBundledWhatsNewCampaign,
 } from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { useWhatsNewHub } from '@src/features/app-config/whats-new/hooks/use-whats-new-hub';
-import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -150,7 +149,7 @@ function Subscription() {
       <MyPageMenuItem
         Icon={CrownIcon}
         label={t('mypage.items.subscription')}
-        pathname={subscriptionHref().pathname}
+        pathname="/settings/subscription"
       />
     </SettingsCard>
   );

@@ -2,10 +2,6 @@ import { useClipboard, useLogger } from '@src/bootstrap/providers/di-context';
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
-import {
-  blockUserConfirmHref,
-  commentReportSheetHref,
-} from '@src/features/social/moderation/utils/navigation/moderation-href';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { getErrorMessage } from '@src/shared/errors';
@@ -521,7 +517,12 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
               icon={FlagIcon}
               title={t('actions.report')}
               testID="todo-comment-report"
-              onPress={() => push(commentReportSheetHref({ todoId, commentId: comment.id }))}
+              onPress={() =>
+                push({
+                  pathname: '/todo/[todoId]/comments/[commentId]/report',
+                  params: { todoId, commentId: comment.id },
+                })
+              }
             />
           )}
           {author != null && TodoCommentPolicy.canBlockCommentAuthor(comment) && (
@@ -531,7 +532,10 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
               variant="danger"
               testID="todo-comment-block"
               onPress={() =>
-                push(blockUserConfirmHref({ userId: author.id, displayName: authorName }))
+                push({
+                  pathname: '/users/[userId]/block',
+                  params: { userId: author.id, name: authorName },
+                })
               }
             />
           )}
