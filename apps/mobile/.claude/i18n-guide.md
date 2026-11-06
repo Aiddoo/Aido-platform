@@ -1,6 +1,6 @@
 # i18n 가이드 (다국어)
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+> **Version**: 1.2.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
 한국어(소스 언어, 원문 보존) + 영어. i18next + react-i18next + expo-localization 기반.
 
@@ -27,9 +27,21 @@ src/shared/i18n/
 
 ### 새 문자열 추가
 
-1. **하드코딩 금지** — 사용자 노출 문자열은 반드시 ko/en 카탈로그 동시 추가 (`locale-parity.test.ts`가 키·보간 변수 불일치를 CI에서 잡음)
+1. **하드코딩 금지** — 사용자 노출 문자열은 반드시 ko/en 카탈로그 동시 추가 (`locale-parity.test.ts`가 키·보간 변수 불일치를 잡음)
 2. 키: `{screen|section}.{element}` camelCase, 최대 3단계 (예: `todo:detail.deleteConfirm.title`)
 3. 공용 문구(확인/취소/저장 등)는 `common:actions.*` 재사용
+
+### ko·en 카탈로그 일치
+
+문구는 ko·en에 같은 키로 함께 넣는다. `src/shared/i18n/__tests__/locale-parity.test.ts`가 네임스페이스마다 다음을 막는다. en의 복수형 접미사(`_one`, `_other` 등)는 뗀 키로 비교한다.
+
+- ko와 en의 키 집합이 같다
+- 키마다 보간 변수 집합이 같다
+- 빈 문자열 값이 없다
+
+안 쓰는 키를 찾는 검사는 없다. 코드를 옮겨 키가 바뀌면 함께 옮기고, 안 쓰게 된 키는 지운다.
+
+언어는 글자만 바꾼다. 오늘, 시간대, 주 시작, 날짜 key에 영향을 주지 않는다.
 
 ### 컴포넌트 vs 비컴포넌트
 
@@ -59,7 +71,7 @@ toast.error(t('friend:toast.sendFailed'));
   // 사용처: t(INQUIRY_CATEGORY_LABEL_KEYS[category])
   ```
 - **런타임 키**(에러 코드 등): `tDynamic('errors', code, fallback)` — 타입 검증 우회 전용
-- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/utils/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel)와 카탈로그 문구를 붙이는 `date.ts`의 formatRelativeTimeLabel·formatWeekOfMonthLabel로만 만든다. 모두 `DateFormatContext`를 인자로 받고, 컴포넌트는 `useDateFormatContext()`로 읽는다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고 기본 locale(en)을 유지한다 — 표시 언어가 주 시작·요일 계산을 바꾸지 않도록 `dayjs.locale()`을 호출하지 않는다. 주는 `calendar-week.ts`의 일요일 시작 규칙 하나만 쓴다. "오늘"은 `useToday()`/`useTodayKey()`로 읽어 인자로 넘긴다
+- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/date/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel)와 카탈로그 문구를 붙이는 `date-labels.ts`의 formatRelativeTimeLabel·formatWeekOfMonthLabel로만 만든다. 모두 `DateFormatContext`를 인자로 받고, 컴포넌트는 `useDateFormatContext()`로 읽는다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고 기본 locale(en)을 유지한다 — 표시 언어가 주 시작·요일 계산을 바꾸지 않도록 `dayjs.locale()`을 호출하지 않는다. 주는 `date-key.ts` `getCalendarWeek`의 일요일 시작 규칙 하나만 쓴다. "오늘"은 `useToday()`/`useTodayKey()`로 읽어 인자로 넘긴다
 
 ### 에러 메시지
 

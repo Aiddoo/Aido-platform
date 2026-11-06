@@ -1,8 +1,8 @@
 # Mobile App Architecture Guide
 
-**Version**: 2.0.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+**Version**: 3.0.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
-Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다.
+Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
 
 | 주제                                                    | 원본                                                                           |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -31,15 +31,16 @@ src/
 │   ├── events/
 │   └── session/
 ├── features/{feature}/           # 단수 kebab-case
+│   ├── schemas/                  # Zod 스키마. {entity}.schema.ts, {name}-form.schema.ts, {name}-params.schema.ts
+│   ├── domains/                  # {entity}.model.ts(순수 함수 + Policy), {feature}.error.ts
 │   ├── apis/                     # {feature}.service.ts, {entity}.mapper.ts, {name}.repository.ts
-│   ├── domains/                  # {entity}.model.ts, {feature}.error.ts, {name}-form.schema.ts
-│   ├── constants/                # {feature}-query-keys.ts, 라벨·옵션 상수
-│   ├── queries/                  # get-…-query-options.ts, use-…-mutation-options.ts, {feature}-cache.ts
-│   ├── components/               # UI 블록과 부모에 결합된 네임스페이스 조각
-│   ├── hooks/                    # 단일 책임 훅 (route 읽기, 상태 튜플)
-│   ├── utils/                    # 순수 계산, navigation/, view-models/
-│   └── __tests__/                # {entity}.factories.ts
-└── shared/                       # analytics, config, constants, draft, errors, hooks, i18n,
+│   ├── constants/                # {feature}-query-keys.ts, {feature}.constants.ts
+│   ├── queries/                  # {entity}.queries.ts, {entity}.mutations.ts, {feature}-cache.ts
+│   ├── components/               # {역할}.tsx. 함께 바뀌는 묶음만 하위 폴더
+│   ├── hooks/                    # 여러 파일이 쓰는 훅 (route 읽기, 상태 튜플)
+│   ├── utils/                    # {feature}-href.ts, {feature}-draft.ts, {name}.view-model.ts, 순수 계산
+│   └── __tests__/                # {entity}.fixtures.ts, {feature}.test-utils.ts
+└── shared/                       # analytics, config, constants, date, draft, errors, hooks, i18n,
                                   # infra(어댑터), observability, preferences, providers, types, ui, utils
 ```
 
@@ -52,6 +53,7 @@ src/
 ```
 Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/ports) ← Adapter(shared/infra)
                                  └──────→ Model·Policy(domains/) ←── Mapper(apis/)
+                                 └──────→ Schema(schemas/) ←── @aido/api 계약
 ```
 
 의존성은 안쪽(Model)으로 향한다. Model은 Service·UI·SDK를 모른다.
@@ -60,65 +62,159 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 `pnpm --filter @aido/mobile check:conventions`(`scripts/check-mobile-conventions.mjs`)가 다음을 실패시킨다.
 
-| 검사                    | 내용                                                                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| SDK import              | `SDK_MODULES`를 `shared/infra` 밖에서 import. [Port·Adapter·DI](#portadapterdi)                                              |
-| 클라이언트 모델         | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import                                                    |
-| 엄격한 없음 비교        | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                     |
-| Hermes에 없는 메서드    | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다 |
-| 테스트 QueryClient      | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                 |
-| 피처 경계               | 다른 피처를 상대 경로로 import                                                                                               |
-| `TodoCheckbox`          | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                              |
-| 댓글 route·props·테스트 | [todo-comments](./todo-comments.md)의 경계                                                                                   |
+| 검사                 | 내용                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                            |
+| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                  |
+| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트 제외). 지금은 `memo`만 대상이다                                                                              |
+| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                |
+| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                            |
+| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                            |
+| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                          |
+| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                         |
+| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/todo-comment`와 할 일 상세 route에만 걸린다 |
+
+아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: `xxxOf` 이름, Facade 별칭·인라인, 모듈 수준 화살표, 금지한 컴포넌트 이름, 메모 밖 feature의 계약 import, `shared` → feature import, `FormField` 사용, 쿼리·utils 파일 위치.
+
+## 아직 옮기지 않은 것
+
+이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 작업 트리를 grep한 수치). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다.
+
+| 규칙                              | 지금 코드                                                                                                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [쿼리 파일](#querymutation-파일)  | `*.queries.ts`·`*.mutations.ts`는 `memo`뿐이다. 20개 feature에 `get-*-query-options.ts` 51개, `use-*-mutation-options.ts` 75개가 있다. 이 파일들은 `getXQueryOptions`와 `useGetXQueryOptions`를 쌍으로 export한다              |
+| utils 폴더                        | `memo` 밖에는 `utils/navigation/`, `utils/view-models/`, `utils/analytics/`가 남아 있다. 평탄한 `*.view-model.ts`를 가진 feature는 아직 없다                                                                                   |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`는 `MemoService`만 쓴다. 나머지는 `safeParse(result.value)` 92곳이다                                                                                                                                         |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일이 131개다(`queries` 34, `domains` 32, `components` 20, `hooks` 18, `utils` 15, `shared` 6, `constants` 6). 메모는 없다                                  |
+| [스키마 폴더](#서버-응답과-모델)  | `schemas/`로 옮긴 feature는 `memo`뿐이다. 나머지는 `domains/`에 모델 스키마와 폼 스키마가 있다                                                                                                                                 |
+| [폼](#폼)                         | `FormField`를 쓰는 파일 21개. 폼 이름에 `formMethods`, `methods`, `composer`, 구조 분해가 섞여 있다. `useFormContext<T>` 36곳                                                                                                  |
+| [생성·수정](#생성수정)            | `AddTodoBottomSheet`(`mode`: `create`·`edit`), `AddSubTodoBottomSheet`(`mode`)가 분기로 처리한다                                                                                                                               |
+| [모델](#모델과-policy)            | `todo-comment-composer.model.ts`에 폼 스키마가 있다. Facade 별칭(`achievement.model.ts`의 `badgeType: getBadgeType`, `app-icon.model.ts`의 `resolveKey: resolveAppIconKey`)이 남아 있다                                        |
+| [컴포넌트 이름](#이름)            | `TodoBody`, `ReportSection`, `TileFrame`, `InviteLinkCardFrame`, `InvitedFriendSummaryFrame`, `PawPrintBoardSection`, 댓글의 지역 `Body`                                                                                       |
+| [화면](#화면)                     | `app/(app)/voice-notes/record.tsx`의 `const waveform` JSX 상수                                                                                                                                                                 |
+| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                    |
+| [함수 형태](#함수-형태)           | `export const useX = () =>` 143개와 그 밖의 모듈 수준 화살표가 남아 있다(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                     |
+| [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
+| [feature 경계](#query와-mutation) | `voice/queries/use-apply-action-plan-mutation-options.ts`가 `MEMO_QUERY_KEYS`를 직접 쓴다                                                                                                                                      |
+| [Expo 권장](#라우팅)              | `Platform.OS` 45개 파일(`process.env.EXPO_OS`로), `useContext` 7개 파일(`use`로)                                                                                                                                               |
+| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                               |
+
+---
+
+## 사용성
+
+코드 구조보다 사용성이 먼저다. 구조를 고치다 사용성이 나빠지면 구조를 양보한다.
+
+| 상황                       | 기대                                                    | 쓰는 것                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 입력칸을 누름              | 칸과 오류 문구가 키보드 위에 보임                       | 폼 `FormStepLayout`(`KeyboardAwareScrollView`), 전체 화면 입력 `KeyboardAvoidingView behavior="padding" automaticOffset`, 시트 `KeyboardBottomSheet` |
+| 저장 버튼                  | 키보드에 가리지 않음                                    | `KeyboardAdaptiveButton`, 시트 `footer`                                                                                                              |
+| 키보드가 열린 채 버튼 탭   | 첫 탭에 바로 동작                                       | 스크롤 폼·검색 `keyboardShouldPersistTaps="handled"`. 칩 줄, 시트, 댓글 작성처럼 입력을 이어 가는 곳만 `"always"`                                    |
+| 키보드를 따라 움직임       | 실제 키보드 위치와 같이 움직임                          | `react-native-keyboard-controller`. `Keyboard.addListener` + 타이밍으로 위치를 흉내 내지 않는다                                                      |
+| 키보드의 다음·완료 키      | 다음 칸 이동 또는 제출                                  | `returnKeyType`, `onSubmitEditing`, `setFocus`                                                                                                       |
+| 이메일·비밀번호            | 맞는 키보드와 자동 완성                                 | `keyboardType`, `textContentType`, `autoComplete`                                                                                                    |
+| 검증 실패                  | 틀린 칸으로 포커스                                      | `Controller`의 `field.ref`                                                                                                                           |
+| 시트 위에 피커를 열고 닫음 | 키보드 내린 뒤 열림, 닫으면 입력으로 포커스 복귀        | `ModalBottomSheet`가 열릴 때 키보드를 내린다. 복귀는 `onCloseStart`에서 한다([시트](./ui-components.md#시트))                                        |
+| 저장 중·실패               | 중복 제출 없음, 성공 전에 닫지 않음, 실패해도 글자 유지 | `isSubmitting`, `isPending`, 초안                                                                                                                    |
+| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useFontScaledSize`                                                                                                                |
+| 뒤로 가기                  | 작성 중 글자를 잃지 않음                                | 초안 또는 확인                                                                                                                                       |
+
+화면을 끝내기 전에 주요 흐름 한 번, 실패와 재시도 한 번, 키보드, 뒤로 가기, 긴 문구, 큰 글꼴을 직접 해 보고 실행한 것과 못 한 것을 나눠 보고한다.
 
 ---
 
 ## 화면
 
-`app/`의 화면은 위에서 아래로 읽힌다. 파일을 열면 화면 순서, 간격, 로딩·오류 경계가 그대로 보여야 한다. 줄이 길어도 쪼개지 않는다.
+`app/`의 화면은 위에서 아래로 읽힌다. 파일을 열면 화면 순서, 간격, 글자, 로딩·오류 경계가 그대로 보여야 한다. 줄이 길어도 쪼개지 않는다.
 
-기준은 frontend-fundamentals-mock-exam-1의 `SavingsCalculatorPage`다. 파일 구조는 따르지 않고, 서비스는 우리 DI로 받는다.
+기준은 frontend-fundamentals-mock-exam-1이다. 파일 구조는 따르지 않고 서비스는 우리 DI로 받는다. 같은 역할의 앱 코드는 다음과 같다.
+
+| 참고 저장소                                | 앱                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------ |
+| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                        |
+| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                               |
+| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoScreenParams`로 읽음 |
+| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)          |
+| `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다  |
 
 ```tsx
-export default function MyPageScreen() {
-  const { t } = useTranslation('user');
+// app/(app)/(tabs)/memo/index.tsx
+<AdaptivePane
+  primary={
+    <Box className="flex-1">
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <HStack align="center" gap={8} className="px-4">
+          <Box className="flex-1">
+            <H3 maxLines={1}>{t('tab.title')}</H3>
+          </Box>
+          <VoiceNoteStartButton />
+          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+            <Suspense fallback={<MemoCreateButton.Loading />}>
+              <MemoCreateButton />
+            </Suspense>
+          </QueryErrorBoundary>
+        </HStack>
 
-  return (
-    <ScrollView>
-      <H3>{t('mypage.header')}</H3>
+        <Spacing size={16} />
+      </StyledSafeAreaView>
 
-      <Spacing size={20} />
+      <MemoListScrollView>
+        {/* 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */}
+        <QueryErrorBoundary fallback={() => null}>
+          <Suspense fallback={null}>
+            <VoiceNoteDraftList />
+          </Suspense>
+        </QueryErrorBoundary>
 
-      <QueryErrorBoundary>
-        <Suspense fallback={<ProfileCard.Loading />}>
-          <ProfileCard />
-        </Suspense>
-      </QueryErrorBoundary>
-
-      <Spacing size={12} />
-
-      <QueryErrorBoundary fallback={InviteRewardCard.Error}>
-        <Suspense fallback={<InviteRewardCard.Loading />}>
-          <InviteRewardCard />
-        </Suspense>
-      </QueryErrorBoundary>
-    </ScrollView>
-  );
-}
+        <QueryErrorBoundary fallback={MemoList.Error}>
+          <Suspense fallback={<MemoList.Loading />}>
+            <MemoList />
+          </Suspense>
+        </QueryErrorBoundary>
+      </MemoListScrollView>
+    </Box>
+  }
+  secondary={…}
+/>
 ```
 
 - `QueryErrorBoundary`·`Suspense`·`Spacing`을 스크린에 그대로 나열한다. 조각 안으로 숨기지 않는다.
+- 화면 제목, 구역 제목, 안내 문구처럼 화면 구성을 설명하는 글자와 그 레이아웃도 스크린에 적는다. 글자 한 줄을 감싼 지역 컴포넌트를 만들지 않는다. 데이터에 따라 달라지는 글자만 해당 컴포넌트 안에 둔다(`MemoList`의 `list.savedTitle`).
+- 스크린에 남겨도 되는 것은 폼 소유, `match`, 짧은 route 처리다. 긴 제출·effect·큰 조각은 그 역할을 맡는 컴포넌트로 옮긴다(`MemoCreateForm`, `MemoEditor`).
 - 넘기기용 래퍼(`MyPagePane.Profile`, `Content → Header → Section`)를 만들지 않는다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않는다.
-- fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. `fallback={(props) => <X.Error {...props} />}`처럼 감싸지 않는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다.
+- JSX 상수(`const waveform = …`)로 화면 구조를 숨기지 않는다.
+- 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다.
+- fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.
+- 경계를 나눌 때는 한 오류가 한 곳에서만 보이는지, 로딩 모양이 지금과 같은지 먼저 확인한다. 같은 쿼리를 두 경계에서 읽으면 404가 두 번 보이므로 나누지 않는다.
 - 바깥 여백은 스크린의 `Spacing`이다. `mb`·`mt` 같은 여백 prop을 블록에 넘기지 않는다.
 - 스스로 숨는 블록은 간격도 함께 사라져야 한다. 조건을 스크린에서 알 수 있으면 `{isAvailable && (…)}` 안에 간격과 블록을 함께 둔다. 조회해야 알 수 있는 카드만 스크린이 `className`으로 넘긴다(`<PushPermissionCard className="mx-4 mb-3" />`).
 - 빈 줄로 구역을 나눈다.
-- Suspense 조회나 Provider 소비 때문에 부모가 꼭 필요하면 같은 파일 아래 `Route`가 검증·Provider·전체 경계만 맡는다. `Screen`은 파일 위에 둔다. 경계를 없애려고 query hook을 자기 Suspense 위로 옮기거나 경계를 내비게이터 전체로 넓히지 않는다.
 - 가상 목록의 `ListHeaderComponent` 안에도 카드·정렬 바·구분선을 직접 적는다. 헤더를 목록 밖으로 옮기면 스크롤과 첫 위치가 바뀐다. `header`·`ListHeaderComponent`는 자리가 정해진 슬롯이라 이름만 보고 없애지 않는다.
-- 정상 목록과 오류 화면이 같은 슬롯 구성을 쓰면 Screen 안의 JSX 상수로 한 번 정의해 공유해도 된다.
 - 데이터를 보여 주는 화면은 로딩·오류·빈 상태·데이터 4상태를 그린다. 저장 실패는 입력값을 지우지 않는다.
 
-실제 화면: 내 정보는 탭(`app/(app)/(tabs)/mypage/index.tsx`)과 메뉴 그룹(`app/(app)/(mypage-menu)/_layout.tsx`)이 같은 `MyPagePane`을 두 칸 왼쪽에 그린다. 경계와 간격은 `MyPagePane`에 위에서 아래로 나열돼 있다.
+Suspense 조회나 파라미터 검증 때문에 부모가 꼭 필요하면 route가 검증과 경계만 맡는다. 경계를 없애려고 query hook을 자기 Suspense 위로 옮기거나 경계를 내비게이터 전체로 넓히지 않는다.
+
+```tsx
+// app/(app)/memo/[memoId]/index.tsx
+export default function MemoDetailRoute() {
+  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const goBack = useSingleTap(router.back);
+
+  if (!params.success) {
+    return <Redirect href="/memo" />;
+  }
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+      <QueryErrorBoundary resetKeys={[params.data.memoId]} fallback={MemoEditor.Error}>
+        <Suspense fallback={<MemoEditor.Loading />}>
+          <MemoEditor toolbar={MemoEditor.StackToolbar} onLeave={goBack} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
+  );
+}
+```
 
 ---
 
@@ -128,38 +224,38 @@ export default function MyPageScreen() {
 
 **추출은 추상화가 아니다.** JSX를 다른 파일로 옮기기만 하면 읽는 사람이 파일을 오갈 뿐 변경 이유는 줄지 않는다.
 
-| 쓰는 곳                    | 둘 곳                                        |
-| -------------------------- | -------------------------------------------- |
-| 한 곳                      | 그 파일 아래 지역 컴포넌트                   |
-| 두 곳 이상, 같은 피처      | 피처 `components/`의 독립 파일               |
-| 부모 없이 의미 없는 조각   | 부모 파일의 네임스페이스(`ProductList.Item`) |
-| 함께 바뀌는 목록·행·작성기 | 같은 하위 폴더                               |
+| 쓰는 곳                    | 둘 곳                                     |
+| -------------------------- | ----------------------------------------- |
+| 한 곳                      | 그 파일 아래 지역 컴포넌트                |
+| 두 곳 이상, 같은 피처      | 피처 `components/`의 독립 파일            |
+| 부모 없이 의미 없는 조각   | 부모 파일의 네임스페이스(`MemoList.Item`) |
+| 함께 바뀌는 목록·행·작성기 | 같은 하위 폴더                            |
 
-이름은 대상과 역할로 짓는다(`AmountInput`, `ProductList`). 위치만 뜻하는 `Header`·`Section`·`Body`는 분리 근거가 아니다. 값을 입력받으면 `…Input`이다(`CategorySelectInput`).
+**데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내리면 Suspense 경계를 블록 단위로 나눌 수 없다. 지역 컴포넌트에 좁힌 값을 넘기는 것은 괜찮다(`MemoList.Item`의 `memo`). 목록의 재사용 인터페이스(`filters`, `orderBy`, `limit`)는 실제 쓰는 곳이 있을 때만 둔다. 안 쓰는 옵션은 만들지 않는다.
 
-**데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내리면 Suspense 경계를 블록 단위로 나눌 수 없다. 목록은 도메인 대신 정책을 Props로 받는다(`filters`, `orderBy`, `limit`).
-
-**화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 `use…ScreenParams()`나 상태 튜플 훅에서 직접 읽는다. 값이 `== null`이면 `.Empty`를 보여 준다. 예외는 목록 행의 id다.
+**화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 `use…ScreenParams()`나 상태 튜플 훅에서 직접 읽는다. 예외는 목록 행의 id다.
 
 ```tsx
-export function FriendCalendar() {
-  const { friendId } = useFriendScreenParams();
-  // friendId로 조회한다
-}
+// features/memo/components/memo-editor.tsx
+function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
+  const { t } = useTranslation(['memo', 'common']);
+  const { memoId } = useMemoScreenParams();
+  const deleteMemo = useMutation(useDeleteMemoMutationOptions());
 ```
 
-선택된 대상을 보여 주는 블록은 바깥 컴포넌트가 튜플 훅으로 id를 읽어 `== null`이면 `.Empty`를 돌려주고, 좁혀진 id만 `.Contents`에 넘긴다(`SelectedMemoDetailPane`).
+선택된 대상을 보여 주는 화면은 스크린이 튜플 훅으로 id를 읽어 `== null`이면 `.Empty`를 그리고, 안쪽 컴포넌트는 route hook으로 좁혀진 id를 읽는다(`MemoScreen`, `MemoEditor`). 스크린이 고르지 않으면 바깥 컴포넌트가 `.Empty`를 돌려주고 좁힌 id를 `.Contents`에 넘긴다(참고 저장소 `CalculationResult.Contents`).
 
 대상이 있는 시트(할 일·하위 항목·카테고리·제안)는 Expo Router 시트 route로 띄운다. 시트가 route hook으로 id를 읽어 캐시에서 조회한다. 폼 상태에 묶인 피커처럼 route 문맥이 없어 `useOverlay`로 띄우는 시트만 값을 Props로 받는다. 계약: `src/shared/ui/bottom-sheet/bottom-sheet.md`.
 
-**컴포넌트는 바깥 레이아웃을 모른다.** margin·폭·위치를 스스로 정하지 않는다. 카드 자신의 모양(`rounded-xl bg-gray-1 px-4 py-3.5`)은 컴포넌트 몫이다.
+**컴포넌트는 바깥 레이아웃을 모른다.** 루트에 margin·폭·위치를 두지 않는다. 카드 자신의 모양(`rounded-2xl bg-gray-1`)과 안쪽 여백은 컴포넌트 몫이다.
 
-**Props는 예측할 수 있게 쓴다.** 원본을 확장하면 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다.
+**Props는 예측할 수 있게 쓴다.** 원본을 확장하면 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. `ReturnType<typeof useX>`로 props를 만들지 않고 인터페이스를 적는다.
 
 ```tsx
-interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
-  value: string;
-  onChange: (color: string) => void;
+// features/memo/components/memo-editor.tsx
+interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
+  icon: ReactNode;
+  accessibilityLabel: string;
 }
 ```
 
@@ -172,13 +268,24 @@ interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'c
 
 `disabled`·`selected`·`onToggle`처럼 같은 뜻의 다른 이름을 만들지 않는다.
 
-**래퍼는 역할이 있을 때만 만든다.** `AmountInput`(단위 suffix·숫자 포맷·계산), `PushPermissionDialog`(도메인 문구·권한 요청)처럼 자기 일이 있어야 한다. 역할이 없으면 원본을 쓴다. 상세: [Wrapper Props 계약](./ui-components.md#wrapper-props-계약).
+**래퍼는 역할이 있을 때만 만든다.** 참고 저장소의 `AmountInput`(단위 suffix·숫자 포맷), 앱의 `PushPermissionDialog`(도메인 문구·권한 요청)처럼 자기 일이 있어야 한다. 역할이 없으면 원본을 쓴다. 상세: [Wrapper Props 계약](./ui-components.md#wrapper-props-계약).
 
 **반복 UI는 나란히 쓴다.** 항목마다 기획이 따로 바뀔 수 있는 표시는 설정 배열을 `map`하지 않고 `CalculationResult`의 `<Record />`처럼 한 줄씩 적는다. 한 줄만 고치면 되게 한다. 서버 항목처럼 데이터로 오는 목록은 `map`·`FlashList`다. 상수로 개수가 정해지는 반복(스켈레톤, `InputOTP.Slot`)은 es-toolkit `times`다.
 
 **네임스페이스는 응집도로 정한다.** `Item`·`Loading`·`Error`·`Empty`는 필수가 아니다. 쓰지 않는 static을 만들지 않는다. 부모에 강하게 결합된 조각(`DailyForecast.TemperatureBar`, `PushPermissionCard.Ask`)도 같은 방식으로 둔다. 파일 안 순서는 본체 → 구성 요소 → `.Loading` → `.Error` → `.Empty`다. 단계별 조각은 본체가 Policy의 step을 `match(step)….exhaustive()`로 고른다.
 
-**변환은 es-toolkit으로 의도를 드러낸다.** `groupBy`, `keyBy`, `partition`, `sumBy`, `orderBy`, `uniqBy`, `clamp`, `times`를 쓴다. 변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(`notification-list.view-model.ts`). 상호 배타적인 상태는 ts-pattern `match(…).exhaustive()`다. 단순 표시 여부나 두 가지 문구는 `&&`·삼항식이면 된다.
+**자리는 같고 구현이 갈리면 컴포넌트를 prop으로 넘긴다.** `MemoEditor`는 넓은 화면 pane과 Stack 화면에서 툴바만 다르다. `mode`로 분기하지 않고 인터페이스 하나를 받는다(`toolbar={MemoEditor.StackToolbar}`, `toolbar={MemoEditor.PaneToolbar}`).
+
+**변환은 es-toolkit으로 의도를 드러낸다.** `groupBy`, `keyBy`, `partition`, `sumBy`, `maxBy`, `orderBy`, `uniqBy`, `clamp`, `times`를 쓴다. 변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(`notification-list.view-model.ts`). 상호 배타적인 상태는 ts-pattern `match(…).exhaustive()`다. 단순 표시 여부나 두 가지 문구는 `&&`·삼항식이면 된다.
+
+### 이름
+
+자세한 표는 [ui-components](./ui-components.md#이름)에 있다.
+
+- 원본을 확장하면 원본 이름으로 끝난다(`AmountInput`, `XBottomSheet`, `XDialog`, `XChip`). 그 외에는 대상과 역할이다(`MemoList`, `MemoEditor`).
+- 쓰지 않는 이름: `Section`, `Body`, `Frame`, `Wrapper`, `Inner`, 역할 없는 `Content`. 위치만 뜻해 변경 이유를 알려 주지 않는다. `X.Contents`는 null을 좁혀 넘길 때만 쓴다.
+- 함수는 동사로 시작한다. 변환은 `toX`(`toMemo`), 생성은 `createX`(`createMemoDraftKey`), 불변 갱신은 `withX`다. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX`는 쓰지 않는다.
+- 저장 키, Analytics 이벤트, 서버 필드처럼 밖으로 나가는 문자열은 이름 정리 대상이 아니다.
 
 ### 목록·스켈레톤
 
@@ -192,45 +299,98 @@ interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'c
 - 자기 데이터를 `useSuspenseQuery`·`useSuspenseInfiniteQuery`로 구독한다.
 - 원본을 그대로 넘기는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않는다. 같은 fallback은 `X.Error = UserList.Error`처럼 참조로 잇는다.
 
-**레이아웃 시프트를 만들지 않는다.** 상태가 바뀌어도 자리를 미리 잡아 화면이 튀지 않게 한다.
-
-- `.Loading`은 `.Item`과 같은 레이아웃·슬롯을 쓰고 슬롯만 `Skeleton`으로 채운다.
-- 글자 자리는 `TextSkeleton size`(현재 글꼴 배율의 줄 높이), 행 텍스트는 `ListRow.Texts.Loading`이다.
-- 데이터에 따라 생기는 줄(설명, 하위 항목)은 그리지 않아 로딩이 끝날 때 위 내용이 밀리지 않게 한다.
-- 받은 뒤 나타나는 버튼·배너는 자리를 먼저 비워 둔다.
-
 ```tsx
-UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
+// features/memo/components/memo-list.tsx
+MemoList.Loading = function Loading() {
+  const columnCount = getColumnCount(useWindowSizeClass());
+
   return (
-    <ScrollView className="flex-1">
-      {times(rows, (index) => (
-        <ListRow
-          key={index}
-          left={<Skeleton className="size-10 rounded-full" />}
-          contents={<ListRow.Texts.Loading type="1RowTypeA" />}
-          right={right}
-        />
+    <HStack gap={12} align="start">
+      {times(columnCount, (column) => (
+        <VStack key={column} flex={1} gap={12}>
+          {times(LOADING_ITEMS_PER_COLUMN, (row) => (
+            <VStack key={row} gap={8} p={16} className="rounded-2xl bg-gray-1">
+              <TextSkeleton size="b3" className="w-full" />
+              <TextSkeleton size="b3" className="w-3/4" />
+              <TextSkeleton size="e1" className="w-1/2" />
+            </VStack>
+          ))}
+        </VStack>
       ))}
-    </ScrollView>
+    </HStack>
   );
 };
 ```
+
+### 레이아웃 시프트
+
+받은 뒤에 화면이 밀리지 않게 자리를 먼저 잡는다.
+
+| 지점                                     | 규칙                                                                                                                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `X.Loading`                              | 받은 뒤 화면과 같은 레이아웃·슬롯·높이. 글자는 `TextSkeleton size`(현재 글꼴 배율의 줄 높이), 행 텍스트는 `ListRow.Texts.Loading`        |
+| 데이터에 따라 생기는 줄(설명, 하위 항목) | 로딩에서 그리지 않아 끝날 때 위 내용이 밀리지 않게 한다                                                                                  |
+| 받은 뒤 나타나는 버튼·배너               | 자리를 먼저 비워 두거나(`MemoCreateButton.Loading`, `MemoEditor.PaneLoading`의 버튼 줄), 대부분 안 보이면 자리를 잡지 않고 이유를 적는다 |
+| 오류 문구                                | `preserveErrorSpace`로 자리 유지. 입력 칸이 밀리지 않는다                                                                                |
+| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useFontScaledSize`, 칩은 `ActionChip.Icon`                                                                       |
+| 재조회                                   | 화면에 데이터가 있으면 fallback으로 바꾸지 않는다. 키가 바뀌는 전환은 `startTransition`을 검토한다                                       |
+| 시트                                     | 내용 높이 변화는 기존 시트 측정을 쓴다. 키보드는 `KeyboardBottomSheet`, `react-native-keyboard-controller`                               |
+| 넓은 화면 전환                           | `AdaptivePane`으로 재마운트 없이 유지                                                                                                    |
+| 부품 교체, 간격 변환                     | 전후 화면을 겹쳐 비교한다. 달라지면 교체하지 않거나 값을 맞춘다                                                                          |
+
+대표 화면을 로딩 중과 완료 후로 찍어 위치를 비교한다. 작은 화면, 글꼴 5단계, 넓은 화면, 다크, 한/영에서 본다.
 
 ### 훅
 
 - `useForm`·`useQuery`·`useMutation`은 쓰는 컴포넌트에서 직접 호출한다. Screen을 짧게 하려고 `useEditor`·`useActions` 같은 포괄 훅에 묶지 않는다.
 - 훅은 변화 이유가 하나다(route 읽기, 전환 조정, field focus). 계산은 순수 함수·Policy로 뺀다. 이름 변경이나 코드 이동은 단일 책임이 아니다.
 - 훅은 상태·effect·구독을 묶거나 여러 곳이 같은 규칙을 공유할 때만 만든다. 한두 줄을 감싸는 훅이나 파일을 짧게 하려는 훅은 만들지 않는다. `requestAnimationFrame(() => setFocus('title'))`처럼 몇 곳에 반복돼도 짧으면 쓰는 곳에 그대로 쓴다.
-- 입력을 여는 칩·행은 폼을 `useFormContext`·`useWatch`·`FormField`로 직접 읽고 쓰며 시트도 직접 연다. 부모에 핸들러를 두고 `value`·`onChange`·`onCloseStart`를 내려보내지 않는다. Props는 부모만 아는 값과 원본 컴포넌트의 props만 받는다. 부모도 같은 동작을 불러야 하면 부모가 소유하고 원본 prop(`onPress`)으로 넘긴다.
-- 상태 훅은 `[value, setValue]` 튜플을 돌려준다. 저장소가 URL·MMKV·`useState` 중 무엇이어도 사용처는 그대로다. 이름은 `[selectedTodoId, setSelectedTodoId]`다.
-- 쓰지 않는 요소는 비워 두지 않고 `_`를 붙인다(`const [_friendId, setFriendId]`).
+- 사용처가 같으면 한 파일이다(`hooks/use-memo-params.ts`). 한 곳에서만 쓰면 그 컴포넌트 파일 안이다(`useMemoAiParse`).
+- 입력을 여는 칩·행은 폼을 `useFormContext`·`useWatch`·`Controller`로 직접 읽고 쓰며 시트도 직접 연다. 부모에 핸들러를 두고 `value`·`onChange`·`onCloseStart`를 내려보내지 않는다. Props는 부모만 아는 값과 원본 컴포넌트의 props만 받는다. 부모도 같은 동작을 불러야 하면 부모가 소유하고 원본 prop(`onPress`)으로 넘긴다.
+- 상태 훅은 `[value, setValue]` 튜플을 돌려준다. 저장소가 URL·MMKV·`useState` 중 무엇이어도 사용처는 그대로다. 이름은 `[selectedMemoId, setSelectedMemoId]`다.
+- 쓰지 않는 요소는 비워 두지 않고 `_`를 붙인다(`const [_selectedMemoId, setSelectedMemoId]`).
+
+### Context 대신 쓰는 것
+
+앱이 만드는 Context는 DI와 라이브러리처럼 동작하는 UI 내부 구현에만 남긴다. Context는 값이 바뀔 때 소비자 전체가 다시 그려지고 의존이 타입에 안 보이기 때문이다. 나머지는 아래 순서로 고른다.
+
+| 순서 | 수단                                            | 언제                                                                                | 예                                                               |
+| ---- | ----------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1    | props                                           | 부모만 아는 값, 한두 단계                                                           | `onLeave`, `isEditing`                                           |
+| 2    | 컴포넌트를 prop으로                             | 자리는 같고 구현이 갈릴 때. 인터페이스 하나                                         | `fallback={MemoList.Error}`, `toolbar={MemoEditor.StackToolbar}` |
+| 3    | Query 캐시, `useIsMutating`, `useMutationState` | 서버 값과 진행 상태를 떨어진 곳에서 읽을 때                                         | `MemoAiParsingBadge`의 `useIsMutating`                           |
+| 4    | route 훅                                        | URL에 남는 값                                                                       | `useMemoScreenParams`, `useSelectedMemo`                         |
+| 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다              | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
+| 6    | RHF `FormProvider`                              | 칩처럼 깊은 자식들이 `setValue`, `setFocus`까지 쓰는 폼만. 얕은 폼은 `control` prop | 메모는 `control`(`Control<MemoFormValues>`)                      |
+
+**유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`).
+
+**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `feed-date-provider`, `use-mypage-pane-layout`, `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`, `auth-provider`.
+
+### 함수 형태
+
+| 위치                                                              | 형태                                           | 예                                                                |
+| ----------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- |
+| 컴포넌트, 훅, 순수 함수, mapper, query options, `select`, fixture | `function` 선언                                | `export function toMemo(dto) {}`, `function selectMemos(data) {}` |
+| 네임스페이스 조각                                                 | 이름 있는 함수 표현식                          | `MemoList.Item = function Item() {}`                              |
+| Service 메서드                                                    | arrow class field. DI로 넘겨도 `this`가 유지됨 | `getMemo = async () => {}`                                        |
+| 컴포넌트 안 핸들러                                                | 화살표 `const`                                 | `const handleBack = () => {}`                                     |
+| 인라인 콜백, 쿼리 키 객체 값                                      | 화살표                                         | `onPress={() => …}`, `detail: ({ memoId }) => […]`                |
+| Policy Facade                                                     | 이름 있는 함수 참조만                          | `{ canCreateMemo, getMemoPreview }`                               |
 
 ### 메모리 누수를 만들지 않는다
 
-- `subscribe`·`add…Listener`는 해제 함수를 돌려주고, `useEffect` cleanup에서 부른다.
-- 타이머·디바운스는 cleanup에서 정리한다. es-toolkit `debounce`의 `flush`는 타이머를 남기므로 `cancel`까지 부른다(`useFormDraftAutosave`).
-- 음성 인식은 언마운트 때 구독을 풀고 `abort()`한다.
-- 서버 GET은 `signal`을 Service → HttpClient까지 넘겨 화면을 떠나면 요청을 멈춘다.
+| 지점          | 규칙                                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 리스너·구독   | `subscribe`·`add…Listener`는 해제 함수를 돌려주고 effect 정리에서 부른다. 외부 값은 `useSyncExternalStore`를 먼저 본다 |
+| 타이머        | 정리에서 `clear`한다. es-toolkit `debounce`의 `flush`는 타이머를 남기므로 `cancel`까지 부른다(`useFormDraftAutosave`)  |
+| 요청          | 서버 GET은 `signal`을 Service → HttpClient까지 넘겨 화면을 떠나면 멈춘다(`memoService.getMemo(memoId, signal)`)        |
+| 음성 인식     | 언마운트 때 구독을 풀고 `abort()`한다                                                                                  |
+| overlay       | `useOverlay`로 받아 소유 컴포넌트가 사라지면 함께 내려간다. 열 때 값이 굳으니 안에서 조회한다                          |
+| 전역 Map·배열 | 지우는 시점 없이 쌓지 않는다                                                                                           |
+| Query 키      | 안 쓰는 Query는 `gcTime`으로 정리한다. 영속 대상만 `persist`한다                                                       |
+
+앱 전체의 메모리를 측정하거나 감사하지는 않았다. 위 규칙은 코드를 고칠 때 보는 기준이다.
 
 ### 기다리지 않는 Promise
 
@@ -242,7 +402,8 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 
 - 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`다(`/todo/[todoId]`). `[id]`는 쓰지 않는다.
 - 같은 화면의 보기 상태(선택 항목, 필터, 날짜, 친구, 작성기)는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`).
-- param은 `features/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod로 검증해 읽는다. `as`로 건너뛰지 않는다. 타입은 `z.output`에서 얻고 기존 스키마(`feedDateParamSchema`, `routeIntegerStringSchema`, `@aido/api` param 스키마)를 재사용한다.
+- param은 `features/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod로 검증해 읽는다. `as`로 건너뛰지 않는다. 타입은 `z.output`에서 얻고 기존 스키마(`routeIdSchema`, `feedDateParamSchema`)를 재사용한다. 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`).
+- `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
 - `useGlobalSearchParams`를 화면 훅에서 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 렌더된다. 레이아웃은 내비게이터와 Provider만 두고 자식 params를 읽지 않는다.
 - href는 피처의 순수 함수가 typed 객체로 만든다(`createFeedHref`, `todoActionsSheetHref`, `memoDetailHref`). 경로 문자열을 잇지 않는다. 알림·위젯 목적지는 `utils/navigation` resolver가 이 함수로 정한다.
 - 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의 `parse` 훅으로 좁혀진 값을 읽는다.
@@ -256,40 +417,128 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복사하지 않는다. 계산할 수 있는 값은 상태로 두지 않는다.
 
-| 상태                       | 도구                                                                | 위치·예                                                       |
-| -------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 서버                       | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery` | `queries/`. 초안을 캐시에 넣지 않는다                         |
-| URL(선택·보기 방식·작성기) | Expo Router params + zod 훅 + href 함수                             | `todoId`, `memoId`, `friendId`. `useState` 사본을 두지 않는다 |
-| 기기에 남는 값(MMKV)       | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`      | `apis/*.repository.ts`                                        |
-| 작성 중 초안               | `shared/draft`(암호화 MMKV, 사용자 범위)                            | 댓글·메모. 긴 본문을 URL에 넣지 않는다                        |
-| 폼                         | react-hook-form + `zodResolver`, 화면이 소유                        | `domains/*-form.schema.ts`                                    |
-| 화면 안 임시 값            | `useState`·`useReducer`·지역 Context                                | 다이얼로그 열림, 측정값                                       |
+| 상태                                                  | 도구                                                                | 판단 기준·예                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery` | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
+| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                      | 비동기·재조회가 필요하면 Query                                      |
+| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | Expo Router params + zod 훅 + href 함수, `[value, setValue]` 튜플   | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
+| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`      | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
+| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                            | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
+| 폼 값                                                 | react-hook-form + `zodResolver`                                     | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
+| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                             | 나머지 전부                                                         |
 
-- pending·error는 이미 주는 곳에서 읽는다. `formState.isSubmitting`·`errors`, mutation·query의 `isPending`·`error`·`variables`를 `useState`로 다시 만들지 않는다.
-- 한 컴포넌트에서 서로 독립인 `useSuspenseQuery`를 연달아 부르면 워터폴이다. `useSuspenseQueries`나 블록별 경계로 나눈다. 앞 결과가 다음 조회의 입력일 때만 순차로 둔다.
-- 당겨서 새로고침은 `useRefresh`로 사용자가 당긴 동안만 표시한다. 배경 refetch까지 켜지는 `isRefetching`을 쓰지 않는다.
+라이브러리가 주는 상태를 다시 만들지 않는다. 이 라이브러리 훅을 한 번 더 감싸는 훅도 만들지 않는다.
+
+| 필요한 것           | 쓰는 것                                                                      | 만들지 않는 것                    |
+| ------------------- | ---------------------------------------------------------------------------- | --------------------------------- |
+| 저장 중, 저장 실패  | `mutation.isPending`, `error`, `isError`, `isSuccess`, `variables`           | `useState` 진행·오류 상태         |
+| 조회 중, 조회 실패  | Suspense + 경계, `query.isLoading`, `isError`, `error`, `refetch`            | 직접 만든 로딩 상태               |
+| 무한 목록           | `hasNextPage`, `isFetchingNextPage`, `isFetchNextPageError`, `fetchNextPage` | 페이지 번호 상태                  |
+| 제출·유효성         | `formState.isSubmitting`, `isValid`, `isDirty`, `errors`                     | 폼 값 복사, 같은 규칙의 별도 함수 |
+| 진행 중인 변경 여부 | `useIsMutating`, `useMutationState`                                          | 전역 플래그                       |
+| 값 구독             | `useWatch`, `form.subscribe`                                                 | 렌더 경로 `getValues()`           |
+
+- 한 컴포넌트에서 서로 독립인 `useSuspenseQuery`를 연달아 부르면 워터폴이다. `useSuspenseQueries`(`MemoEditor`)나 블록별 경계로 나눈다. 앞 결과가 다음 조회의 입력일 때만 순차로 둔다.
+- 당겨서 새로고침은 `useRefresh`로 사용자가 당긴 동안만 표시한다(`MemoListScrollView`). `isRefetching`은 배경 재조회까지 켜져 동작이 달라진다.
 
 예외:
 
 - 초대 수락 결과: mutation 응답을 다음 화면(환영 시트)에 넘길 때 `queryFn: skipToken` 쿼리(`getRedemptionResultQueryOptions`)에 둔다. 보상·친구 결과를 URL로 넘기면 딥링크로 위조할 수 있다.
 - 차단·신고 대상 이름: 사용자 한 명을 id로 조회하는 API가 없어 확인 문구의 이름을 route query(`name`)로 받는다. 표시용이고 판정은 폴더 param의 id로만 한다.
+- 위젯 진입: `use-widget-app-entry.ts`는 앱 최상위에서 현재 화면과 무관하게 읽어야 해 `useGlobalSearchParams`를 쓴다.
+- 입력 흐름: 회원가입·비밀번호의 `step`은 URL로 복원되면 안 돼 `useState`다. 친구 검색어는 입력 중인 값이고 복원 요구가 없어 지역 상태다.
 
 ### 폼
 
-- 화면(가장 가까운 session 부모)이 `useForm`, `zodResolver`, 제출 mutation을 소유하고 지역 `FormProvider`로 넘긴다. `shared/ui/form-field`의 `FormField`만 `Controller`를 소유한다.
-- 하위는 `useWatch({ name })`·`useFormState({ name })`로 자기 값만 구독한다. 폼 값을 전역 상태에 복사하지 않는다.
+모든 폼을 같은 모양으로 쓴다. 메모 작성의 실제 코드다.
+
+```tsx
+// features/memo/schemas/memo-form.schema.ts
+export const memoFormSchema = createMemoSchema.pick({ content: true });
+export type MemoFormValues = z.infer<typeof memoFormSchema>;
+
+export const EMPTY_MEMO_FORM_VALUES: MemoFormValues = { content: '' };
+```
+
+```tsx
+// features/memo/components/memo-create-form.tsx
+const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
+  createMemoDraftKey({ userId: me.id }),
+);
+const form = useForm({
+  resolver: zodResolver(memoFormSchema),
+  defaultValues: restoredDraft ?? EMPTY_MEMO_FORM_VALUES,
+  mode: 'onChange',
+});
+const { isSubmitting, isValid } = useFormState({ control: form.control });
+```
+
+```tsx
+<Controller
+  control={form.control}
+  name="content"
+  render={({ field: { value, onChange, ref } }) => (
+    <TextArea
+      ref={ref}
+      variant="bare"
+      preserveErrorSpace={false}
+      placeholder={t('create.placeholder')}
+      value={value}
+      onChange={onChange}
+    />
+  )}
+/>
+```
+
+- 이름은 `form`으로 통일한다. 입력 바인딩은 RHF `Controller` 공식 형태이고 `field.ref`를 이어 검증 실패 때 그 칸으로 포커스한다.
+- 폼은 그 폼을 제출하는 컴포넌트가 소유한다(스크린 또는 `MemoCreateForm`). 얕은 폼은 `control`을 props로 넘긴다(`Control<MemoFormValues>`). `useFormContext<T>()`와 `useFormState<T>()`의 제네릭은 검사 없는 단정이라 깊은 자식이 많을 때만 `FormProvider`를 쓴다. 시트는 Portal로 그려지므로 `FormProvider`를 시트 안에 둔다([시트](./ui-components.md#시트)).
+- 하위는 `useWatch({ name })`·`useFormState({ name })`로 자기 값만 구독한다.
 - `useForm`은 제네릭 없이 `resolver`에서 타입을 추론한다(`@hookform/resolvers` 권장). 스키마가 변환 없이 입력과 출력이 같으면 타입은 `z.infer` 하나로 쓴다.
 - 처음 값은 스키마의 `.default()`가 아니라 `defaultValues`에 둔다. 값이 없는 칸은 `undefined`가 아니라 `null`이다(RHF가 `undefined` 기본값을 권장하지 않고, 앱 모델의 "없음"도 `null`이다). 그래서 `?? null`·`?? undefined` 변환이 필요 없다.
-- 새로 만들거나 고치는 폼 스키마는 계약 스키마를 가져다 쓰지 않고 `@aido/api/vocabulary`의 상수로 만든다.
-- 생성과 수정은 같은 폼·스키마·컴포넌트를 쓴다. 차이는 `defaultValues`와 제출 변환뿐이다.
+- 폼 스키마는 `schemas/{name}-form.schema.ts`에 둔다. 서버 계약의 입력 스키마에서 `pick`·`extend`로 유도해 길이 한도와 규칙을 다시 적지 않는다.
 - 저장 가능 여부는 스키마와 `formState.isValid`로 판단한다. 같은 규칙을 함수로 또 만들지 않는다.
 - 렌더 경로에서 `getValues()`를 읽지 않는다. `reactCompiler: true`라 값이 캐시돼 갱신되지 않는다. jest는 컴파일러 없이 돌아 이 버그를 못 잡으므로 시뮬레이터에서 확인한다. `getValues()`는 이벤트 핸들러에서만 쓴다.
+
+### 생성·수정
+
+생성과 수정은 같은 스키마와 같은 입력 부품을 쓴다. 폼과 제출은 생성 컴포넌트와 수정 컴포넌트가 각자 소유하고, 공통 부품에 `mode`나 `onSubmit` 분기를 넘기지 않는다. 그 파일만 읽으면 무엇이 저장되는지 보여야 한다. 메모는 `MemoCreateForm`과 `MemoEditor`가 `memoFormSchema`와 `TextArea`만 공유한다. 할 일 변환은 `MemoConvertBottomSheet`가 폼과 제출을 갖고 할 일 작성기의 칩(`TodoComposerChips`)만 가져다 쓴다.
+
+```tsx
+// features/memo/components/memo-create-form.tsx
+// mutate 콜백은 화면이 내려가면 불리지 않는다. 저장이 끝났는데 초안이 남지 않게 기다린 뒤에 지운다
+const saveMemo = (onFailed: (error: unknown) => void) =>
+  form.handleSubmit(async ({ content }) => {
+    try {
+      await createMemo.mutateAsync({ content: content.trim() });
+      discardDraft();
+      goBack();
+    } catch (error) {
+      reportUnexpectedError(error);
+      onFailed(error);
+    }
+  });
+```
+
+생성·수정 화면을 옮길 때 아래 표대로 동작하는지 테스트와 화면으로 확인한다. 지금 동작과 다른 칸이 있으면 임의로 맞추지 않고 그대로 둔 뒤 보고한다.
+
+| 상황                  | 기대 동작                                                 |
+| --------------------- | --------------------------------------------------------- |
+| 저장 성공             | 닫힘, 목록·상세 갱신, 초안 삭제, 이벤트 1회               |
+| 저장 실패(4xx)        | 입력값 유지, 오류 안내 1회                                |
+| 연결 끊김             | 입력값·초안 유지, 무한 대기 없음(`networkMode: 'always'`) |
+| 두 번 누름            | 요청 1회(`isSubmitting`, `isPending`)                     |
+| 검증 실패             | 저장 버튼 비활성 또는 오류 표시, 요청 없음                |
+| 수정인데 바뀐 값 없음 | 요청 없이 닫힘                                            |
+| 반복 할 일 수정       | 범위 선택, 뒤로 가면 입력값 유지                          |
+| 닫기·뒤로 가기        | 작성 중 값 처리(초안 또는 확인)가 지금과 같음             |
+
+표와 다른 지금 동작: `MemoEditor`의 저장 버튼은 저장 뒤 화면에 남아 편집을 끝내고, 바뀐 값이 없어도 누르면 요청을 보낸다. 요청 없이 떠나는 것은 뒤로 가기(`handleBack`)다.
 
 ### 초안
 
 - 초안은 `useDraftStorage(draftKey)`가 첫 렌더에 한 번 동기로 읽어 `defaultValues`에 넣는다. 빈 값으로 그린 뒤 채우지 않는다.
 - `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장한다. 언마운트(폴더블 전환) 때 대기 중인 저장을 flush하고, 제출 성공·취소는 반환된 함수로 대기 저장까지 취소한 뒤 지운다.
-- 키는 피처의 순수 함수(`createTodoCommentDraftKey`, `createMemoDraftKey`)가 `createDraftKey`로 만든다. 사용자 id가 항상 들어간다.
+- 키는 `utils/{feature}-draft.ts`의 순수 함수(`createTodoCommentDraftKey`, `createMemoDraftKey`)가 `createDraftKey`로 만든다. 사용자 id가 항상 들어간다.
 - 명시적 로그아웃·탈퇴 때만 `AuthProvider`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 이어 쓰게 한다. 로그인 후 `useUserIdentity`가 다른 소유자의 초안을 지운다. 7일 지난 초안(`DRAFT_TTL_MS`)은 앱 시작 때 정리한다.
 - 초안 저장소는 MMKV `encryptionKey`(AES-256)로 암호화하고 키는 SecureStore에 둔다. 키 조회가 비동기라 `app/_layout.tsx`가 `useEncryptedStorageBootstrap`으로 스플래시 구간에 미리 열어 `DIProvider`에 넘긴다. 초안 화면이 동기로 복원하기 위해서다.
 - 열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 동작하며 Sentry에 보고한다.
@@ -316,107 +565,149 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 | ----------- | --------------------------------------------------------------------------------------------- |
 | 오늘·자정   | `LocalDateProvider` + `useToday`·`useTodayKey`. render 중 `new Date()`를 기준으로 쓰지 않는다 |
 | 분 단위     | `useMinuteNow`                                                                                |
-| 날짜 key    | `date-key.ts`(`toDeviceDateKey`, `addDaysToDateKey`)                                          |
-| 주          | `calendar-week.ts`(`getCalendarWeekOfDateKey`)                                                |
-| 표시        | `date-format.ts`(`formatDateKeyLabel`, `formatDateLabel`) + `useDateFormatContext`            |
-| 시각·시간대 | `time.ts`, `timezone.ts`                                                                      |
+| 날짜 key    | `shared/date/date-key.ts`(`addDaysToDateKey`, `diffDateKeysInDays`, `getDayOfWeek`)           |
+| 주          | `shared/date/date-key.ts`(`getCalendarWeek`)                                                  |
+| 순간 → 값   | `shared/date/instant.ts`(`toDateKey(d, tz)`, `toHHmm(d, tz)`). 시간대는 인자다                |
+| 표시        | `shared/date/date-format.ts`, `date-labels.ts` + `useDateFormatContext`                       |
+| 시각        | `shared/date/time-of-day.ts`                                                                  |
+| 기기 시간대 | `shared/infra/device-clock.ts`(`getDeviceTimezone`)                                           |
 
 ---
 
 ## 모델과 Policy
 
+**비즈니스 규칙만 둔다. 가장 중요한 규칙이다.** `saving-product.model.ts`처럼 모델 스키마, 규칙 함수, Policy만 둔다. 문구, i18n 키, 색, 크기, 레이아웃, 화면 상태, 폼 값, 초안·저장 키는 넣지 않는다. 그런 값은 `*.view-model.ts`, `*-form.schema.ts`, `*-draft.ts`나 컴포넌트에 둔다. 규칙이 바뀔 때 함수 하나만 고쳐 사용처가 모두 바뀌게 하려면, 다른 이유로 바뀌는 값이 이 파일에 섞이면 안 된다.
+
 ```
-features/{feature}/domains/
-├── {entity}.model.ts    # Zod 모델 + 이름 있는 순수 함수 + {Entity}Policy
-└── {feature}.error.ts   # 기능 오류. [에러 처리] 참고
+features/{feature}/
+├── schemas/
+│   ├── {entity}.schema.ts       # 앱 모델 스키마와 타입
+│   ├── {name}-form.schema.ts    # 폼 값
+│   ├── {name}-draft.schema.ts   # 저장하는 초안 값
+│   └── {name}-params.schema.ts  # route 값
+└── domains/
+    ├── {entity}.model.ts        # 이름 있는 순수 함수 + {Entity}Policy. zod를 import하지 않는다
+    └── {feature}.error.ts       # 기능 오류
 ```
 
-모델 파일 하나에 다 둔다. 규칙이 바뀌면 함수 하나만 고쳐 사용처가 모두 바뀌게 한다. 모델을 불필요하게 여러 개 만들지 않는다. 참고: frontend-fundamentals-mock-exam-1 `saving-product.model.ts`.
+스키마는 `schemas/` 한 곳에 모은다. 서버와 같은 값은 계약에서 `pick`·`extend`로 유도해 다시 적지 않는다. 앱에서 모양이 다른 값(응답 문자열 → `Date`)만 `extend`로 바꾼다.
 
 ```typescript
-export const pushPermissionSchema = z.object({
-  status: z.enum(PUSH_PERMISSION_STATUS),
-  canAskAgain: z.boolean(),
-});
+// features/memo/schemas/memo.schema.ts
+export const memoSchema = memoContractSchema
+  .pick({ id: true, content: true, isPinned: true })
+  .extend({ createdAt: z.date(), updatedAt: z.date() });
+export type Memo = z.infer<typeof memoSchema>;
 
-export function isDeliveryAllowed(permission: PushPermission): boolean {
-  // GRANTED 또는 PROVISIONAL
+export const memoResourceLimitSchema = memoResourceLimitResponseSchema.pick({
+  currentCount: true,
+  maxPerUser: true,
+});
+export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
+```
+
+```typescript
+// features/memo/domains/memo.model.ts
+export function canCreateMemo(limit: MemoResourceLimit) {
+  return limit.currentCount < limit.maxPerUser;
 }
 
-export const PushPermissionPolicy = {
-  isDeliveryAllowed,
-  isNotDetermined,
-  canRequestSystemDialog,
+export function getMemoPreview(memo: Pick<Memo, 'content'>) {
+  const [title = '', ...rest] = memo.content.trim().split('\n');
+
+  return { title: title.trim(), body: rest.join('\n').trim() };
+}
+
+export const MemoPolicy = {
+  canCreateMemo,
+  getMemoPreview,
 } as const;
 ```
 
-**이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정), `find*`(검색), `create*`(생성), `with*`(불변 갱신). `xxxOf`는 쓰지 않는다(`getDisplayState`, `getSelectedActions`). Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
+**화면은 Policy로 소비한다.** `MemoPolicy.canCreateMemo(resourceLimit)`처럼 쓴다. 모델을 불필요하게 여러 개 만들지 않는다.
 
-**첫 인자는 모델이다.** `comment` 규칙이면 첫 인자는 `comment`다(`canDeleteComment(comment)`). 흩어진 필드 나열이나 DTO를 받지 않는다.
+**이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정), `find*`(검색), `create*`(생성), `with*`(불변 갱신). `xxxOf`는 쓰지 않는다. Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
 
-**Policy는 비즈니스 규칙만 담는다.**
+**첫 인자는 모델이다.** 값이 하나만 필요해도 `Pick<Memo, 'content'>`로 받아 필드가 바뀌면 타입이 알려 주게 한다. 흩어진 필드 나열이나 DTO를 받지 않는다.
+
+**Policy가 하지 않는 것.**
 
 - 문구·아이콘·색·레이아웃·i18n 키를 돌려주지 않는다. 등급·단계 같은 의미 값을 돌려주고 컴포넌트가 `satisfies Record<Grade, …>` 맵이나 `match`로 그린다.
 - 화살표 함수 본문을 Facade에 인라인으로 쓰지 않는다. 이름 있는 함수가 테스트 단위다.
-- 현재 시각은 인자로 받는다. `Date.now()`·`new Date()`를 호출하지 않는다.
+- 현재 시각·오늘·시간대는 인자로 받는다. `Date.now()`·`new Date()`·`getDeviceTimezone()`을 호출하지 않는다.
 - 다른 피처의 Policy를 재수출하거나 위임만 하는 함수를 두지 않는다.
 - class로 만들지 않는다.
 
-**앱은 서버 값을 다시 계산하지 않는다.** 남은 횟수·한도·리셋 시각처럼 서버가 계산한 값은 그대로 쓴다.
+**순간과 달력 값.** 순간은 `Date`이고 달력 날짜·시각 값은 [dates](../../../docs/conventions/dates.md)를 따른다. 영속 캐시는 `$date` 태그로 `Date`를 복원한다(`query-cache-persistence.ts`).
 
 **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.date()`·`z.iso.time()`, `z.email()`·`z.url()`, `z.partialRecord`, `z.discriminatedUnion`, `z.enum(튜플)`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`, `.strict()`는 쓰지 않는다.
 
 ### 서버 응답과 모델
 
-모델은 서버 응답 모양에 의존하지 않는다. 서버 필드가 바뀌면 mapper만 고친다. 서버 이름을 모델에 그대로 옮기지 않아도 된다.
+함수와 화면은 서버 응답 모양에 의존하지 않고 앱 타입만 안다. 서버 필드가 바뀌면 mapper와 `schemas/`만 고친다. 요청·응답 계약은 `@aido/api`가 소유하고 앱 모델은 앱이 소유한다.
 
-| `@aido/api` 진입점                        | 내용                                   | import할 수 있는 곳                          |
-| ----------------------------------------- | -------------------------------------- | -------------------------------------------- |
-| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`DAYS_OF_WEEK` 등) | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`) |
-| `@aido/api/errors`                        | `ErrorCode`                            | 어디서나                                     |
-| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입            | `apis/*.service.ts`·`apis/*.mapper.ts`만     |
+| `@aido/api` 진입점                        | 내용                                  | import할 수 있는 곳                                     |
+| ----------------------------------------- | ------------------------------------- | ------------------------------------------------------- |
+| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`MEMO_LIMITS` 등) | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`, 폼 스키마) |
+| `@aido/api/errors`                        | `ErrorCode`                           | 어디서나                                                |
+| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입           | `apis/`와 `schemas/`만                                  |
 
 - 옮긴 모델은 `CLIENT_OWNED_MODEL_PATHS`에 올린다. 아직 옮기지 않은 모델의 `@aido/api` 재사용은 손댈 때 함께 옮긴다.
+- 공유할 값이 앱에만 있으면 `vocabulary`로 올린다. 숫자를 앱에서 다시 적지 않는다.
+- 폼 스키마가 계약과 같은 값을 통과시키는지 mapper 테스트로 교차 검증한다(`memo.mapper.test.ts`).
 - mapper는 계약 enum·유니온을 `satisfies Record<ContractEnum, …>`나 `exhaustive()`로 빠짐없이 매핑한다. 서버가 값을 더하면 빌드가 깨져 놓치지 않는다.
 - brand·enum은 mapper가 `schema.parse`로 붙인다. `as`로 단정하지 않는다.
 - 응답을 읽을 때 새 필드는 없을 수 있다(구 서버와 섞임). `== null`로 처리한다.
-- 모델 테스트는 `*.model.test.ts`에서 `createX(overrides)`로 경계값까지 확인한다. mapper fixture는 계약 스키마로 검증해 만든다(`todoCommentThreadsResponseSchema.parse({ … })`). 계약과 어긋난 fixture로 통과하는 테스트를 막는다.
+- 모델 테스트는 `*.model.test.ts`에서 `createX(overrides)`로 경계값까지 확인한다. mapper fixture는 계약 스키마로 검증해 만든다(`memoListResponseSchema.parse({ … })`). 계약과 어긋난 fixture로 통과하는 테스트를 막는다.
+
+### 서버·클라이언트 계산 경계
+
+| 서버가 계산하고 앱은 읽기만                               | 앱이 계산                                    |
+| --------------------------------------------------------- | -------------------------------------------- |
+| 프리미엄 여부, 한도, 남은 횟수, `resetsAt`, 1회 길이 상한 | 메모 미리보기, 그룹핑, 정렬 표시             |
+| 차감·환불, 멱등 처리, AI 계획, 겹침 판정                  | 낙관적 갱신, 폼 검증(서버가 최종 판단)       |
+| 반복 회차 생성, 순간 값 `scheduledTime`, 휴면             | 달력 표시, `날짜 + 벽시계`의 현지 표시, 오늘 |
+| 쿨다운, 초대·보상 상태                                    | 선택 상태, 시트 열림, 레이아웃               |
+
+앱은 왼쪽 값을 다시 계산하지 않는다. 응답에 필요한 값이 없으면 앱에서 만들지 않고 표시만 한다. 새 응답 필드는 서버 작업이라 따로 승인을 받는다. 앱 전체에서 다시 계산하는 곳을 전수로 찾지는 않았다.
 
 ---
 
 ## Service와 Mapper
 
-Service는 포트를 주입받아 HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 한다. `ApiError`는 번역하지 않고 그대로 넘긴다. 메서드는 arrow class field, private은 `#`다.
+Service는 포트를 주입받아 HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 한다. `ApiError`는 번역하지 않고 그대로 넘긴다. class 하나이고 메서드는 arrow class field, private은 `#`다. 4xx는 `Result.err`, 5xx·네트워크·파싱은 throw다([errors](../../../docs/conventions/errors.md)).
 
 ```typescript
-export class {Feature}Service {
+// features/memo/apis/memo.service.ts
+export class MemoService {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
     this.#httpClient = httpClient;
   }
 
-  create{Feature} = async (params: Create{Feature}Input): Promise<Result<{Feature}, {Feature}ServiceError>> => {
-    if (!{Feature}Policy.isValidInput(params.name)) {
-      return err({Feature}Errors.invalidInput());
-    }
+  getMemo = async (memoId: number, signal?: AbortSignal) =>
+    parseApiResponse(
+      await this.#httpClient.get(`v1/memos/${memoId}`, { signal }),
+      memoDetailResponseSchema,
+      ({ memo }) => toMemo(memo),
+      '[MemoService] Invalid getMemo response',
+    );
+```
 
-    const result = await this.#httpClient.post('v1/{feature}s', params);
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = {feature}ResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[{Feature}Service] Invalid create{Feature} response: ${parsed.error.message}`);
-    }
-
-    return ok(to{Feature}(parsed.data));
+```typescript
+// features/memo/apis/memo.mapper.ts
+export function toMemo(dto: MemoDto): Memo {
+  return {
+    ...pick(dto, ['id', 'content', 'isPinned']),
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
   };
 }
 ```
 
 - `HttpClient`의 성공 값은 `unknown`이다. 응답 타입을 generic으로 단정하지 않고 공유 스키마로 전부 검증한다.
+- 파싱 반복은 `parseApiResponse`(`shared/errors/parse-api-response.ts`)로 쓴다. 오류 문구 접두어를 그대로 받아 기존 문구, 테스트, Sentry 묶음을 유지한다. 파싱 실패 때 로그를 남기는 Service는 옮길 때 로그를 유지한다.
 - Mapper는 DTO·OS 값을 모델로 바꾸는 유일한 지점이고 순수 함수다.
 - 컴포넌트는 `HttpClient`나 `Result`를 직접 다루지 않는다. `{feature}Service`와 `unwrap`을 거친다.
 
@@ -426,35 +717,79 @@ export class {Feature}Service {
 
 ```
 HTTP(unknown)
-  → Service: @aido/api 스키마 safeParse → ParseError
+  → Service: @aido/api 스키마로 검증 → ParseError
   → Mapper: DTO → 클라이언트 모델   ← 서버 스펙 변경은 여기만 고친다
   → Query 캐시: 클라이언트 모델
   → select: 필터·정렬·표시 모델      ← 구독하는 화면별 파생
   → Component: Policy 호출 + 표시
 ```
 
+### Query·Mutation 파일
+
+조회는 `queries/{entity}.queries.ts`, 변경은 `queries/{entity}.mutations.ts`, 무효화는 `queries/{feature}-cache.ts`에 모은다. 작은 feature는 파일 하나, 큰 feature는 엔티티별이다. 파일 위치는 검사하지 않는다.
+
 ```typescript
-// queries/get-memo-query-options.ts
-export function getMemoQueryOptions(memoService: MemoService, { memoId }: { memoId: number }) {
+// features/memo/queries/memo.queries.ts
+function selectMemos(data: InfiniteData<MemoPage>) {
+  return data.pages.flatMap((page) => page.items);
+}
+
+export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
+  const memoService = useMemoService();
+
   return queryOptions({
     queryKey: MEMO_QUERY_KEYS.detail({ memoId }),
     queryFn: async ({ signal }) => unwrap(await memoService.getMemo(memoId, signal)),
   });
 }
+```
 
-export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
-  return getMemoQueryOptions(useMemoService(), { memoId });
+```typescript
+// features/memo/constants/memo-query-keys.ts
+export const MEMO_QUERY_KEYS = {
+  all: ['memo'] as const,
+  list: () => [...MEMO_QUERY_KEYS.all, 'list'] as const,
+  details: () => [...MEMO_QUERY_KEYS.all, 'detail'] as const,
+  detail: ({ memoId }: { memoId: number }) => [...MEMO_QUERY_KEYS.details(), { memoId }] as const,
+  resourceLimit: () => [...MEMO_QUERY_KEYS.all, 'resource-limit'] as const,
+} as const;
+```
+
+```typescript
+// features/memo/queries/memo.mutations.ts
+export function useCreateMemoMutationOptions() {
+  const memoService = useMemoService();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const showFailure = useMemoMutationFailure();
+
+  return mutationOptions({
+    // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
+    networkMode: 'always',
+    mutationFn: async (values: MemoFormValues) => unwrap(await memoService.createMemo(values)),
+    onSuccess: () => trackEvent('memo_created'),
+    onError: (error) => showFailure(error),
+    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
+    onSettled: () => {
+      invalidateMemos(queryClient);
+    },
+  });
 }
 ```
 
-- 컴포넌트는 `useSuspenseQuery(useGet…QueryOptions(…))`처럼 사용처에서 바로 부른다. `queryKey`·`enabled`를 재사용할 때만 지역 변수에 둔다.
-- query key·queryFn·캐시 정책을 컴포넌트에 인라인으로 만들지 않는다. 키를 하드코딩하지 않는다.
-- 인자는 이름 있는 객체로 받고 query key에도 같은 객체를 넣는다. 서버 GET은 `signal`을 넘긴다.
-- 키 이름에 피처 접두사를 반복하지 않는다. 다른 피처의 캐시는 그 피처의 `{feature}-cache.ts` 함수로만 무효화한다.
-- select는 서버 스키마를 변환하지 않는다. 캐시에 DTO가 남으면 낙관적 업데이트가 서버 모양을 알아야 한다.
-- select 함수는 순수하고 참조가 안정적이어야 한다. 모듈 수준 함수를 우선한다. 인라인 화살표는 render마다 다시 실행된다.
-- 클라이언트 필터는 key에 넣지 않고 select로 같은 캐시를 공유한다. 서버 파라미터는 key에 넣는다.
-- `mutationFn`은 반드시 `unwrap()`한다. `Result.err()`를 돌려주면 React Query가 성공으로 보고 `onSuccess`를 부른다. 오류 분기는 [에러 처리](../docs/error-handling.md)를 본다.
+### 쿼리 규칙
+
+- **훅:** 서비스가 DI에 있으므로 옵션은 `useGetXQueryOptions` 훅이다. 컴포넌트는 `useSuspenseQuery(useGetXQueryOptions(…))`처럼 사용처에서 바로 부른다. 옵션을 감싸는 훅을 더 만들지 않는다. `getXQueryOptions` 함수는 훅 밖(`queryClient.fetchQuery`, 프리페치)에서 쓸 때만 `({ xService }, params)` 인자로 export한다. 옮긴 feature에는 아직 그런 예가 없다.
+- **인라인 금지:** query key·queryFn·캐시 정책을 컴포넌트에 인라인으로 만들지 않는다. 키를 하드코딩하지 않는다.
+- **키:** `{FEATURE}_QUERY_KEYS`이고 인자는 이름 있는 객체 하나다. 범위는 복수(`lists`, `details`), 단건은 단수(`detail`)다. 인자 없는 목록은 `list()` 하나면 된다. 키 이름에 피처 접두사를 반복하지 않는다. 영속 대상 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
+- **signal:** 서버 GET은 `signal`을 넘긴다.
+- **select:** 함수 참조가 바뀌면 다시 실행되므로 모듈 수준 `function`(`selectMemos`)이나 `useCallback`으로 둔다. 필요한 값만 구독할 때 쓴다. 오류를 던지는 데 쓰지 않고 서버 스키마를 변환하지 않는다(캐시에 DTO가 남으면 낙관적 업데이트가 서버 모양을 알아야 한다).
+- **필터:** 클라이언트 필터는 key에 넣지 않고 select로 같은 캐시를 공유한다. 서버 파라미터는 key에 넣는다.
+- **구조 공유:** `Date`는 plain 객체가 아니어서 같은 값이어도 새 참조가 되고 그 객체와 조상까지 참조가 바뀐다. 그래서 `Date`가 있는 모델은 재조회 때 다시 그려질 수 있다.
+- **추적 속성:** 결과를 rest로 구조 분해하지 않는다.
+- **`mutationFn`:** 반드시 `unwrap()`한다. `Result.err()`를 돌려주면 React Query가 성공으로 보고 `onSuccess`를 부른다. 오류 분기는 [에러 처리](../docs/error-handling.md)를 본다.
+- **`onSettled`:** Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 바로 떠나는 create·delete·convert는 돌려주지 않고, 기다려야 하는 update·pin만 돌려준다(`useUpdateMemoMutationOptions`, `useToggleMemoPinMutationOptions`). 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
+- **무효화:** 다른 feature의 캐시는 그 feature의 `{feature}-cache.ts` 함수로만 무효화한다(`invalidateMemos`). 자기 feature 안에서 범위를 좁힐 때만 자기 키를 직접 쓴다. 키 위치에 기대는 구조 분해(`const [, , params] = query.queryKey`)를 쓰지 않는다.
 
 ### 할 일 목록의 낙관적 갱신
 
@@ -595,9 +930,9 @@ await clipboard.copy(comment.content ?? '');
 
 ## 새 Feature 추가 체크리스트
 
-1. **Models**: `domains/{entity}.model.ts`(Zod 모델 + 순수 함수 + Policy), 필요하면 `domains/{feature}.error.ts`
-2. **Services + Mapper**: `apis/{entity}.mapper.ts`, `apis/{feature}.service.ts`
+1. **Schemas + Models**: `schemas/{entity}.schema.ts`, 필요하면 `schemas/{name}-form.schema.ts`. `domains/{entity}.model.ts`(순수 함수 + Policy), 필요하면 `domains/{feature}.error.ts`
+2. **Services + Mapper**: `apis/{entity}.mapper.ts`, `apis/{feature}.service.ts`. 모델 경로를 `CLIENT_OWNED_MODEL_PATHS`에 올린다
 3. **DI 등록**: `di-provider.tsx`에 인스턴스, `di-context.tsx`에 `DIContainer` 필드와 `use{Feature}Service` 훅
-4. **Presentations**: `constants/{feature}-query-keys.ts`, `queries/get-…-query-options.ts`, `queries/use-…-mutation-options.ts`, 다른 피처가 무효화해야 하면 `queries/{feature}-cache.ts`, `components/`
+4. **Presentations**: `constants/{feature}-query-keys.ts`, `queries/{entity}.queries.ts`, `queries/{entity}.mutations.ts`, 다른 피처가 무효화해야 하면 `queries/{feature}-cache.ts`, `components/`
 5. **라우트**: `app/` 아래에 위→아래로 읽히는 화면
 6. **테스트**: Model·Policy, Service·Mapper, 자체 로직이 있는 순수 util만

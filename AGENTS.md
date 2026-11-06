@@ -1,6 +1,6 @@
 # Aido
 
-> **Version**: 1.2.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Platform Team
+> **Version**: 1.2.1 · **Last Updated**: 2026-11-07 · **Owner**: Aido Platform Team
 
 Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버와 모바일 앱을 포함.
 
@@ -96,7 +96,7 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 - **린트/포맷**: Oxlint + Oxfmt — `pnpm lint`, `pnpm format:check`, `pnpm format`
 - **커밋/PR/이슈**: 한국어 Conventional Commits(`refactor(server): …`, `ci(server): …`). PR은 요약·주요 변경·실제 검증, 측정한 숫자만. stack은 `stack:<release>`, tip만 `ci:stack-tip`. 상세: [docs/conventions/git.md](docs/conventions/git.md)
 - **타입**: `strict: true`. `as`(`as const` 제외)·`any`·`!`·`@ts-ignore`/`@ts-expect-error` 금지, 타입은 Zod·props·상수 튜플에서 유도
-- **DTO**: `@aido/api`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
+- **DTO**: 요청·응답 계약은 `@aido/api`, 앱 모델은 앱이 소유
 - **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
 - **서버 요청 헤더**: Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다
 - **서버 테스트**: 상태가 중요하면 깊은 mock 대신 작은 Port Stub/Fake, DB 의미는 실제 PostgreSQL(Testcontainers)로 검증

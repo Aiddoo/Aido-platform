@@ -1,34 +1,30 @@
 # UI 컴포넌트 사용 가이드
 
-**Version**: 1.2.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+**Version**: 1.3.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
-> 컴포넌트 선택 우선순위: HeroUI Native → Shared UI 래퍼 (`@src/shared/ui`) → React Native 기본.
+> 컴포넌트 선택 순서: HeroUI Native → Shared UI (`@src/shared/ui`) → React Native 기본.
 
-## 컴포넌트 선택 우선순위
+## 컴포넌트 선택 순서
 
-UI를 구현할 때 다음 우선순위를 **반드시** 따릅니다:
+UI를 만들기 전에 위에서 아래로 찾는다. 바퀴를 다시 만들지 않고 모양과 동작을 앱 전체에서 맞추기 위해서다.
 
-### 1순위: HeroUI Native 원본
+| 순서 | 어디서                                     | 언제                                                                                                                                            |
+| ---- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | HeroUI Native 원본                         | 체크·칩·탭·팝오버·메뉴·누름처럼 원본이 있는 부품(`Checkbox`, `Chip`, `Tabs`, `Popover`, `Menu`, `PressableFeedback`, `Skeleton`, `Separator` …) |
+| 2    | Shared UI (`@src/shared/ui`)               | 같은 역할의 부품이 이미 있을 때. 원본 대신 이것을 쓴다                                                                                          |
+| 3    | 새 래퍼 (`shared/ui`나 피처 `components/`) | 원본에 앱 고유 역할(단위 suffix·숫자 포맷·도메인 문구·디자인 토큰 조합)이 더해질 때만                                                           |
+| 4    | React Native 기본                          | 위에 없을 때만(`ScrollView` 등)                                                                                                                 |
 
-새 UI는 먼저 [HeroUI Native](https://github.com/heroui-inc/heroui-native)에서 찾는다(`Checkbox`, `Chip`, `Tabs`,
-`Popover`, `Dialog`, `PressableFeedback`, `Skeleton` …). 컴포넌트 이름·props는 `.claude/skills/heroui-native`를 본다.
+컴포넌트 이름·props는 `.claude/skills/heroui-native`를 본다.
 
-```tsx
-import { Checkbox, Chip, Popover, Tabs } from 'heroui-native';
-```
-
-단, `shared/ui`에 같은 역할의 래퍼가 이미 있으면 그 래퍼를 쓴다. `Button`, `Text`, `Input`/`TextArea`,
-레이아웃 프리미티브(`Box`·`HStack`·`VStack`·`Flex`·`Spacing`)는 원본 대신 `@src/shared/ui`에서 import한다.
+**글자와 레이아웃은 Shared UI가 먼저다.** `Text`, `H1`~`H4`, `TextSkeleton`, `WordWrapText`, `Box`, `HStack`, `VStack`, `Spacing`, `ReadableContent`를 쓰고 RN `Text`·`View`를 직접 쓰지 않는다. 숫자 크기 대신 `size` 토큰을 쓴다. 버튼·입력(`Button`, `Input`, `TextArea`)과 시트·다이얼로그(`BottomSheet` 3종, `ConfirmDialog`)도 `@src/shared/ui`에서 import한다.
 
 ```tsx
 import { Box, Button, HStack, Text, VStack } from '@src/shared/ui';
+import { Checkbox, Chip, Popover, Tabs } from 'heroui-native';
 ```
 
-### 2순위: Shared UI 래퍼 (`Omit<ComponentProps<typeof X>, …>`)
-
-원본에 앱 고유 역할(단위 suffix·숫자 포맷·도메인 문구·디자인 토큰 조합)이 더해질 때만 `shared/ui`나 피처
-`components/`에 래퍼를 만든다. 원본 props를 `Omit<ComponentProps<typeof X>, …>`로 확장하고 바꾸는 prop만 다시
-선언한다. prop 이름은 원본 그대로다(`isOpen`/`onOpenChange`, `isSelected`/`onSelectedChange`, `value`/`onValueChange`).
+래퍼는 원본 props를 `Omit<ComponentProps<typeof X>, …>`로 확장하고 바꾸는 prop만 다시 선언한다. prop 이름은 원본 그대로다(`isOpen`/`onOpenChange`, `isSelected`/`onSelectedChange`, `value`/`onValueChange`). 역할 없이 원본을 넘기기만 하는 래퍼는 만들지 않는다([Wrapper Props 계약](#wrapper-props-계약)).
 
 ```tsx
 interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
@@ -36,15 +32,7 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 }
 ```
 
-역할 없이 원본을 그대로 넘기기만 하는 래퍼는 만들지 않는다([Wrapper Props 계약](#wrapper-props-계약)).
-
-### 3순위: React Native 기본 컴포넌트 (최후의 수단)
-
-HeroUI와 Shared UI 모두에 없는 경우에만 React Native 컴포넌트를 쓴다.
-
-```tsx
-import { ScrollView } from 'react-native';
-```
+부족한 부품을 `shared/ui`에 더하면 같은 커밋에서 폴더의 문서(`{name}.md`), 테스트, 아래 목록을 갱신한다.
 
 ### 한도 안내는 `PremiumDialog` 하나
 
@@ -56,55 +44,55 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 
 ## Shared UI 컴포넌트 목록
 
-| 컴포넌트                                                                                   | 용도                                                                         | 문서                                                           |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `Text`, `H1`~`H4`                                                                          | 텍스트, 헤딩 (`size="display"`는 날씨 큰 온도 전용)                          | `src/shared/ui/text/text.md`                                   |
-| `FormField`                                                                                | RHF Controller와 field 오류의 단일 바인딩 경계                               | `src/shared/ui/form-field/form-field.md`                       |
-| `Button`                                                                                   | 기본 버튼                                                                    | `src/shared/ui/button/button.md`                               |
-| `KeyboardAdaptiveButton`                                                                   | 키보드 반응 버튼                                                             | `src/shared/ui/button/button.md`                               |
-| `TextButton`                                                                               | 텍스트/링크 버튼                                                             | `src/shared/ui/text-button/text-button.md`                     |
-| `NATIVE_TAB_ICON_SOURCES`                                                                  | NativeTabs용 탭 아이콘 이미지(기본·선택)                                     | `src/shared/ui/icon/icon.md`                                   |
-| `IconCountButton`                                                                          | 아이콘 + 개수 버튼 (좋아요·답글·댓글)                                        | `src/shared/ui/icon-count-button/icon-count-button.md`         |
-| `Input`                                                                                    | 입력 필드                                                                    | `src/shared/ui/input/input.md`                                 |
-| `BottomSheetInput`                                                                         | BottomSheet 내부 입력 필드                                                   | `src/shared/ui/input/input.md`                                 |
-| `Spacing`                                                                                  | 간격 유틸리티                                                                | `src/shared/ui/spacing/spacing.md`                             |
-| `Box`                                                                                      | 단순 컨테이너                                                                | `src/shared/ui/box/box.md`                                     |
-| `Flex`                                                                                     | Flexbox 레이아웃                                                             | `src/shared/ui/flex/flex.md`                                   |
-| `HStack`                                                                                   | 수평 레이아웃                                                                | `src/shared/ui/h-stack/h-stack.md`                             |
-| `AdaptivePane`                                                                             | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음)      | `src/shared/ui/adaptive-pane/adaptive-pane.md`                 |
-| `ReadableContent`                                                                          | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                           | `src/shared/ui/readable-content/readable-content.md`           |
-| `ScreenScrollShadow`                                                                       | 화면 배경 위 스크롤의 잘리는 쪽을 흐리게 덮음 (시트는 `SheetScrollShadow`)   | `src/shared/ui/screen-scroll-shadow/screen-scroll-shadow.md`   |
-| `WordWrapText`                                                                             | 한글이 음절 사이에서 끊기지 않는 긴 글 (Android는 단어마다, iOS는 Text 하나) | `src/shared/ui/word-wrap-text/word-wrap-text.md`               |
-| `MenuActionItem`                                                                           | ⋯ 메뉴 항목. 주황 아이콘, 위험한 항목은 빨간색                               | `src/shared/ui/menu-action-item/menu-action-item.md`           |
-| `VStack`                                                                                   | 수직 레이아웃                                                                | `src/shared/ui/v-stack/v-stack.md`                             |
-| `Grid`                                                                                     | 그리드 레이아웃                                                              | `src/shared/ui/grid/grid.md`                                   |
-| `GridItem`                                                                                 | 그리드 아이템                                                                | `src/shared/ui/grid/grid.md`                                   |
-| `Result`                                                                                   | 결과 화면 (에러, 빈 상태)                                                    | `src/shared/ui/result/result.md`                               |
-| `TextArea`                                                                                 | 여러 줄 텍스트 입력                                                          | `src/shared/ui/text-area/text-area.md`                         |
-| `Avatar`                                                                                   | 선택 가능 아바타 아이콘                                                      | `src/shared/ui/avatar/avatar.md`                               |
-| `ConfirmDialog`                                                                            | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화)        | `src/shared/ui/confirm-dialog/confirm-dialog.md`               |
-| `DashedDivider`                                                                            | 카드 안 구획을 나누는 점선 구분선 (실선은 HeroUI `Separator`)                | `src/shared/ui/dashed-divider/dashed-divider.md`               |
-| `HintPopoverContent`                                                                       | 안내 말풍선 한 모양 (아이콘·제목·작은 X + 설명). `Popover` 안에 둔다         | `src/shared/ui/hint-popover/hint-popover.md`                   |
-| `IconRadioItem`                                                                            | `RadioGroup` 안의 라디오 행 (라벨 · 선택적 설명 · 선택적 아이콘 인디케이터)  | `src/shared/ui/icon-radio-item/icon-radio-item.md`             |
-| `SettingsCard`(`.Item`·`.Toggle`·`.Content`·`.Separator`·스켈레톤), `SettingsScreenLayout` | 설정 카드와 행(`ListGroup`·`ControlField` 기반), 설정 화면 스크롤 틀         | `src/shared/ui/settings-card/settings-card.md`                 |
-| `KeyboardBottomSheet`                                                                      | 키보드 연동 바텀시트 (폼용)                                                  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
-| `BottomSheet`                                                                              | 키보드 불필요 바텀시트 (피커, 액션시트)                                      | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
-| `ModalBottomSheet`                                                                         | `useOverlay`로 띄우는 바텀시트 (시트 위에 시트)                              | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
-| `SheetHeaderLayout`                                                                        | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤             | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
-| `SheetRouteScreen`, `useSheetRoute`                                                        | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기   | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
-| `useStackScreenOptions`, `useStackBackToolbar`                                             | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기       | `src/shared/ui/stack-header/stack-header.md`                   |
-| `FormStepLayout`                                                                           | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)             | `src/shared/ui/form-step-layout/form-step-layout.md`           |
-| `ActionChip`                                                                               | 아이콘 + 라벨 선택 칩 (필터·옵션)                                            | `src/shared/ui/action-chip/action-chip.md`                     |
-| `ListRow`                                                                                  | 썸네일·텍스트가 있는 목록 행                                                 | `src/shared/ui/list-row/list-row.md`                           |
-| `OverlayProvider`, `useOverlay`                                                            | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                   | `src/shared/ui/overlay/overlay.md`                             |
-| `PremiumDialog`                                                                            | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움  | `src/shared/ui/premium-dialog/premium-dialog.md`               |
-| `OfflineBanner`                                                                            | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                  | `src/shared/ui/offline-banner/offline-banner.md`               |
-| `QueryErrorBoundary`                                                                       | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                   | `src/shared/ui/query-error-boundary/query-error-boundary.md`   |
-| `AppToast`                                                                                 | 토스트 본문 (`useAppToast`로 사용)                                           | `src/shared/ui/toast/toast.md`                                 |
-| `StyledSafeAreaView`                                                                       | className을 받는 SafeAreaView                                                | `src/shared/ui/styled-safe-area-view/styled-safe-area-view.md` |
-| `ScallopedContainer`                                                                       | 위아래 물결 가장자리의 카드 (AI 리포트·제안, 구독 혜택)                      | `src/shared/ui/scalloped-container/scalloped-container.md`     |
-| `TextSkeleton`                                                                             | Text 크기별 줄 높이를 따르는 글자 스켈레톤                                   | `src/shared/ui/text/text.md`                                   |
-| `Barcode`                                                                                  | 영수증 톤 카드 아래쪽 바코드 장식 (구독 영수증, 초대 혜택)                   | `src/shared/ui/barcode/barcode.md`                             |
+| 컴포넌트                                                                                   | 용도                                                                                   | 문서                                                           |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `Text`, `H1`~`H4`                                                                          | 텍스트, 헤딩 (`size="display"`는 날씨 큰 온도 전용)                                    | `src/shared/ui/text/text.md`                                   |
+| `FormField`                                                                                | 옛 RHF 바인딩. 새 폼은 RHF `Controller`를 직접 쓴다([옮기는 중](#아직-옮기지-않은-것)) | `src/shared/ui/form-field/form-field.md`                       |
+| `Button`                                                                                   | 기본 버튼                                                                              | `src/shared/ui/button/button.md`                               |
+| `KeyboardAdaptiveButton`                                                                   | 키보드 반응 버튼                                                                       | `src/shared/ui/button/button.md`                               |
+| `TextButton`                                                                               | 텍스트/링크 버튼                                                                       | `src/shared/ui/text-button/text-button.md`                     |
+| `NATIVE_TAB_ICON_SOURCES`                                                                  | NativeTabs용 탭 아이콘 이미지(기본·선택)                                               | `src/shared/ui/icon/icon.md`                                   |
+| `IconCountButton`                                                                          | 아이콘 + 개수 버튼 (좋아요·답글·댓글)                                                  | `src/shared/ui/icon-count-button/icon-count-button.md`         |
+| `Input`                                                                                    | 입력 필드                                                                              | `src/shared/ui/input/input.md`                                 |
+| `BottomSheetInput`                                                                         | BottomSheet 내부 입력 필드                                                             | `src/shared/ui/input/input.md`                                 |
+| `Spacing`                                                                                  | 간격 유틸리티                                                                          | `src/shared/ui/spacing/spacing.md`                             |
+| `Box`                                                                                      | 단순 컨테이너                                                                          | `src/shared/ui/box/box.md`                                     |
+| `Flex`                                                                                     | Flexbox 레이아웃                                                                       | `src/shared/ui/flex/flex.md`                                   |
+| `HStack`                                                                                   | 수평 레이아웃                                                                          | `src/shared/ui/h-stack/h-stack.md`                             |
+| `AdaptivePane`                                                                             | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음)                | `src/shared/ui/adaptive-pane/adaptive-pane.md`                 |
+| `ReadableContent`                                                                          | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                                     | `src/shared/ui/readable-content/readable-content.md`           |
+| `ScreenScrollShadow`                                                                       | 화면 배경 위 스크롤의 잘리는 쪽을 흐리게 덮음 (시트는 `SheetScrollShadow`)             | `src/shared/ui/screen-scroll-shadow/screen-scroll-shadow.md`   |
+| `WordWrapText`                                                                             | 한글이 음절 사이에서 끊기지 않는 긴 글 (Android는 단어마다, iOS는 Text 하나)           | `src/shared/ui/word-wrap-text/word-wrap-text.md`               |
+| `MenuActionItem`                                                                           | ⋯ 메뉴 항목. 주황 아이콘, 위험한 항목은 빨간색                                         | `src/shared/ui/menu-action-item/menu-action-item.md`           |
+| `VStack`                                                                                   | 수직 레이아웃                                                                          | `src/shared/ui/v-stack/v-stack.md`                             |
+| `Grid`                                                                                     | 그리드 레이아웃                                                                        | `src/shared/ui/grid/grid.md`                                   |
+| `GridItem`                                                                                 | 그리드 아이템                                                                          | `src/shared/ui/grid/grid.md`                                   |
+| `Result`                                                                                   | 결과 화면 (에러, 빈 상태)                                                              | `src/shared/ui/result/result.md`                               |
+| `TextArea`                                                                                 | 여러 줄 텍스트 입력                                                                    | `src/shared/ui/text-area/text-area.md`                         |
+| `Avatar`                                                                                   | 선택 가능 아바타 아이콘                                                                | `src/shared/ui/avatar/avatar.md`                               |
+| `ConfirmDialog`                                                                            | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화)                  | `src/shared/ui/confirm-dialog/confirm-dialog.md`               |
+| `DashedDivider`                                                                            | 카드 안 구획을 나누는 점선 구분선 (실선은 HeroUI `Separator`)                          | `src/shared/ui/dashed-divider/dashed-divider.md`               |
+| `HintPopoverContent`                                                                       | 안내 말풍선 한 모양 (아이콘·제목·작은 X + 설명). `Popover` 안에 둔다                   | `src/shared/ui/hint-popover/hint-popover.md`                   |
+| `IconRadioItem`                                                                            | `RadioGroup` 안의 라디오 행 (라벨 · 선택적 설명 · 선택적 아이콘 인디케이터)            | `src/shared/ui/icon-radio-item/icon-radio-item.md`             |
+| `SettingsCard`(`.Item`·`.Toggle`·`.Content`·`.Separator`·스켈레톤), `SettingsScreenLayout` | 설정 카드와 행(`ListGroup`·`ControlField` 기반), 설정 화면 스크롤 틀                   | `src/shared/ui/settings-card/settings-card.md`                 |
+| `KeyboardBottomSheet`                                                                      | 키보드 연동 바텀시트 (폼용)                                                            | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
+| `BottomSheet`                                                                              | 키보드 불필요 바텀시트 (피커, 액션시트)                                                | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
+| `ModalBottomSheet`                                                                         | `useOverlay`로 띄우는 바텀시트 (시트 위에 시트)                                        | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
+| `SheetHeaderLayout`                                                                        | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤                       | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
+| `SheetRouteScreen`, `useSheetRoute`                                                        | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기             | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
+| `useStackScreenOptions`, `useStackBackToolbar`                                             | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기                 | `src/shared/ui/stack-header/stack-header.md`                   |
+| `FormStepLayout`                                                                           | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)                       | `src/shared/ui/form-step-layout/form-step-layout.md`           |
+| `ActionChip`                                                                               | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                      | `src/shared/ui/action-chip/action-chip.md`                     |
+| `ListRow`                                                                                  | 썸네일·텍스트가 있는 목록 행                                                           | `src/shared/ui/list-row/list-row.md`                           |
+| `OverlayProvider`, `useOverlay`                                                            | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                             | `src/shared/ui/overlay/overlay.md`                             |
+| `PremiumDialog`                                                                            | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움            | `src/shared/ui/premium-dialog/premium-dialog.md`               |
+| `OfflineBanner`                                                                            | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                            | `src/shared/ui/offline-banner/offline-banner.md`               |
+| `QueryErrorBoundary`                                                                       | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                             | `src/shared/ui/query-error-boundary/query-error-boundary.md`   |
+| `AppToast`                                                                                 | 토스트 본문 (`useAppToast`로 사용)                                                     | `src/shared/ui/toast/toast.md`                                 |
+| `StyledSafeAreaView`                                                                       | className을 받는 SafeAreaView                                                          | `src/shared/ui/styled-safe-area-view/styled-safe-area-view.md` |
+| `ScallopedContainer`                                                                       | 위아래 물결 가장자리의 카드 (AI 리포트·제안, 구독 혜택)                                | `src/shared/ui/scalloped-container/scalloped-container.md`     |
+| `TextSkeleton`                                                                             | Text 크기별 줄 높이를 따르는 글자 스켈레톤                                             | `src/shared/ui/text/text.md`                                   |
+| `Barcode`                                                                                  | 영수증 톤 카드 아래쪽 바코드 장식 (구독 영수증, 초대 혜택)                             | `src/shared/ui/barcode/barcode.md`                             |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 컴포넌트 문서(`{name}.md`)를 참조하세요.
 
@@ -128,7 +116,7 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 제어형 prop 이름은 원본을 유지한다. Shared Input/TextArea는 `value/onChange`, HeroUI Checkbox는
   `isSelected/onSelectedChange`, overlay는 `isOpen/onOpenChange`를 사용한다.
 - `onChangeText` 변환은 Shared Input/TextArea 내부의 native TextInput 어댑터 한 곳에서만 한다.
-- 폼 부모는 FormProvider와 제출 Promise를 소유하고, FormField의 children은 value/onChange/onBlur와 해당 fieldState만 소비한다.
+- 폼을 소유한 컴포넌트가 제출 Promise를 소유하고, 입력은 RHF `Controller`의 `field`(`value`, `onChange`, `onBlur`, `ref`)와 `fieldState`만 받는다.
 - `Input`과 `TextArea`의 `className`은 바깥 표면, React Native `style`은 실제 `TextInput`에 전달한다.
 - `condition ? <Node /> : undefined`는 condition이 boolean인 JSX 노드에서
   `condition && <Node />`로 쓸 수 있다. 숫자·문자열 조건과 함수 prop에서는 `false` 노출이나 타입
@@ -164,15 +152,31 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 - 고르는 메뉴(`Menu.ItemIndicator`, `TodoCommentSortBar`)는 `Menu.Item`을 쓴다.
 - 네이티브 `Stack.Toolbar.Menu`의 아이콘 색은 시스템이 정한다. 접힌 스택과 펼친 pane은 항목과 순서를 같게 둔다.
 
-## 파일 응집도와 이름
+## 이름
 
-- 공개 컴포넌트 이름은 도메인과 기반 UI를 함께 드러낸다. Card를 확장하면 `{Domain}Card.tsx`처럼 짓는다.
-- `Item`, `Loading`, `Error`, `Empty`가 본체 없이는 의미가 없으면 본체 파일의 지역 컴포넌트 또는
-  compound member로 둔다.
-- 반복 UI는 의미 있는 작은 지역 컴포넌트로 조합한다. 필드가 독립적으로 달라질 수 있으면 짧다는
-  이유만으로 배열과 `map`으로 합치지 않는다.
-- 이미 존재하는 shared layout, 입력, 버튼, 날짜 유틸을 먼저 찾는다. 같은 역할의 wrapper나 util을
-  다시 만들지 않는다.
+이름만 보고 무엇을 하는지, 어떤 원본을 확장했는지 알 수 있게 짓는다.
+
+| 대상                   | 규칙                                                                     | 예                                                     |
+| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
+| 원본을 확장한 컴포넌트 | 원본 이름으로 끝난다                                                     | `TodoCreateBottomSheet`, `ConfirmDialog`, `ActionChip` |
+| 그 외 컴포넌트         | PascalCase, 대상 + 역할                                                  | `MemoList`, `MemoEditor`, `WeatherHero`                |
+| 값을 입력받는 컴포넌트 | `…Input`                                                                 | `BottomSheetInput`                                     |
+| 피커 내용              | `*PickerContent`, `value`/`onChange`/`onCancel`                          | `TodoDatePickerContent`                                |
+| 파일                   | kebab-case, 주 컴포넌트·훅과 같은 이름                                   | `memo-list.tsx`, `use-memo-params.ts`                  |
+| 이벤트 prop / 핸들러   | `onX` / `handleX`                                                        | `onLeave`, `handleBack`                                |
+| 불리언                 | `is`, `has`, `can`, `should`                                             | `isEditing`, `hasNextPage`                             |
+| 상태 훅                | `[value, setValue]`                                                      | `[selectedMemoId, setSelectedMemoId]`                  |
+| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지 | `canCreateMemo`, `getMemoPreview`                      |
+| 변환·생성·불변 갱신    | `toX`, `createX`, `withX`                                                | `toMemo`, `createMemoDraftKey`                         |
+| 상수                   | SCREAMING_SNAKE, 값의 뜻                                                 | `DEFAULT_PAGE_SIZE`, `EMPTY_MEMO_FORM_VALUES`          |
+| 타입, Props            | PascalCase, Props는 `XProps`                                             | `MemoEditorProps`                                      |
+| 스키마                 | camelCase + `Schema`, 타입은 `z.infer`                                   | `memoSchema`, `Memo`                                   |
+| 축약                   | 쓰지 않는다                                                              | `button`, `message`, `index`                           |
+
+- **쓰지 않는 이름:** `Section`, `Body`, `Frame`, `Wrapper`, `Inner`, 역할 없는 `Content`. 위치만 뜻해 분리 근거가 되지 않는다. 시트 안쪽의 `XBottomSheet.Content`와 null을 좁혀 넘기는 `X.Contents`는 쓴다.
+- **네임스페이스:** `Item`, `Loading`, `Error`, `Empty`가 본체 없이는 의미가 없으면 본체 파일의 지역 컴포넌트나 compound member로 둔다.
+- **반복 UI:** 의미 있는 작은 지역 컴포넌트로 조합한다. 필드가 독립적으로 달라질 수 있으면 짧다는 이유만으로 배열과 `map`으로 합치지 않는다.
+- **먼저 찾기:** 이미 있는 shared layout, 입력, 버튼, 날짜 유틸을 먼저 찾는다. 같은 역할의 wrapper나 util을 다시 만들지 않는다.
 
 ## 도메인 다이얼로그와 안내 카드
 
@@ -191,12 +195,53 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 - **글꼴 배율**: 버튼·칩·탭처럼 높이가 정해진 컨트롤은 고정 높이와 좌우 padding을 쓰고 글자에 맞춰 커지지 않게 한다.
   짧은 라벨(확인·취소·저장 등)은 iPhone SE에서 최대 글꼴 배율일 때 ko·en 모두 한 줄에 들어가야 한다. 긴 문구는
   `shrink`·`numberOfLines`로 줄인다([레이아웃 안전](i18n-guide.md#레이아웃-안전-영어-장문)).
-- **시트·다이얼로그**: 새로 만들지 않고 `SheetRouteScreen`(대상이 있는 route 시트)·`BottomSheet`/`KeyboardBottomSheet`·
-  `ConfirmDialog`를 쓴다. 배치는 `getSheetLayout`(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백)이 정한다. 시트는 HeroUI Portal로 그려지므로 `FormProvider`는 시트 안에 두고, HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 넘긴다. `KeyboardBottomSheet`의 바깥 탭·뒤로가기에서 닫기 전에 할 일이 있으면 `onDismissRequest`를 넘긴다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
+- **간격**: 스크린의 구역 간격은 `Spacing`, 묶음 안 간격은 `HStack`·`VStack`의 `gap` prop이다. 그 밖의 여백은 `className`으로 쓴다. spacing prop(`p`, `pb` 등)과 `className`을 한 태그에 섞지 않는다([옮기는 중](#아직-옮기지-않은-것)).
+- **시트·다이얼로그**: 새로 만들지 않고 아래 [시트](#시트)와 `ConfirmDialog`를 쓴다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
 - **iPhone Duo·큰 창**: 배치는 기기 종류가 아니라 창 크기 class(`useWindowSizeClass`: `compact`·`medium`·`expanded`)로
   정하고, 좁은 창(compact)과 넓은 창의 2-pane(`AdaptivePane`)만 구분한다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞추고 reserved region의 실제 위치를 쓴다.
   세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 처리한다(위 [가로 safe area](#가로-safe-area-iphone-duo-세로-레일), [Expo의 Supporting iPhone Duo](https://expo.dev/blog/supporting-iphone-duo)).
   Expo `SplitView`·`ArrangementView`는 시험 후 넣지 않았다([이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유)).
+
+## 시트
+
+상세와 이유는 [bottom-sheet.md](../src/shared/ui/bottom-sheet/bottom-sheet.md)가 원본이다.
+
+| 컴포넌트                            | 용도                                          | 키보드 연동   |
+| ----------------------------------- | --------------------------------------------- | ------------- |
+| `KeyboardBottomSheet`               | 키보드가 필요한 폼 (텍스트 입력)              | O             |
+| `BottomSheet`                       | 키보드 불필요 (피커, 액션시트)                | X             |
+| `ModalBottomSheet`                  | 시트 위에 시트 (`BottomSheet` + `useOverlay`) | X             |
+| `SheetRouteScreen`, `useSheetRoute` | 대상이 있는 시트를 Expo Router route로 띄움   | 안쪽 시트대로 |
+
+- **그리는 곳:** 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`이고 호스트는 `OverlayProvider`가 가진다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 펼쳐 넘긴다.
+- **Context:** Portal은 Context를 잇지 못한다. `FormProvider`처럼 시트 안에서 읽는 Context는 시트 안에 둔다. `footer`에서 폼을 읽으면 `control`을 넘긴다.
+- **스크롤:** 내용은 시트 안에서 스크롤되므로 세로 스크롤 컨테이너를 또 두지 않는다(가로 스크롤은 무방). 작은 화면·큰 글자에서도 보여야 할 주 동작 버튼은 `footer`에 둔다.
+- **안쪽 스크롤이 필요한 내용:** `isContentPanEnabled={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다.
+- **닫기 전 할 일:** `KeyboardBottomSheet`의 바깥 탭·Android 뒤로 가기에서 할 일이 있으면 `onDismissRequest`를 넘긴다. 손잡이·내용 끌어내리기는 이 경로를 타지 않는다.
+- **시트 위 시트:** `ModalBottomSheet`는 열릴 때 키보드를 스스로 내리므로 호출부에서 `Keyboard.dismiss()`를 부르지 않는다. 아래 시트의 입력에 다시 포커스할 때는 `onExit`가 아니라 `onCloseStart`에서 해서 키보드와 아래 시트가 함께 올라오게 한다.
+- **머리글 고정:** "확인"이 머리글에 있는 시트는 `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다.
+- **대상이 있는 시트:** Stack에 `SHEET_ROUTE_SCREEN_OPTIONS`로 등록하고 시트가 route hook으로 id를 읽어 조회한다. `sheet.close(next?)`, `sheet.exit()`로 떠난다.
+- **배치:** `getSheetLayout`이 정한다(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백).
+
+## 아직 옮기지 않은 것
+
+아래 부품은 아직 HeroUI 원본 조합이 아니거나 옛 규칙이다. 옮길 때는 하나씩 전후 화면을 비교하고, 동등하지 않으면 유지한 뒤 이유를 남긴다.
+
+| 부품                 | 지금                                                        | 옮길 모양                                                    | 볼 것                  |
+| -------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | ---------------------- |
+| `TextButton`         | `PressableFeedback` 위 구현                                 | heroui `LinkButton`                                          | 밑줄·화살표            |
+| 닫기 버튼            | 화면별 구현                                                 | heroui `CloseButton`                                         | 터치 영역              |
+| `Button`             | `PressableFeedback` + `Spinner` 구현                        | heroui `Button` 위 얇은 확장. `isLoading`, 크기, `dark` 색만 | 전후 모양              |
+| `Input`, `TextArea`  | heroui 조합이 아닌 구현                                     | `TextField`, `Input`, `TextArea`, `FieldError` 조합          | 시트 키보드, 글꼴 배율 |
+| `PasswordInput`      | `features/auth/components/password-input.tsx`               | `InputGroup`                                                 |                        |
+| 친구 검색            | shared `Input`                                              | `SearchField`                                                |                        |
+| `AppToast`           | `toastProps` 묶음                                           | `Toast.Title`, `.Description`, `.Action` 조합                | 위치·색                |
+| `HintPopoverContent` | 앱의 자리 계산                                              | `Popover`의 `avoidCollisions`, `insets`                      | 뒤집기 동작            |
+| `FormField`          | 21개 파일이 사용                                            | RHF `Controller` 직접 사용 후 삭제                           |                        |
+| spacing prop         | `gap` 외 `p`, `pb` 등이 `className`과 섞임(`MemoList` 포함) | `className`                                                  | 전후 간격              |
+| `Flex`               | 외부에서 직접 사용                                          | `HStack`·`VStack` 내부 구현                                  |                        |
+
+`PremiumDialog`, `OfflineBanner`는 아직 `shared/ui`에 있다.
 
 ---
 

@@ -6,11 +6,12 @@
 
 ## 무엇을 테스트하나
 
-| 대상                           | 검증하는 것                                                                            |
-| ------------------------------ | -------------------------------------------------------------------------------------- |
-| Model·Policy                   | 상태 조합의 허용·거부, 입력 정규화, 날짜·수치 경계                                     |
-| Service·Mapper                 | method·path·query·body, 응답 스키마 검증, DTO→모델 변환, `AbortSignal` 전달, 오류 전달 |
-| 순수 util·view-model·공용 유틸 | 경계값과 분기별 입출력, 캐시 변환의 identity, 정렬·중복 제거·평탄화                    |
+| 대상                           | 검증하는 것                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| Model·Policy                   | 상태 조합의 허용·거부, 입력 정규화, 날짜·수치 경계                                      |
+| Service·Mapper                 | method·path·query·body, 응답 스키마 검증, DTO→모델 변환, `AbortSignal` 전달, 오류 전달  |
+| 순수 util·view-model·공용 유틸 | 경계값과 분기별 입출력, 캐시 변환의 identity, 정렬·중복 제거·평탄화                     |
+| 화면 동작(예외적으로)          | 저장 성공·실패·연결 끊김처럼 계약이 사용자 결과로 이어지는 흐름(`memo-editor.test.tsx`) |
 
 경계(오늘·자정·DST·언어, 라우트·푸시·위젯 URI 해석, 저장 JSON 버전)는 순수 함수 테스트로 고정한다([날짜 경계](../../../docs/conventions/dates.md#4-테스트할-경계)).
 
@@ -27,15 +28,17 @@
 
 ## 파일 위치
 
-| 대상                 | 위치와 이름                                          |
-| -------------------- | ---------------------------------------------------- |
-| Model·Policy         | `domains/{entity}.model.test.ts`                     |
-| Mapper               | `apis/{entity}.mapper.test.ts`                       |
-| Service              | `apis/{feature}.service.test.ts`                     |
-| 피처 순수 util       | `utils/{name}.test.ts`                               |
-| view-model           | `utils/view-models/{name}.view-model.test.ts`        |
-| 공용 유틸            | `shared/utils/{name}.test.ts`                        |
-| 테스트 데이터 팩토리 | `features/{feature}/__tests__/{entity}.factories.ts` |
+| 대상           | 위치와 이름                                            |
+| -------------- | ------------------------------------------------------ |
+| Model·Policy   | `domains/{entity}.model.test.ts`                       |
+| 폼 스키마      | `schemas/{name}-form.schema.test.ts`                   |
+| Mapper         | `apis/{entity}.mapper.test.ts`                         |
+| Service        | `apis/{feature}.service.test.ts`                       |
+| 피처 순수 util | `utils/{name}.test.ts`                                 |
+| view-model     | view-model 파일 옆 `{name}.view-model.test.ts`         |
+| 공용 유틸      | `shared/utils/{name}.test.ts`                          |
+| 테스트 fixture | `features/{feature}/__tests__/{entity}.fixtures.ts`    |
+| 테스트 DI 조립 | `features/{feature}/__tests__/{feature}.test-utils.ts` |
 
 테스트 파일은 구현 파일 옆에 둔다. `.test.ts`가 기본이고 JSX가 꼭 필요할 때만 `.test.tsx`다.
 
@@ -46,10 +49,47 @@
 - `jest.fn()`·spy는 호출 자체가 계약일 때(요청 path, 토큰 해제 순서)와 시간·UUID 같은 실제 경계에만 둔다.
 - 새 테스트의 모듈 `jest.mock`은 어댑터 경계 테스트(`expo-push-notification.gateway.test.ts`)에서만 쓴다. 공용 jest 설정이 처리하는 RN·Expo 런타임은 예외다.
 - 여러 프레임워크 mock을 조립하기 시작하면 순수 로직 추출을 먼저 검토한다.
+- `env.ts`를 파일별로 mock하지 않는다. `jest.setup.ts`가 앱 시작과 같은 경로(`expo-constants`)로 값을 준다.
 - 실제 타이머를 기다리지 않는다. 시간 값을 인자로 주거나 fake timer를 쓴다.
 - 테스트끼리 QueryClient, mock, 전역 상태를 공유하지 않는다.
-- 픽스처는 `createX(overrides)` 한 패턴이다. 필드가 늘면 한 곳만 고친다. Mapper 픽스처는 계약 스키마로 검증해 만든다.
 - 타임존 테스트는 윤년과 다른 국가(서울·LA) 경계 정도만 본다.
+
+## Fixture
+
+fixture는 `createX(overrides)` 한 패턴이다. 필드가 늘면 한 곳만 고치면 되고, 기본값을 스키마로 검증해 모델과 어긋난 fixture로 통과하는 테스트를 막는다.
+
+```ts
+// features/memo/__tests__/memo.fixtures.ts
+const DEFAULT_MEMO = memoSchema.parse({
+  id: 1,
+  content: '장보기',
+  isPinned: false,
+  createdAt: new Date('2026-11-06T00:00:00.000Z'),
+  updatedAt: new Date('2026-11-06T00:00:00.000Z'),
+});
+
+export function createMemo(overrides: Partial<Memo> = {}): Memo {
+  return { ...DEFAULT_MEMO, ...overrides };
+}
+```
+
+```ts
+// features/memo/domains/memo.model.test.ts
+describe('getMemoPreview', () => {
+  it('첫 줄을 제목으로, 나머지를 본문으로 나눈다', () => {
+    // Given
+    const memo = createMemo({ content: ' 장보기 \n우유\n계란' });
+
+    // When
+    const preview = MemoPolicy.getMemoPreview(memo);
+
+    // Then
+    expect(preview).toEqual({ title: '장보기', body: '우유\n계란' });
+  });
+});
+```
+
+Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`의 `memoListResponseSchema.parse({ … })`). 서버 계약이 바뀌면 테스트가 먼저 깨지게 하기 위해서다.
 
 ## Stub 우선 DI 테스트
 
@@ -64,7 +104,8 @@
 
 | 도구                                                    | 용도                                                         |
 | ------------------------------------------------------- | ------------------------------------------------------------ |
-| `features/{f}/__tests__/{f}.factories.ts`               | DTO·모델·포트 stub 팩토리(`createX(overrides)`)              |
+| `features/{f}/__tests__/{entity}.fixtures.ts`           | 모델 fixture(`createX(overrides)`)                           |
+| `features/{f}/__tests__/{f}.test-utils.ts`              | 그 feature 화면 테스트의 `di` 조립(`createMemoTestDi`)       |
 | `renderUi(ui, { di, queryClient })`                     | 실제 provider 위에 `di` 필드만 덮어써 렌더                   |
 | `createMockDIContainer(overrides)` + `StaticDIProvider` | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패 |
 | `createMemorySyncStorage()`                             | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                  |
@@ -91,7 +132,40 @@ await renderUi(<PushPermissionCard />, {
 });
 ```
 
-예시: `push-permission-card.test.tsx`(홈 안내 단계별 동작), `use-push-device-sync.test.tsx`(보고 시점·debounce). 계약이 사용자 결과로 이어지는 흐름이라 둔 것이다. 이 방식을 기본으로 늘리지 않는다.
+예시: `push-permission-card.test.tsx`(홈 안내 단계별 동작), `use-push-device-sync.test.tsx`(보고 시점·debounce), `memo-editor.test.tsx`(저장 실패·연결 끊김). 계약이 사용자 결과로 이어지는 흐름이라 둔 것이다. 이 방식을 기본으로 늘리지 않는다.
+
+## expo-router 공용 mock
+
+`jest.setup.ts`가 `expo-router`를 `src/shared/__tests__/mocks/expo-router.tsx`로 바꾸고, `beforeEach`의 `resetExpoRouterMock()`이 테스트마다 기본값으로 되돌린다. `clearMocks`는 호출 기록만 지워 `mockReturnValue`가 다음 테스트로 새기 때문이다. 테스트 파일에서 `jest.mock('expo-router', …)`를 새로 쓰지 않는다.
+
+```tsx
+// features/memo/components/memo-editor.test.tsx
+jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
+```
+
+- 제공하는 것: `router`(`push`, `replace`, `back`, `navigate`, `setParams`, `canGoBack`), `useLocalSearchParams`, `useIsFocused`, `useRouter`, `useNavigation`, `Redirect`, `Stack.Screen`, `Stack.Toolbar`.
+- `Stack.Toolbar.Button`은 Jest에서 그려지지 않는 네이티브 헤더 대신 접근성 이름이 있는 버튼으로 그려진다. `getByLabelText`로 누른다.
+- 여기에 없는 export(`useFocusEffect` 등)는 `undefined`다. 쓰는 화면을 테스트하려면 먼저 이 파일에 더한다.
+- 이동은 호출을 확인한다(`router.push`). 실제 내비게이션은 앱에서 확인한다.
+
+## Portal 시트 테스트
+
+시트는 Portal로 `OverlayProvider`의 PortalHost에 그려지고, `useOverlay`는 Provider 밖에서 오류를 던진다. 시트와 시트를 여는 컴포넌트는 앱과 같게 `OverlayProvider`로 감싼다. `useToday`를 쓰면 `LocalDateProvider`도 함께 둔다.
+
+```tsx
+// features/memo/components/memo-editor.test.tsx
+await renderUi(
+  <LocalDateProvider>
+    <OverlayProvider>
+      <Suspense fallback={null}>
+        <MemoEditor
+          toolbar={toolbar === 'stack' ? MemoEditor.StackToolbar : MemoEditor.PaneToolbar}
+          onLeave={onLeave}
+        />
+      </Suspense>
+    </OverlayProvider>
+  </LocalDateProvider>,
+```
 
 ## QueryClient와 종료
 
@@ -106,6 +180,17 @@ await renderUi(<PushPermissionCard />, {
 - `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다. 공식 문서: [Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/).
 - `renderUi`는 실제 HeroUI provider를 유지하고 config로 애니메이션만 끈다. 경로 이동은 `expo-router` 경계에서 대체한다. 실제 내비게이션은 앱에서 확인한다.
 - 시뮬레이터 영상은 동작과 레이아웃 증거일 뿐 60/120 FPS를 증명하지 않는다. 성능 수치는 Release 실기기에서 잰다.
+
+## 아직 옮기지 않은 것
+
+기존 테스트는 일괄 교체하지 않고 손대는 파일부터 옮긴다.
+
+| 규칙                       | 지금 코드 (2026-11-07 grep)                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| fixture 파일 이름          | `memo`만 `*.fixtures.ts`. 나머지 19개 파일은 `*.factories.ts`이고 스키마로 검증하지 않는 것이 있다 |
+| 모듈 `jest.mock`           | 51개 파일에 남아 있다. 그중 `jest.mock('expo-router', …)`가 13개 파일이다                          |
+| 폼 스키마와 계약 교차 검증 | 폼 스키마와 계약 스키마가 같은 값을 통과시키는지 mapper 테스트로 확인하는 곳이 아직 없다           |
+| view-model 테스트 위치     | `utils/view-models/` 안에 있다                                                                     |
 
 ## UI와 native 검증
 
