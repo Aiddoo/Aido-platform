@@ -1,6 +1,8 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 
 import { createHapticsStub } from './create-haptics-stub';
@@ -29,6 +31,9 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     deviceTimezoneService: new DeviceTimezoneService(
       createDeviceTimezoneRepository(createMemorySyncStorage()),
     ),
+    // 인증 입구가 항상 읽는 세대와 응답 슬롯이라 관심 없는 테스트에는 빈 값을 둔다
+    sessionEpoch: createSessionEpoch(),
+    notificationEntryStore: createNotificationEntryStore(),
     // 햅틱은 꾸밈이라 저장·실패 흐름 테스트마다 넣지 않아도 되게 아무것도 하지 않는 stub을 둔다
     haptics: createHapticsStub(),
     // 초안 id·멱등 키는 쓰는 화면이 많아 호출마다 다른 값을 주는 stub을 기본으로 둔다
@@ -84,6 +89,12 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get pushNotificationGateway() {
       return dependency('pushNotificationGateway');
+    },
+    get sessionEpoch() {
+      return dependency('sessionEpoch');
+    },
+    get notificationEntryStore() {
+      return dependency('notificationEntryStore');
     },
     get tokenStore() {
       return dependency('tokenStore');

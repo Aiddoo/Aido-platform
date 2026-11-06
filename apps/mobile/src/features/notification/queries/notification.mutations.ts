@@ -3,6 +3,7 @@ import {
   useLogger,
   useNotificationService,
   usePushDeviceService,
+  useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage, isApiError, isConnectivityError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -11,6 +12,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import {
+  invalidateNotifications,
   invalidatePushPermission,
   optimisticallyMarkNotificationsRead,
   restoreNotificationCache,
@@ -162,5 +164,36 @@ export function useRequestPushPermissionMutationOptions() {
         error: getErrorMessage(error),
       });
     },
+  });
+}
+
+/** 눌린 푸시를 기록하고 알림함을 읽음으로 맞춘다. 서버의 opened는 읽음도 함께 처리한다 */
+export function useRecordPushOpenedMutationOptions() {
+  const notificationService = useNotificationService();
+  const sessionEpoch = useSessionEpoch();
+  const logger = useLogger();
+  const queryClient = useQueryClient();
+
+  return mutationOptions({
+    mutationFn: async (notificationId: number) =>
+      unwrap(await notificationService.markOpened(notificationId)),
+    onMutate: (notificationId) => {
+      const epoch = sessionEpoch.current();
+      const isSameSession = () => sessionEpoch.current() === epoch;
+      optimisticallyMarkNotificationsRead(queryClient, notificationId, { canApply: isSameSession })
+        .then(() => (isSameSession() ? notificationService.syncBadgeCount() : undefined))
+        .catch((error) =>
+          logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
+            error: getErrorMessage(error),
+          }),
+        );
+      return { epoch };
+    },
+    onSuccess: (_opened, _notificationId, { epoch }) =>
+      sessionEpoch.current() === epoch ? invalidateNotifications(queryClient) : undefined,
+    onError: (error) =>
+      logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, {
+        error: getErrorMessage(error),
+      }),
   });
 }

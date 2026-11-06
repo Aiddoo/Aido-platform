@@ -2,11 +2,16 @@ import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { match } from 'ts-pattern';
 
+import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 import type {
   Notification,
   NotificationCategoryKey,
   NotificationType,
+  PendingNotificationResponse,
 } from '../schemas/notification.schema';
+
+/** 인증을 기다리는 응답을 보관하는 수명 */
+const PENDING_RESPONSE_LIFETIME_MS = 10 * 60_000;
 
 const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
   'WEEKLY_REPORT',
@@ -74,35 +79,28 @@ function getCategoryKey({ type }: Pick<Notification, 'type'>): NotificationCateg
 }
 
 type NotificationResponseAction =
-  | { status: 'process' }
-  | {
-      status: 'defer';
-      reason: 'auth-resolving' | 'authentication-required' | 'navigation-not-ready';
-    };
+  | { type: 'optOut' }
+  | { type: 'open' }
+  | { type: 'defer'; reason: 'auth-resolving' | 'authentication-required' }
+  | { type: 'drop'; reason: 'expired' };
 
-/** 푸시를 눌렀을 때 지금 처리할지 기다릴지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
-function getResponseAction({
-  authStatus,
-  actionIdentifier,
-  isNavigationReady = true,
-}: {
-  authStatus: AuthStatus;
-  actionIdentifier: string;
-  isNavigationReady?: boolean;
-}): NotificationResponseAction {
-  if (actionIdentifier === 'MARKETING_OPT_OUT') {
-    return { status: 'process' };
+/** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
+function getResponseAction(
+  response: Pick<PendingNotificationResponse, 'actionIdentifier' | 'receivedAt'>,
+  { authStatus, now }: { authStatus: AuthStatus; now: number },
+): NotificationResponseAction {
+  if (now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS) {
+    return { type: 'drop', reason: 'expired' };
   }
-  if (authStatus === 'loading' || authStatus === 'locked') {
-    return { status: 'defer', reason: 'auth-resolving' };
+  if (response.actionIdentifier === MARKETING_OPT_OUT_ACTION) {
+    return { type: 'optOut' };
   }
-  if (authStatus === 'unauthenticated') {
-    return { status: 'defer', reason: 'authentication-required' };
-  }
-  if (!isNavigationReady) {
-    return { status: 'defer', reason: 'navigation-not-ready' };
-  }
-  return { status: 'process' };
+  return match(authStatus)
+    .returnType<NotificationResponseAction>()
+    .with('loading', 'locked', () => ({ type: 'defer', reason: 'auth-resolving' }))
+    .with('unauthenticated', () => ({ type: 'defer', reason: 'authentication-required' }))
+    .with('authenticated', () => ({ type: 'open' }))
+    .exhaustive();
 }
 
 export const NotificationPolicy = {

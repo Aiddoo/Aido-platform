@@ -99,10 +99,6 @@ export const expoPushNotificationGateway: PushNotificationGateway = {
     );
     return () => subscription.remove();
   },
-  addResponseClearedListener: (listener) => {
-    const subscription = Notifications.addNotificationResponseClearedListener(listener);
-    return () => subscription.remove();
-  },
   getLastResponse: () => {
     const response = Notifications.getLastNotificationResponse();
     return response == null ? null : toPushNotificationResponse(response);

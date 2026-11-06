@@ -36,6 +36,7 @@ import { DeviceIdService } from '@src/features/notification/apis/device-id.servi
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
@@ -366,6 +367,7 @@ export function DIProvider({
       purchasesGateway: revenueCatPurchasesGateway,
       pushNotificationGateway: expoPushNotificationGateway,
       tokenStore,
+      sessionEpoch,
       sessionManager,
       sessionCleanupService,
       sessionRevocationService,
@@ -402,6 +404,7 @@ export function DIProvider({
       todoCommentService,
       todoCategoryService,
       notificationService,
+      notificationEntryStore: createNotificationEntryStore(),
       pushDeviceService,
       deviceTimezoneService,
       pushPromptRepository,

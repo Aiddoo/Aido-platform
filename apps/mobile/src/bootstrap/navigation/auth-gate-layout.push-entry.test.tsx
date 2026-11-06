@@ -2,15 +2,10 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import {
   createMarkReadResponseDto,
   createPushNotificationGatewayStub,
 } from '@src/features/notification/__tests__/notification.fixtures';
-import { useColdStartNotificationResponse } from '@src/features/notification/hooks/use-cold-start-notification-response';
-import { useNativeNotificationListeners } from '@src/features/notification/hooks/use-native-notification-listeners';
-import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
-import { useNotificationResponseProcessor } from '@src/features/notification/hooks/use-notification-response-processor';
 import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
   createHttpClientStub,
@@ -23,7 +18,7 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError, NetworkError } from '@src/shared/errors';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack, useFocusEffect } from 'expo-router';
@@ -90,28 +85,6 @@ const SECOND_TODO_RESPONSE: PushNotificationResponse = {
 };
 
 const READ_OK = ok(createMarkReadResponseDto());
-
-/** 지금 입구가 쓰는 훅들. NotificationProvider가 조립하던 그대로다 */
-function useCurrentPushEntry() {
-  const { status } = useAuth();
-  const { data: me } = useQuery({
-    ...useGetMeQueryOptions(),
-    enabled: status === 'authenticated',
-  });
-  const handleNotificationResponse = useNotificationResponseHandler();
-  const processResponse = useNotificationResponseProcessor({
-    authStatus: status,
-    accountId: status === 'authenticated' ? (me?.id ?? null) : null,
-    handleNotificationResponse,
-  });
-  useColdStartNotificationResponse({ processResponse });
-  useNativeNotificationListeners({ processResponse, handleForegroundNotification: noop });
-}
-
-function Layout() {
-  useCurrentPushEntry();
-  return <AuthGateLayout />;
-}
 
 interface SetupOptions {
   status: AuthState['status'];
@@ -205,7 +178,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
 
   const route = await renderRouter(
     {
-      _layout: Layout,
+      _layout: AuthGateLayout,
       index: RootIndex,
       loading: LoadingScreen,
       'invite/index': () => <Text>Invite</Text>,
@@ -411,7 +384,7 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     expect(gateway.getLastResponse()).toBeNull();
   });
 
-  it('연속 두 탭: 보류된 응답을 순서대로 모두 열어 뒤로 가면 앞 알림이 나온다', async () => {
+  it('연속 두 탭: 마지막 탭만 열고 뒤로 가면 피드다', async () => {
     // Given
     const { route, gateway } = await setup({ status: 'loading' });
     await act(async () => gateway.emitResponse(TODO_RESPONSE));
@@ -423,7 +396,25 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/43'));
     await act(() => router.back());
-    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+  });
+
+  it('포그라운드에서 연속 두 탭: 앞 탭의 읽음 응답이 늦어도 마지막 탭만 연다', async () => {
+    // Given
+    const firstRead = createPendingResponse(READ_OK);
+    const { route, gateway, httpClient, analytics } = await setup({ status: 'authenticated' });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    httpClient.patch.mockImplementationOnce(() => firstRead.response);
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+
+    // When
+    await act(async () => gateway.emitResponse(SECOND_TODO_RESPONSE));
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/43'));
+    await act(async () => firstRead.settle());
+
+    // Then
+    expect(route.getPathname()).toBe('/todo/43');
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
   it('모르는 타입: navigation이 없으면 알림 목록으로 간다', async () => {

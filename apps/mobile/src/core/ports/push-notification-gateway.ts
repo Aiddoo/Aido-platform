@@ -44,7 +44,6 @@ export interface PushNotificationGateway {
   addTokenListener(listener: () => void): () => void;
   addReceivedListener(listener: (notification: ReceivedPushNotification) => void): () => void;
   addResponseListener(listener: (response: PushNotificationResponse) => void): () => void;
-  addResponseClearedListener(listener: () => void): () => void;
   /** 앱이 꺼진 상태에서 알림을 눌러 시작했다면 그 응답. 없으면 null */
   getLastResponse(): PushNotificationResponse | null;
   /** 처리한 마지막 응답을 지운다. 지원하지 않는 환경에서는 throw할 수 있다 */

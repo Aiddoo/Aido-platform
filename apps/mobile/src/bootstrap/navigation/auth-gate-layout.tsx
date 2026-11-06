@@ -1,6 +1,7 @@
 import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useNotificationResponseObserver } from '@src/features/notification/hooks/use-notification-response-observer';
 import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use-install-referrer-capture';
 import { useInviteAppEntry } from '@src/features/social/invite/hooks/use-invite-app-entry';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
@@ -20,6 +21,7 @@ export function AuthGateLayout() {
   useWidgetAppEntry();
   useInstallReferrerCapture();
   useInviteAppEntry();
+  useNotificationResponseObserver();
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
   // `locked`(키체인 잠김)는 미인증이 아니라 "아직 모름"이다 — 로그인 화면으로 내려보내지 않는다.

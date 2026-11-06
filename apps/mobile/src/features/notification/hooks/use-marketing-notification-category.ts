@@ -4,6 +4,7 @@ import { i18n } from '@src/shared/i18n';
 import { useEffect } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 
 export function useMarketingNotificationCategory() {
   const logger = useLogger();
@@ -15,7 +16,7 @@ export function useMarketingNotificationCategory() {
         identifier: 'MARKETING',
         actions: [
           {
-            identifier: 'MARKETING_OPT_OUT',
+            identifier: MARKETING_OPT_OUT_ACTION,
             title: i18n.t('notification:actions.marketingOptOut'),
             opensAppToForeground: true,
           },

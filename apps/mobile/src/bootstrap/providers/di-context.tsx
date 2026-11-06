@@ -11,6 +11,7 @@ import type { PushNotificationGateway } from '@src/core/ports/push-notification-
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { SessionManager } from '@src/core/session/session-manager';
 import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import type { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
@@ -37,6 +38,7 @@ import type { ReportService } from '@src/features/insights/report/apis/report.se
 import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import type { PushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
@@ -79,6 +81,8 @@ export interface DIContainer {
   pushNotificationGateway: PushNotificationGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
+  /** 토큰이 지워질 때마다 올라가는 세션 세대 */
+  sessionEpoch: SessionEpoch;
   /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
   sessionManager: SessionManager;
   /** 세션이 끝난 뒤 기기에 남은 계정 데이터를 정리한다 */
@@ -119,6 +123,8 @@ export interface DIContainer {
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
+  /** 눌린 푸시 응답 슬롯 */
+  notificationEntryStore: NotificationEntryStore;
   pushDeviceService: PushDeviceService;
   deviceTimezoneService: DeviceTimezoneService;
   pushPromptRepository: PushPromptRepository;
@@ -166,6 +172,7 @@ export const useLocationGateway = () => useDI().locationGateway;
 export const useClipboard = () => useDI().clipboard;
 export const useNetworkStatus = () => useDI().networkStatus;
 export const useTokenStore = () => useDI().tokenStore;
+export const useSessionEpoch = () => useDI().sessionEpoch;
 export const useSessionCleanupService = () => useDI().sessionCleanupService;
 export const useSessionRevocationService = () => useDI().sessionRevocationService;
 export const useFeatureAttribution = () => useDI().featureAttribution;
@@ -204,6 +211,7 @@ export const useTodoService = () => useDI().todoService;
 export const useTodoCommentService = () => useDI().todoCommentService;
 export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
+export const useNotificationEntryStore = () => useDI().notificationEntryStore;
 export const usePushDeviceService = () => useDI().pushDeviceService;
 export const useDeviceTimezoneService = () => useDI().deviceTimezoneService;
 export const usePushPromptRepository = () => useDI().pushPromptRepository;

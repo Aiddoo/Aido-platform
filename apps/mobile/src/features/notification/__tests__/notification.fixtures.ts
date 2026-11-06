@@ -100,7 +100,6 @@ export const createPushNotificationGatewayStub = (
 ): PushNotificationGatewayStub => {
   const receivedListeners = new Set<(notification: ReceivedPushNotification) => void>();
   const responseListeners = new Set<(response: PushNotificationResponse) => void>();
-  const clearedListeners = new Set<() => void>();
   let lastResponse: PushNotificationResponse | null = null;
 
   const subscribe = <T>(listeners: Set<T>, listener: T) => {
@@ -122,15 +121,9 @@ export const createPushNotificationGatewayStub = (
     addResponseListener: jest.fn((listener: (response: PushNotificationResponse) => void) =>
       subscribe(responseListeners, listener),
     ),
-    addResponseClearedListener: jest.fn((listener: () => void) =>
-      subscribe(clearedListeners, listener),
-    ),
     getLastResponse: jest.fn(() => lastResponse),
     clearLastResponse: jest.fn(() => {
       lastResponse = null;
-      for (const listener of clearedListeners) {
-        listener();
-      }
     }),
     setCategory: jest.fn(async (_category: PushNotificationCategory) => {}),
     setBadgeCount: jest.fn(async (_count: number) => {}),
@@ -149,7 +142,7 @@ export const createPushNotificationGatewayStub = (
     setLastResponse: (response) => {
       lastResponse = response;
     },
-    getListenerCount: () => receivedListeners.size + responseListeners.size + clearedListeners.size,
+    getListenerCount: () => receivedListeners.size + responseListeners.size,
     ...overrides,
   };
 };

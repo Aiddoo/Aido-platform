@@ -47,6 +47,14 @@ export const pushNotificationPayloadSchema = pushNotificationDataSchema
   });
 export type PushNotificationPayload = z.infer<typeof pushNotificationPayloadSchema>;
 
+/** 슬롯에 보관하는 눌린 응답 */
+export interface PendingNotificationResponse {
+  id: string;
+  actionIdentifier: string;
+  data: PushNotificationPayload;
+  receivedAt: number;
+}
+
 const notificationSchema = z.object({
   id: z.number(),
   userId: z.string(),

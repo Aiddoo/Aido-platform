@@ -1,7 +1,11 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import type * as SessionEpochModule from '@src/core/session/session-epoch';
+import type * as NotificationFixturesModule from '@src/features/notification/__tests__/notification.fixtures';
+import type * as NotificationEntryStoreModule from '@src/features/notification/apis/notification-entry.store';
 import type * as InviteServiceStubModule from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
@@ -39,7 +43,29 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     resetData: jest.fn(),
   };
   const featureAttribution = { record: jest.fn(), consume: jest.fn(() => null) };
+  const { createPushNotificationGatewayStub } = jest.requireActual<
+    typeof NotificationFixturesModule
+  >('@src/features/notification/__tests__/notification.fixtures');
+  const { createNotificationEntryStore } = jest.requireActual<typeof NotificationEntryStoreModule>(
+    '@src/features/notification/apis/notification-entry.store',
+  );
+  const { createSessionEpoch } = jest.requireActual<typeof SessionEpochModule>(
+    '@src/core/session/session-epoch',
+  );
+  const pushNotificationGateway = createPushNotificationGatewayStub();
+  const notificationEntryStore = createNotificationEntryStore();
+  const sessionEpoch = createSessionEpoch();
+  const notificationService = {
+    markAsRead: jest.fn(),
+    markOpened: jest.fn(),
+    optOutMarketingPush: jest.fn(),
+    syncBadgeCount: jest.fn(),
+  };
   return {
+    usePushNotificationGateway: () => pushNotificationGateway,
+    useNotificationEntryStore: () => notificationEntryStore,
+    useSessionEpoch: () => sessionEpoch,
+    useNotificationService: () => notificationService,
     useErrorReporter: () => errorReporter,
     useWidgetNavigationRepository: () => repository,
     useInviteService: () => inviteService,
@@ -113,7 +139,9 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
     const [status, setStatus] = useState(initialStatus);
     return (
       <QueryClientProvider client={queryClient}>
-        <AuthContext value={{ status, setStatus }}>{children}</AuthContext>
+        <LocalDateProvider>
+          <AuthContext value={{ status, setStatus }}>{children}</AuthContext>
+        </LocalDateProvider>
       </QueryClientProvider>
     );
   }
