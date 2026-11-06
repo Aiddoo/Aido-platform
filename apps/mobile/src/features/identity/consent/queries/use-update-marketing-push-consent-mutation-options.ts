@@ -1,10 +1,9 @@
 import type { UpdateMarketingPushConsentInput } from '@aido/api';
 import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
+import type { Consent } from '@src/features/identity/auth/domains/auth.model';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import type { Consent } from '../domains/auth.model';
 
 export const useUpdateMarketingPushConsentMutationOptions = () => {
   const haptics = useHaptics();

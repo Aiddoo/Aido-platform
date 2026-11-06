@@ -1,11 +1,10 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
 import type { AiService } from '@src/features/ai/apis/ai.service';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
-
-import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
 
 export function getSuggestionsQueryOptions(aiService: AiService) {
   return queryOptions({

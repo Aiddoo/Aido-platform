@@ -1,8 +1,8 @@
-import { AiConsentNotice } from '@src/features/ai/components/ai-consent-notice';
-import { SuggestionsList } from '@src/features/ai/components/suggestions-list';
 import { invalidateAiSuggestions } from '@src/features/ai/queries/ai-cache';
+import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {

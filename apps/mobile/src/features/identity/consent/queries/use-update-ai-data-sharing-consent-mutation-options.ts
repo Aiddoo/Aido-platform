@@ -1,14 +1,13 @@
 import { AI_DATA_SHARING_CONSENT, type UpdateAiDataSharingConsentInput } from '@aido/api';
 import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
+import type { Consent } from '@src/features/identity/auth/domains/auth.model';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import type { Consent } from '../domains/auth.model';
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export const useUpdateAiDataSharingConsentMutationOptions = () => {

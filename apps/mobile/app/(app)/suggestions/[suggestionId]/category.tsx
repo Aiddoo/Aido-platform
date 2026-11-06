@@ -1,5 +1,5 @@
-import { SuggestionCategoryBottomSheet } from '@src/features/ai/components/suggestion-category-bottom-sheet';
-import { suggestionScreenParamsSchema } from '@src/features/ai/hooks/use-suggestion-screen-params';
+import { SuggestionCategoryBottomSheet } from '@src/features/assistant/suggestion/components/suggestion-category-bottom-sheet';
+import { suggestionScreenParamsSchema } from '@src/features/assistant/suggestion/hooks/use-suggestion-screen-params';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 

@@ -1,6 +1,6 @@
-import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
 import { WhatsNewReentryCard } from '@src/features/app-config/whats-new/components/whats-new-reentry-card';
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
+import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';

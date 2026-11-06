@@ -1,7 +1,6 @@
+import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
+import type { Consent } from '@src/features/identity/auth/domains/auth.model';
 import type { QueryClient } from '@tanstack/react-query';
-
-import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import type { Consent } from '../domains/auth.model';
 
 /**
  * 서버가 AI 데이터 제공 동의가 없다고 거절했을 때(AI_1311) 캐시를 서버 기준으로 맞춘다.

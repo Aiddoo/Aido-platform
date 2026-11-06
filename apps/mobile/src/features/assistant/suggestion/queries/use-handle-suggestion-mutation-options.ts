@@ -5,6 +5,8 @@ import {
   useHaptics,
   useLogger,
 } from '@src/bootstrap/providers/di-context';
+import { AI_LOG_EVENT } from '@src/features/ai/constants/ai-log-events';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
@@ -15,9 +17,6 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import { AI_LOG_EVENT } from '../constants/ai-log-events';
-import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
 
 interface HandleSuggestionParams {
   suggestionId: number;

@@ -1,4 +1,4 @@
-import { createParseMemoResponseDto } from '@src/features/ai/__tests__/parsed-memo.factories';
+import { createParseMemoResponseDto } from '@src/features/voice/__tests__/parsed-memo.factories';
 
 import {
   toApplyActionPlanRequest,

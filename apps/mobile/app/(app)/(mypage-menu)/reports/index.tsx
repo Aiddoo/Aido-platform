@@ -1,16 +1,19 @@
 import { reportTypeSchema } from '@aido/api';
-import { AiConsentNotice } from '@src/features/ai/components/ai-consent-notice';
-import { ReportCard } from '@src/features/ai/components/report-card';
-import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
-import { REPORT_TYPE_LABEL_KEYS } from '@src/features/ai/constants/report-type';
-import { getSampleReport, SAMPLE_REPORT_IDS } from '@src/features/ai/constants/sample-reports';
 import type { ReportType } from '@src/features/ai/domains/ai.model';
 import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
-import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
-import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
+import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
+import { ReportCard } from '@src/features/insights/report/components/report-card';
+import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
+import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report-type';
+import {
+  getSampleReport,
+  SAMPLE_REPORT_IDS,
+} from '@src/features/insights/report/constants/sample-reports';
+import { useGetReportStatusQueryOptions } from '@src/features/insights/report/queries/get-report-status-query-options';
+import { useGetReportsQueryOptions } from '@src/features/insights/report/queries/get-reports-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

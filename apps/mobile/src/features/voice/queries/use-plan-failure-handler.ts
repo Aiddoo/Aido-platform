@@ -7,7 +7,7 @@ import {
 import type { EntitlementFeature } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
-import { markAiDataSharingConsentRequired } from '@src/features/identity/auth/queries/auth-cache';
+import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';

@@ -9,7 +9,7 @@ import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai
 import { isNotChargedError } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
-import { markAiDataSharingConsentRequired } from '@src/features/identity/auth/queries/auth-cache';
+import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';

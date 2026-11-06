@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { AiService } from '@src/features/ai/apis/ai.service';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
@@ -11,7 +12,6 @@ import { ApiError } from '@src/shared/errors/api-error';
 import { err } from '@src/shared/errors/result';
 import { screen } from '@testing-library/react-native';
 
-import { AiService } from '../apis/ai.service';
 import { SuggestionEntry } from './suggestion-entry';
 
 const RETRY_LABEL = '맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요';

@@ -1,3 +1,4 @@
+import type { AiReport } from '@src/features/ai/domains/ai.model';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -11,7 +12,6 @@ import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 
 import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
-import type { AiReport } from '../domains/ai.model';
 
 const LOADING_CARD_COUNT = 3;
 

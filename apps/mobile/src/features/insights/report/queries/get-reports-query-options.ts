@@ -1,10 +1,9 @@
 import { useAiService } from '@src/bootstrap/providers/di-context';
 import type { AiService } from '@src/features/ai/apis/ai.service';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import type { GetAiReportsParams } from '@src/features/ai/domains/ai.model';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
-
-import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
-import type { GetAiReportsParams } from '../domains/ai.model';
 
 export function getReportsQueryOptions(
   aiService: AiService,

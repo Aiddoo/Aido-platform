@@ -1,6 +1,6 @@
 import { ConsentPolicy } from '@src/features/identity/auth/domains/auth.model';
-import { useGetConsentQueryOptions } from '@src/features/identity/auth/queries/get-consent-query-options';
-import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/auth/queries/use-update-ai-data-sharing-consent-mutation-options';
+import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
+import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-ai-data-sharing-consent-mutation-options';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';

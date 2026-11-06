@@ -1,6 +1,5 @@
+import type { AiReport, ReportType } from '@src/features/ai/domains/ai.model';
 import { t } from '@src/shared/i18n';
-
-import type { AiReport, ReportType } from '../domains/ai.model';
 
 export const SAMPLE_REPORT_IDS = {
   WEEKLY: 'sample-weekly',

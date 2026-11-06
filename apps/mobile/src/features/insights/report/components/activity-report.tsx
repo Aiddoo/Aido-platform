@@ -1,3 +1,4 @@
+import type { AiReport } from '@src/features/ai/domains/ai.model';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import { formatDateKeyRange, formatHourLabel, type TimeFormat } from '@src/shared/date/date-format';
 import { getDayOfWeekLabel } from '@src/shared/date/date-labels';
@@ -21,7 +22,6 @@ import { Chip, Separator, SkeletonGroup } from 'heroui-native';
 import type { ReactNode } from 'react';
 
 import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
-import type { AiReport } from '../domains/ai.model';
 
 interface ActivityReportProps {
   report: AiReport;
