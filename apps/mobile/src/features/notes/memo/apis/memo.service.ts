@@ -13,8 +13,6 @@ import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { MEMO_LOG_EVENT } from '@src/features/notes/memo/constants/memo-log-events';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { toVoicePlanFromParsedMemo } from '@src/features/voice/apis/voice-plan.mapper';
-import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
@@ -29,6 +27,7 @@ import {
   toMemoPage,
   toMemoRequest,
   toMemoResourceLimit,
+  toVoicePlanFromParsedMemo,
 } from './memo.mapper';
 
 // 서버 업체 체인 제한(AI_DEADLINE_PARSE_MEMO_MS 25초)보다 길게 기다려야 앱이 먼저 끊어 차감된 결과를 잃지 않는다
@@ -147,7 +146,7 @@ export class MemoService {
           parsed.data.featureQuota == null ? null : toFeatureQuota(parsed.data.featureQuota),
       });
     } catch (error) {
-      this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
+      this.#logger.error(MEMO_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
         method: 'parseMemo',
         zodError: error instanceof Error ? error.message : undefined,
       });

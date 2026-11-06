@@ -2,8 +2,6 @@ import {
   type ApplyAction as ApplyActionDto,
   type ApplyActionPlanRequest,
   actionPlanSchema,
-  type ParseMemoResponse,
-  type ParsedMemoTodo,
   type QuickPlanRequest,
   type VoiceNoteDigestRequest,
   PLANNED_ACTION_TYPES,
@@ -13,8 +11,6 @@ import {
 } from '@aido/api';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-series.mapper';
-import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -115,57 +111,6 @@ export function toQuickPlanResult(
     featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
     charged: dto.charged,
   };
-}
-
-/** 출시된 서버는 "이번 주말 X"를 토·일 + 그 주 일요일까지로 준다. 끝이 다음 날까지인 반복은 한 번으로 본다 */
-function isSingleWeekend(repeat: TodoRepeat, startDate: string): boolean {
-  return (
-    repeat.frequency === 'WEEKLY' &&
-    repeat.weekdays?.includes('SAT') === true &&
-    repeat.weekdays.includes('SUN') &&
-    repeat.end.type === 'UNTIL' &&
-    diffDateKeysInDays(startDate, repeat.end.date) <= 1
-  );
-}
-
-/** 1.15.0 서버는 `repeat`을 주고, 이전 서버는 요일+종료일(`recurrence`)만 준다 */
-function toParsedMemoRepeat({ repeat, recurrence, startDate }: ParsedMemoTodo): TodoRepeat | null {
-  const parsed: TodoRepeat | null =
-    repeat != null
-      ? toRepeat(repeat)
-      : recurrence == null
-        ? null
-        : {
-            frequency: 'WEEKLY',
-            interval: 1,
-            weekdays: recurrence.daysOfWeek,
-            end: { type: 'UNTIL', date: recurrence.endDate },
-          };
-  return parsed != null && isSingleWeekend(parsed, startDate) ? null : parsed;
-}
-
-export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse): VoicePlan {
-  const actions = dto.data.todos.map((todo, index): PlannedAction => ({
-    type: 'create-todo',
-    actionId: `memo-todo-${index}`,
-    title: todo.title,
-    startDate: todo.startDate,
-    endDate: todo.repeat != null || todo.recurrence != null ? null : todo.endDate,
-    scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
-    repeat: toParsedMemoRepeat(todo),
-    visibility: null,
-    items: todo.items,
-    categoryId: todo.categoryId,
-    // 1.15.0 이전 서버는 겹침을 판정하지 않는다
-    duplicateOfTodoId: todo.duplicateOfTodoId ?? null,
-  }));
-  return voicePlanSchema.parse({
-    planId,
-    source: 'memo',
-    sourceMemoId: null,
-    actions,
-    omittedTodoCount: dto.meta.omittedTodoCount ?? 0,
-  });
 }
 
 const toApplyAction = (action: PlannedAction, fallbackCategoryId: number): ApplyActionDto =>

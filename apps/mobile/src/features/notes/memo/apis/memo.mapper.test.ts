@@ -1,8 +1,14 @@
 import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
+import { createParseMemoResponseDto } from '@src/features/voice/__tests__/parsed-memo.factories';
 
 import { memoFormSchema } from '../schemas/memo-form.schema';
-import { toConvertMemoToTodosRequest, toMemoPage, toMemoRequest } from './memo.mapper';
+import {
+  toConvertMemoToTodosRequest,
+  toMemoPage,
+  toMemoRequest,
+  toVoicePlanFromParsedMemo,
+} from './memo.mapper';
 
 describe('메모 페이지 응답 매핑', () => {
   test('날짜를 변환하고 다음 페이지 커서를 화면 모델로 분리한다', () => {
@@ -151,5 +157,100 @@ describe('toConvertMemoToTodosRequest', () => {
 
   it('공유 계약을 넘는 제목은 전송 전에 거부한다', () => {
     expect(() => toConvertMemoToTodosRequest(createFormData({ title: 'a'.repeat(201) }))).toThrow();
+  });
+});
+
+describe('toVoicePlanFromParsedMemo', () => {
+  test('이번 주말(토·일 + 그 주 일요일까지)은 반복이 아니라 토요일 한 번이다', () => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({
+      ...todo,
+      startDate: '2026-11-07',
+      endDate: '2026-11-08',
+      isRecurring: true,
+      recurrence: { daysOfWeek: ['SAT', 'SUN'], endDate: '2026-11-08' },
+    }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({ startDate: '2026-11-07', endDate: null, repeat: null });
+  });
+
+  test('주말 반복의 끝이 더 뒤면 그대로 반복이다', () => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({
+      ...todo,
+      startDate: '2026-11-07',
+      isRecurring: true,
+      recurrence: { daysOfWeek: ['SAT', 'SUN'], endDate: '2026-11-29' },
+    }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({
+      repeat: { weekdays: ['SAT', 'SUN'], end: { type: 'UNTIL', date: '2026-11-29' } },
+    });
+  });
+
+  test('종일 일정은 시간을 비우고 반복에는 종료일을 두지 않는다', () => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({
+      ...todo,
+      isRecurring: true,
+      endDate: '2026-03-10',
+      recurrence: { daysOfWeek: ['MON'], endDate: '2026-04-01' },
+    }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.source).toBe('memo');
+    expect(plan.actions[0]).toMatchObject({ scheduledTime: null, endDate: null });
+  });
+
+  test.each([
+    { why: '서버가 겹침을 알려 주면 그 할 일을 가리킨다', duplicateOfTodoId: 41, expected: 41 },
+    {
+      why: '이전 서버처럼 칸이 없으면 겹치지 않은 것으로 본다',
+      duplicateOfTodoId: undefined,
+      expected: null,
+    },
+  ])('$why', ({ duplicateOfTodoId, expected }) => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({ ...todo, duplicateOfTodoId }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({ duplicateOfTodoId: expected });
+  });
+
+  test('서버가 준 repeat이 있으면 격주·매월도 그대로 쓴다', () => {
+    // Given
+    const dto = createParseMemoResponseDto();
+    dto.data.todos = dto.data.todos.map((todo) => ({
+      ...todo,
+      isRecurring: true,
+      recurrence: { daysOfWeek: ['MON'], endDate: '2026-04-01' },
+      repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } },
+    }));
+
+    // When
+    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+
+    // Then
+    expect(plan.actions[0]).toMatchObject({
+      repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } },
+    });
   });
 });
