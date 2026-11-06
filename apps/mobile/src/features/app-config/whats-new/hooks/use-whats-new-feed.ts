@@ -6,11 +6,17 @@ import { toInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
+import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { getNativeAppVersion } from '../apis/native-app-version';
+import {
+  parseReentryOpenedAt,
+  whatsNewReentryKey,
+  whatsNewSeenKey,
+} from '../apis/whats-new.repository';
 import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 
@@ -37,7 +43,6 @@ export function useWhatsNewFeed({
   const repository = useWhatsNewRepository();
   const now = toInstant(useMinuteNow().toISOString());
   const push = useSingleTap(router.push);
-  const [, refreshState] = useReducer((count: number) => count + 1, 0);
 
   const campaignRelease = config?.enabled
     ? WhatsNewPolicy.findReleaseByCampaign(RELEASES, config.campaignId)
@@ -55,6 +60,9 @@ export function useWhatsNewFeed({
         : null,
     [accountId, release],
   );
+  const storedIdentity = identity ?? { userId: '', campaignId: '' };
+  const [seenAt] = useStoredString(whatsNewSeenKey(storedIdentity));
+  const [reentryOpenedAt] = useStoredString(whatsNewReentryKey(storedIdentity));
   const canAutoOpen =
     isAuthenticated &&
     !isWeatherIntroductionPending &&
@@ -63,7 +71,7 @@ export function useWhatsNewFeed({
       config,
       user,
       appVersion,
-      hasSeen: repository.isSeen(identity),
+      hasSeen: seenAt != null,
     });
 
   useEffect(() => {
@@ -74,7 +82,6 @@ export function useWhatsNewFeed({
     const task = requestIdleCallback(() => {
       if (repository.claimSeen(identity, toInstant(new Date().toISOString()))) {
         push({ pathname: '/whats-new', params: { releaseId: release.id, source: 'auto' } });
-        refreshState();
       }
     });
 
@@ -82,8 +89,7 @@ export function useWhatsNewFeed({
   }, [canAutoOpen, identity, isStable, push, release, repository]);
 
   const isReentryVisible =
-    identity != null &&
-    WhatsNewPolicy.isReentryVisible(repository.getReentryOpenedAt(identity), now);
+    identity != null && WhatsNewPolicy.isReentryVisible(parseReentryOpenedAt(reentryOpenedAt), now);
 
   const openFromReentry = () => {
     if (release != null) {
@@ -94,7 +100,6 @@ export function useWhatsNewFeed({
   const dismissReentry = () => {
     if (identity != null) {
       repository.dismissReentry(identity);
-      refreshState();
     }
   };
 

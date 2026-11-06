@@ -22,7 +22,7 @@ import { createFeatureAttributionStore } from '@src/shared/analytics/feature-att
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { createWhatsNewRepository } from '../apis/whats-new.repository';
+import { createWhatsNewRepository, whatsNewSeenKey } from '../apis/whats-new.repository';
 import { RELEASE_1_15_0 } from '../constants/releases';
 import { Release1150Steps } from './release-1-15-0-steps';
 
@@ -33,7 +33,8 @@ async function renderSteps() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const analytics = createAnalyticsStub();
-  const repository = createWhatsNewRepository(createMemorySyncStorage());
+  const storage = createMemorySyncStorage();
+  const repository = createWhatsNewRepository(storage);
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   queryClient.setQueryData(
@@ -63,7 +64,7 @@ async function renderSteps() {
     },
   });
 
-  return { ...view, analytics, repository };
+  return { ...view, analytics, storage };
 }
 
 describe('Release1150Steps', () => {
@@ -74,7 +75,7 @@ describe('Release1150Steps', () => {
 
   it('처음 열면 노출을 남기고 이 계정의 캠페인을 본 것으로 기록한다', async () => {
     // When
-    const { analytics, repository } = await renderSteps();
+    const { analytics, storage } = await renderSteps();
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_impression', {
@@ -87,9 +88,9 @@ describe('Release1150Steps', () => {
       index: 0,
       source: 'auto',
     });
-    expect(repository.isSeen({ userId: ACCOUNT_ID, campaignId: RELEASE_1_15_0.campaignId })).toBe(
-      true,
-    );
+    expect(
+      storage.get(whatsNewSeenKey({ userId: ACCOUNT_ID, campaignId: RELEASE_1_15_0.campaignId })),
+    ).toBeDefined();
   });
 
   it('말로 할 일 CTA는 흐름을 닫고 마이크 안내와 함께 할 일 추가 시트를 연다', async () => {

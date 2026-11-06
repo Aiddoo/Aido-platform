@@ -1,31 +1,19 @@
-import type { EnumerableSyncStorage, ObservableSyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 
-export const createMemorySyncStorage = (): EnumerableSyncStorage & ObservableSyncStorage => {
+export const createMemorySyncStorage = (): EnumerableSyncStorage => {
   const values = new Map<string, string>();
-  const listeners = new Map<string, Set<() => void>>();
-  const notify = (key: string) => listeners.get(key)?.forEach((listener) => listener());
 
   return {
     get: (key) => values.get(key),
     set: (key, value) => {
       values.set(key, value);
-      notify(key);
     },
     remove: (key) => {
       values.delete(key);
-      notify(key);
     },
     keys: () => [...values.keys()],
     clear: () => {
-      const keys = [...values.keys()];
       values.clear();
-      keys.forEach(notify);
-    },
-    subscribe: (key, listener) => {
-      const keyListeners = listeners.get(key) ?? new Set();
-      keyListeners.add(listener);
-      listeners.set(key, keyListeners);
-      return () => keyListeners.delete(listener);
     },
   };
 };

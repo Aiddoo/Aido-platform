@@ -453,7 +453,7 @@ MemoList.Loading = function Loading() {
 | 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`                 | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
 | 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                                      | 비동기·재조회가 필요하면 Query                                      |
 | URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useRouteParams` 위의 튜플 훅(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
-| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`                      | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
+| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage` + `useStoredString`                                                   | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
 | 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                            | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
 | 폼 값                                                 | react-hook-form + `zodResolver`                                                     | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
 | 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                             | 나머지 전부                                                         |
@@ -877,7 +877,6 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | `Storage`                 | `get`·`set`·`remove`·`clear`                                                | `storage/secure-storage.ts`                      |
 | `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/mmkv-storage.ts`                        |
 | `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/mmkv-draft-storage.ts`                  |
-| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`                                                 | `storage/mmkv-storage.ts`                        |
 | `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard.gateway.ts`            |
 | `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location.gateway.ts`              |
 | `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases.gateway.ts`      |

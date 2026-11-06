@@ -7,13 +7,10 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import {
-  createMemorySyncStorage,
-  createAnalyticsStub,
-  createHttpClientStub,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import {
@@ -23,7 +20,6 @@ import {
 } from '../__tests__/notification.factories';
 import { PushDeviceService } from '../apis/push-device.service';
 import { createPushPromptRepository } from '../apis/push-prompt.repository';
-import { PushPromptService } from '../apis/push-prompt.service';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../domains/push-permission.model';
 import { PushPermissionCard } from './push-permission-card';
@@ -39,9 +35,6 @@ async function renderCard(
   const gateway = createPushNotificationGatewayStub({
     requestPermission: jest.fn(async () => createPushPermissionResponse({ status: 'granted' })),
   });
-  const pushPromptService = new PushPromptService(
-    createPushPromptRepository(createMemorySyncStorage()),
-  );
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -55,7 +48,7 @@ async function renderCard(
 
   await renderUi(<PushPermissionCard />, {
     di: {
-      pushPromptService,
+      pushPromptRepository: createPushPromptRepository(mmkvSyncStorage),
       pushDeviceService: new PushDeviceService(
         gateway,
         { get: async () => 'ios_device-123' },
@@ -70,10 +63,14 @@ async function renderCard(
     },
     queryClient,
   });
-  return { gateway, pushPromptService, userId: me.id };
+  return { gateway };
 }
 
 describe('PushPermissionCard — 홈 알림 안내', () => {
+  afterEach(() => {
+    mmkvSyncStorage.keys().forEach((key) => mmkvSyncStorage.remove(key));
+  });
+
   it('알림이 기기에서 허용되고 앱 설정도 켜져 있으면 보이지 않는다', async () => {
     // Given / When
     await renderCard({ status: 'GRANTED', canAskAgain: false });
@@ -117,16 +114,12 @@ describe('PushPermissionCard — 홈 알림 안내', () => {
 
   it('닫으면 14일 동안 숨긴다', async () => {
     // Given
-    const { pushPromptService, userId } = await renderCard({
-      status: 'DENIED',
-      canAskAgain: false,
-    });
+    await renderCard({ status: 'DENIED', canAskAgain: false });
 
     // When
     fireEvent.press(screen.getByLabelText('알림 안내 닫기'));
 
     // Then
-    expect(pushPromptService.isSnoozed(userId, new Date())).toBe(true);
     await waitFor(() => {
       expect(screen.queryByText('알림이 꺼져 있어요')).toBeNull();
     });

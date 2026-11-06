@@ -190,8 +190,8 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get deviceTimezoneService() {
       return dependency('deviceTimezoneService');
     },
-    get pushPromptService() {
-      return dependency('pushPromptService');
+    get pushPromptRepository() {
+      return dependency('pushPromptRepository');
     },
     get marketingPushPromptService() {
       return dependency('marketingPushPromptService');

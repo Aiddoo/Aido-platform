@@ -1,21 +1,25 @@
-import { usePushPromptService } from '@src/bootstrap/providers/di-context';
+import { usePushPromptRepository } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
+import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useSyncExternalStore } from 'react';
+
+import { parsePushPromptDismissedAt, pushPromptStorageKey } from '../apis/push-prompt.repository';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
 
 /** 홈 알림 안내를 닫았는지(14일 숨김)를 계정마다 읽고 닫는다 */
 export function usePushPermissionPrompt() {
-  const pushPromptService = usePushPromptService();
+  const pushPromptRepository = usePushPromptRepository();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-
-  const isSnoozed = useSyncExternalStore(
-    (listener) => pushPromptService.subscribe(me.id, listener),
-    () => pushPromptService.isSnoozed(me.id, new Date()),
-  );
+  const now = useMinuteNow();
+  const [saved] = useStoredString(pushPromptStorageKey(me.id));
 
   const snooze = () => {
-    pushPromptService.snooze(me.id, new Date());
+    pushPromptRepository.dismiss(me.id, new Date());
   };
 
-  return { isSnoozed, snooze };
+  return {
+    isSnoozed: PushPermissionPolicy.isPromptSnoozed(parsePushPromptDismissedAt(saved), now),
+    snooze,
+  };
 }

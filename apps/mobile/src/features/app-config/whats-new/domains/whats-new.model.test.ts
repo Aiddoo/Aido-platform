@@ -152,7 +152,7 @@ describe('WhatsNewPolicy.isReentryVisible', () => {
     ['2026-11-01T00:00:00.000Z', true],
     ['2026-11-14T23:59:59.000Z', true],
     ['2026-11-15T00:00:00.000Z', false],
-    ['2026-10-31T23:59:59.000Z', false],
+    ['2026-10-31T23:59:59.000Z', true],
   ])('%s에는 %s다', (now, expected) => {
     // When
     const result = WhatsNewPolicy.isReentryVisible(openedAt, toInstant(now));

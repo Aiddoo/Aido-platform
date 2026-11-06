@@ -5,11 +5,12 @@ import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
 import { Button, Image, InlineNotice, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import { type ComponentProps, useCallback, useSyncExternalStore } from 'react';
+import type { ComponentProps } from 'react';
 
+import { allDoneBannerStorageKey } from '../apis/all-done-banner.repository';
 import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 
@@ -34,18 +35,15 @@ export function InviteEntryBanner({
     ...useGetTodoSummaryQueryOptions({ date: todayKey, userId }),
     enabled: userId != null,
   });
-  // 닫은 날은 저장소가 원본이다. 저장소 변경을 구독해 다른 화면에서 닫아도 따라간다
-  const subscribeDismissal = useCallback(
-    (listener: () => void) =>
-      userId == null ? noop : inviteService.subscribeAllDoneBanner(userId, listener),
-    [inviteService, userId],
-  );
-  const isDismissed = useSyncExternalStore(
-    subscribeDismissal,
-    () => userId != null && inviteService.isAllDoneBannerDismissed(userId, todayKey),
-  );
+  // 닫은 날은 저장소가 원본이다. 저장 값을 구독해 다른 화면에서 닫아도 따라간다
+  const [dismissedOn] = useStoredString(allDoneBannerStorageKey(userId ?? ''));
 
-  if (!isInviteAvailable || userId == null || summary?.isComplete !== true || isDismissed) {
+  if (
+    !isInviteAvailable ||
+    userId == null ||
+    summary?.isComplete !== true ||
+    dismissedOn === todayKey
+  ) {
     return null;
   }
 

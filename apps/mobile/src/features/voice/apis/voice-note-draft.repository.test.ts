@@ -66,8 +66,7 @@ describe('VoiceNoteDraftRepository', () => {
   test('문장이 이어서 들어오면 마지막 상태로 한 번만 쓴다', () => {
     // Given
     const { storage, repository } = createRepository();
-    const writes: string[] = [];
-    storage.subscribe(`aido_voice_note_draft_v1:user-1:draft-1`, () => writes.push('write'));
+    const write = jest.spyOn(storage, 'set');
     const note = createVoiceNoteFixture();
 
     // When
@@ -80,7 +79,7 @@ describe('VoiceNoteDraftRepository', () => {
     jest.advanceTimersByTime(DEBOUNCE_MS);
 
     // Then
-    expect(writes).toHaveLength(1);
+    expect(write).toHaveBeenCalledTimes(1);
     expect(repository.find('user-1', note.draftId)?.sentences).toHaveLength(2);
   });
 

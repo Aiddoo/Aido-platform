@@ -201,15 +201,9 @@ export class InviteService {
     return ok(toInvitedFriendsPage(parsed.data));
   };
 
-  isAllDoneBannerDismissed = (userId: string, dateKey: string) =>
-    this.#allDoneBannerRepository.isDismissed(userId, dateKey);
-
   dismissAllDoneBanner = (userId: string, dateKey: string) => {
     this.#allDoneBannerRepository.dismiss(userId, dateKey);
   };
-
-  subscribeAllDoneBanner = (userId: string, listener: () => void) =>
-    this.#allDoneBannerRepository.subscribe(userId, listener);
 
   getCelebratedPawPrintCount = (userId: string) =>
     this.#pawPrintCelebrationRepository.getCelebratedCount(userId);

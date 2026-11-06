@@ -154,14 +154,9 @@ function canAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): bool
   );
 }
 
-/** 처음 본 시각에서 정해진 기간 안일 때만 보인다. 기기 시각이 뒤로 가 있으면 보이지 않는다 */
+/** 현재 시각은 분 단위 시계라 방금 연 시각보다 앞설 수 있다. 그래도 바로 보이도록 아래 경계를 두지 않는다 */
 function isReentryVisible(openedAt: Instant | null, now: Instant): boolean {
-  if (openedAt == null) {
-    return false;
-  }
-  const elapsedMs = diffMs(now, openedAt);
-
-  return elapsedMs >= 0 && elapsedMs < WHATS_NEW_REENTRY_WINDOW_MS;
+  return openedAt != null && diffMs(now, openedAt) < WHATS_NEW_REENTRY_WINDOW_MS;
 }
 
 /** 지난 출시까지 점으로 남기면 오래 사라지지 않으므로 최신 출시만 본다 */

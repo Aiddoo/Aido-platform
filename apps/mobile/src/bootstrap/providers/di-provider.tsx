@@ -40,7 +40,6 @@ import { MarketingPushPromptService } from '@src/features/notification/apis/mark
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
-import { PushPromptService } from '@src/features/notification/apis/push-prompt.service';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -283,7 +282,7 @@ export function DIProvider({
     const deviceTimezoneService = new DeviceTimezoneService(
       createDeviceTimezoneRepository(mmkvSyncStorage),
     );
-    const pushPromptService = new PushPromptService(createPushPromptRepository(mmkvSyncStorage));
+    const pushPromptRepository = createPushPromptRepository(mmkvSyncStorage);
     const marketingPushPromptService = new MarketingPushPromptService(
       createMarketingPushPromptRepository(mmkvSyncStorage),
     );
@@ -408,7 +407,7 @@ export function DIProvider({
       notificationService,
       pushDeviceService,
       deviceTimezoneService,
-      pushPromptService,
+      pushPromptRepository,
       marketingPushPromptService,
       todoNudgeService,
       coachmarkService,

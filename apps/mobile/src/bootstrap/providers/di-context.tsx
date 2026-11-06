@@ -39,7 +39,7 @@ import type { DeviceTimezoneService } from '@src/features/notification/apis/devi
 import type { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import type { PushPromptService } from '@src/features/notification/apis/push-prompt.service';
+import type { PushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -121,7 +121,7 @@ export interface DIContainer {
   notificationService: NotificationService;
   pushDeviceService: PushDeviceService;
   deviceTimezoneService: DeviceTimezoneService;
-  pushPromptService: PushPromptService;
+  pushPromptRepository: PushPromptRepository;
   marketingPushPromptService: MarketingPushPromptService;
   todoNudgeService: TodoNudgeService;
   coachmarkService: CoachmarkService;
@@ -206,7 +206,7 @@ export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
 export const usePushDeviceService = () => useDI().pushDeviceService;
 export const useDeviceTimezoneService = () => useDI().deviceTimezoneService;
-export const usePushPromptService = () => useDI().pushPromptService;
+export const usePushPromptRepository = () => useDI().pushPromptRepository;
 export const useMarketingPushPromptService = () => useDI().marketingPushPromptService;
 export const useTodoNudgeService = () => useDI().todoNudgeService;
 export const useCoachmarkService = () => useDI().coachmarkService;
