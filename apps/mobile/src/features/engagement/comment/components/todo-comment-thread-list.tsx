@@ -203,7 +203,7 @@ TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallba
   );
 };
 
-/** 한 묶음: 댓글과 그 답글. 연결선은 댓글 아바타 아래에서 마지막 답글(또는 더 보기)까지 이어진다 */
+/** 한 묶음: 댓글과 그 답글. 목록이 행을 재활용해도 메뉴·좋아요 상태가 다른 댓글로 넘어가지 않게 댓글마다 key로 새로 만든다. 연결선은 댓글 아바타 아래에서 마지막 답글(또는 더 보기)까지 이어진다 */
 function ThreadRow({
   thread,
   anchor,
@@ -217,9 +217,9 @@ function ThreadRow({
   return (
     <VStack pb={8} testID={`todo-comment-thread-${thread.comment.id}`}>
       <TodoCommentRailRow kind={{ type: 'comment', hasReplies }} isHighlighted={isAnchoredComment}>
-        <TodoCommentItem comment={thread.comment} />
+        <TodoCommentItem key={thread.comment.id} comment={thread.comment} />
       </TodoCommentRailRow>
-      {hasReplies && <TodoCommentReplies thread={thread} anchor={anchor} />}
+      {hasReplies && <TodoCommentReplies key={thread.comment.id} thread={thread} anchor={anchor} />}
     </VStack>
   );
 }

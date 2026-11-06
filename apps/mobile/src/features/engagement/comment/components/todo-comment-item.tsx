@@ -7,12 +7,10 @@ import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   MenuActionItem,
   BlockIcon,
@@ -67,11 +65,6 @@ import { useTodoCommentReveal } from './todo-comment-reveal';
 
 const MENU_TRIGGER_ICON_SIZE = 18;
 
-const NAME_MIN_VISIBLE_CHARS = 4;
-const NAME_MIN_WIDTH = 52;
-const NAME_SHRINK_PRIORITY = 1000;
-/** 이 폭보다 좁으면(좁은 pane의 답글) 이름 4글자·시간·⋯가 한 줄에 다 들어가지 않아 태그·시간을 둘째 줄로 내린다 */
-const SINGLE_AUTHOR_LINE_MIN_WIDTH = 220;
 const MENU_WIDTH = 200;
 const MORE_HIT_SLOP = 12;
 
@@ -156,52 +149,31 @@ function useCommentTimeLabel(comment: TodoComment) {
 }
 
 /**
- * 잘리는 순서는 이름(최소 4글자는 남김) → #태그다. 작성자 표시·시간·⋯는 줄지 않는다.
- * 가장 큰 글자이거나 줄이 좁으면 태그와 시간을 둘째 줄로 내리고 ⋯는 첫 줄 끝에 둔다.
+ * 이름·#태그·작성자 표시·시간은 한 줄에 놓다가 모자라면 줄바꿈하고, ⋯는 첫 줄 끝에 둔다.
+ * 폭을 재서 나누지 않아 첫 화면 뒤에 줄 수가 바뀌며 밀리지 않는다.
  */
 function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }) {
   const { t } = useTranslation('todoComment');
-  const { fontScale } = useFontScale();
-  const fontScaledSize = useFontScaledSize();
   const timeLabel = useCommentTimeLabel(comment);
   const tagLabel = TodoCommentPolicy.getUserTagLabel(comment);
   const name = comment.author?.name ?? t('list.unknownUser');
-  const [lineWidth, setLineWidth] = useState<number | null>(null);
-  const isNarrow = lineWidth != null && lineWidth < fontScaledSize(SINGLE_AUTHOR_LINE_MIN_WIDTH);
-  const isMetaOnSecondLine = fontScale === 'xlarge' || isNarrow;
 
   return (
-    <VStack
-      gap={1}
-      className="min-w-0"
-      onLayout={(event) => setLineWidth(event.nativeEvent.layout.width)}
-    >
-      <HStack gap={4} align="center" className="min-w-0">
-        <Text
-          size="b4"
-          weight="semibold"
-          maxLines={1}
-          ellipsizeMode="tail"
-          style={
-            // 4글자 이하 이름은 줄이지 않고, 긴 이름도 4글자 폭은 남긴 뒤 태그가 줄어든다
-            name.length > NAME_MIN_VISIBLE_CHARS
-              ? { flexShrink: NAME_SHRINK_PRIORITY, minWidth: fontScaledSize(NAME_MIN_WIDTH) }
-              : { flexShrink: 0 }
-          }
-        >
+    <HStack gap={4} align="start" className="min-w-0">
+      <HStack wrap="wrap" gap={4} align="center" className="min-w-0 flex-1 gap-y-px">
+        <Text size="b4" weight="semibold" maxLines={1} ellipsizeMode="tail" className="max-w-full">
           {name}
         </Text>
-        {!isMetaOnSecondLine && tagLabel != null && <Meta text={tagLabel} isShrinkable />}
+        {tagLabel != null && <Meta text={tagLabel} isShrinkable />}
         {TodoCommentPolicy.isByTodoOwner(comment) && (
           <Text size="e2" tone="brand" className="shrink-0">
             {t('list.authorBadge')}
           </Text>
         )}
-        {!isMetaOnSecondLine && <Meta text={`· ${timeLabel}`} />}
-        <Box className="ms-auto shrink-0">{menu}</Box>
+        <Meta text={`· ${timeLabel}`} />
       </HStack>
-      {isMetaOnSecondLine && <Meta text={compact([tagLabel, timeLabel]).join(' · ')} />}
-    </VStack>
+      <Box className="shrink-0">{menu}</Box>
+    </HStack>
   );
 }
 
