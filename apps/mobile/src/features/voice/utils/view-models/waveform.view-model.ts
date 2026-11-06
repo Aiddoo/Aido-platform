@@ -40,27 +40,29 @@ export function createSpeechLevels(
   });
 }
 
-/** 녹음 중 음량을 파형 칸으로 모은다. 이벤트 간격의 절반 칸이라 두 번에 한 칸을 만든다 */
-const SAMPLES_PER_BAR = 2;
-
 export interface LevelSampler {
   pendingMax: number;
-  pendingCount: number;
+  elapsedMs: number;
 }
 
 export function createLevelSampler(): LevelSampler {
-  return { pendingMax: 0, pendingCount: 0 };
+  'worklet';
+  return { pendingMax: 0, elapsedMs: 0 };
 }
 
-export function appendLevelSample(
+/** 프레임마다 음량을 모아 `intervalMs`마다 그동안의 최댓값으로 한 칸을 만든다. UI 스레드에서 부른다 */
+export function appendLevelFrame(
   sampler: LevelSampler,
   level: number,
+  frameMs: number,
+  intervalMs: number = WAVEFORM_BAR.intervalMs,
 ): { sampler: LevelSampler; bar: number | null } {
+  'worklet';
   const pendingMax = Math.max(sampler.pendingMax, level);
-  const pendingCount = sampler.pendingCount + 1;
-  return pendingCount >= SAMPLES_PER_BAR
-    ? { sampler: createLevelSampler(), bar: pendingMax }
-    : { sampler: { pendingMax, pendingCount }, bar: null };
+  const elapsedMs = sampler.elapsedMs + frameMs;
+  return elapsedMs >= intervalMs
+    ? { sampler: { pendingMax: 0, elapsedMs: elapsedMs % intervalMs }, bar: pendingMax }
+    : { sampler: { pendingMax, elapsedMs }, bar: null };
 }
 
 export function appendTimelineBar(
@@ -68,6 +70,7 @@ export function appendTimelineBar(
   bar: number,
   maxBars: number = WAVEFORM_BAR.maxLiveBars,
 ): readonly number[] {
+  'worklet';
   return bars.length < maxBars ? [...bars, bar] : [...bars.slice(1), bar];
 }
 
@@ -78,8 +81,8 @@ export function getFlagBarIndexes(sentences: readonly VoiceNoteSentence[]): numb
 }
 
 /**
- * 아직 칸이 없는 중요 표시에 지금 칸 번호를 매긴다. 녹음 중 칸은 음량 이벤트가 올 때 생겨(기기마다 간격이 다르고
- * 이어 듣기는 0칸에서 시작한다) 시간으로 계산하면 아직 없는 칸을 가리켜 깃발이 그려지지 않는다.
+ * 아직 칸이 없는 중요 표시에 지금 칸 번호를 매긴다. 녹음 중 칸은 듣는 동안에만 쌓여(이어 듣기는 0칸에서 시작한다)
+ * 시간으로 계산하면 아직 없는 칸을 가리켜 깃발이 그려지지 않는다.
  */
 export function withFlagBars(
   flagBars: ReadonlyMap<number, number>,

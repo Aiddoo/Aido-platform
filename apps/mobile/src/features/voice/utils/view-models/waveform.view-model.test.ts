@@ -2,7 +2,7 @@ import { range } from 'es-toolkit';
 
 import { createVoiceNoteSentence } from '../../__tests__/voice-note.factories';
 import {
-  appendLevelSample,
+  appendLevelFrame,
   appendTimelineBar,
   createLevelSampler,
   createSpeechLevels,
@@ -147,18 +147,46 @@ describe('resampleLevels', () => {
   });
 });
 
-describe('appendLevelSample', () => {
-  test('음량 두 번을 파형 한 칸으로 모으고 큰 값을 남긴다', () => {
-    // Given
-    const sampler = createLevelSampler();
-
+describe('appendLevelFrame', () => {
+  test('칸 간격이 차기 전에는 최댓값만 모으고 칸을 만들지 않는다', () => {
     // When
-    const first = appendLevelSample(sampler, 0.2);
-    const second = appendLevelSample(first.sampler, 0.7);
+    const { sampler, bar } = appendLevelFrame(createLevelSampler(), 0.5, 16, 100);
 
     // Then
-    expect(first.bar).toBeNull();
-    expect(second.bar).toBe(0.7);
+    expect(bar).toBeNull();
+    expect(sampler).toEqual({ pendingMax: 0.5, elapsedMs: 16 });
+  });
+
+  test('칸 간격이 차면 그동안의 최댓값으로 한 칸을 만들고 남은 시간을 넘긴다', () => {
+    // Given
+    const pending = { pendingMax: 0.8, elapsedMs: 90 };
+
+    // When
+    const { sampler, bar } = appendLevelFrame(pending, 0.2, 16, 100);
+
+    // Then
+    expect(bar).toBe(0.8);
+    expect(sampler).toEqual({ pendingMax: 0, elapsedMs: 6 });
+  });
+
+  test('음량이 0으로 내려가도 시간이 지나면 조용한 칸을 만든다', () => {
+    // Given
+    const pending = { pendingMax: 0, elapsedMs: 95 };
+
+    // When
+    const { bar } = appendLevelFrame(pending, 0, 16, 100);
+
+    // Then
+    expect(bar).toBe(0);
+  });
+
+  test('프레임이 크게 벌어져도 칸을 한 번에 하나만 만든다', () => {
+    // When
+    const { sampler, bar } = appendLevelFrame(createLevelSampler(), 0.4, 950, 100);
+
+    // Then
+    expect(bar).toBe(0.4);
+    expect(sampler.elapsedMs).toBe(50);
   });
 });
 

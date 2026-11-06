@@ -97,6 +97,7 @@ function VoiceNoteRecordScreen() {
   const clock = <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />;
   const waveform = (
     <RecognizerWaveform
+      level={recording.level}
       isActive={state.status === 'listening'}
       bookmarksMs={recording.bookmarksMs}
       className="self-stretch"

@@ -1,11 +1,9 @@
 import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
-import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
-import type { SpeechEvent } from '@src/core/ports/speech-recognizer';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
   cancelAnimation,
@@ -17,11 +15,11 @@ import {
 } from 'react-native-reanimated';
 
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { VOICE_NO_VOLUME_GAP_MS } from '../../constants/voice.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
+import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
 import {
-  appendLevelSample,
+  appendLevelFrame,
   appendTimelineBar,
   createLevelSampler,
   getTimelineLevel,
@@ -35,46 +33,39 @@ const FLAG = { poleWidth: 2, top: 2, width: 8, height: 8, heightShare: 0.2 } as 
 const IDLE_DASH_HEIGHT = 2;
 const RADIUS = WAVEFORM_BAR.width / 2;
 
-export interface LiveWaveform {
+interface LiveWaveform {
   /** 재생선 왼쪽에 그릴 최근 칸(오래된 순). 길이는 `WAVEFORM_BAR.maxLiveBars`를 넘지 않는다 */
   bars: SharedValue<readonly number[]>;
   barCount: SharedValue<number>;
   shift: SharedValue<number>;
-  pushLevel: (level: number) => void;
 }
 
-/** 녹음 중 파형의 값. 음량 이벤트(초당 20번)가 React 렌더를 일으키지 않는다 */
-export function useLiveWaveform(): LiveWaveform {
+/** 듣는 동안 UI 스레드에서 음량을 칸으로 모은다. JS가 바빠도 파형이 멈추지 않고 React가 다시 그리지 않는다 */
+function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWaveform {
   const reduceMotion = useReduceMotion();
   const bars = useSharedValue<readonly number[]>([]);
   const barCount = useSharedValue(0);
   const shift = useSharedValue(0);
-  const samplerRef = useRef<LevelSampler>(createLevelSampler());
-  const barsRef = useRef<readonly number[]>([]);
-  const barCountRef = useRef(0);
+  const sampler = useSharedValue<LevelSampler>(createLevelSampler());
 
   useEffect(() => () => cancelAnimation(shift), [shift]);
 
-  const pushLevel = useCallback(
-    (level: number) => {
-      const { sampler, bar } = appendLevelSample(samplerRef.current, level);
-      samplerRef.current = sampler;
-      if (bar == null) {
-        return;
-      }
-      barsRef.current = appendTimelineBar(barsRef.current, bar);
-      barCountRef.current += 1;
-      bars.set(barsRef.current);
-      barCount.set(barCountRef.current);
-      if (!reduceMotion) {
-        shift.set(STEP);
-        shift.set(withTiming(0, { duration: WAVEFORM_BAR.intervalMs, easing: Easing.linear }));
-      }
-    },
-    [barCount, bars, reduceMotion, shift],
-  );
+  useVoiceFrameCallback((frame) => {
+    'worklet';
+    const next = appendLevelFrame(sampler.get(), level.get(), frame.timeSincePreviousFrame ?? 0);
+    sampler.set(next.sampler);
+    if (next.bar == null) {
+      return;
+    }
+    bars.set(appendTimelineBar(bars.get(), next.bar));
+    barCount.set(barCount.get() + 1);
+    if (!reduceMotion) {
+      shift.set(STEP);
+      shift.set(withTiming(0, { duration: WAVEFORM_BAR.intervalMs, easing: Easing.linear }));
+    }
+  }, isActive);
 
-  return { bars, barCount, shift, pushLevel };
+  return { bars, barCount, shift };
 }
 
 function addRoundedBar(target: SkPathBuilder, left: number, top: number, height: number) {
@@ -124,7 +115,7 @@ interface WaveformTimelineProps extends Omit<ComponentProps<typeof Box>, 'childr
   flagIndexes: readonly number[];
 }
 
-export function WaveformTimeline({
+function WaveformTimeline({
   waveform,
   flagIndexes,
   className,
@@ -223,47 +214,25 @@ export function WaveformTimeline({
 }
 
 interface RecognizerWaveformProps extends Omit<WaveformTimelineProps, 'waveform' | 'flagIndexes'> {
+  /** 세션의 0..1 음량. 인식기가 말이 없으면 세션이 0으로 내린다 */
+  level: SharedValue<number>;
   isActive: boolean;
   bookmarksMs: readonly number[];
 }
 
-/** 인식기 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
 export function RecognizerWaveform({
+  level,
   isActive,
   bookmarksMs,
   ...timelineProps
 }: RecognizerWaveformProps) {
-  const speechRecognizer = useSpeechRecognizer();
-  const waveform = useLiveWaveform();
-  const { pushLevel, barCount } = waveform;
+  const waveform = useLiveWaveform(level, isActive);
+  const { barCount } = waveform;
   const [flagBars, setFlagBars] = useState<ReadonlyMap<number, number>>(new Map());
 
   useEffect(() => {
     setFlagBars((previous) => withFlagBars(previous, bookmarksMs, barCount.get() - 1));
   }, [barCount, bookmarksMs]);
-
-  useEffect(() => {
-    if (!isActive) {
-      return;
-    }
-    let lastVolumeAt = Date.now();
-    const unsubscribe = speechRecognizer.subscribe((event: SpeechEvent) => {
-      if (event.type === 'volume') {
-        lastVolumeAt = Date.now();
-        pushLevel(event.level);
-      }
-    });
-    const silenceTimer = setInterval(() => {
-      if (Date.now() - lastVolumeAt >= VOICE_NO_VOLUME_GAP_MS) {
-        pushLevel(0);
-      }
-    }, WAVEFORM_BAR.intervalMs / 2);
-
-    return () => {
-      unsubscribe();
-      clearInterval(silenceTimer);
-    };
-  }, [isActive, pushLevel, speechRecognizer]);
 
   return (
     <WaveformTimeline {...timelineProps} waveform={waveform} flagIndexes={[...flagBars.values()]} />
