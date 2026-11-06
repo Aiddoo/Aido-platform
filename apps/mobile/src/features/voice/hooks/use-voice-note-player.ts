@@ -174,7 +174,7 @@ export function useVoiceNotePlayer({
     uris: parts.map(({ uri }) => uri),
     updateIntervalMs: VOICE_NOTE_POSITION_INTERVAL_MS,
   });
-  // 끝까지 들었다는 기억과 잡아 둔 세션을 들고 있어 useMemo 캐시에 맡기지 않는다
+  // 끝까지 들었다는 기억을 들고 있어 useMemo 캐시에 맡기지 않는다
   const [player] = useState(() => createVoiceNotePlayer({ playlist, parts, durationMs, logger }));
 
   useEffect(() => player.attach(), [player]);
