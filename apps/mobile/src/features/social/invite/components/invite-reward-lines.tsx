@@ -1,6 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Text, VStack, WordWrapText } from '@src/shared/ui';
+import { Text, VStack, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { InviteRewardPolicy } from '../domains/invite-reward.model';
@@ -38,11 +39,11 @@ export function InviteRewardLines({ className, ...props }: ComponentProps<typeof
           accessible
           accessibilityLabel={`${line.label}, ${line.value}`}
         >
-          <Box className="self-start rounded-full bg-main/10 px-2.5 py-0.5">
+          <Chip variant="soft" className="rounded-full bg-main/10 px-2.5 py-0.5">
             <Text size="e1" weight="bold" tone="brand">
               {line.label}
             </Text>
-          </Box>
+          </Chip>
           <WordWrapText size="b3" shade={9}>
             {line.value}
           </WordWrapText>

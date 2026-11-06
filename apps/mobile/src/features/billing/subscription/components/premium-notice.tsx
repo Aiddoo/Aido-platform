@@ -2,8 +2,9 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, Spacing, Text } from '@src/shared/ui';
+import { HStack, Spacing, Text } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { Chip } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { PremiumAccessPolicy } from '../domains/premium-access.model';
@@ -48,11 +49,11 @@ function Ending() {
         className="rounded-2xl bg-main/10 px-3.5 py-3"
         testID="subscription-ending-notice"
       >
-        <Box className="rounded-full bg-main px-2 py-0.5">
+        <Chip className="self-center rounded-full bg-main px-2 py-0.5">
           <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
             {badge}
           </Text>
-        </Box>
+        </Chip>
         <Text
           size="b4"
           weight="semibold"

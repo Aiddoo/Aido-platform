@@ -1,9 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPrice } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Card, Radio, RadioGroup } from 'heroui-native';
+import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import {
@@ -61,11 +61,11 @@ function PlanOption({ plan, discountPercent }: PlanOptionProps) {
                   {label}
                 </Text>
                 {isAnnual && discountPercent > 0 && (
-                  <Box className="bg-main/10 px-2 py-0.5 rounded-full">
+                  <Chip variant="soft" className="self-center rounded-full bg-main/10 px-2 py-0.5">
                     <Text size="e2" weight="bold" className="text-main">
                       {t('plan.discount', { percent: discountPercent })}
                     </Text>
-                  </Box>
+                  </Chip>
                 )}
               </HStack>
               <Radio>
