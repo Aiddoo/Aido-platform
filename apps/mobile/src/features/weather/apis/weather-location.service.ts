@@ -91,7 +91,7 @@ export async function resolveLocation(
   }
 
   const previousLocated = previous?.status === 'located' ? previous : null;
-  const revision = WeatherLocationPolicy.readingRevision(previous);
+  const revision = WeatherLocationPolicy.getReadingRevision(previous);
   const coordinates = await readCoordinates(dependencies, signal);
   if (coordinates == null) {
     return previousLocated ?? { status: 'unavailable', revision };
@@ -116,6 +116,6 @@ export async function resolveLocation(
     registered,
     place: place.name,
     countryCode: place.countryCode,
-    revision: WeatherLocationPolicy.nextRevision(revision, registered, reportLocation),
+    revision: WeatherLocationPolicy.getNextRevision(revision, registered, reportLocation),
   };
 }

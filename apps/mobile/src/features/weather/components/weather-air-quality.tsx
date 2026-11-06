@@ -41,7 +41,7 @@ export function WeatherAirQuality() {
       <HStack gap={16} className="mt-1.5">
         {POLLUTANTS.map((pollutant) => {
           const value = airQuality[pollutant];
-          const grade = WeatherReportPolicy.airQualityGrade(
+          const grade = WeatherReportPolicy.getAirQualityGrade(
             WeatherDetailPolicy.pickPollutant(airQuality, pollutant),
           );
           const label = t(`airQuality.${pollutant}`);

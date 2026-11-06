@@ -21,12 +21,8 @@ import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanima
 import { match, P } from 'ts-pattern';
 
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
-import { type PlaceName, WeatherLocationPolicy } from '../domains/weather-location.model';
-import {
-  type DailyForecastEntry,
-  type TemperatureReading,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
+import type { PlaceName } from '../domains/weather-location.model';
+import { type DailyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
 import {
   isConnectionError,
   isLocationNotRegisteredError,
@@ -39,6 +35,13 @@ import {
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
 import { toWeatherReportFailedCause } from '../utils/analytics/weather-analytics';
+import { getForeignCountryName } from '../utils/country-name';
+import {
+  type TemperatureReading,
+  formatTemperature,
+  toDisplayTemperature,
+  toTemperatureReading,
+} from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
 import { WeatherLocationPrompt } from './weather-location-prompt';
 import { WeatherResult } from './weather-result';
@@ -112,13 +115,11 @@ export function WeatherHero() {
     select: WeatherReportSelect.hero,
   });
   const now = useMinuteNow();
-  const today = WeatherReportPolicy.todayForecast(data, now);
+  const today = WeatherReportPolicy.findTodayForecast(data, now);
   const place = location.status === 'ready' ? location.place : null;
   const countryCode = location.status === 'ready' ? location.countryCode : null;
   const title = place?.city ?? t('hero.currentLocation');
-  const reading = WeatherReportPolicy.temperatureReading(
-    WeatherReportPolicy.displayTemperature(data.current.temperature, unit),
-  );
+  const reading = toTemperatureReading(toDisplayTemperature(data.current.temperature, unit));
   const condition = t(WEATHER_CONDITION_LABEL_KEYS[data.current.condition]);
   const temperature = reading.isBelowZero
     ? t('hero.temperatureBelowZero', { count: reading.magnitude })
@@ -165,18 +166,14 @@ export function WeatherHero() {
           {today != null && (
             <Text weight="medium" align="center" tone="onSky" style={lineStyle}>
               {t('hero.highLow', {
-                high: WeatherReportPolicy.degrees(
-                  WeatherReportPolicy.displayTemperature(today.temperatureMax, unit),
-                ),
-                low: WeatherReportPolicy.degrees(
-                  WeatherReportPolicy.displayTemperature(today.temperatureMin, unit),
-                ),
+                high: formatTemperature(today.temperatureMax, unit),
+                low: formatTemperature(today.temperatureMin, unit),
               })}
             </Text>
           )}
         </VStack>
         {today?.restOfDay != null && <WeatherHero.RestOfDay restOfDay={today.restOfDay} />}
-        {WeatherReportPolicy.isStale(data, now) && (
+        {WeatherReportPolicy.isReportStale(data, now) && (
           <WeatherHero.StaleNotice fetchedAt={data.fetchedAt} now={now} />
         )}
       </VStack>
@@ -198,7 +195,7 @@ WeatherHero.LocationLabel = function LocationLabel({
   const { t, i18n } = useTranslation('weather');
   const [deviceLocale] = useLocales();
   const minimumFontScale = useMinimumFontScale('b4');
-  const country = WeatherLocationPolicy.foreignCountryName(
+  const country = getForeignCountryName(
     { countryCode },
     deviceLocale?.regionCode ?? null,
     i18n.language,

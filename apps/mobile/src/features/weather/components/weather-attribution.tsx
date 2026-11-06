@@ -13,16 +13,13 @@ import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
-import {
-  type AttributionBackground,
-  type AttributionInfo,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
+import type { AttributionInfo } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import { type AttributionBackground, toAttributionMark } from '../utils/attribution-mark';
 
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
 const LOGO_HEIGHT = 14;
@@ -109,7 +106,7 @@ WeatherAttribution.Mark = function Mark({
   const { scale } = useWindowDimensions();
   const [hasLogoFailed, setHasLogoFailed] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(LOGO_DEFAULT_ASPECT_RATIO);
-  const mark = WeatherReportPolicy.attributionMark(attribution, background, scale);
+  const mark = toAttributionMark(attribution, background, scale);
 
   const handleLoad = ({ source }: ImageLoadEventData) => {
     if (source.width > 0 && source.height > 0) {

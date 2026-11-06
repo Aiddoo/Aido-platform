@@ -81,5 +81,5 @@ export function useGetWeatherLocationQueryOptions() {
 /** 날씨 블록이 같은 리포트 캐시를 고르도록 위치 리비전을 돌려준다. 위치를 읽는 동안에도 0으로 바로 받는다. */
 export function useWeatherLocationRevision(): number {
   const { data } = useQuery(useGetWeatherLocationQueryOptions());
-  return WeatherLocationPolicy.readingRevision(data);
+  return WeatherLocationPolicy.getReadingRevision(data);
 }

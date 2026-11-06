@@ -29,5 +29,5 @@ function getHourlyPrecipitationOutlook(
 }
 
 export const WeatherNextHourPolicy = {
-  hourlyOutlook: getHourlyPrecipitationOutlook,
+  getHourlyPrecipitationOutlook,
 } as const;

@@ -1,7 +1,6 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { toDateKey } from '@src/shared/date/instant';
 import { round, sumBy } from 'es-toolkit';
-import { match } from 'ts-pattern';
 
 import {
   type AirPollutant,
@@ -23,13 +22,6 @@ function pickPollutant(
 export type VisibilityLevel = 'clear' | 'moderate' | 'poor';
 
 const METERS_PER_KILOMETER = 1000;
-/** 10km 미만은 소수 한 자리까지 보여 줘야 1.2km 같은 짙은 안개가 0km로 뭉개지지 않는다. */
-const VISIBILITY_DECIMAL_BELOW_KM = 10;
-
-function toVisibilityKilometers(meters: number): number {
-  const kilometers = meters / METERS_PER_KILOMETER;
-  return kilometers < VISIBILITY_DECIMAL_BELOW_KM ? round(kilometers, 1) : Math.round(kilometers);
-}
 
 function getVisibilityLevel(meters: number): VisibilityLevel {
   const kilometers = meters / METERS_PER_KILOMETER;
@@ -160,28 +152,16 @@ function getWindLevel(windSpeed: number): WindLevel {
   return windSpeed < STRONG_WIND_MPS ? 'breeze' : 'strong';
 }
 
-export type CloudCoverNote = 'overcast' | 'brokenDay' | 'brokenNight' | 'clearDay' | 'clearNight';
-
-function getCloudCoverNote(cloudCover: number, isDaylight: boolean): CloudCoverNote {
-  return match<CloudCoverLevel, CloudCoverNote>(getCloudCoverLevel(cloudCover))
-    .with('overcast', () => 'overcast')
-    .with('mostlyCloudy', () => (isDaylight ? 'brokenDay' : 'brokenNight'))
-    .with('mostlyClear', () => (isDaylight ? 'clearDay' : 'clearNight'))
-    .exhaustive();
-}
-
 export const WeatherDetailPolicy = {
   pickPollutant,
-  visibilityKilometers: toVisibilityKilometers,
-  visibilityLevel: getVisibilityLevel,
-  cloudCoverLevel: getCloudCoverLevel,
+  getVisibilityLevel,
+  getCloudCoverLevel,
   isMuggy,
-  sunscreenWindow: getSunscreenWindow,
-  nextDayPrecipitation: sumNextDayPrecipitation,
-  nextSunEvent: getNextSunEvent,
-  daylightDuration: getDaylightDuration,
-  dayAfter: findDayAfter,
-  nextFullMoon: findNextFullMoon,
-  windLevel: getWindLevel,
-  cloudCoverNote: getCloudCoverNote,
+  getSunscreenWindow,
+  sumNextDayPrecipitation,
+  getNextSunEvent,
+  getDaylightDuration,
+  findDayAfter,
+  findNextFullMoon,
+  getWindLevel,
 } as const;

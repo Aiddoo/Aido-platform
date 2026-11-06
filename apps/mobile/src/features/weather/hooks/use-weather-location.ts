@@ -27,7 +27,7 @@ export function useWeatherLocation(): WeatherLocation {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const { data, isError } = useQuery(useGetWeatherLocationQueryOptions());
-  const location = WeatherLocationPolicy.status(data, { hasFailed: isError });
+  const location = WeatherLocationPolicy.resolveLocationStatus(data, { hasFailed: isError });
 
   return match(location)
     .with({ status: 'needsPermission' }, () => ({
@@ -40,7 +40,7 @@ export function useWeatherLocation(): WeatherLocation {
           return null;
         });
         trackEvent('weather_location_permission_result', {
-          result: WeatherLocationPolicy.permissionResult(permission),
+          result: WeatherLocationPolicy.toPermissionResult(permission),
         });
         await refetchWeatherLocation(queryClient);
       },

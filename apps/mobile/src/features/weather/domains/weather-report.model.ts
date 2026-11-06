@@ -10,12 +10,10 @@ import {
   weatherNextHourPeriodSchema,
   WEATHER_BRIEFING_RULES,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
-  type WeatherCondition,
   type WeatherPrecipitationType,
 } from '@aido/api';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { hasSameWallClock, toDateKey } from '@src/shared/date/instant';
-import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import type { WeatherSceneInput } from './weather-scene.model';
@@ -81,14 +79,6 @@ const WET_HOUR_CHANCE = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
 
 export function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
   return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === type);
-}
-
-/** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
-function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
-  return match(type)
-    .with('SNOW', 'SLEET', 'HAIL', () => 'SNOW' as const)
-    .with('RAIN', 'MIXED', 'NONE', () => 'RAIN' as const)
-    .exhaustive();
 }
 
 export function isWetHour(hour: HourlyForecastEntry): boolean {
@@ -296,27 +286,6 @@ function getUvLevel(uvIndex: number): UvLevel {
 
 export type TemperatureUnit = 'celsius' | 'fahrenheit';
 
-/** 서버 값은 섭씨다. 반올림한 -0은 "-0°"로 보이지 않게 0으로 바꾼다. */
-function toDisplayTemperature(celsius: number, unit: TemperatureUnit): number {
-  const value = unit === 'fahrenheit' ? (celsius * 9) / 5 + 32 : celsius;
-  return Math.round(value) + 0;
-}
-
-const MINUS_SIGN = '−';
-
-/** 큰 기온은 영하 기호와 숫자를 따로 그린다. */
-export type TemperatureReading = { isBelowZero: boolean; magnitude: number };
-
-function toTemperatureReading(displayValue: number): TemperatureReading {
-  return { isBelowZero: displayValue < 0, magnitude: Math.abs(displayValue) };
-}
-
-/** 영하는 하이픈 대신 마이너스 기호(−)로 써서 숫자 폭과 읽기를 맞춘다. */
-function formatDegrees(displayValue: number): string {
-  const { isBelowZero, magnitude } = toTemperatureReading(displayValue);
-  return `${isBelowZero ? MINUS_SIGN : ''}${magnitude}°`;
-}
-
 function toSceneInput(
   report: Pick<WeatherReport, 'current' | 'location' | 'fetchedAt'>,
 ): WeatherSceneInput {
@@ -384,59 +353,23 @@ function isDifferentWallClock(
   return !hasSameWallClock(now, report.location.timezone, deviceTimeZone);
 }
 
-export type AttributionBackground = 'light' | 'dark';
-
-type AttributionMark = { kind: 'logo'; uri: string } | { kind: 'text'; serviceName: string };
-
-/**
- * 어두운 바탕(하늘 장면·다크 테마)에는 흰 글자 로고(dark), 밝은 바탕에는 검은 글자 로고(light)를 쓴다.
- * 화면 밀도에 맞는 해상도 하나를 골라 1x 크기로 그려야 늘어나 흐려지지 않는다.
- * 로고를 받지 못하면 서비스 이름을 글자로 표기해 출처 표기가 빠지지 않게 한다.
- */
-function getAttributionMark(
-  attribution: AttributionInfo,
-  background: AttributionBackground,
-  pixelRatio: number,
-): AttributionMark {
-  if (attribution.logo == null) {
-    return { kind: 'text', serviceName: attribution.serviceName };
-  }
-  return { kind: 'logo', uri: attribution.logo[background][toLogoDensity(pixelRatio)] };
-}
-
-/** 화면 밀도보다 낮은 해상도를 고르면 늘어나 흐려지므로 같거나 한 단계 높은 해상도를 고른다. */
-function toLogoDensity(pixelRatio: number): '1x' | '2x' | '3x' {
-  if (pixelRatio > 2) {
-    return '3x';
-  }
-  if (pixelRatio > 1) {
-    return '2x';
-  }
-  return '1x';
-}
-
 export const WeatherReportPolicy = {
-  attributionMark: getAttributionMark,
   isDifferentWallClock,
   isWetHour,
   isFrozenPrecipitation,
-  precipitationCondition: toPrecipitationCondition,
-  upcomingHours: selectUpcomingHours,
-  precipitationWindow: getPrecipitationWindow,
-  minutesUntil: getMinutesUntil,
-  isStale: isReportStale,
+  selectUpcomingHours,
+  getPrecipitationWindow,
+  getMinutesUntil,
+  isReportStale,
   isNowcastExpired,
-  todayKey: getTodayKey,
-  todayForecast: findTodayForecast,
-  activeAlerts: selectActiveAlerts,
+  getTodayKey,
+  findTodayForecast,
+  selectActiveAlerts,
   isAlertInEffect,
-  sunEvents: getSunEvents,
-  compassDirection: toCompassDirection,
-  feelsLike: compareFeelsLike,
-  airQualityGrade: getAirQualityGrade,
-  uvLevel: getUvLevel,
-  displayTemperature: toDisplayTemperature,
-  temperatureReading: toTemperatureReading,
-  degrees: formatDegrees,
-  sceneInput: toSceneInput,
+  getSunEvents,
+  toCompassDirection,
+  compareFeelsLike,
+  getAirQualityGrade,
+  getUvLevel,
+  toSceneInput,
 } as const;

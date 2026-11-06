@@ -71,7 +71,7 @@ export function NextHourPrecipitation() {
     return <NextHourPrecipitation.Empty />;
   }
   if (data.nextHour == null) {
-    const outlook = WeatherNextHourPolicy.hourlyOutlook(data.hourly, now);
+    const outlook = WeatherNextHourPolicy.getHourlyPrecipitationOutlook(data.hourly, now);
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
@@ -84,7 +84,7 @@ export function NextHourPrecipitation() {
     );
   }
 
-  const window = WeatherReportPolicy.precipitationWindow(data, now);
+  const window = WeatherReportPolicy.getPrecipitationWindow(data, now);
   const { headline, detail } = toMessage(window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
 

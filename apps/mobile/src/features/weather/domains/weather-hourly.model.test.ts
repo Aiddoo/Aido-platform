@@ -24,12 +24,12 @@ function createHours(rows: readonly Partial<WeatherHourlyForecast>[]) {
 const DRY_CLOUDY = { condition: 'CLOUDY', precipitationChance: 10 } as const;
 const RAIN = { condition: 'RAIN', precipitationChance: 80, precipitationType: 'RAIN' } as const;
 
-describe('WeatherHourlyPolicy.summary', () => {
+describe('WeatherHourlyPolicy.summarizeHourly', () => {
   it('지금 비가 오면 처음 그치는 시간을 그침 시각으로 반환한다', () => {
     // Given 지금부터 2시간 비, 그 뒤 갬 When 요약하면 Then 오후 5시에 그친다
     const report = createWeatherReport({ hourly: createHours([RAIN, RAIN, DRY_CLOUDY]) });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toEqual({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
       endsAt: new Date('2026-11-02T08:00:00.000Z'),
@@ -47,7 +47,7 @@ describe('WeatherHourlyPolicy.summary', () => {
       current: { ...base.current, condition: 'RAIN', precipitationIntensity: 4.5 },
     } as const;
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toMatchObject({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toMatchObject({
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
       endsAt: new Date('2026-11-02T07:00:00.000Z'),
@@ -58,7 +58,7 @@ describe('WeatherHourlyPolicy.summary', () => {
     // Given 남은 시간 내내 비 When 요약하면 Then endsAt은 null이다
     const report = createWeatherReport({ hourly: createHours([RAIN, RAIN]) });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toMatchObject({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toMatchObject({
       kind: 'precipitationOngoing',
       endsAt: null,
     });
@@ -70,7 +70,7 @@ describe('WeatherHourlyPolicy.summary', () => {
       hourly: createHours([...range(10).map(() => DRY_CLOUDY), RAIN]),
     });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toEqual({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'precipitationUpcoming',
       precipitationType: 'RAIN',
       startsAt: new Date('2026-11-02T16:00:00.000Z'),
@@ -85,7 +85,7 @@ describe('WeatherHourlyPolicy.summary', () => {
       hourly: createHours([DRY_CLOUDY, { condition: 'RAIN', precipitationChance: 30 }]),
     });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).not.toMatchObject({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).not.toMatchObject({
       kind: 'precipitationUpcoming',
     });
   });
@@ -97,7 +97,7 @@ describe('WeatherHourlyPolicy.summary', () => {
       hourly: createHours([clear, DRY_CLOUDY, clear, DRY_CLOUDY, DRY_CLOUDY]),
     });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toEqual({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'skyChange',
       from: 'clear',
       to: 'cloudy',
@@ -117,7 +117,7 @@ describe('WeatherHourlyPolicy.summary', () => {
       ]),
     });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toEqual({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'steady',
       sky: 'cloudy',
       peak: { extreme: 'highest', at: new Date('2026-11-02T07:00:00.000Z'), temperature: 16 },
@@ -133,7 +133,7 @@ describe('WeatherHourlyPolicy.summary', () => {
       ]),
     });
 
-    expect(WeatherHourlyPolicy.summary(report, NOW)).toEqual({
+    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
       kind: 'steady',
       sky: 'cloudy',
       peak: null,
@@ -144,47 +144,8 @@ describe('WeatherHourlyPolicy.summary', () => {
     // Given 모두 지난 예보 When 요약하면 Then null이다
     const report = createWeatherReport({ hourly: createHours([DRY_CLOUDY]) });
 
-    expect(WeatherHourlyPolicy.summary(report, new Date('2026-11-02T08:00:00.000Z'))).toBeNull();
-  });
-});
-
-describe('WeatherHourlyPolicy.timeline', () => {
-  it('범위 안의 일몰을 시각 순서로 끼워 넣고 지난 일출은 뺀다', () => {
-    // Given 오후 3~6시 예보와 오후 5시 28분 일몰 When 타임라인을 만들면 Then 5시 칸 뒤에 일몰이 온다
-    const report = createWeatherReport({
-      hourly: createHours([DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY]),
-    });
-
-    const kinds = WeatherHourlyPolicy.timeline(report, NOW).map((item) =>
-      item.kind === 'hour' ? `hour:${item.isNow}` : item.kind,
-    );
-
-    expect(kinds).toEqual(['hour:true', 'hour:false', 'hour:false', 'sunset', 'hour:false']);
-  });
-
-  it('일몰이 정각과 같은 시각이면 시간 칸이 일몰보다 먼저 온다', () => {
-    // Given 오후 5시 정각 일몰
-    const base = createWeatherReport({
-      hourly: createHours([DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY]),
-    });
-    const report = {
-      ...base,
-      daily: base.daily.map((day) => ({ ...day, sunset: new Date('2026-11-02T08:00:00.000Z') })),
-    };
-
-    // When
-    const kinds = WeatherHourlyPolicy.timeline(report, NOW).map((item) =>
-      item.kind === 'hour' ? `hour:${item.isNow}` : item.kind,
-    );
-
-    // Then
-    expect(kinds).toEqual(['hour:true', 'hour:false', 'hour:false', 'sunset', 'hour:false']);
-  });
-
-  it('남은 시간이 없으면 빈 목록을 반환한다', () => {
-    // Given 시간별 예보 없음 When 타임라인을 만들면 Then 빈 목록이다
-    const report = createWeatherReport({ hourly: [] });
-
-    expect(WeatherHourlyPolicy.timeline(report, NOW)).toEqual([]);
+    expect(
+      WeatherHourlyPolicy.summarizeHourly(report, new Date('2026-11-02T08:00:00.000Z')),
+    ).toBeNull();
   });
 });

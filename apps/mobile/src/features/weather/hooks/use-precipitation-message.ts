@@ -67,7 +67,7 @@ export function usePrecipitationMessage({
       }))
       .with({ kind: 'upcoming', precision: 'minute' }, (wet) => ({
         headline: t('nextHour.startsInMinutes', {
-          minutes: WeatherReportPolicy.minutesUntil(wet.startsAt, now),
+          minutes: WeatherReportPolicy.getMinutesUntil(wet.startsAt, now),
           subject: toSubject(wet.precipitationType),
         }),
         detail: describeEnd(wet),

@@ -7,8 +7,8 @@ import { Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import type { RescheduleOption } from '../../domains/weather-briefing.model';
-import { WeatherReportPolicy } from '../../domains/weather-report.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
+import { formatTemperature } from '../../utils/weather-temperature';
 
 interface WeatherRescheduleTimeInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,
@@ -61,9 +61,7 @@ function RescheduleTimeOption({ option, reason, timeFormat, ...props }: Reschedu
   const description =
     reason === 'heat'
       ? t('reschedule.heat.option', {
-          temperature: WeatherReportPolicy.degrees(
-            WeatherReportPolicy.displayTemperature(option.apparentTemperature, unit),
-          ),
+          temperature: formatTemperature(option.apparentTemperature, unit),
         })
       : t('reschedule.option', { chance: option.precipitationChance });
 

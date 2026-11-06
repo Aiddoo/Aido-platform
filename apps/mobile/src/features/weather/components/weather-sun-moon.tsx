@@ -34,19 +34,19 @@ export function WeatherSunMoon() {
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const localTime = useLocalTimeLabel(data.location.timezone, now);
   const formatTime = (date: Date) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const today = WeatherReportPolicy.todayForecast(data, now);
+  const today = WeatherReportPolicy.findTodayForecast(data, now);
   if (today == null) {
     return null;
   }
-  const todayKey = WeatherReportPolicy.todayKey(data, now);
-  const sunEvents = WeatherReportPolicy.sunEvents(today, data.current.isDaylight);
-  const nextEvent = WeatherDetailPolicy.nextSunEvent(
+  const todayKey = WeatherReportPolicy.getTodayKey(data, now);
+  const sunEvents = WeatherReportPolicy.getSunEvents(today, data.current.isDaylight);
+  const nextEvent = WeatherDetailPolicy.getNextSunEvent(
     today,
-    WeatherDetailPolicy.dayAfter(data.daily, todayKey),
+    WeatherDetailPolicy.findDayAfter(data.daily, todayKey),
     now,
   );
-  const daylight = WeatherDetailPolicy.daylightDuration(today);
-  const nextFullMoon = WeatherDetailPolicy.nextFullMoon(data.daily, todayKey);
+  const daylight = WeatherDetailPolicy.getDaylightDuration(today);
+  const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(data.daily, todayKey);
   const headline = match(sunEvents)
     .with({ kind: 'polarDay' }, () => ({ value: t('sunMoon.polarDay'), label: null }))
     .with({ kind: 'polarNight' }, () => ({ value: t('sunMoon.polarNight'), label: null }))

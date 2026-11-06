@@ -16,7 +16,7 @@ import { weatherReportQueryParamsSchema } from '../schemas/weather-report-query-
  */
 export async function refetchWeather(queryClient: QueryClient) {
   const readRevision = () =>
-    WeatherLocationPolicy.readingRevision(
+    WeatherLocationPolicy.getReadingRevision(
       queryClient.getQueryData<LocationReading>(WEATHER_QUERY_KEYS.location()),
     );
   const before = readRevision();

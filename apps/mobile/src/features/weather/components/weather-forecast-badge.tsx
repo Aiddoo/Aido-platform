@@ -7,15 +7,12 @@ import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import {
-  type CurrentWeather,
-  type WeatherReport,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
+import { type CurrentWeather, type WeatherReport } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
 import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
+import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
 
 const selectBadge = (report: WeatherReport) => ({
@@ -61,7 +58,7 @@ WeatherForecastBadge.Item = function Item({
   const { t } = useTranslation('weather');
   const push = useSingleTap(router.push);
   const unit = useTemperatureUnit();
-  const temperature = WeatherReportPolicy.displayTemperature(current.temperature, unit);
+  const temperature = toDisplayTemperature(current.temperature, unit);
 
   return (
     <PressableFeedback
@@ -83,7 +80,7 @@ WeatherForecastBadge.Item = function Item({
           colorClassName="text-gray-6"
         />
         <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
-          {WeatherReportPolicy.degrees(temperature)}
+          {formatDegrees(temperature)}
         </Text>
       </HStack>
     </PressableFeedback>

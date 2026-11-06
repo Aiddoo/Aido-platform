@@ -40,7 +40,7 @@ import { z } from 'zod';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
-import { type HourlyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
   useGetWeatherReportQueryOptions,
@@ -55,6 +55,7 @@ import {
   toBriefingState,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
+import { formatTemperature } from '../utils/weather-temperature';
 import { WeatherBriefingChip } from './weather-briefing-chip';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
@@ -110,10 +111,10 @@ export function WeatherBriefing() {
     return <WeatherBriefing.Empty />;
   }
 
-  const briefing = WeatherBriefingPolicy.briefing(
+  const briefing = WeatherBriefingPolicy.toWeatherBriefing(
     report,
     todoList.todos.map((todo) =>
-      WeatherBriefingPolicy.briefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
+      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
     ),
     { now, timeZone: deviceTimeZone },
   );
@@ -151,8 +152,7 @@ WeatherBriefing.Content = function Content({
     timeZone: dateFormat.timeZone,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatHour: (date) => formatInstantHour(date, timeFormat, dateFormat),
-    formatDegrees: (celsius) =>
-      WeatherReportPolicy.degrees(WeatherReportPolicy.displayTemperature(celsius, unit)),
+    formatDegrees: (celsius) => formatTemperature(celsius, unit),
     formatChance: (percent) => t('details.percentValue', { value: percent }),
   });
   const visibleRows = view.rows.slice(0, VISIBLE_TODO_LIMIT);

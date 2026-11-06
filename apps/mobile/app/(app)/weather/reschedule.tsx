@@ -113,14 +113,14 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
   const now = useMinuteNow();
   const copy = RESCHEDULE_COPY_KEYS[reason];
   const todosById = keyBy(todoList.todos, (todo) => todo.id);
-  const affectedTodos = WeatherBriefingPolicy.affectedTodos(
+  const affectedTodos = WeatherBriefingPolicy.getAffectedTodos(
     report.hourly,
     todoIds.flatMap((todoId) => {
       const todo = todosById[todoId];
       return todo == null
         ? []
         : [
-            WeatherBriefingPolicy.briefingTodo(todo, {
+            WeatherBriefingPolicy.toBriefingTodo(todo, {
               date: todayKey,
               timeZone: getDeviceTimezone(),
             }),
@@ -154,7 +154,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
       {reason === 'rain' && (
         <>
           <WeatherRescheduleTimeline
-            hours={WeatherReportPolicy.upcomingHours(report.hourly, now)}
+            hours={WeatherReportPolicy.selectUpcomingHours(report.hourly, now)}
           />
           <Spacing size={16} />
         </>
@@ -164,7 +164,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
           {index > 0 && <Separator className="my-3" />}
           <WeatherRescheduleTodo
             todo={todo}
-            options={WeatherBriefingPolicy.rescheduleOptions(report.hourly, todo, {
+            options={WeatherBriefingPolicy.getRescheduleOptions(report.hourly, todo, {
               now,
               timeZone: getDeviceTimezone(),
               reason,

@@ -464,9 +464,9 @@ function getSuggestedStartAt(range: HourRange, now: Date): Date | null {
 }
 
 export const WeatherBriefingPolicy = {
-  briefingTodo: toBriefingTodo,
-  briefing: toWeatherBriefing,
-  affectedTodos: getAffectedTodos,
-  rescheduleOptions: getRescheduleOptions,
-  suggestedStartAt: getSuggestedStartAt,
+  toBriefingTodo,
+  toWeatherBriefing,
+  getAffectedTodos,
+  getRescheduleOptions,
+  getSuggestedStartAt,
 } as const;

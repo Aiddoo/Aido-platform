@@ -29,7 +29,13 @@ import {
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
 import { toUvMeterPosition } from '../utils/weather-bar.geometry';
+import { toCloudCoverNote, toVisibilityKilometers } from '../utils/weather-detail.view-model';
 import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
+import {
+  formatDegrees,
+  formatTemperature,
+  toDisplayTemperature,
+} from '../utils/weather-temperature';
 import {
   TILE_GRID_GAP,
   useTileLayout,
@@ -59,18 +65,18 @@ export function WeatherDetailGrid() {
   const { current, hourly } = data;
   const now = useMinuteNow();
 
-  const feelsLike = WeatherReportPolicy.feelsLike(current);
+  const feelsLike = WeatherReportPolicy.compareFeelsLike(current);
   const feelsDifference = Math.abs(
-    WeatherReportPolicy.displayTemperature(current.apparentTemperature, unit) -
-      WeatherReportPolicy.displayTemperature(current.temperature, unit),
+    toDisplayTemperature(current.apparentTemperature, unit) -
+      toDisplayTemperature(current.temperature, unit),
   );
-  const sunscreen = WeatherDetailPolicy.sunscreenWindow(hourly, now, data.location.timezone);
-  const direction = WeatherReportPolicy.compassDirection(current.windDirection);
+  const sunscreen = WeatherDetailPolicy.getSunscreenWindow(hourly, now, data.location.timezone);
+  const direction = WeatherReportPolicy.toCompassDirection(current.windDirection);
   const windSpeed = formatSpeed(current.windSpeed);
   const pressure = String(Math.round(current.pressure));
-  const nextDayPrecipitation = WeatherDetailPolicy.nextDayPrecipitation(hourly, now);
-  const visibilityLevel = WeatherDetailPolicy.visibilityLevel(current.visibility);
-  const cloudCoverNote = WeatherDetailPolicy.cloudCoverNote(current.cloudCover, current.isDaylight);
+  const nextDayPrecipitation = WeatherDetailPolicy.sumNextDayPrecipitation(hourly, now);
+  const visibilityLevel = WeatherDetailPolicy.getVisibilityLevel(current.visibility);
+  const cloudCoverNote = toCloudCoverNote(current.cloudCover, current.isDaylight);
 
   return (
     <Box onLayout={onLayout}>
@@ -80,12 +86,10 @@ export function WeatherDetailGrid() {
             minHeight={bodyMinHeight}
             icon="thermo"
             title={t('details.feelsLike')}
-            value={WeatherReportPolicy.degrees(
-              WeatherReportPolicy.displayTemperature(current.apparentTemperature, unit),
-            )}
+            value={formatTemperature(current.apparentTemperature, unit)}
             sub={t(FEELS_LIKE_LABEL_KEYS[feelsLike])}
             note={t(FEELS_LIKE_NOTE_KEYS[feelsLike], {
-              difference: WeatherReportPolicy.degrees(feelsDifference),
+              difference: formatDegrees(feelsDifference),
             })}
           />
         </GridItem>
@@ -95,7 +99,7 @@ export function WeatherDetailGrid() {
             icon="uv"
             title={t('details.uv')}
             value={String(current.uvIndex)}
-            sub={t(UV_LEVEL_LABEL_KEYS[WeatherReportPolicy.uvLevel(current.uvIndex)])}
+            sub={t(UV_LEVEL_LABEL_KEYS[WeatherReportPolicy.getUvLevel(current.uvIndex)])}
             note={
               sunscreen == null
                 ? t('details.uvLowToday')
@@ -128,7 +132,7 @@ export function WeatherDetailGrid() {
             }
             note={
               current.windGust == null
-                ? t(WIND_LEVEL_NOTE_KEYS[WeatherDetailPolicy.windLevel(current.windSpeed)])
+                ? t(WIND_LEVEL_NOTE_KEYS[WeatherDetailPolicy.getWindLevel(current.windSpeed)])
                 : t('details.windGust', { speed: formatSpeed(current.windGust) })
             }
           >
@@ -173,9 +177,7 @@ export function WeatherDetailGrid() {
             title={t('details.humidity')}
             value={t('details.percentValue', { value: current.humidity })}
             sub={t('details.dewPoint', {
-              value: WeatherReportPolicy.degrees(
-                WeatherReportPolicy.displayTemperature(current.dewPoint, unit),
-              ),
+              value: formatTemperature(current.dewPoint, unit),
             })}
             note={
               WeatherDetailPolicy.isMuggy(current.humidity)
@@ -190,7 +192,7 @@ export function WeatherDetailGrid() {
             icon="eye"
             title={t('details.visibility')}
             value={t('details.kilometerValue', {
-              value: WeatherDetailPolicy.visibilityKilometers(current.visibility),
+              value: toVisibilityKilometers(current.visibility),
             })}
             sub={t(VISIBILITY_LEVEL_LABEL_KEYS[visibilityLevel])}
             note={
@@ -227,7 +229,9 @@ export function WeatherDetailGrid() {
             title={t('details.cloudCover')}
             value={t('details.percentValue', { value: current.cloudCover })}
             sub={t(
-              CLOUD_COVER_LEVEL_LABEL_KEYS[WeatherDetailPolicy.cloudCoverLevel(current.cloudCover)],
+              CLOUD_COVER_LEVEL_LABEL_KEYS[
+                WeatherDetailPolicy.getCloudCoverLevel(current.cloudCover)
+              ],
             )}
             note={t(CLOUD_COVER_NOTE_KEYS[cloudCoverNote])}
           />

@@ -1,5 +1,5 @@
 import type { WeatherRescheduleReason } from '@aido/api';
-import type { WeatherCondition } from '@aido/api';
+import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
@@ -12,6 +12,14 @@ import {
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
 import { type HourlyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+
+/** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
+function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
+  return match(type)
+    .with('SNOW', 'SLEET', 'HAIL', () => 'SNOW' as const)
+    .with('RAIN', 'MIXED', 'NONE', () => 'RAIN' as const)
+    .exhaustive();
+}
 
 /** 화면 문구 한 줄. 컴포넌트가 번역하며, 값에 다른 문구를 넣으면 그 문구도 번역해 넣는다. */
 export interface BriefingCopy {
@@ -90,8 +98,8 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
   });
   const chance = (todo: ForecastTodo) => formatChance(todo.hour.precipitationChance);
   const firstOption = (todo: ForecastTodo, reason: WeatherRescheduleReason) =>
-    WeatherBriefingPolicy.rescheduleOptions(hourly, todo, { now, timeZone, reason })[0]?.startsAt ??
-    null;
+    WeatherBriefingPolicy.getRescheduleOptions(hourly, todo, { now, timeZone, reason })[0]
+      ?.startsAt ?? null;
   /** 완료한 할 일은 옮기지 않는다. 모두 완료했으면 옮길 버튼을 감춘다. */
   const reschedule = (
     todos: ForecastTodo[],
@@ -121,7 +129,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
                 ? { key: 'briefing.noDryTime' }
                 : { key: 'briefing.dryAt', values: { time: formatClock(dryHour) } },
             tone: 'warning',
-            chipCondition: WeatherReportPolicy.precipitationCondition(todo.hour.precipitationType),
+            chipCondition: toPrecipitationCondition(todo.hour.precipitationType),
             chipLabel: chance(todo),
           };
         }),
@@ -242,7 +250,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
       },
     )
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
-      const suggestedAt = WeatherBriefingPolicy.suggestedStartAt(hours, now);
+      const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, now);
       const isInRange = (todo: ForecastTodo) =>
         todo.scheduledAt.getTime() >= hours.startsAt.getTime() &&
         todo.scheduledAt.getTime() < hours.endsAt.getTime();

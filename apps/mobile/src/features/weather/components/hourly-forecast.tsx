@@ -25,18 +25,20 @@ import {
   SKY_STEADY_KEYS,
   WEATHER_CONDITION_LABEL_KEYS,
 } from '../constants/weather-labels';
-import {
-  type HourlySummary,
-  type HourlyTimelineItem,
-  WeatherHourlyPolicy,
-} from '../domains/weather-hourly.model';
-import { type HourlyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
+import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import { type HourlyTimelineItem, toHourlyTimeline } from '../utils/hourly-timeline.view-model';
+import {
+  formatDegrees,
+  formatTemperature,
+  toDisplayTemperature,
+} from '../utils/weather-temperature';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -89,8 +91,8 @@ export function HourlyForecast() {
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
-  const timeline = WeatherHourlyPolicy.timeline(data, now);
-  const summary = WeatherHourlyPolicy.summary(data, now);
+  const timeline = toHourlyTimeline(data, now);
+  const summary = WeatherHourlyPolicy.summarizeHourly(data, now);
   const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
   const context: TimelineContext = { dateFormat, timeFormat: preference.timeFormat, now };
 
@@ -175,9 +177,7 @@ HourlyForecast.Summary = function Summary({
       const params = {
         sky: t(SKY_BEFORE_KEYS[sky]),
         time: hourLabel(peak.at),
-        temperature: WeatherReportPolicy.degrees(
-          WeatherReportPolicy.displayTemperature(peak.temperature, unit),
-        ),
+        temperature: formatTemperature(peak.temperature, unit),
       };
       return peak.extreme === 'highest'
         ? t('hourly.summary.highest', params)
@@ -220,7 +220,7 @@ function HourCell({
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
   const time = isNow ? t('hourly.now') : formatInstantHour(hour.startsAt, timeFormat, dateFormat);
-  const temperature = WeatherReportPolicy.displayTemperature(hour.temperature, unit);
+  const temperature = toDisplayTemperature(hour.temperature, unit);
   const isChanceVisible = hour.precipitationChance >= VISIBLE_CHANCE;
   const labelMinScale = useMinimumFontScale('b3');
   const value = useValueType();
@@ -270,7 +270,7 @@ function HourCell({
         className="tabular-nums"
         style={value.style}
       >
-        {WeatherReportPolicy.degrees(temperature)}
+        {formatDegrees(temperature)}
       </Text>
     </VStack>
   );

@@ -1,7 +1,6 @@
 import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
-import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { toDateKey } from '@src/shared/date/instant';
-import { countBy, maxBy, minBy, orderBy, takeWhile } from 'es-toolkit';
+import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import {
@@ -49,10 +48,6 @@ export type HourlySummary =
       changesOnLaterDay: boolean;
     }
   | { kind: 'steady'; sky: HourlySky; peak: TemperaturePeak | null };
-
-export type HourlyTimelineItem =
-  | { kind: 'hour'; hour: HourlyForecastEntry; isNow: boolean }
-  | { kind: 'sunrise' | 'sunset'; at: Date };
 
 /** 강수 확률이 낮은 비·눈 상태 시간은 흐린 하늘로 읽는다. 강수 여부는 확률(isWetHour)로만 정한다. */
 function toHourlySky(condition: WeatherCondition): HourlySky {
@@ -195,40 +190,6 @@ function summarizeHourly(
   };
 }
 
-function timelineTime(item: HourlyTimelineItem): number {
-  return item.kind === 'hour' ? item.hour.startsAt.getTime() : item.at.getTime();
-}
-
-/** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
-function toHourlyTimeline(
-  report: Pick<WeatherReport, 'hourly' | 'daily'>,
-  now: Date,
-): HourlyTimelineItem[] {
-  const hours = selectUpcomingHours(report.hourly, now);
-  const last = hours.at(-1);
-  if (last == null) {
-    return [];
-  }
-  const rangeEnd = last.startsAt.getTime() + HOUR_MS;
-  const isInRange = (date: Date) => date.getTime() > now.getTime() && date.getTime() < rangeEnd;
-
-  const hourItems = hours.map((hour, index): HourlyTimelineItem => ({
-    kind: 'hour',
-    hour,
-    isNow: index === 0,
-  }));
-  const sunItems = report.daily.flatMap((day): HourlyTimelineItem[] => [
-    ...(day.sunrise != null && isInRange(day.sunrise)
-      ? [{ kind: 'sunrise' as const, at: day.sunrise }]
-      : []),
-    ...(day.sunset != null && isInRange(day.sunset)
-      ? [{ kind: 'sunset' as const, at: day.sunset }]
-      : []),
-  ]);
-  return orderBy([...hourItems, ...sunItems], [timelineTime], ['asc']);
-}
-
 export const WeatherHourlyPolicy = {
-  summary: summarizeHourly,
-  timeline: toHourlyTimeline,
+  summarizeHourly,
 } as const;

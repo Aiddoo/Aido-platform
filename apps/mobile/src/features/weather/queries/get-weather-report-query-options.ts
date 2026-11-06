@@ -117,5 +117,5 @@ export const WeatherReportSelect = {
   sunMoon: (report: WeatherReport) => pick(report, ['location', 'current', 'daily']),
   airQuality: (report: WeatherReport) => report.airQuality,
   attribution: (report: WeatherReport) => pick(report, ['location', 'attribution', 'fetchedAt']),
-  scene: (report: WeatherReport) => WeatherReportPolicy.sceneInput(report),
+  scene: (report: WeatherReport) => WeatherReportPolicy.toSceneInput(report),
 } as const;
