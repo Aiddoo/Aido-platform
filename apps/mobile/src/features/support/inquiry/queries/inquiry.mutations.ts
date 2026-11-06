@@ -1,41 +1,27 @@
 import { useHaptics, useInquiryService } from '@src/bootstrap/providers/di-context';
-import { isBusinessError, unwrap } from '@src/shared/errors/result';
+import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
-import { router } from 'expo-router';
 
 import type { InquiryRequestValues } from '../schemas/inquiry-form.schema';
 
-export const useCreateInquiryMutationOptions = () => {
-  const haptics = useHaptics();
-  const goBack = useSingleTap(router.back);
-
+export function useCreateInquiryMutationOptions() {
   const inquiryService = useInquiryService();
+  const haptics = useHaptics();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('inquiry:toasts.submitFailed'));
 
   return mutationOptions({
-    mutationFn: async (input: InquiryRequestValues) => {
-      const result = await inquiryService.createInquiry(input);
-
-      return unwrap(result);
-    },
+    // 오프라인에 멈춰 두면 연결된 뒤 지금 화면에서 나도 모르게 전송된다. 바로 실패해 글자를 남긴 채 안내한다
+    networkMode: 'always',
+    mutationFn: async (input: InquiryRequestValues) =>
+      unwrap(await inquiryService.createInquiry(input)),
     onSuccess: () => {
       haptics.notify('success');
-
       toast.success(t('inquiry:toasts.submitted'));
-
-      goBack();
     },
-    onError: (error) => {
-      if (!isBusinessError(error)) {
-        return;
-      }
-
-      haptics.notify('error');
-
-      toast.error(error, { fallback: t('inquiry:toasts.submitFailed') });
-    },
+    onError: (error) => showFailure(error),
   });
-};
+}

@@ -1,171 +1,128 @@
-import { type CreateInquiryInput, createInquirySchema, INQUIRY_CONTENT_LIMITS } from '@aido/api';
+import { INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/support/inquiry/constants/inquiry.constants';
 import { useInquiryParams } from '@src/features/support/inquiry/hooks/use-inquiry-params';
 import { useCreateInquiryMutationOptions } from '@src/features/support/inquiry/queries/inquiry.mutations';
-import { isBusinessError } from '@src/shared/errors/result';
+import { inquiryFormSchema } from '@src/features/support/inquiry/schemas/inquiry-form.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   Box,
-  H3,
+  FormStepLayout,
   HStack,
   IconRadioItem,
   KeyboardAdaptiveButton,
-  QueryErrorBoundary,
   ReadableContent,
   Spacing,
-  StyledSafeAreaView,
   Text,
   TextArea,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
+import { router, useNavigation } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
-import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView } from 'react-native';
-import { useKeyboardHandler } from 'react-native-keyboard-controller';
-import Animated, { scrollTo, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
+import { Controller, useForm, useFormState } from 'react-hook-form';
 
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
-
-function InquiryScreen() {
-  const { showBoundary } = useErrorBoundary();
+export default function InquiryScreen() {
   const initialValues = useInquiryParams();
-
   const { t } = useTranslation('inquiry');
   const { locale } = useDateFormatContext();
-  const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
-  const contentHeight = useSharedValue(0);
-  const hasScrolled = useSharedValue(false);
+  const navigation = useNavigation();
+  const reportUnexpectedError = useReportUnexpectedError('inquiry');
+  const goBack = useSingleTap(router.back);
 
-  const createInquiryMutation = useMutation(useCreateInquiryMutationOptions());
-
-  useKeyboardHandler({
-    onStart: () => {
-      'worklet';
-      hasScrolled.set(false);
-    },
-    onMove: (event) => {
-      'worklet';
-      if (event.height > 0 && !hasScrolled.get()) {
-        hasScrolled.set(true);
-        scrollTo(scrollViewRef, 0, contentHeight.get(), true);
-      }
-    },
-  });
-
-  const formMethods = useForm({
-    resolver: zodResolver(createInquirySchema),
+  const createInquiry = useMutation(useCreateInquiryMutationOptions());
+  const form = useForm({
+    resolver: zodResolver(inquiryFormSchema),
     defaultValues: initialValues,
     mode: 'onChange',
   });
-  const { control, handleSubmit } = formMethods;
-  const { isSubmitting, isValid } = useFormState({ control });
+  const { isSubmitting, isValid } = useFormState({ control: form.control });
 
-  const handleSubmitInquiry = async (values: CreateInquiryInput) => {
+  // 실패하면 토스트는 mutation이 한 번 알리고 화면과 입력값은 그대로 둔다
+  const submitInquiry = form.handleSubmit(async (values) => {
     try {
-      await createInquiryMutation.mutateAsync(values);
-    } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
+      await createInquiry.mutateAsync(values);
+      // 보내는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
+      if (navigation.isFocused()) {
+        goBack();
       }
+    } catch (error) {
+      reportUnexpectedError(error);
     }
-  };
+  });
+  const handleSubmit = useSingleTap(() => submitInquiry());
 
   return (
-    <FormProvider {...formMethods}>
-      <Box className="flex-1 bg-white">
-        <AnimatedScrollView
-          ref={scrollViewRef}
-          onContentSizeChange={(_w, h) => {
-            contentHeight.set(h);
-          }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-          keyboardShouldPersistTaps="always"
-          showsVerticalScrollIndicator={false}
-          automaticallyAdjustKeyboardInsets
-        >
-          <StyledSafeAreaView edges={['left', 'right']}>
-            <VStack gap={16}>
-              <H3>{t('form.selectCategory')}</H3>
-
-              <FormField control={control} name="category">
-                {({ onChange, value }) => (
-                  <RadioGroup
-                    value={value}
-                    onValueChange={onChange}
-                    className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
-                  >
-                    {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                      <IconRadioItem
-                        key={key}
-                        value={key}
-                        label={tGlobal(labelKey)}
-                        testID={`inquiry-category-${key}`}
-                      />
-                    ))}
-                  </RadioGroup>
-                )}
-              </FormField>
-            </VStack>
-
-            <Spacing size={24} />
-
-            <FormField control={control} name="content">
-              {({ onChange, value }, { error }) => (
-                <VStack gap={4}>
-                  <TextArea
-                    testID="inquiry-content-input"
-                    label={t('form.contentLabel')}
-                    placeholder={t('form.contentPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'inquiryContent.tooShort',
-                      byType: { too_big: 'inquiryContent.tooLong' },
-                    })}
-                    maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
-                    className="min-h-40"
+    <Box className="flex-1 bg-white">
+      <ReadableContent flex={1}>
+        <FormStepLayout title={t('form.selectCategory')}>
+          <Controller
+            control={form.control}
+            name="category"
+            render={({ field: { value, onChange } }) => (
+              <RadioGroup
+                value={value}
+                onValueChange={onChange}
+                className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
+              >
+                {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
+                  <IconRadioItem
+                    key={key}
+                    value={key}
+                    label={tGlobal(labelKey)}
+                    testID={`inquiry-category-${key}`}
                   />
-                  <HStack justify="end" className="-mt-4">
-                    <Text size="e1" weight="medium" className="text-gray-5">
-                      {formatCount(value.length, locale)}/
-                      {formatCount(INQUIRY_CONTENT_LIMITS.MAX_LENGTH, locale)}
-                    </Text>
-                  </HStack>
-                </VStack>
-              )}
-            </FormField>
-          </StyledSafeAreaView>
-        </AnimatedScrollView>
+                ))}
+              </RadioGroup>
+            )}
+          />
+
+          <Spacing size={24} />
+
+          <Controller
+            control={form.control}
+            name="content"
+            render={({ field: { value, onChange, ref }, fieldState: { error } }) => (
+              <VStack gap={4}>
+                <TextArea
+                  ref={ref}
+                  testID="inquiry-content-input"
+                  label={t('form.contentLabel')}
+                  placeholder={t('form.contentPlaceholder')}
+                  value={value}
+                  onChange={onChange}
+                  isInvalid={error != null}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'inquiryContent.tooShort',
+                    byType: { too_big: 'inquiryContent.tooLong' },
+                  })}
+                  maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
+                  className="min-h-40"
+                />
+                <HStack justify="end" className="-mt-4">
+                  <Text size="e1" weight="medium" className="text-gray-5">
+                    {formatCount(value.length, locale)}/
+                    {formatCount(INQUIRY_CONTENT_LIMITS.MAX_LENGTH, locale)}
+                  </Text>
+                </HStack>
+              </VStack>
+            )}
+          />
+        </FormStepLayout>
 
         <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(handleSubmitInquiry)()}
+          onPress={handleSubmit}
           isDisabled={!isValid}
           isLoading={isSubmitting}
           testID="inquiry-submit"
         >
           {t('form.submit')}
         </KeyboardAdaptiveButton>
-      </Box>
-    </FormProvider>
-  );
-}
-
-/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
-export default function InquiryRoute() {
-  return (
-    <Box className="flex-1 bg-white">
-      <ReadableContent flex={1}>
-        <QueryErrorBoundary>
-          <InquiryScreen />
-        </QueryErrorBoundary>
       </ReadableContent>
     </Box>
   );

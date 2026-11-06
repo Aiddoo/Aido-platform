@@ -7,6 +7,7 @@ import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 
 import { createAnalyticsStub } from './create-analytics-stub';
 import { createErrorReporterStub } from './create-error-reporter-stub';
@@ -33,6 +34,7 @@ export function createTestDi({
 
   return {
     memoService: new MemoService(httpClient, logger),
+    inquiryService: new InquiryService(httpClient),
     userService: new UserService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
     authService: new AuthService(httpClient, httpClient, createMockTokenStore()),

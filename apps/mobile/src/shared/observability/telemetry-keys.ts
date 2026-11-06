@@ -49,6 +49,7 @@ export const SENTRY_FEATURES = [
   'feature_attribution',
   'feature_discovery',
   'firebase_analytics',
+  'inquiry',
   'invite',
   'lifecycle',
   'memo',

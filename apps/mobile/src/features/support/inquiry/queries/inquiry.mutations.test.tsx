@@ -1,80 +1,92 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { NetworkError } from '@src/shared/errors';
-import { QueryClientProvider } from '@tanstack/react-query';
-import type { QueryClient } from '@tanstack/react-query';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { ApiError } from '@src/shared/errors/api-error';
+import { NetworkError } from '@src/shared/errors/infra-error';
+import { ok } from '@src/shared/errors/result';
+import { onlineManager, useMutation } from '@tanstack/react-query';
+import { screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
-import { createInquiryApiError } from '../__tests__/inquiry.fixtures';
-import { InquiryService } from '../apis/inquiry.service';
+import { createInquiryApiError, createInquiryResponseDto } from '../__tests__/inquiry.fixtures';
 import { useCreateInquiryMutationOptions } from './inquiry.mutations';
-
-const mockToastError = jest.fn();
-
-jest.mock('@src/shared/hooks/use-app-toast', () => ({
-  useAppToast: () => ({ success: jest.fn(), error: mockToastError }),
-}));
-jest.mock('expo-router', () => ({ router: { back: jest.fn() } }));
 
 const input = {
   category: INQUIRY_CATEGORY.BUG_REPORT,
   content: '앱에서 할 일 추가 시 오류가 발생합니다.',
 } as const;
 
-describe('문의 접수 실패 안내', () => {
-  let client: QueryClient;
-  let http: ReturnType<typeof createHttpClientStub>;
-  let unmount: (() => Promise<void>) | undefined;
+async function renderSubmit(httpClient: ReturnType<typeof createHttpClientStub>) {
+  let submit: ((values: typeof input) => Promise<unknown>) | undefined;
+  function Capture() {
+    submit = useMutation(useCreateInquiryMutationOptions()).mutateAsync;
+    return null;
+  }
+  await renderUi(<Capture />, {
+    withOverlay: true,
+    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+  });
+  if (submit == null) {
+    throw new Error('mutation을 받지 못했다');
+  }
+
+  return submit;
+}
+
+describe('문의 접수', () => {
+  let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {
-    client = createTestQueryClient();
-    http = createHttpClientStub();
-    unmount = undefined;
+    httpClient = createHttpClientStub();
+    jest.mocked(router.back).mockClear();
   });
 
-  afterEach(async () => {
-    await unmount?.();
+  afterEach(() => {
+    onlineManager.setOnline(true);
   });
 
-  const submitInquiry = async () => {
-    const container = createTestDiContainer({ inquiryService: new InquiryService(http) });
-    const rendered = await renderHook(() => useCreateInquiryMutationOptions(), {
-      wrapper: ({ children }: PropsWithChildren) => (
-        <StaticDIProvider container={container}>
-          <QueryClientProvider client={client}>{children}</QueryClientProvider>
-        </StaticDIProvider>
-      ),
-    });
-    unmount = rendered.unmount;
-    const mutation = client.getMutationCache().build(client, rendered.result.current);
-    await act(async () => {
-      await mutation.execute(input).catch(() => undefined);
-    });
-  };
-
-  it('서버가 거절한 문의는 toast로 이유를 알린다', async () => {
+  it('접수하면 안내하고 화면 이동은 화면에 맡긴다', async () => {
     // Given
-    const apiError = createInquiryApiError({ status: 400 });
-    http.post.mockResolvedValue({ ok: false, error: apiError });
+    httpClient.post.mockResolvedValue(ok(createInquiryResponseDto()));
+    const submit = await renderSubmit(httpClient);
 
     // When
-    await submitInquiry();
+    await submit(input);
 
     // Then
-    expect(mockToastError).toHaveBeenCalledWith(apiError, expect.anything());
+    expect(httpClient.post).toHaveBeenCalledWith('v1/inquiries', input);
+    expect(await screen.findAllByText('문의를 접수했어요.')).not.toHaveLength(0);
+    expect(router.back).not.toHaveBeenCalled();
   });
 
-  it('네트워크 오류는 화면 오류 경계에 맡기고 toast를 띄우지 않는다', async () => {
+  it('오프라인이어도 멈춰 기다리지 않고 바로 실패를 알리며 화면을 떠나지 않는다', async () => {
     // Given
-    http.post.mockRejectedValue(new NetworkError());
+    onlineManager.setOnline(false);
+    httpClient.post.mockRejectedValue(new NetworkError());
+    const submit = await renderSubmit(httpClient);
 
     // When
-    await submitInquiry();
+    const result = submit(input);
 
     // Then
-    expect(mockToastError).not.toHaveBeenCalled();
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it('서버가 거절한 문의는 토스트로 이유를 알린다', async () => {
+    // Given
+    const apiError = createInquiryApiError({ status: 400, message: '내용이 너무 짧아요' });
+    httpClient.post.mockResolvedValue({ ok: false, error: apiError });
+    const submit = await renderSubmit(httpClient);
+
+    // When
+    const result = submit(input);
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(ApiError);
+    expect(await screen.findAllByText('내용이 너무 짧아요')).not.toHaveLength(0);
   });
 });
