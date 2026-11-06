@@ -1,11 +1,13 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
+import { type Instant, toInstant } from '@src/shared/date/instant';
 
 import {
+  recordActiveDay,
+  recordRequest,
   type StoreReviewEligibility,
-  type StoreReviewMoment,
   StoreReviewPolicy,
-  StoreReviewTransitions,
 } from '../domains/store-review.model';
+import type { StoreReviewMoment } from '../schemas/store-review.schema';
 import type { StoreReviewRepository } from './store-review.repository';
 
 export type StoreReviewOutcome =
@@ -31,7 +33,7 @@ interface RequestReviewInput {
 export class StoreReviewService {
   readonly #repository: StoreReviewRepository;
   readonly #gateway: AppStoreReviewGateway;
-  readonly #now: () => Date;
+  readonly #now: () => Instant;
   readonly #inFlightAccounts = new Set<string>();
   /** 서비스는 앱 프로세스마다 하나라 한 번 요청한 실행 안에서는 다시 묻지 않는다 */
   #hasRequestedThisSession = false;
@@ -39,7 +41,7 @@ export class StoreReviewService {
   constructor(
     repository: StoreReviewRepository,
     gateway: AppStoreReviewGateway,
-    now: () => Date = () => new Date(),
+    now: () => Instant = () => toInstant(new Date().toISOString()),
   ) {
     this.#repository = repository;
     this.#gateway = gateway;
@@ -48,9 +50,7 @@ export class StoreReviewService {
 
   /** 할 일을 하나라도 끝낸 날을 남긴다. 하루에 몇 개를 끝냈는지는 세지 않는다 */
   recordActiveDay(accountId: string, localDate: string): void {
-    this.#repository.update(accountId, (state) =>
-      StoreReviewTransitions.recordActiveDay(state, localDate),
-    );
+    this.#repository.update(accountId, (state) => recordActiveDay(state, localDate));
   }
 
   async requestReviewAt(
@@ -73,7 +73,7 @@ export class StoreReviewService {
       if (!(await this.#gateway.isAvailable())) {
         return 'unavailable';
       }
-      if (!(await waitUntilPresentable(StoreReviewPolicy.settleDelayMs(moment)))) {
+      if (!(await waitUntilPresentable(StoreReviewPolicy.getSettleDelayMs(moment)))) {
         return 'interrupted';
       }
       // 기다리는 사이 다른 계정의 요청이 먼저 나갔을 수 있다
@@ -81,9 +81,7 @@ export class StoreReviewService {
         return 'already_requested_this_session';
       }
       // OS가 창을 띄우는지는 알 수 없다. 앱이 도중에 종료돼도 다시 묻지 않도록 요청 전에 기록한다
-      this.#repository.update(accountId, (state) =>
-        StoreReviewTransitions.recordRequest(state, this.#now()),
-      );
+      this.#repository.update(accountId, (state) => recordRequest(state, this.#now()));
       this.#hasRequestedThisSession = true;
       await this.#gateway.requestReview();
       return 'requested';

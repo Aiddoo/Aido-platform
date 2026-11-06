@@ -446,8 +446,8 @@ test('옮긴 클라이언트 모델이 요청·응답 계약을 import하면 거
       'apps/mobile/src/features/voice/apis/voice-plan.mapper.ts': `
         import type { QuickPlanResponse } from '@aido/api';
       `,
-      'apps/mobile/src/features/identity/preference/domains/preference.model.ts': `
-        import { preferenceSchema } from '@aido/api';
+      'apps/mobile/src/features/social/friend/domains/friend.model.ts': `
+        import { friendSchema } from '@aido/api';
       `,
     },
     (errors) => {

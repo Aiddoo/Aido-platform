@@ -1,20 +1,18 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
-import { createSyncStorageStub } from '@src/shared/__tests__';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 
-import { StoreReviewTransitions } from '../domains/store-review.model';
+import { recordRequest } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
 import { StoreReviewService, type WaitUntilPresentable } from './store-review.service';
 
-const NOW = new Date('2026-10-27T12:00:00.000Z');
+const NOW = toInstant('2026-10-27T12:00:00.000Z');
 const ACCOUNT = 'account-a';
 const ALL_DONE = { accountId: ACCOUNT, moment: 'all_todos_done' } as const;
 const presentable: WaitUntilPresentable = async () => true;
 
 const createFixture = () => {
-  const storage = createSyncStorageStub();
-  const values = new Map<string, string>();
-  storage.get.mockImplementation((key) => values.get(key));
-  storage.set.mockImplementation((key, value) => values.set(key, value));
+  const storage = createMemorySyncStorage();
   const repository = createStoreReviewRepository(storage);
   const gateway: jest.Mocked<AppStoreReviewGateway> = {
     isAvailable: jest.fn().mockResolvedValue(true),
@@ -153,7 +151,7 @@ describe('StoreReviewService', () => {
     const { becomeEngaged, gateway, repository, service } = createFixture();
     becomeEngaged();
     repository.update(ACCOUNT, (state) =>
-      StoreReviewTransitions.recordRequest(state, new Date('2026-08-12T00:00:00.000Z')),
+      recordRequest(state, toInstant('2026-08-12T00:00:00.000Z')),
     );
 
     // When

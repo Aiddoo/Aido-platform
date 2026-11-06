@@ -1,31 +1,17 @@
-import { dateSchema, datetimeSchema } from '@aido/api';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { uniq } from 'es-toolkit';
-import { z } from 'zod';
 
+import { STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS } from '../constants/store-review.constants';
+import { createEmptyStoreReviewState } from '../domains/store-review.model';
 import {
-  createEmptyStoreReviewState,
-  STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS,
-  STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
-  storeReviewStateSchema,
+  type LegacyStoreReviewState,
+  legacyStoreReviewStateSchema,
+  persistedStoreReviewStateSchema,
   type StoreReviewState,
-} from '../domains/store-review.model';
+  storeReviewStateSchema,
+} from '../schemas/store-review.schema';
 
 const KEY_PREFIX = 'aido_store_review_prompt_v1';
-
-const persistedStateSchema = z.object({
-  version: z.literal(2),
-  activeDays: z.array(dateSchema).max(STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS),
-  requestedAt: z.array(datetimeSchema).max(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW),
-});
-type PersistedState = z.infer<typeof persistedStateSchema>;
-
-/** 앱 안 확인 창을 쓰던 이전 저장 모양. 읽는 즉시 새 모양으로 옮겨 쓴다 */
-const legacyPersistedStateSchema = z.object({
-  completions: z.array(z.object({ localDate: dateSchema })),
-  reviewRequestedAt: datetimeSchema.nullable(),
-});
-type LegacyPersistedState = z.infer<typeof legacyPersistedStateSchema>;
 
 type StateTransition = (current: StoreReviewState) => StoreReviewState;
 
@@ -36,30 +22,18 @@ export interface StoreReviewRepository {
 
 const storageKey = (accountId: string): string => `${KEY_PREFIX}:${accountId}`;
 
-const fromPersisted = (persisted: PersistedState): StoreReviewState =>
-  storeReviewStateSchema.parse({
-    activeDays: persisted.activeDays,
-    requestedAt: persisted.requestedAt.map((requestedAt) => new Date(requestedAt)),
-  });
-
 /** 이미 리뷰를 요청받은 사용자는 그 시각을 지난 요청 한 번으로 이어받아 곧바로 다시 묻지 않는다 */
-const fromLegacy = (legacy: LegacyPersistedState): StoreReviewState =>
+const fromLegacy = (legacy: LegacyStoreReviewState): StoreReviewState =>
   storeReviewStateSchema.parse({
     activeDays: uniq(legacy.completions.map(({ localDate }) => localDate)).slice(
       -STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS,
     ),
-    requestedAt: legacy.reviewRequestedAt == null ? [] : [new Date(legacy.reviewRequestedAt)],
+    requestedAt: legacy.reviewRequestedAt == null ? [] : [legacy.reviewRequestedAt],
   });
-
-const toPersisted = (state: StoreReviewState): PersistedState => ({
-  version: 2,
-  activeDays: state.activeDays,
-  requestedAt: state.requestedAt.map((requestedAt) => requestedAt.toISOString()),
-});
 
 export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRepository {
   const write = (accountId: string, state: StoreReviewState): void => {
-    storage.set(storageKey(accountId), JSON.stringify(toPersisted(state)));
+    storage.set(storageKey(accountId), JSON.stringify({ version: 2, ...state }));
   };
 
   const read = (accountId: string): StoreReviewState => {
@@ -69,11 +43,11 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
     }
     try {
       const json: unknown = JSON.parse(saved);
-      const current = persistedStateSchema.safeParse(json);
+      const current = persistedStoreReviewStateSchema.safeParse(json);
       if (current.success) {
-        return fromPersisted(current.data);
+        return storeReviewStateSchema.parse(current.data);
       }
-      const legacy = legacyPersistedStateSchema.safeParse(json);
+      const legacy = legacyStoreReviewStateSchema.safeParse(json);
       if (!legacy.success) {
         return createEmptyStoreReviewState();
       }

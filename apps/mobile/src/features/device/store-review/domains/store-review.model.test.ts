@@ -1,21 +1,26 @@
 import { DAY_MS } from '@src/shared/constants/time.constants';
+import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import {
-  createEmptyStoreReviewState,
   STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
   STORE_REVIEW_MIN_ACTIVE_DAYS,
   STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
   STORE_REVIEW_REQUEST_WINDOW_DAYS,
+} from '../constants/store-review.constants';
+import type { StoreReviewState } from '../schemas/store-review.schema';
+import {
+  createEmptyStoreReviewState,
+  recordActiveDay,
+  recordRequest,
   StoreReviewPolicy,
-  type StoreReviewState,
-  StoreReviewTransitions,
 } from './store-review.model';
 
-const NOW = new Date('2026-10-27T12:00:00.000Z');
-const daysBefore = (days: number) => new Date(NOW.getTime() - days * DAY_MS);
+const NOW = toInstant('2026-10-27T12:00:00.000Z');
+const daysBefore = (days: number, msLater = 0) =>
+  toInstant(new Date(toEpochMs(NOW) - days * DAY_MS + msLater).toISOString());
 
 const withActiveDays = (...localDates: string[]): StoreReviewState =>
-  localDates.reduce(StoreReviewTransitions.recordActiveDay, createEmptyStoreReviewState());
+  localDates.reduce(recordActiveDay, createEmptyStoreReviewState());
 
 const ENGAGED: StoreReviewState = withActiveDays('2026-10-20', '2026-10-24', '2026-10-27');
 
@@ -25,7 +30,7 @@ describe('StoreReviewPolicy.evaluate', () => {
     const twoDays = withActiveDays('2026-10-25', '2026-10-26');
 
     // When 셋째 날 할 일을 끝낸다
-    const threeDays = StoreReviewTransitions.recordActiveDay(twoDays, '2026-10-27');
+    const threeDays = recordActiveDay(twoDays, '2026-10-27');
 
     // Then
     expect(STORE_REVIEW_MIN_ACTIVE_DAYS).toBe(3);
@@ -49,7 +54,7 @@ describe('StoreReviewPolicy.evaluate', () => {
     // Given
     const justBefore: StoreReviewState = {
       ...ENGAGED,
-      requestedAt: [new Date(daysBefore(STORE_REVIEW_REQUEST_COOLDOWN_DAYS).getTime() + 1)],
+      requestedAt: [daysBefore(STORE_REVIEW_REQUEST_COOLDOWN_DAYS, 1)],
     };
     const elapsed: StoreReviewState = {
       ...ENGAGED,
@@ -79,22 +84,41 @@ describe('StoreReviewPolicy.evaluate', () => {
   });
 });
 
-describe('StoreReviewTransitions.recordRequest', () => {
+describe('recordRequest', () => {
   it('요청 시각을 쌓고 365일 창 밖의 기록은 지운다', () => {
     // Given
     const state: StoreReviewState = { ...ENGAGED, requestedAt: [daysBefore(400), daysBefore(130)] };
 
     // When
-    const next = StoreReviewTransitions.recordRequest(state, NOW);
+    const next = recordRequest(state, NOW);
 
     // Then
     expect(next.requestedAt).toEqual([daysBefore(130), NOW]);
   });
 });
 
-describe('StoreReviewPolicy.settleDelayMs', () => {
+describe('시간대가 다른 저장 값', () => {
+  it('오프셋이 달라도 같은 순간이면 쿨다운을 같게 판정한다', () => {
+    // Given 서울 표기와 UTC 표기가 가리키는 같은 순간
+    const seoul: StoreReviewState = {
+      ...ENGAGED,
+      requestedAt: [toInstant('2026-06-29T21:00:00.000+09:00')],
+    };
+    const utc: StoreReviewState = {
+      ...ENGAGED,
+      requestedAt: [toInstant('2026-06-29T12:00:00.000Z')],
+    };
+
+    // When / Then
+    expect(StoreReviewPolicy.evaluate(seoul, NOW)).toBe(StoreReviewPolicy.evaluate(utc, NOW));
+  });
+});
+
+describe('StoreReviewPolicy.getSettleDelayMs', () => {
   it('축하 화면이 가라앉도록 순간마다 1초 이상 기다린다', () => {
-    expect(StoreReviewPolicy.settleDelayMs('all_todos_done')).toBeGreaterThanOrEqual(1_000);
-    expect(StoreReviewPolicy.settleDelayMs('paw_print_celebration')).toBeGreaterThanOrEqual(1_000);
+    expect(StoreReviewPolicy.getSettleDelayMs('all_todos_done')).toBeGreaterThanOrEqual(1_000);
+    expect(StoreReviewPolicy.getSettleDelayMs('paw_print_celebration')).toBeGreaterThanOrEqual(
+      1_000,
+    );
   });
 });

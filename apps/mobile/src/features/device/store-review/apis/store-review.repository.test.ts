@@ -1,17 +1,14 @@
-import { createSyncStorageStub } from '@src/shared/__tests__';
+import { createMemorySyncStorage, createSyncStorageStub } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 
-import { StoreReviewTransitions } from '../domains/store-review.model';
+import { recordActiveDay, recordRequest } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
 
 const KEY = 'aido_store_review_prompt_v1:account-a';
 
 const createMemoryStorage = () => {
-  const storage = createSyncStorageStub();
-  const values = new Map<string, string>();
-  storage.get.mockImplementation((key) => values.get(key));
-  storage.set.mockImplementation((key, value) => values.set(key, value));
-  storage.remove.mockImplementation((key) => values.delete(key));
-  return { storage, values };
+  const storage = createMemorySyncStorage();
+  return { storage, values: storage };
 };
 
 describe('StoreReviewRepository', () => {
@@ -21,20 +18,18 @@ describe('StoreReviewRepository', () => {
     const repository = createStoreReviewRepository(storage);
 
     // When
+    repository.update('account-a', (state) => recordActiveDay(state, '2026-10-27'));
     repository.update('account-a', (state) =>
-      StoreReviewTransitions.recordActiveDay(state, '2026-10-27'),
-    );
-    repository.update('account-a', (state) =>
-      StoreReviewTransitions.recordRequest(state, new Date('2026-10-27T12:00:00.000Z')),
+      recordRequest(state, toInstant('2026-10-27T12:00:00.000Z')),
     );
 
     // Then
     expect(repository.read('account-a')).toEqual({
       activeDays: ['2026-10-27'],
-      requestedAt: [new Date('2026-10-27T12:00:00.000Z')],
+      requestedAt: [toInstant('2026-10-27T12:00:00.000Z')],
     });
     expect(repository.read('account-b')).toEqual({ activeDays: [], requestedAt: [] });
-    expect([...values.keys()]).toEqual([KEY]);
+    expect(values.keys()).toEqual([KEY]);
   });
 
   it('이전 저장 모양은 읽을 때 새 모양으로 옮기고 지난 요청을 한 번의 요청으로 이어받는다', () => {
@@ -60,7 +55,7 @@ describe('StoreReviewRepository', () => {
     // Then
     expect(state).toEqual({
       activeDays: ['2026-08-10', '2026-08-11'],
-      requestedAt: [new Date('2026-08-12T00:00:00.000Z')],
+      requestedAt: [toInstant('2026-08-12T00:00:00.000Z')],
     });
     expect(JSON.parse(values.get(KEY) ?? 'null')).toEqual({
       version: 2,
