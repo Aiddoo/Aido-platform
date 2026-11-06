@@ -55,6 +55,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const [isConsentRequired, setIsConsentRequired] = useState(false);
   const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
   const planAbortRef = useRef<AbortController | null>(null);
+  const isUnmountedRef = useRef(false);
   const voiceNoteStorage = useVoiceNoteStorageService();
   const startVoiceNote = useVoiceNoteStart();
   /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
@@ -110,7 +111,14 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     },
   });
 
-  useEffect(() => () => planAbortRef.current?.abort(), []);
+  useEffect(() => {
+    isUnmountedRef.current = false;
+
+    return () => {
+      isUnmountedRef.current = true;
+      planAbortRef.current?.abort();
+    };
+  }, []);
 
   const moveTranscriptToTitle = () => {
     methods.setValue(
@@ -130,11 +138,12 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     }
     Keyboard.dismiss();
     const consent = await aiConsent.ensureAgreedBeforeListening();
-    if (!consent.isAgreed) {
+    if (!consent.isAgreed || isUnmountedRef.current) {
       return;
     }
     hasAskedConsentRef.current = consent.wasAsked;
-    if (!(await ensureMicrophonePermission('quick', locale))) {
+    const isGranted = await ensureMicrophonePermission('quick', locale);
+    if (!isGranted || isUnmountedRef.current) {
       return;
     }
     // 실패한 세션에서 다시 누르면 처음부터 듣는다. 지우기 전에 들은 글자를 입력 칸에 옮겨 둔다

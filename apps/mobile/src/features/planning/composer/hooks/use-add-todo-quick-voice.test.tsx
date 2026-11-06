@@ -147,7 +147,7 @@ async function renderQuickVoice({
     );
   }
 
-  await renderUi(
+  const { rerender } = await renderUi(
     <LocalDateProvider>
       <OverlayProvider>
         <QuickVoiceProbe onExit={onExit} />
@@ -178,7 +178,23 @@ async function renderQuickVoice({
     },
   );
 
-  return { httpClient, speechRecognizer, voiceNoteStorage, onExit, analytics, queryClient };
+  /** 시트만 닫는다. 안내는 앱 위 오버레이에 있어 그대로 남는다 */
+  const closeSheet = () =>
+    rerender(
+      <LocalDateProvider>
+        <OverlayProvider>{null}</OverlayProvider>
+      </LocalDateProvider>,
+    );
+
+  return {
+    httpClient,
+    speechRecognizer,
+    voiceNoteStorage,
+    onExit,
+    analytics,
+    queryClient,
+    closeSheet,
+  };
 }
 
 async function speak(speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>) {
@@ -305,6 +321,58 @@ describe('useAddTodoQuickVoice', () => {
       await fireEvent.press(screen.getByTestId('ai-consent-later'));
       await waitFor(() =>
         expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick', 'ko-KR'),
+      );
+    });
+
+    it('동의 상태를 읽는 사이 시트가 닫히면 마이크 권한을 묻지 않는다', async () => {
+      // Given
+      const { httpClient, speechRecognizer, closeSheet } = await renderQuickVoice();
+      let failConsentRead: (error: Error) => void = jest.fn();
+      httpClient.get.mockReturnValue(
+        new Promise((_resolve, reject) => {
+          failConsentRead = reject;
+        }),
+      );
+      await fireEvent.press(screen.getByTestId('start'));
+      await act(async () => closeSheet());
+
+      // When
+      await act(async () => failConsentRead(new Error('offline')));
+
+      // Then
+      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+    });
+
+    it('마이크 권한을 기다리는 사이 시트가 닫히면 인식기를 시작하지 않고 분석도 남기지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics, queryClient, closeSheet } = await renderQuickVoice();
+      queryClient.setQueryData(
+        AUTH_QUERY_KEYS.consent(),
+        createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
+      );
+      await fireEvent.press(screen.getByTestId('begin'));
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'service-not-allowed' }));
+      analytics.trackEvent.mockClear();
+      speechRecognizer.start.mockClear();
+      let grant: (snapshot: { isGranted: true; canAskAgain: boolean }) => void = jest.fn();
+      speechRecognizer.getPermission.mockReturnValue(
+        new Promise((resolve) => {
+          grant = resolve;
+        }),
+      );
+      await fireEvent.press(screen.getByTestId('start'));
+      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalled());
+      await act(async () => closeSheet());
+
+      // When
+      await act(async () => grant({ isGranted: true, canAskAgain: true }));
+
+      // Then
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'voice_capture_finished',
+        expect.anything(),
       );
     });
 
