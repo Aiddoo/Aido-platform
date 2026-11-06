@@ -6,7 +6,7 @@ import { KeyboardController } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import { TodoCommentComposerPolicy } from '../domains/todo-comment-composer.model';
 import {
   type TodoCommentFormValues,
   NEW_TODO_COMMENT_FORM_VALUES,
@@ -19,7 +19,7 @@ export function useTodoCommentBack() {
   const { control, reset } = useFormContext<TodoCommentFormValues>();
   const mode = useWatch({ control, name: 'mode' });
   const isSubmitting = useIsTodoCommentSubmitting();
-  const result = TodoCommentPolicy.getBackAction({ mode, isSubmitting });
+  const result = TodoCommentComposerPolicy.getBackAction(mode, isSubmitting);
 
   const handleBack = useCallback(
     () =>

@@ -1,6 +1,6 @@
 import { createContext, type PropsWithChildren, use, useCallback, useMemo, useState } from 'react';
 
-import { type ThreadExpansion, TodoCommentPolicy } from '../domains/todo-comment.model';
+import { expandThread, type ThreadExpansion } from '../utils/todo-comment-replies.view-model';
 
 interface TodoCommentExpansionValue {
   expansionByThread: ReadonlyMap<string, ThreadExpansion>;
@@ -61,9 +61,7 @@ export function useExpandThread() {
   const { updateExpansion } = useTodoCommentExpansion();
   return useCallback(
     (threadCommentId: string) =>
-      updateExpansion(threadCommentId, (current) =>
-        TodoCommentPolicy.expandThread(current, 'auto'),
-      ),
+      updateExpansion(threadCommentId, (current) => expandThread(current, 'auto')),
     [updateExpansion],
   );
 }

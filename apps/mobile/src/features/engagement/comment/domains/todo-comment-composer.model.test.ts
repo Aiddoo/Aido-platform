@@ -111,3 +111,27 @@ describe('TodoCommentComposer', () => {
     expect(result).toEqual([true, false, false]);
   });
 });
+
+describe('TodoCommentComposerPolicy.getBackAction', () => {
+  const target = createTodoComment();
+
+  it('답글·수정 중이면 화면보다 작성기를 먼저 닫는다', () => {
+    // When
+    const results = [
+      TodoCommentComposerPolicy.getBackAction({ type: 'reply', target }, false),
+      TodoCommentComposerPolicy.getBackAction({ type: 'edit', target }, false),
+      TodoCommentComposerPolicy.getBackAction({ type: 'new' }, false),
+    ];
+
+    // Then
+    expect(results).toEqual(['closeComposer', 'closeComposer', 'native']);
+  });
+
+  it('보내는 중에는 초안을 지키려고 뒤로가기를 막는다', () => {
+    // When
+    const result = TodoCommentComposerPolicy.getBackAction({ type: 'new' }, true);
+
+    // Then
+    expect(result).toBe('blocked');
+  });
+});

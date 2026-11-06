@@ -160,7 +160,7 @@ function useCommentTimeLabel(comment: TodoComment) {
 function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }) {
   const { t } = useTranslation('todoComment');
   const timeLabel = useCommentTimeLabel(comment);
-  const tagLabel = TodoCommentPolicy.getUserTagLabel(comment);
+  const userTag = comment.author?.userTag;
   const name = comment.author?.name ?? t('list.unknownUser');
 
   return (
@@ -169,8 +169,8 @@ function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }
         <Text size="b4" weight="semibold" maxLines={1} ellipsizeMode="tail" className="max-w-full">
           {name}
         </Text>
-        {tagLabel != null && <Meta text={tagLabel} isShrinkable />}
-        {TodoCommentPolicy.isByTodoOwner(comment) && (
+        {userTag != null && <Meta text={`#${userTag}`} isShrinkable />}
+        {comment.author?.isTodoOwner === true && (
           <Text size="e2" tone="brand" className="shrink-0">
             {t('list.authorBadge')}
           </Text>
@@ -212,7 +212,7 @@ function Body({
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
   );
   const completeDoubleTapHint = useCompleteDoubleTapHint();
-  const mention = TodoCommentPolicy.getMentionName(comment);
+  const mention = comment.replyTo?.authorName;
   const gesture = useCommentDoubleTap({
     burst,
     likeButtonScale,

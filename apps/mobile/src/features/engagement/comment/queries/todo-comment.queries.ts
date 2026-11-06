@@ -34,7 +34,7 @@ interface TodoCommentRepliesParams {
 function selectTodoCommentThreads(data: TodoCommentThreadPages) {
   return {
     threads: TodoCommentPolicy.flattenThreads(data.pages),
-    anchor: TodoCommentPolicy.getAnchor(data.pages),
+    anchor: data.pages[0]?.anchor ?? null,
   };
 }
 

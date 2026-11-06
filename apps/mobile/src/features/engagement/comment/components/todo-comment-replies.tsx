@@ -16,6 +16,7 @@ import type {
   TodoCommentThread,
   TodoCommentThreadAnchor,
 } from '../schemas/todo-comment.schema';
+import { getReplyFooter } from '../utils/todo-comment-replies.view-model';
 import { useThreadExpansion } from './todo-comment-expansion';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentRailRow } from './todo-comment-thread-rail';
@@ -97,7 +98,7 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
     .otherwise(({ data, hasNextPage, hasPreviousPage, isFetchingNextPage }) => {
       const replies = data ?? [];
       const remaining = TodoCommentPolicy.getHiddenReplyCount(thread, replies.length);
-      const footer = TodoCommentPolicy.getReplyFooter(thread, {
+      const footer = getReplyFooter(thread, {
         loadedCount: replies.length,
         hasNextPage,
         expansion,
