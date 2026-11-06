@@ -59,4 +59,32 @@ describe('createNotificationEntryStore', () => {
     // Then
     expect(listener).not.toHaveBeenCalled();
   });
+
+  it('소유 확인이 끝나기 전에 새 탭이 오면 앞 탭의 목적지를 버린다', () => {
+    // Given
+    const store = createNotificationEntryStore();
+    store.receive(tap('a'));
+    store.receive(tap('b'));
+
+    // When
+    store.markReady('a', { kind: 'none' });
+
+    // Then
+    expect(store.getState().ready).toBeNull();
+    expect(store.getState().pending?.id).toBe('b');
+  });
+
+  it('목적지가 정해진 뒤 새 탭이 오면 새 탭이 이긴다', () => {
+    // Given
+    const store = createNotificationEntryStore();
+    store.receive(tap('a'));
+    store.markReady('a', { kind: 'none' });
+
+    // When
+    store.receive(tap('b'));
+
+    // Then
+    expect(store.getState().ready).toBeNull();
+    expect(store.getState().pending?.id).toBe('b');
+  });
 });

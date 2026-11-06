@@ -44,6 +44,7 @@ jest.mock('uniwind', () => ({ useResolveClassNames: () => ({ backgroundColor: '#
 jest.mock('expo-linking', () => ({
   ...jest.requireActual('expo-linking'),
   useLinkingURL: jest.fn(() => null),
+  openURL: jest.fn(async () => true),
 }));
 jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(async () => {}),
@@ -204,7 +205,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
   return { route, gateway, httpClient, focusLog, hideLog, analytics: container.analytics };
 }
 
-describe('푸시 탭 진입 (지금 동작)', () => {
+describe('푸시 탭 진입', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockWindowDimensions(390);
@@ -216,7 +217,7 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     jest.restoreAllMocks();
   });
 
-  it('앱 종료 상태 탭: 읽음 응답을 받고 목적지로 간 뒤에 스플래시를 내린다', async () => {
+  it('앱 종료 상태 탭: 스플래시 뒤에서 목적지로 바로 가 피드가 focus되지 않는다', async () => {
     // Given
     const read = createPendingResponse(READ_OK);
     const { route, gateway, focusLog, hideLog } = await setup({
@@ -230,7 +231,8 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
 
     // Then
-    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    await waitFor(() => expect(gateway.clearLastResponse).not.toHaveBeenCalled());
+    expect(route.getPathname()).toBe('/loading');
     expect(hideLog).toEqual([]);
 
     // When
@@ -239,26 +241,119 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
     await waitFor(() => expect(hideLog).toEqual(['/todo/42']));
-    expect(focusLog).toEqual(['feed', 'todo']);
-    expect(gateway.clearLastResponse).toHaveBeenCalled();
+    expect(focusLog).toEqual(['todo']);
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
   });
 
-  it('스플래시에 갇히지 않는다: 읽음 응답이 없어도 예산 뒤 내린다', async () => {
+  it('앱 종료 상태 탭: 다른 계정 알림은 버리고 피드로 간다', async () => {
     // Given
-    const { route, hideLog } = await setup({
+    const { route, gateway, focusLog } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
-      markRead: () => new Promise(noop),
+      markRead: async () => err(new ApiError('NOTIFICATION_1001', '없어요', 404)),
     });
 
     // When
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
 
     // Then
-    await waitFor(() => expect(hideLog.length).toBeGreaterThan(0), {
-      timeout: NOTIFICATION_READ_BUDGET_MS + 1000,
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    expect(focusLog).toEqual(['feed']);
+    expect(gateway.getLastResponse()).toBeNull();
+  });
+
+  it('앱 종료 상태 탭: 오프라인이어도 목적지로 간다', async () => {
+    // Given
+    const { route } = await setup({
+      status: 'loading',
+      lastResponse: TODO_RESPONSE,
+      markRead: async () => {
+        throw new NetworkError();
+      },
     });
-    expect(route.getPathname()).toBe('/todo/42');
+
+    // When
+    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+  });
+
+  it('앱 종료 상태 탭: 이동 없는 알림은 피드로 간다', async () => {
+    // Given
+    const { route, focusLog, gateway } = await setup({
+      status: 'loading',
+      lastResponse: {
+        ...TODO_RESPONSE,
+        data: {
+          notificationId: 0,
+          type: 'SYSTEM_NOTICE',
+          action: { type: 'NONE' },
+          navigation: { kind: 'NONE' },
+        },
+      },
+    });
+
+    // When
+    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    expect(focusLog).toEqual(['feed']);
+    await waitFor(() => expect(gateway.getLastResponse()).toBeNull());
+  });
+
+  it('앱 종료 상태 탭: 외부 링크는 피드로 간 뒤 한 번만 연다', async () => {
+    // Given
+    const { route } = await setup({
+      status: 'loading',
+      lastResponse: {
+        ...TODO_RESPONSE,
+        data: {
+          notificationId: 0,
+          type: 'SYSTEM_NOTICE',
+          action: { type: 'BROWSER', url: 'https://aido.kr/notice' },
+          navigation: {
+            kind: 'EXTERNAL_URL',
+            url: 'https://aido.kr/notice',
+            presentation: 'BROWSER',
+          },
+        },
+      },
+    });
+
+    // When
+    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    await waitFor(() => expect(ExpoLinking.openURL).toHaveBeenCalledTimes(1));
+    expect(ExpoLinking.openURL).toHaveBeenCalledWith('https://aido.kr/notice');
+  });
+
+  it('앱 종료 상태 탭: 펼친 화면은 피드의 상세 pane으로 연다', async () => {
+    // Given
+    mockWindowDimensions(1000);
+    const { route, hideLog } = await setup({ status: 'loading', lastResponse: TODO_RESPONSE });
+
+    // When
+    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+    // Then
+    await waitFor(() => expect(hideLog).toEqual(['/feed']));
+    expect(route.getSearchParams()).toMatchObject({ todoId: '42' });
+  });
+
+  it('공개 화면에서 탭: 인증된 사용자는 Index를 거치지 않고 바로 이동한다', async () => {
+    // Given
+    const { route, gateway } = await setup({ status: 'authenticated', initialUrl: '/invite' });
+    await waitFor(() => expect(route.getPathname()).toBe('/invite'));
+
+    // When
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
   });
 
   it('앱 종료 상태 탭: 뒤로 가면 피드이고 다시 이동하지 않는다', async () => {
@@ -273,6 +368,12 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
     expect(gateway.getLastResponse()).toBeNull();
+
+    // When
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+
+    // Then
+    expect(route.getPathname()).toBe('/feed');
   });
 
   it('잠금 중 콜드 스타트: 스피너로 넘겼다가 잠금이 풀리면 이동한다', async () => {

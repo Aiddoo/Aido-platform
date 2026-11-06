@@ -9,10 +9,11 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Slot } from 'expo-router';
-import { act, renderRouter } from 'expo-router/testing-library';
+import { act, renderRouter, waitFor } from 'expo-router/testing-library';
 import { type PropsWithChildren, useState } from 'react';
 
 import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
+import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { useNotificationResponseObserver } from './use-notification-response-observer';
 
 jest.unmock('expo-router');
@@ -127,6 +128,21 @@ describe('useNotificationResponseObserver', () => {
 
     // Then
     expect(store.getState().pending?.id).toBe('response-1');
+  });
+
+  it('Index가 이동하지 못해도 상한이 지나면 슬롯을 비워 갇히지 않는다', async () => {
+    // Given
+    const { gateway, logger, store } = await setup({ status: 'authenticated' });
+
+    // When
+    await act(async () => gateway.emitResponse(RESPONSE));
+    expect(store.getState().ready?.response.id).toBe('response-1');
+
+    // Then
+    await waitFor(() => expect(store.getState().ready).toBeNull(), {
+      timeout: NOTIFICATION_ENTRY_HOLD_MAX_MS + 1000,
+    });
+    expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {
