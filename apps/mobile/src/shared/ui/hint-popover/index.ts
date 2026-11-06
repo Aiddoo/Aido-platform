@@ -1,1 +1,1 @@
-export { HintPopoverContent, type HintPopoverContentProps } from './hint-popover';
+export { HINT_OFFSET, HintPopoverContent, type HintPopoverContentProps } from './hint-popover';

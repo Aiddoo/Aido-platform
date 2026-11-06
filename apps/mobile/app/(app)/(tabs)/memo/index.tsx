@@ -12,11 +12,13 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
   Box,
   H3,
+  HINT_OFFSET,
   HStack,
   PlusIcon,
   QueryErrorBoundary,
@@ -31,8 +33,13 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense } from 'react';
 
+const HEADER_GAP = 8;
+const MEMO_CREATE_BUTTON_SIZE = 44;
+
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
+  const fontScaledSize = useFontScaledSize();
+  const isCompact = useWindowSizeClass() === 'compact';
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
 
@@ -49,11 +56,19 @@ export default function MemoScreen() {
         primary={
           <Box className="flex-1">
             <StyledSafeAreaView edges={['left', 'right']}>
-              <HStack align="center" gap={8} className="px-4">
+              <HStack align="center" gap={HEADER_GAP} className="px-4">
                 <Box className="flex-1">
                   <H3 maxLines={1}>{t('tab.title')}</H3>
                 </Box>
-                <VoiceNoteStartButton />
+                {/* 아래로 펴면 첫 메모를 덮는다. 좁으면 제목 자리, 넓으면 그 자리가 좁아 새 메모 버튼 건너 상세 칸에 편다 */}
+                <VoiceNoteStartButton
+                  coachmarkPlacement={isCompact ? 'left' : 'right'}
+                  coachmarkOffset={
+                    isCompact
+                      ? undefined
+                      : fontScaledSize(MEMO_CREATE_BUTTON_SIZE) + HEADER_GAP + HINT_OFFSET
+                  }
+                />
                 <QueryErrorBoundary fallback={MemoCreateButton.Error}>
                   <Suspense fallback={<MemoCreateButton.Loading />}>
                     <MemoCreateButton />
@@ -104,6 +119,7 @@ export default function MemoScreen() {
 
 function MemoCreateButton() {
   const fontScaledSize = useFontScaledSize();
+  const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const push = useSingleTap(router.push);
 
   const toast = useAppToast();
@@ -124,7 +140,7 @@ function MemoCreateButton() {
       onPress={handleCreate}
       accessibilityRole="button"
       accessibilityLabel={t('titles.create')}
-      style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+      style={{ width: createButtonSize, height: createButtonSize }}
       className={cn(
         'items-center justify-center rounded-full',
         canCreate ? 'bg-main' : 'bg-gray-4',
@@ -137,18 +153,20 @@ function MemoCreateButton() {
 
 MemoCreateButton.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();
-  return <Box style={{ width: fontScaledSize(44), height: fontScaledSize(44) }} />;
+  const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
+  return <Box style={{ width: createButtonSize, height: createButtonSize }} />;
 };
 
 MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const fontScaledSize = useFontScaledSize();
+  const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const { t } = useTranslation('common');
   return (
     <PressableFeedback
       accessibilityRole="button"
       accessibilityLabel={t('actions.retry')}
       onPress={reset}
-      style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+      style={{ width: createButtonSize, height: createButtonSize }}
       className="items-center justify-center rounded-full bg-gray-8"
     >
       <RefreshIcon width={20} height={20} colorClassName="text-white" />

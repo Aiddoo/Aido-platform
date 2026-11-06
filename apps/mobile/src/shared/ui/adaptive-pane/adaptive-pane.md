@@ -49,6 +49,10 @@ pane은 Stack 화면이 아니어서 네이티브 헤더가 없고, 꼭대기 �
 - pane 안에서 한 단계 들어간 화면(댓글 대화)만 그 안의 이전 단계로 돌아가는 뒤로가기를 둔다.
 - 접힌 화면(compact)은 상세 라우트의 네이티브 헤더와 시스템 뒤로가기를 그대로 쓴다.
 
+## 자리가 움직였는지 알기
+
+`useAdaptivePaneLayoutKey()`는 창 폭과 접힘선 위치를 합친 문자열이다. 말풍선처럼 pane 안의 자리를 재어 띄운 것은 `CoachmarkPopover`의 `dismissKey`로 넘긴다(`VoiceNoteStartButton`). 자세가 바뀌어 자리가 움직일 때 읽기 시간 전이면 멈춘 뒤 새 자리에서 다시 열고, 충분히 읽었으면 끝낸다. 접힘선이 `AdaptivePane`의 좌표로 재어지므로 `primary`·`secondary` 안에서 부른다. 화면에서 부르면 앱 루트의 provider를 읽어 좌표가 달라진다.
+
 ## Props
 
 | Prop          | 타입                       | 설명                                                            |

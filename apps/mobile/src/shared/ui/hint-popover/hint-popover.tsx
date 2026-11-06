@@ -13,7 +13,7 @@ import { VStack } from '../v-stack';
 const HINT_MAX_WIDTH = 300;
 const HINT_SCREEN_INSET = 12;
 /** `Popover.Content`의 기본 간격과 같다 */
-const HINT_OFFSET = 9;
+export const HINT_OFFSET = 9;
 
 type PopoverContentProps = Extract<
   ComponentProps<typeof Popover.Content>,

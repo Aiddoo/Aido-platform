@@ -1,5 +1,10 @@
 export { ActionChip, type ActionChipProps } from './action-chip';
-export { AdaptivePane, type AdaptivePaneProps, getPrimaryPaneWidth } from './adaptive-pane';
+export {
+  AdaptivePane,
+  type AdaptivePaneProps,
+  getPrimaryPaneWidth,
+  useAdaptivePaneLayoutKey,
+} from './adaptive-pane';
 export { Avatar } from './avatar';
 export { Barcode, type BarcodeProps } from './barcode';
 export {
@@ -40,7 +45,7 @@ export { Flex } from './flex';
 export { FormStepLayout, type FormStepLayoutProps } from './form-step-layout';
 export { Grid, GridItem, useGridColumns } from './grid';
 export { HStack } from './h-stack';
-export { HintPopoverContent, type HintPopoverContentProps } from './hint-popover';
+export { HINT_OFFSET, HintPopoverContent, type HintPopoverContentProps } from './hint-popover';
 export { IconRadioItem, type IconRadioItemProps } from './icon-radio-item';
 export {
   AiIcon,

@@ -1,7 +1,7 @@
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import type { ReactNode } from 'react';
-import { I18nManager, type StyleProp, type ViewStyle } from 'react-native';
+import { I18nManager, type StyleProp, useWindowDimensions, type ViewStyle } from 'react-native';
 import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
 import {
   SafeAreaProvider,
@@ -28,6 +28,17 @@ export function AdaptivePane(props: AdaptivePaneProps) {
       <AdaptivePaneLayout {...props} />
     </ReservedRegionsProvider>
   );
+}
+
+/**
+ * 창 폭이나 접힘선 위치가 바뀌면 달라지는 값. pane 안의 자리가 움직였는지 알 때 쓴다.
+ * 접힘선은 pane의 좌표로 재므로 `AdaptivePane` 안에서 부른다.
+ */
+export function useAdaptivePaneLayoutKey(): string {
+  const { width } = useWindowDimensions();
+  const fold = findVerticalFold(useReservedRegions());
+
+  return `${width}:${fold?.frame.x ?? 'none'}`;
 }
 
 /** 반쯤 접은 자세에서는 접힘선 위치로 목록과 상세를 나누고, 접힘선 폭만큼 비운다. */
