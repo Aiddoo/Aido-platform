@@ -202,9 +202,6 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get coachmarkService() {
       return dependency('coachmarkService');
     },
-    get friendStripHintService() {
-      return dependency('friendStripHintService');
-    },
     get storeReviewService() {
       return dependency('storeReviewService');
     },

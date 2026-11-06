@@ -10,7 +10,6 @@ import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/purchase-failed-reason';
-import type { CoachmarkKind } from '@src/features/device/coachmark/apis/coachmark.repository';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/schemas/oauth.schema';
 import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
 import type { ReportType } from '@src/features/insights/report/domains/report.model';
@@ -396,11 +395,6 @@ export interface VoiceEventMap {
   voice_note_key_point_played: { position_bucket: VoiceDurationBucket };
 }
 
-interface CoachmarkEventMap {
-  coachmark_shown: { kind: CoachmarkKind };
-  coachmark_dismissed: { kind: CoachmarkKind };
-}
-
 interface AiEventMap {
   ai_parse_used: { success: boolean };
   ai_suggestion_acted: { action: 'accept' | 'dismiss' };
@@ -494,7 +488,6 @@ export type LegacyEventMap = AuthEventMap &
   SubscriptionEventMap &
   EntitlementEventMap &
   VoiceEventMap &
-  CoachmarkEventMap &
   AiEventMap &
   VoiceEventMap &
   UserEventMap &

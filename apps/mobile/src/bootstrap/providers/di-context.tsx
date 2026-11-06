@@ -41,7 +41,6 @@ import type { NotificationService } from '@src/features/notification/apis/notifi
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import type { PushPromptService } from '@src/features/notification/apis/push-prompt.service';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
-import type { FriendStripHintService } from '@src/features/planning/todo/apis/friend-strip-hint.service';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import type { FriendService } from '@src/features/social/friend/apis/friend.service';
@@ -126,7 +125,6 @@ export interface DIContainer {
   marketingPushPromptService: MarketingPushPromptService;
   todoNudgeService: TodoNudgeService;
   coachmarkService: CoachmarkService;
-  friendStripHintService: FriendStripHintService;
   storeReviewService: StoreReviewService;
   userService: UserService;
   purchasesSdkManager: PurchasesSdkManager;
@@ -212,7 +210,6 @@ export const usePushPromptService = () => useDI().pushPromptService;
 export const useMarketingPushPromptService = () => useDI().marketingPushPromptService;
 export const useTodoNudgeService = () => useDI().todoNudgeService;
 export const useCoachmarkService = () => useDI().coachmarkService;
-export const useFriendStripHintService = () => useDI().friendStripHintService;
 export const useStoreReviewService = () => useDI().storeReviewService;
 export const useUserService = () => useDI().userService;
 export const usePurchasesSdkManager = () => useDI().purchasesSdkManager;

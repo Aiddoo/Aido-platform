@@ -19,7 +19,7 @@ interface CoachmarkPopoverProps
       'icon' | 'placement' | 'align' | 'avoidCollisions' | 'isPassThrough' | 'offset'
     > {
   kind: CoachmarkKind;
-  title: string;
+  title?: string;
   description: string;
   isEnabled?: boolean;
   isForced?: boolean;

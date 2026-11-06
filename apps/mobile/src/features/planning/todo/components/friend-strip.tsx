@@ -1,5 +1,6 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import { useFriendStripHintService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
+import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/get-friends-infinite-query-options';
@@ -7,13 +8,11 @@ import type { FriendUserViewModel } from '@src/features/social/friend/utils/view
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useTrack } from '@src/shared/analytics';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   Box,
-  CloseIcon,
   HStack,
   PlusIcon,
   QueryErrorActions,
@@ -21,8 +20,8 @@ import {
   RefreshIcon,
   Result,
   Text,
-  WordWrapText,
   TextSkeleton,
+  useAdaptivePaneLayoutKey,
   VStack,
 } from '@src/shared/ui';
 import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
@@ -34,17 +33,8 @@ import {
 } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
-import { CloseButton, PressableFeedback, Separator, Skeleton } from 'heroui-native';
-import {
-  memo,
-  type ReactNode,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { PressableFeedback, Separator, Skeleton } from 'heroui-native';
+import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
 import { useFeedFriendParam } from '../hooks/use-feed-params';
@@ -58,8 +48,6 @@ const MIN_ITEM_WIDTH = 56;
 /** 이름 칸은 글자 배율이 커져도 한글 네 글자 정도가 보이게 넓힌다 */
 const LABEL_WIDTH_IN_EM = 4.5;
 const DIVIDER_HEIGHT = 32;
-/** 안내 말풍선 꼬리(45도 돌린 정사각형) 한 변 */
-const HINT_CARET_SIZE = 10;
 const LOADING_ITEM_COUNT = 8;
 /** 가로 목록이라 1은 목록 폭 한 번. 끝에서 두 화면 앞에서 다음 페이지를 미리 부른다 */
 const END_REACHED_THRESHOLD = 2;
@@ -95,55 +83,52 @@ export function FriendStrip() {
   };
 
   return (
-    <VStack>
-      <HStack align="start" style={{ height }}>
-        <Box pl={16} pr={ITEM_GAP}>
-          <FriendStrip.Item
-            name={t('friendStrip.me')}
-            profileImage={user.profileImage}
-            width={width}
+    <HStack align="start" style={{ height }}>
+      <Box pl={16} pr={ITEM_GAP}>
+        <FriendStrip.Item
+          name={t('friendStrip.me')}
+          profileImage={user.profileImage}
+          width={width}
+        />
+      </Box>
+      <Divider />
+      {friends.length === 0 ? (
+        <FriendStrip.Empty />
+      ) : (
+        <>
+          <FlashList
+            ref={listRef}
+            horizontal
+            data={friends}
+            keyExtractor={(friend) => friend.followId}
+            renderItem={({ item: friend }) => (
+              <FriendStrip.Item
+                friendId={friend.id}
+                name={friend.displayName}
+                profileImage={friend.profileImage}
+                width={width}
+              />
+            )}
+            ItemSeparatorComponent={ItemGap}
+            ListFooterComponent={
+              <ListEnd
+                hasNextPage={hasNextPage}
+                isFetchNextPageError={isFetchNextPageError}
+                onRetry={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
+              />
+            }
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={END_REACHED_THRESHOLD}
+            drawDistance={DRAW_DISTANCE}
+            onLoad={() => setIsListLoaded(true)}
+            showsHorizontalScrollIndicator={false}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingRight: 16 }}
           />
-        </Box>
-        <Divider />
-        {friends.length === 0 ? (
-          <FriendStrip.Empty />
-        ) : (
-          <>
-            <FlashList
-              ref={listRef}
-              horizontal
-              data={friends}
-              keyExtractor={(friend) => friend.followId}
-              renderItem={({ item: friend }) => (
-                <FriendStrip.Item
-                  friendId={friend.id}
-                  name={friend.displayName}
-                  profileImage={friend.profileImage}
-                  width={width}
-                />
-              )}
-              ItemSeparatorComponent={ItemGap}
-              ListFooterComponent={
-                <ListEnd
-                  hasNextPage={hasNextPage}
-                  isFetchNextPageError={isFetchNextPageError}
-                  onRetry={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
-                />
-              }
-              onEndReached={handleEndReached}
-              onEndReachedThreshold={END_REACHED_THRESHOLD}
-              drawDistance={DRAW_DISTANCE}
-              onLoad={() => setIsListLoaded(true)}
-              showsHorizontalScrollIndicator={false}
-              style={{ flex: 1 }}
-              contentContainerStyle={{ paddingRight: 16 }}
-            />
-            <SelectedFriendReveal listRef={listRef} friends={friends} isListLoaded={isListLoaded} />
-          </>
-        )}
-      </HStack>
-      {friends.length === 0 && <FriendStrip.Hint userId={user.id} />}
-    </VStack>
+          <SelectedFriendReveal listRef={listRef} friends={friends} isListLoaded={isListLoaded} />
+        </>
+      )}
+    </HStack>
   );
 }
 
@@ -246,92 +231,56 @@ FriendStrip.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-/** 친구가 없으면 "나" 옆에서 초대(초대를 못 쓰면 친구 찾기)로 이끈다. 칸 높이는 친구가 있을 때와 같다 */
+/**
+ * 친구가 없으면 "나" 옆에서 초대(초대를 못 쓰면 친구 찾기)로 이끈다. 칸 높이는 친구가 있을 때와 같다.
+ * 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
+ */
 FriendStrip.Empty = function Empty() {
   const { t } = useTranslation('todo');
+  const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
   const openMyInvite = useOpenMyInvite();
   const isInviteAvailable = useInviteAvailability();
+  const layoutKey = useAdaptivePaneLayoutKey();
   const label = isInviteAvailable ? t('friendStrip.emptyInvite') : t('friendStrip.findFriends');
+  const hint = isInviteAvailable
+    ? t('friendStrip.emptyInviteHint')
+    : t('friendStrip.emptySearchHint');
 
   return (
-    <PressableFeedback
-      testID="friend-strip-empty"
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={
-        isInviteAvailable ? t('friendStrip.emptyInviteHint') : t('friendStrip.emptySearchHint')
+    <CoachmarkPopover
+      kind="friend-strip"
+      description={hint}
+      dismissKey={layoutKey}
+      placement="bottom"
+      align="start"
+      avoidCollisions
+      isPassThrough
+      onDismiss={() =>
+        trackEvent('friend_strip_hint_dismissed', {
+          hint: isInviteAvailable ? 'invite' : 'search',
+        })
       }
-      onPress={() => {
-        if (isInviteAvailable) {
-          openMyInvite('friend_strip_empty');
-          return;
-        }
-        push('/friends/search');
-      }}
     >
-      <ActionCell
-        icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
-        label={label}
-      />
-    </PressableFeedback>
-  );
-};
-
-/**
- * 친구가 없을 때 친구 줄 아래에 붙는 안내 말풍선. 꼬리가 초대 칸을 가리키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
- * 친구 줄 옆에 두면 큰 글자에서 글이 좁은 칸에 갇히므로 줄 아래 전체 폭을 쓴다
- */
-FriendStrip.Hint = function Hint({ userId }: { userId: string }) {
-  const { t } = useTranslation('todo');
-  const { trackEvent } = useTrack();
-  const fontScaledSize = useFontScaledSize();
-  const hintService = useFriendStripHintService();
-  const isInviteAvailable = useInviteAvailability();
-  const { width } = useFriendStripItemSize();
-  // 닫힘은 저장소가 원본이다. 저장소 변경을 구독해 닫는 즉시 사라진다
-  const subscribe = useCallback(
-    (listener: () => void) => hintService.subscribe(userId, listener),
-    [hintService, userId],
-  );
-  const isDismissed = useSyncExternalStore(subscribe, () => hintService.isDismissed(userId));
-
-  if (isDismissed) {
-    return null;
-  }
-
-  // "나" 칸 + 구분선 뒤 초대 칸의 가운데. 말풍선은 좌우 16 안쪽에서 시작한다
-  const caretLeft = width + ITEM_GAP + 1 + ITEM_GAP + width / 2 - HINT_CARET_SIZE / 2;
-
-  const dismiss = () => {
-    hintService.dismiss(userId);
-    trackEvent('friend_strip_hint_dismissed', { hint: isInviteAvailable ? 'invite' : 'search' });
-  };
-
-  return (
-    <Box mx={16} mt={8} pt={HINT_CARET_SIZE / 2}>
-      <Box
-        className="absolute top-0 rotate-45 rounded-[2px] bg-gray-2"
-        style={{ left: caretLeft, width: HINT_CARET_SIZE, height: HINT_CARET_SIZE }}
-      />
-      <HStack gap={8} align="center" className="rounded-xl bg-gray-2 py-1.5 pl-3 pr-1.5">
-        <WordWrapText size="b4" shade={7} className="flex-1 shrink">
-          {isInviteAvailable ? t('friendStrip.emptyInviteHint') : t('friendStrip.emptySearchHint')}
-        </WordWrapText>
-        <CloseButton
-          testID="friend-strip-hint-dismiss"
-          variant="ghost"
-          accessibilityLabel={t('friendStrip.hintDismiss')}
-          onPress={dismiss}
-        >
-          <CloseIcon
-            width={fontScaledSize(14)}
-            height={fontScaledSize(14)}
-            colorClassName="text-gray-6"
-          />
-        </CloseButton>
-      </HStack>
-    </Box>
+      <PressableFeedback
+        testID="friend-strip-empty"
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={hint}
+        onPress={() => {
+          if (isInviteAvailable) {
+            openMyInvite('friend_strip_empty');
+            return;
+          }
+          push('/friends/search');
+        }}
+      >
+        <ActionCell
+          icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
+          label={label}
+        />
+      </PressableFeedback>
+    </CoachmarkPopover>
   );
 };
 
