@@ -1,12 +1,8 @@
-import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
+import { createAppIconGatewayStub } from '@src/shared/__tests__';
 
 import { AppIconService } from './app-icon.service';
 
-const createGateway = (): jest.Mocked<AppIconGateway> => ({
-  isSupported: jest.fn().mockReturnValue(true),
-  getCurrentIcon: jest.fn().mockResolvedValue(null),
-  changeIcon: jest.fn().mockImplementation(async (name: string | null) => name),
-});
+const createGateway = createAppIconGatewayStub;
 
 describe('앱 아이콘 서비스', () => {
   test.each([

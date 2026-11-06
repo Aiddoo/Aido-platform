@@ -3,6 +3,7 @@ export { createHapticsStub } from './create-haptics-stub';
 export { createLoggerStub } from './create-logger-stub';
 export { createIdGeneratorStub } from './create-id-generator-stub';
 export { createLocalFileSystemFake } from './create-local-file-system-fake';
+export { createAppIconGatewayStub } from './create-app-icon-gateway-stub';
 export { createAnalyticsStub } from './create-analytics-stub';
 export { createTestDiContainer } from './create-test-di-container';
 export { createHttpClientStub } from './create-http-client-stub';

@@ -1,4 +1,4 @@
-import { PROFILE_ICON_KEYS } from '@aido/api';
+import { PROFILE_ICON_KEYS } from '@aido/api/vocabulary';
 import black_cat from '@assets/images/profile-icons/black-cat.webp';
 import cream_cat from '@assets/images/profile-icons/cream-cat.webp';
 import defaultIcon from '@assets/images/profile-icons/default.webp';
@@ -10,7 +10,7 @@ import tuxedo_cat from '@assets/images/profile-icons/tuxedo-cat.webp';
 import white_cat from '@assets/images/profile-icons/white-cat.webp';
 import type { ImageSourcePropType } from 'react-native';
 
-import type { AppIconKey } from '../domains/app-icon.model';
+import type { AppIconKey } from '../schemas/app-icon.schema';
 
 const ICON_PREVIEWS = {
   default: { labelKey: 'icons.default', preview: defaultIcon },

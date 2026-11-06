@@ -1,6 +1,7 @@
 import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
 
-import { type AppIconKey, AppIconPolicy } from '../domains/app-icon.model';
+import { AppIconPolicy } from '../domains/app-icon.model';
+import type { AppIconKey } from '../schemas/app-icon.schema';
 
 export class AppIconService {
   readonly #gateway: AppIconGateway;
@@ -17,7 +18,7 @@ export class AppIconService {
     if (signal?.aborted) {
       throw new Error('App icon lookup cancelled');
     }
-    return AppIconPolicy.resolveKey({ nativeKey });
+    return AppIconPolicy.resolveAppIconKey(nativeKey);
   };
 
   changeIcon = (key: AppIconKey): Promise<AppIconKey> => {
@@ -26,8 +27,8 @@ export class AppIconService {
     }
 
     const operation = this.#gateway
-      .changeIcon(AppIconPolicy.nativeName({ key }))
-      .then((nativeKey) => AppIconPolicy.resolveKey({ nativeKey }));
+      .changeIcon(AppIconPolicy.getNativeAppIconName(key))
+      .then((nativeKey) => AppIconPolicy.resolveAppIconKey(nativeKey));
     const pendingChange = operation.finally(() => {
       if (this.#pendingChange === pendingChange) {
         this.#pendingChange = null;

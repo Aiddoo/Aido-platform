@@ -3,9 +3,10 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
-import type { AppIconKey } from '@src/features/device/app-icon/domains/app-icon.model';
+import { AppIconPolicy } from '@src/features/device/app-icon/domains/app-icon.model';
 import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/app-icon.mutations';
 import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/queries/app-icon.queries';
+import type { AppIconKey } from '@src/features/device/app-icon/schemas/app-icon.schema';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,
@@ -46,7 +47,7 @@ function AppIconScreen() {
       return;
     }
 
-    if (key !== 'default' && !gate.guard()) {
+    if (AppIconPolicy.requiresPremium(key) && !gate.guard()) {
       return;
     }
 
@@ -96,7 +97,7 @@ function AppIconScreen() {
                 value={currentIcon}
                 onChange={handleIconPress}
                 isDisabled={isChanging}
-                isLocked={(key) => isIconLocked && key !== 'default'}
+                isLocked={(key) => isIconLocked && AppIconPolicy.requiresPremium(key)}
               />
             </SettingsCard.Content>
           </SettingsCard>
