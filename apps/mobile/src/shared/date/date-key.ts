@@ -1,20 +1,54 @@
-import { DAY_MS, DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import utc from 'dayjs/plugin/utc';
 
-import { toDateKey } from './instant';
+dayjs.extend(utc);
+dayjs.extend(isoWeek);
+
+const DATE_KEY_FORMAT = 'YYYY-MM-DD';
+const MONDAY = 1;
+
+/** YYYY-MM-DD를 UTC 자정으로 읽는다. 시간대와 DST가 끼지 않아 달력 계산이 하루 단위로 정확하다. */
+function parseDateKey(dateKey: string) {
+  return dayjs.utc(dateKey);
+}
 
 /** YYYY-MM-DD에 달력 일수를 더한다 (윤년·월말·연말 포함, 시간대 무관). */
 export function addDaysToDateKey(dateKey: string, days: number): string {
-  return toDateKey(new Date(Date.parse(`${dateKey}T00:00:00Z`) + days * DAY_MS), 'UTC');
+  const shifted = parseDateKey(dateKey).add(days, 'day');
+  return shifted.isValid() ? shifted.format(DATE_KEY_FORMAT) : '';
 }
 
 /** 두 YYYY-MM-DD 사이의 달력 일수 (to - from, 시간대·DST 무관). */
 export function diffDateKeysInDays(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);
+  return parseDateKey(to).diff(parseDateKey(from), 'day');
 }
 
 /** YYYY-MM-DD의 요일 (0=일 … 6=토, Date#getDay()와 같은 인덱스). */
 export function getDayOfWeek(dateKey: string): number {
-  return new Date(`${dateKey}T00:00:00Z`).getUTCDay();
+  return parseDateKey(dateKey).day();
+}
+
+/** 그 날이 속한 월요일 시작 주의 월요일. 일요일은 앞선 월요일로 간다. */
+export function getMondayOfDateKey(dateKey: string): string {
+  return parseDateKey(dateKey).isoWeekday(MONDAY).format(DATE_KEY_FORMAT);
+}
+
+export function getDaysInDateKeyMonth(dateKey: string): number {
+  return parseDateKey(dateKey).daysInMonth();
+}
+
+export function getMonthEndDateKey(dateKey: string): string {
+  return parseDateKey(dateKey).endOf('month').format(DATE_KEY_FORMAT);
+}
+
+export function isSameMonthDateKey(first: string, second: string): boolean {
+  return parseDateKey(first).isSame(parseDateKey(second), 'month');
+}
+
+export function isSameYearDateKey(first: string, second: string): boolean {
+  return parseDateKey(first).isSame(parseDateKey(second), 'year');
 }
 
 export interface CalendarWeek {
@@ -32,6 +66,6 @@ export function getCalendarWeek(dateKey: string): CalendarWeek {
   return {
     startDateKey,
     endDateKey: addDaysToDateKey(startDateKey, DAYS_PER_WEEK - 1),
-    weekOfMonth: Math.ceil(Number(startDateKey.slice(8, 10)) / DAYS_PER_WEEK),
+    weekOfMonth: Math.ceil(parseDateKey(startDateKey).date() / DAYS_PER_WEEK),
   };
 }

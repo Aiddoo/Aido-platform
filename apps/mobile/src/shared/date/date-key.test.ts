@@ -1,6 +1,17 @@
 import { i18n } from '@src/shared/i18n';
+import { range } from 'es-toolkit';
 
-import { diffDateKeysInDays, getCalendarWeek, getDayOfWeek } from './date-key';
+import {
+  addDaysToDateKey,
+  diffDateKeysInDays,
+  getCalendarWeek,
+  getDayOfWeek,
+  getDaysInDateKeyMonth,
+  getMondayOfDateKey,
+  getMonthEndDateKey,
+  isSameMonthDateKey,
+  isSameYearDateKey,
+} from './date-key';
 import { toDateKey } from './instant';
 
 afterEach(async () => {
@@ -103,5 +114,92 @@ describe('날짜 key 기준 달력 주', () => {
     expect(getCalendarWeek(springDateKey).startDateKey).toBe('2026-03-08');
     expect(fallDateKey).toBe('2026-11-01');
     expect(getCalendarWeek(fallDateKey).startDateKey).toBe('2026-11-01');
+  });
+});
+
+describe('addDaysToDateKey — 날짜 key에 달력 일수 더하기', () => {
+  it.each([
+    ['2026-01-31', 1, '2026-02-01'],
+    ['2026-02-28', 1, '2026-03-01'],
+    ['2028-02-28', 1, '2028-02-29'],
+    ['2026-12-31', 1, '2027-01-01'],
+    ['2027-01-01', -1, '2026-12-31'],
+    ['2026-03-08', 0, '2026-03-08'],
+    ['2026-03-01', -1, '2026-02-28'],
+    ['2026-11-01', 365, '2027-11-01'],
+  ])('%s에 %s일을 더하면 %s다', (dateKey, days, expected) => {
+    // When
+    const result = addDaysToDateKey(dateKey, days);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+
+  test('DST 전환일을 지나도 하루씩 늘고 줄어든다', () => {
+    // Given: 미국·유럽 DST 전환(3월, 10~11월)을 모두 지나는 두 해
+    const start = '2026-01-01';
+
+    // When
+    const keys = range(800).map((offset) => addDaysToDateKey(start, offset));
+
+    // Then
+    keys.forEach((key, offset) => {
+      expect(diffDateKeysInDays(start, key)).toBe(offset);
+    });
+    expect(new Set(keys).size).toBe(800);
+  });
+});
+
+describe('getMondayOfDateKey — 월요일 시작 주의 월요일', () => {
+  it.each([
+    ['2026-11-01', '2026-10-26'],
+    ['2026-11-02', '2026-11-02'],
+    ['2026-11-07', '2026-11-02'],
+    ['2027-01-01', '2026-12-28'],
+    ['2028-03-01', '2028-02-28'],
+  ])('%s가 속한 주의 월요일은 %s다', (dateKey, expected) => {
+    // When
+    const monday = getMondayOfDateKey(dateKey);
+
+    // Then
+    expect(monday).toBe(expected);
+  });
+});
+
+describe('날짜 key의 달 계산', () => {
+  it.each([
+    ['2026-02-10', 28, '2026-02-28'],
+    ['2028-02-10', 29, '2028-02-29'],
+    ['2026-12-01', 31, '2026-12-31'],
+    ['2026-04-30', 30, '2026-04-30'],
+  ])('%s의 달은 %s일이고 말일은 %s다', (dateKey, days, monthEnd) => {
+    // When
+    const result = { days: getDaysInDateKeyMonth(dateKey), monthEnd: getMonthEndDateKey(dateKey) };
+
+    // Then
+    expect(result).toEqual({ days, monthEnd });
+  });
+
+  it.each([
+    ['2026-10-31', '2026-10-01', true],
+    ['2026-10-31', '2026-11-01', false],
+    ['2025-10-31', '2026-10-31', false],
+  ])('%s와 %s의 같은 달 여부는 %s다', (first, second, expected) => {
+    // When
+    const result = isSameMonthDateKey(first, second);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+
+  it.each([
+    ['2026-01-01', '2026-12-31', true],
+    ['2026-12-31', '2027-01-01', false],
+  ])('%s와 %s의 같은 해 여부는 %s다', (first, second, expected) => {
+    // When
+    const result = isSameYearDateKey(first, second);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });
