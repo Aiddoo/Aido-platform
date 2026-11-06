@@ -38,7 +38,7 @@ src/
 │   ├── queries/                  # {entity}.queries.ts, {entity}.mutations.ts, {feature}-cache.ts
 │   ├── components/               # {역할}.tsx. 함께 바뀌는 묶음만 하위 폴더
 │   ├── hooks/                    # 여러 파일이 쓰는 훅 (route 읽기, 상태 튜플)
-│   ├── utils/                    # {feature}-href.ts, {feature}-draft.ts, {name}.view-model.ts, 순수 계산
+│   ├── utils/                    # {feature}-draft.ts, {name}.view-model.ts, 순수 계산
 │   └── __tests__/                # {entity}.fixtures.ts, {feature}.test-utils.ts
 └── shared/                       # analytics, config, constants, date, draft, errors, hooks, i18n,
                                   # infra(어댑터), observability, preferences, providers, types, ui, utils
@@ -432,7 +432,7 @@ MemoList.Loading = function Loading() {
 - param은 `features/{area}/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod로 검증해 읽는다. `as`로 건너뛰지 않는다. 타입은 `z.output`에서 얻고 기존 스키마(`routeIdSchema`, `feedDateParamSchema`)를 재사용한다. 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`).
 - `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
 - `useGlobalSearchParams`를 화면 훅에서 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 렌더된다. 레이아웃은 내비게이터와 Provider만 두고 자식 params를 읽지 않는다.
-- href는 피처의 순수 함수가 typed 객체로 만든다(`createFeedHref`, `todoActionsSheetHref`, `memoDetailHref`). 경로 문자열을 잇지 않는다. 알림·위젯 목적지는 `utils/navigation` resolver가 이 함수로 정한다.
+- 이동은 호출부에서 `router.push({ pathname, params })`로 직접 쓴다. typed routes가 `pathname`과 동적 세그먼트를 컴파일 때 검사하므로 href 래퍼를 만들지 않는다. 경로 문자열을 잇지 않는다. 알림은 `utils/notification-destination.ts`, 위젯은 `WidgetNavigationPolicy.getRoute`가 목적지를 정한다.
 - 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의 `parse` 훅으로 좁혀진 값을 읽는다.
 - 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` param으로 바뀐다. 친구 전환은 `router.setParams`라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 메모(`memo`)와 말로 메모(`voice-notes`) 스택은 `slide_from_bottom`이다. `voice-notes`는 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다(`gestureEnabled: false`). 시스템 모달은 토스트·한도 안내가 뒤로 가려져 쓰지 않는다.
@@ -444,15 +444,15 @@ MemoList.Loading = function Loading() {
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복사하지 않는다. 계산할 수 있는 값은 상태로 두지 않는다.
 
-| 상태                                                  | 도구                                                                | 판단 기준·예                                                        |
-| ----------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery` | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
-| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                      | 비동기·재조회가 필요하면 Query                                      |
-| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | Expo Router params + zod 훅 + href 함수, `[value, setValue]` 튜플   | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
-| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`      | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
-| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                            | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
-| 폼 값                                                 | react-hook-form + `zodResolver`                                     | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
-| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                             | 나머지 전부                                                         |
+| 상태                                                  | 도구                                                                    | 판단 기준·예                                                        |
+| ----------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`     | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
+| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                          | 비동기·재조회가 필요하면 Query                                      |
+| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useXParams()` 훅(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
+| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`          | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
+| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
+| 폼 값                                                 | react-hook-form + `zodResolver`                                         | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
+| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                 | 나머지 전부                                                         |
 
 라이브러리가 주는 상태를 다시 만들지 않는다. 이 라이브러리 훅을 한 번 더 감싸는 훅도 만들지 않는다.
 

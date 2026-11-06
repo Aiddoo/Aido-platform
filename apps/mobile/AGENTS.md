@@ -48,27 +48,27 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 ├── constants/        # Query Keys, feature 상수
 ├── components/       # UI 블록과 부모에 결합된 네임스페이스 조각
 ├── hooks/            # route 읽기, [value, setValue] 튜플, 여러 파일이 쓰는 훅
-├── utils/            # href, 초안 키, view-model, 순수 계산
+├── utils/            # 초안 키, view-model, 순수 계산
 └── __tests__/        # fixture, 테스트 DI
 ```
 
-| 파일 유형      | 패턴                                |
-| -------------- | ----------------------------------- |
-| 모델 스키마    | `schemas/{entity}.schema.ts`        |
-| 함수 + Policy  | `domains/{entity}.model.ts`         |
-| 에러           | `domains/{feature}.error.ts`        |
-| 폼 스키마      | `schemas/{name}-form.schema.ts`     |
-| 서비스         | `apis/{feature}.service.ts`         |
-| 매퍼           | `apis/{entity}.mapper.ts`           |
-| 조회 옵션      | `queries/{entity}.queries.ts`       |
-| 변경 옵션      | `queries/{entity}.mutations.ts`     |
-| 캐시 helper    | `queries/{feature}-cache.ts`        |
-| Query Keys     | `constants/{feature}-query-keys.ts` |
-| feature 상수   | `constants/{feature}.constants.ts`  |
-| href           | `utils/{feature}-href.ts`           |
-| 초안 키        | `utils/{feature}-draft.ts`          |
-| 표시 값        | `utils/{name}.view-model.ts`        |
-| 테스트 fixture | `__tests__/{entity}.fixtures.ts`    |
+| 파일 유형      | 패턴                                                             |
+| -------------- | ---------------------------------------------------------------- |
+| 모델 스키마    | `schemas/{entity}.schema.ts`                                     |
+| 함수 + Policy  | `domains/{entity}.model.ts`                                      |
+| 에러           | `domains/{feature}.error.ts`                                     |
+| 폼 스키마      | `schemas/{name}-form.schema.ts`                                  |
+| 서비스         | `apis/{feature}.service.ts`                                      |
+| 매퍼           | `apis/{entity}.mapper.ts`                                        |
+| 조회 옵션      | `queries/{entity}.queries.ts`                                    |
+| 변경 옵션      | `queries/{entity}.mutations.ts`                                  |
+| 캐시 helper    | `queries/{feature}-cache.ts`                                     |
+| Query Keys     | `constants/{feature}-query-keys.ts`                              |
+| feature 상수   | `constants/{feature}.constants.ts`                               |
+| URL params     | `schemas/{name}-params.schema.ts` + `hooks/use-{name}-params.ts` |
+| 초안 키        | `utils/{feature}-draft.ts`                                       |
+| 표시 값        | `utils/{name}.view-model.ts`                                     |
+| 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                 |
 
 이 모양으로 옮긴 feature는 지금 `memo` 하나다. 나머지는 옛 패턴이다: `domains/`의 스키마, `queries/get-{resource}[-infinite]-query-options.ts`, `queries/use-{action}-mutation-options.ts`, `utils/navigation/`, `utils/view-models/`, `__tests__/{entity}.factories.ts`. 평탄한 `*.view-model.ts`는 아직 어느 feature에도 없다. 차이 목록: [아직 옮기지 않은 것](.claude/architecture.md#아직-옮기지-않은-것).
 
