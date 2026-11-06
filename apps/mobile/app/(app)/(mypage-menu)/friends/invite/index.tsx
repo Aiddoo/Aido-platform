@@ -28,11 +28,12 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  Image,
 } from '@src/shared/ui';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { type ReactNode, Suspense } from 'react';
-import { Image, RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const SHARE_ICON = process.env.EXPO_OS === 'ios' ? 'square.and.arrow.up' : ShareIcon;
@@ -173,7 +174,7 @@ function InviteHeroBanner() {
         source={catHiImage}
         accessibilityIgnoresInvertColors
         className="absolute -bottom-[30px] -right-[18px] size-[136px]"
-        resizeMode="cover"
+        contentFit="cover"
       />
 
       <Text size="t2" weight="bold" lineBreakStrategyIOS="hangul-word" className="mr-[98px]">

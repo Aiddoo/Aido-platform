@@ -27,12 +27,13 @@ import {
   VStack,
   ScallopedContainer,
   Box,
+  Image,
 } from '@src/shared/ui';
 import { usePrefetchQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
-import { Image, RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function ReportsScreen() {
@@ -59,7 +60,7 @@ function ReportsScreen() {
               <Image
                 source={require('@assets/images/ido_cat_suggestion.webp')}
                 style={{ width: 100, height: 100 }}
-                resizeMode="contain"
+                contentFit="contain"
               />
               <Spacing size={8} />
               <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">

@@ -19,6 +19,7 @@ import {
   QueryErrorBoundary,
   StyledSafeAreaView,
   Box,
+  Image,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -29,7 +30,6 @@ import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 /** 이메일 칸에 있을 때 아래 비밀번호 칸까지 버튼 위에 보여 바로 누를 수 있게 조금 더 올린다 */
@@ -71,7 +71,7 @@ function EmailLoginScreen() {
           source={idoCatHiImage}
           className="absolute right-0 top-0 z-10 h-[100px] w-[100px]"
           style={{ transform: [{ translateX: 20 }, { translateY: 20 }, { rotate: '-60deg' }] }}
-          resizeMode="contain"
+          contentFit="contain"
         />
         <ReadableContent flex={1}>
           <KeyboardAwareScrollView
