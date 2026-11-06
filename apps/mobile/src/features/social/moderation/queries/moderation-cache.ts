@@ -1,5 +1,5 @@
+import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { invalidateAllTodoComments } from '@src/features/engagement/comment/queries/todo-comment-cache';
-import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
@@ -15,6 +15,7 @@ import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
  * 차단은 친구 관계·친구 할 일·댓글·콕·알림을, 해제는 차단 목록만 바꾸지만 같은 범위를 다시 받아 맞춘다.
  */
 export function invalidateAfterBlockChange(queryClient: QueryClient) {
+  emitNotificationsChanged();
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: MODERATION_QUERY_KEYS.blockedUsers() }),
     invalidateFriends(queryClient),
@@ -22,6 +23,5 @@ export function invalidateAfterBlockChange(queryClient: QueryClient) {
     invalidateFeedTodos(queryClient),
     invalidateAllTodoComments(queryClient),
     invalidateNudges(queryClient),
-    invalidateNotifications(queryClient),
   ]);
 }

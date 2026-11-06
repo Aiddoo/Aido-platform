@@ -1,10 +1,12 @@
-import { useUpdateMarketingConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
-import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
+import { useUpdatePushEnabledMutationOptions } from '@src/features/device/activation/queries/activation.mutations';
+import {
+  useUpdateMarketingConsentMutationOptions,
+  useUpdateMarketingPushConsentMutationOptions,
+} from '@src/features/identity/consent/queries/consent.mutations';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
-import { useUpdatePushEnabledMutationOptions } from '@src/features/notification/queries/notification.mutations';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';

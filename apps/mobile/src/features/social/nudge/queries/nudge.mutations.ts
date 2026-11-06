@@ -4,9 +4,9 @@ import {
   useTodoNudgeService,
   useHaptics,
 } from '@src/bootstrap/providers/di-context';
+import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
-import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-query-keys';
 import { useTrack } from '@src/shared/analytics';
@@ -32,10 +32,8 @@ export function useReplyToNudgeMutationOptions() {
     onSuccess: async (data, variables) => {
       trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
       queryClient.setQueryData(NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }), data);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() }),
-        invalidateNotifications(queryClient),
-      ]);
+      emitNotificationsChanged();
+      await queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
     },
     onError: (error) => {
       if (!isApiError(error)) {
@@ -61,10 +59,8 @@ export function useSendNudgeThanksMutationOptions() {
       if (recipientCount > 0) {
         trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
       }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() }),
-        invalidateNotifications(queryClient),
-      ]);
+      emitNotificationsChanged();
+      await queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
     },
     onError: (error, { todoId }) => {
       if (!isApiError(error)) {

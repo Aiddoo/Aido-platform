@@ -1,16 +1,16 @@
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { HStack, StyledSafeAreaView } from '@src/shared/ui';
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 
 import { useMyPagePaneLayout } from '../../hooks/use-mypage-pane-layout';
 
 interface MyPagePaneLayoutProps extends PropsWithChildren {
-  /** 두 칸의 왼쪽에 놓일 때. 네이티브 헤더가 없어 종과 위 여백을 여기서 그린다. */
+  /** 두 칸의 왼쪽에 놓일 때. 네이티브 헤더가 없어 머리 동작과 위 여백을 여기서 그린다. */
   isSplit: boolean;
+  headerAction: ReactNode;
 }
 
-export function MyPagePaneLayout({ isSplit, children }: MyPagePaneLayoutProps) {
+export function MyPagePaneLayout({ isSplit, headerAction, children }: MyPagePaneLayoutProps) {
   const { scrollRef, handleScroll, topInset } = useMyPagePaneLayout();
 
   return (
@@ -23,7 +23,7 @@ export function MyPagePaneLayout({ isSplit, children }: MyPagePaneLayoutProps) {
         <StyledSafeAreaView edges={['left', 'right']}>
           <HStack px={16} py={10} justify="end">
             <HStack className="size-11" align="center" justify="center">
-              <NotificationBell.Header />
+              {headerAction}
             </HStack>
           </HStack>
         </StyledSafeAreaView>

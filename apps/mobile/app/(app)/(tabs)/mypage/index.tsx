@@ -14,7 +14,7 @@ export default function MyPageScreen() {
       {isCompact && <NotificationBell.Toolbar />}
       <AdaptivePane
         primary={
-          <MyPagePaneLayout isSplit={!isCompact}>
+          <MyPagePaneLayout isSplit={!isCompact} headerAction={<NotificationBell.Header />}>
             <MyPagePane inviteCard={<MyPageInviteCard />} whatsNewItem={<WhatsNewMenuItem />} />
           </MyPagePaneLayout>
         }

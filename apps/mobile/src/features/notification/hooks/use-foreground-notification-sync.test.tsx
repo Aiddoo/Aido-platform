@@ -12,6 +12,7 @@ import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
 async function setup(isAuthenticated: boolean) {
+  const invalidateByType = jest.fn(async () => {});
   const notificationService = new NotificationService(
     createHttpClientStub(),
     createPushNotificationGatewayStub(),
@@ -28,10 +29,11 @@ async function setup(isAuthenticated: boolean) {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </StaticDIProvider>
   );
-  const hook = await renderHook(() => useForegroundNotificationSync({ isAuthenticated }), {
-    wrapper,
-  });
-  return { syncBadgeCount, invalidateQueries, ...hook };
+  const hook = await renderHook(
+    () => useForegroundNotificationSync({ isAuthenticated, invalidateByType }),
+    { wrapper },
+  );
+  return { syncBadgeCount, invalidateQueries, invalidateByType, ...hook };
 }
 
 describe('useForegroundNotificationSync', () => {
@@ -54,6 +56,20 @@ describe('useForegroundNotificationSync', () => {
     // Then
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: NOTIFICATION_QUERY_KEYS.all });
     expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('받은 알림 타입으로 다른 기능의 화면을 다시 받는다', async () => {
+    // Given
+    const { result, invalidateByType } = await setup(true);
+
+    // When
+    result.current({
+      data: { notificationId: 1, type: 'FOLLOW_NEW', action: { type: 'DEEP_LINK' } },
+    });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(invalidateByType).toHaveBeenCalledWith('FOLLOW_NEW');
   });
 
   it('data가 계약에 맞지 않아도 목록과 배지는 맞춘다', async () => {

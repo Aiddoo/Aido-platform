@@ -6,6 +6,7 @@ import { match, P } from 'ts-pattern';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { notificationListQueryParamsSchema } from '../schemas/notification-list-query-params.schema';
 import type { NotificationListResult } from '../schemas/notification.schema';
+import type { PushPermission } from '../schemas/push-permission.schema';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 
@@ -103,6 +104,10 @@ export function restoreNotificationCache(
 
 export function invalidateNotifications(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
+}
+
+export function setCachedPushPermission(queryClient: QueryClient, permission: PushPermission) {
+  queryClient.setQueryData<PushPermission>(NOTIFICATION_QUERY_KEYS.permission(), permission);
 }
 
 export function invalidatePushPermission(queryClient: QueryClient) {
