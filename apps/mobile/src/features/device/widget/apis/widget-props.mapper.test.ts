@@ -1,4 +1,4 @@
-import { buildWidgetDaySnapshot } from '../__tests__/widget-snapshot.factory';
+import { buildWidgetDaySnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetProps } from './widget-props.mapper';
 
 describe('위젯 표시 데이터 변환', () => {

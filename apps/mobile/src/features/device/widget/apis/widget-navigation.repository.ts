@@ -1,9 +1,10 @@
-import type { WidgetNavigationStorage } from '../bridge/widget-navigation-storage';
+import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+
+import { WidgetNavigationPolicy } from '../domains/widget-navigation.model';
 import {
   type WidgetNavigationCommand,
   widgetNavigationCommandSchema,
-  WidgetNavigationPolicy,
-} from '../domains/widget-navigation.model';
+} from '../schemas/widget-navigation.schema';
 
 export const WIDGET_NAVIGATION_COMMAND_KEY = 'aido_widget_pending_navigation_v1';
 

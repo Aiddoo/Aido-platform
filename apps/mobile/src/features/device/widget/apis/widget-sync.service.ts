@@ -1,7 +1,7 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
-import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
+import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
@@ -21,30 +21,28 @@ export class WidgetSyncService {
     this.#errorReporter = errorReporter;
   }
 
-  syncSummary(summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> {
-    return this.#scheduleWrite(
+  syncSummary = (summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> =>
+    this.#scheduleWrite(
       () => toWidgetSnapshot(summaries, context),
       'syncSummary',
       context.userId ?? null,
       context.timeZone,
     );
-  }
 
-  syncLoggedOut(localDate: string, context: WidgetSnapshotContext): Promise<void> {
-    return this.#scheduleWrite(
+  syncLoggedOut = (localDate: string, context: WidgetSnapshotContext): Promise<void> =>
+    this.#scheduleWrite(
       () => toLoggedOutWidgetSnapshot(localDate, context),
       'syncLoggedOut',
       null,
       context.timeZone,
     );
-  }
 
-  #scheduleWrite(
+  #scheduleWrite = (
     createSnapshot: () => WidgetSnapshot,
     method: string,
     userId: string | null,
     timeZone: string,
-  ): Promise<void> {
+  ): Promise<void> => {
     const generation = ++this.#generation;
 
     // Native writes are serialized so an in-flight account snapshot cannot overwrite logout.
@@ -83,9 +81,9 @@ export class WidgetSyncService {
     });
 
     return this.#pendingWrite;
-  }
+  };
 
-  #report(error: unknown, method: string): void {
+  #report = (error: unknown, method: string): void => {
     try {
       this.#errorReporter.captureException(
         error instanceof Error ? error : new Error(String(error)),
@@ -94,5 +92,5 @@ export class WidgetSyncService {
     } catch {
       // Widget and observability failures must not reject the app's auth lifecycle.
     }
-  }
+  };
 }

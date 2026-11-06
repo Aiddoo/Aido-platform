@@ -9,7 +9,7 @@ import { Children, createElement, isValidElement, type ReactNode } from 'react';
 import {
   buildWidgetSnapshotContext,
   buildWidgetSummary,
-} from '../__tests__/widget-snapshot.factory';
+} from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetProps } from '../apis/widget-props.mapper';
 import { toWidgetSnapshot } from '../apis/widget-snapshot.mapper';
 

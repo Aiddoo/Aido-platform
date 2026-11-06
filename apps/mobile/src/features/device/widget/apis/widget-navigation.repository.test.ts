@@ -1,5 +1,6 @@
-import type { WidgetNavigationStorage } from '../bridge/widget-navigation-storage';
-import type { WidgetNavigationCommand } from '../domains/widget-navigation.model';
+import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+
+import type { WidgetNavigationCommand } from '../schemas/widget-navigation.schema';
 import {
   createWidgetNavigationRepository,
   WIDGET_NAVIGATION_COMMAND_KEY,

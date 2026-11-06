@@ -1,4 +1,4 @@
-import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.factory';
+import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetTimelineEntries } from './widget-timeline.mapper';
 
 function summarize(entries: ReturnType<typeof toWidgetTimelineEntries>) {

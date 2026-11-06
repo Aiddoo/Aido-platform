@@ -1,5 +1,5 @@
+import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
 import {
-  parseWidgetNavigationUri,
   WidgetNavigationPolicy,
   WIDGET_NAVIGATION_COMMAND_TTL_MS,
 } from './widget-navigation.model';

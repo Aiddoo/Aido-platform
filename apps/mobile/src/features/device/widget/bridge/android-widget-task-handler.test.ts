@@ -1,11 +1,11 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
-import type { WidgetNavigationStorage } from './widget-navigation-storage';
 
 jest.mock('./android-widgets.bridge', () => ({ renderStoredAndroidWidget: jest.fn() }));
 

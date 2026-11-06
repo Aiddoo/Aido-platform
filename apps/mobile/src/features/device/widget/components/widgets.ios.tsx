@@ -30,7 +30,7 @@ import {
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ReactElement } from 'react';
 
-import type { WidgetProps } from '../domains/widget-props.model';
+import type { WidgetProps } from '../schemas/widget-props.schema';
 import { createRegisteredWidgetProps } from '../utils/widget-initial-props';
 
 // Widget layouts execute in isolation; helpers and palette must stay inside this function.

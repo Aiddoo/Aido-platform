@@ -1,4 +1,4 @@
-import type { WidgetNavigationStorage } from '@src/features/device/widget/bridge/widget-navigation-storage';
+import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
 import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 let widgetStorage: MMKV | null = null;

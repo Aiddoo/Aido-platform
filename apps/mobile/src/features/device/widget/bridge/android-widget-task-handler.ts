@@ -11,7 +11,7 @@ import {
   createWidgetNavigationRepository,
   type WidgetNavigationRepository,
 } from '../apis/widget-navigation.repository';
-import { parseWidgetNavigationUri } from '../domains/widget-navigation.model';
+import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
 import { ANDROID_WIDGET_DEFINITIONS, ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
 

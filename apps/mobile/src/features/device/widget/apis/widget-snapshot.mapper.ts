@@ -11,7 +11,7 @@ import type {
   WidgetDaySnapshot,
   WidgetSnapshot,
   WidgetSnapshotStrings,
-} from '../domains/widget-snapshot.model';
+} from '../schemas/widget-snapshot.schema';
 
 /**
  * 오늘의 할 일 요약 입력 (GET v1/todos/summary 도메인 모델과 구조 동일).

@@ -3,7 +3,7 @@ import { range } from 'es-toolkit';
 import {
   buildWidgetSnapshotContext,
   buildWidgetSummary,
-} from '../__tests__/widget-snapshot.factory';
+} from '../__tests__/widget-snapshot.fixtures';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,

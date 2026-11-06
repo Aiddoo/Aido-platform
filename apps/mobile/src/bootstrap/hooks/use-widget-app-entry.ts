@@ -1,7 +1,5 @@
-import {
-  type WidgetNavigationCommand,
-  WidgetNavigationPolicy,
-} from '@src/features/device/widget/domains/widget-navigation.model';
+import { WidgetNavigationPolicy } from '@src/features/device/widget/domains/widget-navigation.model';
+import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';

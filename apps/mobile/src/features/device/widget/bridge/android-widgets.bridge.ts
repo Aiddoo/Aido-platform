@@ -9,7 +9,8 @@ import { createAndroidWidgetSnapshotRepository } from '../apis/android-widget-sn
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { toWidgetProps } from '../apis/widget-props.mapper';
 import { renderAndroidWidget } from '../components/widgets.android';
-import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
+import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
+import { type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 import { createInitialWidgetProps } from '../utils/widget-initial-props';
 import { ANDROID_WIDGET_DEFINITIONS } from './android-widget';
 import type { WidgetBridge } from './widget-bridge';

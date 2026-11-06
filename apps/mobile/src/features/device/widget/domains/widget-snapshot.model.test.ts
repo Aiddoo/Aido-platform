@@ -1,7 +1,8 @@
 import { toDateKey } from '@src/shared/date/instant';
 
-import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.factory';
-import { storedWidgetSnapshotSchema, WidgetSnapshotPolicy } from './widget-snapshot.model';
+import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
+import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot.schema';
+import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
 describe('WidgetSnapshotPolicy.selectDay', () => {
   it('오늘 key와 같은 day의 상태를 그대로 표시한다', () => {

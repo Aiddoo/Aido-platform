@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 import { toWidgetTimelineEntries } from '../apis/widget-timeline.mapper';
 import { AIDO_WIDGETS } from '../components/widgets';
-import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
+import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 import type { WidgetBridge } from './widget-bridge';
 
 export function createExpoWidgetsBridge(): WidgetBridge {

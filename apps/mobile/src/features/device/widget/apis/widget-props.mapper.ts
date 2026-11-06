@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 
-import type { WidgetProps } from '../domains/widget-props.model';
-import type { WidgetDaySnapshot, WidgetRenderState } from '../domains/widget-snapshot.model';
+import type { WidgetProps } from '../schemas/widget-props.schema';
+import type { WidgetDaySnapshot, WidgetRenderState } from '../schemas/widget-snapshot.schema';
 
 export function toWidgetProps(
   snapshot: WidgetDaySnapshot,

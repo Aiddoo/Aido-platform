@@ -2,7 +2,7 @@ import { range } from 'es-toolkit';
 import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
-import type { WidgetProps } from '../domains/widget-props.model';
+import type { WidgetProps } from '../schemas/widget-props.schema';
 import { createInitialWidgetProps } from '../utils/widget-initial-props';
 import { renderAndroidWidget } from './widgets.android';
 
