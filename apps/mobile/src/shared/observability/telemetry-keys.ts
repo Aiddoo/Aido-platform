@@ -5,7 +5,6 @@ import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscrip
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/purchase-failed-reason';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/schemas/oauth.schema';
 import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
-import type { TimezoneOffsetBucket } from '@src/features/notification/schemas/device-timezone.schema';
 import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '@src/features/voice/domains/voice.error';
 
@@ -253,11 +252,6 @@ interface LifecycleEventMap {
   local_day_changed: {
     trigger: LocalDateChangeTrigger;
   };
-  /** 시간대 이름·도시는 보내지 않고 바뀐 폭만 보낸다. 여행 빈도와 기기 예약 전환 판단에 쓴다. */
-  device_timezone_changed: {
-    offset_bucket: TimezoneOffsetBucket;
-    notice_shown: boolean;
-  };
 }
 
 interface SubscriptionEventMap {
@@ -381,27 +375,6 @@ interface UserEventMap {
   settings_changed: { setting: string; value: string };
 }
 
-interface NotificationEventMap {
-  push_notification_opened: {
-    type: string;
-    action: string;
-    campaign_key?: string;
-    variant_id?: string;
-    purpose?: string;
-  };
-  notification_center_opened: { type: string; destination: string };
-  marketing_push_opted_out: { source: 'push_action' };
-  marketing_push_opted_in: { source: 'feed_banner' };
-  marketing_push_prompt_dismissed: { source: 'feed_banner' };
-  push_permission_prompt_shown: { source: PushPermissionPromptSource; step: string };
-  push_permission_prompt_dismissed: { source: PushPermissionPromptSource; step: string };
-  push_permission_requested: { source: PushPermissionPromptSource; status: string };
-  push_permission_settings_opened: { source: PushPermissionPromptSource };
-}
-
-/** 알림 권한 안내가 보인 곳 */
-export type PushPermissionPromptSource = 'activation' | 'feed_card' | 'settings';
-
 interface BadgeEventMap {
   badge_summary_viewed: {
     badge_type: 'perfect' | 'almost' | 'completed';
@@ -440,6 +413,5 @@ export type LegacyEventMap = AuthEventMap &
   AiEventMap &
   VoiceEventMap &
   UserEventMap &
-  NotificationEventMap &
   BadgeEventMap &
   ConnectivityEventMap;

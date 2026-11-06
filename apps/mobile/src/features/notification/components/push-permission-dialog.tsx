@@ -1,9 +1,10 @@
-import { type PushPermissionPromptSource, useTrack } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { type ComponentProps, useEffect } from 'react';
 
+import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PUSH_PERMISSION_STEP } from '../domains/push-permission.model';
 import { useRequestPushPermissionMutationOptions } from '../queries/notification.mutations';
 

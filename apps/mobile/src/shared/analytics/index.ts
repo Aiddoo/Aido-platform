@@ -4,7 +4,6 @@ export type {
   FeatureKey,
   FriendSearchLengthBucket,
   GrowthEventMap,
-  PushPermissionPromptSource,
 } from '@src/shared/observability/telemetry-keys';
 export { FEATURE_KEYS, toFriendSearchLengthBucket } from '@src/shared/observability/telemetry-keys';
 export {

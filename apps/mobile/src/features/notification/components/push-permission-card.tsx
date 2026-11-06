@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { type PushPermissionPromptSource, useTrack } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, InlineNotice } from '@src/shared/ui';
@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
 import { usePushPermissionPrompt } from '../hooks/use-push-permission-prompt';
 import {
