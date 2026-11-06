@@ -167,6 +167,7 @@ export {
   type SettingsCardToggleSkeletonProps,
 } from './settings-card';
 export { Spacing, type SpacingProps } from './spacing';
+export { Steps } from './steps';
 export {
   STACK_BACK_ICON,
   STACK_CLOSE_ICON,
