@@ -16,7 +16,7 @@ interface CoachmarkPopoverProps
     Omit<ComponentProps<typeof Popover>, 'isOpen' | 'onOpenChange' | 'children'>,
     Pick<
       HintPopoverContentProps,
-      'icon' | 'placement' | 'align' | 'avoidCollisions' | 'isPassThrough'
+      'icon' | 'placement' | 'align' | 'avoidCollisions' | 'isPassThrough' | 'offset'
     > {
   kind: CoachmarkKind;
   title: string;
@@ -57,6 +57,7 @@ export function CoachmarkPopover({
   align,
   avoidCollisions,
   isPassThrough,
+  offset,
   children,
   ...popoverProps
 }: CoachmarkPopoverProps) {
@@ -128,6 +129,7 @@ export function CoachmarkPopover({
         align={align}
         avoidCollisions={avoidCollisions}
         isPassThrough={isPassThrough}
+        offset={offset}
       />
     </Popover>
   );
