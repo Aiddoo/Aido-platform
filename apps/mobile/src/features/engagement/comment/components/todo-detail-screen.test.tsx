@@ -360,6 +360,35 @@ describe('할 일 상세 카드', () => {
     expect(await screen.findByText('매일')).toBeOnTheScreen();
   });
 
+  it('지웠거나 볼 수 없게 된 할 일은 본문과 입력창 대신 안내 하나만 보이고 뒤로 갈 수 있다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockImplementation(async (path: string) => {
+      if (path === `v1/todos/${TODO_ID}/details`) {
+        return err(new ApiError('TODO_0101', '없음', 404));
+      }
+      return ok({ items: [], pagination: PAGINATION, anchor: null });
+    });
+    jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
+
+    // When
+    await renderUi(<TodoDetailRoute />, {
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({ httpClient }),
+    });
+
+    // Then
+    expect(await screen.findByTestId('todo-unavailable')).toBeOnTheScreen();
+    expect(screen.queryByTestId('todo-comment-composer')).toBeNull();
+
+    // When
+    await fireEvent.press(screen.getByText('뒤로 가기'));
+
+    // Then
+    expect(router.back).toHaveBeenCalled();
+  });
+
   it('댓글이 없으면 큰 아이콘 없이 짧은 안내만 보인다', async () => {
     // Given
     await renderTodoDetail({ threadItems: [] });
