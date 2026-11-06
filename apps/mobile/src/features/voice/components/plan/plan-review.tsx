@@ -36,7 +36,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
 import {
@@ -284,7 +284,7 @@ PlanReview.Loading = function Loading({
           <TextSkeleton size="b4" className="w-full" />
         </VStack>
         <VStack gap={8}>
-          {times(LOADING_ROW_COUNT, (index) => (
+          {range(LOADING_ROW_COUNT).map((index) => (
             <TodoRow
               key={index}
               left={<Skeleton className="size-5 rounded-md" />}

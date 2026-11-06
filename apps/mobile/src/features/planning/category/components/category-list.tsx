@@ -19,7 +19,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -162,7 +162,7 @@ CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
 CategoryList.Loading = function Loading() {
   return (
     <VStack className="bg-gray-1 rounded-2xl p-2">
-      {times(2, (index) => (
+      {range(2).map((index) => (
         <ListRow
           key={index}
           left={<Skeleton className="size-2 rounded-full dark:bg-gray-2" />}

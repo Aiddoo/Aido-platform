@@ -5,7 +5,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, Grid, GridItem } from '@src/shared/ui';
 import { formatDecimal } from '@src/shared/utils/format';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 
 import { UV_METER_COLORS } from '../constants/weather-colors';
 import {
@@ -242,7 +242,7 @@ WeatherDetailGrid.Loading = function Loading() {
   return (
     <Box onLayout={onLayout}>
       <Grid columns={columns} gap={TILE_GRID_GAP}>
-        {times(LOADING_TILE_COUNT, (index) => (
+        {range(LOADING_TILE_COUNT).map((index) => (
           <GridItem key={index}>
             <WeatherTileSkeleton minHeight={bodyMinHeight} />
           </GridItem>

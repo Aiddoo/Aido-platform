@@ -1,7 +1,7 @@
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';
 import { Result, TextSkeleton, VStack } from '@src/shared/ui';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 
 const LOADING_LINE_COUNT = 4;
@@ -18,7 +18,7 @@ export function VoiceNoteScreenLoading() {
   if (isOnline) {
     return (
       <VStack gap={8} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
-        {times(LOADING_LINE_COUNT, (index) => (
+        {range(LOADING_LINE_COUNT).map((index) => (
           <TextSkeleton key={index} size="b2" className="w-full" />
         ))}
       </VStack>

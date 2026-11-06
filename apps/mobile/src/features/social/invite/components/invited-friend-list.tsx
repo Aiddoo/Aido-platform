@@ -4,7 +4,7 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { PawIcon, type Result } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import type { ComponentProps, ReactElement } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -57,7 +57,7 @@ function renderItem({ item }: { item: InvitedFriend }) {
 InvitedFriendList.Loading = function Loading() {
   return (
     <ScrollView className="flex-1">
-      {times(4, (index) => (
+      {range(4).map((index) => (
         <InvitedFriendRow.Loading key={index} />
       ))}
     </ScrollView>

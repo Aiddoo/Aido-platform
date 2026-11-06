@@ -4,7 +4,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
 import { ScrollView } from 'react-native';
@@ -78,7 +78,7 @@ NotificationListRow.Loading = function Loading() {
       <Box px={16} py={8}>
         <TextSkeleton size="b3" className="w-32" />
       </Box>
-      {times(5, (index) => (
+      {range(5).map((index) => (
         <Fragment key={index}>
           {index > 0 && <Separator className="mx-4" />}
           <ListRow

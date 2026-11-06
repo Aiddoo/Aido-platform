@@ -2,8 +2,7 @@ import { INVITE_CODE } from '@aido/api';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
 import { cn } from '@src/shared/utils/cn';
-import { noop } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { noop, range } from 'es-toolkit';
 import { InputOTP, REGEXP_ONLY_DIGITS_AND_CHARS } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
 import type { TextInputProps } from 'react-native';
@@ -101,7 +100,7 @@ export function InviteCodeInput({
         {...props}
       >
         <InputOTP.Group className="w-full gap-2">
-          {times(INVITE_CODE.LENGTH, (index) => (
+          {range(INVITE_CODE.LENGTH).map((index) => (
             <InputOTP.Slot
               key={index}
               index={index}

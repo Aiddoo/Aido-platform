@@ -18,7 +18,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
@@ -164,7 +164,7 @@ TodoDetailCard.Loading = function Loading() {
         top={<TextSkeleton size="b3" className="w-4/5" />}
       />
       <HStack gap={16} align="center">
-        {times(2, (index) => (
+        {range(2).map((index) => (
           <HStack key={index} gap={4} align="center">
             <Skeleton className="size-4 rounded-full" />
             <TextSkeleton size="e1" className="w-4" />

@@ -20,7 +20,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { ActivityIndicator, RefreshControl } from 'react-native';
@@ -147,7 +147,7 @@ WeeklyAchievementList.Loading = function Loading() {
 
   return (
     <VStack>
-      {times(LOADING_ROW_COUNT, (index) => (
+      {range(LOADING_ROW_COUNT).map((index) => (
         <ListRow
           key={index}
           left={<Skeleton className="size-10 rounded-full" />}

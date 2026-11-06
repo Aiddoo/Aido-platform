@@ -35,7 +35,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
@@ -368,7 +368,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
 TodoActionsBottomSheet.Loading = function Loading() {
   return (
     <VStack gap={8}>
-      {times(6, (index) => (
+      {range(6).map((index) => (
         <Skeleton key={index} className="h-14 w-full rounded-xl" />
       ))}
     </VStack>

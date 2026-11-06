@@ -22,7 +22,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
@@ -152,7 +152,7 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
 SubTodoActionsBottomSheet.Loading = function Loading() {
   return (
     <VStack gap={8}>
-      {times(2, (index) => (
+      {range(2).map((index) => (
         <Skeleton key={index} className="h-14 w-full rounded-xl" />
       ))}
     </VStack>

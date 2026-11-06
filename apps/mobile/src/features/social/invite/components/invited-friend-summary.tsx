@@ -2,7 +2,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, H4, HStack, PawIcon, Result, TextButton, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
@@ -59,7 +59,7 @@ InvitedFriendSummary.Loading = function Loading() {
       <Box className="min-h-8 justify-center px-4">
         <TextSkeleton size="t3" className="w-28" />
       </Box>
-      {times(3, (index) => (
+      {range(3).map((index) => (
         <InvitedFriendRow.Loading key={index} />
       ))}
     </InvitedFriendSummaryFrame>

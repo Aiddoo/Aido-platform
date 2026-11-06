@@ -34,7 +34,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { useMemo, useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
@@ -203,7 +203,7 @@ FriendTodoList.Loading = function Loading() {
     <VStack gap={8}>
       <CategoryHeaderPill.Loading />
       <Box>
-        {times(3, (index) => (
+        {range(3).map((index) => (
           <TodoRow.Loading key={index} />
         ))}
       </Box>

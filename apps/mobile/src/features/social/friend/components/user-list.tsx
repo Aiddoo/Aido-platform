@@ -10,7 +10,7 @@ import {
   Result,
 } from '@src/shared/ui';
 import type { FetchNextPageOptions } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
@@ -119,7 +119,7 @@ UserList.Loading = function Loading({
   return (
     <ScrollView className="flex-1" contentContainerStyle={contentContainerStyle}>
       {ListHeaderComponent}
-      {times(rows, (index) => (
+      {range(rows).map((index) => (
         <ListRow
           key={index}
           left={<Skeleton className="size-10 rounded-full" />}

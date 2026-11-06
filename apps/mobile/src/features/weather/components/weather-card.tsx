@@ -1,7 +1,7 @@
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { tv } from '@src/shared/utils/tv';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { GlassView } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Platform } from 'react-native';
@@ -101,7 +101,7 @@ WeatherCard.Loading = function Loading({ lines = 2 }: { lines?: number }) {
   return (
     <WeatherCard>
       <TextSkeleton size="b4" className="w-24 opacity-40" />
-      {times(lines, (index) => (
+      {range(lines).map((index) => (
         <TextSkeleton key={index} size="b2" className="w-full opacity-40" />
       ))}
     </WeatherCard>

@@ -25,8 +25,7 @@ import {
   Result,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo, useState } from 'react';
@@ -97,7 +96,7 @@ TodoList.Loading = function Loading() {
     <Box gap={8}>
       <CategoryHeaderPill.Loading />
       <Box>
-        {times(5, (index) => (
+        {range(5).map((index) => (
           <TodoRow.Loading key={index} />
         ))}
       </Box>

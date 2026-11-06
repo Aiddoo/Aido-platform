@@ -22,8 +22,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from 'react';
 import { RefreshControl, type ScrollViewProps } from 'react-native';
@@ -189,7 +188,7 @@ export function TodoCommentThreadList({
 TodoCommentThreadList.Loading = function Loading() {
   return (
     <VStack testID="todo-comment-thread-list-loading">
-      {times(LOADING_ROW_COUNT, (index) => (
+      {range(LOADING_ROW_COUNT).map((index) => (
         <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>
           <TodoCommentItem.Loading />
         </TodoCommentRailRow>

@@ -26,7 +26,7 @@ import {
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
@@ -251,7 +251,7 @@ AchievementSummaryCard.Loading = function Loading() {
       <Spacing size={16} />
 
       <VStack align="center">
-        {times(CERTIFICATE_LINE_COUNT, (index) => (
+        {range(CERTIFICATE_LINE_COUNT).map((index) => (
           <Skeleton key={index} className="w-full rounded" style={{ height: fontScaledSize(20) }} />
         ))}
       </VStack>

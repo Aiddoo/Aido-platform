@@ -22,8 +22,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { clamp } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { clamp, range } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -76,7 +75,7 @@ export function MemoList() {
         )}
 
         <HStack gap={12} align="start">
-          {times(columnCount, (columnIndex) => (
+          {range(columnCount).map((columnIndex) => (
             <VStack key={columnIndex} flex={1} gap={12}>
               {memos
                 .filter((_, memoIndex) => memoIndex % columnCount === columnIndex)
@@ -156,9 +155,9 @@ MemoList.Loading = function Loading() {
 
   return (
     <HStack gap={12} align="start">
-      {times(columnCount, (column) => (
+      {range(columnCount).map((column) => (
         <VStack key={column} flex={1} gap={12}>
-          {times(LOADING_ITEMS_PER_COLUMN, (row) => (
+          {range(LOADING_ITEMS_PER_COLUMN).map((row) => (
             <VStack key={row} gap={8} p={16} className="rounded-2xl bg-gray-1">
               <TextSkeleton size="b3" className="w-full" />
               <TextSkeleton size="b3" className="w-3/4" />

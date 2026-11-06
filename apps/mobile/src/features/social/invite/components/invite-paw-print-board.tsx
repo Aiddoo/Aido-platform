@@ -23,7 +23,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/format';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useId, useState } from 'react';
@@ -364,9 +364,9 @@ InvitePawPrintBoard.Loading = function Loading() {
       <TextSkeleton size="b4" className="w-44" />
       <TextSkeleton size="b3" className="w-64" />
       <VStack align="center" gap={22}>
-        {times(PAW_PRINT_BOARD_SIZE / grid.columns, (rowIndex) => (
+        {range(PAW_PRINT_BOARD_SIZE / grid.columns).map((rowIndex) => (
           <HStack key={rowIndex} style={{ width: grid.rowWidth, gap: grid.connectorLength }}>
-            {times(grid.columns, (index) => (
+            {range(grid.columns).map((index) => (
               <Skeleton
                 key={index}
                 className="rounded-full"

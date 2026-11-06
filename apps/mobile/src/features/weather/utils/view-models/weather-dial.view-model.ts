@@ -1,5 +1,4 @@
-import { round } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { range, round } from 'es-toolkit';
 
 import { toUnitPosition } from '../../domains/weather-report.model';
 
@@ -38,7 +37,7 @@ export interface DialTicks {
 /** from~to 각도를 step 간격으로 나누고 majorEvery번째마다 긴 눈금을 그린다. */
 function toDialTicks(from: number, to: number, step: number, majorEvery: number): DialTicks {
   const count = Math.floor((to - from) / step) + 1;
-  const ticks = times(count, (index) => {
+  const ticks = range(count).map((index) => {
     const degrees = from + index * step;
     const isMajor = index % majorEvery === 0;
     const outer = toDialPoint(degrees, TICK_OUTER_RADIUS);

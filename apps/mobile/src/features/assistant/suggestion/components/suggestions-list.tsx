@@ -26,7 +26,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Image } from 'react-native';
@@ -292,7 +292,7 @@ SuggestionsList.Loading = function Loading() {
       <Spacing size={20} />
 
       <Box className="px-4 pb-4">
-        {times(SUGGESTION_LOADING_COUNT, (index) => (
+        {range(SUGGESTION_LOADING_COUNT).map((index) => (
           <Box key={index} className="py-2">
             <VStack gap={8}>
               <VStack gap={4}>

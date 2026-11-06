@@ -32,8 +32,7 @@ import {
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import {
@@ -222,7 +221,7 @@ FriendStrip.Loading = function Loading() {
       </Box>
       <Divider />
       <HStack gap={ITEM_GAP}>
-        {times(LOADING_ITEM_COUNT, (index) => (
+        {range(LOADING_ITEM_COUNT).map((index) => (
           <SkeletonCell key={index} />
         ))}
       </HStack>

@@ -1,5 +1,5 @@
 import type { WeatherHourlyForecast } from '@aido/api';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 
 import {
   createHourlyForecastDto,
@@ -41,7 +41,7 @@ function createTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
   };
 }
 
-const DRY_HOURS = times(9, () => ({ precipitationChance: 10 }));
+const DRY_HOURS = range(9).map(() => ({ precipitationChance: 10 }));
 
 describe('WeatherBriefingPolicy.briefing', () => {
   it('비 소식도 할 일도 없으면 브리핑할 할 일이 없다고 알린다', () => {
@@ -79,7 +79,7 @@ describe('WeatherBriefingPolicy.briefing', () => {
 
   it('할 일 7개 중 비 오는 시간에 걸린 것만 고르고, 지난 할 일은 빼며 끝낸 할 일은 완료 표시로 남긴다', () => {
     // Given 14:30부터 1시간 간격 할 일 7개, 세 번째는 끝냄 When 브리핑하면 Then 비 시간 할 일만 완료 여부와 함께 남는다
-    const todos = times(7, (index) =>
+    const todos = range(7).map((index) =>
       createTodo({
         id: index + 1,
         scheduledAt: new Date(Date.parse('2026-11-02T05:30:00.000Z') + index * 60 * 60_000),
@@ -182,7 +182,7 @@ describe('WeatherBriefingPolicy.briefing', () => {
   it('지금은 비가 안 오고 내일 오후에 비가 시작되면 내일 오후부터 비가 온다고 알린다', () => {
     // Given 오늘 남은 시간 흐리고 맑음, 내일 13시(04:00Z) 비 When 브리핑하면 Then 내일 오후 비를 알린다
     const hours = [
-      ...times(22, () => ({ condition: 'CLOUDY', precipitationChance: 10 }) as const),
+      ...range(22).map(() => ({ condition: 'CLOUDY', precipitationChance: 10 }) as const),
       { precipitationChance: 80, precipitationType: 'RAIN' } as const,
     ];
     const briefing = WeatherBriefingPolicy.briefing(createReport(hours), [], CLOCK);
@@ -202,7 +202,7 @@ describe('WeatherBriefingPolicy.briefing', () => {
   it('모레 비는 알리지 않고 남은 할 일을 날씨 걱정 없는 목록으로 보여 준다', () => {
     // Given 오늘·내일 흐림, 모레 비 When 22시 할 일을 브리핑하면 Then 비를 피했다고 알린다
     const hours = [
-      ...times(40, () => ({ precipitationChance: 10 })),
+      ...range(40).map(() => ({ precipitationChance: 10 })),
       { precipitationChance: 80, precipitationType: 'RAIN' } as const,
     ];
     const briefing = WeatherBriefingPolicy.briefing(

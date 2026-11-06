@@ -16,8 +16,7 @@ import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui/icon';
 import { cn } from '@src/shared/utils/cn';
 import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
-import { compact, round, zip } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { compact, range, round, zip } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { memo, useCallback, useMemo, useState } from 'react';
 import Animated, { Easing, FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -375,7 +374,7 @@ DailyForecast.Loading = function Loading() {
   return (
     <WeatherCard>
       <TextSkeleton size="b4" className="w-24 opacity-40" />
-      {times(LOADING_ROW_COUNT, (index) => (
+      {range(LOADING_ROW_COUNT).map((index) => (
         <HStack key={index} align="center" gap={10} className="min-h-14">
           <TextSkeleton size="b1" className="w-14 opacity-40" />
           <TextSkeleton size="b1" className="flex-1 opacity-40" />

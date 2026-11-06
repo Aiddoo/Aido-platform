@@ -2,7 +2,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
@@ -76,7 +76,7 @@ CategorySelectInput.Loading = function Loading() {
     <VStack gap={20}>
       <TextSkeleton size="b3" className="w-24" />
       <VStack gap={8}>
-        {times(LOADING_ROW_COUNT, (index) => (
+        {range(LOADING_ROW_COUNT).map((index) => (
           <ListRow
             key={index}
             left={<Skeleton className="size-2 rounded-full" />}

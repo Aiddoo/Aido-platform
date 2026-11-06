@@ -13,7 +13,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
@@ -130,7 +130,7 @@ PlanPicker.Loading = function Loading() {
     .with(false, () => <SubscriptionResult.Offline target="plans" />)
     .with(true, () => (
       <VStack gap={12} accessibilityState={{ busy: true }} testID="subscription-paywall-loading">
-        {times(PLAN_ROW_COUNT, (index) => (
+        {range(PLAN_ROW_COUNT).map((index) => (
           <Skeleton key={index} className="h-16 rounded-2xl dark:bg-gray-2" />
         ))}
       </VStack>

@@ -12,7 +12,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
@@ -103,7 +103,7 @@ AppIconPicker.Item = function Item({
 AppIconPicker.Loading = function Loading() {
   return (
     <Grid columns={3}>
-      {times(APP_ICONS.length, (index) => (
+      {range(APP_ICONS.length).map((index) => (
         <GridItem key={index} p={8} className="items-center">
           <VStack align="center" gap={8} p={8}>
             <Skeleton className="w-20 h-20 rounded-2xl" />

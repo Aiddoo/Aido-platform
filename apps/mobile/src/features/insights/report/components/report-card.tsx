@@ -6,7 +6,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, DashedDivider, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 
@@ -112,7 +112,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
 ReportCard.Loading = function Loading() {
   return (
     <VStack>
-      {times(LOADING_CARD_COUNT, (i) => (
+      {range(LOADING_CARD_COUNT).map((i) => (
         <Box key={i} className="py-3">
           <SkeletonGroup isLoading>
             <VStack gap={10}>

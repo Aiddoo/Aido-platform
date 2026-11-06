@@ -18,7 +18,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, useEffect, useRef } from 'react';
 import Animated, {
@@ -150,7 +150,7 @@ ThanksSummaryRow.Loading = function Loading() {
       variant="pending"
       left={
         <HStack>
-          {times(VISIBLE_AVATAR_COUNT, (index) => (
+          {range(VISIBLE_AVATAR_COUNT).map((index) => (
             <Box key={index} className={cn(index > 0 && '-ml-2')}>
               <Skeleton className="size-8 rounded-full border-2 border-background" />
             </Box>

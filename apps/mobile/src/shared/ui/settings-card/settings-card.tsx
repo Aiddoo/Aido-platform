@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { cn } from '@src/shared/utils/cn';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { ControlField, ListGroup, Separator, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
@@ -106,7 +106,7 @@ SettingsCard.ItemSkeleton = function ItemSkeleton({
     <HStack align="center" gap={12} className="min-h-12 p-4 py-3">
       <VStack flex={1} gap={2}>
         <TextSkeleton size="b2" className="w-28" />
-        {times(descriptionLines, (line) => (
+        {range(descriptionLines).map((line) => (
           <TextSkeleton key={line} size="b4" className="w-44" />
         ))}
       </VStack>

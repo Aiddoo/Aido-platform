@@ -11,7 +11,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { memo, type ReactNode } from 'react';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
@@ -350,7 +350,7 @@ HourlyForecast.Loading = function Loading() {
     <WeatherCard className="px-0">
       <TextSkeleton size="b3" className="mx-4 w-48 opacity-40" />
       <Box className="flex-row px-1.5">
-        {times(6, (index) => (
+        {range(6).map((index) => (
           <VStack key={index} align="center" gap={6} style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
             <TextSkeleton size="b3" className="w-8 opacity-40" />
             <Spacing size={ICON_SIZE} />

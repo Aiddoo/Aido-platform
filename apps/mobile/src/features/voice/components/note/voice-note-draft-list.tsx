@@ -15,7 +15,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
 import { ScrollView, StyleSheet } from 'react-native';
@@ -129,7 +129,7 @@ VoiceNoteDraftList.Loading = function Loading() {
       contentInsetAdjustmentBehavior="automatic"
       scrollEnabled={false}
     >
-      {times(VOICE_NOTE_PREVIEW_COUNT, (index) => (
+      {range(VOICE_NOTE_PREVIEW_COUNT).map((index) => (
         <Box key={index} className="pb-2">
           <HStack gap={12} align="center" className="rounded-2xl bg-gray-1 px-3 py-3">
             <Skeleton className="size-10 rounded-full" />

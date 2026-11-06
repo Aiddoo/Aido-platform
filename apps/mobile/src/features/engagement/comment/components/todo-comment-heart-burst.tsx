@@ -1,5 +1,5 @@
 import { HeartFilledIcon } from '@src/shared/ui';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -181,7 +181,7 @@ export function TodoCommentHeartBurst({ burst }: { burst: TodoCommentHeartBurstV
         <Animated.View style={[styles.ring, ringStyle]}>
           <View style={styles.ringStroke} className="border-error" />
         </Animated.View>
-        {times(DOT_COUNT, (index) => (
+        {range(DOT_COUNT).map((index) => (
           <BurstDot
             key={index}
             progress={burst.dots}

@@ -17,7 +17,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/format';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -146,7 +146,7 @@ SubscriptionReceipt.Loading = function Loading() {
         <Spacing size={24} />
 
         <VStack gap={12}>
-          {times(3, (index) => (
+          {range(3).map((index) => (
             <HStack key={index} justify="between">
               <TextSkeleton size="b3" className="w-20" />
               <TextSkeleton size="b3" className="w-28" />
@@ -160,7 +160,7 @@ SubscriptionReceipt.Loading = function Loading() {
       <Box className="px-5 pb-5">
         <TextSkeleton size="b3" className="mb-3 w-32" />
         <VStack gap={10}>
-          {times(4, (index) => (
+          {range(4).map((index) => (
             <HStack key={index} gap={12} align="center">
               <Skeleton className="size-5 rounded-full dark:bg-gray-2" />
               <TextSkeleton size="b3" className="w-44" />
