@@ -1,8 +1,12 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import type { HttpClient } from '@src/core/ports/http';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
+import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
@@ -50,6 +54,13 @@ export function createTestDi({
     todoService: new TodoService(httpClient),
     subTodoService: new SubTodoService(httpClient),
     draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+    activationService: new ActivationService(
+      createActivationProgressRepository(createMemorySyncStorage()),
+    ),
+    storeReviewService: new StoreReviewService(
+      createStoreReviewRepository(createMemorySyncStorage()),
+      { isAvailable: jest.fn().mockResolvedValue(false), requestReview: jest.fn() },
+    ),
     inquiryService: new InquiryService(httpClient),
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),

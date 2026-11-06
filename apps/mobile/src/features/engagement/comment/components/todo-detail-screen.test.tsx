@@ -3,9 +3,14 @@ import { createPreferenceDto } from '@src/features/identity/preference/__tests__
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
   createTodoDto,
+  createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createPendingResponse,
+} from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -105,12 +110,14 @@ interface RenderTodoDetailOptions {
   details?: Record<string, unknown>;
   threadItems?: unknown[];
   listItems?: ReturnType<typeof createTodoDto>[];
+  analytics?: ReturnType<typeof createAnalyticsStub>;
 }
 
 async function renderTodoDetail({
   details,
   threadItems,
   listItems = [],
+  analytics = createAnalyticsStub(),
 }: RenderTodoDetailOptions = {}) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (path: string) => {
@@ -145,6 +152,7 @@ async function renderTodoDetail({
     withOverlay: true,
     di: createTestDi({
       httpClient,
+      analytics,
       clipboard: { hasContent: jest.fn(), paste: jest.fn(), copy: jest.fn() },
     }),
   });
@@ -362,5 +370,99 @@ describe('할 일 상세 카드', () => {
     // Then
     expect(empty).toBeOnTheScreen();
     expect(screen.queryByText('아직 댓글이 없어요')).toBeNull();
+  });
+});
+
+describe('할 일 상세 체크', () => {
+  const PRIVATE_TODO = { visibility: 'PRIVATE' as const };
+
+  it('내 할 일은 누르면 응답 전에 바로 체크되고 기존 토글 요청과 이벤트를 쓴다', async () => {
+    // Given
+    const analytics = createAnalyticsStub();
+    const { httpClient } = await renderTodoDetail({
+      details: { todo: createTodoDto({ id: TODO_ID, ...PRIVATE_TODO }) },
+      analytics,
+    });
+    const pending = createPendingResponse(
+      ok({
+        message: '완료',
+        todo: createTodoDto({ id: TODO_ID, ...PRIVATE_TODO, completed: true }),
+      }),
+    );
+    httpClient.patch.mockReturnValue(pending.response);
+
+    // When
+    await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('todo-detail-checkbox')).toBeChecked());
+    expect(httpClient.patch).toHaveBeenCalledWith(`v1/todos/${TODO_ID}/complete`, {
+      completed: true,
+    });
+
+    // When
+    pending.settle();
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('todo_completed', {
+        todo_id: TODO_ID,
+        is_completed: true,
+      }),
+    );
+  });
+
+  it('서버가 거절하면 체크가 되돌아간다', async () => {
+    // Given
+    const { httpClient } = await renderTodoDetail({
+      details: { todo: createTodoDto({ id: TODO_ID, ...PRIVATE_TODO }) },
+    });
+    httpClient.patch.mockResolvedValue(err(new ApiError('TODO_9999', '거절', 400)));
+
+    // When
+    await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));
+
+    // Then
+    await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId('todo-detail-checkbox')).not.toBeChecked());
+  });
+
+  it('내 하위 할 일도 눌러 체크한다', async () => {
+    // Given
+    const item = createTodoItemResponseDto({ id: 7, title: '스트레칭' });
+    const todo = createTodoDto({
+      id: TODO_ID,
+      ...PRIVATE_TODO,
+      items: [item],
+      itemStats: { total: 1, completed: 0 },
+    });
+    const { httpClient } = await renderTodoDetail({ details: { todo } });
+    const pending = createPendingResponse(ok({ message: '수정', todo }));
+    httpClient.patch.mockReturnValue(pending.response);
+
+    // When
+    await fireEvent.press(await screen.findByTestId('todo-detail-sub-todo-checkbox-7'));
+
+    // Then
+    expect(httpClient.patch).toHaveBeenCalledWith(`v1/todos/${TODO_ID}/items/7`, {
+      completed: true,
+    });
+    pending.settle();
+  });
+
+  it('친구 하위 할 일은 읽기 전용이다', async () => {
+    // Given
+    const item = createTodoItemResponseDto({ id: 7, title: '스트레칭' });
+    const todo = createTodoDto({
+      id: TODO_ID,
+      items: [item],
+      itemStats: { total: 1, completed: 0 },
+    });
+
+    // When
+    await renderTodoDetail({ details: { ...FRIEND_DETAILS, todo } });
+
+    // Then
+    expect(await screen.findByTestId('todo-detail-sub-todo-checkbox-7')).toBeDisabled();
   });
 });

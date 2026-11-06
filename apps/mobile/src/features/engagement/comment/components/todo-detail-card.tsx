@@ -9,6 +9,8 @@ import {
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import {
   useGetTodoDetailsQueryOptions,
   useGetTodosByDateQueryOptions,
@@ -38,7 +40,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
@@ -91,6 +93,8 @@ TodoDetailCard.Owner = function Owner() {
 TodoDetailCard.Task = function Task() {
   const { todoId } = useTodoScreenParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
+  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
   const { todo } = detail;
 
@@ -103,6 +107,17 @@ TodoDetailCard.Task = function Task() {
           className="size-6"
           hitSlop={CHECKBOX_HIT_SLOP}
           isSelected={todo.completed}
+          isDisabled={toggleTodo.isPending}
+          onSelectedChange={
+            TodoPolicy.isOwnTodo(detail)
+              ? () =>
+                  toggleTodo.mutate({
+                    todoId,
+                    body: { completed: !todo.completed },
+                    date: TodoPolicy.getDetailListDate(todo, todayKey),
+                  })
+              : undefined
+          }
         />
       </Box>
       <Text
@@ -173,6 +188,8 @@ TodoDetailCard.Schedule = function Schedule() {
 TodoDetailCard.SubTodos = function SubTodos() {
   const { todoId } = useTodoScreenParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
+  const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
+  const todayKey = useTodayKey();
   const { todo } = detail;
 
   if (!TodoPolicy.hasSubTodos(todo)) {
@@ -191,6 +208,18 @@ TodoDetailCard.SubTodos = function SubTodos() {
                 testID={`todo-detail-sub-todo-checkbox-${subTodo.id}`}
                 accessibilityLabel={subTodo.title}
                 isSelected={subTodo.completed}
+                isDisabled={toggleSubTodo.isPending}
+                onSelectedChange={
+                  TodoPolicy.isOwnTodo(detail)
+                    ? () =>
+                        toggleSubTodo.mutate({
+                          todoId,
+                          subTodoId: subTodo.id,
+                          isCompleted: !subTodo.completed,
+                          date: TodoPolicy.getDetailListDate(todo, todayKey),
+                        })
+                    : undefined
+                }
               />
             }
             top={<TodoLabel isChecked={subTodo.completed}>{subTodo.title}</TodoLabel>}
