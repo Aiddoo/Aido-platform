@@ -1,7 +1,7 @@
 import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { todoCategorySchema as categorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
-import { range, sortBy, uniq } from 'es-toolkit';
+import { orderBy, range, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
@@ -164,7 +164,7 @@ function withCompletions(
   result: DailyCompletionsResult,
   completions: readonly DailyCompletionSummary[],
 ): DailyCompletionsResult {
-  const sorted = sortBy(completions, [(completion) => completion.date]);
+  const sorted = orderBy(completions, [(completion) => completion.date], ['asc']);
   return {
     ...result,
     completions: sorted,

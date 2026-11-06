@@ -12,7 +12,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
 import { useConfirmDialog } from '@src/shared/ui';
-import { noop, sortBy } from 'es-toolkit';
+import { noop, orderBy } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -179,9 +179,10 @@ export function useVoiceNoteRecording({
       storage.recordings.remove(accountId, fileName);
       return;
     }
-    recordingsRef.current = sortBy(
+    recordingsRef.current = orderBy(
       [...recordingsRef.current, { fileName, startMs }],
       [({ startMs: partStartMs }) => partStartMs],
+      ['asc'],
     );
     persist('later');
     const handedOff = hasHandedOffRef.current

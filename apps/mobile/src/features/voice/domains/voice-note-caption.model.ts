@@ -1,5 +1,5 @@
 import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
-import { clamp } from 'es-toolkit';
+import { clamp, sumBy } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
 import {
@@ -108,7 +108,7 @@ function toTimedSentences(
     segmentStartMs: number;
   },
 ): VoiceNoteSentence[] {
-  const total = pieces.reduce((sum, piece) => sum + removeSpaces(piece).length, 0);
+  const total = sumBy(pieces, (piece) => removeSpaces(piece).length);
   let offset = 0;
 
   const ranges = pieces.map((piece) => {

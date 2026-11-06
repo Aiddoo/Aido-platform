@@ -308,7 +308,7 @@ export function getRecordingSizeBytes(
   note: VoiceNote,
   sizes: Readonly<Record<string, number>>,
 ): number {
-  return note.recordings.reduce((total, { fileName }) => total + (sizes[fileName] ?? 0), 0);
+  return sumBy(note.recordings, ({ fileName }) => sizes[fileName] ?? 0);
 }
 
 export function hasText(note: VoiceNote): boolean {

@@ -1,7 +1,7 @@
 import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { toDateKey } from '@src/shared/date/instant';
-import { countBy, maxBy, minBy, sortBy, takeWhile } from 'es-toolkit';
+import { countBy, maxBy, minBy, orderBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import {
@@ -225,7 +225,7 @@ function toHourlyTimeline(
       ? [{ kind: 'sunset' as const, at: day.sunset }]
       : []),
   ]);
-  return sortBy([...hourItems, ...sunItems], [timelineTime]);
+  return orderBy([...hourItems, ...sunItems], [timelineTime], ['asc']);
 }
 
 export const WeatherHourlyPolicy = {
