@@ -19,7 +19,6 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useSuggestionScreenParams } from '../hooks/use-suggestion-screen-params';
 import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { findSheetSuggestion } from '../utils/view-models/suggestion-category.view-model';
 
 type SuggestionCategoryBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -60,7 +59,9 @@ SuggestionCategoryBottomSheet.Content = function Content({
   const [{ data: suggestions }, { data: categoriesData }] = useSuspenseQueries({
     queries: [useGetSuggestionsQueryOptions(), useGetTodoCategoriesQueryOptions()],
   });
-  const suggestion = useRetainedValue(findSheetSuggestion(suggestions, suggestionId));
+  const suggestion = useRetainedValue(
+    suggestions.find((candidate) => candidate.id === suggestionId) ?? null,
+  );
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesData.categories,
     suggestion?.suggestedCategoryId,

@@ -1,27 +1,18 @@
-import { ErrorCode } from '@aido/api/errors';
 import { useSuggestionService } from '@src/bootstrap/providers/di-context';
-import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
-import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
-import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-function getSuggestionsQueryOptions(suggestionService: SuggestionService) {
+import { SUGGESTION_QUERY_KEYS } from '../constants/suggestion-query-keys';
+import { isSuggestionsPremiumRequired } from '../domains/suggestion.error';
+
+export function useGetSuggestionsQueryOptions() {
+  const suggestionService = useSuggestionService();
+
   return queryOptions({
-    queryKey: SUGGESTION_QUERY_KEYS.suggestions(),
-    queryFn: async ({ signal }) => {
-      const result = await suggestionService.getSuggestions(signal);
-      return unwrap(result);
-    },
+    queryKey: SUGGESTION_QUERY_KEYS.all,
+    queryFn: async ({ signal }) => unwrap(await suggestionService.getSuggestions(signal)),
     throwOnError: (error, query) =>
-      query.state.data == null && !isSuggestionsPremiumRequiredError(error),
+      query.state.data == null && !isSuggestionsPremiumRequired(error),
     meta: { refreshOnPremiumChange: true },
   });
 }
-
-export function useGetSuggestionsQueryOptions() {
-  return getSuggestionsQueryOptions(useSuggestionService());
-}
-
-export const isSuggestionsPremiumRequiredError = (error: unknown): boolean =>
-  isApiError(error) && error.hasCode(ErrorCode.AI_1309);

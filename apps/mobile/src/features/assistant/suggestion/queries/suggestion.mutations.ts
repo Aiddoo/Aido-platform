@@ -1,13 +1,9 @@
-import { ErrorCode } from '@aido/api/errors';
 import {
   useActivationService,
-  useSuggestionService,
   useHaptics,
   useLogger,
+  useSuggestionService,
 } from '@src/bootstrap/providers/di-context';
-import { SUGGESTION_LOG_EVENT } from '@src/features/assistant/suggestion/constants/suggestion-log-events';
-import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
-import type { AiSuggestionActionInput } from '@src/features/assistant/suggestion/domains/suggestion.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
@@ -15,15 +11,21 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+
+import { SUGGESTION_LOG_EVENT } from '../constants/suggestion-log-events';
+import { isSuggestionUnavailable } from '../domains/suggestion.error';
+import type { AiSuggestionActionInput } from '../schemas/suggestion.schema';
+import { invalidateAiSuggestions } from './suggestion-cache';
 
 interface HandleSuggestionParams {
   suggestionId: number;
   input: AiSuggestionActionInput;
 }
 
-export const useHandleSuggestionMutationOptions = () => {
+export function useHandleSuggestionMutationOptions() {
   const haptics = useHaptics();
   const suggestionService = useSuggestionService();
   const activationService = useActivationService();
@@ -32,15 +34,14 @@ export const useHandleSuggestionMutationOptions = () => {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
+  const showFailure = useMutationFailure(t('ai:suggestions.toasts.retryLater'));
 
   return mutationOptions({
-    mutationFn: async ({ suggestionId, input }: HandleSuggestionParams) => {
-      const result = await suggestionService.handleSuggestionAction(suggestionId, input);
-      return unwrap(result);
-    },
+    mutationFn: async ({ suggestionId, input }: HandleSuggestionParams) =>
+      unwrap(await suggestionService.handleSuggestionAction(suggestionId, input)),
     onSuccess: (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
-      queryClient.invalidateQueries({ queryKey: SUGGESTION_QUERY_KEYS.suggestions() });
+      invalidateAiSuggestions(queryClient);
 
       if (input.action === 'accept') {
         recordTodoCreatedForActivation({ queryClient, service: activationService });
@@ -54,30 +55,18 @@ export const useHandleSuggestionMutationOptions = () => {
       );
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (gate.handleError(error)) {
+        haptics.notify('error');
         return;
       }
 
-      if (
-        isApiError(error) &&
-        (error.hasCode(ErrorCode.AI_1305) ||
-          error.hasCode(ErrorCode.AI_1306) ||
-          error.hasCode(ErrorCode.AI_1307))
-      ) {
-        queryClient.invalidateQueries({ queryKey: SUGGESTION_QUERY_KEYS.suggestions() });
-        toast.error(error.message);
-        return;
+      if (isSuggestionUnavailable(error)) {
+        invalidateAiSuggestions(queryClient);
+      } else if (!isApiError(error)) {
+        logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-
-      logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
-      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
+      showFailure(error);
     },
   });
-};
+}

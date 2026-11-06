@@ -19,7 +19,7 @@ import {
 const DEPENDENT_KEYS = [
   NUDGE_QUERY_KEYS.limit(),
   ENTITLEMENT_QUERY_KEYS.snapshot(),
-  SUGGESTION_QUERY_KEYS.suggestions(),
+  SUGGESTION_QUERY_KEYS.all,
   MEMO_QUERY_KEYS.resourceLimit(),
   PREFERENCE_QUERY_KEYS.current(),
 ];

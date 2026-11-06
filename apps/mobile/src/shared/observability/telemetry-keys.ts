@@ -383,7 +383,6 @@ export interface VoiceEventMap {
 
 interface AiEventMap {
   ai_parse_used: { success: boolean };
-  ai_suggestion_acted: { action: 'accept' | 'dismiss' };
   ai_data_sharing_consent_changed: { agreed: boolean };
 }
 

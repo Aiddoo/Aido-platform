@@ -1,4 +1,3 @@
-import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
   formatDateLabel,
@@ -31,11 +30,10 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
+import { isSuggestionsPremiumRequired } from '../domains/suggestion.error';
 import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
-import {
-  isSuggestionsPremiumRequiredError,
-  useGetSuggestionsQueryOptions,
-} from '../queries/suggestion.queries';
+import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
+import type { AiSuggestion } from '../schemas/suggestion.schema';
 
 const SUGGESTION_LOADING_COUNT = 2;
 
@@ -320,7 +318,7 @@ SuggestionsList.Loading = function Loading() {
 SuggestionsList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
-  if (isSuggestionsPremiumRequiredError(error)) {
+  if (isSuggestionsPremiumRequired(error)) {
     return <SuggestionsList.PremiumPreview />;
   }
 

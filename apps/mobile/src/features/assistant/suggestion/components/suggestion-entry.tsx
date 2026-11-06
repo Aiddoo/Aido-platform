@@ -9,10 +9,8 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import {
-  isSuggestionsPremiumRequiredError,
-  useGetSuggestionsQueryOptions,
-} from '../queries/suggestion.queries';
+import { isSuggestionsPremiumRequired } from '../domains/suggestion.error';
+import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 
 /**
  * 피드 맨 아래의 있어도 되고 없어도 되는 칸이라 조회 오류를 던지지 않고 이 칸 안에서 다시 시도하게 한다.
@@ -61,7 +59,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   const { t } = useTranslation(['todo', 'ai']);
   const suggestionsQuery = useQuery({ ...useGetSuggestionsQueryOptions(), throwOnError: false });
 
-  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
+  if (isSuggestionsPremiumRequired(suggestionsQuery.error)) {
     return (
       <InfoCard
         label={t('ai:suggestions.toasts.premiumOnly')}
