@@ -14,7 +14,7 @@ import type {
   TodoRepeatEnd,
   TodoSeries,
   TodoUpdateScope,
-} from '../domains/todo-repeat.model';
+} from '../schemas/todo-repeat.schema';
 
 export interface RepeatingTodoDraft {
   title: string;

@@ -37,12 +37,13 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, type ComponentType, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
-import { type Todo, TodoPolicy } from '../../domains/todo.model';
+import { TodoPolicy } from '../../domains/todo.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
 import { useDeleteTodoMutationOptions } from '../../queries/todo.mutations';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import type { Todo } from '../../schemas/todo.schema';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
 

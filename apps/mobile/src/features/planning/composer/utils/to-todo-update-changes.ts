@@ -1,8 +1,6 @@
-import type { UpdateTodoInput } from '@aido/api';
-import {
-  TodoRepeatPolicy,
-  type TodoRepeat,
-} from '@src/features/planning/todo/domains/todo-repeat.model';
+import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { type TodoRepeat } from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import type { UpdateTodoInput } from '@src/features/planning/todo/schemas/todo-request.schema';
 import { toDateKey } from '@src/shared/date/instant';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';

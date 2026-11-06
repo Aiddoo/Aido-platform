@@ -4,7 +4,6 @@ import {
   type DayOfWeek,
   TODO_EDIT_SCOPES,
   TODO_SERIES_LIMITS,
-  TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
 import {
@@ -18,20 +17,13 @@ import {
 } from '@src/shared/date/date-key';
 import { isEqual } from 'es-toolkit';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
 import {
-  TODO_REPEAT_COUNT,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_REPEAT_WEEKDAYS as WEEKDAYS,
   TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
-
-const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
-export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
-/** 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다 */
-const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
-export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
+import type { TodoEditScope, TodoRepeat, TodoRepeatEnd } from '../schemas/todo-repeat.schema';
 
 const TODO_REPEAT_KINDS = [
   'DAILY',
@@ -42,39 +34,6 @@ const TODO_REPEAT_KINDS = [
   'MONTHLY',
 ] as const;
 type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
-
-const todoRepeatEndSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('NEVER') }),
-  z.object({ type: z.literal('UNTIL'), date: z.iso.date() }),
-  z.object({
-    type: z.literal('COUNT'),
-    count: z.int().min(TODO_REPEAT_COUNT.MIN).max(TODO_REPEAT_COUNT.MAX),
-  }),
-]);
-export type TodoRepeatEnd = z.infer<typeof todoRepeatEndSchema>;
-
-export const todoRepeatSchema = z.discriminatedUnion('frequency', [
-  z.object({ frequency: z.literal('DAILY'), end: todoRepeatEndSchema }),
-  z.object({
-    frequency: z.literal('WEEKLY'),
-    interval: z.union([z.literal(1), z.literal(2)]),
-    weekdays: z.array(z.enum(DAYS_OF_WEEK)).min(1),
-    end: todoRepeatEndSchema,
-  }),
-  z.object({
-    frequency: z.literal('MONTHLY'),
-    monthDay: z.int().min(1).max(31),
-    end: todoRepeatEndSchema,
-  }),
-]);
-export type TodoRepeat = z.infer<typeof todoRepeatSchema>;
-
-const todoSeriesSchema = z.object({
-  id: z.string(),
-  repeat: todoRepeatSchema,
-  startDate: z.iso.date(),
-});
-export type TodoSeries = z.infer<typeof todoSeriesSchema>;
 
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
   return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));

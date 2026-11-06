@@ -1,8 +1,6 @@
-import { createTodoItemSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import {
   useSubTodoScreenParams,
@@ -10,6 +8,8 @@ import {
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { type SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
+import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { DictationButton } from '@src/features/voice/components/dictation-button';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -47,6 +47,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { useAddSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
+import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 
 type AddSubTodoBottomSheetProps = Omit<
   ComponentProps<typeof KeyboardBottomSheet>,
@@ -159,7 +160,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
   const { control, handleSubmit, reset, setValue } = useForm({
-    resolver: zodResolver(createTodoItemSchema),
+    resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: subTodo?.title ?? '' },
   });
   const draftTitle = useWatch({ control, name: 'title' });
@@ -229,7 +230,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
             placeholder={t('subTodo.placeholder')}
             value={value}
             onChange={onChange}
-            maxLength={createTodoItemSchema.shape.title.maxLength ?? undefined}
+            maxLength={subTodoFormSchema.shape.title.maxLength ?? undefined}
             size="medium"
             renderErrorMessage={false}
             returnKeyType="done"

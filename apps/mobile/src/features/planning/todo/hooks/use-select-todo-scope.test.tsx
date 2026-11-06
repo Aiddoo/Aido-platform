@@ -7,7 +7,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Pressable, TextInput } from 'react-native';
 
-import type { TodoEditScope } from '../domains/todo-repeat.model';
+import type { TodoEditScope } from '../schemas/todo-repeat.schema';
 import { TodoScopeStep, useSelectTodoScope } from './use-select-todo-scope';
 
 function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) => void }) {

@@ -1,10 +1,10 @@
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
+import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
   type TodoRepeat,
-  TodoRepeatPolicy,
   todoRepeatSchema,
-} from '@src/features/planning/todo/domains/todo-repeat.model';
+} from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';

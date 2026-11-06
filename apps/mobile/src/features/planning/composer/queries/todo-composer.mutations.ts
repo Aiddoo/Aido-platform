@@ -1,4 +1,3 @@
-import type { CreateTodoInput, UpdateTodoInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import {
   useActivationService,
@@ -17,7 +16,6 @@ import type {
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
   cancelTodoCompletionQueries,
@@ -33,6 +31,11 @@ import {
   settleTodoListWrite,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTodoSeriesFailureHandler } from '@src/features/planning/todo/queries/todo-series.mutations';
+import type {
+  CreateTodoInput,
+  UpdateTodoInput,
+} from '@src/features/planning/todo/schemas/todo-request.schema';
+import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

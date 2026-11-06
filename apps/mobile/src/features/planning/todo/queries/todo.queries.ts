@@ -8,7 +8,8 @@ import { type QueryState, queryOptions } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { type DailyCompletionSummary, TodoPolicy } from '../domains/todo.model';
+import { TodoPolicy } from '../domains/todo.model';
+import { type DailyCompletionSummary } from '../schemas/todo.schema';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
 export function shouldPersistTodosByDate({ date, todayKey }: { date: string; todayKey: string }) {

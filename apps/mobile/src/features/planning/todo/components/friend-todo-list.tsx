@@ -1,7 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { useFriendScreenParams } from '@src/features/social/friend/hooks/use-friend-screen-params';
 import { toDateKey } from '@src/shared/date/instant';

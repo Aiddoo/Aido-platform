@@ -1,5 +1,5 @@
-import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoRepeat } from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { toNullableDate } from '@src/features/planning/todo/utils/calendar-date';
 import { toDate } from '@src/shared/date/instant';
 

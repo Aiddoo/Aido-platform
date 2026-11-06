@@ -4,7 +4,7 @@ import { type PropsWithChildren, useState } from 'react';
 import { Keyboard } from 'react-native';
 
 import { TodoScopeSelectContent } from '../components/todo-scope-select-content';
-import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.model';
+import type { TodoEditScope, TodoUpdateScope } from '../schemas/todo-repeat.schema';
 
 interface ScopeRequest {
   action: 'edit' | 'delete';

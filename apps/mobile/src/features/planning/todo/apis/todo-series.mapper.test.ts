@@ -1,6 +1,6 @@
 import { createTodoSchema, todoRepeatSchema, updateTodoSchema } from '@aido/api';
 
-import type { TodoRepeat } from '../domains/todo-repeat.model';
+import type { TodoRepeat } from '../schemas/todo-repeat.schema';
 import {
   type RepeatingTodoDraft,
   toCreateRepeatingTodoRequest,

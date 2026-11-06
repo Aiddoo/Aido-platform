@@ -9,7 +9,7 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { Todo } from '../domains/todo.model';
+import type { Todo } from '../schemas/todo.schema';
 import { toTodo } from './todo.mapper';
 
 export class SubTodoService {

@@ -6,11 +6,8 @@ import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
-import {
-  type TodoRepeat,
-  type TodoRepeatEnd,
-  TodoRepeatPolicy,
-} from '../domains/todo-repeat.model';
+import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { type TodoRepeat, type TodoRepeatEnd } from '../schemas/todo-repeat.schema';
 
 const todoRepeatFormShape = z.object({
   startDate: z.date(),

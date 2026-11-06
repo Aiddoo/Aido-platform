@@ -1,5 +1,5 @@
 import { TODO_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { todoRepeatSchema } from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import { z } from 'zod';
 
 export const addTodoFormSchema = z.object({

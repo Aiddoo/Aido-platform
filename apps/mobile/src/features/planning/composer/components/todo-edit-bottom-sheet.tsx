@@ -2,16 +2,17 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toTodoEditFormValues } from '@src/features/planning/composer/utils/to-todo-edit-form-values';
 import { TodoScopeSelectContent } from '@src/features/planning/todo/components/todo-scope-select-content';
-import {
-  type TodoRepeat,
-  TodoRepeatPolicy,
-  type TodoUpdateScope,
-} from '@src/features/planning/todo/domains/todo-repeat.model';
+import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import {
+  type TodoRepeat,
+  type TodoUpdateScope,
+} from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import { type Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';

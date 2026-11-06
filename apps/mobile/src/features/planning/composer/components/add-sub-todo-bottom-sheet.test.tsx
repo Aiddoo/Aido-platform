@@ -7,7 +7,7 @@ import {
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
-import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoListResult } from '@src/features/planning/todo/schemas/todo.schema';
 import {
   createAnalyticsStub,
   createHttpClientStub,

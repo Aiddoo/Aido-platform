@@ -8,7 +8,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import type { TodoRepeat } from '../domains/todo-repeat.model';
+import type { TodoRepeat } from '../schemas/todo-repeat.schema';
 import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
 
 const START_DATE = new Date(2026, 10, 5, 12);

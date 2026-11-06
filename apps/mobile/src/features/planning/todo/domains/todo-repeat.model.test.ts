@@ -3,7 +3,8 @@ import { z } from 'zod';
 
 import repeatOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
 import { toRepeat } from '../apis/todo-series.mapper';
-import { type TodoRepeat, TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
+import { type TodoRepeat, todoRepeatSchema } from '../schemas/todo-repeat.schema';
+import { TodoRepeatPolicy } from './todo-repeat.model';
 
 /** 서버 RepeatRule도 같은 표를 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
 const SHARED_OCCURRENCE_CASES = z

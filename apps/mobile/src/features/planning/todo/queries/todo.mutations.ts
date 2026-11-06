@@ -1,9 +1,3 @@
-import type {
-  ToggleTodoCompleteInput,
-  ChangeTodoCategoryInput,
-  ReorderTodoInput,
-  UpdateTodoScheduleInput,
-} from '@aido/api';
 import {
   useActivationService,
   useHaptics,
@@ -24,8 +18,14 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import { TodoPolicy } from '../domains/todo.model';
+import type { TodoUpdateScope, TodoEditScope } from '../schemas/todo-repeat.schema';
+import type {
+  ChangeTodoCategoryInput,
+  ReorderTodoInput,
+  ToggleTodoCompleteInput,
+  UpdateTodoScheduleInput,
+} from '../schemas/todo-request.schema';
 import {
   cancelTodoCompletionQueries,
   getCachedTodosByDate,

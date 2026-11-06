@@ -3,13 +3,13 @@ import type { Query, QueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { TodoPolicy } from '../domains/todo.model';
 import {
   type DailyCompletionsResult,
   type Todo,
   type TodoDetails,
   type TodoListResult,
-  TodoPolicy,
-} from '../domains/todo.model';
+} from '../schemas/todo.schema';
 
 export interface TodoSnapshot {
   date: string;

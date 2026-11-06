@@ -1,10 +1,10 @@
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
 import type {
   DailyCompletionsResult,
   TodoListResult,
-} from '@src/features/planning/todo/domains/todo.model';
-import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
+} from '@src/features/planning/todo/schemas/todo.schema';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';

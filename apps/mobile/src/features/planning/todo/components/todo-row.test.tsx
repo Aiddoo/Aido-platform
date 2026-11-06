@@ -4,7 +4,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import type { TodoRepeat } from '../domains/todo-repeat.model';
+import type { TodoRepeat } from '../schemas/todo-repeat.schema';
 import { TodoScheduleLine } from './todo-row';
 
 const MON_THU: TodoRepeat = {

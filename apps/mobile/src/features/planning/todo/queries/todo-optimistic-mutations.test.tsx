@@ -31,7 +31,7 @@ import type {
   Todo,
   TodoDetails,
   TodoListResult,
-} from '../domains/todo.model';
+} from '../schemas/todo.schema';
 import { useDeleteSubTodoMutationOptions } from './sub-todo.mutations';
 import { useReorderSubTodosMutationOptions } from './sub-todo.mutations';
 import { useToggleSubTodoMutationOptions } from './sub-todo.mutations';

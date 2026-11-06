@@ -1,61 +1,26 @@
 import {
-  createTodoResponseSchema,
   type DailyCompletionSummary as DailyCompletionSummaryDTO,
   type DailyCompletionsRangeResponse,
   type FriendTodoListResponse,
-  reorderTodoResponseSchema,
   type Todo as TodoDto,
   type TodoDetailsResponse,
-  todoDetailsResponseSchema,
-  todoListResponseSchema,
   type TodoListResponse,
-  todoRepeatSchema,
-  todoSchema,
-  todoSeriesResponseSchema,
   type TodoSummaryResponse,
-  updateTodoResponseSchema,
 } from '@aido/api';
 import { toHHmm } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
-import { z } from 'zod';
 
+import { TodoPolicy } from '../domains/todo.model';
 import {
   type DailyCompletionSummary,
   type DailyCompletionsResult,
   type Todo,
   type TodoDetails,
-  TodoPolicy,
   type TodoSummary,
   type TodoListResult,
-} from '../domains/todo.model';
+} from '../schemas/todo.schema';
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat } from './todo-series.mapper';
-
-/**
- * 새 서버가 더한 모르는 반복 빈도 하나 때문에 응답 전체를 버리지 않는다. 모르는 규칙은 규칙을 모르는 회차(`repeat: null`)로 읽고,
- * 화면은 이미 이 경우를 `↻ 반복`으로 그린다.
- */
-const lenientRepeatSchema = todoRepeatSchema.nullable().optional().catch(null);
-const lenientTodoSchema = todoSchema.extend({ repeat: lenientRepeatSchema });
-
-export const todoListEnvelopeSchema = todoListResponseSchema.extend({
-  items: z.array(lenientTodoSchema),
-});
-export const createTodoEnvelopeSchema = createTodoResponseSchema.extend({
-  todo: lenientTodoSchema,
-});
-export const updateTodoEnvelopeSchema = updateTodoResponseSchema.extend({
-  todo: lenientTodoSchema,
-});
-export const reorderTodoEnvelopeSchema = reorderTodoResponseSchema.extend({
-  todo: lenientTodoSchema,
-});
-export const todoDetailsEnvelopeSchema = todoDetailsResponseSchema.extend({
-  todo: lenientTodoSchema,
-});
-export const todoSeriesEnvelopeSchema = todoSeriesResponseSchema.extend({
-  repeat: todoRepeatSchema.nullable().catch(null),
-});
 
 /** 옛 서버 응답에는 벽시계 칸이 없어 순간을 기기 시간대로 읽는다 */
 const toLocalTime = ({ scheduledTime, scheduledLocalTime }: TodoDto): string | null => {

@@ -2,7 +2,7 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderHook } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import type { Todo } from '../domains/todo.model';
+import type { Todo } from '../schemas/todo.schema';
 import { useToggleTodoMutationOptions } from './todo.mutations';
 
 const TODAY = '2026-10-27';

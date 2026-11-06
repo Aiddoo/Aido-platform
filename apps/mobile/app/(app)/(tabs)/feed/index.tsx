@@ -20,7 +20,6 @@ import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-c
 import { FriendStrip } from '@src/features/planning/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import {
   useFeedActionParam,
   useFeedDateKey,
@@ -36,6 +35,7 @@ import {
   invalidateFeedTodos,
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
+import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';

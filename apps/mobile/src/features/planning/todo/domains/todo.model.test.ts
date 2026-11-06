@@ -1,5 +1,6 @@
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import { type DailyCompletionsResult, TodoPolicy } from './todo.model';
+import { type DailyCompletionsResult } from '../schemas/todo.schema';
+import { TodoPolicy } from './todo.model';
 
 describe('TodoPolicy.completesAllTodos', () => {
   it('할 일이 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다', () => {

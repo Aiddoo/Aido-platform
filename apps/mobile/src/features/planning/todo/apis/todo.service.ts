@@ -17,8 +17,16 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 
-import type { TodoEditScope, TodoSeries, TodoUpdateScope } from '../domains/todo-repeat.model';
 import { isTodoSeriesNotFoundError, TodoSeriesNotCreatedError } from '../domains/todo-series.error';
+import {
+  createTodoEnvelopeSchema,
+  reorderTodoEnvelopeSchema,
+  todoDetailsEnvelopeSchema,
+  todoListEnvelopeSchema,
+  todoSeriesEnvelopeSchema,
+  updateTodoEnvelopeSchema,
+} from '../schemas/todo-envelope.schema';
+import type { TodoEditScope, TodoSeries, TodoUpdateScope } from '../schemas/todo-repeat.schema';
 import type {
   DailyCompletionsResult,
   Todo,
@@ -26,7 +34,7 @@ import type {
   TodoExistence,
   TodoSummary,
   TodoListResult,
-} from '../domains/todo.model';
+} from '../schemas/todo.schema';
 import {
   type RepeatingTodoDraft,
   type TodoSeriesEditOptions,
@@ -37,18 +45,12 @@ import {
   toUpdateTodoRequest,
 } from './todo-series.mapper';
 import {
-  createTodoEnvelopeSchema,
-  reorderTodoEnvelopeSchema,
-  todoDetailsEnvelopeSchema,
-  todoListEnvelopeSchema,
-  todoSeriesEnvelopeSchema,
   toDailyCompletionsResult,
   toFriendTodoListResult,
   toTodo,
   toTodoDetails,
   toTodoListResult,
   toTodoSummary,
-  updateTodoEnvelopeSchema,
 } from './todo.mapper';
 
 export class TodoService {

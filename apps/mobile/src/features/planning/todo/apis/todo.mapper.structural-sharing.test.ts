@@ -2,7 +2,8 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 
 import { createTodoDto } from '../__tests__/todo.fixtures';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import { todoSchema, TodoPolicy } from '../domains/todo.model';
+import { TodoPolicy } from '../domains/todo.model';
+import { todoSchema } from '../schemas/todo.schema';
 import { toTodo } from './todo.mapper';
 
 describe('Todo 클라이언트 모델과 캐시', () => {

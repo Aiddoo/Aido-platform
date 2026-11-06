@@ -3,11 +3,8 @@ import { formatDaysOfWeek } from '@src/shared/date/date-labels';
 import { t } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
-import {
-  type TodoRepeat,
-  type TodoRepeatEnd,
-  TodoRepeatPolicy,
-} from '../domains/todo-repeat.model';
+import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { type TodoRepeat, type TodoRepeatEnd } from '../schemas/todo-repeat.schema';
 
 const WEEKDAY_SEPARATOR = '·';
 const SUMMARY_SEPARATOR = ' · ';

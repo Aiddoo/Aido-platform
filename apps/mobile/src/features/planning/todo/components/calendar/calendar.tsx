@@ -36,8 +36,8 @@ import {
 } from 'react-native';
 import { match } from 'ts-pattern';
 
-import type { DailyCompletionSummary } from '../../domains/todo.model';
 import type { CompletionsByDate } from '../../queries/todo.queries';
+import type { DailyCompletionSummary } from '../../schemas/todo.schema';
 import {
   clampCalendarPage,
   getCalendarPageAtOffset,

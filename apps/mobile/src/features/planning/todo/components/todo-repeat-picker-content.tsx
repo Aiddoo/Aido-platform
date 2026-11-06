@@ -32,7 +32,7 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
-import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { useDatePicker } from '../hooks/use-date-picker';
 import {
   getTodoRepeatFormIssue,
@@ -41,6 +41,7 @@ import {
   todoRepeatFormSchema,
   type TodoRepeatFormValues,
 } from '../schemas/todo-repeat-form.schema';
+import { type TodoRepeat } from '../schemas/todo-repeat.schema';
 import {
   DAY_TYPE_TONE,
   getDatePickerDayStyle,

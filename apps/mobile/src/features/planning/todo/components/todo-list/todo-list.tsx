@@ -2,8 +2,10 @@ import { ReorderCoachmark } from '@src/features/device/coachmark/components/reor
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { type SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
+import { type Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
