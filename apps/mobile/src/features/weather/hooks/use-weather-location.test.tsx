@@ -18,11 +18,13 @@ import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createSeoulReportDto } from '../__tests__/weather-report.factories';
+import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
 import { WeatherService } from '../apis/weather.service';
-import { useWeatherLocationRevision } from '../queries/get-weather-location-query-options';
-import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
 import { refetchWeatherLocation } from '../queries/weather-cache';
+import {
+  useGetWeatherReportQueryOptions,
+  useWeatherLocationRevision,
+} from '../queries/weather.queries';
 import { useWeatherLocation } from './use-weather-location';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };

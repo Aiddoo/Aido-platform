@@ -29,10 +29,7 @@ import {
 import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { type HourlyTimelineItem, toHourlyTimeline } from '../utils/hourly-timeline.view-model';
 import {

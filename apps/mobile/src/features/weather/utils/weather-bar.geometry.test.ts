@@ -1,4 +1,4 @@
-import { createWeatherReport } from '../__tests__/weather-report.factories';
+import { createWeatherReport } from '../__tests__/weather-report.fixtures';
 import {
   toAirMeterPosition,
   toTemperatureBars,

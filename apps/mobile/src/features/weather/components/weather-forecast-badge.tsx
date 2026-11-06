@@ -9,7 +9,7 @@ import { match } from 'ts-pattern';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
 import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
 import type { CurrentWeather, WeatherReport } from '../schemas/weather-report.schema';
 import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';

@@ -7,7 +7,7 @@ import {
   createHourlySeries,
   createWeatherReport,
   createWeatherReportDto,
-} from '../__tests__/weather-report.factories';
+} from '../__tests__/weather-report.fixtures';
 import { type BriefingTodo, WeatherBriefingPolicy } from './weather-briefing.model';
 
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */

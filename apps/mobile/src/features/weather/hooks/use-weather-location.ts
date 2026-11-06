@@ -7,8 +7,8 @@ import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import { useGetWeatherLocationQueryOptions } from '../queries/get-weather-location-query-options';
 import { refetchWeatherLocation } from '../queries/weather-cache';
+import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
 import type { PlaceName } from '../schemas/weather-location.schema';
 
 export type WeatherLocation =

@@ -1,9 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import {
-  createHourlyForecastDto,
-  createWeatherReport,
-} from '../__tests__/weather-report.factories';
+import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { toHourlyTimeline } from './hourly-timeline.view-model';
 
 const HOUR_MS = 60 * 60_000;

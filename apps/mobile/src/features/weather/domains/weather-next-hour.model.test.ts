@@ -1,4 +1,4 @@
-import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.factories';
+import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherNextHourPolicy } from './weather-next-hour.model';
 
 describe('WeatherNextHourPolicy.getHourlyPrecipitationOutlook', () => {

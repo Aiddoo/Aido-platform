@@ -14,10 +14,7 @@ import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { AttributionInfo } from '../schemas/weather-report.schema';
 import { type AttributionBackground, toAttributionMark } from '../utils/attribution-mark';
 

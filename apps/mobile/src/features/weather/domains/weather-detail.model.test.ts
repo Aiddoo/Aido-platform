@@ -1,9 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import {
-  createHourlyForecastDto,
-  createWeatherReport,
-} from '../__tests__/weather-report.factories';
+import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherDetailPolicy } from './weather-detail.model';
 
 const SUNRISE = new Date('2026-11-01T21:51:00.000Z');

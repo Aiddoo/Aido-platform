@@ -22,7 +22,7 @@ import {
   toRescheduleTargets,
 } from '../../domains/weather-reschedule.model';
 import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
-import { useRescheduleTodoMutationOptions } from '../../queries/use-reschedule-todo-mutation-options';
+import { useRescheduleTodoMutationOptions } from '../../queries/weather.mutations';
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */

@@ -30,10 +30,7 @@ import {
 } from '../domains/weather.error';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { PlaceName } from '../schemas/weather-location.schema';
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import { toWeatherReportFailedCause } from '../utils/analytics/weather-analytics';

@@ -7,10 +7,7 @@ import {
   type WeatherSceneInput,
 } from '../components/weather-scene/weather-scene';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { useWeatherLocation } from './use-weather-location';
 
 /** 리포트를 받기 전·권한 안내 중에는 맑은 낮 하늘을 바탕으로 둔다. */

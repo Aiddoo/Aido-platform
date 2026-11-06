@@ -41,10 +41,7 @@ import { z } from 'zod';
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
 import { toWeatherBriefingKind } from '../utils/analytics/weather-analytics';

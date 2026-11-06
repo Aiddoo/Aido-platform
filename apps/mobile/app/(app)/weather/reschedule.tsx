@@ -12,7 +12,7 @@ import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weat
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
-} from '@src/features/weather/queries/get-weather-report-query-options';
+} from '@src/features/weather/queries/weather.queries';
 import { weatherRescheduleFormSchema } from '@src/features/weather/schemas/weather-reschedule-form.schema';
 import { weatherRescheduleParamsSchema } from '@src/features/weather/schemas/weather-reschedule-params.schema';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';

@@ -1,6 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import { createWeatherReportDto } from '../__tests__/weather-report.factories';
+import { createWeatherReportDto } from '../__tests__/weather-report.fixtures';
 import { toWeatherReport } from './weather.mapper';
 
 describe('toWeatherReport', () => {

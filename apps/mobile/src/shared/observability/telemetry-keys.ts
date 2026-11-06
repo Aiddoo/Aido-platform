@@ -1,11 +1,9 @@
-import type { WeatherRescheduleReason } from '@aido/api';
 import type {
   InviteFriendship,
   RedeemOutcome,
   ReplyToNudgeInput,
   UserReportReason,
   UserReportTargetType,
-  WeatherAlertSeverity,
 } from '@aido/api';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
@@ -22,13 +20,6 @@ import type { InviteShareChannel } from '@src/features/social/invite/domains/inv
 import type { RedeemFailureReason } from '@src/features/social/invite/domains/invite.error';
 import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '@src/features/voice/domains/voice.error';
-import type {
-  WeatherBriefingKind,
-  WeatherLocationRegisteredResult,
-  WeatherOpenedEntry,
-  WeatherReportFailedCause,
-} from '@src/features/weather/utils/analytics/weather-analytics';
-import type { TodoSuggestionReason } from '@src/features/weather/utils/weather-briefing.view-model';
 
 // 관측 키의 단일 원본. Analytics 이벤트·Sentry feature/tag·breadcrumb 카테고리를 여기서만 정의한다.
 // 포트(core/ports)는 이 파일의 타입만 import한다.
@@ -497,23 +488,6 @@ interface BadgeEventMap {
   badge_opened_from_notification: undefined;
 }
 
-interface WeatherEventMap {
-  weather_location_permission_result: { result: 'granted' | 'needs_permission' | 'denied' };
-  weather_alert_opened: { severity: WeatherAlertSeverity };
-  weather_reschedule_opened: { todo_count: number; reason: WeatherRescheduleReason };
-  weather_reschedule_applied: { moved_count: number; reason: WeatherRescheduleReason };
-  weather_reschedule_undone: { moved_count: number; reason: WeatherRescheduleReason };
-  weather_todo_suggestion_opened: { reason: TodoSuggestionReason };
-  /** 날씨 화면 진입. 화면이 열릴 때 한 번 */
-  weather_opened: { entry: WeatherOpenedEntry };
-  /** 브리핑 노출. 화면이 열려 있는 동안 처음 보인 종류로 한 번 */
-  weather_briefing_shown: { kind: WeatherBriefingKind };
-  /** 화면을 연 뒤 위치 확인이 끝난 결과. 화면이 열려 있는 동안 한 번 */
-  weather_location_registered: { result: WeatherLocationRegisteredResult };
-  /** 리포트 경계가 실패를 보였다. 실패 화면마다 한 번 */
-  weather_report_failed: { cause: WeatherReportFailedCause };
-}
-
 /** 연결 상태. 오프라인 배너가 뜨는 전환(오프라인 구간)마다 한 번 */
 interface ConnectivityEventMap {
   offline_banner_shown: undefined;
@@ -538,5 +512,4 @@ export type LegacyEventMap = AuthEventMap &
   UserEventMap &
   NotificationEventMap &
   BadgeEventMap &
-  WeatherEventMap &
   ConnectivityEventMap;

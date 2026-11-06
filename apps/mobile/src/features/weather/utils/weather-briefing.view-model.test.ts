@@ -1,6 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.factories';
+import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import {
   type BriefingViewDeps,

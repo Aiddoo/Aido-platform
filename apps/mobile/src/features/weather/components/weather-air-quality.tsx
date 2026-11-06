@@ -7,10 +7,7 @@ import { AIR_METER_COLORS } from '../constants/weather-colors';
 import { AIR_GRADE_LABEL_KEYS, AIR_QUALITY_SOURCE_LABEL_KEYS } from '../constants/weather-labels';
 import { WeatherDetailPolicy } from '../domains/weather-detail.model';
 import { type AirPollutant, WeatherReportPolicy } from '../domains/weather-report.model';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toAirMeterPosition } from '../utils/weather-bar.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';

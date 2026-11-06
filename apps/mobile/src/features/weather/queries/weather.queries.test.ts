@@ -1,12 +1,9 @@
 import { createHttpClientStub } from '@src/shared/__tests__';
 
-import { createWeatherReport } from '../__tests__/weather-report.factories';
+import { createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherService } from '../apis/weather.service';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
-import {
-  getWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from './get-weather-report-query-options';
+import { getWeatherReportQueryOptions, WeatherReportSelect } from './weather.queries';
 
 describe('getWeatherReportQueryOptions', () => {
   it('위치가 실제로 바뀐 리비전마다 다른 리포트 캐시를 쓰고, 모두 날씨 무효화 범위 안에 둔다', () => {

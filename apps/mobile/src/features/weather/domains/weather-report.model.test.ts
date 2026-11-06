@@ -7,7 +7,7 @@ import {
   createSeoulReportDto,
   createTokyoReportDto,
   createWeatherReport,
-} from '../__tests__/weather-report.factories';
+} from '../__tests__/weather-report.fixtures';
 import { toWeatherReport } from '../apis/weather.mapper';
 import { WeatherReportPolicy } from './weather-report.model';
 

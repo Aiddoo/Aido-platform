@@ -12,10 +12,7 @@ import { PressableFeedback } from 'heroui-native';
 
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { WeatherAlert } from '../schemas/weather-report.schema';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';

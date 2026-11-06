@@ -2,10 +2,7 @@ import type { WeatherHourlyForecast } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
-import {
-  createHourlyForecastDto,
-  createWeatherReport,
-} from '../__tests__/weather-report.factories';
+import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherHourlyPolicy } from './weather-hourly.model';
 
 const HOUR_MS = 60 * 60_000;

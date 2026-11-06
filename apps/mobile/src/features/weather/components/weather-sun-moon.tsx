@@ -12,10 +12,7 @@ import { MOON_PHASE_LABEL_KEYS, SUN_EVENT_LABEL_KEYS } from '../constants/weathe
 import { WeatherDetailPolicy } from '../domains/weather-detail.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { getSunArcPosition, isSunBelowHorizon, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';

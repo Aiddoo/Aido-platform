@@ -30,10 +30,7 @@ import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import {
   type TemperatureBar,

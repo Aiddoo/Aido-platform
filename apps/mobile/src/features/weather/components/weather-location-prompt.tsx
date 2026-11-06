@@ -7,8 +7,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useGetWeatherLocationQueryOptions } from '../queries/get-weather-location-query-options';
-import { useUpdateWeatherLocationMutationOptions } from '../queries/use-update-weather-location-mutation-options';
+import { useUpdateWeatherLocationMutationOptions } from '../queries/weather.mutations';
+import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
 import { WeatherResult } from './weather-result';
 
 interface WeatherLocationPromptProps {

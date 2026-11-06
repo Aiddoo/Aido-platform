@@ -1,4 +1,4 @@
-import { createAttributionDto, createWeatherReport } from '../__tests__/weather-report.factories';
+import { createAttributionDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { toAttributionMark } from './attribution-mark';
 
 describe('toAttributionMark', () => {

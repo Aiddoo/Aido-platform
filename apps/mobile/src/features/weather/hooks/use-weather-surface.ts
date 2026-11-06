@@ -4,10 +4,7 @@ import { useUniwind } from 'uniwind';
 
 import { toWeatherScene, type WeatherSceneSky } from '../components/weather-scene/weather-scene';
 import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { WeatherReport } from '../schemas/weather-report.schema';
 import { useOnSkyColor } from './use-on-sky-color';
 
