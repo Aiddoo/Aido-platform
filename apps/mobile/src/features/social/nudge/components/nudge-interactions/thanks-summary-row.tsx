@@ -13,13 +13,10 @@ import {
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Text,
-  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
-import { Skeleton } from 'heroui-native';
 import { type ReactNode, useEffect, useRef } from 'react';
 import Animated, {
   useAnimatedStyle,
@@ -46,6 +43,10 @@ interface ThanksSummaryRowProps {
   onThanksPress: () => void;
 }
 
+/**
+ * 쓸 수 있는지, 보낼 대상이 있는지 두 번 조회해야 보일지 아는 줄이라 로딩 때 자리를 잡지 않는다.
+ * 자리를 잡으면 대상이 없을 때 나타났다 사라져 아래가 두 번 움직인다.
+ */
 export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
   if (availability.data !== true) {
@@ -142,26 +143,6 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
       />
     ))
     .exhaustive();
-};
-
-ThanksSummaryRow.Loading = function Loading() {
-  return (
-    <ThanksSummaryCard
-      variant="pending"
-      left={
-        <HStack>
-          {range(VISIBLE_AVATAR_COUNT).map((index) => (
-            <Box key={index} className={cn(index > 0 && '-ml-2')}>
-              <Skeleton className="size-8 rounded-full border-2 border-background" />
-            </Box>
-          ))}
-        </HStack>
-      }
-      title={<TextSkeleton size="b3" className="w-32" />}
-      description={<TextSkeleton size="e1" className="w-40" />}
-      action={<Skeleton className="h-10 w-20 rounded-xl" />}
-    />
-  );
 };
 
 interface ThanksSummaryRowErrorProps extends QueryErrorFallbackProps {

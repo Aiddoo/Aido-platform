@@ -174,7 +174,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
               <ThanksSummaryRow.Error {...props} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
             )}
           >
-            <Suspense fallback={<ThanksSummaryRow.Loading />}>
+            <Suspense fallback={null}>
               <ThanksSummaryRow
                 todoId={todo.id}
                 onThanksPress={() =>

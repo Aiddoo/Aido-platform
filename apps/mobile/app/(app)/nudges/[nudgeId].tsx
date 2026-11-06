@@ -143,7 +143,7 @@ function NudgeDetailScreen() {
                       resetKeys={[nudge.todoId]}
                       fallback={ThanksSummaryRow.Error}
                     >
-                      <Suspense fallback={<ThanksSummaryRow.Loading />}>
+                      <Suspense fallback={null}>
                         <ThanksSummaryRow
                           todoId={nudge.todoId}
                           onThanksPress={handleOpenThanksSheet}
