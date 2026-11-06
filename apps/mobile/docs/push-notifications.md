@@ -11,13 +11,17 @@ PushNotificationGateway (core/ports) ← expoPushNotificationGateway (shared/inf
         PushDeviceService (features/notification/apis) → PUT /v1/notifications/push-devices/{deviceId}
 ```
 
-| 조각                                       | 역할                                                                  |
-| ------------------------------------------ | --------------------------------------------------------------------- |
-| `domains/push-permission.model.ts`         | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)          |
-| `apis/push-permission.mapper.ts`           | OS 값 → 모델, 모델·토큰 → 보고 입력                                   |
-| `apis/push-device.service.ts`              | 권한 읽기·요청, 채널 → 토큰 → 보고, 로그아웃 해제                     |
-| `apis/push-prompt.{repository,service}.ts` | 홈 안내를 닫은 시각을 계정마다 MMKV에 저장                            |
-| `hooks/use-push-device-sync.ts`            | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출) |
+| 조각                                          | 역할                                                                  |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| `domains/push-permission.model.ts`            | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)          |
+| `apis/push-permission.mapper.ts`              | OS 값 → 모델, 모델·토큰 → 보고 입력                                   |
+| `apis/push-device.service.ts`                 | 권한 읽기·요청, 채널 → 토큰 → 보고, 로그아웃 해제                     |
+| `apis/push-prompt.{repository,service}.ts`    | 홈 안내를 닫은 시각을 계정마다 MMKV에 저장                            |
+| `hooks/use-push-device-sync.ts`               | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출) |
+| `hooks/use-notification-response-observer.ts` | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                    |
+| `hooks/use-notification-entry.ts`             | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`) |
+| `apis/notification-entry.store.ts`            | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다               |
+| `utils/notification-destination.ts`           | 푸시 `navigation`과 구 필드를 앱 목적지로 바꾼다                      |
 
 ## 클라이언트가 하는 일
 
@@ -73,6 +77,91 @@ PushNotificationGateway (core/ports) ← expoPushNotificationGateway (shared/inf
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
 - 앱 아이콘 배지는 읽지 않은 알림 수에 맞춘다. 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 지우지 않는다. 로그아웃(`unauthenticated`)일 때만 지운다(`syncNotificationBadge`).
 
+## 눌린 푸시 처리
+
+Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNotificationResponse`와 응답 리스너를 받아 슬롯에 넣고, 처리 뒤 `clearLastNotificationResponse`로 재시작 중복을 막는다. 푸시는 URL을 싣지 않으므로 `+native-intent`는 관여하지 않는다.
+
+| 상황                             | 동작                                                                                                                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 인증 확인 중(`loading`·`locked`) | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                        |
+| 로그아웃 상태                    | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                           |
+| 연속 두 탭                       | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                       |
+| 로그아웃·세션 만료               | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                         |
+| 다른 계정 알림·없는 대상         | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                      |
+| 오프라인·5xx·읽음 지연           | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다 |
+| 모르는 타입, `navigation` 있음   | `navigation`을 따른다. Analytics `type`은 `UNKNOWN`이다                                                                                                               |
+| 모르는 타입, `navigation` 없음   | 알림 목록으로 연다                                                                                                                                                    |
+| 서버의 새 kind, 틀린 모양        | 계약이 `navigation`만 버려 구 필드로 간다                                                                                                                             |
+| 수신 거부 버튼                   | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                     |
+| 알림함 항목                      | DTO에 `navigation`이 없어 영구히 구 필드로 간다                                                                                                                       |
+
+### 목적지 대조
+
+구 필드 경로는 알림함이 영구히 쓰므로 지우지 않는다. `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 31개 타입과 19개 kind를 묶는다. 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서 두 경로가 같은 곳으로 가는지 본다.
+
+서버가 만들지 않는 입력에서만 나는 차이는 `knownDifference`로 적고, 실제로 다른지 테스트한다.
+
+| 입력                           | 구 필드              | 서버 `navigation`   |
+| ------------------------------ | -------------------- | ------------------- |
+| `routing`에 `commentId`만 있음 | 댓글 위치            | `TODO`, 댓글 없음   |
+| 옮기기 링크의 모르는 `reason`  | 비로 옮기기 화면     | `WEATHER`           |
+| `todoIds=1e2`                  | 거부, `WEATHER` 화면 | `Number`로 읽어 100 |
+| `todoIds=0012`                 | 거부, `WEATHER` 화면 | `Number`로 읽어 12  |
+
+### 콜드 스타트 순서
+
+| 순서 | 이전                                            | 지금                                               |
+| ---- | ----------------------------------------------- | -------------------------------------------------- |
+| 1    | 스플래시 유지, 글꼴·암호화 저장소 대기          | 같음                                               |
+| 2    | 응답 보류, `/` → `/loading`                     | 슬롯에 받음, `/` → `/loading`                      |
+| 3    | 인증 확정 → **스플래시 hide**                   | 인증과 복원 확정. 스플래시와 로딩 가드 유지        |
+| 4    | `/` → `/feed` (피드 focus, 안내 가능)           | 읽음 확인(최대 800ms)                              |
+| 5    | `me` 왕복 대기                                  | 가드 해제 → Index가 목적지로 `Redirect withAnchor` |
+| 6    | **`markAsRead` 왕복** (오프라인이면 이동 안 함) | 다음 프레임에 스플래시 hide                        |
+| 7    | `router.navigate`, 피드 위로 슬라이드           | `clearLastResponse`, `opened` 기록                 |
+
+- 피드는 anchor로 아래에 있고 focus되지 않아 안내와 화면 기록이 생기지 않는다. 뒤로 가기는 피드다.
+- 외부 링크와 이동 없음은 경로가 없어 피드로 간 뒤 처리한다.
+- 스플래시에 갇히지 않는다. 읽음은 예산으로 항상 끝나고, 진입 대기는 3초 상한(`NOTIFICATION_ENTRY_HOLD_MAX_MS`) 뒤 내리며, Index가 이동하지 못하면 슬롯을 비워 피드로 보낸다. 루트 오류 경계와 `AppProviders`의 조회 오류 경계도 내린다.
+- 이 순서(1안)의 `Redirect withAnchor`와 실제 Tabs 조합은 시뮬레이터 스파이크로 확정한다. Jest 하네스의 `(tabs)`는 Stack이다. 안 되면 Index 진입 커밋만 되돌리면 2안(피드로 간 뒤 이동까지 스플래시 유지)이 남는다.
+
+### 기기별 동작 (코드 확인, expo-notifications 58.1.8)
+
+| 항목             | iOS                                                  | Android                                                                                                                                                      |
+| ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| data 위치        | `userInfo["body"]` (`NotificationRecords.swift:331`) | 앱이 꺼졌거나 뒤에 있으면 extras의 `body` JSON(`toResponseBundleFromExtras`)                                                                                 |
+| 응답 id          | 요청 identifier                                      | FCM `google.message_id`                                                                                                                                      |
+| 꺼진 앱에서 누름 | 마지막 응답으로 읽음                                 | 리스너가 없어 보류됐다가 모듈이 만들어질 때 마지막 응답으로 넘어온다(`NotificationManager.addListener`)                                                      |
+| `MARKETING` 버튼 | 카테고리로 표시                                      | `ExpoNotificationBuilder`가 그릴 때만 붙는다. 앱이 앞에 있을 때 표시와 로컬 알림이 해당하고, 뒤에 있을 때 FCM이 직접 그린 알림에는 없다(추정, 실기기 미확인) |
+| 수신 거부 누름   | `opensAppToForeground: true`로 앱이 열린다           | 같음. Android 12+는 전용 Activity PendingIntent                                                                                                              |
+
+### 시뮬레이터 재현
+
+iOS 개발 빌드 번들은 `com.aido.mobile.dev`다. 알림 권한은 앱에서 미리 허용한다. 시간 측정은 Release로 한다(개발 빌드는 Metro와 launcher가 시간을 늘린다).
+
+```json
+{
+  "Simulator Target Bundle": "com.aido.mobile.dev",
+  "aps": { "alert": { "title": "댓글", "body": "새 댓글이 있어요" }, "sound": "default" },
+  "body": {
+    "notificationId": 0,
+    "type": "TODO_SHARED",
+    "action": { "type": "DEEP_LINK" },
+    "context": { "todoId": 42 },
+    "navigation": { "kind": "TODO", "todoId": 42 }
+  }
+}
+```
+
+```bash
+xcrun simctl terminate booted com.aido.mobile.dev
+xcrun simctl io booted recordVideo coldstart.mp4   # 다른 터미널에서
+xcrun simctl push booted com.aido.mobile.dev payload.apns
+# 배너를 손으로 탭하고 영상을 프레임 단위로 본다
+```
+
+Android 에뮬레이터는 FCM 없이 로컬 알림으로 본다. 임시 코드로 `Notifications.scheduleNotificationAsync`에 같은 `data`를 넣어 예약하고, 커밋하지 않는다. 앱을 끌 때는 예약이 지워지는 `am force-stop` 대신 최근 앱에서 밀어 끈다.
+
 ## 테스트
 
-포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `push-permission-card.test.tsx`, `use-push-device-sync.test.tsx`, `expo-push-notification.gateway.test.ts`(어댑터 경계)다. 자세한 규칙은 [testing-guide](../.claude/testing-guide.md)를 본다.
+포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `push-permission-card.test.tsx`, `use-push-device-sync.test.tsx`, `expo-push-notification.gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서는 실제 라우터로 도는 `auth-gate-layout.push-entry.test.tsx`다. 자세한 규칙은 [testing-guide](../.claude/testing-guide.md)를 본다.
