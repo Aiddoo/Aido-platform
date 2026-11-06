@@ -14,7 +14,7 @@ import {
   type VoiceCaptureState,
   type VoicePauseCause,
 } from '../domains/voice-capture.model';
-import { getDurationBucket } from '../utils/analytics/duration-bucket';
+import { getDurationBucket } from '../utils/voice-analytics';
 
 const PAUSE_CAUSE_PARAMS = {
   'app-background': 'app_background',

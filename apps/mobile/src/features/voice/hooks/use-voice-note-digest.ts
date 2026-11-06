@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
 import { type VoiceNoteDigestInput, VoiceNotePolicy } from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
-import { useCreateVoiceNoteDigestMutationOptions } from '../queries/use-create-voice-note-digest-mutation-options';
+import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
 
 export interface VoiceNoteDigestFailure {
   cause: VoicePlanFailureCause;

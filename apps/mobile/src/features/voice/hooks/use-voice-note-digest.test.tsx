@@ -25,7 +25,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
-import { createVoiceNoteFixture } from '../__tests__/voice-note.factories';
+import { createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
 import { VoiceService } from '../apis/voice.service';
 import { VoiceNoteDigestButton } from '../components/note/voice-note-digest-button';
 import { useVoiceNoteDigest } from './use-voice-note-digest';

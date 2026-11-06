@@ -1,6 +1,6 @@
 import { createLocalFileSystemFake, createMemorySyncStorage } from '@src/shared/__tests__';
 
-import { createVoiceNoteDigest, createVoiceNoteFixture } from '../__tests__/voice-note.factories';
+import { createVoiceNoteDigest, createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
 import { VoiceNoteStorageService } from './voice-note-storage.service';

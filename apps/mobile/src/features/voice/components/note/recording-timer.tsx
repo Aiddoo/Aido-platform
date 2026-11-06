@@ -9,7 +9,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { getRecordingRingLayout } from '../../utils/view-models/recording-timer.view-model';
+import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
 
 /** 원은 3시 방향에서 시작하므로 12시부터 차오르게 돌린다 */
 const RING_START_ANGLE = -90;

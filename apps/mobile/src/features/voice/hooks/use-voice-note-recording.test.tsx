@@ -13,7 +13,7 @@ import { OverlayProvider, Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
-import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.factories';
+import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import {
   createOfflineModelPromptRepository,
   type OfflineModelPromptRepository,

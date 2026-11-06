@@ -12,7 +12,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { createVoiceNoteDigest } from '../../__tests__/voice-note.factories';
+import { createVoiceNoteDigest } from '../../__tests__/voice-note.fixtures';
 import { KeyPointList } from './key-point-list';
 
 function createSameTimeKeyPoints() {

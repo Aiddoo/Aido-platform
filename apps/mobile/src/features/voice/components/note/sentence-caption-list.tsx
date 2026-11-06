@@ -8,7 +8,7 @@ import { match } from 'ts-pattern';
 
 import type { VoiceNoteSentence } from '../../domains/voice-note.model';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { splitLowConfidenceText } from '../../utils/view-models/low-confidence-text.view-model';
+import { splitLowConfidenceText } from '../../utils/low-confidence-text.view-model';
 
 const AUTOSCROLL_THRESHOLD = 0.2;
 

@@ -22,7 +22,7 @@ import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../../constants/voice.co
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
-import { followLevel } from '../../utils/view-models/waveform.view-model';
+import { followLevel } from '../../utils/waveform.geometry';
 
 const BLEED = VOICE_EDGE_GLOW.blur * 3;
 const FULL_TURN_RADIANS = Math.PI * 2;

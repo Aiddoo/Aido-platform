@@ -25,7 +25,7 @@ import {
   getTimelineLevel,
   type LevelSampler,
   withFlagBars,
-} from '../../utils/view-models/waveform.view-model';
+} from '../../utils/waveform.geometry';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
 const BAR_VERTICAL_SHARE = 0.8;

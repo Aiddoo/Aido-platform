@@ -4,7 +4,7 @@ import {
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 
-import { createVoiceNoteFixture } from '../__tests__/voice-note.factories';
+import { createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
 import { VoiceRecordingIntake } from './voice-recording-intake';
 
 const ACCOUNT_ID = 'user-1';

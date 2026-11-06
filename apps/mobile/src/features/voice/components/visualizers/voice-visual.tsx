@@ -34,11 +34,8 @@ import {
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
-import {
-  addFrameTime,
-  shouldUseLightOrb,
-} from '../../utils/view-models/voice-frame-budget.view-model';
-import { followLevel } from '../../utils/view-models/waveform.view-model';
+import { addFrameTime, shouldUseLightOrb } from '../../utils/voice-frame-budget';
+import { followLevel } from '../../utils/waveform.geometry';
 
 /** SkSL 출력은 곱셈 알파다 */
 const ORB_SHADER = Skia.RuntimeEffect.Make(`

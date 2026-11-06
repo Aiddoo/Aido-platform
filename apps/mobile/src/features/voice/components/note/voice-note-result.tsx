@@ -32,9 +32,9 @@ import {
   type VoiceNotePlayer,
 } from '../../hooks/use-voice-note-player';
 import { type VoiceNoteTab, voiceNoteTabSchema } from '../../schemas/voice-note-params.schema';
-import { getDurationBucket } from '../../utils/analytics/duration-bucket';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { createSpeechLevels, getFlagBarIndexes } from '../../utils/view-models/waveform.view-model';
+import { getDurationBucket } from '../../utils/voice-analytics';
+import { createSpeechLevels, getFlagBarIndexes } from '../../utils/waveform.geometry';
 import { PlanReview } from '../plan/plan-review';
 import { KeyPointList } from './key-point-list';
 import { SentenceCaptionList } from './sentence-caption-list';

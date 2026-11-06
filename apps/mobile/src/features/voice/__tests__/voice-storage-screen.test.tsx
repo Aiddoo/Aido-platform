@@ -19,7 +19,7 @@ import VoiceStorageRoute from '../../../../app/(app)/(mypage-menu)/settings/voic
 import { createVoiceNoteDraftRepository } from '../apis/voice-note-draft.repository';
 import { VoiceNoteStorageService } from '../apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '../apis/voice-recording.repository';
-import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.factories';
+import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
 const OWNER_DIRECTORY = ['voice-notes', ACCOUNT_ID];

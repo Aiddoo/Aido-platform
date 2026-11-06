@@ -1,6 +1,6 @@
 import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { createParseMemoResponseDto } from '@src/features/voice/__tests__/parsed-memo.factories';
+import { createParseMemoResponseDto } from '@src/features/voice/__tests__/parsed-memo.fixtures';
 
 import { memoFormSchema } from '../schemas/memo-form.schema';
 import {

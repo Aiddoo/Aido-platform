@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 
-import { getRecordingRingLayout } from '../../utils/view-models/recording-timer.view-model';
+import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
 import { RecordingTimer } from './recording-timer';
 
 describe('RecordingTimer', () => {

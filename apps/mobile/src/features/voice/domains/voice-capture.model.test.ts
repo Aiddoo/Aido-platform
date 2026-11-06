@@ -1,4 +1,4 @@
-import { createCaptureState, createTranscript } from '../__tests__/voice.factories';
+import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import {
   createVoiceCaptureState,

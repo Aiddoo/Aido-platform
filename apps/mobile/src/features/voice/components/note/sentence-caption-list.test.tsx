@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 
-import { createVoiceNoteSentence } from '../../__tests__/voice-note.factories';
+import { createVoiceNoteSentence } from '../../__tests__/voice-note.fixtures';
 import { SentenceCaptionList } from './sentence-caption-list';
 
 describe('SentenceCaptionList', () => {

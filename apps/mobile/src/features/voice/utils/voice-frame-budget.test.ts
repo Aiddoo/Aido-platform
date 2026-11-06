@@ -1,7 +1,7 @@
 import { range } from 'es-toolkit';
 
-import { VOICE_FRAME_BUDGET } from '../../constants/voice.constants';
-import { addFrameTime, shouldUseLightOrb } from './voice-frame-budget.view-model';
+import { VOICE_FRAME_BUDGET } from '../constants/voice.constants';
+import { addFrameTime, shouldUseLightOrb } from './voice-frame-budget';
 
 const SLOW_FRAME = VOICE_FRAME_BUDGET.slowFrameMs + 10;
 const FAST_FRAME = 16;

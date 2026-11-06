@@ -1,4 +1,4 @@
-import { createTranscript } from '../__tests__/voice.factories';
+import { createTranscript } from '../__tests__/voice.fixtures';
 import {
   appendFinalResult,
   applyResult,

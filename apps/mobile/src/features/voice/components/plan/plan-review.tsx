@@ -59,13 +59,13 @@ import {
 } from '../../domains/plan-review-form.schema';
 import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
 import { isSourceMemoMissingError } from '../../domains/voice.error';
-import { useApplyActionPlanMutationOptions } from '../../queries/use-apply-action-plan-mutation-options';
+import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import {
   getPlanMemoLabel,
   getPlanTodoSubtitle,
   parseScheduledTime,
   shouldShowPlanDate,
-} from '../../utils/view-models/plan-todo.view-model';
+} from '../../utils/plan-todo.view-model';
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
 
 const LOADING_ROW_COUNT = 3;

@@ -1,4 +1,4 @@
-import { getDurationBucket } from './duration-bucket';
+import { getDurationBucket } from './voice-analytics';
 
 describe('getDurationBucket', () => {
   it.each([

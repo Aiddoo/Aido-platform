@@ -1,4 +1,4 @@
-import { VOICE_FRAME_BUDGET } from '../../constants/voice.constants';
+import { VOICE_FRAME_BUDGET } from '../constants/voice.constants';
 
 export function addFrameTime(slowMs: number, frameMs: number): number {
   'worklet';

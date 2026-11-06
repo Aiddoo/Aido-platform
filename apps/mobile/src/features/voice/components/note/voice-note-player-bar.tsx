@@ -21,7 +21,7 @@ import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useVoiceNotePlayback, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { getPlayedBarCount, resampleLevels } from '../../utils/view-models/waveform.view-model';
+import { getPlayedBarCount, resampleLevels } from '../../utils/waveform.geometry';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
 const RADIUS = WAVEFORM_BAR.width / 2;

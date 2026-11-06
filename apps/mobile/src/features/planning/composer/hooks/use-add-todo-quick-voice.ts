@@ -22,7 +22,7 @@ import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognitio
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
-import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
+import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/voice.mutations';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';

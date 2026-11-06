@@ -6,7 +6,7 @@ import {
   createVoiceNoteFixture,
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
-} from '../__tests__/voice-note.factories';
+} from '../__tests__/voice-note.fixtures';
 import { createPlanReviewDraft } from './plan-review-form.schema';
 import {
   createDigestInput,

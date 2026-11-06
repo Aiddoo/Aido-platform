@@ -1,4 +1,4 @@
-import { getRecordingRingLayout } from './recording-timer.view-model';
+import { getRecordingRingLayout } from './recording-timer.geometry';
 
 describe('getRecordingRingLayout', () => {
   test.each([

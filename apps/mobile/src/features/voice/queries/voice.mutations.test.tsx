@@ -16,7 +16,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { VoiceService } from '../apis/voice.service';
 import type { PlannedAction } from '../domains/voice-plan.model';
-import { useApplyActionPlanMutationOptions } from './use-apply-action-plan-mutation-options';
+import { useApplyActionPlanMutationOptions } from './voice.mutations';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 

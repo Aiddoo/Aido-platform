@@ -1,6 +1,6 @@
 import { range } from 'es-toolkit';
 
-import { createVoiceNoteSentence } from '../../__tests__/voice-note.factories';
+import { createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import {
   appendLevelFrame,
   appendTimelineBar,
@@ -11,7 +11,7 @@ import {
   getTimelineLevel,
   resampleLevels,
   withFlagBars,
-} from './waveform.view-model';
+} from './waveform.geometry';
 
 describe('withFlagBars', () => {
   test('음량 이벤트가 느려 칸이 시간보다 적어도 표시한 순간의 칸에 깃발을 꽂는다', () => {

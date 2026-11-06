@@ -7,10 +7,7 @@ import { formatCount } from '@src/shared/utils/format';
 import { Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import {
-  type DigestStepStatus,
-  getDigestStepStatus,
-} from '../../utils/view-models/digest-progress.view-model';
+import { type DigestStepStatus, getDigestStepStatus } from '../../utils/digest-progress.view-model';
 
 interface DigestProgressProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
   characterCount: number;

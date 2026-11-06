@@ -1,6 +1,6 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 
-import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.factories';
+import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import { withSentences } from '../domains/voice-note.model';
 import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';

@@ -23,7 +23,7 @@ import { reflectFeatureQuota } from '@src/features/voice/queries/voice-plan-cach
 import {
   summarizePlanForAnalytics,
   toAnalyticsSource,
-} from '@src/features/voice/utils/analytics/voice-plan-analytics';
+} from '@src/features/voice/utils/voice-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
