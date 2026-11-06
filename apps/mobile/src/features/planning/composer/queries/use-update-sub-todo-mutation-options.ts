@@ -1,18 +1,17 @@
 import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
-import { unwrap } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { t } from '@src/shared/i18n';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { SubTodoPolicy } from '../domains/sub-todo.model';
+import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   cancelTodoQueries,
   settleTodoListWrite,
   snapshotTodo,
   updateCachedTodo,
-} from './todo-cache';
+} from '@src/features/planning/todo/queries/todo-cache';
+import { useTrack } from '@src/shared/analytics';
+import { unwrap } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { t } from '@src/shared/i18n';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 interface UpdateSubTodoParams {
   todoId: number;

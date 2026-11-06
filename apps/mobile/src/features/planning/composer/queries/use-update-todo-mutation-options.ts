@@ -1,5 +1,8 @@
 import type { UpdateTodoInput } from '@aido/api';
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
+import type { TodoSeriesEditOptions } from '@src/features/planning/todo/apis/todo-series.mapper';
+import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { useTodoSeriesFailureHandler } from '@src/features/planning/todo/queries/use-todo-series-failure-handler';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -7,10 +10,6 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import type { TodoSeriesEditOptions } from '../apis/todo-series.mapper';
-import { invalidateTodos } from './todo-cache';
-import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 interface UpdateTodoMutationParams {
   todoId: number;

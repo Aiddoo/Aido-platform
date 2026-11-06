@@ -1,4 +1,4 @@
-import { TodoEditBottomSheet } from '@src/features/planning/todo/components/todo-edit-bottom-sheet';
+import { TodoEditBottomSheet } from '@src/features/planning/composer/components/todo-edit-bottom-sheet';
 import { todoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';

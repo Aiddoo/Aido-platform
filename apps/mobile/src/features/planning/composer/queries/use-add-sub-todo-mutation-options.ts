@@ -1,14 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors/api-error';
-import { unwrap } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { t } from '@src/shared/i18n';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { SubTodoPolicy } from '../domains/sub-todo.model';
+import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   cancelTodoCompletionQueries,
   createOptimisticId,
@@ -16,7 +9,13 @@ import {
   snapshotTodo,
   syncDailyCompletionWithList,
   updateCachedTodo,
-} from './todo-cache';
+} from '@src/features/planning/todo/queries/todo-cache';
+import { useTrack } from '@src/shared/analytics';
+import { isApiError } from '@src/shared/errors/api-error';
+import { unwrap } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { t } from '@src/shared/i18n';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 interface AddSubTodoParams {
   todoId: number;

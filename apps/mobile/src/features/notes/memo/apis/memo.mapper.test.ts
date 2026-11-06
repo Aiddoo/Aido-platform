@@ -1,5 +1,5 @@
 import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
-import type { AddTodoFormValues } from '@src/features/planning/todo/domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
 
 import { memoFormSchema } from '../schemas/memo-form.schema';
 import { toConvertMemoToTodosRequest, toMemoPage, toMemoRequest } from './memo.mapper';

@@ -1,9 +1,12 @@
 import type { UpdateTodoInput } from '@aido/api';
+import {
+  TodoRepeatPolicy,
+  type TodoRepeat,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
 import { toDateKey } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
-import { TodoRepeatPolicy, type TodoRepeat } from '../domains/todo-repeat.model';
 
 function toFormDateKey(date: Date) {
   return toDateKey(date, getDeviceTimezone());

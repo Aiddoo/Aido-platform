@@ -11,7 +11,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/auth/queries/auth-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import type { AddTodoFormValues } from '@src/features/planning/todo/domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-form.schema';
 import {

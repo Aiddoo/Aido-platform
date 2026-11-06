@@ -9,15 +9,8 @@ import { recordTodoCreatedForActivation } from '@src/features/device/activation/
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
-import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { t } from '@src/shared/i18n';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-
-import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import type { OptimisticTodo } from '../domains/todo.model';
+import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
+import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
   cancelTodoCompletionQueries,
@@ -26,7 +19,13 @@ import {
   removeTodoFromList,
   settleTodoCompletionWrite,
   syncDailyCompletionWithList,
-} from './todo-cache';
+} from '@src/features/planning/todo/queries/todo-cache';
+import { useTrack } from '@src/shared/analytics';
+import { isApiError } from '@src/shared/errors';
+import { unwrap } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { t } from '@src/shared/i18n';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 export interface CreateTodoParams {
   input: CreateTodoInput;

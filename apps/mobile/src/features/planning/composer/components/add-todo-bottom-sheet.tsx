@@ -2,7 +2,16 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
+import { TodoScopeSelectContent } from '@src/features/planning/todo/components/todo-scope-select-content';
+import {
+  type TodoRepeat,
+  TodoRepeatPolicy,
+  type TodoUpdateScope,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
+import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { toTodoEditFormValues } from '@src/features/planning/todo/utils/to-todo-edit-form-values';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
@@ -34,18 +43,10 @@ import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'r
 import { match, P } from 'ts-pattern';
 
 import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
-import {
-  type TodoRepeat,
-  TodoRepeatPolicy,
-  type TodoUpdateScope,
-} from '../domains/todo-repeat.model';
-import { shouldReopenRepeatPicker } from '../domains/todo-series.error';
-import { TodoPolicy } from '../domains/todo.model';
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
-import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import {
   hasOnlyDateChanges,
   hasTodoUpdateChanges,
@@ -56,7 +57,6 @@ import {
   TodoComposerChips,
   TodoComposerSubmitButton,
 } from './todo-composer-fields';
-import { TodoScopeSelectContent } from './todo-scope-select-content';
 
 interface AddTodoBottomSheetBaseProps {
   isOpen: boolean;

@@ -1,7 +1,6 @@
 import { TODO_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { z } from 'zod';
-
-import { todoRepeatSchema } from './todo-repeat.model';
 
 export const addTodoFormSchema = z.object({
   title: z.string().min(1).max(TODO_LIMITS.TITLE_MAX_LENGTH),

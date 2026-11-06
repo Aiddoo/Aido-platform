@@ -1,6 +1,12 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
+import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
+import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
+import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
+import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { toNullableDate } from '@src/features/planning/todo/utils/calendar-date';
+import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -34,12 +40,6 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { useResolveClassNames } from 'uniwind';
 
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
-import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { TodoPolicy } from '../domains/todo.model';
-import { formatRepeatSummary } from '../utils/format-repeat-summary';
-import { TodoDatePickerContent } from './todo-date-picker-content';
-import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
-import { TodoTimePickerContent } from './todo-time-picker-content';
 
 interface TodoComposerChipsProps {
   isSeriesOccurrence?: boolean;

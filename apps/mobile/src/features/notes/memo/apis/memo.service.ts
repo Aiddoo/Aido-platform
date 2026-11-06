@@ -12,7 +12,7 @@ import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { AI_LOG_EVENT } from '@src/features/ai/constants/ai-log-events';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
-import type { AddTodoFormValues } from '@src/features/planning/todo/domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
 import { toVoicePlanFromParsedMemo } from '@src/features/voice/apis/voice-plan.mapper';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import type { ApiError } from '@src/shared/errors/api-error';

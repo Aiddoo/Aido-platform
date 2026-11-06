@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { useUpdateTodoMutationOptions } from '@src/features/planning/composer/queries/use-update-todo-mutation-options';
 import {
   createHapticsStub,
   createMockAnalytics,
@@ -13,7 +14,6 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { TodoService } from '../apis/todo.service';
-import { useUpdateTodoMutationOptions } from './use-update-todo-mutation-options';
 
 const mockToastError = jest.fn();
 

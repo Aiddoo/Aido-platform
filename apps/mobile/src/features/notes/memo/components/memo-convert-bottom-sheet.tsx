@@ -4,8 +4,8 @@ import {
   openTodoRepeatPicker,
   TodoComposerChips,
   TodoComposerSubmitButton,
-} from '@src/features/planning/todo/components/todo-composer-fields';
-import { addTodoFormSchema } from '@src/features/planning/todo/domains/add-todo-form.schema';
+} from '@src/features/planning/composer/components/todo-composer-fields';
+import { addTodoFormSchema } from '@src/features/planning/composer/domains/add-todo-form.schema';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';

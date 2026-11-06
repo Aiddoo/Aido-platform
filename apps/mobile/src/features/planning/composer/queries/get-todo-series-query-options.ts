@@ -1,9 +1,8 @@
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
-
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 
 export function getTodoSeriesQueryOptions(
   todoService: TodoService,
