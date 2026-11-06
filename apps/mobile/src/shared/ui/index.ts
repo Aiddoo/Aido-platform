@@ -5,6 +5,7 @@ export {
   getPrimaryPaneWidth,
   useAdaptivePaneLayoutKey,
 } from './adaptive-pane';
+export { AspectRatio, type AspectRatioProps } from './aspect-ratio';
 export { Avatar } from './avatar';
 export { Barcode, type BarcodeProps } from './barcode';
 export {
