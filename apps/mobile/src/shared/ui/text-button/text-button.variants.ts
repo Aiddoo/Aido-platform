@@ -1,7 +1,7 @@
 import { tv } from '@src/shared/utils/tv';
 
 export const textButtonVariants = tv({
-  base: 'items-center justify-center flex-row',
+  base: 'items-center justify-center flex-row gap-0 disabled:opacity-40',
 
   variants: {
     size: {
@@ -15,9 +15,6 @@ export const textButtonVariants = tv({
       clear: '',
       underline: 'underline',
       arrow: '',
-    },
-    isDisabled: {
-      true: 'opacity-40',
     },
   },
 

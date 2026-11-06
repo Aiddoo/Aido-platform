@@ -7,7 +7,7 @@ import { textButtonVariants } from './text-button.variants';
 jest.mock('heroui-native', () => {
   const { View } = require('react-native');
   return {
-    PressableFeedback: ({ children, ...props }: { children: ReactNode }) => (
+    LinkButton: ({ children, ...props }: { children: ReactNode }) => (
       <View {...props}>{children}</View>
     ),
   };
@@ -46,7 +46,7 @@ describe('textButtonVariants', () => {
     expect(textButtonVariants({ variant: 'underline' })).toContain('underline');
   });
 
-  test('비활성화 상태에서는 투명도가 낮아진다', () => {
-    expect(textButtonVariants({ isDisabled: true })).toContain('opacity-40');
+  test('비활성화 상태에서는 heroui 기본보다 낮은 투명도를 쓴다', () => {
+    expect(textButtonVariants({})).toContain('disabled:opacity-40');
   });
 });

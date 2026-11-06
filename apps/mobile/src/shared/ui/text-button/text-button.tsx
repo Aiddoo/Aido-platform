@@ -1,5 +1,5 @@
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
+import { LinkButton } from 'heroui-native';
 
 import { Box } from '../box';
 import { ArrowRightIcon } from '../icon';
@@ -23,6 +23,10 @@ const ICON_SIZE_MAP = {
   xlarge: 20,
 } as const;
 
+/**
+ * heroui `LinkButton`(ghost, 높이·안쪽 여백 없음) 위에 글자 크기 5단계를 얹는다.
+ * 글자는 앱 글꼴 설정을 따르도록 heroui 라벨 대신 자식 `Text`로 넣는다.
+ */
 export function TextButton({
   children,
   size = 'medium',
@@ -32,9 +36,9 @@ export function TextButton({
   ...props
 }: TextButtonProps) {
   return (
-    <PressableFeedback
+    <LinkButton
       isDisabled={isDisabled}
-      className={cn(textButtonVariants({ size, variant, isDisabled }), className)}
+      className={cn(textButtonVariants({ size, variant }), className)}
       {...props}
     >
       <Text size={TEXT_SIZE_MAP[size]} shade={6} underline={variant === 'underline'}>
@@ -49,6 +53,6 @@ export function TextButton({
           />
         </Box>
       )}
-    </PressableFeedback>
+    </LinkButton>
   );
 }
