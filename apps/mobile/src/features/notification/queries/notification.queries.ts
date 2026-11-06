@@ -4,8 +4,6 @@ import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';
 
-import type { NotificationService } from '../apis/notification.service';
-import type { PushDeviceService } from '../apis/push-device.service';
 import {
   NOTIFICATION_QUERY_KEYS,
   type NotificationListFilters,
@@ -20,10 +18,9 @@ interface NotificationPageParam {
 
 const INITIAL_NOTIFICATION_PAGE_PARAM: NotificationPageParam = {};
 
-function getNotificationsInfiniteQueryOptions(
-  notificationService: NotificationService,
-  { params }: { params?: NotificationQueryParams },
-) {
+export function useGetNotificationsInfiniteQueryOptions(params?: NotificationQueryParams) {
+  const notificationService = useNotificationService();
+
   return infiniteQueryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.list({
       category: params?.category,
@@ -31,18 +28,18 @@ function getNotificationsInfiniteQueryOptions(
       limit: params?.limit,
     }),
 
-    queryFn: async ({ pageParam, signal }) => {
-      const result = await notificationService.getNotifications(
-        {
-          cursor: pageParam.cursor,
-          limit: params?.limit ?? 20,
-          category: params?.category,
-          unreadOnly: params?.unreadOnly,
-        },
-        signal,
-      );
-      return unwrap(result);
-    },
+    queryFn: async ({ pageParam, signal }) =>
+      unwrap(
+        await notificationService.getNotifications(
+          {
+            cursor: pageParam.cursor,
+            limit: params?.limit ?? 20,
+            category: params?.category,
+            unreadOnly: params?.unreadOnly,
+          },
+          signal,
+        ),
+      ),
 
     initialPageParam: INITIAL_NOTIFICATION_PAGE_PARAM,
 
@@ -53,17 +50,16 @@ function getNotificationsInfiniteQueryOptions(
   });
 }
 
-export function useGetNotificationsInfiniteQueryOptions(params?: NotificationQueryParams) {
-  return getNotificationsInfiniteQueryOptions(useNotificationService(), { params });
-}
-
-const selectNotifications = (infinitePages: InfiniteData<NotificationListResult>) =>
-  uniqBy(
+function selectNotifications(infinitePages: InfiniteData<NotificationListResult>) {
+  return uniqBy(
     infinitePages.pages.flatMap((page) => page.notifications),
     (notification) => notification.id,
   );
+}
 
-function getPushPermissionQueryOptions(pushDeviceService: PushDeviceService) {
+export function useGetPushPermissionQueryOptions() {
+  const pushDeviceService = usePushDeviceService();
+
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.permission(),
     queryFn: () => pushDeviceService.readPermission(),
@@ -75,20 +71,11 @@ function getPushPermissionQueryOptions(pushDeviceService: PushDeviceService) {
   });
 }
 
-export function useGetPushPermissionQueryOptions() {
-  return getPushPermissionQueryOptions(usePushDeviceService());
-}
+export function useGetUnreadCountQueryOptions() {
+  const notificationService = useNotificationService();
 
-function getUnreadCountQueryOptions(notificationService: NotificationService) {
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
-    queryFn: async ({ signal }) => {
-      const result = await notificationService.getUnreadCount(signal);
-      return unwrap(result);
-    },
+    queryFn: async ({ signal }) => unwrap(await notificationService.getUnreadCount(signal)),
   });
-}
-
-export function useGetUnreadCountQueryOptions() {
-  return getUnreadCountQueryOptions(useNotificationService());
 }

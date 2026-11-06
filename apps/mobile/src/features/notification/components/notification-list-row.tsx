@@ -1,5 +1,6 @@
 import type { DateSectionKey } from '@src/features/notification/utils/date-section';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
+import { type Instant, toDate } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,7 +17,7 @@ interface NotificationListRowProps extends Omit<
   label: string;
   title: string;
   body: string;
-  createdAt: Date;
+  createdAt: Date | Instant;
   isUnread?: boolean;
 }
 
@@ -50,7 +51,7 @@ export function NotificationListRow({
                   {label}
                 </Text>
                 <Text size="b4" shade={5}>
-                  {formatRelativeTimeLabel(createdAt, now, dateFormatContext)}
+                  {formatRelativeTimeLabel(toDate(createdAt), now, dateFormatContext)}
                 </Text>
               </HStack>
 

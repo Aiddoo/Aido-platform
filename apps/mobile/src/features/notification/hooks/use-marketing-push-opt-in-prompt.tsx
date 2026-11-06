@@ -1,7 +1,8 @@
-import { useMarketingPushPromptService } from '@src/bootstrap/providers/di-context';
+import { useMarketingPushPromptRepository } from '@src/bootstrap/providers/di-context';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack } from '@src/shared/analytics';
+import { toInstant } from '@src/shared/date/instant';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useOverlay } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
@@ -24,11 +25,11 @@ interface MarketingPushOptInPrompt {
 /**
  * 마케팅 푸시 옵트인 배너의 표시 여부·상호작용을 소유하는 view-model 훅.
  *
- * 노출 판단은 MarketingPushPromptPolicy에, 저장은 MarketingPushPromptService에 맡긴다.
+ * 노출 판단은 MarketingPushPromptPolicy에, 저장은 MarketingPushPromptRepository에 맡긴다.
  * 부수효과는 명시적 액션(open/dismiss)에서만 일어난다.
  */
 export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
-  const marketingPushPromptService = useMarketingPushPromptService();
+  const marketingPushPromptRepository = useMarketingPushPromptRepository();
   const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const [{ data: consent }, { data: permission }, { data: preference }] = useSuspenseQueries({
@@ -38,18 +39,18 @@ export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const [promptState] = useState(() => marketingPushPromptService.getState());
+  const [promptState] = useState(() => marketingPushPromptRepository.get());
   const [dismissed, setDismissed] = useState(false);
   const today = useToday();
 
   // 기기 권한이나 앱 푸시 설정이 꺼져 있으면 알림 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
   const isVisible =
     !dismissed &&
-    PushPermissionPolicy.nextStep(permission, preference) === PUSH_PERMISSION_STEP.NONE &&
-    MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
+    PushPermissionPolicy.getNextStep(permission, preference) === PUSH_PERMISSION_STEP.NONE &&
+    MarketingPushPromptPolicy.shouldPrompt(consent, promptState, toInstant(today.toISOString()));
 
   const dismiss = () => {
-    marketingPushPromptService.recordPrompt(new Date());
+    marketingPushPromptRepository.record(toInstant(new Date().toISOString()));
     setDismissed(true);
     trackEvent('marketing_push_prompt_dismissed', { source: 'feed_banner' });
   };

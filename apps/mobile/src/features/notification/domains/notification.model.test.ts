@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { type Notification } from '../schemas/notification.schema';
 import { NotificationPolicy } from './notification.model';
 
@@ -10,7 +12,7 @@ const baseNotification: Notification = {
   isRead: false,
   context: { cheerId: 7, friendId: 'cmsender0000000000000001' },
   routing: { senderId: 'cmsender0000000000000001', senderName: '지윤' },
-  createdAt: new Date('2026-10-26T09:00:00.000Z'),
+  createdAt: toInstant('2026-10-26T09:00:00.000Z'),
   readAt: null,
 };
 

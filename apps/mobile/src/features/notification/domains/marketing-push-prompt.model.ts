@@ -1,5 +1,6 @@
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { DAY_MS } from '@src/shared/constants/time.constants';
+import { diffMs, type Instant } from '@src/shared/date/instant';
 
 import type { MarketingPushPromptState } from '../schemas/marketing-push-prompt.schema';
 
@@ -7,29 +8,28 @@ const COOLDOWN_DAYS = 14;
 /** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */
 const MAX_PROMPT_COUNT = 3;
 
-export function isNotAgreedToMarketingPush(consent: Consent): boolean {
+function isNotAgreedToMarketingPush(consent: Pick<Consent, 'marketingPushAgreedAt'>): boolean {
   return consent.marketingPushAgreedAt == null;
 }
 
-export function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
+function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
   return promptState.count < MAX_PROMPT_COUNT;
 }
 
 /** 마지막 닫기 이후 쿨다운이 경과했는가 (닫은 적 없으면 즉시 true) */
-export function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Date): boolean {
+function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Instant): boolean {
   if (promptState.lastPromptedAt == null) {
     return true;
   }
 
-  const elapsedMs = now.getTime() - new Date(promptState.lastPromptedAt).getTime();
-  return elapsedMs >= COOLDOWN_DAYS * DAY_MS;
+  return diffMs(now, promptState.lastPromptedAt) >= COOLDOWN_DAYS * DAY_MS;
 }
 
 /** 동의 정보 로딩 전에는 노출하지 않는다. 규칙을 추가하려면 조건 함수를 하나 더 조합한다. */
-function shouldPromptMarketingPush(
-  consent: Consent | undefined,
+function shouldPrompt(
+  consent: Pick<Consent, 'marketingPushAgreedAt'> | undefined,
   promptState: MarketingPushPromptState,
-  now: Date,
+  now: Instant,
 ): boolean {
   if (consent == null) {
     return false;
@@ -43,5 +43,8 @@ function shouldPromptMarketingPush(
 }
 
 export const MarketingPushPromptPolicy = {
-  shouldPrompt: shouldPromptMarketingPush,
+  isNotAgreedToMarketingPush,
+  isUnderPromptLimit,
+  hasCooldownElapsed,
+  shouldPrompt,
 } as const;

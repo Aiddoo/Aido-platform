@@ -1,18 +1,16 @@
 import {
-  useAnalytics,
   useDeviceTimezoneService,
   useLogger,
   useTodoService,
 } from '@src/bootstrap/providers/di-context';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { toHHmm } from '@src/shared/date/instant';
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useEffect, useEffectEvent } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -35,13 +33,13 @@ export function useTimezoneChangeNotice({
 }) {
   const deviceTimezoneService = useDeviceTimezoneService();
   const todoService = useTodoService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const logger = useLogger();
   const { toast } = useAppToast();
   const { t } = useTranslation('notification');
 
   const hasUpcomingTimedTodo = async (): Promise<boolean> => {
-    const { currentLocalDate, currentLocalDateKey } = readDeviceLocalDateState();
+    const { currentLocalDate, currentLocalDateKey, currentTimeZone } = readDeviceLocalDateState();
     const result = await todoService.getTodos({
       startDate: currentLocalDateKey,
       endDate: addDaysToDateKey(currentLocalDateKey, UPCOMING_TODO_WINDOW_DAYS),
@@ -51,7 +49,7 @@ export function useTimezoneChangeNotice({
       result.ok &&
       TodoPolicy.hasUpcomingTimedTodo(result.value.todos, {
         dateKey: currentLocalDateKey,
-        time: toHHmm(currentLocalDate, getDeviceTimezone()),
+        time: toHHmm(currentLocalDate, currentTimeZone),
       })
     );
   };
@@ -68,7 +66,7 @@ export function useTimezoneChangeNotice({
     if (isNoticeShown) {
       toast(t('timezoneChanged.title'), { description: t('timezoneChanged.description') });
     }
-    track(analytics, 'device_timezone_changed', {
+    trackEvent('device_timezone_changed', {
       offset_bucket: DeviceTimezonePolicy.getTimezoneOffsetBucket(change),
       notice_shown: isNoticeShown,
     });

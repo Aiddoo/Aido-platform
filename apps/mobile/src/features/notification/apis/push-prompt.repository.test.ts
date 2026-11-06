@@ -1,4 +1,5 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 
 import {
   createPushPromptRepository,
@@ -10,7 +11,7 @@ describe('createPushPromptRepository', () => {
   it('닫은 시각을 계정마다 따로 남기고 키는 출시된 앱과 같다', () => {
     // Given
     const storage = createMemorySyncStorage();
-    const dismissedAt = new Date('2026-11-04T09:00:00.000Z');
+    const dismissedAt = toInstant('2026-11-04T09:00:00.000Z');
 
     // When
     createPushPromptRepository(storage).dismiss('user-a', dismissedAt);

@@ -1,5 +1,6 @@
 import { usePushPromptRepository } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { toInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -15,11 +16,14 @@ export function usePushPermissionPrompt() {
   const [saved] = useStoredString(pushPromptStorageKey(me.id));
 
   const snooze = () => {
-    pushPromptRepository.dismiss(me.id, new Date());
+    pushPromptRepository.dismiss(me.id, toInstant(new Date().toISOString()));
   };
 
   return {
-    isSnoozed: PushPermissionPolicy.isPromptSnoozed(parsePushPromptDismissedAt(saved), now),
+    isSnoozed: PushPermissionPolicy.isPromptSnoozed(
+      parsePushPromptDismissedAt(saved),
+      toInstant(now.toISOString()),
+    ),
     snooze,
   };
 }

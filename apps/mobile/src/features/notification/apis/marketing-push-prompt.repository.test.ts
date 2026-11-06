@@ -1,4 +1,5 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createMarketingPushPromptRepository } from './marketing-push-prompt.repository';
 
@@ -48,7 +49,7 @@ describe('createMarketingPushPromptRepository', () => {
     const repository = createMarketingPushPromptRepository(storage);
 
     // When
-    repository.record(new Date('2026-07-20T09:00:00.000Z'));
+    repository.record(toInstant('2026-07-20T09:00:00.000Z'));
 
     // Then
     expect(repository.get()).toEqual({ lastPromptedAt: '2026-07-20T09:00:00.000Z', count: 2 });

@@ -7,6 +7,7 @@ import {
   pushNotificationDataSchema,
 } from '@aido/api';
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
@@ -46,8 +47,8 @@ const notificationSchema = z.object({
   routing: notificationRoutingSchema.optional(),
   context: notificationContextSchema.optional(),
   action: notificationActionSchema.optional(),
-  createdAt: z.date(),
-  readAt: z.date().nullable(),
+  createdAt: instantSchema,
+  readAt: instantSchema.nullable(),
 });
 export type Notification = z.infer<typeof notificationSchema>;
 

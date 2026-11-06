@@ -20,7 +20,7 @@ import {
   restoreNotificationCache,
 } from './notification-cache';
 
-export const useMarkAllAsReadMutationOptions = () => {
+export function useMarkAllAsReadMutationOptions() {
   const haptics = useHaptics();
   const notificationService = useNotificationService();
   const logger = useLogger();
@@ -37,10 +37,7 @@ export const useMarkAllAsReadMutationOptions = () => {
   };
 
   return mutationOptions({
-    mutationFn: async () => {
-      const result = await notificationService.markAllAsRead();
-      return unwrap(result);
-    },
+    mutationFn: async () => unwrap(await notificationService.markAllAsRead()),
     onMutate: async () => {
       const snapshot = await optimisticallyMarkNotificationsRead(queryClient);
       clearBadgeQuietly();
@@ -62,19 +59,17 @@ export const useMarkAllAsReadMutationOptions = () => {
       haptics.notify('error');
     },
   });
-};
+}
 
-export const useMarkAsReadMutationOptions = () => {
+export function useMarkAsReadMutationOptions() {
   const haptics = useHaptics();
   const notificationService = useNotificationService();
   const logger = useLogger();
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    mutationFn: async (notificationId: number) => {
-      const result = await notificationService.markAsRead(notificationId);
-      return unwrap(result);
-    },
+    mutationFn: async (notificationId: number) =>
+      unwrap(await notificationService.markAsRead(notificationId)),
     onMutate: async (notificationId) => {
       const snapshot = await optimisticallyMarkNotificationsRead(queryClient, notificationId);
       const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
@@ -113,10 +108,10 @@ export const useMarkAsReadMutationOptions = () => {
       haptics.notify('error');
     },
   });
-};
+}
 
 /** 알림을 거절해 시스템 창을 다시 띄울 수 없을 때 이 앱의 설정 화면을 연다. 돌아오면 권한 쿼리가 다시 읽는다 */
-export const useOpenPushSettingsMutationOptions = () => {
+export function useOpenPushSettingsMutationOptions() {
   const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
 
@@ -129,10 +124,10 @@ export const useOpenPushSettingsMutationOptions = () => {
       });
     },
   });
-};
+}
 
 /** 화면 뒤에서 기기 상태를 서버에 알린다. 실패는 다음 동기화 때 다시 보내므로 사용자에게 보이지 않는다 */
-export const useReportPushDeviceMutationOptions = () => {
+export function useReportPushDeviceMutationOptions() {
   const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -151,9 +146,9 @@ export const useReportPushDeviceMutationOptions = () => {
       logger.error(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, toError(error));
     },
   });
-};
+}
 
-export const useRequestPushPermissionMutationOptions = () => {
+export function useRequestPushPermissionMutationOptions() {
   const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -171,13 +166,13 @@ export const useRequestPushPermissionMutationOptions = () => {
       });
     },
   });
-};
+}
 
 /**
  * 앱 푸시 설정을 바꾸고, 켰을 때는 이어서 OS 권한을 묻는다.
  * 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다.
  */
-export const useUpdatePushEnabledMutationOptions = () => {
+export function useUpdatePushEnabledMutationOptions() {
   const updatePreferenceOptions = useUpdatePreferenceMutationOptions();
   const pushDeviceService = usePushDeviceService();
   const activationService = useActivationService();
@@ -210,4 +205,4 @@ export const useUpdatePushEnabledMutationOptions = () => {
       );
     },
   });
-};
+}

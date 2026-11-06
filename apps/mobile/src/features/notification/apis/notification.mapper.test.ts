@@ -11,7 +11,7 @@ jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 
 describe('toNotification', () => {
-  test('createdAt ISO -> Date 변환', () => {
+  test('createdAt ISO -> Instant 변환', () => {
     // Given
     const server = createNotificationListResponseDto().notifications[0];
     if (!server) {
@@ -22,13 +22,12 @@ describe('toNotification', () => {
     const result = toNotification(server);
 
     // Then
-    expect(result.createdAt).toBeInstanceOf(Date);
-    expect(result.createdAt.toISOString()).toBe('2026-03-08T10:00:00.000Z');
+    expect(result.createdAt).toBe('2026-03-08T10:00:00.000Z');
     expect(result.id).toBe(1);
     expect(result.type).toBe('FOLLOW_NEW');
   });
 
-  test('readAt ISO -> Date 변환', () => {
+  test('readAt ISO -> Instant 변환', () => {
     // Given
     const server = createNotificationListResponseDto().notifications[1];
     if (!server) {
@@ -39,8 +38,7 @@ describe('toNotification', () => {
     const result = toNotification(server);
 
     // Then
-    expect(result.readAt).toBeInstanceOf(Date);
-    expect(result.readAt?.toISOString()).toBe('2026-03-07T10:00:00.000Z');
+    expect(result.readAt).toBe('2026-03-07T10:00:00.000Z');
   });
 
   test('readAt null -> null', () => {
@@ -109,7 +107,7 @@ describe('toNotificationListResult', () => {
 
     // Then
     expect(result.notifications).toHaveLength(2);
-    expect(result.notifications[0]?.createdAt).toBeInstanceOf(Date);
+    expect(result.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
     expect(result.unreadCount).toBe(1);
     expect(result.hasMore).toBe(false);
     expect(result.nextCursor).toBeNull();

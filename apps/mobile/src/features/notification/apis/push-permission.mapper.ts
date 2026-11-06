@@ -4,6 +4,7 @@ import {
   type ReportPushDeviceInput,
 } from '@aido/api';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
+import { toInstant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { PushDevice, PushPermission } from '../schemas/push-permission.schema';
@@ -41,6 +42,6 @@ export function toPushDevice(dto: PushDeviceResponse): PushDevice {
   return {
     permission: dto.permission,
     hasActiveToken: dto.hasActiveToken,
-    reportedAt: new Date(dto.reportedAt),
+    reportedAt: toInstant(dto.reportedAt),
   };
 }

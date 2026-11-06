@@ -193,8 +193,8 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get pushPromptRepository() {
       return dependency('pushPromptRepository');
     },
-    get marketingPushPromptService() {
-      return dependency('marketingPushPromptService');
+    get marketingPushPromptRepository() {
+      return dependency('marketingPushPromptRepository');
     },
     get todoNudgeService() {
       return dependency('todoNudgeService');

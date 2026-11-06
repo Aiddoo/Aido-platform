@@ -2,14 +2,14 @@ import {
   getDateSectionKey,
   type DateSectionKey,
 } from '@src/features/notification/utils/date-section';
-import { toDateKey } from '@src/shared/date/instant';
+import { type Instant, toDateKey } from '@src/shared/date/instant';
 import { groupBy } from 'es-toolkit';
 
 export type DateSectionedListItem<TEntry> =
   | { type: 'header'; section: DateSectionKey }
   | { type: 'item'; entry: TEntry };
 
-export function toDateSectionedListItems<TEntry extends { createdAt: Date }>(
+export function toDateSectionedListItems<TEntry extends { createdAt: Date | Instant }>(
   entries: readonly TEntry[],
   todayDateKey: string,
   timeZone: string,

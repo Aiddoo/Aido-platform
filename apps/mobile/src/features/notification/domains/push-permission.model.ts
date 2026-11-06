@@ -1,5 +1,6 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time.constants';
+import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { PushPermission } from '../schemas/push-permission.schema';
@@ -36,15 +37,15 @@ function isBlockedUntilSettings(permission: PushPermission): boolean {
   return !isDeliveryAllowed(permission) && !permission.canAskAgain;
 }
 
-function isPromptSnoozed(dismissedAt: Date | null, now: Date): boolean {
+function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
   if (dismissedAt == null) {
     return false;
   }
-  return now.getTime() - dismissedAt.getTime() < PUSH_PROMPT_SNOOZE_DAYS * DAY_MS;
+  return diffMs(now, dismissedAt) < PUSH_PROMPT_SNOOZE_DAYS * DAY_MS;
 }
 
 /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
-function getNextPushPermissionStep(
+function getNextStep(
   permission: PushPermission,
   { pushEnabled }: { pushEnabled: boolean },
 ): PushPermissionStep {
@@ -63,5 +64,5 @@ export const PushPermissionPolicy = {
   canRequestSystemDialog,
   isBlockedUntilSettings,
   isPromptSnoozed,
-  nextStep: getNextPushPermissionStep,
+  getNextStep,
 } as const;

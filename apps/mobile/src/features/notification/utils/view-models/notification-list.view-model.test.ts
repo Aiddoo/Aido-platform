@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { createNotificationListResponseDto } from '../../__tests__/notification.fixtures';
 import { toNotification } from '../../apis/notification.mapper';
 import { toDateSectionedListItems } from './notification-list.view-model';
@@ -9,7 +11,7 @@ describe('알림 목록 날짜 섹션', () => {
     if (dto == null) {
       throw new Error('알림 fixture가 필요합니다');
     }
-    const notification = { ...toNotification(dto), createdAt: new Date('2026-10-04T14:59:00Z') };
+    const notification = { ...toNotification(dto), createdAt: toInstant('2026-10-04T14:59:00Z') };
     // When
     const before = toDateSectionedListItems([notification], '2026-10-04', 'Asia/Seoul');
     const after = toDateSectionedListItems([notification], '2026-10-05', 'Asia/Seoul');
@@ -25,7 +27,7 @@ describe('알림 목록 날짜 섹션', () => {
     if (dto == null) {
       throw new Error('알림 fixture가 필요합니다');
     }
-    const first = { ...toNotification(dto), id: 2, createdAt: new Date('2026-10-04T04:00:00Z') };
+    const first = { ...toNotification(dto), id: 2, createdAt: toInstant('2026-10-04T04:00:00Z') };
     const second = { ...first, id: 1 };
     // When
     const items = toDateSectionedListItems([first, second], '2026-10-04', 'Asia/Seoul');

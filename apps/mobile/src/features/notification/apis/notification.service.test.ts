@@ -37,7 +37,7 @@ describe('NotificationService', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.notifications).toHaveLength(2);
-        expect(result.value.notifications[0]?.createdAt).toBeInstanceOf(Date);
+        expect(result.value.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
       }
     });
 

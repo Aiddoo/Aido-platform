@@ -36,7 +36,7 @@ import type { AchievementService } from '@src/features/insights/achievement/apis
 import type { ReportService } from '@src/features/insights/report/apis/report.service';
 import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
-import type { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
+import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import type { PushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
@@ -122,7 +122,7 @@ export interface DIContainer {
   pushDeviceService: PushDeviceService;
   deviceTimezoneService: DeviceTimezoneService;
   pushPromptRepository: PushPromptRepository;
-  marketingPushPromptService: MarketingPushPromptService;
+  marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
   coachmarkService: CoachmarkService;
   storeReviewService: StoreReviewService;
@@ -207,7 +207,7 @@ export const useNotificationService = () => useDI().notificationService;
 export const usePushDeviceService = () => useDI().pushDeviceService;
 export const useDeviceTimezoneService = () => useDI().deviceTimezoneService;
 export const usePushPromptRepository = () => useDI().pushPromptRepository;
-export const useMarketingPushPromptService = () => useDI().marketingPushPromptService;
+export const useMarketingPushPromptRepository = () => useDI().marketingPushPromptRepository;
 export const useTodoNudgeService = () => useDI().todoNudgeService;
 export const useCoachmarkService = () => useDI().coachmarkService;
 export const useStoreReviewService = () => useDI().storeReviewService;

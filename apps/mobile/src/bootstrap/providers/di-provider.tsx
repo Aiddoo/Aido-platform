@@ -36,7 +36,6 @@ import { DeviceIdService } from '@src/features/notification/apis/device-id.servi
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
-import { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
@@ -283,9 +282,7 @@ export function DIProvider({
       createDeviceTimezoneRepository(mmkvSyncStorage),
     );
     const pushPromptRepository = createPushPromptRepository(mmkvSyncStorage);
-    const marketingPushPromptService = new MarketingPushPromptService(
-      createMarketingPushPromptRepository(mmkvSyncStorage),
-    );
+    const marketingPushPromptRepository = createMarketingPushPromptRepository(mmkvSyncStorage);
 
     // Todo Nudge
     const todoNudgeService = new TodoNudgeService(authHttpClient);
@@ -408,7 +405,7 @@ export function DIProvider({
       pushDeviceService,
       deviceTimezoneService,
       pushPromptRepository,
-      marketingPushPromptService,
+      marketingPushPromptRepository,
       todoNudgeService,
       coachmarkService,
       storeReviewService,

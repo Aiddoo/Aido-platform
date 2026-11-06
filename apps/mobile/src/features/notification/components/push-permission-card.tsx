@@ -30,7 +30,7 @@ export function PushPermissionCard({ className }: PushPermissionCardProps) {
   });
   const prompt = usePushPermissionPrompt();
   const { trackEvent } = useTrack();
-  const step = PushPermissionPolicy.nextStep(permission, preference);
+  const step = PushPermissionPolicy.getNextStep(permission, preference);
   const isVisible = !prompt.isSnoozed && step !== PUSH_PERMISSION_STEP.NONE;
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { Instant } from '@src/shared/date/instant';
 
 import {
   type MarketingPushPromptState,
@@ -13,7 +14,7 @@ const EMPTY_STATE: MarketingPushPromptState = { lastPromptedAt: null, count: 0 }
 export interface MarketingPushPromptRepository {
   get(): MarketingPushPromptState;
   /** 노출 1회를 기록한다(시각 갱신 + count 증가) */
-  record(promptedAt: Date): void;
+  record(promptedAt: Instant): void;
 }
 
 export function createMarketingPushPromptRepository(
@@ -36,7 +37,7 @@ export function createMarketingPushPromptRepository(
     get,
     record: (promptedAt) => {
       const next: MarketingPushPromptState = {
-        lastPromptedAt: promptedAt.toISOString(),
+        lastPromptedAt: promptedAt,
         count: get().count + 1,
       };
       storage.set(MARKETING_PUSH_PROMPT_KEY, JSON.stringify(next));

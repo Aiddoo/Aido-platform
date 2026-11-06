@@ -30,7 +30,7 @@ export function PushPermissionStatusRow() {
     .with(PUSH_PERMISSION_STATUS.NOT_DETERMINED, () => t('permission.status.notDetermined'))
     .exhaustive();
 
-  const action = match(PushPermissionPolicy.nextStep(permission, { pushEnabled: true }))
+  const action = match(PushPermissionPolicy.getNextStep(permission, { pushEnabled: true }))
     .with(PUSH_PERMISSION_STEP.ASK, () => (
       <Button size="small" variant="weak" display="inline" onPress={() => setIsDialogOpen(true)}>
         {t('permission.card.continue')}

@@ -1,4 +1,5 @@
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { toInstant } from '@src/shared/date/instant';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
@@ -18,7 +19,7 @@ const makePage = (id: number): NotificationListResult => ({
       title: 'title',
       body: 'body',
       isRead: false,
-      createdAt: new Date('2026-07-14T00:00:00.000Z'),
+      createdAt: toInstant('2026-07-14T00:00:00.000Z'),
       readAt: null,
     },
   ],
@@ -92,7 +93,7 @@ describe('notification cache optimistic update', () => {
           notifications: page.notifications.map((notification) => ({
             ...notification,
             isRead: true,
-            readAt: new Date('2026-07-14T01:00:00.000Z'),
+            readAt: toInstant('2026-07-14T01:00:00.000Z'),
           })),
         },
       ],
