@@ -1,6 +1,6 @@
 # 관측(Observability) 가이드
 
-**Version**: 1.1.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+**Version**: 1.2.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
 무엇을 언제 어디로 남기는지의 규칙이다. 이벤트 목록과 GA 콘솔 설정은 [측정 계획](../docs/analytics-measurement-plan.md)에 있다.
 
@@ -131,13 +131,31 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 - `feature`는 `SENTRY_FEATURES`(`SentryFeature`)의 snake_case 값이다. 새 값은 거기에 먼저 더한다. 태그 키는 `SENTRY_TAGS`를 쓴다.
 - `logger.error`의 `feature` 태그는 이벤트 키의 첫 마디이고 `SENTRY_FEATURES` 안의 값만 보낸다. 새 첫 마디를 쓰는 로그 이벤트는 거기에도 더한다. 빠지면 `sentry-logger.test.ts`가 실패한다.
 
+## 오류 분류와 한 번만 보고
+
+Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureException`)는 `shared/infra/observability/capture-error.ts`의 `captureError` 한 곳을 지난다. 이슈로 보낼지는 `shared/errors/classify-error-report.ts`의 `classifyErrorReport`만 판단하고 표는 `classify-error-report.test.ts`가 고정한다.
+
+| 오류                                                    | Sentry                                             | 비고                             |
+| ------------------------------------------------------- | -------------------------------------------------- | -------------------------------- |
+| 4xx `ApiError`, `BusinessError`(`code` 가진 Error)      | breadcrumb(`category: error`)                      | UI가 `Result`·토스트로 처리      |
+| 검증 실패(`ZodError`)                                   | breadcrumb                                         |                                  |
+| `NetworkError`, `TimeoutError`                          | breadcrumb                                         | 기기 상태                        |
+| `KeychainLockedError`                                   | breadcrumb                                         | 잠금은 재시도할 상태             |
+| `ServerError`(5xx)                                      | 이슈. `request_id` 태그(`X-Request-Id`)            | `ky-client`가 요청 헤더에서 채움 |
+| `ParseError`(응답 파싱 실패), 렌더 오류, 잡지 못한 오류 | 이슈. 호출부가 `feature` 태그(`error_boundary` 등) |                                  |
+| 5xx `ApiError`                                          | 이슈                                               | 방어용                           |
+
+- 같은 `Error` 객체는 어느 경로로 몇 번 보고해도 한 번만 처리한다(`WeakSet`). 먼저 닿은 쪽의 태그가 남는다. 재현과 고정은 `capture-error.test.ts`다. 현재 호출부 중 한 오류를 양쪽으로 보내는 곳은 없었고, 어댑터 구조상 가능했던 이중 전송을 막았다.
+- 새 오류 종류를 breadcrumb로 낮추려면 `classifyErrorReport`와 그 테스트 표에 먼저 더한다. 호출부가 `captureException`을 아끼는 식으로 정하지 않는다.
+
 ## Logger
 
 - message는 자유 문자열 대신 기능별 `*_LOG_EVENT` 상수다. 키 형식과 필드(`errorType`·`errorCode`)는 [이벤트 키와 필드](../../api/.claude/logging-guide.md#이벤트-키와-필드-서버앱-공통)를 따른다.
 - 상수는 기능 `constants/<feature>-log-events.ts`, 공용 인프라는 모듈 옆에 둔다. 예: `NOTIFICATION_LOG_EVENT`.
 - 레벨은 호출부가 정한다. 가변 정보는 message가 아니라 context로 넘긴다.
 - context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`toError(error).message`·`instanceof` 분기를 넣지 않는다.
-- 어댑터(`console-*`, `composite-logger`) 밖에서 `console.*`을 쓰지 않는다.
+- 어댑터(`console-*`, `composite-logger`) 밖에서 `console.*`을 쓰지 않는다. `.oxlintrc.json`의 `eslint/no-console`이 `apps/mobile/src`·`app`에서 막고, 어댑터와 테스트만 예외다.
+- 이벤트 키는 `feature.action.result` 세 마디 kebab-case다. 값은 Sentry 대시보드에서 쓰므로 바꾸지 않는다. `log-event-keys.test.ts`가 형식, `*_LOG_EVENT` 상수 하나, 문자열 직접 사용 금지를 검사한다.
 
 | 상황                               | 호출                                                   | Sentry                                     |
 | ---------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
@@ -145,7 +163,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 | 예측 못한 오류(경계 밖·백그라운드) | `logger.error(KEY, toError(e))`                        | 이벤트 `source=logger`·`feature=<첫 마디>` |
 | 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`        | 이벤트 `feature`(`SENTRY_FEATURES`)        |
 
-- `logger.error(KEY, Error)`는 그 자체로 Sentry 이벤트다. 같은 오류를 `captureException`으로 또 보내지 않는다. 이벤트가 필요 없는 실패는 `warn`이다.
+- `logger.error(KEY, Error)`는 Sentry로 가는 길이다. 같은 오류 객체를 `captureException`으로 또 보내도 이슈는 한 번만 생긴다(아래 [한 번만 보고](#오류-분류와-한-번만-보고)). 그래도 한 곳에서 한 방법으로만 보낸다.
 - `logger.error(KEY, undefined, context)`는 breadcrumb만 남긴다. 이벤트가 필요하면 `Error`를 넘긴다.
 - `logger.debug`는 Sentry에 남지 않는다.
 
@@ -162,19 +180,44 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 - 음성은 길이를 구간으로만 남기고, 오류는 인식기 오류 코드(`speech_error`)만 남긴다.
 - 상대 사용자 id·신고 상세는 Analytics에 넣지 않는다.
 
+### Sentry 전송 전 걸러내기
+
+`shared/infra/observability/scrub-sentry-event.ts`가 `Sentry.init`의 `beforeSend`·`beforeBreadcrumb`로 한 번 더 지운다. 호출부가 실수해도 나가지 않게 하는 마지막 방어선이고, 호출부에서 먼저 빼는 것이 원칙이다.
+
+- **허용 키 방식**: `extra`와 breadcrumb `data`는 `ALLOWED_CONTEXT_KEYS`(`memoId`, `status`, `code`, `durationMs`, `error`, `reason` 등)에 있는 키의 문자열·숫자·불리언만 남는다. 그 밖의 키(`content`, `transcript`, `title`, `email`, `accessToken`)와 객체·배열 값은 지운다. 새 context 키를 쓰면 허용 목록과 테스트에 먼저 더한다.
+- **문자열 패턴**: 이메일, `Bearer ...`, JWT, 40자 이상 토큰 모양은 `[email]`·`[token]`으로 바뀌고 500자로 자른다. 요청 ID(UUID 36자)는 그대로다.
+- `console` breadcrumb는 버린다(로거 context가 그대로 담긴다). 요청은 `data`·쿠키·`Authorization`을 지우고 URL 쿼리를 자른다. 사용자는 내부 id만 남긴다.
+- 사용자 태그는 내부 id뿐이고 비인증이 되면 `setUserId(null)`로 해제한다(`useUserIdentity`).
+
 ## 이벤트 남발 금지
 
 - 예측 가능한 4xx는 이벤트가 아니다. `Result.err()`로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다.
 - breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)다. 서버 로그 `reqId`, 서버 Sentry `request_id` 태그와 같은 값이다.
 - 이벤트는 예측 못한 문제(ErrorBoundary 도달, 5xx·네트워크·파싱)와 도메인 신호(`session_expired`)에만 쓴다.
 
+## 기기에서 확인하는 시나리오
+
+운영이 아닌 빌드는 `ErrorReporter`·`Logger`가 console이라 Sentry에 가지 않는다. 확인할 때는 개발 DSN을 넣은 Release 빌드를 쓰고 운영 DSN이 아닌지 먼저 본다.
+
+| 시나리오             | 방법                                                | 기대                                                                                                   |
+| -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 일부러 500           | QA 서버에서 목록 API가 500을 내게 한다              | 이슈 1건. `request_id` 태그가 서버 로그 `reqId`와 같다. 토스트와 재시도가 뜬다                         |
+| 일부러 4xx(404, 409) | 지운 할 일을 열기, 중복 요청                        | 이슈가 생기지 않는다. 다른 이슈의 breadcrumb에만 `error`·`http`로 남는다                               |
+| 비행기 모드·타임아웃 | 네트워크를 끊고 새로 고침                           | 이슈가 생기지 않는다                                                                                   |
+| 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`), `feature` 태그가 있다. breadcrumb에 `*.response-parse.failed`가 있다           |
+| 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`, 오류 화면. 같은 오류가 두 번 올라오지 않는다                       |
+| 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없다. 사용자는 내부 id뿐이다. 로그아웃 뒤 이벤트엔 사용자가 없다 |
+
 ## 관련 코드
 
-| 관심사           | 위치                                                                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| 포트             | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                           |
-| Sentry 어댑터    | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                  |
-| Sentry init·wrap | `shared/infra/observability/sentry.ts`                                                                                                          |
-| 카탈로그·파사드  | `shared/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                               |
-| 환경별 구현·DI   | `shared/infra/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                                      |
-| 계측 지점        | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/providers/auth-provider.tsx`(session) |
+| 관심사            | 위치                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 포트              | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                           |
+| Sentry 어댑터     | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                  |
+| Sentry init·wrap  | `shared/infra/observability/sentry.ts`                                                                                                          |
+| 전송 입구·분류    | `shared/infra/observability/capture-error.ts`, `shared/errors/classify-error-report.ts`                                                         |
+| 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                              |
+| 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                       |
+| 카탈로그·파사드   | `shared/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                               |
+| 환경별 구현·DI    | `shared/infra/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                                      |
+| 계측 지점         | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/providers/auth-provider.tsx`(session) |
