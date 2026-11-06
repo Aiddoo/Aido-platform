@@ -1,5 +1,5 @@
 import type { ChangeTodoCategoryInput } from '@aido/api';
-import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -19,7 +19,7 @@ interface ChangeTodoCategoryMutationParams {
 
 export const useChangeTodoCategoryMutationOptions = () => {
   const haptics = useHaptics();
-  const todoCategoryService = useTodoCategoryService();
+  const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const handleSeriesFailure = useTodoSeriesFailureHandler();
@@ -27,7 +27,7 @@ export const useChangeTodoCategoryMutationOptions = () => {
 
   return mutationOptions({
     mutationFn: async ({ todoId, input, scope }: ChangeTodoCategoryMutationParams) => {
-      const result = await todoCategoryService.changeTodoCategory(todoId, input, scope);
+      const result = await todoService.changeTodoCategory(todoId, input, scope);
       return unwrap(result);
     },
     onSuccess: (_data, variables) => {

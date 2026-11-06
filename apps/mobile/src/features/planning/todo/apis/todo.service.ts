@@ -1,4 +1,5 @@
 import {
+  type ChangeTodoCategoryInput,
   type CreateTodoInput,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
@@ -8,6 +9,7 @@ import {
   type ToggleTodoCompleteInput,
   todoSummaryResponseSchema,
   type UpdateTodoInput,
+  updateTodoResponseSchema,
   type UpdateTodoScheduleInput,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
@@ -29,6 +31,7 @@ import {
   type RepeatingTodoDraft,
   type TodoSeriesEditOptions,
   toCreateRepeatingTodoRequest,
+  toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
   toUpdateTodoRequest,
@@ -402,5 +405,29 @@ export class TodoService {
     }
 
     return ok(toTodoDetails(parsed.data));
+  };
+
+  changeTodoCategory = async (
+    todoId: number,
+    input: ChangeTodoCategoryInput,
+    scope?: TodoUpdateScope,
+  ): Promise<Result<Todo, ApiError>> => {
+    const result =
+      scope === 'THIS_AND_FOLLOWING'
+        ? await this.#httpClient.patch(`v1/todos/${todoId}`, toFollowingCategoryRequest(input))
+        : await this.#httpClient.patch(`v1/todos/${todoId}/category`, input);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoService] Invalid changeTodoCategory response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodo(parsed.data.todo));
   };
 }

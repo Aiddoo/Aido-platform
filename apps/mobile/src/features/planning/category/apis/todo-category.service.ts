@@ -1,5 +1,4 @@
 import {
-  type ChangeTodoCategoryInput,
   type CreateTodoCategoryInput,
   createTodoCategoryResponseSchema,
   type DeleteTodoCategoryQuery,
@@ -9,13 +8,8 @@ import {
   todoCategoryListResponseSchema,
   type UpdateTodoCategoryInput,
   updateTodoCategoryResponseSchema,
-  updateTodoResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
-import { toFollowingCategoryRequest } from '@src/features/planning/todo/apis/todo-series.mapper';
-import { toTodo } from '@src/features/planning/todo/apis/todo.mapper';
-import type { TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
@@ -108,30 +102,6 @@ export class TodoCategoryService {
     }
 
     return ok(undefined);
-  };
-
-  changeTodoCategory = async (
-    todoId: number,
-    input: ChangeTodoCategoryInput,
-    scope?: TodoUpdateScope,
-  ): Promise<Result<Todo, ApiError>> => {
-    const result =
-      scope === 'THIS_AND_FOLLOWING'
-        ? await this.#httpClient.patch(`v1/todos/${todoId}`, toFollowingCategoryRequest(input))
-        : await this.#httpClient.patch(`v1/todos/${todoId}/category`, input);
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateTodoResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCategoryService] Invalid changeTodoCategory response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodo(parsed.data.todo));
   };
 
   reorderCategory = async (
