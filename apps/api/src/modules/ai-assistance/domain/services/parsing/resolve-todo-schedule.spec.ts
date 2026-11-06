@@ -384,6 +384,290 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 });
 
+describe("resolveTodoSchedule — 지난 날짜를 만들지 않는다", () => {
+  // 서울 2026-11-07(토) 10:00, 2026-11-08(일) 10:00
+  const SATURDAY = { now: new Date("2026-11-07T01:00:00Z"), timeZone: "Asia/Seoul" };
+  const SUNDAY = { now: new Date("2026-11-08T01:00:00Z"), timeZone: "Asia/Seoul" };
+
+  it.each([
+    { name: "토요일의 금요일", clock: SATURDAY, weekday: "FRI", expected: "2026-11-13" },
+    { name: "토요일의 월요일", clock: SATURDAY, weekday: "MON", expected: "2026-11-09" },
+    { name: "토요일의 토요일(오늘)", clock: SATURDAY, weekday: "SAT", expected: "2026-11-07" },
+    {
+      name: "토요일의 일요일(이번 주 남은 날)",
+      clock: SATURDAY,
+      weekday: "SUN",
+      expected: "2026-11-08",
+    },
+    { name: "일요일의 금요일", clock: SUNDAY, weekday: "FRI", expected: "2026-11-13" },
+    { name: "일요일의 토요일", clock: SUNDAY, weekday: "SAT", expected: "2026-11-14" },
+    { name: "일요일의 일요일(오늘)", clock: SUNDAY, weekday: "SUN", expected: "2026-11-08" },
+  ] as const)("이번 주 $name 은 $expected 이다", ({ clock, weekday, expected }) => {
+    // Given
+    const said = [0, null].map((weekOffset) =>
+      draft({ date: { kind: "WEEKDAY", weekday, weekOffset } }),
+    );
+    // When
+    const dates = said.map((input) => resolveTodoSchedule(input, clock).startDate);
+    // Then
+    expect(dates).toEqual([expected, expected]);
+  });
+
+  // 일요일은 ISO 주의 끝이고 11-01은 달의 첫날이라 그 주 월요일이 전달로 넘어간다.
+  it.each([
+    { weekday: "MON", upcoming: "2026-11-02", nextWeek: "2026-11-02" },
+    { weekday: "TUE", upcoming: "2026-11-03", nextWeek: "2026-11-03" },
+    { weekday: "WED", upcoming: "2026-11-04", nextWeek: "2026-11-04" },
+    { weekday: "THU", upcoming: "2026-11-05", nextWeek: "2026-11-05" },
+    { weekday: "FRI", upcoming: "2026-11-06", nextWeek: "2026-11-06" },
+    { weekday: "SAT", upcoming: "2026-11-07", nextWeek: "2026-11-07" },
+    { weekday: "SUN", upcoming: "2026-11-01", nextWeek: "2026-11-08" },
+  ] as const)(
+    "달의 첫날인 일요일에 $weekday 는 $upcoming, 다음 주 $weekday 는 $nextWeek 이다",
+    ({ weekday, upcoming, nextWeek }) => {
+      // Given
+      const firstSunday = { now: new Date("2026-11-01T01:00:00Z"), timeZone: "Asia/Seoul" };
+      const said = [null, 0, 1].map((weekOffset) =>
+        draft({ date: { kind: "WEEKDAY", weekday, weekOffset } }),
+      );
+      // When
+      const dates = said.map((input) => resolveTodoSchedule(input, firstSunday).startDate);
+      // Then
+      expect(dates).toEqual([upcoming, upcoming, nextWeek]);
+    },
+  );
+
+  const PAST_DATES = [
+    { name: "지난달 초", date: { kind: "MONTH_START", amount: -1 } },
+    { name: "작년 초", date: { kind: "YEAR_START", amount: -1 } },
+    { name: "지난달 말", date: { kind: "MONTH_END", amount: -1 } },
+    { name: "작년 말", date: { kind: "YEAR_END", amount: -1 } },
+    { name: "1주 전", date: { kind: "OFFSET_WEEKS", amount: -1 } },
+    { name: "1달 전", date: { kind: "OFFSET_MONTHS", amount: -1 } },
+  ] as const;
+
+  it.each(PAST_DATES)("$name 표현은 오늘로 두고 INVALID_DATE를 남긴다", ({ date }) => {
+    // Given
+    const input = draft({ date });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result.startDate).toBe("2026-11-07");
+    expect(result.warnings).toEqual(["INVALID_DATE"]);
+  });
+
+  it.each(PAST_DATES)("끝 날짜로 온 $name 표현은 시작보다 앞서지 않는다", ({ date }) => {
+    // Given
+    const fromToday = draft({ endDate: date });
+    const fromTomorrow = draft({ date: { kind: "OFFSET_DAYS", amount: 1 }, endDate: date });
+    // When
+    const results = [fromToday, fromTomorrow].map((input) => resolveTodoSchedule(input, SATURDAY));
+    // Then
+    expect(results).toMatchObject([
+      { startDate: "2026-11-07", endDate: null },
+      { startDate: "2026-11-08", endDate: null },
+    ]);
+    expect(results[1]?.warnings).toContain("END_BEFORE_START");
+  });
+
+  it("장애 사례: 토요일의 '금요일 치과'와 '내일'은 모두 앞으로의 날짜이고 경고가 없다", () => {
+    // Given
+    const dentist = draft({ date: { kind: "WEEKDAY", weekday: "FRI", weekOffset: 0 } });
+    const tomorrow = draft({ date: { kind: "OFFSET_DAYS", amount: 1 } });
+    // When
+    const results = [dentist, tomorrow].map((input) => resolveTodoSchedule(input, SATURDAY));
+    // Then
+    expect(results).toMatchObject([
+      { startDate: "2026-11-13", warnings: [] },
+      { startDate: "2026-11-08", warnings: [] },
+    ]);
+  });
+
+  it("모델이 낸 지난주 요일도 앞으로의 그 요일로 넘긴다", () => {
+    // Given
+    const input = draft({ date: { kind: "WEEKDAY", weekday: "FRI", weekOffset: -1 } });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result.startDate).toBe("2026-11-13");
+  });
+
+  it.each([
+    { weekOffset: 1, expected: "2026-11-13" },
+    { weekOffset: 2, expected: "2026-11-20" },
+  ])("주를 말한 weekOffset $weekOffset은 그대로 $expected 이다", ({ weekOffset, expected }) => {
+    // Given
+    const input = draft({ date: { kind: "WEEKDAY", weekday: "FRI", weekOffset } });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result.startDate).toBe(expected);
+  });
+
+  it("넘긴 요일에도 말한 시각을 그대로 쓴다", () => {
+    // Given
+    const input = draft({
+      date: { kind: "WEEKDAY", weekday: "FRI", weekOffset: 0 },
+      time: { hour: 3, minute: 0, meridiem: "PM" },
+    });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-11-13", scheduledTime: "15:00" });
+  });
+
+  it("토요일의 '이번 주 금요일까지'는 기한을 버리지 않고 다음 금요일까지다", () => {
+    // Given
+    const input = draft({ endDate: { kind: "WEEKDAY", weekday: "FRI", weekOffset: 0 } });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result).toMatchObject({
+      startDate: "2026-11-07",
+      endDate: "2026-11-13",
+      warnings: [],
+    });
+  });
+
+  it.each([
+    { name: "이번 주를 말한", weekOffset: 0 },
+    { name: "요일만 말한", weekOffset: null },
+  ])("토요일에 $name '금요일부터 일요일까지'는 시작 뒤의 일요일까지다", ({ weekOffset }) => {
+    // Given
+    const input = draft({
+      date: { kind: "WEEKDAY", weekday: "FRI", weekOffset },
+      endDate: { kind: "WEEKDAY", weekday: "SUN", weekOffset },
+    });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result).toMatchObject({
+      startDate: "2026-11-13",
+      endDate: "2026-11-15",
+      warnings: [],
+    });
+  });
+
+  it("음수 OFFSET_DAYS는 오늘로 두고 INVALID_DATE를 남긴다", () => {
+    // Given
+    const input = draft({ date: { kind: "OFFSET_DAYS", amount: -1 } });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-11-07", warnings: ["INVALID_DATE"] });
+  });
+
+  it("연도까지 말한 지난 날짜는 오늘로 두고 INVALID_DATE를 남긴다", () => {
+    // Given
+    const input = draft({ date: { kind: "CALENDAR_DATE", year: 2026, month: 11, day: 6 } });
+    // When
+    const result = resolveTodoSchedule(input, SATURDAY);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-11-07", warnings: ["INVALID_DATE"] });
+  });
+
+  it("연도까지 말한 오늘과 앞으로의 날짜는 그대로 둔다", () => {
+    // Given
+    const said = [7, 8].map((day) =>
+      draft({ date: { kind: "CALENDAR_DATE", year: 2026, month: 11, day } }),
+    );
+    // When
+    const results = said.map((input) => resolveTodoSchedule(input, SATURDAY));
+    // Then
+    expect(results).toMatchObject([
+      { startDate: "2026-11-07", warnings: [] },
+      { startDate: "2026-11-08", warnings: [] },
+    ]);
+  });
+});
+
+describe("resolveTodoSchedule — 이번 달 초·올해 초", () => {
+  const seoulAt = (date: string) => ({
+    now: new Date(`${date}T01:00:00Z`),
+    timeZone: "Asia/Seoul",
+  });
+  const monthStart = draft({ date: { kind: "MONTH_START", amount: 0 } });
+  const yearStart = draft({ date: { kind: "YEAR_START", amount: 0 } });
+
+  it.each([
+    { name: "1일", today: "2026-11-01", expected: "2026-11-01" },
+    { name: "초순 마지막 10일", today: "2026-11-10", expected: "2026-11-10" },
+    { name: "초순이 지난 11일", today: "2026-11-11", expected: "2026-12-01" },
+    { name: "말일", today: "2026-11-30", expected: "2026-12-01" },
+    { name: "1월 31일", today: "2027-01-31", expected: "2027-02-01" },
+    { name: "12월 10일", today: "2026-12-10", expected: "2026-12-10" },
+    { name: "12월 11일", today: "2026-12-11", expected: "2027-01-01" },
+    { name: "12월 31일", today: "2026-12-31", expected: "2027-01-01" },
+  ])("$name 에 말한 이번 달 초는 $expected 이다", ({ today, expected }) => {
+    // Given
+    const clock = seoulAt(today);
+    // When
+    const result = resolveTodoSchedule(monthStart, clock);
+    // Then
+    expect(result).toMatchObject({ startDate: expected, warnings: [] });
+  });
+
+  it.each([
+    { name: "1월 1일", today: "2027-01-01", expected: "2027-01-01" },
+    { name: "1월 31일", today: "2027-01-31", expected: "2027-01-31" },
+    { name: "2월 1일", today: "2027-02-01", expected: "2028-01-01" },
+    { name: "12월 31일", today: "2026-12-31", expected: "2027-01-01" },
+  ])("$name 에 말한 올해 초는 $expected 이다", ({ today, expected }) => {
+    // Given
+    const clock = seoulAt(today);
+    // When
+    const result = resolveTodoSchedule(yearStart, clock);
+    // Then
+    expect(result).toMatchObject({ startDate: expected, warnings: [] });
+  });
+
+  it.each([
+    {
+      name: "이번 달 초(서울 11일·LA 10일)",
+      input: monthStart,
+      now: "2026-11-10T15:30:00Z",
+      seoul: "2026-12-01",
+      la: "2026-11-10",
+    },
+    {
+      name: "12월의 이번 달 초(서울 11일·LA 10일)",
+      input: monthStart,
+      now: "2026-12-10T15:30:00Z",
+      seoul: "2027-01-01",
+      la: "2026-12-10",
+    },
+    {
+      name: "올해 초(서울 2월 1일·LA 1월 31일)",
+      input: yearStart,
+      now: "2027-01-31T16:00:00Z",
+      seoul: "2028-01-01",
+      la: "2027-01-31",
+    },
+  ])("같은 순간의 $name 는 사용자 시간대로 판단한다", ({ input, now, seoul, la }) => {
+    // Given
+    const zones = ["Asia/Seoul", "America/Los_Angeles"];
+    // When
+    const dates = zones.map(
+      (timeZone) => resolveTodoSchedule(input, { now: new Date(now), timeZone }).startDate,
+    );
+    // Then
+    expect(dates).toEqual([seoul, la]);
+  });
+
+  it("끝 날짜로 온 이번 달 초도 같은 규칙이라 시작보다 앞서지 않는다", () => {
+    // Given
+    const input = draft({ endDate: { kind: "MONTH_START", amount: 0 } });
+    const clocks = [seoulAt("2026-11-07"), seoulAt("2026-11-15")];
+    // When
+    const results = clocks.map((clock) => resolveTodoSchedule(input, clock));
+    // Then
+    expect(results).toMatchObject([
+      { startDate: "2026-11-07", endDate: null, warnings: [] },
+      { startDate: "2026-11-15", endDate: "2026-12-01", warnings: [] },
+    ]);
+  });
+});
+
 describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가능한 결과", () => {
   it("때와 함께 온 relativeMinutes 0은 '지금'이 아니라 말한 날짜와 때로 계산한다", () => {
     // Given - 서울 수 10:00에 "내일 아침 치과 예약 전화"를 모델이 relativeMinutes 0과 함께 냄

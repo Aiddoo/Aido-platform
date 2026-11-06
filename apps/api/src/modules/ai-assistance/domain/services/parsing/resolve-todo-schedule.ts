@@ -24,6 +24,10 @@ export interface ScheduleClock {
 /** 반복 종료를 말하지 않은 반복 일정의 기본 기간 */
 const DEFAULT_RECURRENCE_WEEKS = 4;
 const HALF_DAY_MINUTES = 12 * 60;
+/** "이번 달 초"로 보는 마지막 날(초순) */
+const MONTH_EARLY_LAST_DAY = 10;
+/** "올해 초"로 보는 달(1월)의 dayjs 월 번호 */
+const YEAR_EARLY_MONTH_INDEX = 0;
 
 /** 때만 말한 경우의 기본 시각(분). 자정은 대상 날짜 다음 날 00:00으로 따로 다룬다. */
 const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, number>> = {
@@ -110,7 +114,7 @@ export function resolveTodoSchedule(
 
   let endDate: string | null = null;
   if (draft.endDate != null && draft.endDate.kind !== "NONE") {
-    const end = resolveDateRef(draft.endDate, today);
+    const end = resolveEndDateRef(draft.endDate, today, startDay);
     if (end.warning != null) {
       warnings.push(end.warning);
     }
@@ -237,6 +241,25 @@ function resolveRepeatEnd(
 }
 
 function resolveDateRef(ref: DateRef, today: CalendarDay): DayResolution {
+  return clampPastToToday(resolveStatedDay(ref, today), today);
+}
+
+/** 여기까지 온 지난 값은 음수나 지난 날을 집어 말한 값이라 다음 시기로 넘기면 말한 시기와 달라진다. */
+function clampPastToToday(stated: DayResolution, today: CalendarDay): DayResolution {
+  return stated.day.isBefore(today) ? { day: today, warning: "INVALID_DATE" } : stated;
+}
+
+/** "이번 달 초"가 지났으면 할 일로 쓸 수 있는 다음 달 초로 넘긴다. */
+function findUpcomingMonthStart(today: CalendarDay): CalendarDay {
+  return today.date() <= MONTH_EARLY_LAST_DAY ? today : today.add(1, "month").startOf("month");
+}
+
+/** "올해 초"가 지났으면 할 일로 쓸 수 있는 내년 초로 넘긴다. */
+function findUpcomingYearStart(today: CalendarDay): CalendarDay {
+  return today.month() === YEAR_EARLY_MONTH_INDEX ? today : today.add(1, "year").startOf("year");
+}
+
+function resolveStatedDay(ref: DateRef, today: CalendarDay): DayResolution {
   const amount = ref.amount ?? 0;
   return (
     match(ref.kind)
@@ -247,29 +270,55 @@ function resolveDateRef(ref: DateRef, today: CalendarDay): DayResolution {
       .with("OFFSET_MONTHS", () => ({ day: today.add(amount, "month") }))
       .with("WEEKDAY", () => resolveWeekday(ref, today))
       .with("CALENDAR_DATE", () => resolveCalendarDate(ref, today))
-      .with("MONTH_START", () => ({ day: today.add(amount, "month").startOf("month") }))
+      .with("MONTH_START", () => ({
+        day:
+          amount === 0
+            ? findUpcomingMonthStart(today)
+            : today.add(amount, "month").startOf("month"),
+      }))
       .with("MONTH_END", () => ({ day: today.add(amount, "month").endOf("month").startOf("day") }))
-      .with("YEAR_START", () => ({ day: dayjs.utc(`${today.year() + amount}-01-01`) }))
+      .with("YEAR_START", () => ({
+        day:
+          amount === 0 ? findUpcomingYearStart(today) : dayjs.utc(`${today.year() + amount}-01-01`),
+      }))
       .with("YEAR_END", () => ({ day: dayjs.utc(`${today.year() + amount}-12-31`) }))
       .exhaustive()
   );
+}
+
+/** "금요일부터 일요일까지"의 끝 요일은 오늘이 아니라 시작일에서 가장 가까운 그 요일이다. */
+function resolveEndDateRef(ref: DateRef, today: CalendarDay, start: CalendarDay): DayResolution {
+  const end = resolveDateRef(ref, today);
+  return ref.kind === "WEEKDAY" && ref.weekday != null && end.day.isBefore(start)
+    ? { day: findUpcomingWeekday(ref.weekday, start) }
+    : end;
 }
 
 function isoIndex(day: DayOfWeek): number {
   return DAY_OF_WEEK_ORDER.indexOf(day);
 }
 
+function getWeekdayThisWeek(weekday: DayOfWeek, baseDay: CalendarDay): CalendarDay {
+  return baseDay.isoWeekday(isoIndex(weekday) + 1);
+}
+
+/** 기준일을 포함해 가장 가까운 그 요일 */
+function findUpcomingWeekday(weekday: DayOfWeek, baseDay: CalendarDay): CalendarDay {
+  const weekdayThisWeek = getWeekdayThisWeek(weekday, baseDay);
+  return weekdayThisWeek.isBefore(baseDay) ? weekdayThisWeek.add(1, "week") : weekdayThisWeek;
+}
+
 function resolveWeekday(ref: DateRef, today: CalendarDay): DayResolution {
   if (ref.weekday == null) {
     return { day: today, warning: "INVALID_DATE" };
   }
-  const target = isoIndex(ref.weekday);
+  const upcomingWeekday = findUpcomingWeekday(ref.weekday, today);
   if (ref.weekOffset == null) {
-    // 요일만 말하면 오늘을 포함해 가장 가까운 그 요일이다.
-    const diff = (target - (today.isoWeekday() - 1) + 7) % 7;
-    return { day: today.add(diff, "day") };
+    return { day: upcomingWeekday };
   }
-  return { day: today.startOf("isoWeek").add(ref.weekOffset * 7 + target, "day") };
+  const statedWeekday = getWeekdayThisWeek(ref.weekday, today).add(ref.weekOffset, "week");
+  // 할 일에 지난 날짜는 쓸 수 없어 다음 그 요일로 넘긴다.
+  return { day: statedWeekday.isBefore(today) ? upcomingWeekday : statedWeekday };
 }
 
 function calendarDay(year: number, month: number, day: number): CalendarDay | null {

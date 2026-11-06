@@ -134,18 +134,24 @@ describe("resolveTodoSchedule — ISO 53주차 (2026-12-28 ~ 2027-01-03)", () =>
       expect(resolveAt(INSTANT, zone, tomorrow).startDate).toBe(expected);
     });
 
+    // 서울은 새 ISO 주, LA는 53주 마지막 날이라 "이번 주"가 갈린다. LA의 금요일은 이미 지나 다음 금요일이다.
     it.each([
-      { zone: SEOUL, expected: "2027-01-08" },
-      { zone: LOS_ANGELES, expected: "2027-01-01" },
-    ])("When 이번 주 금요일 Then $zone 은 $expected 이다", ({ zone, expected }) => {
-      const result = resolveAt(
-        INSTANT,
-        zone,
-        draft({ date: { kind: "WEEKDAY", weekday: "FRI", weekOffset: 0 } }),
-      );
+      { zone: SEOUL, weekday: "FRI", expected: "2027-01-08" },
+      { zone: LOS_ANGELES, weekday: "FRI", expected: "2027-01-08" },
+      { zone: SEOUL, weekday: "SUN", expected: "2027-01-10" },
+      { zone: LOS_ANGELES, weekday: "SUN", expected: "2027-01-03" },
+    ] as const)(
+      "When 이번 주 $weekday Then $zone 은 $expected 이다",
+      ({ zone, weekday, expected }) => {
+        const result = resolveAt(
+          INSTANT,
+          zone,
+          draft({ date: { kind: "WEEKDAY", weekday, weekOffset: 0 } }),
+        );
 
-      expect(result.startDate).toBe(expected);
-    });
+        expect(result.startDate).toBe(expected);
+      },
+    );
   });
 });
 
