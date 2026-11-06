@@ -20,7 +20,7 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView, useWindowDimensions } from 'react-native';
@@ -325,11 +325,10 @@ function TargetBanner({
           </Text>
         )}
       </VStack>
-      <PressableFeedback
+      <CloseButton
+        variant="ghost"
         hitSlop={CLOSE_HIT_SLOP}
         isDisabled={isSubmitting}
-        className="size-8 items-center justify-center"
-        accessibilityRole="button"
         accessibilityLabel={t('actions.closeComposer')}
         onPress={() => {
           reset(TodoCommentComposer.new());
@@ -337,7 +336,7 @@ function TargetBanner({
         }}
       >
         <CloseIcon width={CLOSE_ICON_SIZE} height={CLOSE_ICON_SIZE} colorClassName="text-gray-6" />
-      </PressableFeedback>
+      </CloseButton>
     </HStack>
   );
 }

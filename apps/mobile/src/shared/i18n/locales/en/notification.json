@@ -9,6 +9,7 @@
   "marketingOptIn": {
     "bannerTitle": "Reminders, tips & Aido news",
     "bannerDescription": "A little help with your streak, to-dos, and what’s new",
+    "bannerDismiss": "Dismiss reminder prompt",
     "title": "A little help along the way",
     "description": "· Reminders to keep your streak going\n· Missed to-dos and AI suggestions for you\n· News, events, and special offers\n\nYou can turn these off anytime in Settings.\n(By agreeing, you consent to promotional notifications.)",
     "agree": "Yes, notify me",

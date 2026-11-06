@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, RobotPixelIcon, Text, VStack } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton, PressableFeedback } from 'heroui-native';
 
 interface WhatsNewReentryCardProps {
   onPress: () => void;
@@ -33,15 +33,15 @@ export function WhatsNewReentryCard({ onPress, onDismiss }: WhatsNewReentryCardP
         </HStack>
       </PressableFeedback>
 
-      <PressableFeedback
+      <CloseButton
         testID="feature-guide-dismiss"
+        variant="ghost"
+        className="size-5"
         onPress={onDismiss}
-        hitSlop={8}
-        accessibilityRole="button"
         accessibilityLabel={t('entry.dismissLabel')}
       >
         <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
-      </PressableFeedback>
+      </CloseButton>
     </HStack>
   );
 }

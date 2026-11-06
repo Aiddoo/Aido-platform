@@ -1,7 +1,7 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack, Text } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton, PressableFeedback } from 'heroui-native';
 
 interface PickerHeaderProps {
   title: string;
@@ -21,13 +21,18 @@ export function PickerHeader({
   return (
     <HStack className="items-center" px={16}>
       <Box className="flex-1 items-start">
-        <PressableFeedback onPress={onCancel}>
+        <CloseButton
+          variant="ghost"
+          style={{ width: fontScaledSize(20), height: fontScaledSize(20) }}
+          accessibilityLabel={t('actions.close')}
+          onPress={onCancel}
+        >
           <CloseIcon
             width={fontScaledSize(20)}
             height={fontScaledSize(20)}
             colorClassName="text-gray-8"
           />
-        </PressableFeedback>
+        </CloseButton>
       </Box>
       <Text size="b2" weight="semibold" tone="neutral" shade={8}>
         {title}

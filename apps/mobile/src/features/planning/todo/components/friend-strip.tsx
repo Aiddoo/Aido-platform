@@ -34,7 +34,7 @@ import {
 } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { CloseButton, PressableFeedback, Skeleton } from 'heroui-native';
 import {
   memo,
   type ReactNode,
@@ -318,20 +318,18 @@ FriendStrip.Hint = function Hint({ userId }: { userId: string }) {
         <WordWrapText size="b4" shade={7} className="flex-1 shrink">
           {isInviteAvailable ? t('friendStrip.emptyInviteHint') : t('friendStrip.emptySearchHint')}
         </WordWrapText>
-        <PressableFeedback
+        <CloseButton
           testID="friend-strip-hint-dismiss"
-          accessibilityRole="button"
+          variant="ghost"
           accessibilityLabel={t('friendStrip.hintDismiss')}
-          hitSlop={8}
           onPress={dismiss}
-          className="size-8 items-center justify-center rounded-full"
         >
           <CloseIcon
             width={fontScaledSize(14)}
             height={fontScaledSize(14)}
             colorClassName="text-gray-6"
           />
-        </PressableFeedback>
+        </CloseButton>
       </HStack>
     </Box>
   );

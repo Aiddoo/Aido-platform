@@ -6,7 +6,7 @@ import { Button, CloseIcon, HStack, ListRow } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton } from 'heroui-native';
 import { type ReactNode, useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -214,14 +214,14 @@ function Notice({ className, title, description, action, onDismiss }: NoticeProp
       right={
         <HStack align="center" gap={8}>
           {action}
-          <PressableFeedback
+          <CloseButton
+            variant="ghost"
+            className="size-5"
             onPress={onDismiss}
-            hitSlop={8}
-            accessibilityRole="button"
             accessibilityLabel={t('permission.card.dismiss')}
           >
             <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
-          </PressableFeedback>
+          </CloseButton>
         </HStack>
       }
     />

@@ -5,7 +5,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -73,10 +73,11 @@ ReorderCoachmark.Contents = function Contents({
       <Text size="b4" shade={7} className="flex-1 shrink">
         {t(`reorderCoachmark.${kind}`)}
       </Text>
-      <PressableFeedback
+      <CloseButton
+        variant="ghost"
+        className="size-4"
         hitSlop={14}
         onPress={() => setIsVisible(false)}
-        accessibilityRole="button"
         accessibilityLabel={t('reorderCoachmark.dismiss')}
       >
         <CloseIcon
@@ -84,7 +85,7 @@ ReorderCoachmark.Contents = function Contents({
           height={fontScaledSize(16)}
           colorClassName="text-gray-6"
         />
-      </PressableFeedback>
+      </CloseButton>
     </HStack>
   );
 };

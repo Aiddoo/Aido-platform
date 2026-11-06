@@ -31,7 +31,16 @@ jest.mock('heroui-native', () => {
     [key: string]: unknown;
   }) => React.createElement(Pressable, { ...props, onPress }, children);
   PressableFeedback.Highlight = () => null;
-  return { PressableFeedback };
+  const CloseButton = ({
+    children,
+    onPress,
+    ...props
+  }: {
+    children: React.ReactNode;
+    onPress: () => void;
+    [key: string]: unknown;
+  }) => React.createElement(Pressable, { ...props, onPress }, children);
+  return { CloseButton, PressableFeedback };
 });
 
 describe('WhatsNewReentryCard', () => {

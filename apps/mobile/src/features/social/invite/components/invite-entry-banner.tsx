@@ -9,7 +9,7 @@ import { Button, CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useCallback, useSyncExternalStore } from 'react';
 import { Image } from 'react-native';
 
@@ -89,15 +89,14 @@ export function InviteEntryBanner({ className, ...props }: ComponentProps<typeof
           {t('entry.inviteFriends')}
         </Button>
       </VStack>
-      <PressableFeedback
-        accessibilityRole="button"
+      <CloseButton
+        variant="ghost"
         accessibilityLabel={t('entry.allDoneDismiss')}
-        hitSlop={8}
         onPress={() => inviteService.dismissAllDoneBanner(userId, todayKey)}
-        className="absolute right-1 top-1 size-11 items-center justify-center rounded-full"
+        className="absolute right-1 top-1 size-11"
       >
         <CloseIcon width={16} height={16} colorClassName="text-gray-6" />
-      </PressableFeedback>
+      </CloseButton>
     </HStack>
   );
 }

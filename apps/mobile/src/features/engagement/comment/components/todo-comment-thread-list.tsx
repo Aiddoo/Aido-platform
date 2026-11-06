@@ -22,7 +22,7 @@ import {
 } from '@src/shared/ui';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
-import { PressableFeedback, Spinner } from 'heroui-native';
+import { CloseButton, PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from 'react';
 import type { ScrollViewProps } from 'react-native';
 import Animated, {
@@ -314,9 +314,10 @@ DoubleTapHint.Contents = function Contents({ accountId }: { accountId: string })
       <Text size="b4" shade={8} className="flex-1 shrink">
         {t('hint.doubleTap')}
       </Text>
-      <PressableFeedback
+      <CloseButton
+        variant="ghost"
+        className="size-4"
         hitSlop={HINT_CLOSE_HIT_SLOP}
-        accessibilityRole="button"
         accessibilityLabel={t('hint.dismiss')}
         onPress={() => {
           complete();
@@ -324,7 +325,7 @@ DoubleTapHint.Contents = function Contents({ accountId }: { accountId: string })
         }}
       >
         <CloseIcon width={HINT_CLOSE_SIZE} height={HINT_CLOSE_SIZE} colorClassName="text-gray-6" />
-      </PressableFeedback>
+      </CloseButton>
     </HStack>
   );
 };

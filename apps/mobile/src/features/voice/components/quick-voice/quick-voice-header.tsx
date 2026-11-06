@@ -2,7 +2,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton } from 'heroui-native';
 import type { ReactNode } from 'react';
 
 interface QuickVoiceHeaderProps {
@@ -23,10 +23,10 @@ export function QuickVoiceHeader({ center, right, onClose }: QuickVoiceHeaderPro
   return (
     <HStack align="center" gap={8}>
       <Box flex={isCompact ? undefined : 1} className="items-start">
-        <PressableFeedback
+        <CloseButton
+          variant="ghost"
+          style={{ width: fontScaledSize(22), height: fontScaledSize(22) }}
           onPress={onClose}
-          hitSlop={12}
-          accessibilityRole="button"
           accessibilityLabel={t('listening.cancel')}
           testID="quick-voice-cancel"
         >
@@ -35,7 +35,7 @@ export function QuickVoiceHeader({ center, right, onClose }: QuickVoiceHeaderPro
             height={fontScaledSize(22)}
             colorClassName="text-gray-7"
           />
-        </PressableFeedback>
+        </CloseButton>
       </Box>
       <Box flex={isCompact ? 1 : undefined} className="items-center">
         {center}

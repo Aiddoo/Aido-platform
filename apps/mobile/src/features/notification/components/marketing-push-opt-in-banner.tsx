@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton, PressableFeedback } from 'heroui-native';
 
 import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-prompt';
 
@@ -35,9 +35,14 @@ export function MarketingPushOptInBanner({ className }: MarketingPushOptInBanner
         </VStack>
       </PressableFeedback>
 
-      <PressableFeedback onPress={dismiss} hitSlop={8}>
+      <CloseButton
+        variant="ghost"
+        className="size-5"
+        accessibilityLabel={t('marketingOptIn.bannerDismiss')}
+        onPress={dismiss}
+      >
         <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
-      </PressableFeedback>
+      </CloseButton>
     </HStack>
   );
 }
