@@ -7,6 +7,7 @@ import GorhomBottomSheet, {
   BottomSheetScrollView,
   useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
+import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import {
   type ComponentRef,
   createContext,
@@ -43,6 +44,8 @@ import {
   SHEET_RADIUS,
 } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
+import { usePortalTarget } from './portal-target';
+import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
 import { useSheetLayout } from './use-sheet-layout';
@@ -62,14 +65,17 @@ interface KeyboardBottomSheetProps {
 }
 
 /**
- * 키보드 연동 BottomSheet.
+ * 키보드 연동 BottomSheet. 바깥은 HeroUI Root·Portal이고 `FormProvider` 같은 주변 Context는 시트 안에 둔다.
+ *
+ * 내용은 gorhom을 직접 쓴다. `BottomSheet.Content`는 내용을 `BottomSheetView`로 한 번 더 감싸, 키보드 때문에
+ * 시트가 줄어도 안쪽 스크롤 높이가 줄지 않아 작은 화면에서 입력칸과 버튼에 손이 닿지 않는다.
  *
  * 내용은 스크롤된다. 내용이 짧으면 시트가 그 높이에 맞춰 줄어들지만(enableDynamicSizing),
  * 키보드가 올라온 채로 내용이 길어지면 시트만으로는 아래쪽에 손이 닿지 않기 때문이다.
  * keyboardShouldPersistTaps가 'always'인 것도 같은 이유다 — 없으면 키보드가 떠 있을 때
  * 첫 탭이 키보드를 내리는 데 먹혀 버튼을 두 번 눌러야 한다.
  */
-export const KeyboardBottomSheet = ({
+export function KeyboardBottomSheet({
   isOpen,
   onOpenChange,
   onCloseStart,
@@ -78,8 +84,9 @@ export const KeyboardBottomSheet = ({
   backgroundDecoration,
   isContentPanEnabled = true,
   onDismissRequest,
-}: KeyboardBottomSheetProps) => {
+}: KeyboardBottomSheetProps) {
   const { setEnabled } = useKeyboardContext();
+  const portalTarget = usePortalTarget();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const animatedPosition = useSharedValue(0);
   const lastContentHeightRef = useRef(0);
@@ -330,52 +337,56 @@ export const KeyboardBottomSheet = ({
   };
 
   return (
-    <SheetDecorationContext value={backgroundDecoration}>
-      <SheetFooterContext value={footer}>
-        <GorhomBottomSheet
-          ref={sheetRef}
-          animatedPosition={animatedPosition}
-          accessible={false}
-          animationConfigs={animationConfigs}
-          index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
-          enableDynamicSizing
-          maxDynamicContentSize={maxDynamicContentSize}
-          enablePanDownToClose
-          enableContentPanningGesture={isContentPanEnabled}
-          keyboardBehavior="interactive"
-          keyboardBlurBehavior="restore"
-          enableBlurKeyboardOnGesture
-          android_keyboardInputMode="adjustPan"
-          topInset={topInset}
-          style={{ marginLeft: margins.left, marginRight: margins.right }}
-          backgroundComponent={DecoratedSheetBackground}
-          backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
-          handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
-          backdropComponent={renderBackdrop}
-          onAnimate={handleAnimate}
-          onChange={handleSheetChange}
-          onClose={handleSheetClose}
-          footerComponent={footer == null ? undefined : renderFooter}
-        >
-          <BottomSheetScrollView
-            ref={scrollViewRef}
-            onScrollBeginDrag={handleScrollBeginDrag}
-            onContentSizeChange={handleContentSizeChange}
-            contentContainerStyle={[
-              styles.content,
-              { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
-            ]}
-            keyboardShouldPersistTaps="always"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {children}
-          </BottomSheetScrollView>
-        </GorhomBottomSheet>
-      </SheetFooterContext>
-    </SheetDecorationContext>
+    <HeroBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <HeroBottomSheet.Portal {...portalTarget}>
+        <SheetDecorationContext value={backgroundDecoration}>
+          <SheetFooterContext value={footer}>
+            <GorhomBottomSheet
+              ref={sheetRef}
+              animatedPosition={animatedPosition}
+              accessible={false}
+              animationConfigs={animationConfigs}
+              index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
+              enableDynamicSizing
+              maxDynamicContentSize={maxDynamicContentSize}
+              enablePanDownToClose
+              enableContentPanningGesture={isContentPanEnabled}
+              keyboardBehavior="interactive"
+              keyboardBlurBehavior="restore"
+              enableBlurKeyboardOnGesture
+              android_keyboardInputMode="adjustPan"
+              topInset={topInset}
+              style={{ marginLeft: margins.left, marginRight: margins.right }}
+              backgroundComponent={DecoratedSheetBackground}
+              backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
+              handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
+              backdropComponent={renderBackdrop}
+              onAnimate={handleAnimate}
+              onChange={handleSheetChange}
+              onClose={handleSheetClose}
+              footerComponent={footer == null ? undefined : renderFooter}
+            >
+              <BottomSheetScrollView
+                ref={scrollViewRef}
+                onScrollBeginDrag={handleScrollBeginDrag}
+                onContentSizeChange={handleContentSizeChange}
+                contentContainerStyle={[
+                  styles.content,
+                  { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
+                ]}
+                keyboardShouldPersistTaps="always"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                {children}
+              </BottomSheetScrollView>
+            </GorhomBottomSheet>
+          </SheetFooterContext>
+        </SheetDecorationContext>
+      </HeroBottomSheet.Portal>
+    </HeroBottomSheet>
   );
-};
+}
 
 export function useKeyboardSheetBodyMaxHeight(): number {
   const insets = useSafeAreaInsets();
@@ -395,12 +406,6 @@ function getContentBottomPadding(bottomInset: number) {
 }
 
 const SheetDecorationContext = createContext<ReactNode>(null);
-/** footer 내용이 바뀔 때 gorhom의 footerComponent가 바뀌면 고정 영역이 다시 마운트되어 누르던 버튼을 놓친다 */
-const SheetFooterContext = createContext<ReactNode>(null);
-
-function SheetFooterSlot() {
-  return use(SheetFooterContext);
-}
 
 /**
  * gorhom 기본 배경과 같은 면 뒤에 장식을 깐다. 장식이 바뀔 때 배경 컴포넌트가 바뀌어 다시 마운트되지 않도록

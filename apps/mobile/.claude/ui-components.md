@@ -89,7 +89,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `SettingsCard`(`.Item`·`.Toggle`·`.Content`·`.Separator`·스켈레톤), `SettingsScreenLayout` | 설정 카드와 행(`ListGroup`·`ControlField` 기반), 설정 화면 스크롤 틀         | `src/shared/ui/settings-card/settings-card.md`                 |
 | `KeyboardBottomSheet`                                                                      | 키보드 연동 바텀시트 (폼용)                                                  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
 | `BottomSheet`                                                                              | 키보드 불필요 바텀시트 (피커, 액션시트)                                      | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
-| `ModalBottomSheet`                                                                         | `OverlayProvider` 안의 절대 위치 바텀시트 (시트 위에 시트)                   | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
+| `ModalBottomSheet`                                                                         | `useOverlay`로 띄우는 바텀시트 (시트 위에 시트)                              | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
 | `SheetHeaderLayout`                                                                        | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤             | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
 | `SheetRouteScreen`, `useSheetRoute`                                                        | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기   | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
 | `useStackScreenOptions`, `useStackBackToolbar`                                             | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기       | `src/shared/ui/stack-header/stack-header.md`                   |
@@ -192,8 +192,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
   짧은 라벨(확인·취소·저장 등)은 iPhone SE에서 최대 글꼴 배율일 때 ko·en 모두 한 줄에 들어가야 한다. 긴 문구는
   `shrink`·`numberOfLines`로 줄인다([레이아웃 안전](i18n-guide.md#레이아웃-안전-영어-장문)).
 - **시트·다이얼로그**: 새로 만들지 않고 `SheetRouteScreen`(대상이 있는 route 시트)·`BottomSheet`/`KeyboardBottomSheet`·
-  `ConfirmDialog`를 쓴다. 배치는 `getSheetLayout`(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백)이 정하고, Android 뒤로가기는
-  `useAndroidSheetBackHandler`가 소비한다. `KeyboardBottomSheet`의 바깥 탭·뒤로가기에서 닫기 전에 할 일이 있으면 `onDismissRequest`를 넘긴다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
+  `ConfirmDialog`를 쓴다. 배치는 `getSheetLayout`(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백)이 정한다. 시트는 HeroUI Portal로 그려지므로 `FormProvider`는 시트 안에 두고, HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 넘긴다. `KeyboardBottomSheet`의 바깥 탭·뒤로가기에서 닫기 전에 할 일이 있으면 `onDismissRequest`를 넘긴다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
 - **iPhone Duo·큰 창**: 배치는 기기 종류가 아니라 창 크기 class(`useWindowSizeClass`: `compact`·`medium`·`expanded`)로
   정하고, 좁은 창(compact)과 넓은 창의 2-pane(`AdaptivePane`)만 구분한다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞추고 reserved region의 실제 위치를 쓴다.
   세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 처리한다(위 [가로 safe area](#가로-safe-area-iphone-duo-세로-레일), [Expo의 Supporting iPhone Duo](https://expo.dev/blog/supporting-iphone-duo)).

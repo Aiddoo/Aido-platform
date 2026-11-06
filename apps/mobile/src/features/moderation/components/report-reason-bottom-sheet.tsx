@@ -28,7 +28,14 @@ import { router } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import {
+  type Control,
+  FormProvider,
+  useForm,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 import { match } from 'ts-pattern';
 
 import { toReportFailureAction } from '../domains/moderation.error';
@@ -103,13 +110,18 @@ export function ReportReasonBottomSheet({
   };
 
   return (
-    <FormProvider {...formMethods}>
-      <KeyboardBottomSheet
-        {...sheetProps}
-        isOpen={sheet.isOpen}
-        onOpenChange={sheet.onOpenChange}
-        footer={<SubmitButton onPress={() => formMethods.handleSubmit(handleReport)()} />}
-      >
+    <KeyboardBottomSheet
+      {...sheetProps}
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      footer={
+        <SubmitButton
+          control={formMethods.control}
+          onPress={() => formMethods.handleSubmit(handleReport)()}
+        />
+      }
+    >
+      <FormProvider {...formMethods}>
         <VStack gap={16} pb={16} testID="report-reason-sheet">
           <VStack gap={2}>
             <Text size="b3" shade={7}>
@@ -129,8 +141,8 @@ export function ReportReasonBottomSheet({
             {t('report.notice')}
           </Text>
         </VStack>
-      </KeyboardBottomSheet>
-    </FormProvider>
+      </FormProvider>
+    </KeyboardBottomSheet>
   );
 }
 
@@ -207,10 +219,14 @@ function DetailLengthCounter() {
   );
 }
 
-function SubmitButton({ onPress }: Pick<ComponentProps<typeof Button>, 'onPress'>) {
+interface SubmitButtonProps extends Pick<ComponentProps<typeof Button>, 'onPress'> {
+  control: Control<UserReportFormInput>;
+}
+
+function SubmitButton({ control, onPress }: SubmitButtonProps) {
   const { t } = useTranslation('moderation');
-  const reason = useWatch<UserReportFormInput, 'reason'>({ name: 'reason' });
-  const { isSubmitting } = useFormState<UserReportFormInput>();
+  const reason = useWatch({ control, name: 'reason' });
+  const { isSubmitting } = useFormState({ control });
 
   return (
     <Button

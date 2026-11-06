@@ -45,15 +45,15 @@ if (isConfirmed) {
 
 ## API
 
-| 항목                                              | 설명                                                      |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| `OverlayProvider`                                 | 앱 루트에 한 번 둔다. 열린 overlay를 렌더한다             |
-| `useOverlay()`                                    | `{ open, openAsync }`. Provider 밖에서는 오류를 던진다    |
-| `open(({ isOpen, close, unmount }) => …)`         | 띄운다. 돌려주는 값이 없다                                |
-| `openAsync<T>(({ isOpen, close, unmount }) => …)` | 띄우고 `Promise<T>`를 돌려준다                            |
-| `close()` / `close(value)`                        | `isOpen`을 false로 바꾼다. `openAsync`는 이때 resolve     |
-| `unmount()`                                       | 트리에서 뺀다. 닫힘 애니메이션이 끝난 뒤(`onExit`) 부른다 |
-| `useOverlayState()`                               | 현재 열린 overlay 상태를 읽는다                           |
+| 항목                                              | 설명                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `OverlayProvider`                                 | 앱 루트와 시트 route에 둔다. 열린 overlay와 시트·다이얼로그의 PortalHost를 그린다 |
+| `useOverlay()`                                    | `{ open, openAsync }`. Provider 밖에서는 오류를 던진다                            |
+| `open(({ isOpen, close, unmount }) => …)`         | 띄운다. 돌려주는 값이 없다                                                        |
+| `openAsync<T>(({ isOpen, close, unmount }) => …)` | 띄우고 `Promise<T>`를 돌려준다                                                    |
+| `close()` / `close(value)`                        | `isOpen`을 false로 바꾼다. `openAsync`는 이때 resolve                             |
+| `unmount()`                                       | 트리에서 뺀다. 닫힘 애니메이션이 끝난 뒤(`onExit`) 부른다                         |
+| `useOverlayState()`                               | 현재 열린 overlay 상태를 읽는다                                                   |
 
 애니메이션이 없는 다이얼로그는 `close(); unmount();`를 함께 부릅니다.
 

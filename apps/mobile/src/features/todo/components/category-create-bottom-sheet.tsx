@@ -54,8 +54,8 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
   };
 
   return (
-    <FormProvider {...formMethods}>
-      <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <FormProvider {...formMethods}>
         <VStack gap={40} pb={12}>
           <VStack gap={20}>
             <FormField control={control} name="name">
@@ -89,7 +89,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
             {t('common:actions.confirm')}
           </Button>
         </VStack>
-      </KeyboardBottomSheet>
-    </FormProvider>
+      </FormProvider>
+    </KeyboardBottomSheet>
   );
 }

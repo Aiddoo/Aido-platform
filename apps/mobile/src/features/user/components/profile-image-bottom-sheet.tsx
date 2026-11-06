@@ -1,19 +1,8 @@
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  Button,
-  HStack,
-  Spacing,
-  Text,
-  VStack,
-  SHEET_DETACHED_MARGIN,
-  useSheetLayout,
-} from '@src/shared/ui';
+import { BottomSheet, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { BottomSheet } from 'heroui-native';
 import { useEffect, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { useUpdateProfileMutationOptions } from '../queries/use-update-profile-mutation-options';
@@ -30,8 +19,6 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
 
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
 
-  const insets = useSafeAreaInsets();
-  const sheetLayout = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN, isFullWindowHost: true });
   const [selectedIcon, setSelectedIcon] = useState<string | null>(user.profileImage);
 
   useEffect(() => {
@@ -49,72 +36,54 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <BottomSheet.Portal>
-        <BottomSheet.Overlay />
-        <BottomSheet.Content
-          accessible={false}
-          snapPoints={['85%']}
-          enableDynamicSizing={false}
-          enableOverDrag={false}
-          contentContainerClassName="h-full"
-          detached
-          bottomInset={insets.bottom || 16}
-          topInset={sheetLayout.topInset}
-          style={{ marginLeft: sheetLayout.margins.left, marginRight: sheetLayout.margins.right }}
-          backgroundClassName="rounded-[32px]"
-        >
-          <BottomSheetScrollView showsVerticalScrollIndicator={false}>
-            <VStack gap={20} pb={16}>
-              <BottomSheet.Title>
-                <Text size="b2" weight="semibold">
-                  {t('profile.imageSheet.title')}
-                </Text>
-              </BottomSheet.Title>
+    <BottomSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      footer={
+        <HStack gap={12}>
+          <Button
+            variant="weak"
+            size="large"
+            color="dark"
+            display="block"
+            onPress={() => handleSave(null)}
+            isDisabled={updateProfileMutation.isPending}
+            className="flex-1"
+          >
+            {t('profile.imageSheet.clear')}
+          </Button>
+          <Button
+            size="large"
+            color="primary"
+            display="block"
+            onPress={() => handleSave(selectedIcon)}
+            isLoading={updateProfileMutation.isPending}
+            className="flex-1"
+          >
+            {t('profile.imageSheet.save')}
+          </Button>
+        </HStack>
+      }
+    >
+      <VStack gap={20}>
+        <Text size="b2" weight="semibold" accessibilityRole="header">
+          {t('profile.imageSheet.title')}
+        </Text>
 
-              <VStack align="center">
-                <UserAvatar
-                  className="w-24 h-24 rounded-full"
-                  alt={t('profile.imageSheet.selectedAlt')}
-                  profileImage={selectedIcon}
-                />
-              </VStack>
+        <VStack align="center">
+          <UserAvatar
+            className="w-24 h-24 rounded-full"
+            alt={t('profile.imageSheet.selectedAlt')}
+            profileImage={selectedIcon}
+          />
+        </VStack>
 
-              <AppIconPicker
-                value={selectedIcon}
-                onChange={setSelectedIcon}
-                isDisabled={updateProfileMutation.isPending}
-              />
-
-              <Spacing size={4} />
-
-              <HStack gap={12}>
-                <Button
-                  variant="weak"
-                  size="large"
-                  color="dark"
-                  display="block"
-                  onPress={() => handleSave(null)}
-                  isDisabled={updateProfileMutation.isPending}
-                  className="flex-1"
-                >
-                  {t('profile.imageSheet.clear')}
-                </Button>
-                <Button
-                  size="large"
-                  color="primary"
-                  display="block"
-                  onPress={() => handleSave(selectedIcon)}
-                  isLoading={updateProfileMutation.isPending}
-                  className="flex-1"
-                >
-                  {t('profile.imageSheet.save')}
-                </Button>
-              </HStack>
-            </VStack>
-          </BottomSheetScrollView>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
+        <AppIconPicker
+          value={selectedIcon}
+          onChange={setSelectedIcon}
+          isDisabled={updateProfileMutation.isPending}
+        />
+      </VStack>
     </BottomSheet>
   );
 }

@@ -1,5 +1,5 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { useDialogPortalTarget } from '@src/shared/ui/bottom-sheet';
+import { usePortalTarget } from '@src/shared/ui/bottom-sheet';
 import { Box } from '@src/shared/ui/box';
 import { Button, type ButtonProps } from '@src/shared/ui/button';
 import { HStack } from '@src/shared/ui/h-stack';
@@ -26,7 +26,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { fontScale } = useFontScale();
   const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
-  const portalTarget = useDialogPortalTarget();
+  const portalTarget = usePortalTarget();
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal {...portalTarget}>

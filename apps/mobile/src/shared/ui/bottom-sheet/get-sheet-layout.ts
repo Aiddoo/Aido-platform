@@ -14,34 +14,23 @@ export interface SheetLayout {
 
 export interface SheetLayoutInput {
   windowWidth: number;
-  safeAreaInsets: SheetHorizontalMargins & { top: number };
+  safeAreaTop: number;
   minMargin: number;
-  isFullWindowHost: boolean;
   reservedRegions: readonly ReservedRegion[];
 }
 
 const NO_SAFE_AREA: SheetHorizontalMargins = { left: 0, right: 0 };
 
 /**
- * 시트의 좌우 여백과 위쪽 한계.
- * - 화면 안 시트: 탭 레일이 시트 위에 남으므로 가로 safe area를 피한다.
- * - 전체 창 호스트(route 시트·overlay)의 시트: 레일을 덮으므로 좌우 대칭으로 채우고, 반쯤 접힌 접힘선은 넘지 않으며,
- *   상태 표시 같은 occlusion 아래에서 시작한다.
+ * 시트의 좌우 여백과 위쪽 한계. 시트는 Portal로 전체 창에 그려져 탭 레일을 덮으므로 좌우 대칭으로 채우고,
+ * 반쯤 접힌 접힘선은 넘지 않으며, 상태 표시 같은 occlusion 아래에서 시작한다.
  */
 export function getSheetLayout({
   windowWidth,
-  safeAreaInsets,
+  safeAreaTop,
   minMargin,
-  isFullWindowHost,
   reservedRegions,
 }: SheetLayoutInput): SheetLayout {
-  if (!isFullWindowHost) {
-    return {
-      margins: getSheetHorizontalMargins(windowWidth, safeAreaInsets, minMargin),
-      topInset: safeAreaInsets.top,
-    };
-  }
-
   const span = getSheetSpan(windowWidth, reservedRegions);
   const spanMargins = getSheetHorizontalMargins(span.end - span.start, NO_SAFE_AREA, minMargin);
   const margins = {
@@ -55,7 +44,7 @@ export function getSheetLayout({
     )
     .map(({ frame }) => frame.y + frame.height);
 
-  return { margins, topInset: Math.max(safeAreaInsets.top, ...occlusionBottoms) };
+  return { margins, topInset: Math.max(safeAreaTop, ...occlusionBottoms) };
 }
 
 /** 세로 접힘선이 있으면 더 넓은 쪽, 같으면 뒤쪽 면에 시트를 둔다. */

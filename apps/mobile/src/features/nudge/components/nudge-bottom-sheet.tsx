@@ -134,8 +134,8 @@ function NudgeMessageSheet({
   };
 
   return (
-    <FormProvider {...formMethods}>
-      <KeyboardBottomSheet {...sheetProps} onOpenChange={handleOpenChange}>
+    <KeyboardBottomSheet {...sheetProps} onOpenChange={handleOpenChange}>
+      <FormProvider {...formMethods}>
         <VStack gap={16} pb={16}>
           <VStack gap={2}>
             <Text size="b3" shade={6}>
@@ -180,7 +180,7 @@ function NudgeMessageSheet({
             {t('nudge.send')}
           </Button>
         </VStack>
-      </KeyboardBottomSheet>
-    </FormProvider>
+      </FormProvider>
+    </KeyboardBottomSheet>
   );
 }

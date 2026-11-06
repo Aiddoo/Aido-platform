@@ -4,11 +4,29 @@
 
 ## 컴포넌트 선택 가이드
 
-| 컴포넌트              | 용도                                    | 키보드 연동 |
-| --------------------- | --------------------------------------- | ----------- |
-| `KeyboardBottomSheet` | 키보드가 필요한 폼 (텍스트 입력)        | O           |
-| `BottomSheet`         | 키보드 불필요 (피커, 액션시트)          | X           |
-| `ModalBottomSheet`    | 시트 위에 시트 (Overlay 절대 위치 기반) | X           |
+| 컴포넌트              | 용도                                     | 키보드 연동 |
+| --------------------- | ---------------------------------------- | ----------- |
+| `KeyboardBottomSheet` | 키보드가 필요한 폼 (텍스트 입력)         | O           |
+| `BottomSheet`         | 키보드 불필요 (피커, 액션시트)           | X           |
+| `ModalBottomSheet`    | 시트 위에 시트 (`BottomSheet` + overlay) | X           |
+
+## 구조
+
+모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`로 그린다. 호스트는 `OverlayProvider`가 가져 Query·DI·Overlay를 그대로 쓸 수 있고,
+열린 순서대로 쌓인다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 펼쳐 넘긴다.
+
+- **Context:** Portal은 Context를 잇지 못한다. `FormProvider`처럼 시트 안에서 읽는 Context는 시트 안에 둔다. `footer`에서 폼을 읽으면 `control`을 넘긴다.
+- **배경:** `BottomSheet`는 문서의 커스텀 Overlay 방식(`useBottomSheet`, `useBottomSheetAnimation`)이다. 기본 Overlay는 닫기 시작하면 바로 사라진다.
+- **닫힘 알림:** `BottomSheet`의 `onOpenChange(false)`는 `useBottomSheetAnimation().progress`가 닫힌 위치에 멈춘 뒤에 온다. 문서상 gorhom `onClose`는 스와이프로 닫을 때만 오기 때문이다.
+
+공식 방식을 그대로 쓰지 않는 곳과 이유:
+
+| 위치                                                                     | 이유                                                                                                                                           |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `KeyboardBottomSheet`의 내용은 gorhom 직접 사용                          | `BottomSheet.Content`가 내용을 `BottomSheetView`로 감싸, 키보드 때문에 시트가 줄어도 안쪽 스크롤 높이가 줄지 않는다                            |
+| `KeyboardBottomSheet`의 `useAndroidSheetBackHandler`                     | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                               |
+| 입력은 `BottomSheetTextInput` (`useBottomSheetAwareHandlers` 아님)       | gorhom 소스가 JS에서 `.set(updater)`를 쓰면 키보드 이벤트를 놓칠 수 있다고 경고하는데 공식 훅이 그 방식이고, 언마운트 정리도 없다              |
+| `BottomSheet`가 `useBottomSheetInternal`의 `animatedDetentsState`를 읽음 | route처럼 열린 채 마운트하면 gorhom이 높이 측정 전의 열기를 버리는데, 측정 끝을 알리는 공개 이벤트가 없다. HeroUI 시트 내용도 같은 값을 읽는다 |
 
 ## 사용법
 
@@ -68,7 +86,7 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 
 ### ModalBottomSheet
 
-기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. 드래그 닫기는 상단 손잡이에서 동작하여 내부 목록 스크롤과 경쟁하지 않습니다. 시스템 Reduce Motion 설정을 Reanimated `ReduceMotion.System`으로 따릅니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다. 아래 시트의 입력에 다시 포커스할 때는 `onExit`가 아니라 `onCloseStart`에서 해서, 위 시트가 내려가는 동안 키보드와 아래 시트가 함께 올라오게 합니다.
+기존 시트 위에 추가 시트를 띄울 때 `useOverlay`와 함께 쓴다. 키보드는 열릴 때 이 시트가 내리므로 호출부에서 `Keyboard.dismiss()`를 부르지 않는다. 같은 호스트에 나중에 등록되어 아래 시트 위에 쌓인다. 아래 시트의 입력에 다시 포커스할 때는 `onExit`가 아니라 `onCloseStart`에서 해서, 위 시트가 내려가는 동안 키보드와 아래 시트가 함께 올라오게 합니다.
 
 ```tsx
 import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
@@ -98,8 +116,8 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 ### 머리글 고정 (`hasFixedHeader`, `SheetHeaderLayout`)
 
 날짜·시간·반복 피커처럼 "확인"이 머리글에 있는 시트는 스크롤해도 머리글이 남아야 한다. 머리글이 내용 쪽 폼 상태를 읽으므로
-`footer`처럼 시트에 넘기지 않고, `ModalBottomSheet`에 `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다. 같은 내용을
-gorhom `BottomSheet`(할 일 메뉴의 날짜·시간 route)에 넣으면 머리글과 본문을 쌓기만 하고 시트 전체가 스크롤한다. 반복 기간처럼 늘 보여야 하는 아래 줄은
+`footer`처럼 시트에 넘기지 않고, `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다. 같은 내용을
+`hasFixedHeader` 없는 `BottomSheet`(할 일 메뉴의 날짜·시간 route)에 넣으면 머리글과 본문을 쌓기만 하고 시트 전체가 스크롤한다. 반복 기간처럼 늘 보여야 하는 아래 줄은
 `footer`로 넘기면 본문 아래에 함께 고정된다.
 
 ```tsx
@@ -119,7 +137,7 @@ gorhom `BottomSheet`(할 일 메뉴의 날짜·시간 route)에 넣으면 머리
 
 할 일·하위 항목·카테고리·제안처럼 대상이 있는 시트는 Overlay 대신 Expo Router route로 띄운다.
 대상 id는 폴더 구조(`app/(app)/todo/[todoId]/actions.tsx`)에서 오고, 시트는 route hook으로 읽어
-Query 캐시에서 데이터를 조회하고 mutation을 직접 가진다. 화면 등장·퇴장은 기존 gorhom 시트가 그대로
+Query 캐시에서 데이터를 조회하고 mutation을 직접 가진다. 화면 등장·퇴장은 시트가 그대로
 맡으므로 키보드 연동과 UI thread 애니메이션은 Overlay 시트와 같다.
 
 ```tsx
@@ -145,12 +163,10 @@ const sheet = useSheetRoute('/feed');
 - 다음 시트로 이어질 때는 `close({ type: 'replace', href })`로 바꿔 뒤로가기 기록을 쌓지 않는다.
   완료 후 아래 화면도 바꿔야 하면 `close({ type: 'back-then-replace', href })`를 쓴다.
 - 구독 화면 이동처럼 애니메이션 없이 바로 떠날 때는 `sheet.exit()`를 쓴다.
-- Android 뒤로가기는 시트의 `useAndroidSheetBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
-- `SheetRouteScreen`은 제스처 루트와 Overlay를 route 안에 다시 둔다. iOS transparentModal은 루트 위에
-  따로 표시되므로, 시트 안에서 여는 피커·다이얼로그가 시트 아래로 숨지 않게 하기 위해서다.
-- 같은 이유로 모달 안에 PortalHost를 둔다. HeroUI `Dialog.Portal`을 직접 쓰는 다이얼로그는
-  `useDialogPortalTarget()`을 펼쳐 넘긴다(`ConfirmDialog`는 이미 쓴다). iOS FullWindowOverlay는 모달 바깥
-  창에 붙어 화면에는 보여도 VoiceOver·XCUITest가 읽지 못한다.
+- Android 뒤로가기는 `BottomSheet`는 HeroUI가, `KeyboardBottomSheet`는 `useAndroidSheetBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
+- `SheetRouteScreen`은 제스처 루트와 `OverlayProvider`를 route 안에 다시 둔다. iOS transparentModal은 루트 위에
+  따로 표시되므로, 시트와 그 위의 피커·다이얼로그가 이 모달 안에 그려지게 하기 위해서다. 호스트가 route 안에 있어 route 훅도 그대로 쓴다.
+- 이 호스트는 `disableFullWindowOverlay`다. iOS FullWindowOverlay는 모달 바깥 창에 붙어 화면에는 보여도 VoiceOver·XCUITest가 읽지 못한다.
 
 ## Props
 
@@ -179,19 +195,19 @@ const sheet = useSheetRoute('/feed');
 
 ```
 bottom-sheet/
-├── bottom-sheet.tsx                   # gorhom 기반 기본 바텀시트
-├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
-├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
+├── bottom-sheet.tsx                   # HeroUI 기반 기본 바텀시트
+├── keyboard-bottom-sheet.tsx          # HeroUI Root·Portal + gorhom 내용의 키보드 연동 바텀시트
+├── modal-bottom-sheet.tsx             # overlay로 띄우는 바텀시트 (시트 위 시트)
+├── portal-target.ts                   # HeroUI *.Portal에 넘길 호스트
+├── sheet-footer-slot.tsx              # footer가 바뀌어도 다시 마운트되지 않게 하는 슬롯
 ├── sheet-header-layout.tsx            # 머리글 고정 + 본문 스크롤 (hasFixedHeader 시트의 내용)
 ├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·`ScrollShadow` 흐림을 보이는 시트 스크롤
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
-├── full-window-host-context.ts        # 시트가 내비게이터 위 전체 창(route·overlay)에 그려지는지
 ├── use-sheet-route.ts                 # 시트 route의 열림 상태와 한 번만 떠나기
 ├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
-├── motion.ts                          # 모션 감소용 애니메이션 시간 해석
 ├── get-sheet-horizontal-margins.ts    # 주어진 영역 기준 최대 폭·가운데 정렬 여백
-├── get-sheet-layout.ts                # 호스트·reserved region·safe area로 좌우 여백, 위쪽 한계, 최대 높이 계산
+├── get-sheet-layout.ts                # reserved region·safe area로 좌우 여백, 위쪽 한계, 최대 높이 계산
 ├── use-sheet-layout.ts                # 위 계산에 창 크기·safe area·reserved region을 넣는 훅
 ├── constants.ts                       # 공유 스타일, 상수
 ├── index.ts                           # barrel export
@@ -200,26 +216,20 @@ bottom-sheet/
 
 ## 배치 (iPhone Duo·폴더블)
 
-[Expo의 iPhone Duo 가이드](https://expo.dev/blog/supporting-iphone-duo)대로 시트가 놓인 호스트에 따라 피할 영역을 정한다.
+[Expo의 iPhone Duo 가이드](https://expo.dev/blog/supporting-iphone-duo)대로 피할 영역을 정한다.
 배치 기하는 `react-native-reserved-regions`가 잰 값만 쓰고 직접 추정하지 않는다.
 
-| 호스트                                      | 좌우                                                                | 위쪽 한계                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 화면 안(탭 레일이 시트 위에 남음)           | 가로 safe area(세로 레일)를 피해 최대 폭 560 가운데 정렬            | 위쪽 safe area                                                |
-| 전체 창(route 시트, overlay, HeroUI Portal) | 레일을 덮으므로 좌우 대칭. 세로 접힘선이 있으면 더 넓은 면에만 둔다 | 위쪽 safe area와 겹치는 occlusion(레일의 상태 표시) 중 아래쪽 |
+시트는 모두 Portal로 전체 창에 그려져 레일을 덮으므로 좌우 대칭으로 채운다. 세로 접힘선이 있으면 더 넓은 면에만 두고,
+위쪽 한계는 위쪽 safe area와 겹치는 occlusion(레일의 상태 표시) 중 아래쪽이다.
 
 최대 높이는 위쪽 한계와 아래 여백 사이(`getSheetMaxHeight`)이고, 내용이 더 길면 시트 안에서 스크롤한다.
-route 시트는 모달이 크기를 받은 뒤 그려서, 시트에서 시트로
-replace할 때 크기가 정해지기 전 위치로 열리지 않게 한다. HeroUI Portal처럼 Context를 이어받지 않는
-전체 창 호스트는 `useSheetLayout({ minMargin, isFullWindowHost: true })`로 같은 계산을 쓴다.
+route 시트는 모달이 크기를 받은 뒤 그려서, 시트에서 시트로 replace할 때 크기가 정해지기 전 위치로 열리지 않게 한다.
 
 ## Android 뒤로가기와 정리 (1.11.0)
 
-열린 `BottomSheet`, `KeyboardBottomSheet`, `ModalBottomSheet`는
-공용 `useAndroidSheetBackHandler`에서 시스템 뒤로가기를 소비한다. 가장 마지막에 열린 시트가
-먼저 닫히며, 닫힘 이후에는 기존 Expo Router 화면 뒤로가기가 이어진다. 절대 위치
-`ModalBottomSheet`는 종료 애니메이션 중에도 이벤트를 소비해 같은 입력이 아래 화면까지
-전파되지 않게 한다. React Native `BackHandler`의 구독은 cleanup에서 제거한다.
+열린 시트가 시스템 뒤로가기를 소비한다. `BottomSheet`·`ModalBottomSheet`는 HeroUI가, `KeyboardBottomSheet`는
+`useAndroidSheetBackHandler`가 처리한다. 가장 마지막에 열린 시트가 먼저 닫히며, 닫힘 이후에는 기존 Expo Router 화면 뒤로가기가 이어진다.
+React Native `BackHandler`의 구독은 cleanup에서 제거한다.
 
 `KeyboardBottomSheet`의 내용 크기·키보드 변경은 하나의 예약 resize frame으로 모은다.
 시트가 닫히거나 unmount되면 frame을 취소하고, forceClose 재시도 timer도 정리한다.
@@ -235,4 +245,4 @@ replace할 때 크기가 정해지기 전 위치로 열리지 않게 한다. Her
 
 ## 열고 닫는 시간
 
-gorhom 시트(`BottomSheet`, `KeyboardBottomSheet`)는 `SHEET_ANIMATION_DURATION`(250ms)으로 움직인다. gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 약 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다. `ModalBottomSheet`는 gorhom이 아니고 자체 `withTiming`을 쓴다.
+모든 시트는 `SHEET_ANIMATION_DURATION`(250ms)으로 움직인다. gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 약 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다. `ModalBottomSheet`도 `BottomSheet`라 같다.

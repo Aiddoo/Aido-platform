@@ -2,21 +2,12 @@ import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import {
-  ArrowRightIcon,
-  Button,
-  HStack,
-  Text,
-  VStack,
-  SHEET_DETACHED_MARGIN,
-  useSheetLayout,
-} from '@src/shared/ui';
+import { ArrowRightIcon, BottomSheet, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
+import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { SignUpFormInput } from '../domains/sign-up-form.schema';
 
@@ -31,8 +22,6 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
   const { t } = useTranslation(['auth', 'common']);
   const { control, setValue } = useFormContext<SignUpFormInput>();
   const { isSubmitting } = useFormState({ control });
-  const insets = useSafeAreaInsets();
-  const sheetLayout = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN, isFullWindowHost: true });
   const openUrl = useOpenUrl();
   const { resolvedLanguage } = useLanguage();
 
@@ -57,87 +46,74 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
 
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <BottomSheet.Portal>
-        <BottomSheet.Overlay />
-        <BottomSheet.Content
-          accessible={false}
-          enableDynamicSizing
-          detached
-          bottomInset={insets.bottom || 16}
-          topInset={sheetLayout.topInset}
-          style={{ marginLeft: sheetLayout.margins.left, marginRight: sheetLayout.margins.right }}
-          backgroundClassName="rounded-[32px]"
-        >
-          <VStack gap={32}>
-            <VStack gap={16}>
-              <ControlField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
-                <ControlField.Indicator>
-                  <Checkbox className="shadow-none border border-main size-5 rounded-md" />
-                </ControlField.Indicator>
-                <Label>
-                  <Text size="b2" weight="semibold">
-                    {t('terms.agreeAll')}
-                  </Text>
-                </Label>
-              </ControlField>
+      <VStack gap={32}>
+        <VStack gap={16}>
+          <ControlField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
+            <ControlField.Indicator>
+              <Checkbox className="shadow-none border border-main size-5 rounded-md" />
+            </ControlField.Indicator>
+            <Label>
+              <Text size="b2" weight="semibold">
+                {t('terms.agreeAll')}
+              </Text>
+            </Label>
+          </ControlField>
 
-              <Separator />
+          <Separator />
 
-              <VStack gap={20}>
-                <FormField control={control} name="termsAgreed">
-                  {({ value, onChange }) => (
-                    <TermsBottomSheet.AgreementItem
-                      label={t('terms.termsOfService')}
-                      isRequired
-                      isSelected={value}
-                      onSelectedChange={onChange}
-                      onPressLink={() => openUrl(legalUrl('terms', resolvedLanguage))}
-                    />
-                  )}
-                </FormField>
-                <FormField control={control} name="marketingPushAgreed">
-                  {({ value, onChange }) => (
-                    <TermsBottomSheet.AgreementItem
-                      label={t('terms.marketingPush')}
-                      isSelected={value}
-                      onSelectedChange={onChange}
-                    />
-                  )}
-                </FormField>
-                <FormField control={control} name="privacyAgreed">
-                  {({ value, onChange }) => (
-                    <TermsBottomSheet.AgreementItem
-                      label={t('terms.privacyPolicy')}
-                      isRequired
-                      isSelected={value}
-                      onSelectedChange={onChange}
-                      onPressLink={() => openUrl(legalUrl('privacy', resolvedLanguage))}
-                    />
-                  )}
-                </FormField>
-                <FormField control={control} name="marketingAgreed">
-                  {({ value, onChange }) => (
-                    <TermsBottomSheet.AgreementItem
-                      label={t('terms.marketing')}
-                      isSelected={value}
-                      onSelectedChange={onChange}
-                    />
-                  )}
-                </FormField>
-              </VStack>
-            </VStack>
-
-            <Button
-              color="dark"
-              onPress={handleConfirm}
-              isLoading={isSubmitting}
-              isDisabled={!isRequiredAgreed}
-            >
-              {t('common:actions.confirm')}
-            </Button>
+          <VStack gap={20}>
+            <FormField control={control} name="termsAgreed">
+              {({ value, onChange }) => (
+                <TermsBottomSheet.AgreementItem
+                  label={t('terms.termsOfService')}
+                  isRequired
+                  isSelected={value}
+                  onSelectedChange={onChange}
+                  onPressLink={() => openUrl(legalUrl('terms', resolvedLanguage))}
+                />
+              )}
+            </FormField>
+            <FormField control={control} name="marketingPushAgreed">
+              {({ value, onChange }) => (
+                <TermsBottomSheet.AgreementItem
+                  label={t('terms.marketingPush')}
+                  isSelected={value}
+                  onSelectedChange={onChange}
+                />
+              )}
+            </FormField>
+            <FormField control={control} name="privacyAgreed">
+              {({ value, onChange }) => (
+                <TermsBottomSheet.AgreementItem
+                  label={t('terms.privacyPolicy')}
+                  isRequired
+                  isSelected={value}
+                  onSelectedChange={onChange}
+                  onPressLink={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+                />
+              )}
+            </FormField>
+            <FormField control={control} name="marketingAgreed">
+              {({ value, onChange }) => (
+                <TermsBottomSheet.AgreementItem
+                  label={t('terms.marketing')}
+                  isSelected={value}
+                  onSelectedChange={onChange}
+                />
+              )}
+            </FormField>
           </VStack>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
+        </VStack>
+
+        <Button
+          color="dark"
+          onPress={handleConfirm}
+          isLoading={isSubmitting}
+          isDisabled={!isRequiredAgreed}
+        >
+          {t('common:actions.confirm')}
+        </Button>
+      </VStack>
     </BottomSheet>
   );
 }

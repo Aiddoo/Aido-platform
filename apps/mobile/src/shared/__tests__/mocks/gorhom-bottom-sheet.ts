@@ -1,21 +1,32 @@
-import type { ComponentType } from 'react';
+import { type ComponentType, createElement, Fragment, type ReactNode } from 'react';
 
 const actual = require('@gorhom/bottom-sheet/mock');
 
 interface GorhomSheetProps {
   onChange: (index: number) => void;
   onClose: () => void;
+  onAnimate: (fromIndex: number, toIndex: number) => void;
   backgroundComponent: ComponentType<{ pointerEvents: 'none' }>;
   backdropComponent: unknown;
+  footerComponent?: ComponentType<object>;
 }
 
 let lastProps: GorhomSheetProps | null = null;
 
-/** 공식 mock 그대로에, gorhom이 네이티브에서 부르는 콜백을 테스트가 대신 부를 수 있게 마지막 props를 남긴다 */
+/**
+ * 공식 mock은 footer를 그리지 않는다. 주 동작 버튼을 테스트가 누를 수 있게 그리고,
+ * gorhom이 네이티브에서 부르는 콜백을 테스트가 대신 부를 수 있게 마지막 props를 남긴다
+ */
 class RecordingBottomSheet extends actual.default {
   render() {
     lastProps = this.props;
-    return super.render();
+    const { footerComponent } = this.props;
+    return createElement(
+      Fragment,
+      null,
+      super.render(),
+      footerComponent == null ? null : createElement(footerComponent),
+    );
   }
 }
 
@@ -31,5 +42,6 @@ module.exports = {
   ...actual,
   __esModule: true,
   default: RecordingBottomSheet,
+  BottomSheetFooter: ({ children }: { children: ReactNode }) => children,
   getLastGorhomSheetProps,
 };

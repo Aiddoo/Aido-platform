@@ -1,4 +1,3 @@
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AuthProvider } from '@src/bootstrap/providers/auth-provider';
 import { DIProvider } from '@src/bootstrap/providers/di-provider';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
@@ -58,25 +57,20 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                           <RevenueCatProvider>
                             <NotificationProvider>
                               <ReservedRegionsProvider style={{ flex: 1 }}>
-                                <BottomSheetModalProvider>
-                                  {/* 이 경계가 그리면 내비게이터가 내려가 있어 문의는 화면 이동 대신 메일로 연다 */}
-                                  <QueryErrorBoundary
-                                    fallback={({ reset }) => (
-                                      <QueryErrorFallback
-                                        reset={reset}
-                                        onInquiry={openSupportMail}
-                                      />
-                                    )}
-                                  >
-                                    <OverlayProvider resetKey={pathname}>
-                                      <OfflineBanner />
-                                      {/* 배너가 상태 표시줄 inset을 차지하면 아래 화면은 남은 inset만 받는다 */}
-                                      <SafeAreaProvider style={{ flex: 1 }}>
-                                        {children}
-                                      </SafeAreaProvider>
-                                    </OverlayProvider>
-                                  </QueryErrorBoundary>
-                                </BottomSheetModalProvider>
+                                {/* 이 경계가 그리면 내비게이터가 내려가 있어 문의는 화면 이동 대신 메일로 연다 */}
+                                <QueryErrorBoundary
+                                  fallback={({ reset }) => (
+                                    <QueryErrorFallback reset={reset} onInquiry={openSupportMail} />
+                                  )}
+                                >
+                                  <OverlayProvider resetKey={pathname}>
+                                    <OfflineBanner />
+                                    {/* 배너가 상태 표시줄 inset을 차지하면 아래 화면은 남은 inset만 받는다 */}
+                                    <SafeAreaProvider style={{ flex: 1 }}>
+                                      {children}
+                                    </SafeAreaProvider>
+                                  </OverlayProvider>
+                                </QueryErrorBoundary>
                               </ReservedRegionsProvider>
                             </NotificationProvider>
                           </RevenueCatProvider>

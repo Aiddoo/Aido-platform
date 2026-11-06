@@ -8,15 +8,13 @@ export {
   ModalBottomSheet,
   SheetHeaderLayout,
   SHEET_CONTENT_PADDING,
-  SHEET_DETACHED_MARGIN,
   SHEET_RADIUS,
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,
   SheetRouteScreen,
   SheetScrollShadow,
-  useDialogPortalTarget,
+  usePortalTarget,
   useKeyboardSheetBodyMaxHeight,
-  useSheetLayout,
   useSheetRoute,
 } from './bottom-sheet';
 export { Box } from './box';

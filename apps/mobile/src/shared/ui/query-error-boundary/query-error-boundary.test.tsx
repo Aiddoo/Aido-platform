@@ -22,6 +22,7 @@ jest.mock('heroui-native', () => {
       { Highlight: () => null },
     ),
     Spinner: () => <View testID="spinner" />,
+    PortalHost: () => null,
   };
 });
 

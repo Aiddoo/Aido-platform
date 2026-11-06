@@ -41,7 +41,6 @@ import {
   useWatch,
   type UseFormReturn,
 } from 'react-hook-form';
-import { Keyboard } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import {
@@ -76,8 +75,8 @@ export function PlanTodoEditSheet({
   const handleConfirm = methods.handleSubmit((values) => onConfirm(values.todo));
 
   return (
-    <FormProvider {...methods}>
-      <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <FormProvider {...methods}>
         <VStack gap={12}>
           <FormField control={methods.control} name="todo.title">
             {({ value, onChange }) => (
@@ -117,8 +116,8 @@ export function PlanTodoEditSheet({
             {t('edit.confirm')}
           </Button>
         </VStack>
-      </KeyboardBottomSheet>
-    </FormProvider>
+      </FormProvider>
+    </KeyboardBottomSheet>
   );
 }
 
@@ -146,7 +145,6 @@ function DateChip() {
       : formatDateKeyLabel(startDate, 'monthDay', dateFormatContext);
 
   const handlePress = () => {
-    Keyboard.dismiss();
     overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
@@ -190,7 +188,6 @@ function TimeChip() {
   });
 
   const handlePress = () => {
-    Keyboard.dismiss();
     overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
@@ -323,7 +320,6 @@ function CategoryChip({ fallbackCategoryId }: { fallbackCategoryId: number }) {
   const category = categories.find(({ id }) => id === categoryId);
 
   const handlePress = () => {
-    Keyboard.dismiss();
     overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={unmount}>
         <QueryErrorBoundary>

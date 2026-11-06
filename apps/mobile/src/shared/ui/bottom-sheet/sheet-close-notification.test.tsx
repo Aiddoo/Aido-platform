@@ -7,17 +7,50 @@ import { BackHandler, Platform } from 'react-native';
 import { BottomSheet } from './bottom-sheet';
 import { KeyboardBottomSheet } from './keyboard-bottom-sheet';
 
-describe.each([
-  ['BottomSheet', BottomSheet],
-  ['KeyboardBottomSheet', KeyboardBottomSheet],
-])('%s 닫힘 알림', (_name, Sheet) => {
+describe('BottomSheet 닫힘 알림', () => {
+  it('열리기 전에 닫혀도 닫혔다고 한 번 알려 route가 투명하게 남지 않는다', async () => {
+    // Given
+    const onOpenChange = jest.fn();
+    const sheet = (isOpen: boolean) => (
+      <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Text>내용</Text>
+      </BottomSheet>
+    );
+    const { rerender } = await renderUi(sheet(true));
+
+    // When
+    await rerender(sheet(false));
+    await rerender(sheet(false));
+
+    // Then
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('처음부터 닫혀 있으면 알리지 않는다', async () => {
+    // Given
+    const onOpenChange = jest.fn();
+
+    // When
+    await renderUi(
+      <BottomSheet isOpen={false} onOpenChange={onOpenChange}>
+        <Text>내용</Text>
+      </BottomSheet>,
+    );
+
+    // Then
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('KeyboardBottomSheet 닫힘 알림', () => {
   it('열리는 도중에 닫혀 gorhom이 onClose만 불러도 닫혔다고 알려 route가 투명하게 남지 않는다', async () => {
     // Given
     const onOpenChange = jest.fn();
     await renderUi(
-      <Sheet isOpen onOpenChange={onOpenChange}>
+      <KeyboardBottomSheet isOpen onOpenChange={onOpenChange}>
         <Text>내용</Text>
-      </Sheet>,
+      </KeyboardBottomSheet>,
     );
 
     // When
@@ -31,9 +64,9 @@ describe.each([
     // Given
     const onOpenChange = jest.fn();
     await renderUi(
-      <Sheet isOpen onOpenChange={onOpenChange}>
+      <KeyboardBottomSheet isOpen onOpenChange={onOpenChange}>
         <Text>내용</Text>
-      </Sheet>,
+      </KeyboardBottomSheet>,
     );
     await act(async () => getLastGorhomSheetProps().onChange(0));
 

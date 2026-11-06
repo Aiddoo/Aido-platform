@@ -74,12 +74,16 @@ function WeatherRescheduleSheet() {
   });
 
   return (
-    <FormProvider {...form}>
-      <BottomSheet
-        isOpen={sheet.isOpen}
-        onOpenChange={sheet.onOpenChange}
-        footer={<RescheduleFooter onDone={() => sheet.close()} />}
-      >
+    <BottomSheet
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      footer={
+        <FormProvider {...form}>
+          <RescheduleFooter onDone={() => sheet.close()} />
+        </FormProvider>
+      }
+    >
+      <FormProvider {...form}>
         {sheet.isOpen && (
           <QueryErrorBoundary
             fallback={(fallbackProps) => (
@@ -94,8 +98,8 @@ function WeatherRescheduleSheet() {
             </Suspense>
           </QueryErrorBoundary>
         )}
-      </BottomSheet>
-    </FormProvider>
+      </FormProvider>
+    </BottomSheet>
   );
 }
 

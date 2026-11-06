@@ -52,7 +52,6 @@ import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Suspense, useState } from 'react';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
-import { Keyboard } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -182,7 +181,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     date: string,
     { isFollowingOnly = false }: { isFollowingOnly?: boolean } = {},
   ) => {
-    Keyboard.dismiss();
     const scope = await overlay.openAsync<TodoUpdateScope | null>(
       ({ isOpen: isScopeOpen, close, unmount }) => (
         <ModalBottomSheet isOpen={isScopeOpen} onOpenChange={() => close(null)} onExit={unmount}>
@@ -326,7 +324,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   });
 
   const openRepeatPicker = () => {
-    Keyboard.dismiss();
     overlay.open(({ isOpen: isPickerOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
@@ -386,77 +383,77 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         };
 
   return (
-    <FormProvider {...methods}>
-      <KeyboardBottomSheet
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        backgroundDecoration={
-          voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
-        }
-        isContentPanEnabled={
-          !VoiceCapturePolicy.isActive(voice.state) &&
-          voice.state.status !== 'planning' &&
-          voice.state.status !== 'review'
-        }
-        onDismissRequest={handleVoiceDismissRequest}
-        footer={
-          isFormStep ? (
-            <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
-              <Box className="h-px bg-gray-2" />
+    <KeyboardBottomSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      backgroundDecoration={
+        voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
+      }
+      isContentPanEnabled={
+        !VoiceCapturePolicy.isActive(voice.state) &&
+        voice.state.status !== 'planning' &&
+        voice.state.status !== 'review'
+      }
+      onDismissRequest={handleVoiceDismissRequest}
+      footer={
+        isFormStep ? (
+          <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
+            <Box className="h-px bg-gray-2" />
 
-              <HStack gap={8} align="center" justify="end">
-                {props.mode === 'create' && (
-                  <>
-                    <QuickVoiceInfo />
-                    <CoachmarkPopover
-                      kind="voice-quick-start"
-                      title={tVoice('coach.quickStart.title')}
-                      description={tVoice('coach.quickStart.description')}
-                      placement="left"
-                      align="center"
-                      isEnabled={!isTitleFocused}
-                      isPassThrough
-                      isDismissed={hasTouchedForm}
-                      isForced={isVoiceHintForced}
-                      onDismiss={() => setIsVoiceHintForced(false)}
-                    >
-                      <QuickVoiceButton
-                        onPress={() => {
-                          setIsVoiceHintForced(false);
-                          return voice.start();
-                        }}
-                        testID="todo-quick-voice-button"
-                      />
-                    </CoachmarkPopover>
-                  </>
+            <HStack gap={8} align="center" justify="end">
+              {props.mode === 'create' && (
+                <>
+                  <QuickVoiceInfo />
+                  <CoachmarkPopover
+                    kind="voice-quick-start"
+                    title={tVoice('coach.quickStart.title')}
+                    description={tVoice('coach.quickStart.description')}
+                    placement="left"
+                    align="center"
+                    isEnabled={!isTitleFocused}
+                    isPassThrough
+                    isDismissed={hasTouchedForm}
+                    isForced={isVoiceHintForced}
+                    onDismiss={() => setIsVoiceHintForced(false)}
+                  >
+                    <QuickVoiceButton
+                      onPress={() => {
+                        setIsVoiceHintForced(false);
+                        return voice.start();
+                      }}
+                      testID="todo-quick-voice-button"
+                    />
+                  </CoachmarkPopover>
+                </>
+              )}
+              <PressableFeedback
+                isDisabled={isSubmitDisabled}
+                onPress={() => handleSubmitTodo()}
+                style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+                className={cn(
+                  'items-center justify-center rounded-4xl',
+                  isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
                 )}
-                <PressableFeedback
-                  isDisabled={isSubmitDisabled}
-                  onPress={() => handleSubmitTodo()}
-                  style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-                  className={cn(
-                    'items-center justify-center rounded-4xl',
-                    isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
-                  )}
-                >
-                  {isSubmitting ? (
-                    <Spinner
-                      size="sm"
-                      color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
-                    />
-                  ) : (
-                    <ArrowUpIcon
-                      width={fontScaledSize(18)}
-                      height={fontScaledSize(18)}
-                      colorClassName="text-white"
-                    />
-                  )}
-                </PressableFeedback>
-              </HStack>
-            </VStack>
-          ) : undefined
-        }
-      >
+              >
+                {isSubmitting ? (
+                  <Spinner
+                    size="sm"
+                    color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+                  />
+                ) : (
+                  <ArrowUpIcon
+                    width={fontScaledSize(18)}
+                    height={fontScaledSize(18)}
+                    colorClassName="text-white"
+                  />
+                )}
+              </PressableFeedback>
+            </HStack>
+          </VStack>
+        ) : undefined
+      }
+    >
+      <FormProvider {...methods}>
         {match(voice.state)
           .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
             <QuickVoicePanel
@@ -569,8 +566,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               </ScrollView>
             </VStack>
           ))}
-      </KeyboardBottomSheet>
-    </FormProvider>
+      </FormProvider>
+    </KeyboardBottomSheet>
   );
 }
 
@@ -614,7 +611,6 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
   };
 
   const handlePress = () => {
-    Keyboard.dismiss();
     overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
@@ -660,7 +656,6 @@ function TimeChip() {
   const displayedTime = isAllDay ? null : scheduledTime;
 
   const handlePress = () => {
-    Keyboard.dismiss();
     overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
@@ -773,7 +768,6 @@ function CategoryChip() {
             }
             label={category?.name ?? t('chip.category')}
             onPress={() => {
-              Keyboard.dismiss();
               overlay.open(({ isOpen, close, unmount }) => (
                 <ModalBottomSheet
                   isOpen={isOpen}
