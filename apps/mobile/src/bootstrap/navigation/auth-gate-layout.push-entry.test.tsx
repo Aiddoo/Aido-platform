@@ -26,7 +26,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
 import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
-import { Linking, Pressable, Text } from 'react-native';
+import { AppState, type AppStateStatus, Linking, Pressable, Text } from 'react-native';
 
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
@@ -579,6 +579,43 @@ describe('푸시 탭 진입', () => {
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+  });
+
+  it('수신 거부 버튼: 실패하면 다음 탭에 밀리지 않고 포그라운드로 돌아올 때 다시 보낸다', async () => {
+    // Given
+    const appStateListeners: Array<(state: AppStateStatus) => void> = [];
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+      appStateListeners.push(listener);
+      return { remove: noop };
+    });
+    const { route, gateway, httpClient } = await setup({ status: 'authenticated' });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    httpClient.post.mockRejectedValueOnce(new NetworkError());
+    httpClient.post.mockResolvedValue(ok({ optedOut: true }));
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...TODO_RESPONSE,
+        id: 'opt-out',
+        actionIdentifier: 'MARKETING_OPT_OUT',
+        data: { ...TODO_RESPONSE.data, marketingOptOutToken: 'token-1' },
+      }),
+    );
+    await act(async () => gateway.emitResponse(SECOND_TODO_RESPONSE));
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/43'));
+    await act(async () => {
+      appStateListeners.forEach((listener) => listener('active'));
+    });
+
+    // Then
+    await waitFor(() =>
+      expect(
+        httpClient.post.mock.calls.filter(
+          ([url]) => url === 'v1/notifications/marketing-push/opt-out',
+        ),
+      ).toHaveLength(2),
+    );
   });
 
   it('수신 거부 버튼: 로그인 없이 처리하고 이동하지 않는다', async () => {
