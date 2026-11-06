@@ -8,7 +8,6 @@ import { emitNotificationsChanged } from '@src/core/events/notifications-changed
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
-import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError, unwrap } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -16,8 +15,13 @@ import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { type SendRemindNudgeInput, type SendTodoNudgeInput } from '../domains/todo-nudge.model';
-import type { ReplyToNudgeInput, SendNudgeThanksInput } from '../schemas/nudge-request.schema';
+import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
+import type {
+  CreateNudgeInput,
+  CreateRemindNudgeInput,
+  ReplyToNudgeInput,
+  SendNudgeThanksInput,
+} from '../schemas/nudge-request.schema';
 
 export function useReplyToNudgeMutationOptions() {
   const todoNudgeService = useTodoNudgeService();
@@ -86,10 +90,8 @@ export function useSendRemindNudgeMutationOptions() {
   return mutationOptions({
     // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async (input: SendRemindNudgeInput) => {
-      const result = await todoNudgeService.sendRemindNudge(input);
-      return unwrap(result);
-    },
+    mutationFn: async (input: CreateRemindNudgeInput) =>
+      unwrap(await todoNudgeService.sendRemindNudge(input)),
     onSuccess: (_data, variables) => {
       haptics.notify('success');
       queryClient.invalidateQueries({
@@ -115,10 +117,7 @@ export function useSendTodoNudgeMutationOptions() {
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: SendTodoNudgeInput) => {
-      const result = await todoNudgeService.sendNudge(input);
-      return unwrap(result);
-    },
+    mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeService.sendNudge(input)),
     onSuccess: () => {
       haptics.notify('success');
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.limit() });

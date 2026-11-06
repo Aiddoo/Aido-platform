@@ -1,33 +1,30 @@
-import type {
-  CreateNudgeResponse,
-  CreateRemindNudgeResponse,
-  NudgeCooldownInfo as NudgeCooldownInfoDTO,
-  NudgeLimitInfo as NudgeLimitInfoDTO,
-} from '@aido/api';
+import type { CreateNudgeResponse, CreateRemindNudgeResponse } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
+import { pick } from 'es-toolkit';
 
 import type {
   NudgeCooldownInfo,
   NudgeLimitInfo,
   SendTodoNudgeResult,
-} from '../domains/todo-nudge.model';
+} from '../schemas/todo-nudge.schema';
 
-export const toNudgeLimitInfo = (dto: NudgeLimitInfoDTO): NudgeLimitInfo => ({
-  dailyLimit: dto.dailyLimit,
-  usedToday: dto.usedToday,
-  remainingToday: dto.remainingToday,
-  isUnlimited: dto.isUnlimited,
-});
+export function toNudgeLimitInfo(dto: NudgeLimitInfo): NudgeLimitInfo {
+  return pick(dto, ['dailyLimit', 'usedToday', 'remainingToday', 'isUnlimited']);
+}
 
-export const toNudgeCooldownInfo = (dto: NudgeCooldownInfoDTO): NudgeCooldownInfo => ({
-  canNudge: dto.canNudge,
-  cooldownEndsAt: dto.cooldownEndsAt ? new Date(dto.cooldownEndsAt) : null,
-  remainingSeconds: dto.remainingSeconds ?? null,
-});
+export function toNudgeCooldownInfo(
+  dto: Omit<NudgeCooldownInfo, 'cooldownEndsAt'> & { cooldownEndsAt: string | null },
+): NudgeCooldownInfo {
+  return {
+    ...pick(dto, ['canNudge', 'remainingSeconds']),
+    cooldownEndsAt: dto.cooldownEndsAt == null ? null : toInstant(dto.cooldownEndsAt),
+  };
+}
 
-export const toSendNudgeResult = (dto: CreateNudgeResponse): SendTodoNudgeResult => ({
-  message: dto.message,
-});
+export function toSendNudgeResult(dto: CreateNudgeResponse): SendTodoNudgeResult {
+  return pick(dto, ['message']);
+}
 
-export const toSendRemindNudgeResult = (dto: CreateRemindNudgeResponse): SendTodoNudgeResult => ({
-  message: dto.message,
-});
+export function toSendRemindNudgeResult(dto: CreateRemindNudgeResponse): SendTodoNudgeResult {
+  return pick(dto, ['message']);
+}

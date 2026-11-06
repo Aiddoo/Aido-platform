@@ -8,11 +8,11 @@ import {
   type NotificationCategory,
   notificationCategorySchema,
 } from '@src/features/notification/schemas/notification.schema';
+import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import {
   nudgeDirectionSchema,
   type NudgeDirection,
-} from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
+} from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

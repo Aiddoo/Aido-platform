@@ -1,4 +1,4 @@
-import type { NudgeLimitInfo } from './todo-nudge.model';
+import type { NudgeLimitInfo } from '../schemas/todo-nudge.schema';
 import { TodoNudgePolicy } from './todo-nudge.model';
 
 const NOW = new Date(2026, 1, 25, 9, 0, 0);

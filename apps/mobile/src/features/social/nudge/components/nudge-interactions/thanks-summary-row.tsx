@@ -1,6 +1,7 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
+import { type Instant, toDate } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,12 +28,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import {
-  NudgeInteractionPolicy,
-  type NudgeThanksPreview,
-} from '../../domains/nudge-interaction.model';
+import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useGetNudgeInteractionAvailabilityQueryOptions } from '../../queries/nudge.queries';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
+import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const VISIBLE_AVATAR_COUNT = 2;
 const BUTTON_HIT_SLOP = 4;
@@ -302,7 +301,7 @@ function SentHeart({ style }: { style: ReturnType<typeof useAnimatedStyle> }) {
   );
 }
 
-function LastThankedAt({ lastThankedAt }: { lastThankedAt: Date | null }) {
+function LastThankedAt({ lastThankedAt }: { lastThankedAt: Instant | null }) {
   const dateFormatContext = useDateFormatContext();
   const now = useMinuteNow();
 
@@ -312,7 +311,7 @@ function LastThankedAt({ lastThankedAt }: { lastThankedAt: Date | null }) {
 
   return (
     <CardDescription>
-      {formatRelativeTimeLabel(lastThankedAt, now, dateFormatContext)}
+      {formatRelativeTimeLabel(toDate(lastThankedAt), now, dateFormatContext)}
     </CardDescription>
   );
 }

@@ -25,12 +25,10 @@ import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
-import {
-  NudgeInteractionPolicy,
-  type NudgeThanksPreview,
-} from '../../domains/nudge-interaction.model';
+import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useSendNudgeThanksMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
+import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const RECIPIENT_ROW_HEIGHT = 64;
 const LIST_MIN_HEIGHT = 72;

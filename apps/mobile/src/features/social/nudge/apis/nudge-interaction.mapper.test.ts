@@ -2,7 +2,7 @@ import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtur
 import { toNudgeInteraction, toNudgeThanksPreview } from './nudge-interaction.mapper';
 
 describe('콕 응답을 클라이언트 모델로 변환', () => {
-  test('친구 정보는 평탄하게 만들고 감사 시각을 Date로 변환한다', () => {
+  test('친구 정보는 평탄하게 만들고 감사 시각을 Instant로 둔다', () => {
     // Given
     const dto = createNudgeInteractionDto({ thankedAt: '2026-10-04T00:00:00.000Z' });
     // When
@@ -14,7 +14,7 @@ describe('콕 응답을 클라이언트 모델로 변환', () => {
       todoTitle: '산책하기',
       isTodoCompleted: false,
     });
-    expect(nudge.thankedAt).toEqual(new Date('2026-10-04T00:00:00.000Z'));
+    expect(nudge.thankedAt).toBe('2026-10-04T00:00:00.000Z');
     expect(nudge).not.toHaveProperty('sender');
   });
 
@@ -48,7 +48,7 @@ describe('감사 미리보기 페이지 변환', () => {
     });
   });
 
-  test('감사한 친구 수와 마지막 감사 시각을 보존하고 시각은 Date로 변환한다', () => {
+  test('감사한 친구 수와 마지막 감사 시각을 보존하고 시각은 Instant로 둔다', () => {
     // Given
     const dto = {
       todoId: 1,
@@ -61,7 +61,7 @@ describe('감사 미리보기 페이지 변환', () => {
     const preview = toNudgeThanksPreview(dto);
     // Then
     expect(preview.thankedRecipientCount).toBe(3);
-    expect(preview.lastThankedAt).toEqual(new Date('2026-10-26T06:12:00.000Z'));
+    expect(preview.lastThankedAt).toBe('2026-10-26T06:12:00.000Z');
   });
 
   test('페이지 메타데이터가 있으면 전체 인원과 다음 커서를 보존한다', () => {

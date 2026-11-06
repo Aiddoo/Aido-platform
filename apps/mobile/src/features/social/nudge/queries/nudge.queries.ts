@@ -1,13 +1,27 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
-import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-query-keys';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/query.constants';
 import { unwrap } from '@src/shared/errors/result';
-import { queryOptions, type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
+import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import { type TodoNudgeService } from '../apis/todo-nudge.service';
-import { type NudgeDirection, type NudgeInteractionPage } from '../domains/nudge-interaction.model';
+import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
+import type { NudgeDirection, NudgeInteractionPage } from '../schemas/nudge-interaction.schema';
 
-function getNudgeInteractionAvailabilityQueryOptions(todoNudgeService: TodoNudgeService) {
+type NudgeInteractionsPageParam = { cursor?: number };
+const INITIAL_PAGE: NudgeInteractionsPageParam = {};
+
+type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
+const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
+const THANKS_PREVIEW_PAGE_SIZE = 20;
+
+function selectNudgeInteractions(
+  infinitePages: InfiniteData<NudgeInteractionPage, NudgeInteractionsPageParam>,
+) {
+  return infinitePages.pages.flatMap((page) => page.items);
+}
+
+export function useGetNudgeInteractionAvailabilityQueryOptions() {
+  const todoNudgeService = useTodoNudgeService();
+
   return queryOptions({
     queryKey: NUDGE_QUERY_KEYS.interactionAvailability(),
     queryFn: async ({ signal }) =>
@@ -16,48 +30,29 @@ function getNudgeInteractionAvailabilityQueryOptions(todoNudgeService: TodoNudge
   });
 }
 
-export function useGetNudgeInteractionAvailabilityQueryOptions() {
-  return getNudgeInteractionAvailabilityQueryOptions(useTodoNudgeService());
-}
+export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: number }) {
+  const todoNudgeService = useTodoNudgeService();
 
-function getNudgeInteractionQueryOptions(
-  todoNudgeService: TodoNudgeService,
-  { nudgeId }: { nudgeId: number },
-) {
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId: nudgeId }),
+    queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId }),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getInteraction(nudgeId, signal)),
     staleTime: 30_000,
   });
 }
 
-export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: number }) {
-  return getNudgeInteractionQueryOptions(useTodoNudgeService(), { nudgeId });
-}
+export function useGetNudgeInteractionsInfiniteQueryOptions({
+  direction,
+}: {
+  direction: NudgeDirection;
+}) {
+  const todoNudgeService = useTodoNudgeService();
 
-type NudgeInteractionsPageParam = { cursor?: number };
-const INITIAL_PAGE: NudgeInteractionsPageParam = {};
-
-function selectNudgeInteractions(
-  infinitePages: InfiniteData<NudgeInteractionPage, NudgeInteractionsPageParam>,
-) {
-  return infinitePages.pages.flatMap((page) => page.items);
-}
-
-function getNudgeInteractionsInfiniteQueryOptions(
-  todoNudgeService: TodoNudgeService,
-  { direction }: { direction: NudgeDirection },
-) {
   return infiniteQueryOptions({
     queryKey: NUDGE_QUERY_KEYS.interactionList({ direction }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getInteractions(
-          {
-            direction,
-            limit: DEFAULT_PAGE_SIZE,
-            cursor: pageParam.cursor,
-          },
+          { direction, limit: DEFAULT_PAGE_SIZE, cursor: pageParam.cursor },
           signal,
         ),
       ),
@@ -69,22 +64,9 @@ function getNudgeInteractionsInfiniteQueryOptions(
   });
 }
 
-export function useGetNudgeInteractionsInfiniteQueryOptions({
-  direction,
-}: {
-  direction: NudgeDirection;
-}) {
-  return getNudgeInteractionsInfiniteQueryOptions(useTodoNudgeService(), { direction });
-}
+export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoId: number }) {
+  const todoNudgeService = useTodoNudgeService();
 
-type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
-const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
-const THANKS_PREVIEW_PAGE_SIZE = 20;
-
-function getNudgeThanksPreviewInfiniteQueryOptions(
-  todoNudgeService: TodoNudgeService,
-  { todoId }: { todoId: number },
-) {
   return infiniteQueryOptions({
     queryKey: NUDGE_QUERY_KEYS.thanksPreview({ todoId }),
     queryFn: async ({ pageParam, signal }) =>
@@ -104,40 +86,24 @@ function getNudgeThanksPreviewInfiniteQueryOptions(
   });
 }
 
-export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoId: number }) {
-  return getNudgeThanksPreviewInfiniteQueryOptions(useTodoNudgeService(), { todoId });
-}
-
-function getRemindNudgeCooldownQueryOptions(
-  todoNudgeService: TodoNudgeService,
-  { userId }: { userId: string },
-) {
-  return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId: userId }),
-    queryFn: async ({ signal }) => {
-      const result = await todoNudgeService.getRemindCooldownInfo(userId, signal);
-      return unwrap(result);
-    },
-    staleTime: 1_000 * 60,
-  });
-}
-
 export function useGetRemindNudgeCooldownQueryOptions({ userId }: { userId: string }) {
-  return getRemindNudgeCooldownQueryOptions(useTodoNudgeService(), { userId });
-}
+  const todoNudgeService = useTodoNudgeService();
 
-function getTodoNudgeLimitQueryOptions(todoNudgeService: TodoNudgeService) {
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.limit(),
-    queryFn: async ({ signal }) => {
-      const result = await todoNudgeService.getLimitInfo(signal);
-      return unwrap(result);
-    },
+    queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId }),
+    queryFn: async ({ signal }) =>
+      unwrap(await todoNudgeService.getRemindCooldownInfo(userId, signal)),
     staleTime: 1_000 * 60,
-    meta: { refreshOnPremiumChange: true },
   });
 }
 
 export function useGetTodoNudgeLimitQueryOptions() {
-  return getTodoNudgeLimitQueryOptions(useTodoNudgeService());
+  const todoNudgeService = useTodoNudgeService();
+
+  return queryOptions({
+    queryKey: NUDGE_QUERY_KEYS.limit(),
+    queryFn: async ({ signal }) => unwrap(await todoNudgeService.getLimitInfo(signal)),
+    staleTime: 1_000 * 60,
+    meta: { refreshOnPremiumChange: true },
+  });
 }

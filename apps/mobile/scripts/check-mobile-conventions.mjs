@@ -195,6 +195,12 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/planning/category/domains/',
   'apps/mobile/src/features/planning/category/hooks/',
   'apps/mobile/src/features/planning/category/queries/',
+  'apps/mobile/src/features/social/nudge/components/',
+  'apps/mobile/src/features/social/nudge/constants/',
+  'apps/mobile/src/features/social/nudge/domains/',
+  'apps/mobile/src/features/social/nudge/hooks/',
+  'apps/mobile/src/features/social/nudge/queries/',
+  'apps/mobile/src/features/social/nudge/utils/',
 ];
 /** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
 const SCHEMA_FOLDER_FEATURE_PATHS = [
@@ -222,6 +228,7 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/device/coachmark/',
   'apps/mobile/src/features/device/store-review/',
   'apps/mobile/src/features/planning/category/',
+  'apps/mobile/src/features/social/nudge/',
   'apps/mobile/src/features/social/moderation/apis/',
   'apps/mobile/src/features/social/moderation/components/',
   'apps/mobile/src/features/social/moderation/constants/',

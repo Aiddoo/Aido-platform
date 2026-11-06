@@ -1,9 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
-import {
-  NudgeInteractionPolicy,
-  type NudgeInteraction,
-} from '@src/features/social/nudge/domains/nudge-interaction.model';
+import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
+import type { NudgeInteraction } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { getNudgeReplyLabelKey } from '@src/features/social/nudge/utils/nudge-reply-label';
 import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';

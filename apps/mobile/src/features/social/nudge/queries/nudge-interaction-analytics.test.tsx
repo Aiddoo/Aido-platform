@@ -1,111 +1,108 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import type { QueryClient } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react-native';
+import {
+  createAnalyticsStub,
+  createHapticsStub,
+  createHttpClientStub,
+} from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { NetworkError } from '@src/shared/errors/infra-error';
+import { ok } from '@src/shared/errors/result';
+import { useMutation } from '@tanstack/react-query';
+import { act } from '@testing-library/react-native';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
-import { toNudgeInteraction } from '../apis/nudge-interaction.mapper';
-import { useReplyToNudgeMutationOptions } from './nudge.mutations';
-import { useSendNudgeThanksMutationOptions } from './nudge.mutations';
+import {
+  useReplyToNudgeMutationOptions,
+  useSendNudgeThanksMutationOptions,
+} from './nudge.mutations';
 
-const mockTrackEvent = jest.fn();
-const mockCaptureException = jest.fn();
-let mockQueryClient: QueryClient;
+function useReplyMutation() {
+  return useMutation(useReplyToNudgeMutationOptions());
+}
 
-jest.mock('@src/bootstrap/providers/di-context', () => ({
-  useTodoNudgeService: () => ({ replyToNudge: jest.fn(), sendThanks: jest.fn() }),
-  useErrorReporter: () => ({ captureException: mockCaptureException }),
-  useHaptics: () => ({ notify: jest.fn() }),
-}));
+function useThanksMutation() {
+  return useMutation(useSendNudgeThanksMutationOptions());
+}
 
-jest.mock('@src/shared/analytics', () => ({
-  useTrack: () => ({ trackEvent: mockTrackEvent }),
-}));
+async function setup() {
+  const httpClient = createHttpClientStub();
+  const analytics = createAnalyticsStub();
+  let reply: ReturnType<typeof useReplyMutation> | undefined;
+  let thanks: ReturnType<typeof useThanksMutation> | undefined;
+  function Capture() {
+    reply = useReplyMutation();
+    thanks = useThanksMutation();
+    return null;
+  }
+  await renderUi(<Capture />, {
+    withOverlay: true,
+    di: createTestDi({ httpClient, analytics, haptics: createHapticsStub() }),
+  });
+  if (reply == null || thanks == null) {
+    throw new Error('mutation을 받지 못했다');
+  }
+  const replyMutation = reply;
+  const thanksMutation = thanks;
 
-jest.mock('@src/shared/hooks/use-app-toast', () => ({
-  useAppToast: () => ({ error: jest.fn() }),
-}));
-
-jest.mock('@tanstack/react-query', () => ({
-  ...jest.requireActual('@tanstack/react-query'),
-  useQueryClient: () => mockQueryClient,
-}));
+  return {
+    httpClient,
+    analytics,
+    replyToNudge: (variables: Parameters<typeof replyMutation.mutateAsync>[0]) =>
+      act(() => replyMutation.mutateAsync(variables).catch(() => undefined)),
+    sendThanks: (variables: Parameters<typeof thanksMutation.mutateAsync>[0]) =>
+      act(() => thanksMutation.mutateAsync(variables).catch(() => undefined)),
+  };
+}
 
 describe('콕 답장·감사 Analytics', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockQueryClient = createTestQueryClient();
-  });
-
   it('답장 성공 시 공용 카탈로그의 답장 종류만 기록한다', async () => {
     // Given
-    const { result } = await renderHook(() => useReplyToNudgeMutationOptions());
-    const nudge = toNudgeInteraction(createNudgeInteractionDto({ replyKind: 'STARTING' }));
+    const { httpClient, analytics, replyToNudge } = await setup();
+    httpClient.put.mockResolvedValue(ok(createNudgeInteractionDto({ replyKind: 'STARTING' })));
 
     // When
-    await result.current.onSuccess?.(
-      nudge,
-      { nudgeId: nudge.id, input: { replyKind: 'STARTING' } },
-      undefined,
-      { client: mockQueryClient, meta: undefined, mutationKey: undefined },
-    );
+    await replyToNudge({ nudgeId: 1, input: { replyKind: 'STARTING' } });
 
     // Then
-    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackEvent).toHaveBeenCalledWith('nudge_replied', { reply_kind: 'STARTING' });
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('nudge_replied', { reply_kind: 'STARTING' });
   });
 
   it('감사 성공 시 서버가 실제 전송한 친구 수를 기록한다', async () => {
     // Given
-    const { result } = await renderHook(() => useSendNudgeThanksMutationOptions());
+    const { httpClient, analytics, sendThanks } = await setup();
+    httpClient.put.mockResolvedValue(ok({ sentCount: 22 }));
 
     // When
-    await result.current.onSuccess?.(22, { todoId: 1, input: { throughNudgeId: 22 } }, undefined, {
-      client: mockQueryClient,
-      meta: undefined,
-      mutationKey: undefined,
-    });
+    await sendThanks({ todoId: 1, input: { throughNudgeId: 22 } });
 
     // Then
-    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackEvent).toHaveBeenCalledWith('nudge_thanks_sent', { recipient_count: 22 });
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('nudge_thanks_sent', { recipient_count: 22 });
   });
 
   it('이미 감사한 친구에게 재요청하면 전송 성공 이벤트를 늘리지 않는다', async () => {
     // Given
-    const { result } = await renderHook(() => useSendNudgeThanksMutationOptions());
+    const { httpClient, analytics, sendThanks } = await setup();
+    httpClient.put.mockResolvedValue(ok({ sentCount: 0 }));
 
     // When
-    await result.current.onSuccess?.(0, { todoId: 1, input: { throughNudgeId: 22 } }, undefined, {
-      client: mockQueryClient,
-      meta: undefined,
-      mutationKey: undefined,
-    });
+    await sendThanks({ todoId: 1, input: { throughNudgeId: 22 } });
 
     // Then
-    expect(mockTrackEvent).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
   it('답장·감사 요청이 실패하면 성공 이벤트를 기록하지 않는다', async () => {
     // Given
-    const reply = await renderHook(() => useReplyToNudgeMutationOptions());
-    const thanks = await renderHook(() => useSendNudgeThanksMutationOptions());
-    const context = { client: mockQueryClient, meta: undefined, mutationKey: undefined };
+    const { httpClient, analytics, replyToNudge, sendThanks } = await setup();
+    httpClient.put.mockRejectedValue(new NetworkError());
 
     // When
-    await reply.result.current.onError?.(
-      new Error('network error'),
-      { nudgeId: 1, input: { replyKind: 'LATER' } },
-      undefined,
-      context,
-    );
-    await thanks.result.current.onError?.(
-      new Error('network error'),
-      { todoId: 1, input: { throughNudgeId: 22 } },
-      undefined,
-      context,
-    );
+    await replyToNudge({ nudgeId: 1, input: { replyKind: 'LATER' } });
+    await sendThanks({ todoId: 1, input: { throughNudgeId: 22 } });
 
     // Then
-    expect(mockTrackEvent).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 });

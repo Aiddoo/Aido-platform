@@ -26,7 +26,7 @@ describe('toNudgeLimitInfo', () => {
 });
 
 describe('toNudgeCooldownInfo', () => {
-  test('cooldownEndsAt ISO → Date 변환', () => {
+  test('cooldownEndsAt ISO → Instant 변환', () => {
     // Given
     const dto = createNudgeCooldownInfoDto({
       canNudge: false,
@@ -39,8 +39,7 @@ describe('toNudgeCooldownInfo', () => {
 
     // Then
     expect(result.canNudge).toBe(false);
-    expect(result.cooldownEndsAt).toBeInstanceOf(Date);
-    expect(result.cooldownEndsAt?.toISOString()).toBe('2026-03-08T10:00:00.000Z');
+    expect(result.cooldownEndsAt).toBe('2026-03-08T10:00:00.000Z');
     expect(result.remainingSeconds).toBe(300);
   });
 

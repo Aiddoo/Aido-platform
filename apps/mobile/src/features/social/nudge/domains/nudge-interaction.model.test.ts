@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import {
   getNudgeInteractionStatusFromFlags,
   NudgeInteractionPolicy,
@@ -173,7 +175,7 @@ describe('getResponseStage', () => {
     ],
     [
       '고맙다고 했으면 thanked',
-      { ...nudge, isTodoCompleted: true, thankedAt: new Date('2026-03-01') },
+      { ...nudge, isTodoCompleted: true, thankedAt: toInstant('2026-03-01T00:00:00.000Z') },
       'me',
       'thanked',
     ],

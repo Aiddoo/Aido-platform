@@ -1,7 +1,6 @@
-import type {
-  ReplyToNudgeInput as ReplyToNudgeContractInput,
-  SendNudgeThanksInput as SendNudgeThanksContractInput,
+export type {
+  CreateNudgeInput,
+  CreateRemindNudgeInput,
+  ReplyToNudgeInput,
+  SendNudgeThanksInput,
 } from '@aido/api';
-
-export type ReplyToNudgeInput = ReplyToNudgeContractInput;
-export type SendNudgeThanksInput = SendNudgeThanksContractInput;

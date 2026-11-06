@@ -18,6 +18,7 @@ import { NotificationService } from '@src/features/notification/apis/notificatio
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -51,6 +52,7 @@ export function createTestDi({
     memoService: new MemoService(httpClient, logger),
     todoCategoryService: new TodoCategoryService(httpClient),
     todoCommentService: new TodoCommentService(httpClient),
+    todoNudgeService: new TodoNudgeService(httpClient),
     todoService: new TodoService(httpClient),
     subTodoService: new SubTodoService(httpClient),
     draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),

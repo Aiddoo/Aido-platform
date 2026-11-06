@@ -18,11 +18,11 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
-import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
 import { useSendRemindNudgeMutationOptions } from '../queries/nudge.mutations';
 import { useSendTodoNudgeMutationOptions } from '../queries/nudge.mutations';
+import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
 
 export interface NudgeReceiver {
   id: string;

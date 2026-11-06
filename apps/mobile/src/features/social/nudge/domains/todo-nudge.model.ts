@@ -1,30 +1,8 @@
-import { type CreateNudgeInput, type CreateRemindNudgeInput, NUDGE_LIMITS } from '@aido/api';
+import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
-import { z } from 'zod';
 
-const nudgeLimitInfoSchema = z.object({
-  dailyLimit: z.number().nullable(),
-  usedToday: z.number(),
-  remainingToday: z.number().nullable(),
-  isUnlimited: z.boolean(),
-});
-export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
-
-const nudgeCooldownInfoSchema = z.object({
-  canNudge: z.boolean(),
-  cooldownEndsAt: z.date().nullable(),
-  remainingSeconds: z.number().nullable(),
-});
-export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
-
-export type SendTodoNudgeInput = CreateNudgeInput;
-export type SendRemindNudgeInput = CreateRemindNudgeInput;
-
-const sendTodoNudgeResultSchema = z.object({
-  message: z.string(),
-});
-export type SendTodoNudgeResult = z.infer<typeof sendTodoNudgeResultSchema>;
+import type { NudgeLimitInfo } from '../schemas/todo-nudge.schema';
 
 const MAX_MESSAGE_LENGTH = NUDGE_LIMITS.MAX_MESSAGE_LENGTH;
 

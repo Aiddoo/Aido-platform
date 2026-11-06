@@ -31,7 +31,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
       signal,
     });
     expect(page).toMatchObject({ nextCursor: 1, hasNext: true });
-    expect(page.items[0]?.createdAt).toBeInstanceOf(Date);
+    expect(page.items[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
   });
 
   test('답장 요청에는 완료 상태를 넣지 않고 최신 답장 모델을 반환한다', async () => {

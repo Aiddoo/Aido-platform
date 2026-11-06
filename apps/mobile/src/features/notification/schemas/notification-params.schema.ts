@@ -1,5 +1,5 @@
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
-import { nudgeDirectionSchema } from '@src/features/social/nudge/domains/nudge-interaction.model';
+import { nudgeDirectionSchema } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { z } from 'zod';
 
 import { notificationCategorySchema } from './notification.schema';
