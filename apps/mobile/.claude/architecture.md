@@ -788,7 +788,7 @@ export function useCreateMemoMutationOptions() {
 - **구조 공유:** `Date`는 plain 객체가 아니어서 같은 값이어도 새 참조가 되고 그 객체와 조상까지 참조가 바뀐다. 그래서 `Date`가 있는 모델은 재조회 때 다시 그려질 수 있다.
 - **추적 속성:** 결과를 rest로 구조 분해하지 않는다.
 - **`mutationFn`:** 반드시 `unwrap()`한다. `Result.err()`를 돌려주면 React Query가 성공으로 보고 `onSuccess`를 부른다. 오류 분기는 [에러 처리](../docs/error-handling.md)를 본다.
-- **`onSettled`:** Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 바로 떠나는 create·delete·convert는 돌려주지 않고, 기다려야 하는 update·pin만 돌려준다(`useUpdateMemoMutationOptions`, `useToggleMemoPinMutationOptions`). 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
+- **`onSettled`:** Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 바로 떠나는 create·delete·convert는 돌려주지 않는다. update는 뒤로 가기 저장이 떠나므로 돌려주지 않고, 대신 `onSuccess`에서 목록의 그 항목을 바꾼다(`replaceMemoInList`). 화면에 머무는 pin만 돌려준다(`useToggleMemoPinMutationOptions`). 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
 - **무효화:** 다른 feature의 캐시는 그 feature의 `{feature}-cache.ts` 함수로만 무효화한다(`invalidateMemos`). 자기 feature 안에서 범위를 좁힐 때만 자기 키를 직접 쓴다. 키 위치에 기대는 구조 분해(`const [, , params] = query.queryKey`)를 쓰지 않는다.
 
 ### 할 일 목록의 낙관적 갱신

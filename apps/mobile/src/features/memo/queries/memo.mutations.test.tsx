@@ -1,4 +1,6 @@
 import type { Memo as MemoDto } from '@aido/api';
+import { createActivationProgressRepository } from '@src/features/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/activation/apis/activation.service';
 import {
   createHapticsStub,
   createMemorySyncStorage,
@@ -14,14 +16,19 @@ import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
-import { act } from '@testing-library/react-native';
+import { act, screen } from '@testing-library/react-native';
 
 import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { toMemo } from '../apis/memo.mapper';
 import { MemoService } from '../apis/memo.service';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { Memo } from '../schemas/memo.schema';
-import { useParseMemoMutationOptions, useUpdateMemoMutationOptions } from './memo.mutations';
+import {
+  useConvertMemoToTodosMutationOptions,
+  useDeleteMemoMutationOptions,
+  useParseMemoMutationOptions,
+  useUpdateMemoMutationOptions,
+} from './memo.mutations';
 
 const originalMemo: MemoDto = {
   id: 5,
@@ -158,5 +165,91 @@ describe('오프라인에서 AI 정리', () => {
     // Then
     await expect(result).rejects.toBeInstanceOf(NetworkError);
     expect(httpClient.post).not.toHaveBeenCalled();
+  });
+});
+
+describe('오프라인에서 할 일로 바꾸기', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it('멈춰 기다리지 않고 요청을 보내 바로 실패한다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const httpClient = createMockHttpClient();
+    httpClient.post.mockRejectedValue(new NetworkError());
+    let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
+    function useMutationCapture() {
+      return useMutation(useConvertMemoToTodosMutationOptions()).mutateAsync;
+    }
+    function Capture() {
+      mutateAsync = useMutationCapture();
+      return null;
+    }
+    await renderUi(
+      <OverlayProvider>
+        <Capture />
+      </OverlayProvider>,
+      {
+        di: {
+          ...createMemoTestDi(httpClient),
+          haptics: createHapticsStub(),
+          activationService: new ActivationService(
+            createActivationProgressRepository(createMemorySyncStorage()),
+          ),
+        },
+      },
+    );
+
+    // When
+    const result = mutateAsync?.({
+      memoId: 5,
+      values: {
+        title: '메모',
+        startDate: new Date('2026-10-02T00:00:00.000Z'),
+        endDate: null,
+        scheduledTime: null,
+        isAllDay: true,
+        categoryId: 1,
+        visibility: 'PUBLIC',
+        repeat: null,
+      },
+    });
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('오프라인에서 메모 삭제', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it('멈춰 기다리지 않고 바로 실패해 연결 문제를 알린다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const httpClient = createMockHttpClient();
+    httpClient.delete.mockRejectedValue(new NetworkError());
+    let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
+    function useMutationCapture() {
+      return useMutation(useDeleteMemoMutationOptions()).mutateAsync;
+    }
+    function Capture() {
+      mutateAsync = useMutationCapture();
+      return null;
+    }
+    await renderUi(<Capture />, {
+      di: { ...createMemoTestDi(httpClient), haptics: createHapticsStub() },
+    });
+
+    // When
+    const result = mutateAsync?.(5);
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
+    // HeroUI가 높이를 재려고 같은 토스트를 하나 더 그린다
+    expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
   });
 });

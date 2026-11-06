@@ -25,12 +25,11 @@ import {
   toAnalyticsSource,
 } from '@src/features/voice/utils/analytics/voice-plan-analytics';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError, NetworkError } from '@src/shared/errors';
+import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
-import { match } from 'ts-pattern';
 
 import { MEMO_MUTATION_KEYS, MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
@@ -39,7 +38,7 @@ import {
   createMemoPlanRequestDraftKey,
   prepareMemoPlanIdempotencyKey,
 } from '../utils/memo-plan-draft';
-import { invalidateMemos } from './memo-cache';
+import { invalidateMemos, replaceMemoInList } from './memo-cache';
 
 function useMemoMutationFailure() {
   const haptics = useHaptics();
@@ -47,9 +46,7 @@ function useMemoMutationFailure() {
 
   return (error: unknown, fallback = t('memo:toasts.retryLater')) => {
     haptics.notify('error');
-    match(error)
-      .when(isApiError, ({ message }) => toast.error(message))
-      .otherwise(() => toast.error(undefined, { fallback }));
+    toast.error(getUserFacingMessage(error), { fallback });
   };
 }
 
@@ -84,16 +81,21 @@ export function useUpdateMemoMutationOptions() {
     mutationFn: async ({ memoId, values }: { memoId: number; values: MemoFormValues }) =>
       unwrap(await memoService.updateMemo(memoId, values)),
     onSuccess: async (memo, { memoId }) => {
-      await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) }),
+        queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
+      ]);
       queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
+      // 재조회를 기다리지 않고 떠나므로 돌아간 목록에 옛 글자가 보이지 않게 먼저 바꾼다
+      replaceMemoInList(queryClient, memo);
       trackEvent('memo_updated', { memo_id: memoId });
     },
     onError: (error) => showFailure(error),
-    onSettled: (_memo, _error, { memoId }) =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) }),
-      ]),
+    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
+    onSettled: (_memo, _error, { memoId }) => {
+      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
+      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+    },
   });
 }
 
@@ -126,6 +128,8 @@ export function useDeleteMemoMutationOptions() {
   const showFailure = useMemoMutationFailure();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async (memoId: number) => unwrap(await memoService.deleteMemo(memoId)),
     onSuccess: (_result, memoId) => {
       toast.success(t('memo:toasts.deleted'));
@@ -148,6 +152,8 @@ export function useConvertMemoToTodosMutationOptions() {
   const showFailure = useMemoMutationFailure();
 
   return mutationOptions({
+    // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
+    networkMode: 'always',
     mutationFn: async ({ memoId, values }: { memoId: number; values: AddTodoFormValues }) =>
       unwrap(await memoService.convertToTodos(memoId, values)),
     onSuccess: (_result, { memoId }) => {
@@ -247,13 +253,10 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
         return;
       }
 
-      const description = isNotChargedError(error) ? t('subscription:gate.notCharged') : undefined;
-      if (isApiError(error)) {
-        toast.error(error.message, { description });
-        return;
-      }
-
-      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater'), description });
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('ai:suggestions.toasts.retryLater'),
+        description: isNotChargedError(error) ? t('subscription:gate.notCharged') : undefined,
+      });
     },
   });
 }

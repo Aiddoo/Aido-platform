@@ -1,7 +1,13 @@
 import '@src/shared/i18n/init';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import { createMemorySyncStorage, createMockHttpClient } from '@src/shared/__tests__';
+import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import {
+  createMemorySyncStorage,
+  createMockHttpClient,
+  createSpeechRecognizerStub,
+  createVoiceNoteStorageServiceFake,
+} from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -19,6 +25,7 @@ import { createMemo } from '../__tests__/memo.fixtures';
 import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import { MemoEditor } from './memo-editor';
+import { MemoList } from './memo-list';
 
 const MEMO_ID = 5;
 const SAVED_MEMO_DTO = {
@@ -31,7 +38,7 @@ const SAVED_MEMO_DTO = {
   updatedAt: '2026-11-06T00:01:00.000Z',
 };
 
-async function renderEditor(toolbar: 'stack' | 'pane') {
+async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -41,6 +48,16 @@ async function renderEditor(toolbar: 'stack' | 'pane') {
     MEMO_QUERY_KEYS.detail({ memoId: MEMO_ID }),
     createMemo({ id: MEMO_ID, content: '처음 메모' }),
   );
+  queryClient.setQueryData(MEMO_QUERY_KEYS.list(), {
+    pages: [
+      {
+        items: [createMemo({ id: MEMO_ID, content: '처음 메모' })],
+        hasNext: false,
+        nextCursor: null,
+      },
+    ],
+    pageParams: [null],
+  });
   const httpClient = createMockHttpClient();
   httpClient.get.mockImplementation((url) =>
     url === `v1/memos/${MEMO_ID}`
@@ -53,6 +70,7 @@ async function renderEditor(toolbar: 'stack' | 'pane') {
     <LocalDateProvider>
       <OverlayProvider>
         <Suspense fallback={null}>
+          {withList && <MemoList />}
           <MemoEditor
             toolbar={toolbar === 'stack' ? MemoEditor.StackToolbar : MemoEditor.PaneToolbar}
             onLeave={onLeave}
@@ -66,6 +84,10 @@ async function renderEditor(toolbar: 'stack' | 'pane') {
         ...createMemoTestDi(httpClient),
         todoCategoryService: new TodoCategoryService(httpClient),
         draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+        recognitionLanguageRepository:
+          createRecognitionLanguageRepository(createMemorySyncStorage()),
+        speechRecognizer: createSpeechRecognizerStub(),
+        voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
       },
     },
   );
@@ -134,6 +156,24 @@ describe('MemoEditor', () => {
     // Then
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
+  });
+
+  it('뒤로 가기로 저장하면 목록을 다시 받기 전에도 목록에 새 글이 보인다', async () => {
+    // Given
+    const { httpClient, onLeave } = await renderEditor('stack', { withList: true });
+    httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+    await editContent('고친 메모');
+    expect(screen.getByText('처음 메모')).toBeTruthy();
+
+    // When
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+    });
+
+    // Then
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('고친 메모')).toBeTruthy();
+    expect(screen.queryByText('처음 메모')).toBeNull();
   });
 
   it('고친 글자가 없으면 저장 요청 없이 떠난다', async () => {
