@@ -1,12 +1,12 @@
+import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import type { Logger } from '@src/core/ports/logger';
 import { getErrorMessage, isConnectivityError, toError } from '@src/shared/errors';
 
 import type { NotificationService } from '../apis/notification.service';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import type { NotificationAuthStatus } from './navigation/notification-response-disposition';
 
 interface SyncNotificationBadgeParams {
-  authStatus: NotificationAuthStatus;
+  authStatus: AuthStatus;
   isOnline: boolean;
   notificationService: Pick<NotificationService, 'syncBadgeCount' | 'clearBadge'>;
   logger: Logger;

@@ -1,3 +1,4 @@
+import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
 import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
@@ -13,7 +14,6 @@ import {
   createPushNotificationGatewayStub,
 } from '../__tests__/notification.factories';
 import { PushDeviceService } from '../apis/push-device.service';
-import type { NotificationAuthStatus } from '../utils/navigation/notification-response-disposition';
 import { usePushDeviceSync } from './use-push-device-sync';
 
 const silentLogger: Logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
@@ -28,7 +28,7 @@ describe('usePushDeviceSync', () => {
     jest.restoreAllMocks();
   });
 
-  async function setup(authStatus: NotificationAuthStatus = 'authenticated') {
+  async function setup(authStatus: AuthStatus = 'authenticated') {
     const removeAppStateListener = jest.fn();
     let appStateListener: ((state: AppStateStatus) => void) | undefined;
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
@@ -70,7 +70,7 @@ describe('usePushDeviceSync', () => {
     );
 
     const hook = await renderHook(
-      ({ status, deviceTimeZone }: { status: NotificationAuthStatus; deviceTimeZone?: string }) =>
+      ({ status, deviceTimeZone }: { status: AuthStatus; deviceTimeZone?: string }) =>
         usePushDeviceSync({ authStatus: status, deviceTimeZone, onReported }),
       { wrapper, initialProps: { status: authStatus } },
     );

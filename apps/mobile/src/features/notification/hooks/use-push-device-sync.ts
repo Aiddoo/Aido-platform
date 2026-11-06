@@ -1,3 +1,4 @@
+import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { usePushDeviceService } from '@src/bootstrap/providers/di-context';
 import { i18n } from '@src/shared/i18n';
 import { useMutation } from '@tanstack/react-query';
@@ -6,7 +7,6 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { useReportPushDeviceMutationOptions } from '../queries/use-report-push-device-mutation-options';
-import type { NotificationAuthStatus } from '../utils/navigation/notification-response-disposition';
 
 /** 권한 창·제어 센터처럼 짧게 오가는 복귀를 한 번으로 묶는다 */
 const APP_ACTIVE_SYNC_DELAY_MS = 1_000;
@@ -21,7 +21,7 @@ export function usePushDeviceSync({
   deviceTimeZone,
   onReported,
 }: {
-  authStatus: NotificationAuthStatus;
+  authStatus: AuthStatus;
   /** 앞에 떠 있는 채로 시간대가 바뀌면 복귀 이벤트가 없어 이 값으로 알아챈다 */
   deviceTimeZone?: string;
   /** 보고가 성공하면 부른다. 값이 같아 요청을 건너뛴 때도 부른다 */

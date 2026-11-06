@@ -1,3 +1,4 @@
+import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
@@ -8,7 +9,6 @@ import { act, renderRouter, screen, waitFor } from 'expo-router/testing-library'
 import { useState } from 'react';
 
 import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
-import type { NotificationAuthStatus } from '../utils/navigation/notification-response-disposition';
 import { useNotificationResponseProcessor } from './use-notification-response-processor';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
@@ -30,13 +30,13 @@ async function setup({ initialUrl = '/feed' }: { initialUrl?: string } = {}) {
   const handleNotificationResponse = jest.fn().mockResolvedValue('handled');
   let processResponse: (response: PushNotificationResponse) => void = () => {};
   let setSession: (session: {
-    authStatus: NotificationAuthStatus;
+    authStatus: AuthStatus;
     accountId: string | null;
   }) => void = () => {};
 
   function Harness() {
     const [session, setState] = useState<{
-      authStatus: NotificationAuthStatus;
+      authStatus: AuthStatus;
       accountId: string | null;
     }>({ authStatus: 'authenticated', accountId: 'account-1' });
     setSession = setState;
@@ -63,7 +63,7 @@ async function setup({ initialUrl = '/feed' }: { initialUrl?: string } = {}) {
     gateway,
     handleNotificationResponse,
     process: (response: PushNotificationResponse) => act(() => processResponse(response)),
-    changeSession: (session: { authStatus: NotificationAuthStatus; accountId: string | null }) =>
+    changeSession: (session: { authStatus: AuthStatus; accountId: string | null }) =>
       act(() => setSession(session)),
   };
 }

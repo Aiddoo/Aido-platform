@@ -37,7 +37,7 @@ import {
  * `loading`만 여기 따로 있는 이유: 부팅 판정 함수는 이 값을 반환할 수 없다.
  * 판정 결과가 아니라 결과가 아직 도착하지 않았다는 UI 사정이기 때문이다.
  */
-type AuthStatus = 'loading' | ResolvedAuthStatus;
+export type AuthStatus = 'loading' | ResolvedAuthStatus;
 
 interface AuthContextValue {
   status: AuthStatus;

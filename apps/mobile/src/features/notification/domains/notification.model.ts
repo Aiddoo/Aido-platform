@@ -4,6 +4,7 @@ import {
   NOTIFICATION_CATEGORY,
   NOTIFICATION_TYPE,
 } from '@aido/api/vocabulary';
+import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { z } from 'zod';
 
 export const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
@@ -111,7 +112,40 @@ export function findReceivedCheer(
   return { cheerId, senderId, senderName: notification.routing?.senderName ?? null };
 }
 
+export type NotificationResponseAction =
+  | { status: 'process' }
+  | {
+      status: 'defer';
+      reason: 'auth-resolving' | 'authentication-required' | 'navigation-not-ready';
+    };
+
+/** 푸시를 눌렀을 때 지금 처리할지 기다릴지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
+export function getResponseAction({
+  authStatus,
+  actionIdentifier,
+  isNavigationReady = true,
+}: {
+  authStatus: AuthStatus;
+  actionIdentifier: string;
+  isNavigationReady?: boolean;
+}): NotificationResponseAction {
+  if (actionIdentifier === 'MARKETING_OPT_OUT') {
+    return { status: 'process' };
+  }
+  if (authStatus === 'loading' || authStatus === 'locked') {
+    return { status: 'defer', reason: 'auth-resolving' };
+  }
+  if (authStatus === 'unauthenticated') {
+    return { status: 'defer', reason: 'authentication-required' };
+  }
+  if (!isNavigationReady) {
+    return { status: 'defer', reason: 'navigation-not-ready' };
+  }
+  return { status: 'process' };
+}
+
 export const NotificationPolicy = {
   isAiFeature,
   findReceivedCheer,
+  getResponseAction,
 } as const;

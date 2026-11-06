@@ -1,3 +1,4 @@
+import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage } from '@src/shared/errors';
@@ -7,11 +8,7 @@ import { AppState } from 'react-native';
 
 import { toPushNotificationPayload } from '../apis/notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import type { PushNotificationPayload } from '../domains/notification.model';
-import {
-  getNotificationResponseDisposition,
-  type NotificationAuthStatus,
-} from '../utils/navigation/notification-response-disposition';
+import { NotificationPolicy, type PushNotificationPayload } from '../domains/notification.model';
 import type { useNotificationResponseHandler } from './use-notification-response-handler';
 
 type PendingNotificationResponse = {
@@ -33,7 +30,7 @@ export function useNotificationResponseProcessor({
   accountId,
   handleNotificationResponse,
 }: {
-  authStatus: NotificationAuthStatus;
+  authStatus: AuthStatus;
   accountId: string | null;
   handleNotificationResponse: ReturnType<typeof useNotificationResponseHandler>;
 }) {
@@ -97,7 +94,7 @@ export function useNotificationResponseProcessor({
         pendingResponses.current.delete(responseId);
         return;
       }
-      const disposition = getNotificationResponseDisposition({
+      const disposition = NotificationPolicy.getResponseAction({
         authStatus,
         actionIdentifier: response.actionIdentifier,
         isNavigationReady,
