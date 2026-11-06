@@ -1,7 +1,6 @@
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-marketing-push-consent-mutation-options';
-import { PreferencePolicy } from '@src/features/identity/preference/domains/preference.model';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
@@ -43,16 +42,14 @@ function PushSettingsScreen() {
         <SettingsCard.Toggle
           label={t('settings.nightPushLabel')}
           description={
-            PreferencePolicy.isPushDisabled(preference)
+            !preference.pushEnabled
               ? t('auth:preference.enablePushFirst')
               : t('settings.nightPushDescription')
           }
           isSelected={preference.nightPushEnabled}
           onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
           isDisabled={
-            PreferencePolicy.isPushDisabled(preference) ||
-            updateMutation.isPending ||
-            pushEnabledMutation.isPending
+            !preference.pushEnabled || updateMutation.isPending || pushEnabledMutation.isPending
           }
         />
       </SettingsCard>

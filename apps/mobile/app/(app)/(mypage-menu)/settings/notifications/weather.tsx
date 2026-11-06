@@ -18,14 +18,14 @@ function WeatherSettingsScreen() {
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const { t } = useTranslation(['notification', 'auth']);
 
-  const pushDisabled = PreferencePolicy.isPushDisabled(preference) || updateMutation.isPending;
+  const pushDisabled = !preference.pushEnabled || updateMutation.isPending;
 
   return (
     <SettingsCard>
       <SettingsCard.Toggle
         label={t('settings.weatherLabel')}
         description={
-          PreferencePolicy.isPushDisabled(preference)
+          !preference.pushEnabled
             ? t('auth:preference.enablePushFirst')
             : t('settings.weatherDescription')
         }

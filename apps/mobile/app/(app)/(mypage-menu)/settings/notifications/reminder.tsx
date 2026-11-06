@@ -1,7 +1,6 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
-import { PreferencePolicy } from '@src/features/identity/preference/domains/preference.model';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import type { Preference } from '@src/features/identity/preference/schemas/preference.schema';
@@ -110,7 +109,7 @@ function ReminderTimeInput({
       onChange={(value) => updatePreference.mutate(time.toInput(value))}
       {...time.range}
       timeFormat={preference.timeFormat}
-      isDisabled={PreferencePolicy.isPushDisabled(preference) || updatePreference.isPending}
+      isDisabled={!preference.pushEnabled || updatePreference.isPending}
       accessory={isLocked ? <CrownIcon width={14} height={14} /> : undefined}
       onBeforeOpen={() => gate.guard()}
     />

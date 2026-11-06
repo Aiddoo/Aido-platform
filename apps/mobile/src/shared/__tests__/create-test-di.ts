@@ -5,6 +5,7 @@ import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/c
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
@@ -36,6 +37,7 @@ export function createTestDi({
     memoService: new MemoService(httpClient, logger),
     inquiryService: new InquiryService(httpClient),
     userService: new UserService(httpClient),
+    preferenceService: new PreferenceService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
     authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
     consentService: new ConsentService(httpClient),

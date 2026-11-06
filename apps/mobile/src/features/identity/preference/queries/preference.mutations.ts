@@ -4,6 +4,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -15,65 +16,71 @@ type UpdatePreferenceArgs = PreferenceChange & {
   trackAs?: 'weatherEnabled';
 };
 
-export const useUpdatePreferenceMutationOptions = () => {
+/** 서버가 설정 값을 거절한 이유 중 사용자에게 우리 문구로 알리는 것 */
+function getRejectionMessage(error: unknown) {
+  if (!isApiError(error)) {
+    return undefined;
+  }
+  if (error.hasCode(ErrorCode.PREFERENCE_1701)) {
+    return t('auth:toasts.premiumReminderTime');
+  }
+  if (error.hasCode(ErrorCode.PREFERENCE_1702)) {
+    return t('auth:toasts.invalidTimeRange');
+  }
+  return undefined;
+}
+
+export function useUpdatePreferenceMutationOptions() {
   const haptics = useHaptics();
   const preferenceService = usePreferenceService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('auth:toasts.settingsChangeFailed'));
 
   return mutationOptions({
-    mutationFn: async ({ trackAs: _trackAs, ...input }: UpdatePreferenceArgs) => {
-      const result = await preferenceService.updatePreference(input);
-      return unwrap(result);
-    },
-    onMutate: async ({ trackAs: _trackAs, ...input }) => {
+    // 연결이 없을 때 요청을 쥐고 기다리면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
+    networkMode: 'always',
+    mutationFn: async ({ trackAs: _trackAs, ...change }: UpdatePreferenceArgs) =>
+      unwrap(await preferenceService.updatePreference(change)),
+    onMutate: async ({ trackAs: _trackAs, ...change }) => {
       await queryClient.cancelQueries({ queryKey: PREFERENCE_QUERY_KEYS.current() });
 
       const previousData = queryClient.getQueryData<Preference>(PREFERENCE_QUERY_KEYS.current());
 
-      queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return { ...old, ...input };
-      });
+      queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), (old) =>
+        old == null ? old : { ...old, ...change },
+      );
 
       return { previousData };
     },
-    onSuccess: (data, { trackAs, ...input }) => {
+    onSuccess: (data, { trackAs, ...change }) => {
       if (trackAs) {
         trackEvent('settings_changed', {
           setting: trackAs,
-          value: String(Object.values(input)[0]),
+          value: String(Object.values(change)[0]),
         });
       } else {
-        for (const [setting, value] of Object.entries(input)) {
+        for (const [setting, value] of Object.entries(change)) {
           trackEvent('settings_changed', { setting, value: String(value) });
         }
       }
       // 서버 응답으로 캐시를 정확하게 업데이트 (invalidate 대신 직접 업데이트로 블링킹 방지)
       queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
     },
-    onError: (error, _input, context) => {
-      haptics.notify('error');
-
+    onError: (error, _change, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), context.previousData);
       }
 
-      if (isApiError(error)) {
-        if (error.hasCode(ErrorCode.PREFERENCE_1701)) {
-          toast.error(t('auth:toasts.premiumReminderTime'));
-          return;
-        }
-        if (error.hasCode(ErrorCode.PREFERENCE_1702)) {
-          toast.error(t('auth:toasts.invalidTimeRange'));
-          return;
-        }
+      const rejection = getRejectionMessage(error);
+      if (rejection != null) {
+        haptics.notify('error');
+        toast.error(rejection);
+        return;
       }
 
-      toast.error(error, { fallback: t('auth:toasts.settingsChangeFailed') });
+      showFailure(error);
     },
   });
-};
+}

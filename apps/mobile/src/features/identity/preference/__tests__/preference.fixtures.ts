@@ -1,6 +1,8 @@
 import type { PreferenceResponse } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
+import { type Preference, preferenceSchema } from '../schemas/preference.schema';
+
 const generatePreferenceDto = (): PreferenceResponse => ({
   pushEnabled: true,
   nightPushEnabled: false,
@@ -22,6 +24,11 @@ export const createPreferenceDto = (
   overrides?: Partial<PreferenceResponse>,
 ): PreferenceResponse => ({
   ...generatePreferenceDto(),
+  ...overrides,
+});
+
+export const createPreference = (overrides?: Partial<Preference>): Preference => ({
+  ...preferenceSchema.parse(generatePreferenceDto()),
   ...overrides,
 });
 

@@ -26,7 +26,7 @@ function NotificationSettingsScreen() {
   const { t } = useTranslation('notification');
   const dateFormatContext = useDateFormatContext();
 
-  const isPushDisabled = PreferencePolicy.isPushDisabled(preference);
+  const isPushDisabled = !preference.pushEnabled;
 
   return (
     <>
