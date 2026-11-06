@@ -40,7 +40,7 @@ import { useMemo, useState } from 'react';
 import { useFeedDate } from '../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
-import { toFriendCategoryGroups } from '../utils/group-friend-todos-by-category';
+import { groupFriendTodosByCategory } from '../utils/group-friend-todos-by-category';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
@@ -58,7 +58,7 @@ export function FriendTodoList() {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const categoryGroups = useMemo(() => toFriendCategoryGroups(todos), [todos]);
+  const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos), [todos]);
 
   if (categoryGroups.length === 0) {
     return <FriendTodoList.Empty />;

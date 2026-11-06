@@ -44,7 +44,7 @@ import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
 import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
-import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
+import { groupTodosByCategory } from '../../utils/group-todos-by-category';
 import { ReorderCoachmark } from '../reorder-coachmark';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {
@@ -67,7 +67,7 @@ export function TodoList() {
     ],
   });
   const categoryGroups = useMemo(
-    () => toTodoCategoryGroups(todosByDate.todos, categoriesResult.categories),
+    () => groupTodosByCategory(todosByDate.todos, categoriesResult.categories),
     [todosByDate.todos, categoriesResult.categories],
   );
   const canReorderTodos = categoryGroups.some((group) => group.todos.length >= 2);

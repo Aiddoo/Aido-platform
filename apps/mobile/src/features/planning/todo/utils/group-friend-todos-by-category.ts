@@ -2,7 +2,7 @@ import { groupBy } from 'es-toolkit';
 
 import type { TodoListResult } from '../domains/todo.model';
 
-export function toFriendCategoryGroups(data: TodoListResult) {
+export function groupFriendTodosByCategory(data: TodoListResult) {
   const todos = data.todos;
   return Object.values(groupBy(todos, (todo) => todo.category.id)).flatMap((items) => {
     const first = items[0];

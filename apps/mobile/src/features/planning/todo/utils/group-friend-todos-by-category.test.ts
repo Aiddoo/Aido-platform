@@ -1,6 +1,6 @@
 import { createTodoDto } from '../__tests__/todo.factories';
 import { toTodo } from '../apis/todo.mapper';
-import { toFriendCategoryGroups } from './group-friend-todos-by-category';
+import { groupFriendTodosByCategory } from './group-friend-todos-by-category';
 
 describe('친구 할 일 목록 표시', () => {
   test('조회한 원본을 유지하면서 카테고리와 시간 표시를 조합한다', () => {
@@ -11,8 +11,8 @@ describe('친구 할 일 목록 표시', () => {
     );
     const result = { todos: [first, second], hasNext: false, nextCursor: null };
     // When
-    const twelveHour = toFriendCategoryGroups(result);
-    const twentyFourHour = toFriendCategoryGroups(result);
+    const twelveHour = groupFriendTodosByCategory(result);
+    const twentyFourHour = groupFriendTodosByCategory(result);
     // Then
     expect(twelveHour.map((group) => group.category.name)).toEqual(['기본', '스터디']);
     expect(twelveHour[0]?.todos[0]).toBe(first);
@@ -25,7 +25,7 @@ describe('친구 할 일 목록 표시', () => {
     // Given
     const todos = { todos: [], hasNext: false, nextCursor: null };
     // When
-    const result = toFriendCategoryGroups(todos);
+    const result = groupFriendTodosByCategory(todos);
     // Then
     expect(result).toEqual([]);
   });

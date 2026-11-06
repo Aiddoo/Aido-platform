@@ -3,7 +3,7 @@ import { groupBy } from 'es-toolkit';
 
 import type { Todo } from '../domains/todo.model';
 
-export function toTodoCategoryGroups(todos: Todo[], categories: TodoCategoryWithCount[]) {
+export function groupTodosByCategory(todos: Todo[], categories: TodoCategoryWithCount[]) {
   const grouped = groupBy(todos, (todo) => todo.category.id);
   return categories.map((category) => ({
     category,
