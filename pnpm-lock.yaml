@@ -185,6 +185,12 @@ catalogs:
     '@react-native-kakao/share':
       specifier: 2.4.11
       version: 2.4.11
+    '@react-native-kakao/social':
+      specifier: 2.4.11
+      version: 2.4.11
+    '@react-native-kakao/user':
+      specifier: 2.4.11
+      version: 2.4.11
     '@sentry/nestjs':
       specifier: 11.10.0
       version: 11.10.0
@@ -852,6 +858,12 @@ importers:
         specifier: 'catalog:'
         version: 2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-native-kakao/share':
+        specifier: 'catalog:'
+        version: 2.4.11(@react-native-kakao/core@2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-native-kakao/social':
+        specifier: 'catalog:'
+        version: 2.4.11(@react-native-kakao/core@2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-native-kakao/user':
         specifier: 'catalog:'
         version: 2.4.11(@react-native-kakao/core@2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@sentry/react-native':
@@ -4610,6 +4622,20 @@ packages:
 
   '@react-native-kakao/share@2.4.11':
     resolution: {integrity: sha512-0P8lBHJSM7TML6N1KD/7+7iHdOJDnUUNpgKzgqSD061KKHkiZ8njBT0rMsdhrg4cK+kW8xyglYpLVRgBV5+0wA==}
+    peerDependencies:
+      '@react-native-kakao/core': 2.4.11
+      react: '*'
+      react-native: '*'
+
+  '@react-native-kakao/social@2.4.11':
+    resolution: {integrity: sha512-I/IP+RO2GU+qgg2tY/bumtoKNpb4aTNgWSmIbsAjh4Lt/HcKfJg1IluxKm80J7THAD02Qv3qiRBs34VGuft4zw==}
+    peerDependencies:
+      '@react-native-kakao/core': 2.4.11
+      react: '*'
+      react-native: '*'
+
+  '@react-native-kakao/user@2.4.11':
+    resolution: {integrity: sha512-XI3CVSh/yJDg17QVGpBrIGRGGpWvkyL/5Uc6M3B7e5aRdQVtKpnwWbivhKhzaqmgadC585ocgSRLRq48rMZ+CA==}
     peerDependencies:
       '@react-native-kakao/core': 2.4.11
       react: '*'
@@ -15233,6 +15259,20 @@ snapshots:
       expo: 58.0.23(055f46f1911c17655fe84235463802d2)
 
   '@react-native-kakao/share@2.4.11(@react-native-kakao/core@2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+    dependencies:
+      '@mj-studio/js-util': 1.1.14
+      '@react-native-kakao/core': 2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react: 19.3.0
+      react-native: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+
+  '@react-native-kakao/social@2.4.11(@react-native-kakao/core@2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+    dependencies:
+      '@mj-studio/js-util': 1.1.14
+      '@react-native-kakao/core': 2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react: 19.3.0
+      react-native: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+
+  '@react-native-kakao/user@2.4.11(@react-native-kakao/core@2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       '@mj-studio/js-util': 1.1.14
       '@react-native-kakao/core': 2.4.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)

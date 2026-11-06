@@ -12,6 +12,12 @@
   ],
   "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
   "ignore": ["**/*.d.ts", "src/shared/constants/query-meta.ts"],
-  "ignoreDependencies": ["expo-glass-effect", "babel-plugin-react-compiler", "babel-jest"],
+  "ignoreDependencies": [
+    "@react-native-kakao/social",
+    "@react-native-kakao/user",
+    "expo-glass-effect",
+    "babel-plugin-react-compiler",
+    "babel-jest"
+  ],
   "ignoreBinaries": ["adb", "eas", "oxfmt", "oxlint"]
 }
