@@ -28,7 +28,7 @@ import { RadioGroup } from 'heroui-native';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
 export default function InquiryScreen() {
-  const [initialValues] = useInquiryParams();
+  const initialValues = useInquiryParams();
   const { t } = useTranslation('inquiry');
   const { locale } = useDateFormatContext();
   const navigation = useNavigation();

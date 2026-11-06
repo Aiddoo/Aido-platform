@@ -101,7 +101,7 @@ function WeatherRescheduleSheet() {
 
 function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
   const { t } = useTranslation('weather');
-  const { todoIds, reason, setTodoIds } = useWeatherRescheduleParams();
+  const [{ todoIds, reason }, setParams] = useWeatherRescheduleParams();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
@@ -127,7 +127,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
       onEmpty();
       return;
     }
-    setTodoIds(remaining);
+    setParams({ todoIds: remaining });
   };
 
   if (affectedTodos.length === 0) {

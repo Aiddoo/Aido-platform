@@ -66,7 +66,7 @@ export default function AchievementDetailScreen() {
 
 function WeeklyAchievementCertificate() {
   const fontScaledSize = useFontScaledSize();
-  const [{ year, week }] = useAchievementParams();
+  const { year, week } = useAchievementParams();
   const [{ data: achievement }, { data: user }] = useSuspenseQueries({
     queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
   });
