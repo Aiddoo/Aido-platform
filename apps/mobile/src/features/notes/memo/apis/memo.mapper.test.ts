@@ -26,7 +26,7 @@ describe('메모 페이지 응답 매핑', () => {
     // Then
     expect(result.nextCursor).toBe(12);
     expect(result.hasNext).toBe(true);
-    expect(result.items[0]?.createdAt).toEqual(new Date('2026-10-03T00:00:00Z'));
+    expect(result.items[0]?.createdAt).toBe('2026-10-03T00:00:00Z');
     expect(result.items[0]).not.toHaveProperty('userId');
   });
 

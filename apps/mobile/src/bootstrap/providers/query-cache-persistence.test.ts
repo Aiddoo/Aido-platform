@@ -157,6 +157,42 @@ describe('serializeQueryCache', () => {
     expect(restored).toEqual(client);
   });
 
+  it('Instant 문자열은 복원 뒤에도 오프셋까지 문자열 그대로다', () => {
+    // Given
+    const memo = {
+      createdAt: '2026-11-06T00:00:00.000Z',
+      updatedAt: '2026-11-06T09:00:00+09:00',
+    };
+    const client = {
+      timestamp: 1,
+      buster: '1:1.15.0',
+      clientState: { mutations: [], queries: [] },
+      memo,
+    };
+
+    // When
+    const restored = deserializeQueryCache(serializeQueryCache(client));
+
+    // Then
+    expect(restored).toEqual(client);
+  });
+
+  it('Instant로 옮기기 전에 저장한 $date 값도 Date로 되살린다', () => {
+    // Given 옛 버전이 저장한 캐시
+    const legacy = JSON.stringify({
+      timestamp: 1,
+      buster: '1:1.14.0',
+      clientState: { mutations: [], queries: [] },
+      memo: { createdAt: { $date: 1793923200000 } },
+    });
+
+    // When
+    const restored = deserializeQueryCache(legacy);
+
+    // Then
+    expect(restored).toMatchObject({ memo: { createdAt: new Date(1793923200000) } });
+  });
+
   it('달력 날짜와 벽시계 시각 문자열은 복원 뒤에도 문자열 그대로다', () => {
     // Given
     const todo = {

@@ -7,6 +7,7 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isApiError, isConnectivityError } from '@src/shared/errors';
@@ -107,7 +108,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
     createMemoDraftKey({ userId: me.id, memoId }),
     {
-      sourceUpdatedAt: memo.updatedAt.getTime(),
+      sourceUpdatedAt: toEpochMs(memo.updatedAt),
       onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
     },
   );
@@ -646,7 +647,7 @@ function useMemoAiParse() {
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const aiConsent = useAiDataSharingConsentGate();
   const defaultCategoryId = categoriesQuery.data?.categories[0]?.id;
-  const sourceUpdatedAt = memo.updatedAt.getTime();
+  const sourceUpdatedAt = toEpochMs(memo.updatedAt);
 
   const handlePress = async () => {
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다

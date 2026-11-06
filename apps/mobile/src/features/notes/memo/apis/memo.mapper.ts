@@ -8,7 +8,7 @@ import {
 } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
 import { toRepeatDto } from '@src/features/planning/todo/apis/todo-series.mapper';
-import { toDateKey } from '@src/shared/date/instant';
+import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { pick } from 'es-toolkit';
 
@@ -18,8 +18,8 @@ import type { Memo, MemoPage, MemoResourceLimit } from '../schemas/memo.schema';
 export function toMemo(dto: MemoDto): Memo {
   return {
     ...pick(dto, ['id', 'content', 'isPinned']),
-    createdAt: new Date(dto.createdAt),
-    updatedAt: new Date(dto.updatedAt),
+    createdAt: toInstant(dto.createdAt),
+    updatedAt: toInstant(dto.updatedAt),
   };
 }
 

@@ -3,7 +3,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
-import { getZonedHour, toDateKey } from './instant';
+import { getZonedHour, type Instant, toDate, toDateKey } from './instant';
 import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
 import { isValidHHmm, parseHour, parseMinute } from './time-of-day';
 
@@ -73,7 +73,12 @@ function getHourCycleOptions(timeFormat: TimeFormat): Intl.DateTimeFormatOptions
   return timeFormat === 'TWELVE_HOUR' ? { hour12: true } : { hourCycle: 'h23' };
 }
 
-export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormatContext): string {
+export function formatDateLabel(
+  value: Date | Instant,
+  kind: DateLabel,
+  context: DateFormatContext,
+): string {
+  const date = toDate(value);
   if (!isValidDate(date)) {
     return '';
   }

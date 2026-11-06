@@ -1,4 +1,13 @@
-import { getZonedHour, hasSameWallClock, toDateKey, toHHmm } from './instant';
+import {
+  diffMs,
+  getZonedHour,
+  hasSameWallClock,
+  isBefore,
+  toDateKey,
+  toEpochMs,
+  toHHmm,
+  toInstant,
+} from './instant';
 
 describe('toDateKey', () => {
   it.each([
@@ -86,5 +95,98 @@ describe('hasSameWallClock', () => {
     // When / Then 서머타임 동안(-7)만 같고 해제 뒤(-8 대 -7)에는 다르다
     expect(hasSameWallClock(beforeFallBack, 'America/Los_Angeles', 'America/Phoenix')).toBe(true);
     expect(hasSameWallClock(afterFallBack, 'America/Los_Angeles', 'America/Phoenix')).toBe(false);
+  });
+});
+
+describe('toInstant', () => {
+  it.each([
+    ['Z 표기', '2026-10-02T00:00:00.000Z'],
+    ['초만 있는 Z 표기', '2026-10-03T00:00:00Z'],
+    ['오프셋 표기', '2026-10-02T09:00:00+09:00'],
+  ])('%s는 받아들여 문자열 그대로 둔다', (_name, iso) => {
+    // When & Then
+    expect(toInstant(iso)).toBe(iso);
+  });
+
+  it.each(['', '2026-10-02', '어제', '2026-13-01T00:00:00Z', '2026-10-02T00:00:00'])(
+    '순간이 아닌 값 %j는 거부한다',
+    (value) => {
+      // When & Then
+      expect(() => toInstant(value)).toThrow();
+    },
+  );
+});
+
+describe('toEpochMs — 초안 sourceUpdatedAt 호환', () => {
+  it('Date의 getTime과 같은 숫자를 돌려준다', () => {
+    // Given
+    const iso = '2026-10-02T00:01:00.123Z';
+
+    // When & Then
+    expect(toEpochMs(toInstant(iso))).toBe(new Date(iso).getTime());
+  });
+});
+
+describe('isBefore, diffMs — 오프셋이 달라도 순간으로 비교한다', () => {
+  const seoulNine = toInstant('2026-10-02T09:00:00+09:00');
+  const utcFive = toInstant('2026-10-02T05:00:00Z');
+
+  it('문자열 사전순과 다른 순서도 순간으로 판단한다', () => {
+    // Given 사전순으로는 서울 표기가 뒤지만 실제로는 UTC 5시보다 5시간 빠르다
+    expect(seoulNine > utcFive).toBe(true);
+
+    // When & Then
+    expect(isBefore(seoulNine, utcFive)).toBe(true);
+    expect(isBefore(utcFive, seoulNine)).toBe(false);
+  });
+
+  it('같은 순간은 앞서지 않고 차이는 0이다', () => {
+    // Given
+    const utc = toInstant('2026-10-02T00:00:00Z');
+
+    // When & Then
+    expect(isBefore(seoulNine, utc)).toBe(false);
+    expect(diffMs(seoulNine, utc)).toBe(0);
+  });
+
+  it('차이는 앞 값에서 뒤 값을 뺀 밀리초다', () => {
+    // When & Then
+    expect(diffMs(utcFive, seoulNine)).toBe(5 * 60 * 60 * 1000);
+  });
+});
+
+describe('Instant를 시간대로 읽기', () => {
+  it('자정 직전·정각이 서울에서 다른 날짜가 된다', () => {
+    // When & Then
+    expect(toDateKey(toInstant('2026-10-01T14:59:59.999Z'), 'Asia/Seoul')).toBe('2026-10-01');
+    expect(toDateKey(toInstant('2026-10-01T15:00:00.000Z'), 'Asia/Seoul')).toBe('2026-10-02');
+  });
+
+  it('오프셋 표기도 같은 순간이면 같은 날짜와 시각으로 읽는다', () => {
+    // Given 서울 자정은 UTC 전날 15시
+    const seoulMidnight = toInstant('2026-10-02T00:00:00+09:00');
+
+    // When & Then
+    expect(toDateKey(seoulMidnight, 'Asia/Seoul')).toBe('2026-10-02');
+    expect(toDateKey(seoulMidnight, 'America/Los_Angeles')).toBe('2026-10-01');
+    expect(toHHmm(seoulMidnight, 'America/Los_Angeles')).toBe('08:00');
+  });
+
+  it('LA 서머타임 시작 때 01:59 다음이 03:00이다', () => {
+    // When & Then
+    expect(toHHmm(toInstant('2026-03-08T09:59:59Z'), 'America/Los_Angeles')).toBe('01:59');
+    expect(toHHmm(toInstant('2026-03-08T10:00:00Z'), 'America/Los_Angeles')).toBe('03:00');
+  });
+
+  it('LA 서머타임 해제 때 01시가 두 번 지나가도 날짜는 그대로다', () => {
+    // Given
+    const first = toInstant('2026-11-01T08:30:00Z');
+    const second = toInstant('2026-11-01T09:30:00Z');
+
+    // When & Then
+    expect(toHHmm(first, 'America/Los_Angeles')).toBe('01:30');
+    expect(toHHmm(second, 'America/Los_Angeles')).toBe('01:30');
+    expect(toDateKey(first, 'America/Los_Angeles')).toBe('2026-11-01');
+    expect(toDateKey(second, 'America/Los_Angeles')).toBe('2026-11-01');
   });
 });

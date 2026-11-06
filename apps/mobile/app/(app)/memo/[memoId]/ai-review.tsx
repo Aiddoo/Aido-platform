@@ -12,6 +12,7 @@ import {
   toVoicePlanFromDraft,
 } from '@src/features/voice/domains/plan-review-form.schema';
 import { voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
+import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -42,7 +43,7 @@ function AiReviewScreen() {
   });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
     createMemoPlanDraftKey({ userId: user.id, memoId }),
-    { sourceUpdatedAt: memo.updatedAt.getTime() },
+    { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
   const fallbackCategoryId = categoriesResult.categories[0]?.id;
 
