@@ -16,7 +16,7 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { APP_ICONS } from '../constants/app-icons';
+import { APP_ICONS } from '../constants/app-icon.constants';
 import type { AppIconKey } from '../domains/app-icon.model';
 
 interface AppIconPickerProps extends Omit<ComponentProps<typeof Grid>, 'children'> {

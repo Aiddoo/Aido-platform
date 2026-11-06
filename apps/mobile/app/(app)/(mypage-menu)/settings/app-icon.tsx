@@ -4,8 +4,8 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
 import type { AppIconKey } from '@src/features/device/app-icon/domains/app-icon.model';
-import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/queries/get-current-app-icon-query-options';
-import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/use-change-app-icon-mutation-options';
+import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/app-icon.mutations';
+import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/queries/app-icon.queries';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,

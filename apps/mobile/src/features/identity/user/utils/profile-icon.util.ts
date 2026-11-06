@@ -1,5 +1,5 @@
 import defaultProfileIconImage from '@assets/images/profile-icons/default.webp';
-import { APP_ICONS } from '@src/features/device/app-icon/constants/app-icons';
+import { APP_ICONS } from '@src/features/device/app-icon/constants/app-icon.constants';
 import type { ImageSourcePropType } from 'react-native';
 
 const ICON_MAP = new Map<string, ImageSourcePropType>(
