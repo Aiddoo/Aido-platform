@@ -8,7 +8,6 @@ import {
 } from '@src/shared/date/date-format';
 import { formatDaysOfWeek } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
@@ -23,6 +22,7 @@ import {
   ScallopedContainer,
   Spacing,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -273,8 +273,6 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
 };
 
 SuggestionsList.Loading = function Loading() {
-  const fontScaledSize = useFontScaledSize();
-
   return (
     <ScallopedContainer>
       <Box className="items-center px-5 pt-4">
@@ -284,9 +282,9 @@ SuggestionsList.Loading = function Loading() {
           resizeMode="contain"
         />
         <Spacing size={8} />
-        <Skeleton className="w-48 rounded dark:bg-gray-2" style={{ height: fontScaledSize(28) }} />
+        <TextSkeleton size="t3" className="w-48" />
         <Spacing size={4} />
-        <Skeleton className="w-56 rounded dark:bg-gray-2" style={{ height: fontScaledSize(19) }} />
+        <TextSkeleton size="b4" className="w-56" />
       </Box>
 
       <Spacing size={20} />
@@ -297,24 +295,19 @@ SuggestionsList.Loading = function Loading() {
             <VStack gap={8}>
               <VStack gap={4}>
                 <HStack justify="between" align="center">
-                  <Skeleton
-                    className="w-32 rounded dark:bg-gray-2"
-                    style={{ height: fontScaledSize(23) }}
-                  />
-                  <Skeleton
-                    className="w-16 rounded dark:bg-gray-2"
-                    style={{ height: fontScaledSize(17) }}
-                  />
+                  <TextSkeleton size="b2" className="w-32" />
+                  <TextSkeleton size="e1" className="w-16" />
                 </HStack>
-                <Skeleton
-                  className="w-40 rounded dark:bg-gray-2"
-                  style={{ height: fontScaledSize(19) }}
-                />
+                <TextSkeleton size="b4" className="w-40" />
               </VStack>
-              <Skeleton
-                className="w-full rounded dark:bg-gray-2"
-                style={{ height: fontScaledSize(19) }}
-              />
+              <TextSkeleton size="b4" className="w-full" />
+              <HStack justify="between" align="center" className="mt-1">
+                <TextSkeleton size="e1" className="w-24" />
+                <HStack gap={8}>
+                  <Skeleton className="h-8 w-12 rounded-xl" />
+                  <Skeleton className="h-8 w-12 rounded-xl" />
+                </HStack>
+              </HStack>
             </VStack>
             {index < SUGGESTION_LOADING_COUNT - 1 && <DashedDivider className="mt-5" />}
           </Box>

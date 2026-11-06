@@ -19,6 +19,7 @@ import {
   ShareIcon,
   Spacing,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import {
@@ -40,6 +41,7 @@ import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
 const CERTIFICATE_LINE_COUNT = 4;
+const LOADING_STAT_COUNT = 3;
 
 export function AchievementSummaryCard() {
   const today = useToday();
@@ -233,43 +235,53 @@ AchievementSummaryCard.Empty = function Empty() {
 };
 
 AchievementSummaryCard.Loading = function Loading() {
-  const fontScaledSize = useFontScaledSize();
-
   return (
-    <Certificate>
-      <Spacing size={12} />
+    <Box>
+      <Certificate>
+        <Spacing size={12} />
 
-      <Certificate.Ornament />
+        <Certificate.Ornament />
 
-      <Spacing size={16} />
+        <Spacing size={16} />
 
-      <VStack align="center" gap={4}>
-        <Skeleton className="w-10 rounded dark:bg-gray-2" style={{ height: fontScaledSize(17) }} />
-        <Skeleton className="w-32 rounded dark:bg-gray-2" style={{ height: fontScaledSize(28) }} />
-      </VStack>
+        <VStack align="center" gap={4}>
+          <TextSkeleton size="e1" className="w-10" />
+          <Box className="border-b border-transparent pb-1 px-8">
+            <TextSkeleton size="t3" className="w-32" />
+          </Box>
+        </VStack>
 
-      <Spacing size={16} />
+        <Spacing size={16} />
 
-      <VStack align="center">
-        {range(CERTIFICATE_LINE_COUNT).map((index) => (
-          <Skeleton key={index} className="w-full rounded" style={{ height: fontScaledSize(20) }} />
-        ))}
-      </VStack>
+        <VStack align="center">
+          {range(CERTIFICATE_LINE_COUNT).map((index) => (
+            <TextSkeleton key={index} size="b3" className="w-full" />
+          ))}
+        </VStack>
 
-      <Spacing size={20} />
+        <Spacing size={20} />
 
-      <DashedDivider />
+        <DashedDivider />
 
-      <Spacing size={14} />
+        <Spacing size={14} />
 
-      <HStack align="center" gap={12}>
-        <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
-        <Skeleton
-          className="flex-1 rounded dark:bg-gray-2"
-          style={{ height: fontScaledSize(40) }}
-        />
-      </HStack>
-    </Certificate>
+        <HStack align="center" gap={12}>
+          <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
+          {range(LOADING_STAT_COUNT).map((index) => (
+            <VStack key={index} align="center" gap={1} className="flex-1">
+              <TextSkeleton size="e1" className="w-10" />
+              <TextSkeleton size="b2" className="w-12" />
+            </VStack>
+          ))}
+        </HStack>
+      </Certificate>
+
+      <Spacing size={8} />
+
+      <Box className="self-end py-1">
+        <TextSkeleton size="b3" className="w-16" />
+      </Box>
+    </Box>
   );
 };
 

@@ -4,10 +4,10 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
+import { ArrowRightIcon, CopyIcon, H4, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
+import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
 
 import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
@@ -116,14 +116,12 @@ function UserTierChip({ tier }: { tier: AccessTier }) {
 
 ProfileCard.Loading = function Loading() {
   return (
-    <SkeletonGroup isLoading isSkeletonOnly>
-      <HStack gap={12} align="center" className="rounded-2xl px-4 py-3">
-        <SkeletonGroup.Item className="size-12 rounded-full" />
-        <VStack className="flex-1">
-          <SkeletonGroup.Item className="h-6 w-24 rounded-md" />
-          <SkeletonGroup.Item className="h-5 w-20 rounded-md" />
-        </VStack>
-      </HStack>
-    </SkeletonGroup>
+    <HStack gap={12} align="center" className="rounded-2xl px-4 py-3">
+      <Skeleton className="size-12 rounded-full" />
+      <VStack className="flex-1">
+        <TextSkeleton size="t3" className="w-24" />
+        <TextSkeleton size="b4" className="w-20" />
+      </VStack>
+    </HStack>
   );
 };

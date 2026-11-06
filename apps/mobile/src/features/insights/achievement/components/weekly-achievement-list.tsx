@@ -2,7 +2,6 @@ import type { FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
@@ -18,6 +17,7 @@ import {
   Result,
   Spacing,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -134,21 +134,14 @@ WeeklyAchievementList.Empty = function Empty() {
 };
 
 WeeklyAchievementList.Loading = function Loading() {
-  const fontScaledSize = useFontScaledSize();
-
   return (
     <VStack>
       {range(LOADING_ROW_COUNT).map((index) => (
         <ListRow
           key={index}
           left={<Skeleton className="size-10 rounded-full" />}
-          contents={
-            <VStack gap={2}>
-              <Skeleton className="w-24 rounded" style={{ height: fontScaledSize(23) }} />
-              <Skeleton className="w-16 rounded" style={{ height: fontScaledSize(17) }} />
-            </VStack>
-          }
-          right={<Skeleton className="w-12 rounded" style={{ height: fontScaledSize(20) }} />}
+          contents={<ListRow.Texts.Loading type="2RowTypeA" />}
+          right={<TextSkeleton size="b3" className="w-12" />}
           verticalPadding="medium"
         />
       ))}

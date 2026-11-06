@@ -16,11 +16,12 @@ import {
   Spacing,
   StyledSafeAreaView,
   TextButton,
+  TextSkeleton,
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Separator, Skeleton } from 'heroui-native';
+import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 
 import { UserPolicy } from '../../domains/user.model';
@@ -147,7 +148,7 @@ function AccountActionButtons() {
 AccountActionButtons.Loading = function Loading() {
   return (
     <Box accessibilityState={{ busy: true }} className="items-center pb-10">
-      <Skeleton className="h-5 w-40 rounded-md" />
+      <TextSkeleton size="b4" className="w-40" />
     </Box>
   );
 };

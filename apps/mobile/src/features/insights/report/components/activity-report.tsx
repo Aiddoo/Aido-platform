@@ -11,6 +11,7 @@ import {
   ScallopedContainer,
   Spacing,
   Text,
+  TextSkeleton,
   VStack,
   Box,
 } from '@src/shared/ui';
@@ -18,7 +19,7 @@ import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
-import { Chip, Separator, SkeletonGroup } from 'heroui-native';
+import { Chip, Separator, Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
 
@@ -310,13 +311,15 @@ ActivityReport.Loading = function Loading() {
   return (
     <VStack className="px-4" gap={16}>
       <Spacing size={16} />
-      <SkeletonGroup isLoading>
-        <SkeletonGroup.Item className="h-8 w-48 rounded-md" />
-        <SkeletonGroup.Item className="h-32 w-full rounded-2xl" />
-        <SkeletonGroup.Item className="h-40 w-full rounded-2xl" />
-        <SkeletonGroup.Item className="h-24 w-full rounded-2xl" />
-        <SkeletonGroup.Item className="h-24 w-full rounded-2xl" />
-      </SkeletonGroup>
+      <HStack align="center" gap={8}>
+        <Skeleton className="h-6 w-12 rounded-full" />
+        <TextSkeleton size="b2" className="w-24" />
+        <TextSkeleton size="b4" className="w-32" />
+      </HStack>
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      <Skeleton className="h-40 w-full rounded-2xl" />
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <Skeleton className="h-24 w-full rounded-2xl" />
     </VStack>
   );
 };

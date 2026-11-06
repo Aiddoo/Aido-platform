@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack, Box } from '@src/shared/ui';
+import { HStack, Text, TextSkeleton, VStack, Box } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Separator, SkeletonGroup } from 'heroui-native';
+import { Separator } from 'heroui-native';
 
 import { useGetReportStatusQueryOptions } from '../queries/get-report-status-query-options';
 import { formatDday } from '../utils/format-report';
@@ -40,21 +40,19 @@ export function ReportStatusBanner() {
 ReportStatusBanner.Loading = function Loading() {
   return (
     <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-2 py-3">
-      <SkeletonGroup isLoading>
-        <HStack className="items-stretch">
-          <VStack gap={4} align="center" className="flex-1">
-            <SkeletonGroup.Item className="h-4 w-24 rounded-md" />
-            <SkeletonGroup.Item className="h-7 w-12 rounded-md" />
-          </VStack>
+      <HStack className="items-stretch">
+        <VStack gap={4} align="center" className="flex-1">
+          <TextSkeleton size="b4" className="w-24" />
+          <TextSkeleton size="t3" className="w-12" />
+        </VStack>
 
-          <Separator orientation="vertical" className="bg-gray-3" />
+        <Separator orientation="vertical" className="bg-gray-3" />
 
-          <VStack gap={4} align="center" className="flex-1">
-            <SkeletonGroup.Item className="h-4 w-24 rounded-md" />
-            <SkeletonGroup.Item className="h-7 w-12 rounded-md" />
-          </VStack>
-        </HStack>
-      </SkeletonGroup>
+        <VStack gap={4} align="center" className="flex-1">
+          <TextSkeleton size="b4" className="w-24" />
+          <TextSkeleton size="t3" className="w-12" />
+        </VStack>
+      </HStack>
     </Box>
   );
 };
