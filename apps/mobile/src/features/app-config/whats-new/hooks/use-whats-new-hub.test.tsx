@@ -3,7 +3,7 @@ import { act, fireEvent, render, renderHook } from '@testing-library/react-nativ
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { WHATS_NEW_CAMPAIGN_ID } from '../domains/whats-new.registry';
+import { WHATS_NEW_CAMPAIGN_ID } from '../constants/whats-new.constants';
 import { useWhatsNewHub } from './use-whats-new-hub';
 
 const mockTrackEvent = jest.fn();

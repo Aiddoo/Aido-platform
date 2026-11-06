@@ -1,5 +1,5 @@
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import { getCachedWhatsNewConfig } from '@src/features/app-config/whats-new/queries/whats-new-cache';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';

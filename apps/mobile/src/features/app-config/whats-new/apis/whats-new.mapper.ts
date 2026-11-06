@@ -1,6 +1,7 @@
 import type { FeatureDiscoveryResponse } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 
-import type { WhatsNewConfig } from '../domains/whats-new.model';
+import type { WhatsNewConfig } from '../schemas/whats-new.schema';
 
 export const toWhatsNewConfig = (response: FeatureDiscoveryResponse): WhatsNewConfig => {
   if (!response.enabled) {
@@ -9,6 +10,6 @@ export const toWhatsNewConfig = (response: FeatureDiscoveryResponse): WhatsNewCo
 
   return {
     ...response,
-    launchedAt: new Date(response.launchedAt),
+    launchedAt: toInstant(response.launchedAt),
   };
 };

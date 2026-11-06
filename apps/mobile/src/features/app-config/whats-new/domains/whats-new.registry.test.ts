@@ -1,9 +1,8 @@
 import {
-  WHATS_NEW_CAMPAIGN_ID,
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
-  filterAvailableCampaign,
-  getBundledWhatsNewCampaign,
-} from './whats-new.registry';
+  WHATS_NEW_CAMPAIGN_ID,
+} from '../constants/whats-new.constants';
+import { filterAvailableCampaign, getBundledWhatsNewCampaign } from './whats-new.registry';
 
 describe('getBundledWhatsNewCampaign', () => {
   it('마지막 음성 카드는 할 일 추가 시트를 마이크 안내와 함께 연다', () => {

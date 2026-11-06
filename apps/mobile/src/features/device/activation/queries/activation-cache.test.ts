@@ -1,6 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { WHATS_NEW_QUERY_KEYS } from '@src/features/app-config/whats-new/constants/whats-new-query-keys';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
@@ -31,7 +31,7 @@ const config: WhatsNewConfig = {
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',
-  launchedAt: new Date('2026-08-01T00:00:00.000Z'),
+  launchedAt: toInstant('2026-08-01T00:00:00.000Z'),
   autoOpen: true,
 };
 

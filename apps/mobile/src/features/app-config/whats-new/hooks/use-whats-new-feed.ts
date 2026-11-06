@@ -52,14 +52,11 @@ export function useWhatsNewFeed({
     [accountId, campaign],
   );
   const hasSeen = identity ? stateService.isSeen(identity) : true;
-  const canAutoOpen = WhatsNewPolicy.canAutoOpen({
-    authStatus: isWeatherIntroductionPending ? 'loading' : status,
-    config,
-    user,
-    appVersion,
-    hasBundledCampaign: campaign != null,
-    hasSeen,
-  });
+  const canAutoOpen =
+    isAuthenticated &&
+    !isWeatherIntroductionPending &&
+    campaign != null &&
+    WhatsNewPolicy.canAutoOpen({ config, user, appVersion, hasSeen });
 
   useEffect(() => {
     if (!identity || !campaign || !accountId) {

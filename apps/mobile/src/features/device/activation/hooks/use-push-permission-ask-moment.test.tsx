@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import {
   createPushDeviceResponseDto,
   createPushNotificationGatewayStub,
@@ -31,7 +31,7 @@ const EXISTING_USER_STATE: ActivationState = {
     enabled: true as const,
     campaignId: 'feature-discovery-2026-08',
     minAppVersion: '1.8.0',
-    launchedAt: new Date('2026-08-01T00:00:00.000Z'),
+    launchedAt: toInstant('2026-08-01T00:00:00.000Z'),
     autoOpen: true,
   },
   user: { id: 'existing-user', createdAt: new Date('2026-07-01T00:00:00.000Z') },

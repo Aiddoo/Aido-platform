@@ -1,5 +1,5 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import { queryOptions } from '@tanstack/react-query';
 
 import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';

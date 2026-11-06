@@ -1,35 +1,24 @@
-import { featureDiscoveryMinAppVersionSchema } from '@aido/api';
-import { userSchema } from '@src/features/identity/user/schemas/user.schema';
-import { z } from 'zod';
+import type { User } from '@src/features/identity/user/schemas/user.schema';
+import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
 
-const whatsNewConfigSchema = z.discriminatedUnion('enabled', [
-  z.object({ enabled: z.literal(false) }),
-  z.object({
-    enabled: z.literal(true),
-    campaignId: z.string(),
-    minAppVersion: z.string(),
-    launchedAt: z.date(),
-    autoOpen: z.boolean(),
-  }),
-]);
-export type WhatsNewConfig = z.infer<typeof whatsNewConfigSchema>;
-const whatsNewEligibilitySchema = z.object({
-  authStatus: z.enum(['loading', 'locked', 'authenticated', 'unauthenticated']),
-  config: whatsNewConfigSchema.optional(),
-  user: userSchema.pick({ createdAt: true }).optional(),
-  appVersion: z.string().optional(),
-  hasBundledCampaign: z.boolean(),
-  hasSeen: z.boolean(),
-});
-type WhatsNewEligibility = z.infer<typeof whatsNewEligibilitySchema>;
-const parsedSemanticVersionSchema = z.object({
-  core: z.tuple([z.number(), z.number(), z.number()]).readonly(),
-  prerelease: z.array(z.string()).readonly().nullable(),
-});
-type ParsedSemanticVersion = z.infer<typeof parsedSemanticVersionSchema>;
+import { WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
+import type { Release, ReleaseList } from '../schemas/release.schema';
+import { type WhatsNewConfig, whatsNewAppVersionSchema } from '../schemas/whats-new.schema';
+
+interface ParsedSemanticVersion {
+  core: readonly [number, number, number];
+  prerelease: readonly string[] | null;
+}
+
+interface AutoOpenInput {
+  config: WhatsNewConfig | undefined;
+  user: Pick<User, 'createdAt'> | undefined;
+  appVersion: string | undefined;
+  hasSeen: boolean;
+}
 
 function parseSemanticVersion(value: string | undefined): ParsedSemanticVersion | null {
-  if (!value || !featureDiscoveryMinAppVersionSchema.safeParse(value).success) {
+  if (!value || !whatsNewAppVersionSchema.safeParse(value).success) {
     return null;
   }
 
@@ -125,27 +114,63 @@ export function isSemanticVersionAtLeast(
   return comparePrerelease(current.prerelease, minimum.prerelease) >= 0;
 }
 
-const canAutoOpen = ({
-  authStatus,
-  config,
-  user,
-  appVersion,
-  hasBundledCampaign,
-  hasSeen,
-}: WhatsNewEligibility): boolean => {
-  if (authStatus !== 'authenticated' || !config?.enabled || !user) {
+/** 서버가 켠 캠페인을 앱이 묶어 온 출시로 찾는다. 앱이 모르는 캠페인이면 없다 */
+function findReleaseByCampaign<T extends Pick<Release, 'campaignId'>>(
+  releases: readonly T[],
+  campaignId: string,
+): T | undefined {
+  return releases.find((release) => release.campaignId === campaignId);
+}
+
+function getLatestRelease<T extends Pick<Release, 'releasedOn'>>(
+  releases: readonly [T, ...T[]],
+): T {
+  return releases.reduce((latest, release) =>
+    release.releasedOn > latest.releasedOn ? release : latest,
+  );
+}
+
+function isReleaseAvailable(
+  release: Pick<Release, 'requiresInvite'>,
+  { isInviteAvailable }: { isInviteAvailable: boolean },
+): boolean {
+  return !release.requiresInvite || isInviteAvailable;
+}
+
+/** 출시 전에 가입했고, 켜진 캠페인을 지원하는 앱이고, 아직 보지 않았을 때만 자동으로 연다 */
+function canAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): boolean {
+  if (!config?.enabled || user == null) {
     return false;
   }
 
   return (
     config.autoOpen &&
-    hasBundledCampaign &&
     !hasSeen &&
-    user.createdAt.getTime() < config.launchedAt.getTime() &&
+    user.createdAt.getTime() < toEpochMs(config.launchedAt) &&
     isSemanticVersionAtLeast(appVersion, config.minAppVersion)
   );
-};
+}
+
+/** 처음 본 시각에서 정해진 기간 안일 때만 보인다. 기기 시각이 뒤로 가 있으면 보이지 않는다 */
+function isReentryVisible(openedAt: Instant | null, now: Instant): boolean {
+  if (openedAt == null) {
+    return false;
+  }
+  const elapsedMs = diffMs(now, openedAt);
+
+  return elapsedMs >= 0 && elapsedMs < WHATS_NEW_REENTRY_WINDOW_MS;
+}
+
+/** 지난 출시까지 점으로 남기면 오래 사라지지 않으므로 최신 출시만 본다 */
+function hasUnseenRelease(releases: ReleaseList, seenCampaignIds: readonly string[]): boolean {
+  return !seenCampaignIds.includes(getLatestRelease(releases).campaignId);
+}
 
 export const WhatsNewPolicy = {
   canAutoOpen,
+  findReleaseByCampaign,
+  getLatestRelease,
+  hasUnseenRelease,
+  isReentryVisible,
+  isReleaseAvailable,
 } as const;

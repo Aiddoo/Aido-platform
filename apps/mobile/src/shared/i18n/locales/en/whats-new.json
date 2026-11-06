@@ -73,5 +73,11 @@
         "description": "Reminders, repeats, and subtasks work the same."
       }
     }
+  },
+  "v1_15_0": {
+    "summary": "Speak to add, voice notes"
+  },
+  "v1_14_0": {
+    "summary": "Invite friends"
   }
 }

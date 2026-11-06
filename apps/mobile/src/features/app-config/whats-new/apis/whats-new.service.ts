@@ -2,7 +2,7 @@ import { featureDiscoveryResponseSchema } from '@aido/api';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { ParseError } from '@src/shared/errors/infra-error';
 
-import type { WhatsNewConfig } from '../domains/whats-new.model';
+import type { WhatsNewConfig } from '../schemas/whats-new.schema';
 import { toWhatsNewConfig } from './whats-new.mapper';
 
 export class WhatsNewService {

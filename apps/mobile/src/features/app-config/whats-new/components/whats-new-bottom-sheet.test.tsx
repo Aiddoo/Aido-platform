@@ -1,3 +1,4 @@
+import { PREVIOUS_WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/whats-new/constants/whats-new.constants';
 import { getBundledWhatsNewCampaign } from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { createSyncStorageStub } from '@src/shared/__tests__/create-sync-storage-stub';
 import '@src/shared/i18n/init';
@@ -6,7 +7,6 @@ import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
-import { PREVIOUS_WHATS_NEW_CAMPAIGN_ID } from '../domains/whats-new.registry';
 import { WhatsNewBottomSheet } from './whats-new-bottom-sheet';
 
 let mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };

@@ -1,6 +1,6 @@
 import { useWhatsNewStateService } from '@src/bootstrap/providers/di-context';
+import { WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/whats-new/constants/whats-new.constants';
 import {
-  WHATS_NEW_CAMPAIGN_ID,
   filterAvailableCampaign,
   getBundledWhatsNewCampaign,
 } from '@src/features/app-config/whats-new/domains/whats-new.registry';

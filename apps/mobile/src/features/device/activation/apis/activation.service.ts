@@ -1,4 +1,4 @@
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';
 import type { Instant } from '@src/shared/date/instant';
 

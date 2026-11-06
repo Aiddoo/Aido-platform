@@ -1,9 +1,9 @@
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import {
   WHATS_NEW_CAMPAIGN_ID,
   LEGACY_WHATS_NEW_CAMPAIGN_ID,
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
-} from '@src/features/app-config/whats-new/domains/whats-new.registry';
+} from '@src/features/app-config/whats-new/constants/whats-new.constants';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
@@ -40,7 +40,7 @@ interface ChecklistVisibilityInput extends ChecklistEligibilityInput {
 
 function resolveEnabledCampaign(
   config: WhatsNewConfig,
-): { campaignId: string; launchedAt: Date } | null {
+): { campaignId: string; launchedAt: Instant } | null {
   if (config.enabled && ACTIVATION_CAMPAIGN_IDS.has(config.campaignId)) {
     return {
       campaignId: config.campaignId,
@@ -55,7 +55,7 @@ function isNewUserCohort(
   user: ActivationUser | undefined,
 ): boolean {
   const campaign = config ? resolveEnabledCampaign(config) : null;
-  return Boolean(campaign && user && user.createdAt.getTime() >= campaign.launchedAt.getTime());
+  return Boolean(campaign && user && user.createdAt.getTime() >= toEpochMs(campaign.launchedAt));
 }
 
 function getActivationIdentity(
@@ -63,7 +63,7 @@ function getActivationIdentity(
   user: ActivationUser | undefined,
 ): ActivationIdentity | null {
   const campaign = config ? resolveEnabledCampaign(config) : null;
-  if (!campaign || !user || user.createdAt.getTime() < campaign.launchedAt.getTime()) {
+  if (!campaign || !user || user.createdAt.getTime() < toEpochMs(campaign.launchedAt)) {
     return null;
   }
   return {

@@ -3,7 +3,7 @@ import type { FeatureDiscoveryResponse } from '@aido/api';
 import { toWhatsNewConfig } from './whats-new.mapper';
 
 describe('toWhatsNewConfig', () => {
-  it('활성 응답의 출시 시각을 Date로 변환한다', () => {
+  it('활성 응답의 출시 시각을 Instant로 옮긴다', () => {
     // Given
     const response: FeatureDiscoveryResponse = {
       enabled: true,
@@ -19,7 +19,7 @@ describe('toWhatsNewConfig', () => {
     // Then
     expect(result.enabled).toBe(true);
     if (result.enabled) {
-      expect(result.launchedAt).toEqual(new Date('2026-08-01T00:00:00.000Z'));
+      expect(result.launchedAt).toBe('2026-08-01T00:00:00.000Z');
     }
   });
 

@@ -1,4 +1,4 @@
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
 import { toInstant } from '@src/shared/date/instant';
 
 import type { ActivationProgress } from '../schemas/activation.schema';
@@ -12,7 +12,7 @@ const createConfig = (
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',
-  launchedAt: LAUNCHED_AT,
+  launchedAt: toInstant(LAUNCHED_AT.toISOString()),
   autoOpen: true,
   ...overrides,
 });
