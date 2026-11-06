@@ -1,66 +1,19 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { parseCalendarViewMode } from './calendar-view-mode.preference';
 
-import { readCalendarViewMode, writeCalendarViewMode } from './calendar-view-mode.preference';
-
-describe('readCalendarViewMode', () => {
-  it('저장된 값이 없으면 week를 반환한다', () => {
+describe('parseCalendarViewMode', () => {
+  it.each([
+    { saved: undefined, expected: 'week' },
+    { saved: 'week', expected: 'week' },
+    { saved: 'month', expected: 'month' },
+    { saved: 'year', expected: 'week' },
+  ])('저장값 $saved는 $expected로 읽는다', ({ saved, expected }) => {
     // Given
-    const storage = createMockSyncStorage();
-    storage.get.mockReturnValue(undefined);
+    const stored = saved;
 
     // When
-    const result = readCalendarViewMode(storage);
+    const result = parseCalendarViewMode(stored);
 
     // Then
-    expect(result).toBe('week');
-  });
-
-  it('week가 저장되어 있으면 week를 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.get.mockReturnValue('week');
-
-    // When
-    const result = readCalendarViewMode(storage);
-
-    // Then
-    expect(result).toBe('week');
-  });
-
-  it('month가 저장되어 있으면 month를 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.get.mockReturnValue('month');
-
-    // When
-    const result = readCalendarViewMode(storage);
-
-    // Then
-    expect(result).toBe('month');
-  });
-
-  it('유효하지 않은 값이 저장되어 있으면 week를 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.get.mockReturnValue('day');
-
-    // When
-    const result = readCalendarViewMode(storage);
-
-    // Then
-    expect(result).toBe('week');
-  });
-});
-
-describe('writeCalendarViewMode', () => {
-  it('올바른 key와 value로 storage.set을 호출한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-
-    // When
-    writeCalendarViewMode(storage, 'month');
-
-    // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_calendar_view_mode', 'month');
+    expect(result).toBe(expected);
   });
 });

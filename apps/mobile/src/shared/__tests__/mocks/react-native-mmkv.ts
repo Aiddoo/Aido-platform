@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+
 /**
  * jest 환경용 react-native-mmkv(v4 · Nitro) 목.
  *
@@ -8,6 +10,16 @@
  */
 class InMemoryMMKV {
   readonly #store = new Map<string, string>();
+  readonly #listeners = new Set<(key: string) => void>();
+
+  #notify(key: string): void {
+    this.#listeners.forEach((listener) => listener(key));
+  }
+
+  addOnValueChangedListener(listener: (key: string) => void): { remove: () => void } {
+    this.#listeners.add(listener);
+    return { remove: () => this.#listeners.delete(listener) };
+  }
 
   getString(key: string): string | undefined {
     return this.#store.get(key);
@@ -15,10 +27,13 @@ class InMemoryMMKV {
 
   set(key: string, value: string | number | boolean): void {
     this.#store.set(key, String(value));
+    this.#notify(key);
   }
 
   remove(key: string): boolean {
-    return this.#store.delete(key);
+    const removed = this.#store.delete(key);
+    this.#notify(key);
+    return removed;
   }
 
   clearAll(): void {
@@ -35,6 +50,23 @@ class InMemoryMMKV {
 }
 
 export const createMMKV = (): InMemoryMMKV => new InMemoryMMKV();
+
+export function useMMKVString(key: string, instance: InMemoryMMKV) {
+  const value = useSyncExternalStore(
+    (onChange) => {
+      const subscription = instance.addOnValueChangedListener((changedKey) => {
+        if (changedKey === key) {
+          onChange();
+        }
+      });
+      return subscription.remove;
+    },
+    () => instance.getString(key),
+  );
+
+  return [value, (next: string) => instance.set(key, next)] as const;
+}
+
 export const MMKV = InMemoryMMKV;
 export const existsMMKV = (): boolean => false;
 export const deleteMMKV = (): boolean => false;
