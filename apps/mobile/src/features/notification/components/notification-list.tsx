@@ -1,4 +1,3 @@
-import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -12,8 +11,7 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
-  Box,
-  Button,
+  InfiniteList,
   NotiIcon,
   Result,
   VStack,
@@ -21,41 +19,42 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Separator, Spinner } from 'heroui-native';
+import { Separator } from 'heroui-native';
 import { useCallback } from 'react';
-import { RefreshControl } from 'react-native';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
+import { useNotificationCategoryParam } from '../hooks/use-notification-category-param';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
-import { type Notification, type NotificationCategory } from '../schemas/notification.schema';
+import type { Notification } from '../schemas/notification.schema';
 import { toDateSectionedListItems } from '../utils/date-section';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { NotificationListRow } from './notification-list-row';
 
-type NotificationListProps = {
-  category?: NotificationCategory;
-  unreadOnly?: boolean;
-  limit?: number;
-};
+const NOTIFICATION_PAGE_SIZE = 10;
 
-export function NotificationList({ category, unreadOnly, limit }: NotificationListProps) {
-  const { t } = useTranslation(['notification', 'common']);
-  const query = useSuspenseInfiniteQuery(
-    useGetNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
-  );
+export function NotificationList() {
+  const [category] = useNotificationCategoryParam();
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
+    useSuspenseInfiniteQuery(
+      useGetNotificationsInfiniteQueryOptions({ category, limit: NOTIFICATION_PAGE_SIZE }),
+    );
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
-  const listItems = toDateSectionedListItems(query.data, currentLocalDateKey, currentTimeZone);
-  const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
-  const { color: refreshTint } = useResolveClassNames('text-main');
+  const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
+  const [refreshing, onRefresh] = useRefresh(refetch);
 
   return (
-    <FlashList
+    <InfiniteList
       data={listItems}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      isFetchNextPageError={isFetchNextPageError}
+      fetchNextPage={fetchNextPage}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
@@ -71,40 +70,8 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
           .with({ type: 'item' }, ({ entry }) => String(entry.id))
           .exhaustive()
       }
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={refreshTint}
-          colors={refreshTint == null ? undefined : [refreshTint]}
-        />
-      }
       ListEmptyComponent={<NotificationList.Empty />}
-      ListFooterComponent={match({
-        isFetchNextPageError: query.isFetchNextPageError,
-        isFetchingNextPage: query.isFetchingNextPage,
-      })
-        .with({ isFetchNextPageError: true }, () => (
-          <Box p={16}>
-            <Button variant="weak" onPress={() => query.fetchNextPage()}>
-              {t('common:actions.retry')}
-            </Button>
-          </Box>
-        ))
-        .with({ isFetchingNextPage: true }, () => (
-          <Box py={24}>
-            <Spinner size="lg" />
-          </Box>
-        ))
-        .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
-        .exhaustive()}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      onEndReached={() => {
-        if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          return query.fetchNextPage({ cancelRefetch: false });
-        }
-      }}
-      onEndReachedThreshold={0.5}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
     />
   );

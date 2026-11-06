@@ -70,7 +70,7 @@ export default function NotificationsScreen() {
                 <Tabs.Content value={category} className="flex-1">
                   <QueryErrorBoundary resetKeys={[category]} fallback={NotificationList.Error}>
                     <Suspense fallback={<NotificationList.Loading />}>
-                      <NotificationList category={category} limit={10} />
+                      <NotificationList />
                     </Suspense>
                   </QueryErrorBoundary>
                 </Tabs.Content>

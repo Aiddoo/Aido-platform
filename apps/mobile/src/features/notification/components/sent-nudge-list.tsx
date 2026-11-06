@@ -1,5 +1,4 @@
 import { ErrorCode } from '@aido/api/errors';
-import { FlashList } from '@shopify/flash-list';
 import {
   NudgeInteractionPolicy,
   type NudgeInteraction,
@@ -12,8 +11,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
-  Box,
-  Button,
+  InfiniteList,
   NotiIcon,
   Result,
   VStack,
@@ -21,27 +19,28 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Separator, Spinner } from 'heroui-native';
-import { RefreshControl } from 'react-native';
+import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { toDateSectionedListItems } from '../utils/date-section';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {
-  const { t } = useTranslation('common');
-  const query = useSuspenseInfiniteQuery(
-    useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
+    useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }));
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
-  const listItems = toDateSectionedListItems(query.data, currentLocalDateKey, currentTimeZone);
-  const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
-  const { color: refreshTint } = useResolveClassNames('text-main');
+  const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
+  const [refreshing, onRefresh] = useRefresh(refetch);
 
   return (
-    <FlashList
+    <InfiniteList
       data={listItems}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      isFetchNextPageError={isFetchNextPageError}
+      fetchNextPage={fetchNextPage}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
@@ -57,40 +56,8 @@ export function SentNudgeList() {
           .with({ type: 'item' }, ({ entry }) => String(entry.id))
           .exhaustive()
       }
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={refreshTint}
-          colors={refreshTint == null ? undefined : [refreshTint]}
-        />
-      }
       ListEmptyComponent={<SentNudgeList.Empty />}
-      ListFooterComponent={match({
-        isFetchNextPageError: query.isFetchNextPageError,
-        isFetchingNextPage: query.isFetchingNextPage,
-      })
-        .with({ isFetchNextPageError: true }, () => (
-          <Box p={16}>
-            <Button variant="weak" onPress={() => query.fetchNextPage()}>
-              {t('actions.retry')}
-            </Button>
-          </Box>
-        ))
-        .with({ isFetchingNextPage: true }, () => (
-          <Box py={24}>
-            <Spinner size="lg" />
-          </Box>
-        ))
-        .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
-        .exhaustive()}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      onEndReached={() => {
-        if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          return query.fetchNextPage({ cancelRefetch: false });
-        }
-      }}
-      onEndReachedThreshold={0.5}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
     />
   );
