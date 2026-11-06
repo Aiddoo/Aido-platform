@@ -3,7 +3,7 @@ import { ConfirmDialog, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 
 import { useBlockUserRouteParams } from '../hooks/use-block-user-route-params';
-import { useBlockUserMutationOptions } from '../queries/use-block-user-mutation-options';
+import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
 
 /**
  * 차단 확인. 차단하는 동안 다이얼로그를 그대로 두고 확인 버튼만 불러오는 중으로 바꾼다.

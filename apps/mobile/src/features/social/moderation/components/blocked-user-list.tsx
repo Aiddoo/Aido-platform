@@ -11,8 +11,8 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
 import type { BlockedUser } from '../domains/user-block.model';
-import { useGetBlockedUsersInfiniteQueryOptions } from '../queries/get-blocked-users-infinite-query-options';
-import { useUnblockUserMutationOptions } from '../queries/use-unblock-user-mutation-options';
+import { useUnblockUserMutationOptions } from '../queries/moderation.mutations';
+import { useGetBlockedUsersInfiniteQueryOptions } from '../queries/moderation.queries';
 
 const UNBLOCK_BUTTON_HIT_SLOP = 6;
 

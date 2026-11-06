@@ -39,7 +39,7 @@ import { match } from 'ts-pattern';
 
 import { toReportFailureAction } from '../domains/moderation.error';
 import type { UserReportTarget } from '../domains/user-report.model';
-import { useReportContentMutationOptions } from '../queries/use-report-content-mutation-options';
+import { useReportContentMutationOptions } from '../queries/moderation.mutations';
 
 const TARGET_CAPTION_KEYS = {
   PROFILE: 'report.caption.PROFILE',
