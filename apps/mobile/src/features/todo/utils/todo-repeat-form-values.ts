@@ -12,7 +12,6 @@ import {
   TodoRepeatPolicy,
 } from '../domains/todo-repeat.model';
 
-/** 시트를 열 때 값이 없으면 시작일의 요일 하나를 고른 상태 + 날짜 종료(종료일 없음)로 시작한다. */
 export function toTodoRepeatFormValues(
   startDate: Date,
   repeat: TodoRepeat | null,
@@ -52,7 +51,6 @@ export function toTodoRepeatFormValues(
     .exhaustive();
 }
 
-/** 시작일이 바뀌면 요일·종료일을 TodoRepeatPolicy로 보정한다 (매월 n일은 옮긴 시작일을 따른다). */
 export function withTodoRepeatFormStartDate(
   values: TodoRepeatFormValues,
   nextStartDate: Date,
@@ -80,7 +78,6 @@ export function hasSameWeekdays(a: readonly DayOfWeek[], b: readonly DayOfWeek[]
   return xor(a, b).length === 0;
 }
 
-/** 프리셋은 매주 반복일 때만 켜진 것으로 본다 */
 export function isTodoRepeatFormPreset(
   values: Pick<TodoRepeatFormValues, 'isMonthly' | 'interval' | 'weekdays'>,
   days: readonly DayOfWeek[],
@@ -88,7 +85,6 @@ export function isTodoRepeatFormPreset(
   return !values.isMonthly && values.interval === 1 && hasSameWeekdays(values.weekdays, days);
 }
 
-/** 켜진 프리셋을 다시 누르면 요일을 비운다 */
 export function withTodoRepeatFormPreset(
   values: TodoRepeatFormValues,
   days: readonly DayOfWeek[],
@@ -113,7 +109,6 @@ export function withTodoRepeatFormMonthlyToggled(
   return { ...values, isMonthly: !values.isMonthly, interval: 1 };
 }
 
-/** 매월에서 요일을 누르면 그 요일 하나로 돌아간다 */
 export function withTodoRepeatFormDayToggled(
   values: TodoRepeatFormValues,
   day: DayOfWeek,
@@ -137,10 +132,6 @@ export function getTodoRepeatFormFirstOccurrenceKey(values: TodoRepeatFormValues
     : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
 }
 
-/**
- * 달력에서 날짜를 눌렀을 때의 다음 값. 지난 날은 고를 수 없다.
- * 첫 회차를 누르거나 기간을 이미 골랐으면 그 날부터 다시 시작하고, 시작일 뒤는 종료일, 앞은 시작일이 된다.
- */
 export function withTodoRepeatFormCalendarDate(
   values: TodoRepeatFormValues,
   date: Date,

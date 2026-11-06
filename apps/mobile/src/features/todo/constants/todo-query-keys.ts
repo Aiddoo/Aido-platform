@@ -40,7 +40,6 @@ export const TODO_QUERY_KEYS = {
     endDate: string;
   }) => [...TODO_QUERY_KEYS.friendLists(), 'completion', { userId, startDate, endDate }] as const,
 
-  // 반복 할 일의 규칙 (편집 시트가 불러온다)
   series: ({ seriesId }: { seriesId: string }) =>
     [...TODO_QUERY_KEYS.all, 'series', { seriesId }] as const,
 

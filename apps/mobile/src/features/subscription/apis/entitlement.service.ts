@@ -9,7 +9,6 @@ import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import type { EntitlementSnapshot } from '../domains/entitlement.model';
 import { toEntitlementSnapshot } from './entitlement.mapper';
 
-/** 서버가 계산한 권한·한도·사용량(GET /v1/entitlements) */
 export class EntitlementService {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;

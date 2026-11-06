@@ -10,7 +10,6 @@ interface MyPagePaneLayoutProps extends PropsWithChildren {
   isSplit: boolean;
 }
 
-/** 탭과 메뉴 화면이 왼쪽 메뉴를 같은 자리·같은 스크롤로 그리게 하는 틀이다. */
 export function MyPagePaneLayout({ isSplit, children }: MyPagePaneLayoutProps) {
   const { scrollRef, handleScroll, topInset } = useMyPagePaneLayout();
 

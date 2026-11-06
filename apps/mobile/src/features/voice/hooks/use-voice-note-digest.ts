@@ -90,7 +90,6 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
         }
       }
       const cause = getVoicePlanFailureCause(error);
-      // 한도는 안내 창이 맡는다
       setFailure(cause === 'limit' ? null : { cause, isNotCharged: isNotChargedError(error) });
     }
   };

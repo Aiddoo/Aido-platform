@@ -1,13 +1,11 @@
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 
-/** 저장한 인식 언어가 없을 때 앱 언어를 따른다 */
 export const APP_LANGUAGE_SPEECH_LOCALE = {
   ko: 'ko-KR',
   en: 'en-US',
 } as const satisfies Record<ResolvedLanguage, SpeechLocale>;
 
-/** 빠른 말하기 한 번에 들을 수 있는 최대 길이. 넘기면 말로 메모하기를 권한다 */
 export const QUICK_CAPTURE_MAX_SECONDS = 90;
 
 /** 듣기를 시작하라고 한 뒤 인식기가 이 안에 시작을 알리지 않으면 실패로 보고 글자를 들고 멈춘다 */
@@ -36,7 +34,6 @@ export const VOICE_STALL_RESTART = {
   minIntervalMs: 30_000,
 } as const;
 
-/** 단어 신뢰도(0..1)가 이보다 낮으면 잘못 들었을 수 있다고 밑줄을 친다 */
 export const LOW_CONFIDENCE_THRESHOLD = 0.5;
 
 /** 인식기가 고유명사를 맞히도록 알려 주는 단어의 최대 개수(SDK 권장 상한) */

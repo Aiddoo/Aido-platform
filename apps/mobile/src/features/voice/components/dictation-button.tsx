@@ -17,7 +17,6 @@ interface DictationButtonProps extends Omit<
   onChange: (value: string) => void;
 }
 
-/** AI 없이 받아쓰기. 이미 적은 글 뒤에 들은 말을 이어 붙인다 */
 export function DictationButton({ value, onChange, ...pressableProps }: DictationButtonProps) {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();

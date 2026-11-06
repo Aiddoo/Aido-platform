@@ -72,7 +72,6 @@ export type OfflineModelResult = 'downloaded' | 'scheduled' | 'dialog-opened' | 
 export interface SpeechStartOptions {
   locale: SpeechLocale;
   mode: SpeechMode;
-  /** 내 카테고리·할 일 이름처럼 잘 틀리는 고유명사 */
   contextualStrings: readonly string[];
   /** 기기 안 인식을 쓴다. `getCapabilities().canRecognizeOnDevice`일 때만 켠다 */
   isOnDevice: boolean;
@@ -91,6 +90,5 @@ export interface SpeechRecognizer {
   stop(): void;
   /** 결과 없이 바로 끝낸다 */
   abort(): void;
-  /** 반환 함수로 구독을 끝낸다 */
   subscribe(listener: (event: SpeechEvent) => void): () => void;
 }

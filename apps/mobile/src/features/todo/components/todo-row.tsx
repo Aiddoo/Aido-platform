@@ -148,7 +148,6 @@ interface TodoTitleLineProps {
   isPrivate: boolean;
 }
 
-/** 제목은 여러 줄로 늘어나고 잠금 아이콘은 첫 줄 끝에 고정한다 */
 export function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
   const fontScaledSize = useFontScaledSize();
 
@@ -170,7 +169,6 @@ interface TodoScheduleLineProps {
   timeLabel: string | null;
 }
 
-/** "오전 10:00 · ↻ 매주 월·목". 목록에는 주기만 보이고 끝나는 날은 보이지 않는다. 긴 줄은 말줄임 없이 다음 줄로 */
 export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();

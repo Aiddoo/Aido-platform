@@ -31,7 +31,6 @@ interface SheetEdgeGlowProps {
   level: SharedValue<number>;
 }
 
-/** `KeyboardBottomSheet`의 `backgroundDecoration`으로 시트 면 뒤에 깐다 */
 export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
   const isReducedMotion = useReduceMotion();
   const mainColor = useSkiaColor('text-main');

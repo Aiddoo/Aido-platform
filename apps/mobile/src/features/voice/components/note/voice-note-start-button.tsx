@@ -6,7 +6,6 @@ import { PressableFeedback } from 'heroui-native';
 
 import { useVoiceNoteStart } from '../../hooks/use-voice-note-start';
 
-/** 메모 탭 위쪽의 말로 메모 버튼. 메모 추가 버튼과 같은 높이로 나란히 둔다. 화면 맨 위라 안내는 아래로 연다 */
 export function VoiceNoteStartButton() {
   const { t } = useTranslation('voiceNote');
   const fontScaledSize = useFontScaledSize();

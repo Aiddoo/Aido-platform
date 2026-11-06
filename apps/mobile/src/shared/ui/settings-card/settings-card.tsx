@@ -19,7 +19,6 @@ export interface SettingsCardProps extends ComponentProps<typeof ListGroup> {
   label?: string;
 }
 
-/** 설정 화면의 카드 한 장. 행 모양과 글자 크기 설정을 한곳에서 맞춘다. */
 export function SettingsCard({ label, className, children, ...props }: SettingsCardProps) {
   return (
     <ListGroup variant="transparent" className={cn('rounded-2xl bg-gray-1', className)} {...props}>
@@ -168,12 +167,10 @@ SettingsCard.ToggleSkeleton = function ToggleSkeleton({
   );
 };
 
-/** 행 모양이 아닌 내용(숫자 요약, 안내 등)을 행과 같은 여백으로 담는다. */
 SettingsCard.Content = function Content(props: ComponentProps<typeof VStack>) {
   return <VStack px={16} py={12} gap={12} {...props} />;
 };
 
-/** 카드 자리에서 실패를 알린다. 경계의 `fallback`으로 넘긴다. */
 SettingsCard.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
@@ -199,10 +196,6 @@ export interface SettingsScreenLayoutProps extends ComponentProps<typeof ScrollV
   gap?: ComponentProps<typeof ReadableContent>['gap'];
 }
 
-/**
- * 설정 화면의 스크롤 틀. 스크롤바와 배경은 가장자리까지 두고 내용만 레일(가로 safe area)을 피하며,
- * 넓은 화면에서는 카드가 끝까지 늘어나지 않게 모은다.
- */
 export function SettingsScreenLayout({ gap = 12, children, ...props }: SettingsScreenLayoutProps) {
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>

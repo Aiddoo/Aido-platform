@@ -46,7 +46,6 @@ export function useVoiceNoteRecordExit({
     }
   };
 
-  /** 들은 내용이 없으면 끝낼 게 없어 이유를 알리고 묻는다. 묻는 동안 말이 들어왔으면 그 내용으로 정리한다 */
   const handleFinishPress = async () => {
     if (VoiceCapturePolicy.canFinish(state)) {
       finish();

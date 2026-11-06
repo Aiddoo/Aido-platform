@@ -16,10 +16,6 @@ export interface FormStepLayoutProps extends Omit<
   children: ReactNode;
 }
 
-/**
- * 폼 단계 화면의 스크롤 영역 — 가로 safe area, 페이드인 제목, 입력 영역 순서로 놓는다.
- * 작은 화면·큰 글자에서도 포커스한 입력이 키보드에 붙은 하단 버튼 위로 올라온다.
- */
 export function FormStepLayout({
   title,
   children,

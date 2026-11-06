@@ -34,7 +34,6 @@ const STORE_SETUP_CODES = [
   PURCHASES_ERROR_CODE.UNSUPPORTED_ERROR,
 ] as const;
 
-/** SDK가 던진 값에서 `PURCHASES_ERROR_CODE`를 읽는다. SDK 오류가 아니면 null이다 */
 function toStoreErrorCode(error: unknown) {
   if (typeof error !== 'object' || error == null || !('code' in error)) {
     return null;

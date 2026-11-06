@@ -9,7 +9,6 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
   feature: EntitlementFeature;
 }
 
-/** 남은 횟수 알약. 스냅샷을 스스로 구독하고 무제한·공정 사용 한도·아직 모를 때는 그리지 않는다 */
 export function QuotaChip({
   feature,
   size = 'sm',

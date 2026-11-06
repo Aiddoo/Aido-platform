@@ -33,10 +33,6 @@ interface VoiceNoteMarkControlProps {
   onPress: () => void;
 }
 
-/**
- * 녹음 화면의 중요 표시. 듣기가 시작되면 처음 한 번 안내가 뜨고, 안내가 떠 있어도 첫 탭이 바로 표시한다.
- * 안내가 끝나면 라벨 옆 ⓘ로 같은 설명을 다시 본다.
- */
 export function VoiceNoteMarkControl({
   markCount,
   isListening,

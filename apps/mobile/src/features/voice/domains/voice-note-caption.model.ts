@@ -70,7 +70,6 @@ export function splitIntoSentences(
 
 const removeSpaces = (text: string) => text.replace(/\s/g, '');
 
-/** 글자 위치(공백 제외)가 어느 단어 구간에 있는지로 문장의 시작 시각을 찾는다 */
 function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number): number | null {
   let consumed = 0;
   for (const segment of segments) {
@@ -82,7 +81,6 @@ function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number):
   return segments.at(-1)?.startMs ?? null;
 }
 
-/** 문장의 글자 범위(공백 제외)에 드는 단어 구간 */
 function findSegmentsWithin(
   segments: readonly SpeechSegment[],
   fromOffset: number,
@@ -139,7 +137,6 @@ function toTimedSentences(
   });
 }
 
-/** 지금 꼬리를 문장으로 확정한다(인식 구간이 끝남·결과가 처음부터 다시 쌓임) */
 export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
   if (captions.provisional.length === 0) {
     return captions;
@@ -254,7 +251,6 @@ export function hasCaptionText(captions: VoiceNoteCaptions): boolean {
   return captions.sentences.length > 0 || captions.provisional.length > 0;
 }
 
-/** 아직 바뀔 수 있는 마지막 문장. 화면에서 회색으로 그린다 */
 export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
   return captions.provisional.at(-1)?.text ?? '';
 }
@@ -286,7 +282,6 @@ export function createVoiceNoteFromTranscript({
   );
 }
 
-/** 저장된 초안에서 자막을 이어 간다 */
 export function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCaptions {
   return {
     sentences,

@@ -21,9 +21,7 @@ interface CoachmarkPopoverProps
   kind: CoachmarkKind;
   title: string;
   description: string;
-  /** 지금 보여도 되는 상태인지. 다른 안내나 패널이 떠 있으면 false로 미룬다. 포커스와 자리 재기는 여기서 본다 */
   isEnabled?: boolean;
-  /** 이미 본 안내도 다시 연다(기능 소개에서 "지금 말해볼게요"를 눌러 온 경우). 닫으면 `onDismiss`로 알린다 */
   isForced?: boolean;
   onDismiss?: () => void;
   /** 대상이 지금 눌리지 않을 때. `Popover.Trigger`가 대상의 비활성을 덮어써 여기로 받는다 */
@@ -33,9 +31,7 @@ interface CoachmarkPopoverProps
    * 읽을 틈 없이 지나갔으면 본 것으로 남기지 않고, 멈춘 뒤 새 자리에서 다시 연다.
    */
   dismissKey?: string;
-  /** true가 되면 사용자가 다른 일을 시작한 것으로 보고 끝낸다. 바깥을 막지 않는 `isPassThrough`와 함께 쓴다 */
   isDismissed?: boolean;
-  /** 말풍선이 가리킬 대상 */
   children: ReactNode;
 }
 

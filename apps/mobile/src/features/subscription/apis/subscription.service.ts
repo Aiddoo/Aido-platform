@@ -17,11 +17,6 @@ import type { PurchasesSdkManager } from './purchases-sdk-manager';
 import { toSubscriptionError } from './subscription-error.mapper';
 import { toCustomerInfo, toSubscriptionOffering } from './subscription.mapper';
 
-/**
- * 구독 비즈니스 로직 (offerings 조회, 구매, 복원)
- *
- * SDK 라이프사이클(configure/logIn/logOut)은 PurchasesSdkManager가 담당.
- */
 export class SubscriptionService {
   readonly #sdkManager: PurchasesSdkManager;
   readonly #purchases: PurchasesGateway;
@@ -101,7 +96,6 @@ export class SubscriptionService {
     }
   };
 
-  /** 스토어 구독이 바뀌면 알린다. 초기화 전이면 알릴 것이 없다. 반환 함수로 구독을 끝낸다 */
   subscribeCustomerInfo = (listener: (customerInfo: CustomerInfo) => void): (() => void) => {
     if (!this.#sdkManager.isConfigured()) {
       return noop;

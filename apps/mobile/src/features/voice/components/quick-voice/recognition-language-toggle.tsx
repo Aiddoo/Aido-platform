@@ -11,7 +11,6 @@ interface RecognitionLanguageToggleProps extends Omit<
   onValueChange: (locale: SpeechLocale) => void;
 }
 
-/** 말하는 언어(한국어·English). 한 줄이어야 하므로 라벨은 줄바꿈하지 않는다 */
 export function RecognitionLanguageToggle({
   value,
   onValueChange,

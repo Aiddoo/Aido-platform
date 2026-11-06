@@ -4,7 +4,6 @@ export interface TextRun {
   testID?: string;
 }
 
-/** 빈칸으로 단어를 나눈다. 한 단어 안에서 모양이 달라지는 조각(밑줄)은 같은 단어로 묶는다 */
 export function splitRunsIntoWords(runs: readonly TextRun[]): TextRun[][] {
   const words: TextRun[][] = [];
   let current: TextRun[] = [];

@@ -12,7 +12,6 @@ import {
 const WEEKDAY_SEPARATOR = '·';
 const SUMMARY_SEPARATOR = ' · ';
 
-/** 주기만: "매일", "주중", "주말", "매주 월·목", "격주 화", "매월 15일". 목록 행은 끝나는 날을 보이지 않는다 */
 export function formatRepeatCadence(
   repeat: TodoRepeat,
   { weekdaySeparator = WEEKDAY_SEPARATOR }: { weekdaySeparator?: string } = {},
@@ -44,7 +43,6 @@ function formatEnd(end: TodoRepeatEnd, context: DateFormatContext): string | nul
     .exhaustive();
 }
 
-/** "매주 월·수·금", "매일 · 12월 31일까지", "매월 15일 · 10회" */
 export function formatRepeatSummary(repeat: TodoRepeat, context: DateFormatContext): string {
   return [formatRepeatCadence(repeat), formatEnd(repeat.end, context)]
     .filter((part) => part != null && part !== '')

@@ -50,7 +50,6 @@ export interface StoreUnavailable {
   diagnosticCode: string;
 }
 
-/** 던져진 값이 무엇이든 사용자가 할 수 있는 일이 같은 원인으로 묶는다 */
 export function getFailureCause(error: unknown): SubscriptionFailureCause {
   return match(error)
     .with(P.instanceOf(SubscriptionError), getSubscriptionErrorCause)
@@ -75,7 +74,6 @@ export function getDiagnosticCode(error: unknown): string {
     .otherwise(() => 'UNKNOWN');
 }
 
-/** 스토어를 쓸 수 없는 상태면 그 종류를, 그 밖의 오류면 null을 준다 */
 export function getStoreUnavailable(error: unknown): StoreUnavailable | null {
   return match(error)
     .with(

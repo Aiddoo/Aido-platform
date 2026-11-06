@@ -18,11 +18,9 @@ interface RecordingTimerProps extends Omit<ComponentProps<typeof Box>, 'children
   elapsedMs: number;
   /** 한 번에 녹음할 수 있는 최대 길이. 서버 `featureQuota.perUse.maxSeconds`에서 온 값이고, 끝이 없으면 null이다 */
   limitMs: number | null;
-  /** 잠시 멈춘 때처럼 남은 시간 대신 보일 글자 */
   label?: string;
 }
 
-/** 큰 타이머 둘레에 한 번에 녹음할 수 있는 시간이 얼마나 찼는지 보여주는 링 */
 export function RecordingTimer({
   elapsedMs,
   limitMs,

@@ -18,10 +18,6 @@ import type { VoicePlanSource } from '../domains/voice-plan.model';
 import { getVoicePlanFailureCause } from '../domains/voice.error';
 import { toAnalyticsSource } from '../utils/analytics/voice-plan-analytics';
 
-/**
- * 계획 만들기가 실패했을 때의 공통 처리. 한도는 게이트 하나가 안내하고, 나머지는 원인별 문구를 토스트로 알린다.
- * 들은 글자와 고친 카드는 부른 쪽이 들고 있으므로 여기서 지우지 않는다.
- */
 export function usePlanFailureHandler(
   feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>,
   {

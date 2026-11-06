@@ -35,7 +35,6 @@ const captureBaseSchema = z.object({
   pauseCount: z.int().nonnegative(),
 });
 
-/** 계획을 받아 고르는 단계로 넘어갈 때 함께 드는 값 */
 export const capturedPlanSchema = z.object({
   plan: voicePlanSchema,
   /** 이 요청으로 횟수를 썼는지. false면 "횟수는 차감되지 않아요"를 보여 준다 */
@@ -65,7 +64,6 @@ export interface VoiceCaptureSeed {
 }
 
 export type VoiceCaptureEvent =
-  /** 이어 받을 글자와 시간이 있으면(빠른 말하기에서 넘어옴) 거기서부터 듣는다 */
   | { type: 'prepare'; seed?: VoiceCaptureSeed }
   | { type: 'start'; at: number }
   | { type: 'result'; result: SpeechResult }
@@ -75,7 +73,6 @@ export type VoiceCaptureEvent =
   | { type: 'end' }
   /** `isStopRequested`: 이 구간은 앱이 이미 stop을 불렀다 */
   | { type: 'error'; code: SpeechErrorCode; at: number; isStopRequested?: boolean }
-  /** 글자를 넘겨받은 쪽이 일을 마쳤다. 고를 계획이 있으면 review로, 없으면 처음으로 돌아간다 */
   | { type: 'planned'; result: CapturedPlan | null }
   | { type: 'plan-failed' }
   | { type: 'retry-plan' }
@@ -243,7 +240,6 @@ export function shouldRestartSegment(state: VoiceCaptureState): boolean {
   return state.status === 'listening';
 }
 
-/** 인식기가 멈췄는지 보려고 듣는 구간마다 모으는 값 */
 export const voiceStallWatchSchema = z.object({
   /** 마지막 글자를 받았거나 구간이 열린 시각 */
   lastTextAt: z.number(),
@@ -288,7 +284,6 @@ export function withStallRestart(now: number): VoiceStallWatch {
   return createVoiceStallWatch(now, now);
 }
 
-/** 듣는 중인데 말소리가 지금 들리고, 그만큼 들었는데도 일정 시간 글자가 없다 */
 export function shouldRestartStalledRecognizer(
   state: VoiceCaptureState,
   watch: VoiceStallWatch,
@@ -312,7 +307,6 @@ export function isActive(state: VoiceCaptureState): boolean {
   );
 }
 
-/** 듣기를 끝내고 글자를 마무리하거나 정리하는 중이다. 이때는 닫거나 되돌릴 수 없다 */
 export function isWrappingUp(state: VoiceCaptureState): boolean {
   return state.status === 'finalizing' || state.status === 'planning';
 }
@@ -342,7 +336,6 @@ export function canResume(state: VoiceCaptureState): boolean {
     .otherwise(() => false);
 }
 
-/** 한 번에 들을 수 있는 길이가 정해져 있으면 그 안에서만 이어 듣는다. 길이 제한이 없으면 null이다 */
 export function canResumeWithinLimit(state: VoiceCaptureState, limitMs: number | null): boolean {
   return canResume(state) && (limitMs == null || state.elapsedMs < limitMs);
 }
@@ -392,7 +385,6 @@ export function isOverQuickLimit(
   return getElapsedMs(state, now) >= maxSeconds * 1_000;
 }
 
-/** 빠른 말하기 길이를 다 써서 멈췄다. 들은 글자를 정리하거나 말로 메모하기로 이어 가게 한다 */
 export function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boolean {
   return state.status === 'paused' && isOverQuickLimit(state, now);
 }

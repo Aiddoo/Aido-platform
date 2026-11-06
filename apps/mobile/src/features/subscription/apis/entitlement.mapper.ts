@@ -41,7 +41,6 @@ export const toEntitlementSnapshot = (dto: EntitlementSnapshotDto): EntitlementS
     features: mapValues(pick(dto.features, PLAN_FEATURE_KEYS), toFeatureQuota),
   } satisfies Record<keyof EntitlementSnapshotDto, unknown>);
 
-/** 한도·프리미엄 전용 오류 코드가 막은 기능. 한도 안내는 이 표 한 곳에서만 코드를 기능으로 바꾼다 */
 const LIMITED_FEATURE_BY_ERROR_CODE = {
   [ErrorCode.AI_1303]: 'AI_PARSE',
   [ErrorCode.AI_1313]: 'VOICE_NOTE',
@@ -66,7 +65,6 @@ export interface LimitedFeature {
   featureQuota: FeatureQuota | null;
 }
 
-/** 서버가 한도·프리미엄 전용으로 막은 오류면 막힌 기능을, 아니면 null을 돌려준다 */
 export function findLimitedFeature(error: unknown): LimitedFeature | null {
   if (!isApiError(error) || !isLimitedErrorCode(error.code)) {
     return null;
@@ -87,7 +85,6 @@ export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
   return details.success ? toFeatureQuota(details.data.featureQuota) : null;
 }
 
-/** 서버가 이 요청으로 사용 횟수를 차감하지 않았다고 알린 오류인지 */
 export function isNotChargedError(error: unknown): boolean {
   return isApiError(error) && notChargedErrorDetailsSchema.safeParse(error.details).success;
 }

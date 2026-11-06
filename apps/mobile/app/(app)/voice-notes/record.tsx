@@ -92,7 +92,6 @@ function VoiceNoteRecordScreen() {
     recording.start({ startLocale: locale, contextualStrings: getSpeechContext() }).catch(() => {
       toast.error(t('record.failedTitle'));
     });
-    // 화면이 열릴 때 한 번만 듣기를 시작한다
   }, []);
 
   const clock = <VoiceNoteRecordScreen.Clock state={state} limitMs={limitMs} />;
@@ -211,7 +210,6 @@ VoiceNoteRecordScreen.LanguageToggle = function LanguageToggle({
   );
 };
 
-/** 1초마다 시계만 다시 그린다. 자막과 조작 줄은 건드리지 않는다 */
 VoiceNoteRecordScreen.Clock = function Clock({
   state,
   limitMs,
@@ -290,7 +288,6 @@ VoiceNoteRecordScreen.Controls = function Controls({
   );
 };
 
-/** 멈췄거나 실패했을 때. 왜 멈췄는지 알리고 정리·닫기·이어 듣기를 고르게 한다 */
 VoiceNoteRecordScreen.Stopped = function Stopped({
   state,
   canResume,

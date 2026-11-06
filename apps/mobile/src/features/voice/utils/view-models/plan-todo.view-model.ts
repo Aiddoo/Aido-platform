@@ -1,4 +1,3 @@
-/** 계획 카드의 회색 줄. 날짜(오늘이 아니고 반복이 아닐 때) · 시간 · 반복 순서로 있는 것만 잇는다 */
 export function getPlanTodoSubtitle({
   dateLabel,
   timeLabel,
@@ -30,7 +29,6 @@ export function parseScheduledTime(scheduledTime: string) {
   return { hour, minute };
 }
 
-/** 제목 없이 내용만 있는 메모는 내용을 이름처럼 보인다 */
 export function getPlanMemoLabel(memo: { title: string; content: string }) {
   return memo.title === '' ? memo.content : memo.title;
 }

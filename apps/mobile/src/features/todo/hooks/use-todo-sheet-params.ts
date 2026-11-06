@@ -61,7 +61,6 @@ export function useTodoCreatePrefillParam(): readonly [z.output<typeof createPre
   return [createPrefillSearchSchema.parse(useLocalSearchParams())] as const;
 }
 
-/** 기능 소개의 "지금 말해볼게요"로 왔으면 마이크 안내를 이미 봤어도 다시 띄운다 */
 export function useTodoCreateVoiceHintParam(): boolean {
   return createVoiceHintSearchSchema.parse(useLocalSearchParams()).voiceHint != null;
 }

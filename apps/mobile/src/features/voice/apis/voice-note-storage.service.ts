@@ -7,7 +7,6 @@ import type { VoiceRecordingRepository } from './voice-recording.repository';
 export interface VoiceNoteRecordingUsage {
   /** 아래 메모들의 녹음 크기 합. 메모에 속하지 않은 파일은 사용자가 볼 수도 지울 수도 없어 넣지 않는다 */
   totalBytes: number;
-  /** 녹음이 있는 메모(최근 순)와 그 크기 */
   notes: { note: VoiceNote; bytes: number }[];
 }
 
@@ -48,7 +47,6 @@ export class VoiceNoteStorageService {
     };
   };
 
-  /** 녹음 파일만 지운다. 글자·요약·할 일은 남고 다시 듣기만 없어진다 */
   removeRecordings = (accountId: string, draftId: string): void => {
     const note = this.drafts.find(accountId, draftId);
     if (note == null) {
@@ -66,7 +64,6 @@ export class VoiceNoteStorageService {
       .forEach((note) => this.drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note)));
   };
 
-  /** 30일이 지난 초안과 그 녹음, 어느 초안에도 속하지 않고 기한이 지난 녹음 파일을 지운다 */
   removeExpired = (accountId: string): void => {
     const now = this.#now();
     const [expired, alive] = partition(this.drafts.findAll(accountId), (note) =>
@@ -85,7 +82,6 @@ export class VoiceNoteStorageService {
     this.recordings.removeAllExceptOwner(accountId);
   };
 
-  /** 로그아웃·탈퇴 */
   removeAll = (): void => {
     this.drafts.removeAll();
     this.recordings.removeAll();

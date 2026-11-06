@@ -23,12 +23,10 @@ const planActionFormSchema = z.discriminatedUnion('type', [
   plannedMemoSchema.extend(selectedField),
 ]);
 
-/** 계획 카드를 고치는 폼. 카드마다 추가할지(`isSelected`)를 함께 든다 */
 export const planReviewFormSchema = z.object({ actions: z.array(planActionFormSchema) });
 
 export type PlanReviewFormValues = z.infer<typeof planReviewFormSchema>;
 
-/** 카드 하나를 고치는 시트의 폼. 확인을 누르기 전까지 목록과 초안은 이 값을 보지 못한다 */
 export const planTodoEditFormSchema = z.object({ todo: planTodoFormSchema });
 export type PlanTodoEditFormValues = z.infer<typeof planTodoEditFormSchema>;
 
@@ -44,7 +42,6 @@ export function createPlanReviewFormValues(
   };
 }
 
-/** 폼의 카드와 고른 상태를 정책이 읽는 모양으로 되돌린다 */
 export function toPlannedActions({ actions }: PlanReviewFormValues): PlannedAction[] {
   return actions.map(({ isSelected: _isSelected, ...action }) => plannedActionSchema.parse(action));
 }

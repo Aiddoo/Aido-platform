@@ -26,7 +26,6 @@ import { useVoiceNotes } from '../../hooks/use-voice-notes';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { voiceNoteHref, voiceNoteListHref } from '../../utils/navigation/voice-note-href';
 
-/** 기기에 남아 있는 말로 메모. 녹음을 끝내거나 앱이 꺼져도 글자는 여기서 다시 연다 */
 export function VoiceNoteDraftList() {
   const { t } = useTranslation('voiceNote');
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
@@ -122,7 +121,6 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
   );
 };
 
-/** 전용 화면의 로딩. `All`과 같은 안쪽 여백과 행 모양이라 목록이 와도 자리가 그대로다 */
 VoiceNoteDraftList.Loading = function Loading() {
   return (
     <ScrollView

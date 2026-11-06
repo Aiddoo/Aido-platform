@@ -47,7 +47,6 @@ const CARD_CTA_TEST_IDS = {
 interface CardCopy {
   title: ParseKeys<'featureDiscovery'>;
   description: ParseKeys<'featureDiscovery'>;
-  /** 버튼이 있는 카드(route가 있는 카드)만 둔다 */
   cta?: ParseKeys<'featureDiscovery'>;
   ctaLabel?: ParseKeys<'featureDiscovery'>;
 }

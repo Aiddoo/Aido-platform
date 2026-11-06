@@ -29,7 +29,6 @@ export function useTimezoneChangeNotice({
   reportCount,
 }: {
   accountId: string | null;
-  /** 보고가 성공할 때마다 늘어난다 */
   reportCount: number;
 }) {
   const deviceTimezoneService = useDeviceTimezoneService();

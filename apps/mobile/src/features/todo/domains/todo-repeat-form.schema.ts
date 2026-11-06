@@ -49,7 +49,6 @@ function toTodoRepeatEnd(values: TodoRepeatFormValues): TodoRepeatEnd | null {
     .exhaustive();
 }
 
-/** 요일이 없거나 날짜 종료인데 종료일이 없으면 반복을 만들 수 없다. */
 export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
   const end = toTodoRepeatEnd(values);
   if (end == null) {
@@ -82,7 +81,6 @@ export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
 
 export type TodoRepeatFormIssue = 'no-weekdays' | 'until-required' | 'no-occurrence';
 
-/** 반복을 확인할 수 없는 이유 하나. 확인 버튼(스키마)과 요약 문구가 같은 판단을 쓴다 */
 export function getTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeatFormIssue | null {
   if (!values.isMonthly && values.weekdays.length === 0) {
     return 'no-weekdays';

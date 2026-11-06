@@ -101,7 +101,6 @@ export const SubTodoPolicy = {
     );
   },
 
-  /** 지운 항목을 원래 자리로 되돌린다. 이미 있으면 그대로 둔다 */
   withSubTodoRestored<T extends SubTodoParent>(parent: T, subTodo: SubTodo, index: number): T {
     if (parent.subTodos.some(({ id }) => id === subTodo.id)) {
       return parent;

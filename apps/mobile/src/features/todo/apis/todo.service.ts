@@ -300,7 +300,6 @@ export class TodoService {
     return ok(toTodoSummary(parsed.data));
   };
 
-  /** 반복 할 일을 만들면 서버가 첫 회차와 규칙을 돌려준다. 나머지 회차는 목록을 다시 읽어 본다 */
   createRepeatingTodo = async (
     draft: RepeatingTodoDraft,
   ): Promise<Result<{ todo: Todo; series: TodoSeries }, ApiError | TodoSeriesNotCreatedError>> => {

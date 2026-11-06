@@ -35,22 +35,15 @@ import { useVoiceCaptureSession } from './use-voice-capture-session';
 interface UseVoiceNoteRecordingOptions {
   accountId: string;
   locale: SpeechLocale;
-  /** 이어서 들을 초안(빠른 말하기에서 넘어온 글자). 없으면 새 녹음이다 */
   seedDraftId?: string;
   entry?: Extract<VoiceCaptureEntry, 'memo_tab' | 'quick_voice_upgrade'>;
   /** 서버 한도의 한 번 최대 길이(초). null이면 끝이 없다 */
   maxSeconds: number | null;
   onLimitReached: () => void;
-  /** 초안을 저장하고 정리 화면으로 넘어갈 때 */
   onFinished: (draftId: string) => void;
-  /** 끝냈는데 들은 글자가 없을 때 */
   onEmpty: () => void;
 }
 
-/**
- * 녹음 화면의 세션. 인식은 `useVoiceCaptureSession`에 맡기고 여기서는 문장 시각·깃발·녹음 조각을 모아
- * 기기 초안에 이어서 저장한다. 앱이 꺼져도 마지막으로 저장한 글자는 메모 탭에 남는다.
- */
 export function useVoiceNoteRecording({
   accountId,
   locale,
@@ -91,7 +84,6 @@ export function useVoiceNoteRecording({
   const captionsRef = useRef(captions);
   const recordingsRef = useRef<VoiceNoteRecording[]>([]);
   const pendingSavesRef = useRef<Promise<void>[]>([]);
-  /** 아직 다 쓰지 않은 녹음 파일과 그 구간이 시작한 시각(노트 시계). 파일과 시각은 uri로 짝짓는다 */
   const segmentStartsRef = useRef(new Map<string, number>());
   const currentSegmentStartRef = useRef(0);
   const partCountRef = useRef(0);
@@ -271,7 +263,6 @@ export function useVoiceNoteRecording({
     // 파일 받기는 ref만 읽어 화면이 내려간 뒤에도 그대로 동작한다
   }, [speechRecognizer]);
 
-  /** 남길 글자가 없어 기기의 녹음 조각과 초안을 지운다. 뒤늦은 파일·글자는 더 받지 않는다 */
   function removeLocalNote() {
     hasDiscardedRef.current = true;
     recordingsRef.current.forEach(({ fileName }) => storage.recordings.remove(accountId, fileName));
@@ -369,7 +360,6 @@ export function useVoiceNoteRecording({
     );
   };
 
-  /** 초안을 지우고 나간다(들은 글자가 없을 때). 뒤늦은 파일·글자는 더 받지 않는다 */
   const discard = () => {
     hasBegunRef.current = false;
     session.cancel();
@@ -388,7 +378,6 @@ export function useVoiceNoteRecording({
     /** 이어 받은 글자까지 포함해 들은 글자가 있다. 있으면 묻지 않고 지우면 안 된다 */
     hasText: VoiceNoteCaptionPolicy.hasCaptionText(captions),
     bookmarksMs: captions.bookmarksMs,
-    /** 중요 표시한 문장 수. 정리·결과 화면의 개수와 같은 기준이다 */
     markCount: VoiceNoteCaptionPolicy.getMarkedSentenceCount(captions),
     start,
     mark,

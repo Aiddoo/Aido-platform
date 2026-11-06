@@ -53,7 +53,6 @@ export type PushNotificationPayloadResult =
   | { success: true; payload: PushNotificationPayload }
   | { success: false; error: Error };
 
-/** OS가 준 푸시 data를 앱 모델로 읽는다. 모양이 맞지 않으면 error를 돌려준다 */
 export function toPushNotificationPayload(data: unknown): PushNotificationPayloadResult {
   const parsed = pushNotificationDataSchema.safeParse(data);
   if (!parsed.success) {

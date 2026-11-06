@@ -27,7 +27,6 @@ function SubscriptionScreen() {
 
   // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
   // 영수증은 서버 값으로만 그려 스토어가 실패해도 이용 중인 사람(관리자 포함)은 영수증을 본다.
-  // 스토어를 쓸 수 없으면 요금제 자리에서 안내한다.
   return match({
     hasFullAccess: EntitlementPolicy.hasFullAccess(entitlements),
     canSubscribe: receipt.primaryAction === 'subscribe',
@@ -38,7 +37,6 @@ function SubscriptionScreen() {
     .exhaustive();
 }
 
-/** 내 정보·권한을 받기 전에는 영수증과 같은 자리·모양의 스켈레톤을 둔다 */
 SubscriptionScreen.Loading = function Loading() {
   const isOnline = useIsOnline();
 
@@ -63,7 +61,6 @@ SubscriptionScreen.Loading = function Loading() {
   );
 };
 
-/** 내 정보·권한을 불러오지 못하면 영수증도 요금제도 정할 수 없어 화면 전체에서 안내한다 */
 SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1">

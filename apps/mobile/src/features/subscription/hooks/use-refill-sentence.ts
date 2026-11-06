@@ -11,7 +11,6 @@ import {
   type EntitlementSnapshot,
 } from '../domains/entitlement.model';
 
-/** "12월 1일에 다시 10번 생겨요"처럼 다 쓴 횟수가 언제 채워지는지. 알 수 없으면 null이다 */
 export function useRefillSentence() {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();

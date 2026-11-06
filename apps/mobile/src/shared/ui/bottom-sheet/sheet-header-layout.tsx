@@ -6,22 +6,15 @@ import { VStack } from '../v-stack/v-stack';
 import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './constants';
 import { SheetScrollArea } from './sheet-scroll-area';
 
-/** 시트가 세로 스크롤을 내용에 맡겼는지(`hasFixedHeader`) */
 export const SheetBodyHostContext = createContext(false);
 
 interface SheetHeaderLayoutProps {
-  /** 내용이 길어 스크롤돼도 시트 위에 남는 머리글 */
   header: ReactNode;
-  /** 내용이 길어 스크롤돼도 시트 아래에 남는 줄 */
   footer?: ReactNode;
   gap: number;
   children: ReactNode;
 }
 
-/**
- * 머리글(과 아래 줄)은 고정하고 본문만 스크롤하는 시트 내용. `ModalBottomSheet`의 `hasFixedHeader`와 함께 쓴다.
- * 넘치지 않으면 그냥 쌓은 모양과 같다. 그런 시트 밖에서는 그대로 쌓기만 한다.
- */
 export function SheetHeaderLayout({ header, footer, gap, children }: SheetHeaderLayoutProps) {
   const isScrollDelegated = use(SheetBodyHostContext);
 
@@ -56,7 +49,6 @@ const { paddingBottom: SHEET_BOTTOM_PADDING } = SHARED_SHEET_STYLES.content;
 
 const styles = StyleSheet.create({
   layout: { flexShrink: 1 },
-  // 시트 안쪽 여백까지 넓혀 스크롤 막대와 흐림이 시트 가장자리에 붙는다
   bleed: { marginHorizontal: -SHEET_CONTENT_PADDING },
   bleedToBottom: { marginHorizontal: -SHEET_CONTENT_PADDING, marginBottom: -SHEET_BOTTOM_PADDING },
   body: { paddingHorizontal: SHEET_CONTENT_PADDING },

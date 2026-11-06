@@ -26,7 +26,6 @@ import { toPremiumBenefitAmounts } from '../utils/view-models/plan-benefit.view-
 import type { SubscriptionReceiptRow } from '../utils/view-models/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
-/** 이용 중인 프리미엄의 영수증. 출처(관리자·결제·초대 보상)와 기간, 이용 중인 혜택을 보여 준다 */
 export function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
   const { variant, rows, footnote } = useSubscriptionReceipt();

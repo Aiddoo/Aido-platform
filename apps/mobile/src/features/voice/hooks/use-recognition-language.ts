@@ -7,7 +7,6 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
 
-/** 말하는 언어. 사용자별로 기억하고, 고른 적이 없으면 앱 언어를 따른다 */
 export function useRecognitionLanguage() {
   const repository = useRecognitionLanguageRepository();
   const { resolvedLanguage } = useLanguage();

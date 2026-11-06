@@ -89,14 +89,12 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
     };
   }, [speechRecognizer]);
 
-  /** 실패는 안에서 토스트로 알리므로 기다리지 않고 불러도 된다 */
   const start = async () => {
     hasFailedRef.current = false;
     isStopRequestedRef.current = false;
     try {
       const locale = APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
       const isGranted = await ensureMicrophonePermission('dictation', locale);
-      // 권한을 묻는 사이 화면이 내려갔으면 시작하지 않는다
       if (!isGranted || !isMountedRef.current) {
         return;
       }

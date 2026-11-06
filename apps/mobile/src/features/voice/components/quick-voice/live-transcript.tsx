@@ -10,16 +10,13 @@ import {
   type VoiceTranscript,
 } from '../../domains/voice-transcript.model';
 
-/** 이 개수를 넘으면 단어를 하나씩 등장시키지 않는다 */
 const MAX_ANIMATED_WORDS = 40;
 const WORD_FADE_MS = 450;
-/** 맨 아래에서 이만큼 안이면 끝까지 본 것으로 보고 다시 따라간다 */
 const FOLLOW_THRESHOLD_PX = 24;
 
 interface LiveTranscriptProps {
   transcript: VoiceTranscript;
   placeholder?: string;
-  /** 이미 본 글자를 다시 보일 때는 등장 효과를 끈다 */
   isWordFadeEnabled?: boolean;
 }
 

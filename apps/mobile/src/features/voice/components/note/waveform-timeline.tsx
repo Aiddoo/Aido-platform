@@ -38,10 +38,8 @@ const RADIUS = WAVEFORM_BAR.width / 2;
 export interface LiveWaveform {
   /** 재생선 왼쪽에 그릴 최근 칸(오래된 순). 길이는 `WAVEFORM_BAR.maxLiveBars`를 넘지 않는다 */
   bars: SharedValue<readonly number[]>;
-  /** 지금까지 만든 칸 수. 깃발 위치를 `bars` 안의 칸으로 옮길 때 쓴다 */
   barCount: SharedValue<number>;
   shift: SharedValue<number>;
-  /** 인식기의 음량을 넣는다. React를 거치지 않고 UI 스레드 값만 바꾼다 */
   pushLevel: (level: number) => void;
 }
 
@@ -96,7 +94,6 @@ function getSlotLeft(width: number, slot: number, sideCount: number) {
   return width / 2 + (slot - sideCount) * STEP - RADIUS;
 }
 
-/** 소리가 있는 칸 중 말한 칸 또는 조용한 칸만 그린다. 색이 달라 경로를 나눈다 */
 function addLevelBars(
   target: SkPathBuilder,
   { width, height }: { width: number; height: number },
@@ -124,11 +121,9 @@ function addLevelBars(
 
 interface WaveformTimelineProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
   waveform: LiveWaveform;
-  /** 깃발이 꽂힌 전체 칸 번호 */
   flagIndexes: readonly number[];
 }
 
-/** 가운데 고정 재생선을 지나 왼쪽으로 흐르는 파형. 말한 구간은 main, 조용한 구간은 gray, 중요 표시는 깃발이다 */
 export function WaveformTimeline({
   waveform,
   flagIndexes,
@@ -228,9 +223,7 @@ export function WaveformTimeline({
 }
 
 interface RecognizerWaveformProps extends Omit<WaveformTimelineProps, 'waveform' | 'flagIndexes'> {
-  /** 듣지 않을 때는 음량을 받지 않아 파형이 멈춘다 */
   isActive: boolean;
-  /** 중요 표시한 시각. 표시한 순간의 칸에 깃발을 꽂는다 */
   bookmarksMs: readonly number[];
 }
 

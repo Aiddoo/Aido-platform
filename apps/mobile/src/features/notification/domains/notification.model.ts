@@ -39,7 +39,6 @@ export const notificationActionSchema = z.object({
 });
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
-/** 푸시를 눌렀을 때 앱이 읽는 알림 data. 모르는 값은 mapper가 걸러 이 모양만 남는다 */
 export const pushNotificationPayloadSchema = z.object({
   notificationId: z.int().nonnegative(),
   type: notificationTypeSchema,

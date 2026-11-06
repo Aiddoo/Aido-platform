@@ -19,11 +19,9 @@ interface CreateQuickPlanVariables extends PreparedPlanRequest<CreateQuickPlanIn
 }
 
 interface UseCreateQuickPlanMutationOptionsParams {
-  /** 한도 안내에서 구독 화면으로 가기 직전에 부른다(열린 시트 닫기) */
   onSubscribe?: () => void;
 }
 
-/** 말하거나 적은 글을 계획으로 나눈다. 요청마다 `preparePlanRequest`로 만든 멱등 키를 함께 보낸다 */
 export const useCreateQuickPlanMutationOptions = ({
   onSubscribe,
 }: UseCreateQuickPlanMutationOptionsParams = {}) => {

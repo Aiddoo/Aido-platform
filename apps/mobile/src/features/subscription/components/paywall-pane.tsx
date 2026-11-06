@@ -37,7 +37,6 @@ import { SubscriptionResult } from './subscription-result';
 
 const PLAN_ROW_COUNT = 2;
 
-/** 무료 사용자(또는 보상 기간에 구독을 이어 붙이려는 사람)의 요금제 화면. 요금제 자리와 구독 버튼만 스토어 상태를 따른다 */
 export function PaywallPane() {
   const [chosenPlanId, setChosenPlanId] = useState<string>();
 

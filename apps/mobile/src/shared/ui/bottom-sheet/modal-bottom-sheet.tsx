@@ -27,14 +27,12 @@ const DISMISS_VELOCITY = 500;
 interface ModalBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** 닫기 애니메이션 시작 시 호출. 아래 시트의 키보드를 함께 올릴 때 쓴다 */
   onCloseStart?: () => void;
   /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
   onExit: () => void;
   children: ReactNode;
   /** 내용이 길어 스크롤돼도 시트 아래에 고정되는 영역. 주 동작 버튼을 둔다. */
   footer?: ReactNode;
-  /** 내용이 `SheetHeaderLayout`으로 머리글을 고정하고 본문 스크롤을 직접 둔다. 피커처럼 "확인"이 위에 있는 시트에 쓴다 */
   hasFixedHeader?: boolean;
 }
 
@@ -123,7 +121,6 @@ export const ModalBottomSheet = ({
         }),
       );
     } else {
-      // Animate out (한 번만 실행)
       if (!isAnimatingOut.get()) {
         isAnimatingOut.set(true);
         onCloseStartRef.current?.();

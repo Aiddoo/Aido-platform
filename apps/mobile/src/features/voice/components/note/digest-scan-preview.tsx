@@ -17,11 +17,9 @@ import { useSkiaColor } from '../../hooks/use-skia-color';
 const BEAM = { height: 90, opacity: 0.45, durationMs: 2_200 } as const;
 
 interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
-  /** 정리할 글자를 문단으로 나눈 것. 흐리게 보이고 그 위로 빛줄기가 훑는다 */
   paragraphs: readonly string[];
 }
 
-/** 정리 중에 전사 글자를 흐리게 보여주며 위에서 아래로 빛줄기가 훑는다. 모션 줄이기에서는 빛줄기를 그리지 않는다 */
 export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
   const reduceMotion = useReduceMotion();
   const beamColor = useSkiaColor('text-main');

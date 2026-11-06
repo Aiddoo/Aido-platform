@@ -35,7 +35,6 @@ export function cancelTodoQueries(
   ]);
 }
 
-/** 할 일 체크·추가·삭제가 함께 바꾸는 달력 요약 조회까지 멈춘다. */
 export function cancelTodoCompletionQueries(
   queryClient: QueryClient,
   target: { date: string; todoId?: number },
@@ -69,7 +68,6 @@ export function getCachedTodosByDate(
   return queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }))?.todos;
 }
 
-/** 캐시에 있는 그 할 일(날짜 목록과 열린 상세)을 함께 고친다. */
 export function updateCachedTodo(
   queryClient: QueryClient,
   { date, todoId }: { date: string; todoId: number },
@@ -103,7 +101,6 @@ export function removeTodoFromList(
   );
 }
 
-/** 임시 행을 응답으로 온 서버 행으로 바꾼다. 그 사이 다시 받아 임시 행이 없으면 그대로 둔다. */
 export function confirmTodoInList(
   queryClient: QueryClient,
   { date, optimisticId }: { date: string; optimisticId: number },
@@ -187,7 +184,6 @@ export function settleTodoListWrite(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.pages() });
 }
 
-/** 완료 기록까지 바꾼 뮤테이션이 끝날 때 달력·위젯·시작 체크리스트도 같은 규칙으로 맞춘다. */
 export function settleTodoCompletionWrite(queryClient: QueryClient) {
   settleTodoListWrite(queryClient);
   if (queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.completionWrites() }) !== 1) {

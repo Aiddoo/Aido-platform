@@ -12,9 +12,7 @@ import { isRecordingFileExpired } from '../domains/voice-note.model';
 interface SaveRecordingInput {
   accountId: string;
   draftId: string;
-  /** 초안의 몇 번째 조각인지. 멈췄다 이어 들으면 파일이 조각마다 하나다 */
   partIndex: number;
-  /** 인식기가 `recording-saved`로 알려 준 파일 */
   sourceUri: string;
 }
 
@@ -28,7 +26,6 @@ export interface VoiceRecordingRepository {
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
   removeOwned(accountId: string): void;
-  /** 초안이 가리키지 않고 보관 기한이 지난 파일을 지우고 지운 파일 이름을 돌려준다 */
   removeExpired(accountId: string, now: Date, referencedFileNames: ReadonlySet<string>): string[];
   removeAllExceptOwner(accountId: string): void;
   removeAll(): void;

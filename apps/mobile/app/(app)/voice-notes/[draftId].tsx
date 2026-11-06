@@ -64,12 +64,10 @@ import { Platform, ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-/** 정리 중 미리보기에 보여 줄 앞부분 문장 수. 전체를 그릴 이유가 없다 */
 const SCAN_PREVIEW_SENTENCES = 12;
 
 const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
 
-/** 네이티브 헤더 버튼 아이콘. iOS는 SF Symbol, Android는 Material Symbol을 쓴다. */
 const VOICE_NOTE_TOOLBAR_ICON = {
   saveMemo: Platform.OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,
   memoSaved: Platform.OS === 'ios' ? 'checkmark' : Check,
@@ -104,7 +102,6 @@ interface VoiceNoteDigestProps {
   note: VoiceNote;
 }
 
-/** 메모로 저장은 정리한 뒤에만 보인다. 저장했으면 다시 저장하지 않게 체크로 바뀐다 */
 function VoiceNoteToolbar({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
@@ -151,7 +148,6 @@ function VoiceNoteToolbar({ note }: { note: VoiceNote }) {
   );
 }
 
-/** 정리 전: 들은 글자를 보여 주고, 누르면 정리한다. 실패해도 글자는 그대로 있고 다시 정리할 수 있다 */
 function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
@@ -217,7 +213,6 @@ VoiceNoteDigest.Failure = function Failure({ failure }: { failure: VoiceNoteDige
   );
 };
 
-/** 정리 뒤: 제목·재생 줄 아래로 요약·할 일·전문을 고른다. 넓은 화면은 할 일 칸이 옆에 늘 보인다 */
 function VoiceNoteResult({ note }: { note: VoiceNote }) {
   const [tab, setTab] = useVoiceNoteTab();
   const isCompact = useWindowSizeClass() === 'compact';
@@ -262,7 +257,6 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
   );
 }
 
-/** 기기에 남은 녹음 조각으로 만든 플레이어. 화면을 벗어나면 재생을 멈춘다 */
 function useVoiceNoteResultPlayer(note: VoiceNote) {
   const { accountId } = useCurrentVoiceNote();
   const { recordings } = useVoiceNoteStorageService();
@@ -398,7 +392,6 @@ VoiceNoteResult.Summary = function Summary({
   );
 };
 
-/** 재생 중인 포인트가 바뀔 때만 다시 그린다 */
 VoiceNoteResult.KeyPoints = function KeyPoints({
   note,
   player,
@@ -431,7 +424,6 @@ VoiceNoteResult.KeyPoints = function KeyPoints({
   );
 };
 
-/** 재생 중인 문장이 바뀔 때만 다시 그린다 */
 VoiceNoteResult.Transcript = function Transcript({
   note,
   player,

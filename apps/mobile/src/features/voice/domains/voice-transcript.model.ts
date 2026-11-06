@@ -46,7 +46,6 @@ export function applyResult(transcript: VoiceTranscript, result: SpeechResult): 
     : replaceInterimResult(transcript, result.transcript);
 }
 
-/** 확정된 글자. 화면에서 진하게 그린다 */
 export function getFinalText(transcript: VoiceTranscript): string {
   return transcript.sentences.join(' ');
 }
@@ -55,7 +54,6 @@ export function getInterimText(transcript: VoiceTranscript): string {
   return transcript.interim;
 }
 
-/** 서버로 보내거나 입력칸에 넣을 전체 글자 */
 export function getTranscriptText(transcript: VoiceTranscript): string {
   return [getFinalText(transcript), transcript.interim].filter((part) => part.length > 0).join(' ');
 }
@@ -80,7 +78,6 @@ export function mergeHeardTextIntoTitle(title: string, heardText: string): strin
   return `${typed} ${heard}`;
 }
 
-/** 멈춘 뒤 남은 꼬리를 확정해 잃지 않게 한다 */
 export function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscript {
   return appendFinalResult(transcript, transcript.interim);
 }

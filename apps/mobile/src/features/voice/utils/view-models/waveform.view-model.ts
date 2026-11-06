@@ -42,7 +42,6 @@ export function createSpeechLevels(
 const SAMPLES_PER_BAR = 2;
 
 export interface LevelSampler {
-  /** 아직 칸이 되지 않은 음량 중 가장 큰 값과 개수 */
   pendingMax: number;
   pendingCount: number;
 }
@@ -51,7 +50,6 @@ export function createLevelSampler(): LevelSampler {
   return { pendingMax: 0, pendingCount: 0 };
 }
 
-/** 칸이 하나 찼으면 `bar`에 그 값을 준다 */
 export function appendLevelSample(
   sampler: LevelSampler,
   level: number,
@@ -63,7 +61,6 @@ export function appendLevelSample(
     : { sampler: { pendingMax, pendingCount }, bar: null };
 }
 
-/** 녹음 중 칸 목록에 한 칸을 더한다. 오래 녹음해도 길이는 그대로다 */
 export function appendTimelineBar(
   bars: readonly number[],
   bar: number,
@@ -111,7 +108,6 @@ export function getTimelineLevel(
   return index >= 0 ? (levels[index] ?? null) : null;
 }
 
-/** 지난 프레임의 값에서 음량 쪽으로 한 프레임 나아간 값. 커질 때와 잦아들 때 따라가는 시간이 다르다 */
 export function followLevel(
   current: number,
   target: number,
@@ -123,7 +119,6 @@ export function followLevel(
   return current + (target - current) * (1 - Math.exp(-elapsedMs / followMs));
 }
 
-/** 전체 길이를 `count`칸으로 줄여 스크러버에 맞춘다. 칸마다 구간의 가장 큰 값이다 */
 export function resampleLevels(levels: readonly number[], count: number): number[] {
   if (count <= 0 || levels.length === 0) {
     return [];

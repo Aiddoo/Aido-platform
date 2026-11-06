@@ -65,7 +65,6 @@ export const voicePlanSchema = z.object({
   actions: z
     .array(plannedActionSchema)
     .max(ACTION_PLAN_LIMITS.MAX_TODOS + ACTION_PLAN_LIMITS.MAX_MEMOS),
-  /** 상한을 넘어 계획에 넣지 못한 할 일 수 */
   omittedTodoCount: z.int().nonnegative(),
 });
 export type VoicePlan = z.infer<typeof voicePlanSchema>;
@@ -129,10 +128,6 @@ export type PlanHeadline =
   | { kind: 'memo' }
   | { kind: 'already-added' };
 
-/**
- * 계획 머리글에 무엇을 말할지. 고른 할 일이 있으면 그 수, 메모만 고르면 메모다.
- * 아무것도 고르지 않았을 때 할 일이 전부 겹치면 이미 있는 것이고, 사용자가 끈 것이면 나눈 수를 그대로 둔다.
- */
 export function getPlanHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
   const selectedTodoCount = countSelectedTodos(plan, selection);
   if (selectedTodoCount > 0) {
@@ -175,12 +170,10 @@ export function withScheduledTime(todo: PlannedTodo, scheduledTime: string | nul
   return { ...todo, scheduledTime };
 }
 
-/** 저장 요청에 보낼 카테고리. AI가 고르지 못한 칸은 시트의 현재 카테고리로 채운다 */
 export function getCategoryId(todo: PlannedTodo, fallbackCategoryId: number) {
   return todo.categoryId ?? fallbackCategoryId;
 }
 
-/** 카드 묶음을 나누는 데 필요한 값 */
 export type PlanGroupableAction =
   | Pick<PlannedTodo, 'type' | 'categoryId'>
   | Pick<PlannedMemo, 'type'>;
@@ -192,7 +185,6 @@ export interface PlanActionGroup {
   indexes: number[];
 }
 
-/** 카테고리가 처음 나온 순서로 묶고, 묶음 안에서는 원래 순서를 지킨다 */
 export function getPlanActionGroups(
   actions: readonly PlanGroupableAction[],
   fallbackCategoryId: number,

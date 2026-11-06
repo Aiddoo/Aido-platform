@@ -57,7 +57,6 @@ export function useThreadExpansion(threadCommentId: string, defaultExpansion: Th
   return [expansion, setExpansion] as const;
 }
 
-/** 답글을 올리면 그 묶음을 펼친다. 사용자가 직접 펼친 묶음은 그 상태를 지킨다 */
 export function useExpandThread() {
   const { updateExpansion } = useTodoCommentExpansion();
   return useCallback(

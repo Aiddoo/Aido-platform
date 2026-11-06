@@ -6,7 +6,6 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 
-/** 이번 녹음의 길이 한도와, 한도에 닿았을 때의 안내. 프리미엄은 바로 정리로 넘어가고 나머지는 한도 창에서 고른다 */
 export function useVoiceNoteRecordLimit() {
   const { t } = useTranslation('voiceNote');
   const toast = useAppToast();

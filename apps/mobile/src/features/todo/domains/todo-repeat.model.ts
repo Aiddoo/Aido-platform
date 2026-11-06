@@ -122,10 +122,6 @@ export function isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
   return repeat.frequency === 'MONTHLY' && repeat.monthDay >= TODO_REPEAT_MONTH_DAY_CLAMP_FROM;
 }
 
-/**
- * 시작일이 바뀌면 시작일에서 따라오는 값(매월 n일, 시작일 요일 하나만 고른 요일)을 맞추고,
- * 시작일보다 앞선 종료일은 시작일로 당긴다.
- */
 export function withRepeatStartDate(
   repeat: TodoRepeat,
   previousStartDate: string,
@@ -192,7 +188,6 @@ export function getTodoEditScopeDecision({
   return isDateOnly ? 'this-only' : 'ask';
 }
 
-/** 이 회차가 속한 묶음과 그 규칙. 할 일 모델의 두 칸이다 */
 export interface RepeatOccurrence {
   recurrenceGroupId: string | null;
   repeat: TodoRepeat | null;
@@ -249,7 +244,6 @@ function isOccurrenceDateKey(repeat: TodoRepeat, startDate: string, dateKey: str
     .exhaustive();
 }
 
-/** 시작일부터 종료 조건(날짜·횟수)까지의 회차 날짜. 끝이 없으면 limit(YYYY-MM-DD)까지 */
 function* walkOccurrenceDateKeys(
   repeat: TodoRepeat,
   startDate: string,
@@ -291,7 +285,6 @@ export function getFirstRepeatOccurrenceDateKey(
   return first ?? null;
 }
 
-/** 날짜·횟수로 끝나는 규칙의 마지막 회차. 끝이 없거나 회차가 없으면 null */
 export function getLastRepeatOccurrenceDateKey(
   repeat: TodoRepeat,
   startDate: string,

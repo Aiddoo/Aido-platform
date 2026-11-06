@@ -12,7 +12,6 @@ type SheetScrollShadowProps = Omit<
   'LinearGradientComponent' | 'color' | 'size'
 >;
 
-/** 시트 안 스크롤을 감싸 잘리는 쪽을 시트 면 색으로 흐리게 덮는다. 넘치지 않으면 보이지 않는다 */
 export function SheetScrollShadow(props: SheetScrollShadowProps) {
   const { backgroundColor } = useResolveClassNames('bg-white dark:bg-gray-1');
 
@@ -34,7 +33,6 @@ interface SheetScrollAreaProps extends Pick<
   children: ReactNode;
 }
 
-/** 시트 내용의 세로 스크롤. 넘칠 때만 스크롤 막대와 흐림이 나타나 더 있다는 걸 알린다 */
 export function SheetScrollArea({ style, contentContainerStyle, children }: SheetScrollAreaProps) {
   return (
     <SheetScrollShadow style={[styles.area, style]}>

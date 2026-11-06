@@ -31,7 +31,6 @@ import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-quer
 import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
 import { toPlanBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
 
-/** 스토어 응답 없이 그리는 제목과 혜택. 요금제를 못 받아도 늘 같은 자리에 보인다 */
 export function Paywall() {
   const { t } = useTranslation('subscription');
 
@@ -62,7 +61,6 @@ export function Paywall() {
   );
 }
 
-/** 그림과 함께 보여 주는 대표 혜택. 숫자는 서버 스냅샷(무료)과 PLAN_CATALOG(프리미엄)에서 읽는다 */
 Paywall.Benefits = function Benefits() {
   const { t } = useTranslation('subscription');
   const { locale } = useDateFormatContext();

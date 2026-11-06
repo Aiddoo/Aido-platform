@@ -17,20 +17,14 @@ type CaptionItem =
   | { type: 'interim'; text: string };
 
 interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'children'> {
-  /** 확정된 문장. 길어져도 보이는 만큼만 그리는 가상화 목록이다 */
   sentences: readonly VoiceNoteSentence[];
-  /** 아직 인식 중인 꼬리. 확정되기 전이라 회색으로 그린다 */
   interimText?: string;
-  /** 녹음 중이면 아래부터 쌓이며 따라 내려가고, 사용자가 위로 올리면 멈춘다 */
   isLive?: boolean;
   activeSentenceIndex?: number;
-  /** 주면 문장을 눌러 그 시각부터 들을 수 있다 */
   onPressSentence?: (sentence: VoiceNoteSentence) => void;
-  /** 목록 아래를 덮는 안내의 높이. 최신 문장이 그 위에 오게 비운다 */
   contentBottomInset?: number;
 }
 
-/** 문장 카드 자막. 녹음 중에는 아래로 쌓이고 사용자가 위로 올리면 자동 스크롤이 멈춘다 */
 export function SentenceCaptionList({
   sentences,
   interimText,

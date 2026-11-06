@@ -14,7 +14,6 @@ const KEY_PREFIX = 'aido_voice_note_draft_v1:';
 const KEY_SEPARATOR = ':';
 
 export interface VoiceNoteDraftRepository {
-  /** 초안이 바뀌면 부른다. `getSnapshot`과 함께 `useSyncExternalStore`에 넘긴다 */
   subscribe(listener: () => void): () => void;
   /** 내 초안 전체. 바뀌기 전까지 같은 배열을 돌려준다 */
   getSnapshot(accountId: string): readonly VoiceNote[];
@@ -22,9 +21,7 @@ export interface VoiceNoteDraftRepository {
   /** 오래된 순서가 아니라 저장소 순서다. 정렬은 쓰는 쪽이 정한다 */
   findAll(accountId: string): VoiceNote[];
   save(accountId: string, note: VoiceNote): void;
-  /** 문장이 이어서 들어오는 동안 쓰기를 모은다. 같은 초안끼리만 모은다 */
   scheduleSave(accountId: string, note: VoiceNote): void;
-  /** 모아 둔 쓰기를 지금 끝낸다(끝내기·백그라운드 전환) */
   flush(accountId: string, draftId: string): void;
   remove(accountId: string, draftId: string): void;
   removeAllExceptOwner(accountId: string): void;

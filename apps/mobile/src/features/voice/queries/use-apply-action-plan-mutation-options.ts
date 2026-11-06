@@ -21,11 +21,8 @@ import { toAnalyticsSource } from '../utils/analytics/voice-plan-analytics';
 export interface ApplyActionPlanParams {
   source: VoicePlanSource;
   sourceMemoId: number | null;
-  /** 사용자가 고른 행동만 */
   actions: readonly PlannedAction[];
-  /** 카테고리를 고르지 못한 할 일에 넣을, 시트의 현재 카테고리 */
   fallbackCategoryId: number;
-  /** 고르지 않은 행동 수(분석용) */
   skippedCount: number;
   idempotencyKey: string;
 }

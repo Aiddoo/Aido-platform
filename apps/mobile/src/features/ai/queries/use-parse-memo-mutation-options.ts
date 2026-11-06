@@ -77,7 +77,6 @@ export const useParseMemoMutationOptions = () => {
         source: toAnalyticsSource(plan.source),
         ...summarizePlanForAnalytics(plan),
       });
-      // 결과는 기기에 남겨 화면을 벗어나거나 앱을 다시 켜도 잃지 않는다
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId != null) {
         draftService.save(

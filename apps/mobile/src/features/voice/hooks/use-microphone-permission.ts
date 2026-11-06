@@ -31,10 +31,6 @@ function getPermissionCopy(missing: MissingSpeechPermission) {
     .exhaustive();
 }
 
-/**
- * 그 언어로 듣는 데 필요한 마이크·음성 인식 권한을 확인하고 필요하면 묻는다. 허용되면 true다.
- * 다시 물을 수 없게 막혔으면 설정으로 안내하고, 이번만 거절했으면 토스트로 알린다. 문구는 실제로 막은 권한을 말한다.
- */
 export function useMicrophonePermission() {
   const speechRecognizer = useSpeechRecognizer();
   const toast = useAppToast();

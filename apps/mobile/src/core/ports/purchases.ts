@@ -1,4 +1,3 @@
-/** 스토어 SDK가 알려 준 결제처. 앱이 구분하지 않는 결제처는 `OTHER`다 */
 export type PurchaseStore = 'APP_STORE' | 'PLAY_STORE' | 'PROMOTIONAL' | 'OTHER';
 
 export interface PurchaseEntitlement {
@@ -31,7 +30,6 @@ export interface PurchaseOffering {
 
 export type PurchasePackageResult =
   | { type: 'purchased'; status: PurchaseStatus }
-  /** 지금 판매 중인 요금제에 그 패키지가 없다 */
   | { type: 'package-not-found' };
 
 /**
@@ -75,6 +73,5 @@ export interface PurchasesGateway {
   /** 실패하면 `PurchasesGatewayError`를 throw한다 */
   restore(): Promise<PurchaseStatus>;
   getStatus(): Promise<PurchaseStatus>;
-  /** 이 기기 구매·복원, 다른 기기 변경, 스토어 직접 취소를 알린다. 반환 함수로 구독을 끝낸다 */
   subscribe(listener: (info: PurchaseStatus) => void): () => void;
 }

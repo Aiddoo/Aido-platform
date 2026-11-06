@@ -70,7 +70,6 @@ interface TodoScopeSelectContentProps {
   /** 보일 범위. 규칙 변경은 이후만, 규칙 없는 묶음의 삭제는 이후가 없다 */
   scopes: readonly TodoEditScope[];
   onChange: (scope: TodoEditScope) => void;
-  /** 같은 시트 안의 한 단계로 보일 때, 누르면 앞 화면으로 돌아간다 */
   onBack?: () => void;
 }
 

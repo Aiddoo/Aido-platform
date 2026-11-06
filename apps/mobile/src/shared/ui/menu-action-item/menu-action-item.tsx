@@ -11,7 +11,6 @@ type MenuActionItemProps = Omit<ComponentProps<typeof Menu.Item>, 'children'> & 
   description?: string | null;
 };
 
-/** 앱의 ⋯ 메뉴 항목. 앞에 주황 아이콘을 두고, 삭제·차단 같은 위험한 항목은 빨간색으로 그린다 */
 export function MenuActionItem({
   icon: Icon,
   title,

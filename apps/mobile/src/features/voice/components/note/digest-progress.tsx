@@ -17,7 +17,6 @@ interface DigestProgressProps extends Omit<ComponentProps<typeof VStack>, 'child
   markCount: number;
 }
 
-/** 정리 중 단계 3개. 글자 정리는 기기에서 끝났고, 핵심·할 일은 서버 응답이 오면 함께 끝난다 */
 export function DigestProgress({ characterCount, markCount, ...stackProps }: DigestProgressProps) {
   const { t } = useTranslation('voiceNote');
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);

@@ -341,7 +341,6 @@ export interface SubscriptionEventMap {
   purchase_failed: { reason: PurchaseFailedReason };
 }
 
-/** 한도·프리미엄 안내를 띄운 화면. premium_gate_*·limit_reached_*가 같은 값을 쓴다 */
 export type EntitlementGateSurface =
   | 'add_todo_sheet'
   | 'memo_detail'

@@ -9,7 +9,6 @@ import { useCurrentVoiceNote } from './use-current-voice-note';
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */
 const UNUSED_CATEGORY_ID = 0;
 
-/** 정리한 내용을 메모 한 장으로 저장한다. 저장 여부와 멱등 키는 기기의 초안에 남긴다 */
 export function useVoiceNoteSaveMemo(note: VoiceNote) {
   const { accountId, draftId } = useCurrentVoiceNote();
   const { drafts } = useVoiceNoteStorageService();

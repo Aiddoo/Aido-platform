@@ -23,7 +23,6 @@ interface VoiceNotePlayerBarProps extends Omit<ComponentProps<typeof HStack>, 'c
   /** 한 칸이 `WAVEFORM_BAR.intervalMs`인 노트 전체 소리 크기 */
   levels: readonly number[];
   flagIndexes: readonly number[];
-  /** 녹음 파일이 기기에 아직 있는지. 없으면 파형 대신 안내를 보인다 */
   isRecordingAvailable: boolean;
 }
 

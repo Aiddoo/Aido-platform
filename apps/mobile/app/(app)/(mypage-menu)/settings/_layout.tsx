@@ -9,7 +9,6 @@ export default function SettingsLayout() {
   const { t } = useTranslation('settings');
 
   const isCompact = useWindowSizeClass() === 'compact';
-  // 왼쪽 메뉴로 고르는 화면은 넓은 화면에서 전환 없이 바뀐다
   const menuScreenAnimation = isCompact ? 'default' : 'none';
 
   return (

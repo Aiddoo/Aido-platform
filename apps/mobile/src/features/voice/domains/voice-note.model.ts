@@ -17,7 +17,6 @@ import { isTodoAction, type PlannedMemo, type VoiceNoteDigestResult } from './vo
 
 const SPEECH_LOCALES = ['ko-KR', 'en-US'] as const satisfies readonly SpeechLocale[];
 
-/** 저장할 때는 ISO 문자열, 읽으면 `Date`다. 기기 저장소에는 순간만 ISO로 남긴다 */
 const instantSchema = z.codec(z.iso.datetime(), z.date(), {
   decode: (iso) => new Date(iso),
   encode: (date) => date.toISOString(),
@@ -163,7 +162,6 @@ function isSentenceAtKeyPoint(sentence: VoiceNoteSentence, startMs: number) {
   return sentence.startMs <= startMs && startMs < sentence.endMs;
 }
 
-/** 정리 결과를 노트에 담는다. 서버가 돌려준 시각의 문장에 중요 표시가 있으면 핵심 포인트에 깃발을 옮긴다 */
 export function withDigestResult(note: VoiceNote, result: VoiceNoteDigestResult): VoiceNote {
   const keyPoints = result.keyPoints.map(({ text, startMs }, index) => ({
     id: `key-point-${index + 1}`,
@@ -199,7 +197,6 @@ export function withAppliedAt(
   return { ...note, appliedAt, appliedTodoCount, planDraft: null, planApplyRequest: null };
 }
 
-/** 고른 카드에 할 일 없이 메모만 있어 메모만 저장했다 */
 export function hasAppliedOnlyMemo(note: VoiceNote): boolean {
   return note.appliedAt != null && note.appliedTodoCount === 0;
 }
@@ -221,7 +218,6 @@ export interface VoiceNoteDigestInput {
   segments: { startMs: number; text: string; isBookmarked: boolean }[];
 }
 
-/** 정리 요청. 문장이 서버 상한을 넘으면 이웃끼리 묶는다. 시각은 묶음의 첫 문장, 깃발은 하나라도 있으면 남긴다 */
 export function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
   const sentences = note.sentences.filter((sentence) => sentence.text.trim() !== '');
   const groupSize = Math.max(
@@ -266,7 +262,6 @@ export function hasNoPlannedTodos(note: VoiceNote): boolean {
   );
 }
 
-/** 계획 칸에 무엇을 보일지. 카드를 고칠 수 있을 때만 초안을 함께 돌려준다 */
 export type VoiceNotePlanStatus =
   | { status: 'applied' }
   | { status: 'no-todos' }
@@ -297,22 +292,18 @@ export function getMarkCount(note: VoiceNote): number {
   return note.sentences.filter(({ isBookmarked }) => isBookmarked).length;
 }
 
-/** 재생 위치에 있는 문장. 첫 문장 앞이면 -1이다 */
 export function findSentenceIndexAt(note: VoiceNote, positionMs: number): number {
   return note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs);
 }
 
-/** 정리한 제목. 정리 전이거나 서버가 비워 줬으면 null이라 화면이 기본 제목을 쓴다 */
 export function getDigestTitle(note: VoiceNote): string | null {
   return note.digest == null || note.digest.title === '' ? null : note.digest.title;
 }
 
-/** 다시 듣기만 없앤 노트. 글자·요약·할 일은 그대로다 */
 export function withoutRecordings(note: VoiceNote): VoiceNote {
   return { ...note, recordings: [] };
 }
 
-/** 이 노트의 녹음이 차지하는 크기. `sizes`는 파일 이름별 크기다 */
 export function getRecordingSizeBytes(
   note: VoiceNote,
   sizes: Readonly<Record<string, number>>,
@@ -324,7 +315,6 @@ export function hasText(note: VoiceNote): boolean {
   return note.sentences.some((sentence) => sentence.text.trim() !== '');
 }
 
-/** 정리할 글자가 있고 아직 정리하지 않았다. 실패해서 다시 누르는 경우도 digest가 비어 있어 허용한다 */
 export function canDigest(note: VoiceNote): boolean {
   return note.digest == null && hasText(note);
 }
@@ -334,7 +324,6 @@ export function canPlayRecording(note: VoiceNote): boolean {
   return note.recordings.length > 0 && note.durationMs > 0;
 }
 
-/** 재생 위치에서 말하고 있는 핵심 포인트. 첫 포인트 전이면 없다 */
 export function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint | undefined {
   if (note.digest == null) {
     return undefined;
@@ -349,7 +338,6 @@ export function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKe
     );
 }
 
-/** 위치가 속한 녹음 조각. 첫 조각 앞이면 첫 조각이다 */
 export function findRecordingIndexAt(
   recordings: readonly { startMs: number }[],
   positionMs: number,

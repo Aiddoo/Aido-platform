@@ -13,7 +13,6 @@ interface SpeechContextSource {
 /** 인식기가 한 구절로 받기에 너무 긴 제목은 고유명사 힌트로 쓸모가 없다 */
 const MAX_PHRASE_LENGTH = 30;
 
-/** 카테고리 이름을 먼저, 최근 할 일 제목을 이어 붙여 중복 없이 최대 100개로 줄인다 */
 export function getSpeechContextStrings({
   categoryNames,
   todoTitles,

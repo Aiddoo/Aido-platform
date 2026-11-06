@@ -19,12 +19,6 @@ interface PurchasesSdkManagerDependencies {
   isDebugLogEnabled: boolean;
 }
 
-/**
- * 결제 SDK 라이프사이클 관리
- *
- * SDK 초기화, 사용자 동기화만 담당.
- * RevenueCatProvider에서만 사용한다.
- */
 export class PurchasesSdkManager {
   readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;

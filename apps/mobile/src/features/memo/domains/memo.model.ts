@@ -21,7 +21,6 @@ export function isMemoCreatable(limit: MemoResourceLimit): boolean {
   return limit.currentCount < limit.maxPerUser;
 }
 
-/** 메모 첫 줄을 제목으로, 나머지를 본문으로 나눈다 */
 export function getMemoPreview(content: string) {
   const [title = '', ...rest] = content.trim().split('\n');
 

@@ -151,7 +151,6 @@ export function formatDateKeyRange(
   return `${formatDateKeyLabel(startDateKey, kind, context)} ~ ${formatDateKeyLabel(endDateKey, kind, context)}`;
 }
 
-/** 좁은 자리에 쓰는 기간 (ko: "11월 5일~7일", en: "Nov 5~7"). 같은 달이면 끝은 날만, 해가 다르면 연도까지 쓴다. */
 export function formatDateKeyCompactRange(
   startDateKey: string,
   endDateKey: string,

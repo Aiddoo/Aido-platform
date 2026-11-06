@@ -207,5 +207,4 @@ function Support() {
   );
 }
 
-/** 내 정보 메뉴. 묶음마다 나란히 두어 기획이 바뀌면 그 줄만 고친다 */
 export const MyPageMenu = { Activity, Subscription, Settings, Support };

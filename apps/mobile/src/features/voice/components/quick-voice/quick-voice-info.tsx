@@ -12,7 +12,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
-/** 시트 툴바의 "AI로 할 일 만들기 ⓘ · N번 남음". ⓘ를 누르면 무엇이 AI인지와 한도를 알려 준다 */
 export function QuickVoiceInfo() {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();

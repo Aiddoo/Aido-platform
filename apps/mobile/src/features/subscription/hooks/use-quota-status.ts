@@ -8,7 +8,6 @@ import { match } from 'ts-pattern';
 import { type EntitlementFeature, EntitlementPolicy } from '../domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
 
-/** 남은 횟수 상태와 문구. 무제한·공정 사용 한도·아직 모를 때는 `hidden`이고 문구가 없다 */
 export function useQuotaStatus(feature: EntitlementFeature) {
   const { t } = useTranslation('subscription');
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);

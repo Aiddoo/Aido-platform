@@ -11,7 +11,6 @@ export function getCachedEntitlements(queryClient: QueryClient) {
   return queryClient.getQueryData<EntitlementSnapshot>(ENTITLEMENT_QUERY_KEYS.snapshot());
 }
 
-/** AI 응답·한도 오류가 함께 준 한도를 다시 묻지 않고 스냅샷에 반영한다. 스냅샷이 없으면 다음 조회를 기다린다 */
 export function setFeatureQuota(queryClient: QueryClient, quota: FeatureQuota) {
   queryClient.setQueryData<EntitlementSnapshot>(ENTITLEMENT_QUERY_KEYS.snapshot(), (snapshot) =>
     snapshot == null ? snapshot : EntitlementPolicy.withFeatureQuota(snapshot, quota),

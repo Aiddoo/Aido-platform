@@ -19,7 +19,6 @@ interface CreateVoiceNoteDigestVariables extends PreparedPlanRequest<VoiceNoteDi
   signal?: AbortSignal;
 }
 
-/** 긴 녹음의 글을 요약·핵심 포인트·계획으로 정리한다. 실패 안내는 글자 옆에 화면이 직접 보여 준다 */
 export const useCreateVoiceNoteDigestMutationOptions = () => {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
@@ -34,7 +33,6 @@ export const useCreateVoiceNoteDigestMutationOptions = () => {
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ input, idempotencyKey, signal }: CreateVoiceNoteDigestVariables) => {
-      // 오프라인이 확실하면 연결 시도를 기다리지 않는다
       if (!onlineManager.isOnline()) {
         throw new NetworkError();
       }

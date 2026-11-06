@@ -52,7 +52,6 @@ export type QuotaStatus =
   | { type: 'remaining'; count: number; period: QuotaPeriod }
   | { type: 'used-up'; period: QuotaPeriod };
 
-/** 다 쓴 횟수가 다시 채워지는 때 */
 export type QuotaResetNotice =
   | { type: 'today' }
   | { type: 'tomorrow' }
@@ -162,7 +161,6 @@ export function getFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFe
   return snapshot.tier === 'FREE' && limit != null ? limit : PLAN_CATALOG[feature].free;
 }
 
-/** AI 응답·한도 오류가 함께 준 기능 한도로 스냅샷을 바꾼다 */
 export function withFeatureQuota(
   snapshot: EntitlementSnapshot,
   quota: FeatureQuota,

@@ -4,7 +4,6 @@ import { AiIcon, HStack, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { QuotaChip } from './quota-chip';
 
-/** 이번 달 남은 AI 횟수를 한곳에서 본다. 프리미엄·관리자는 셀 일이 없어 그리지 않는다 */
 export function QuotaSummary() {
   const { t } = useTranslation('subscription');
   const aiParse = useQuotaStatus('AI_PARSE');

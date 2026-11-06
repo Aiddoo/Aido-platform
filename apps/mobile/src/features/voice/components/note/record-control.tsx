@@ -19,7 +19,6 @@ const RECORD_CONTROL_PRESS = {
   },
 };
 
-/** 라벨 위쪽에서 양옆 버튼 위 끝까지의 거리. 라벨에 붙은 말풍선을 버튼 위로 올릴 때 쓴다 */
 export function useRecordControlLabelClearance() {
   const fontScaledSize = useFontScaledSize();
 
@@ -32,7 +31,6 @@ export function useRecordControlLabelClearance() {
 interface RecordControlProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   label: string;
   isPrimary?: boolean;
-  /** 눌러서 표시가 생긴 상태 */
   isActive?: boolean;
   children: ReactNode;
 }
@@ -53,9 +51,6 @@ export function RecordControl({ label, children, ...buttonProps }: RecordControl
   );
 }
 
-/**
- * 칸 폭은 셋이 같다. 버튼 칸의 높이는 가운데 큰 버튼에 맞춰, 버튼의 세로 중심과 라벨 기준선이 한 줄에 놓인다.
- */
 RecordControl.Column = function Column({
   label,
   children,

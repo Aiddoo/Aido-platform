@@ -11,7 +11,6 @@ interface SubscriptionResultProps extends Omit<ComponentProps<typeof Result>, 'i
   isAlert?: boolean;
 }
 
-/** 구독 화면의 오프라인·실패 안내. 다른 화면의 오류 안내(`QueryErrorFallback`)처럼 그림 없이 글자와 버튼만 둔다 */
 export function SubscriptionResult({
   isAlert = false,
   title,

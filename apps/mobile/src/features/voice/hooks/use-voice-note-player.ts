@@ -16,7 +16,6 @@ import { VoiceNotePolicy } from '../domains/voice-note.model';
 
 const SECOND_MS = 1_000;
 
-/** 녹음 파일 한 조각. `startMs`는 노트 시계에서 이 조각이 시작하는 곳이다 */
 export interface VoiceNotePlayerPart {
   uri: string;
   startMs: number;
@@ -25,11 +24,9 @@ export interface VoiceNotePlayerPart {
 interface UseVoiceNotePlayerOptions {
   /** 시간 순서의 녹음 조각. 없으면 재생할 수 없는 상태로 둔다. 플레이어가 살아 있는 동안 바꾸지 않는다 */
   parts: readonly VoiceNotePlayerPart[];
-  /** 파일 길이를 읽기 전에 쓸 노트의 길이 */
   durationMs: number;
 }
 
-/** 지금 재생 상태. 재생 중에는 자주 바뀌니 `useVoiceNotePlayback`으로 필요한 값만 구독한다 */
 export interface VoiceNotePlayback {
   isLoaded: boolean;
   isPlaying: boolean;
@@ -42,7 +39,6 @@ export interface VoiceNotePlayer {
   getPlayback: () => VoiceNotePlayback;
   togglePlay: () => Promise<void>;
   seekTo: (positionMs: number) => Promise<void>;
-  /** 그 지점부터 바로 들려준다(핵심 포인트 누르기) */
   playFrom: (positionMs: number) => Promise<void>;
 }
 
@@ -64,7 +60,6 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
   /** 마지막 조각까지 다 들었다. iOS는 이때 현재 항목이 사라져 시간·길이가 0이 되므로 따로 기억한다 */
   let hasFinished = false;
   let resolvedDurationMs = durationMs;
-  /** 다른 조각으로 갈 때 새 조각이 열리면 적용할 위치 */
   let pendingStart: PendingStart | null = null;
 
   const createPlayback = (): VoiceNotePlayback => {
@@ -167,7 +162,6 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
     status.currentTime >= status.duration;
 
   return {
-    /** 재생 이벤트를 받기 시작한다. 돌려준 함수로 끝낸다 */
     attach: () => {
       const subscription = playlist.addListener('playlistStatusUpdate', handleStatus);
       return () => subscription.remove();
@@ -230,7 +224,6 @@ export function useVoiceNotePlayer({
   return player;
 }
 
-/** 재생 상태에서 고른 값만 구독한다. 고른 값이 그대로면 다시 그리지 않는다 */
 export function useVoiceNotePlayback<TSelected>(
   player: VoiceNotePlayer,
   select: (playback: VoiceNotePlayback) => TSelected,

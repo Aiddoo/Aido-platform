@@ -15,11 +15,8 @@ const KEY_POINT_HINT_HEIGHT = 116;
 
 interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
   keyPoints: readonly VoiceNoteKeyPoint[];
-  /** 지금 재생 위치가 속한 포인트. 모르면 강조하지 않는다 */
   activeKeyPointId?: string;
-  /** 포인트를 누르면 그 지점부터 재생하라고 알린다. 들을 녹음이 없으면 넘기지 않아 누를 수 없다 */
   onPressKeyPoint?: (keyPoint: VoiceNoteKeyPoint) => void;
-  /** 들을 수 있으면 시각이 있는 첫 포인트의 시간 칩에 "시간을 누르면 들려요" 안내를 처음 한 번 붙인다 */
   hasTimeCoachmark?: boolean;
 }
 
@@ -63,7 +60,6 @@ function hasSameTime(keyPoint: VoiceNoteKeyPoint, previous: VoiceNoteKeyPoint | 
   );
 }
 
-/** 안내가 남아 있는 동안만 말풍선 자리를 비운다 */
 function KeyPointHintSpace() {
   const fontScaledSize = useFontScaledSize();
   const [isHintPending] = useMyPendingCoachmark('voice-key-point');

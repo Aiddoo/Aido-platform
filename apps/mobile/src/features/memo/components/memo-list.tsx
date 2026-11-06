@@ -44,7 +44,6 @@ export function MemoList() {
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
-    // 말로 남긴 메모가 위에 있으면 메모가 없다고 말하지 않는다
     return hasVoiceNotes ? null : <MemoList.Empty />;
   }
 
@@ -145,7 +144,6 @@ MemoList.Item = function Item({
   );
 };
 
-/** 실제 목록과 같은 열 수·카드 모양이라 받은 뒤에 칸이 움직이지 않는다 */
 MemoList.Loading = function Loading() {
   const columnCount = getMemoColumnCount(useWindowSizeClass());
 

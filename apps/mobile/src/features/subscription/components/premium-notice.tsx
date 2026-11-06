@@ -68,7 +68,6 @@ function Ending() {
   );
 }
 
-/** 최근에 초대 보상이 끝나 무료로 돌아온 사람에게 페이월 위에서 한 줄로 알린다 */
 function GrantEnded() {
   const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -97,7 +96,6 @@ function GrantEnded() {
   );
 }
 
-/** 구독 화면 맨 위 한 줄 안내. 상황마다 하나만 보이고 보일 일이 없으면 그리지 않는다 */
 export const PremiumNotice = {
   Ending,
   GrantEnded,

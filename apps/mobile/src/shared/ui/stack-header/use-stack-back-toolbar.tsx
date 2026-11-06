@@ -10,7 +10,6 @@ interface UseStackBackToolbarParams {
   fallbackHref?: Href;
   /** Android 버튼 뒤 둥근 면 색. 같은 화면의 오른쪽 버튼과 모양을 맞출 때 쓴다. */
   buttonContainerColor?: ComponentProps<typeof Stack.Toolbar>['buttonContainerColor'];
-  /** 아래로 닫는 화면처럼 뒤로가기가 아닌 모양으로 보일 때 쓴다 */
   icon?: ComponentProps<typeof Stack.Toolbar.Button>['icon'];
   accessibilityLabel?: string;
 }

@@ -55,9 +55,7 @@ interface KeyboardBottomSheetProps {
   children: ReactNode;
   /** 내용이 길어 스크롤돼도 시트 아래(키보드 위)에 고정되는 영역. 주 동작 버튼을 둔다. */
   footer?: ReactNode;
-  /** 시트 면 뒤에 깔리는 장식. 시트 크기를 기준으로 absolute로 배치하고, 내용 위로는 올라오지 않는다 */
   backgroundDecoration?: ReactNode;
-  /** 내용을 끌어 시트를 움직일지. 내용이 안쪽 스크롤을 직접 두면 끄고 손잡이로만 움직이게 한다 */
   isContentPanEnabled?: boolean;
   /** 바깥 탭과 Android 뒤로 가기에서 할 일. 없으면 시트를 닫는다. 손잡이·내용 끌어내리기는 gorhom이 닫아 여기로 오지 않는다 */
   onDismissRequest?: () => void;
@@ -379,7 +377,6 @@ export const KeyboardBottomSheet = ({
   );
 };
 
-/** 내용 위아래 여백을 뺀, 시트 안에 한 번에 보일 수 있는 내용의 최대 높이. 안쪽 스크롤을 직접 두는 내용이 쓴다 */
 export function useKeyboardSheetBodyMaxHeight(): number {
   const insets = useSafeAreaInsets();
   const { topInset } = useSheetLayout({ minMargin: 0 });

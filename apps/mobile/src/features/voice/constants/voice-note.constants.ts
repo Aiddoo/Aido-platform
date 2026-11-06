@@ -9,13 +9,11 @@ export const VOICE_NOTE_PREVIEW_COUNT = 3;
  */
 export const VOICE_RECORDING_ORPHAN_RETENTION_MS = 60 * 60 * 1_000;
 
-/** 확정 문장이 이어서 들어올 때 초안 쓰기를 모으는 시간 */
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;
 
 /** 말이 끊이지 않아도 이 시간마다는 쓴다. 앱이 꺼져도 이만큼만 잃는다 */
 export const VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS = 5_000;
 
-/** 문서 폴더 아래 녹음 폴더 이름. 아래에 계정별 폴더를 둔다 */
 export const VOICE_RECORDING_ROOT_DIRECTORY = 'voice-notes';
 
 export const VOICE_RECORDING_EXTENSION = 'wav';
@@ -32,7 +30,6 @@ export const WAVEFORM_BAR = {
   maxLiveBars: 160,
 } as const;
 
-/** 이 값 이상이면 말한 구간으로 본다 */
 export const SPEECH_LEVEL_THRESHOLD = 0.2;
 
 /** 자막 한 카드의 최대 글자 수. 문장부호가 없어도 카드가 끝없이 길어지지 않게 끊는다 */

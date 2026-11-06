@@ -37,15 +37,9 @@ import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 
 interface UseAddTodoQuickVoiceOptions {
   methods: UseFormReturn<AddTodoFormValues>;
-  /** 구독 화면으로 가기 직전에 시트를 닫는다 */
   onExit: () => void;
 }
 
-/**
- * 할 일 추가 시트의 말로 할 일 만들기. 한도 확인 → AI 동의 → 마이크 권한 → 듣기 순서로 시작하고,
- * 듣기가 끝나면 글자를 계획 API로 보내 같은 시트 안에서 고르는 단계(`review`)로 넘어간다.
- * 실패하면 들은 글자를 입력 칸에 남기고, 다시 정리할 때 같은 키를 써서 두 번 차감되지 않는다.
- */
 export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOptions) {
   const { t: tVoice } = useTranslation('voice');
   const logger = useLogger();
@@ -152,7 +146,6 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     await session.begin({ locale, contextualStrings: getSpeechContext() });
   };
 
-  /** 고른 카드를 버리고 처음부터 다시 듣는다 */
   const restart = async () => {
     setIsRestarting(true);
     planRequestRef.current = null;
@@ -171,7 +164,6 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     session.cancel();
   };
 
-  /** 계획에 할 일이 없을 때 들은 글자를 입력 칸에 옮겨 직접 고치게 한다 */
   const typeInstead = () => {
     moveTranscriptToTitle();
     planRequestRef.current = null;

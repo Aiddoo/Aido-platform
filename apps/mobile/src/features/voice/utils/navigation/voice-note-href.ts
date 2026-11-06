@@ -1,7 +1,6 @@
 import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
 
 interface VoiceNoteRecordHrefOptions {
-  /** 이어서 들을 초안(빠른 말하기에서 넘어온 글자) */
   draftId?: string;
   entry?: Extract<VoiceCaptureEntry, 'memo_tab' | 'quick_voice_upgrade'>;
 }

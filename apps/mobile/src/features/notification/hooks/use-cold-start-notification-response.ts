@@ -15,7 +15,6 @@ function getNextResponse(previous: LastResponse, next: PushNotificationResponse 
   return previous.id === next.id ? previous : next;
 }
 
-/** 앱이 꺼진 상태에서 알림을 눌러 시작한 응답과 이후 도착한 응답을 처리기에 넘긴다 */
 export function useColdStartNotificationResponse({
   processResponse,
 }: {

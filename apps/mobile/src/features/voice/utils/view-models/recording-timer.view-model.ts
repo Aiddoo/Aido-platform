@@ -13,7 +13,6 @@ export interface RecordingRingLayout {
   strokeWidth: number;
   radius: number;
   circumference: number;
-  /** 링 안 글자 칸의 폭. 글꼴이 커지면 이 폭에 맞춰 글자를 줄인다 */
   textWidth: number;
 }
 

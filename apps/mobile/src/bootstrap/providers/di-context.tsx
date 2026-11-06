@@ -73,7 +73,6 @@ export interface DIContainer {
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
   purchasesGateway: PurchasesGateway;
-  /** OS 알림 SDK. 권한·토큰은 서비스가, 알림 수신·응답·카테고리는 훅이 이 포트로 쓴다 */
   pushNotificationGateway: PushNotificationGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
@@ -86,9 +85,7 @@ export interface DIContainer {
   draftService: DraftService;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
-  /** 빠른 말하기 인식 언어(사용자 범위 로컬 상태) */
   recognitionLanguageRepository: RecognitionLanguageRepository;
-  /** 기기 음성 인식 모델 받기를 거절한 언어(사용자 범위 로컬 상태) */
   offlineModelPromptRepository: OfflineModelPromptRepository;
 
   // Services
@@ -129,7 +126,6 @@ export interface DIContainer {
   weatherIntroductionService: WeatherIntroductionService;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
-  /** 기기 안에만 있는 말로 메모하기 초안·녹음 파일(사용자 범위) */
   voiceNoteStorageService: VoiceNoteStorageService;
 }
 

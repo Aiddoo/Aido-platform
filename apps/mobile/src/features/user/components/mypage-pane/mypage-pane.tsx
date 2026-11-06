@@ -29,7 +29,6 @@ import { useGetMeQueryOptions } from '../../queries/get-me-query-options';
 import { MyPageMenu } from '../mypage-menu/mypage-menu';
 import { ProfileCard } from '../profile-card';
 
-/** 내 정보 탭과 넓은 화면의 메뉴 왼쪽이 함께 쓰는 내용이다. 스크롤과 위 여백은 `MyPagePaneLayout`이 맡는다. */
 export function MyPagePane() {
   const { t } = useTranslation('user');
   const isInviteAvailable = useInviteAvailability();

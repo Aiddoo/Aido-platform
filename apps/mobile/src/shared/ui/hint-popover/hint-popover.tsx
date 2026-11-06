@@ -10,7 +10,6 @@ import { CloseIcon, type MicIcon } from '../icon';
 import { Text } from '../text';
 import { VStack } from '../v-stack';
 
-/** 말풍선 폭. 좁은 화면에서는 화면 안으로 줄인다 */
 const HINT_MAX_WIDTH = 300;
 const HINT_SCREEN_INSET = 12;
 /** `Popover.Content`의 기본 간격과 같다 */
@@ -28,7 +27,6 @@ export interface HintPopoverContentProps extends Omit<
   icon?: typeof MicIcon;
   title?: string;
   description?: string;
-  /** 바깥을 막지 않는다. 안내가 떠 있어도 대상과 화면을 그대로 눌러야 할 때 쓴다. 닫기는 X와 대상이다 */
   isPassThrough?: boolean;
   children?: ReactNode;
 }
@@ -43,10 +41,6 @@ interface HintPlacementInput {
   offset: number;
 }
 
-/**
- * 말풍선이 상태바나 홈 표시줄과 겹치면 반대쪽으로 뒤집는다. 양쪽 다 모자라면 자리가 더 많은 쪽이다.
- * 잴 수 있기 전과 옆으로 뜨는 말풍선은 요청한 방향 그대로다.
- */
 export function getHintPlacement({
   placement,
   trigger,
@@ -78,7 +72,6 @@ interface HintWidthInput {
   offset: number;
 }
 
-/** 말풍선 폭. 대상 왼쪽에 뜨면 대상과 화면 왼쪽 끝 사이에 들어가게 줄인다 */
 export function getHintWidth({
   placement,
   trigger,
@@ -93,10 +86,6 @@ export function getHintWidth({
   return Math.min(trigger.pageX - offset - HINT_SCREEN_INSET - leftInset, widest);
 }
 
-/**
- * 앱의 모든 안내 말풍선 모양. `Popover` 안에 `Popover.Trigger`와 나란히 둔다.
- * 아이콘·제목·작은 X가 한 줄이고 그 아래에 설명이 온다. 안전 영역과 겹치면 반대쪽으로 뒤집는다.
- */
 export function HintPopoverContent({
   icon: Icon,
   title,

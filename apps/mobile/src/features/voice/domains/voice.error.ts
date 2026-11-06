@@ -1,7 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isApiError, isConnectivityError, isInfraError } from '@src/shared/errors';
 
-/** 계획을 만들거나 저장하지 못한 원인. 원인마다 문구와 다음 행동이 다르다 */
 export type VoicePlanFailureCause =
   | 'network'
   | 'consent-required'

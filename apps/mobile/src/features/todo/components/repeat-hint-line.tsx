@@ -6,14 +6,11 @@ import type { ComponentProps, ReactNode } from 'react';
 const REPEAT_HINT_ICON_SIZE = 14;
 
 interface RepeatHintLineProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
-  /** 지금 고른 규칙처럼 강조할 줄 */
   isHighlighted?: boolean;
   children: string;
-  /** 문구 뒤에 붙는 것(ⓘ) */
   right?: ReactNode;
 }
 
-/** 반복에 대한 짧은 안내 한 줄. 반복 아이콘과 같은 크기·색의 글자를 어디서나 똑같이 쓴다 */
 export function RepeatHintLine({
   isHighlighted = false,
   children,

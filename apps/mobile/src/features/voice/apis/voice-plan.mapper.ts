@@ -84,7 +84,6 @@ const toPlannedAction = (dto: z.infer<typeof plannedActionSchema>): PlannedActio
     }))
     .exhaustive();
 
-/** 빠른 계획·녹음 정리의 계획을 `VoicePlan`으로 바꾼다. 모르는 행동 타입은 버린다 */
 export function toVoicePlan(
   planId: string,
   source: VoicePlanSource,
@@ -145,7 +144,6 @@ function toParsedMemoRepeat({ repeat, recurrence, startDate }: ParsedMemoTodo): 
   return parsed != null && isSingleWeekend(parsed, startDate) ? null : parsed;
 }
 
-/** 메모 정리 응답(`parse-memo`)도 같은 계획으로 만든다 */
 export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse): VoicePlan {
   const actions = dto.data.todos.map((todo, index): PlannedAction => ({
     type: 'create-todo',
