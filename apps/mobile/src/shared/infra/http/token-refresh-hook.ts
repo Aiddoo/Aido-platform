@@ -36,6 +36,7 @@ export interface TokenRefreshHookDeps {
  * - 이미 다른 flight가 토큰을 회전한 뒤 도착한 401(stale token)은 갱신 없이
  *   저장된 최신 토큰으로 바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
  * - 세션이 무효로 확정되면(`invalid`) 원 401 응답을 반환하고 세션을 종료한다.
+ * - 갱신 도중 세션이 끝났으면(`superseded`) 세션을 끝내지 않고 원 401을 반환한다.
  * - 갱신의 일시 실패(네트워크·5xx·타임아웃·잠긴 키체인)는 갱신기가 재시도 가능한
  *   인프라 에러로 throw하며, 훅은 개입하지 않고 그대로 전파한다 — React Query가
  *   5xx/네트워크와 동일하게 자동 재시도한다(재시도 화면 대신 로딩 유지, 세션 보존).
@@ -89,6 +90,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
         await endSession(details);
         return response;
       })
+      .with({ kind: 'superseded' }, () => response)
       .exhaustive();
   };
 };

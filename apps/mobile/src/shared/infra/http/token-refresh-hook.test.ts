@@ -181,4 +181,19 @@ describe('createTokenRefreshHook', () => {
       error: 'User interaction is not allowed.',
     });
   });
+
+  it('갱신 도중 세션이 끝났으면(superseded) 세션을 끝내지 않고 원 응답을 돌려준다', async () => {
+    // Given
+    tokenStore.readAccessToken.mockResolvedValue('current-token');
+    refresh.mockResolvedValue({ kind: 'superseded' });
+    const response = createFakeResponse(401);
+    const request = createFakeRequest({ Authorization: 'Bearer current-token' });
+
+    // When
+    const result = await invokeHook(request, response);
+
+    // Then
+    expect(result).toBe(response);
+    expect(endSession).not.toHaveBeenCalled();
+  });
 });

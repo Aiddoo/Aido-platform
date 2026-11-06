@@ -1,4 +1,5 @@
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import ky, { type KyInstance } from 'ky';
 
@@ -86,7 +87,11 @@ describe('createAuthClient: 동시 401', () => {
     const http = new KyHttpClient(
       createAuthClient({
         tokenStore,
-        refresh: createTokenRefresher({ tokenStore, requestRefresh }),
+        refresh: createTokenRefresher({
+          tokenStore,
+          requestRefresh,
+          sessionEpoch: createSessionEpoch(),
+        }),
         endSession,
       }),
     );
@@ -110,7 +115,8 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   let http: KyHttpClient;
 
   const buildClient = (): KyInstance => {
-    const refresh = createTokenRefresher({ tokenStore, requestRefresh });
+    const sessionEpoch = createSessionEpoch();
+    const refresh = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch });
 
     return ky.create({
       prefix: 'https://api.test',

@@ -3,10 +3,15 @@ import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
 import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { emitSessionExpired } from '@src/core/events/session-expired';
+import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
-import { createMemoryTokenStore } from '@src/shared/__tests__';
+import {
+  createMemoryTokenStore,
+  createHttpClientStub,
+  createPendingResponse,
+} from '@src/shared/__tests__';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -21,6 +26,8 @@ import { z } from 'zod';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
 import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.factories';
+import { AuthService } from '../apis/auth.service';
+import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from '../utils/log-out-device';
 import { useDeleteAccountMutationOptions } from './use-delete-account-mutation-options';
 import { useEmailLoginMutationOptions } from './use-email-login-mutation-options';
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
@@ -282,6 +289,70 @@ describe('로그인', () => {
   });
 });
 
+describe('로그아웃과 늦은 갱신', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('갱신 중에 로그아웃이 시간 초과로 끝나고 갱신 응답이 늦게 와도 토큰이 되살아나지 않는다', async () => {
+    // Given
+    const sessionEpoch = createSessionEpoch();
+    const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
+    const lateRefresh = createPendingResponse(
+      new Response(
+        JSON.stringify({ data: { accessToken: 'access-late', refreshToken: 'refresh-late' } }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const sessionManager = createSessionManager(tokenStore);
+    global.fetch = jest.fn((input) =>
+      input instanceof Request && input.url.endsWith('v1/todos')
+        ? Promise.resolve(new Response(null, { status: 401 }))
+        : new Promise<Response>(() => undefined),
+    );
+    const http = new KyHttpClient(
+      createAuthClient({
+        tokenStore,
+        refresh: createTokenRefresher({
+          tokenStore,
+          requestRefresh: () => lateRefresh.response,
+          sessionEpoch,
+        }),
+        endSession: (details) => sessionManager.end(details),
+      }),
+    );
+    const authService = new AuthService(createHttpClientStub(), http, tokenStore);
+    const todosRequest = http.get('v1/todos').catch(() => undefined);
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    const logout = logOutDevice({
+      isOnline: true,
+      authService,
+      pushDeviceService: { unregister: async () => ok(undefined) },
+      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+    });
+
+    // When
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(LOGOUT_REQUEST_TIMEOUT_MS);
+    });
+    await logout;
+    await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
+    lateRefresh.settle();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1000);
+    });
+
+    // Then
+    await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(tokenStore.readAccessToken()).resolves.toBeNull();
+    await todosRequest;
+  });
+});
+
 describe('토큰 만료', () => {
   const originalFetch = global.fetch;
 
@@ -290,11 +361,12 @@ describe('토큰 만료', () => {
   });
 
   function createSessionWithRealPipeline(requestRefresh: () => Promise<Response>) {
-    const tokenStore = createMemoryTokenStore(ACCOUNT_A_TOKENS);
+    const sessionEpoch = createSessionEpoch();
+    const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
     const sessionManager = createSessionManager(tokenStore);
     const client = createAuthClient({
       tokenStore,
-      refresh: createTokenRefresher({ tokenStore, requestRefresh }),
+      refresh: createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch }),
       endSession: (details) => sessionManager.end(details),
     });
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));

@@ -1,6 +1,7 @@
 import { refreshTokensSchema } from '@aido/api';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { TimeoutError as KyTimeoutError } from 'ky';
@@ -21,19 +22,23 @@ export type RefreshTokensRequest = (refreshToken: string) => Promise<Response>;
  *   토큰을 함께 싣는다(ky v2의 beforeRequest는 재시도 시 다시 실행되지 않는다).
  * - `invalid`: 세션 종료가 확정적이다(서버 거부·응답 스키마 위반·로컬 토큰 없음).
  *   서버가 준 `ErrorCode`가 있으면 그대로 실어 보낸다(진실의 원천은 서버다).
+ * - `superseded`: 갱신 도중 세션이 끝났다. 이 응답은 지난 세션의 것이라 저장도, 세션 종료도
+ *   하지 않는다. 받아들이면 로그아웃한 토큰이 되살아나거나 다음 계정의 토큰이 지워진다.
  *
  * 일시 실패(네트워크·타임아웃·429/5xx·키체인 잠김·저장 실패)는 판정이 아니라 **인프라
  * 에러로 throw**된다 — 보유 토큰은 유효하므로 React Query의 재시도 정책이 처리한다.
  */
 export type RefreshOutcome =
   | { kind: 'refreshed'; accessToken: string }
-  | { kind: 'invalid'; details: SessionExpiredDetails };
+  | { kind: 'invalid'; details: SessionExpiredDetails }
+  | { kind: 'superseded' };
 
 export type TokenRefresher = () => Promise<RefreshOutcome>;
 
 interface TokenRefresherDeps {
   tokenStore: TokenStore;
   requestRefresh: RefreshTokensRequest;
+  sessionEpoch: SessionEpoch;
 }
 
 /**
@@ -43,16 +48,20 @@ interface TokenRefresherDeps {
  * 세션 종료는 `SessionManager`의 책임이며, 갱신기는 판정 결과를 타입으로 보고할 뿐이다.
  * (갱신기가 세션을 끝낼 수 있으면 "토큰 삭제는 두 경로뿐"이라는 불변식이 무너진다.)
  *
- * resolve = 확정 판정(refreshed/invalid), reject = 일시 인프라 장애(재시도 대상).
- * 동시 대기자들은 single-flight로 동일한 결과(성공이든 실패든)를 공유한다.
+ * resolve = 확정 판정(refreshed/invalid/superseded), reject = 일시 인프라 장애(재시도 대상).
+ * 같은 세대의 동시 대기자들은 single-flight로 동일한 결과(성공이든 실패든)를 공유한다.
  */
 export const createTokenRefresher = ({
   tokenStore,
   requestRefresh,
+  sessionEpoch,
 }: TokenRefresherDeps): TokenRefresher => {
-  let inFlight: Promise<RefreshOutcome> | null = null;
+  let inFlight: { epoch: number; outcome: Promise<RefreshOutcome> } | null = null;
 
-  const refresh = async (): Promise<RefreshOutcome> => {
+  const refresh = async (epoch: number): Promise<RefreshOutcome> => {
+    const concludeInvalid = (details: SessionExpiredDetails): RefreshOutcome =>
+      sessionEpoch.current() === epoch ? { kind: 'invalid', details } : { kind: 'superseded' };
+
     let refreshToken: string | null;
     try {
       refreshToken = await tokenStore.readRefreshToken();
@@ -63,7 +72,7 @@ export const createTokenRefresher = ({
     }
 
     if (!refreshToken) {
-      return { kind: 'invalid', details: { reason: 'tokens-missing' } };
+      return concludeInvalid({ reason: 'tokens-missing' });
     }
 
     let response: Response;
@@ -84,7 +93,11 @@ export const createTokenRefresher = ({
       const parsed = refreshEnvelopeSchema.safeParse(body);
       if (!parsed.success) {
         // 2xx = 서버는 이미 회전을 마쳤다. 새 토큰을 읽지 못하면 보유 토큰은 곧 무효다.
-        return { kind: 'invalid', details: { reason: 'invalid-refresh-response' } };
+        return concludeInvalid({ reason: 'invalid-refresh-response' });
+      }
+
+      if (sessionEpoch.current() !== epoch) {
+        return { kind: 'superseded' };
       }
 
       const { accessToken, refreshToken: nextRefreshToken } = parsed.data.data;
@@ -103,10 +116,10 @@ export const createTokenRefresher = ({
     if (response.status === 401) {
       // 서버가 리프레시 토큰 자체를 거부했다. 어떤 코드인지가 진단의 전부다 —
       // SESSION_0704(토큰 재사용 → 패밀리 폐기)와 SESSION_0702(단순 만료)는 전혀 다른 사건이다.
-      return {
-        kind: 'invalid',
-        details: { reason: 'refresh-rejected', serverErrorCode: toServerErrorCode(body) },
-      };
+      return concludeInvalid({
+        reason: 'refresh-rejected',
+        serverErrorCode: toServerErrorCode(body),
+      });
     }
 
     // 429/기타 4xx/5xx — 토큰은 아직 유효할 수 있으므로 보존하고 재시도 대상으로 던진다.
@@ -115,12 +128,16 @@ export const createTokenRefresher = ({
   };
 
   return () => {
-    if (inFlight) {
-      return inFlight;
+    const epoch = sessionEpoch.current();
+    if (inFlight?.epoch === epoch) {
+      return inFlight.outcome;
     }
-    inFlight = refresh().finally(() => {
-      inFlight = null;
+    const outcome = refresh(epoch).finally(() => {
+      if (inFlight?.outcome === outcome) {
+        inFlight = null;
+      }
     });
-    return inFlight;
+    inFlight = { epoch, outcome };
+    return outcome;
   };
 };

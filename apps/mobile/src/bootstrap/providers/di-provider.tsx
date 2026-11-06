@@ -1,3 +1,4 @@
+import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { createWhatsNewStateRepository } from '@src/features/app-config/whats-new/apis/whats-new-state.repository';
@@ -124,7 +125,8 @@ export function DIProvider({
 }: DIProviderProps) {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
-    const tokenStore = createSecureTokenStore(storage);
+    const sessionEpoch = createSessionEpoch();
+    const tokenStore = withSessionEpoch(createSecureTokenStore(storage), sessionEpoch);
 
     // Observability — 크래시/에러/이벤트/로그는 Sentry로 일원화(네이티브 크래시 포함),
     // Firebase는 Analytics(제품 지표)만 담당. Sentry init은 앱 루트(initSentry)에서 1회.
@@ -176,6 +178,7 @@ export function DIProvider({
     const tokenRefresher = createTokenRefresher({
       tokenStore,
       requestRefresh: createRefreshTokensRequest({ appVersion, appBuild }),
+      sessionEpoch,
     });
 
     const authKyInstance = createAuthClient({
