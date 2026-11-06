@@ -1,3 +1,4 @@
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -7,7 +8,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { PremiumAccessPolicy } from '../domains/premium-access.model';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 
 /** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */

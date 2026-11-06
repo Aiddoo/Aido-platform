@@ -2,7 +2,7 @@ import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api/voc
 import {
   PremiumAccessPolicy,
   PremiumAccessSchema,
-} from '@src/features/billing/subscription/domains/premium-access.model';
+} from '@src/features/identity/user/domains/premium-access.model';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);

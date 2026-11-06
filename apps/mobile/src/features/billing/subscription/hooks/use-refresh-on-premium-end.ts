@@ -1,11 +1,14 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import {
+  type PremiumAccess,
+  PremiumAccessPolicy,
+} from '@src/features/identity/user/domains/premium-access.model';
 import { getErrorMessage } from '@src/shared/errors';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import { type PremiumAccess, PremiumAccessPolicy } from '../domains/premium-access.model';
 import { refreshAfterPremiumEnded } from '../queries/subscription-cache';
 
 /**

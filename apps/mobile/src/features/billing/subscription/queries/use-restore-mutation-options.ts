@@ -3,6 +3,7 @@ import {
   useHaptics,
   useSubscriptionService,
 } from '@src/bootstrap/providers/di-context';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
@@ -12,7 +13,6 @@ import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
-import { PremiumAccessPolicy } from '../domains/premium-access.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { toSubscriptionActionFailure } from '../utils/view-models/subscription-failure.view-model';
 import { syncMeUntilStorePremium } from './subscription-cache';

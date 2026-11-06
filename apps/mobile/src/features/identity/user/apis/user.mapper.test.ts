@@ -1,4 +1,4 @@
-import { PREMIUM_ME_EXAMPLES } from '@src/features/billing/subscription/__tests__/premium-access.factories';
+import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 
 import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.factories';
 import { toUpdateProfileResult, toUser } from './user.mapper';

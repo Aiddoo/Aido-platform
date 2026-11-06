@@ -1,4 +1,4 @@
-import { createPremiumAccess } from '@src/features/billing/subscription/__tests__/premium-access.factories';
+import { createPremiumAccess } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 
 import { toUserAnalyticsProperties } from './user-analytics-properties';
 

@@ -3,10 +3,10 @@ import {
   type CustomerInfo,
   CustomerInfoPolicy,
 } from '@src/features/billing/subscription/domains/customer-info.model';
-import type { PremiumAccess } from '@src/features/billing/subscription/domains/premium-access.model';
 import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
+import type { PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { ENV } from '@src/shared/config/env';

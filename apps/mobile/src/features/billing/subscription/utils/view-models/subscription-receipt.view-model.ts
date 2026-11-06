@@ -1,13 +1,12 @@
 import { PREMIUM_SOURCE } from '@aido/api';
-import type { User } from '@src/features/identity/user/domains/user.model';
-import { match, P } from 'ts-pattern';
-
 import {
   hasPassed,
   type PremiumAccess,
   PremiumAccessPolicy,
   type PremiumEndingNotice,
-} from '../../domains/premium-access.model';
+} from '@src/features/identity/user/domains/premium-access.model';
+import type { User } from '@src/features/identity/user/domains/user.model';
+import { match, P } from 'ts-pattern';
 
 /** 영수증 출처. 관리자, 스토어 구독(결제), 초대 보상 기간 */
 type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';

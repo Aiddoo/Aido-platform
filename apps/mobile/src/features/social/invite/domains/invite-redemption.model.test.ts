@@ -1,4 +1,4 @@
-import { PREMIUM_ME_EXAMPLES } from '@src/features/billing/subscription/__tests__/premium-access.factories';
+import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 
 import { createPendingRedemption, createRedemptionResult } from '../__tests__/invite.factories';

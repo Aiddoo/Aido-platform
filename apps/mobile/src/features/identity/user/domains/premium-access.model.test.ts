@@ -1,6 +1,6 @@
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 
-import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.factories';
+import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
 import { calculateDaysLeft, PremiumAccessPolicy } from './premium-access.model';
 
 const SEOUL = 'Asia/Seoul';

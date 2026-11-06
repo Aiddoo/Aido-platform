@@ -5,9 +5,11 @@ import {
   PLAN_QUOTA_PERIODS,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
+import {
+  calculateDaysLeft,
+  hasPassed,
+} from '@src/features/identity/user/domains/premium-access.model';
 import { z } from 'zod';
-
-import { calculateDaysLeft, hasPassed } from './premium-access.model';
 
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
 export type EntitlementFeature = z.infer<typeof entitlementFeatureSchema>;

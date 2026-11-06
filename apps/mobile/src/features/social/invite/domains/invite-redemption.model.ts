@@ -5,7 +5,7 @@ import {
   REDEEM_OUTCOME,
   redeemInviteResponseSchema,
 } from '@aido/api';
-import type { PremiumAccess } from '@src/features/billing/subscription/domains/premium-access.model';
+import type { PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
