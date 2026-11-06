@@ -102,17 +102,13 @@ export function useVoiceCaptureSession({
   const { trackEvent } = useTrack();
 
   const [state, setState] = useState<VoiceCaptureState>(createVoiceCaptureState);
-  const [isQuiet, setIsQuiet] = useState(false);
   const level = useSharedValue(0);
   const stateRef = useRef(state);
   const startOptionsRef = useRef<SpeechStartOptions | null>(null);
-  const quietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const finalizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const deferredStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stallRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const volumeGapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [timers] = useState(() =>
+    createTimerSlots<'finalize' | 'deferredStart' | 'stallRestart'>(),
+  );
   const linkRef = useRef(createVoiceRecognizerLink());
-  const isQuietRef = useRef(false);
   /** 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜면 아무도 끄지 못한다 */
   const isUnmountedRef = useRef(false);
 
@@ -141,48 +137,21 @@ export function useVoiceCaptureSession({
     speechRecognizer.stop();
   };
 
-  const clearQuiet = () => {
-    if (quietTimerRef.current != null) {
-      clearTimeout(quietTimerRef.current);
-      quietTimerRef.current = null;
-    }
-    if (isQuietRef.current) {
-      isQuietRef.current = false;
-      setIsQuiet(false);
-    }
-  };
-
-  const clearVolumeGap = () => {
-    if (volumeGapTimerRef.current != null) {
-      clearTimeout(volumeGapTimerRef.current);
-      volumeGapTimerRef.current = null;
-    }
-  };
-
-  const clearDeferredStart = () => {
-    if (deferredStartTimerRef.current != null) {
-      clearTimeout(deferredStartTimerRef.current);
-      deferredStartTimerRef.current = null;
-    }
-  };
-
-  const clearStallRestart = () => {
-    if (stallRestartTimerRef.current != null) {
-      clearTimeout(stallRestartTimerRef.current);
-      stallRestartTimerRef.current = null;
-    }
-  };
+  const silence = useSilenceAutoFinish({
+    isEnabled: mode === 'quick',
+    canFinish: () => VoiceCapturePolicy.canFinish(stateRef.current),
+    onSilence: () => {
+      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, AUTO_FINISH_SILENCE_MS)) {
+        finish();
+      }
+    },
+    onVolumeGap: () => level.set(0),
+  });
 
   const clearTimers = () => {
-    clearQuiet();
-    clearVolumeGap();
+    silence.clear();
     level.set(0);
-    clearDeferredStart();
-    clearStallRestart();
-    if (finalizeTimerRef.current != null) {
-      clearTimeout(finalizeTimerRef.current);
-      finalizeTimerRef.current = null;
-    }
+    timers.clearAll();
   };
 
   const trackFinished = (outcome: VoiceCaptureOutcome, at: VoiceCaptureState) => {
@@ -197,45 +166,25 @@ export function useVoiceCaptureSession({
   };
 
   const handleFinalized = () => {
-    if (finalizeTimerRef.current != null) {
-      clearTimeout(finalizeTimerRef.current);
-      finalizeTimerRef.current = null;
-    }
+    timers.clear('finalize');
     const { next } = dispatch({ type: 'end' });
     trackFinished(VoiceCapturePolicy.getCaptureOutcome(next), next);
   };
 
   function finish() {
-    clearQuiet();
-    clearDeferredStart();
+    silence.cancelQuiet();
+    timers.clear('deferredStart');
     const { previous, next } = dispatch({ type: 'finish', at: Date.now() });
     if (previous === next) {
       return;
     }
     if (next.status === 'finalizing') {
       stopRecognizer();
-      finalizeTimerRef.current = setTimeout(() => {
-        finalizeTimerRef.current = null;
-        handleFinalized();
-      }, FINALIZE_TIMEOUT_MS);
+      timers.set('finalize', handleFinalized, FINALIZE_TIMEOUT_MS);
       return;
     }
     trackFinished(VoiceCapturePolicy.getCaptureOutcome(next), next);
   }
-
-  const markSilence = () => {
-    if (mode !== 'quick' || isQuietRef.current || !VoiceCapturePolicy.canFinish(stateRef.current)) {
-      return;
-    }
-    isQuietRef.current = true;
-    setIsQuiet(true);
-    quietTimerRef.current = setTimeout(() => {
-      quietTimerRef.current = null;
-      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, AUTO_FINISH_SILENCE_MS)) {
-        finish();
-      }
-    }, AUTO_FINISH_SILENCE_MS);
-  };
 
   const handleError = (code: SpeechErrorCode) => {
     const { isStopRequested } = linkRef.current;
@@ -287,12 +236,15 @@ export function useVoiceCaptureSession({
     trackEvent('voice_recognizer_stalled', { mode, on_device: isOnDevice });
     addBreadcrumb('capture.recognizer-stalled', { mode, on_device: isOnDevice });
     stopRecognizer();
-    stallRestartTimerRef.current = setTimeout(() => {
-      stallRestartTimerRef.current = null;
-      if (VoiceCapturePolicy.shouldRestartSegment(stateRef.current)) {
-        speechRecognizer.abort();
-      }
-    }, FINALIZE_TIMEOUT_MS);
+    timers.set(
+      'stallRestart',
+      () => {
+        if (VoiceCapturePolicy.shouldRestartSegment(stateRef.current)) {
+          speechRecognizer.abort();
+        }
+      },
+      FINALIZE_TIMEOUT_MS,
+    );
   };
 
   const watchRecognizerStall = (nextLevel: number) => {
@@ -313,11 +265,11 @@ export function useVoiceCaptureSession({
       startPrepared();
       return;
     }
-    deferredStartTimerRef.current = setTimeout(startPrepared, FINALIZE_TIMEOUT_MS);
+    timers.set('deferredStart', startPrepared, FINALIZE_TIMEOUT_MS);
   };
 
   function startPrepared() {
-    clearDeferredStart();
+    timers.clear('deferredStart');
     const startOptions = startOptionsRef.current;
     if (startOptions == null || getStatus() !== 'preparing') {
       return;
@@ -329,7 +281,7 @@ export function useVoiceCaptureSession({
   const handleEvent = useEffectEvent((event: SpeechEvent) => {
     if (event.type === 'end') {
       updateLink({ type: 'ended' });
-      clearStallRestart();
+      timers.clear('stallRestart');
     }
     if (!VoiceCapturePolicy.isActive(stateRef.current)) {
       return;
@@ -348,28 +300,20 @@ export function useVoiceCaptureSession({
         dispatch({ type: 'result', result: { transcript, isFinal } });
         if (transcript.trim().length > 0) {
           updateLink({ type: 'text-heard', transcript, at: Date.now() });
-          clearQuiet();
+          silence.cancelQuiet();
         }
       })
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
         level.set(nextLevel);
-        clearVolumeGap();
-        volumeGapTimerRef.current = setTimeout(() => {
-          volumeGapTimerRef.current = null;
-          level.set(0);
-          markSilence();
-        }, VOICE_NO_VOLUME_GAP_MS);
-        if (VoiceCapturePolicy.isSpeaking(nextLevel, linkRef.current.lastTextAt, Date.now())) {
-          clearQuiet();
-        } else {
-          markSilence();
-        }
+        silence.noteVolume(
+          VoiceCapturePolicy.isSpeaking(nextLevel, linkRef.current.lastTextAt, Date.now()),
+        );
         watchRecognizerStall(nextLevel);
       })
       .with({ type: 'error' }, ({ code }) => handleError(code))
       .with({ type: 'end' }, () => {
         const current = stateRef.current;
-        if (deferredStartTimerRef.current != null) {
+        if (timers.has('deferredStart')) {
           startPrepared();
         } else if (VoiceCapturePolicy.shouldRestartSegment(current)) {
           dispatch({ type: 'end' });
@@ -414,32 +358,22 @@ export function useVoiceCaptureSession({
     };
   }, [speechRecognizer]);
 
-  const handleLimitReached = useEffectEvent(() => {
-    if (onLimitReached == null) {
-      finish();
-      return;
-    }
-    pause('limit');
-    onLimitReached();
-  });
-
-  const isListening = state.status === 'listening';
-  useEffect(() => {
-    if (!isListening) {
-      return;
-    }
-    if (maxSeconds == null) {
-      return;
-    }
-    const remainingMs = VoiceCapturePolicy.getRemainingCaptureMs(
-      stateRef.current,
-      maxSeconds,
-      Date.now(),
-    );
-    const timer = setTimeout(() => handleLimitReached(), remainingMs);
-
-    return () => clearTimeout(timer);
-  }, [isListening, maxSeconds]);
+  useTimeoutWhile(
+    state.status === 'listening',
+    () =>
+      maxSeconds == null
+        ? null
+        : VoiceCapturePolicy.getRemainingCaptureMs(stateRef.current, maxSeconds, Date.now()),
+    () => {
+      if (onLimitReached == null) {
+        finish();
+        return;
+      }
+      pause('limit');
+      onLimitReached();
+    },
+    maxSeconds,
+  );
 
   const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
   const notifyPlanFailed = useEffectEvent((transcript: VoiceTranscript) => onFailed?.(transcript));
@@ -469,22 +403,16 @@ export function useVoiceCaptureSession({
     };
   }, [isPlanning, dispatch]);
 
-  const failPreparing = useEffectEvent(() => {
-    speechRecognizer.abort();
-    updateLink({ type: 'ended' });
-    handleError('client');
-  });
-
   // 시작 신호가 오지 않으면 듣는 중처럼 멈춰 있지 않고 글자를 든 실패 상태로 간다
-  const isPreparing = state.status === 'preparing';
-  useEffect(() => {
-    if (!isPreparing) {
-      return;
-    }
-    const timer = setTimeout(() => failPreparing(), VOICE_PREPARING_TIMEOUT_MS);
-
-    return () => clearTimeout(timer);
-  }, [isPreparing]);
+  useTimeoutWhile(
+    state.status === 'preparing',
+    () => VOICE_PREPARING_TIMEOUT_MS,
+    () => {
+      speechRecognizer.abort();
+      updateLink({ type: 'ended' });
+      handleError('client');
+    },
+  );
 
   /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
   const begin = async ({
@@ -599,7 +527,7 @@ export function useVoiceCaptureSession({
   return {
     state,
     level,
-    isQuiet,
+    isQuiet: silence.isQuiet,
     begin,
     finish,
     pause: () => pause('user'),
@@ -611,4 +539,124 @@ export function useVoiceCaptureSession({
     changeLocale,
     getElapsedMs,
   };
+}
+
+/** 이름 하나에 타이머 하나. 다시 걸면 앞의 것을 지운다 */
+function createTimerSlots<TKey extends string>() {
+  const slots = new Map<TKey, ReturnType<typeof setTimeout>>();
+
+  const clear = (key: TKey) => {
+    const timer = slots.get(key);
+    if (timer != null) {
+      clearTimeout(timer);
+      slots.delete(key);
+    }
+  };
+
+  return {
+    set: (key: TKey, callback: () => void, delayMs: number) => {
+      clear(key);
+      slots.set(
+        key,
+        setTimeout(() => {
+          slots.delete(key);
+          callback();
+        }, delayMs),
+      );
+    },
+    clear,
+    has: (key: TKey) => slots.has(key),
+    clearAll: () => {
+      slots.forEach((timer) => clearTimeout(timer));
+      slots.clear();
+    },
+  };
+}
+
+interface UseSilenceAutoFinishOptions {
+  isEnabled: boolean;
+  canFinish: () => boolean;
+  /** 말이 멈춘 채 `AUTO_FINISH_SILENCE_MS`가 지났다 */
+  onSilence: () => void;
+  /** 음량 이벤트가 끊겼다. `isEnabled`와 상관없이 부른다 */
+  onVolumeGap: () => void;
+}
+
+/** 말이 멈춘 것을 음량과 글자로 판단해 잠시 뒤 알린다 */
+function useSilenceAutoFinish({
+  isEnabled,
+  canFinish,
+  onSilence,
+  onVolumeGap,
+}: UseSilenceAutoFinishOptions) {
+  const [isQuiet, setIsQuiet] = useState(false);
+  const isQuietRef = useRef(false);
+  const [timers] = useState(() => createTimerSlots<'quiet' | 'volumeGap'>());
+
+  const cancelQuiet = () => {
+    timers.clear('quiet');
+    if (isQuietRef.current) {
+      isQuietRef.current = false;
+      setIsQuiet(false);
+    }
+  };
+
+  const markSilence = () => {
+    if (!isEnabled || isQuietRef.current || !canFinish()) {
+      return;
+    }
+    isQuietRef.current = true;
+    setIsQuiet(true);
+    timers.set('quiet', onSilence, AUTO_FINISH_SILENCE_MS);
+  };
+
+  const noteVolume = (isSpeaking: boolean) => {
+    timers.set(
+      'volumeGap',
+      () => {
+        onVolumeGap();
+        markSilence();
+      },
+      VOICE_NO_VOLUME_GAP_MS,
+    );
+    if (isSpeaking) {
+      cancelQuiet();
+    } else {
+      markSilence();
+    }
+  };
+
+  return {
+    isQuiet,
+    noteVolume,
+    cancelQuiet,
+    clear: () => {
+      cancelQuiet();
+      timers.clear('volumeGap');
+    },
+  };
+}
+
+/** `isActive`인 동안 시간이 지나면 한 번 부른다. `restartKey`가 바뀌면 다시 잰다. 지연이 null이면 걸지 않는다 */
+function useTimeoutWhile(
+  isActive: boolean,
+  getDelayMs: () => number | null,
+  onTimeout: () => void,
+  restartKey?: number | null,
+) {
+  const readDelayMs = useEffectEvent(getDelayMs);
+  const handleTimeout = useEffectEvent(onTimeout);
+
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    const delayMs = readDelayMs();
+    if (delayMs == null) {
+      return;
+    }
+    const timer = setTimeout(() => handleTimeout(), delayMs);
+
+    return () => clearTimeout(timer);
+  }, [isActive, restartKey]);
 }
