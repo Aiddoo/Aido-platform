@@ -1,6 +1,8 @@
-/** @type {import('jest').Config} */
-module.exports = {
-  preset: 'jest-expo',
+/**
+ * process.env.EXPO_OS는 babel-preset-expo가 transform 때 플랫폼 상수로 바꾼다.
+ * 기본은 iOS이고, Android에서만 달라지는 로직은 `*.android.test.ts(x)`를 jest-expo/android로 돌린다.
+ */
+const base = {
   resolver: '<rootDir>/jest.resolver.cjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   clearMocks: true,
@@ -34,12 +36,29 @@ module.exports = {
     // v4(Nitro)는 import 시 NitroModules를 eager 로드해 jest에서 크래시 — 인메모리 목으로 대체
     '^react-native-mmkv$': '<rootDir>/src/shared/__tests__/mocks/react-native-mmkv.ts',
   },
-  testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/*.(test|spec).[jt]s?(x)'],
+  watchman: false,
+};
+
+module.exports = {
+  projects: [
+    {
+      ...base,
+      displayName: 'ios',
+      preset: 'jest-expo/ios',
+      testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/*.(test|spec).[jt]s?(x)'],
+      testPathIgnorePatterns: ['/node_modules/', '\\.android\\.test\\.'],
+    },
+    {
+      ...base,
+      displayName: 'android',
+      preset: 'jest-expo/android',
+      testMatch: ['**/*.android.(test|spec).[jt]s?(x)'],
+    },
+  ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.test.{ts,tsx}',
     '!src/**/__tests__/**',
     '!**/node_modules/**',
   ],
-  watchman: false,
 };

@@ -197,7 +197,10 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/shared/i18n/device-language.ts', ['expo-localization']],
   ['apps/mobile/src/shared/providers/language-provider.tsx', ['expo-localization']],
   ['apps/mobile/src/shared/providers/local-date-provider.tsx', ['expo-localization']],
-  ['apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx', ['expo-application']],
+  [
+    'apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx',
+    ['expo-application', 'expo-linking'],
+  ],
   ['apps/mobile/src/shared/utils/device-headers.ts', ['expo-device']],
 ]);
 
