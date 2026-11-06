@@ -28,6 +28,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
@@ -40,21 +41,11 @@ import {
 } from '../utils/memo-plan-draft';
 import { invalidateMemos, replaceMemoInList } from './memo-cache';
 
-function useMemoMutationFailure() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
-
-  return (error: unknown, fallback = t('memo:toasts.retryLater')) => {
-    haptics.notify('error');
-    toast.error(getUserFacingMessage(error), { fallback });
-  };
-}
-
 export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMemoMutationFailure();
+  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
@@ -73,7 +64,7 @@ export function useUpdateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMemoMutationFailure();
+  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
@@ -104,7 +95,7 @@ export function useToggleMemoPinMutationOptions() {
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMemoMutationFailure();
+  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
 
   return mutationOptions({
     onMutate: () => haptics.impact('light'),
@@ -125,7 +116,7 @@ export function useDeleteMemoMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMemoMutationFailure();
+  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
@@ -149,7 +140,7 @@ export function useConvertMemoToTodosMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMemoMutationFailure();
+  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
