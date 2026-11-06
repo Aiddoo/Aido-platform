@@ -5,10 +5,10 @@ import {
   useHaptics,
   useLogger,
 } from '@src/bootstrap/providers/di-context';
-import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
+import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

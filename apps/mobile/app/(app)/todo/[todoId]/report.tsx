@@ -1,10 +1,10 @@
-import { ReportReasonBottomSheet } from '@src/features/moderation/components/report-reason-bottom-sheet';
-import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
 import {
   todoScreenParamsSchema,
   useTodoScreenParams,
-} from '@src/features/todo/hooks/use-todo-screen-params';
-import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
+} from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/get-todo-details-query-options';
+import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
+import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SheetRouteScreen } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';

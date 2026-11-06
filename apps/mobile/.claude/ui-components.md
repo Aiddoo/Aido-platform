@@ -233,7 +233,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 닫기 버튼            | 화면별 구현                                                 | heroui `CloseButton`                                         | 터치 영역              |
 | `Button`             | `PressableFeedback` + `Spinner` 구현                        | heroui `Button` 위 얇은 확장. `isLoading`, 크기, `dark` 색만 | 전후 모양              |
 | `Input`, `TextArea`  | heroui 조합이 아닌 구현                                     | `TextField`, `Input`, `TextArea`, `FieldError` 조합          | 시트 키보드, 글꼴 배율 |
-| `PasswordInput`      | `features/auth/components/password-input.tsx`               | `InputGroup`                                                 |                        |
+| `PasswordInput`      | `features/identity/auth/components/password-input.tsx`      | `InputGroup`                                                 |                        |
 | 친구 검색            | shared `Input`                                              | `SearchField`                                                |                        |
 | `AppToast`           | `toastProps` 묶음                                           | `Toast.Title`, `.Description`, `.Action` 조합                | 위치·색                |
 | `HintPopoverContent` | 앱의 자리 계산                                              | `Popover`의 `avoidCollisions`, `insets`                      | 뒤집기 동작            |

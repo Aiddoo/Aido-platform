@@ -1,5 +1,5 @@
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { AiIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

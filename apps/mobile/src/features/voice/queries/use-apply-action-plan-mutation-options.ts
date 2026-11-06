@@ -3,11 +3,11 @@ import {
   useHaptics,
   useVoiceService,
 } from '@src/bootstrap/providers/di-context';
-import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
-import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
-import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-category-query-keys';
+import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

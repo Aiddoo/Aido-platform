@@ -1,17 +1,17 @@
 import '@src/shared/i18n/init';
-import { createActivationProgressRepository } from '@src/features/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/activation/apis/activation.service';
-import { AuthService } from '@src/features/auth/apis/auth.service';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
+import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { PreferenceService } from '@src/features/preference/apis/preference.service';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/preference/constants/preference-query-keys';
-import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
-import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
-import { UserService } from '@src/features/user/apis/user.service';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { TodoCategoryService } from '@src/features/planning/todo/apis/todo-category.service';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-category-query-keys';
 import {
   createErrorReporterStub,
   createHapticsStub,

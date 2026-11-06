@@ -1,6 +1,6 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
+import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import {
   formatDateLabel,
   formatTimeDisplay,

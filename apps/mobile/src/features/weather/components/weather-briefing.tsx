@@ -1,12 +1,16 @@
 import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { TodoCheckbox, TodoProgress, TodoRow } from '@src/features/todo/components/todo-row';
-import { useGetTodosByDateQueryOptions } from '@src/features/todo/queries/get-todos-by-date-query-options';
-import { useToggleTodoMutationOptions } from '@src/features/todo/queries/use-toggle-todo-mutation-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import {
+  TodoCheckbox,
+  TodoProgress,
+  TodoRow,
+} from '@src/features/planning/todo/components/todo-row';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
+import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/use-toggle-todo-mutation-options';
 import {
   todoActionsSheetHref,
   todoCreateSheetHref,
-} from '@src/features/todo/utils/navigation/todo-sheet-href';
+} from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import { toHHmm } from '@src/shared/date/instant';

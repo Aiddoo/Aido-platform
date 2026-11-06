@@ -1,12 +1,12 @@
 import '@src/shared/i18n/init';
-import { createPreferenceDto } from '@src/features/preference/__tests__/preference.factories';
-import { toPreference } from '@src/features/preference/apis/preference.mapper';
-import { PreferenceService } from '@src/features/preference/apis/preference.service';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/preference/constants/preference-query-keys';
-import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
-import { toUser } from '@src/features/user/apis/user.mapper';
-import { UserService } from '@src/features/user/apis/user.service';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.factories';
+import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
+import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { toUser } from '@src/features/identity/user/apis/user.mapper';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createMemorySyncStorage,
   createMockAnalytics,

@@ -1,18 +1,18 @@
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import {
+  type Preference,
+  PreferencePolicy,
+} from '@src/features/identity/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
 import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
   SettingsTimeInput,
 } from '@src/features/notification/components/settings/settings-time-input';
 import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/settings-time-range';
-import {
-  type Preference,
-  PreferencePolicy,
-} from '@src/features/preference/domains/preference.model';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { CrownIcon, QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';

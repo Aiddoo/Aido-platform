@@ -1,4 +1,4 @@
-import { nudgeDirectionSchema } from '@src/features/nudge/domains/nudge-interaction.model';
+import { nudgeDirectionSchema } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { z } from 'zod';

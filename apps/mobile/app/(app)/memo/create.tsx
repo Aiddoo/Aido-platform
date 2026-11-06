@@ -1,4 +1,4 @@
-import { MemoCreateForm } from '@src/features/memo/components/memo-create-form';
+import { MemoCreateForm } from '@src/features/notes/memo/components/memo-create-form';
 import { QueryErrorBoundary } from '@src/shared/ui';
 import { Suspense } from 'react';
 

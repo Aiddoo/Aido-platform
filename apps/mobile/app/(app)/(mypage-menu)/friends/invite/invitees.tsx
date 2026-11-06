@@ -1,11 +1,11 @@
-import { InvitedFriendList } from '@src/features/invite/components/invited-friend-list';
+import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
 import {
   type InvitedFriendsView,
   InvitedFriendsViewSchema,
   useInvitedFriendsViewParam,
-} from '@src/features/invite/hooks/use-invited-friends-view-param';
-import { useGetInviteQueryOptions } from '@src/features/invite/queries/get-invite-query-options';
-import { useGetInvitedFriendCountInfiniteQueryOptions } from '@src/features/invite/queries/get-invited-friends-infinite-query-options';
+} from '@src/features/social/invite/hooks/use-invited-friends-view-param';
+import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/get-invite-query-options';
+import { useGetInvitedFriendCountInfiniteQueryOptions } from '@src/features/social/invite/queries/get-invited-friends-infinite-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,

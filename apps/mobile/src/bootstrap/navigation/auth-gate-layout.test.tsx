@@ -1,6 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import type * as InviteServiceStubModule from '@src/features/invite/__tests__/create-stub-invite-service';
+import type * as InviteServiceStubModule from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
@@ -20,7 +20,7 @@ jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: j
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
 jest.mock('@src/bootstrap/providers/di-context', () => {
   const { createStubInviteService } = jest.requireActual<typeof InviteServiceStubModule>(
-    '@src/features/invite/__tests__/create-stub-invite-service',
+    '@src/features/social/invite/__tests__/create-stub-invite-service',
   );
   const errorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
   const repository = {
@@ -48,7 +48,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     useFeatureAttribution: () => featureAttribution,
   };
 });
-jest.mock('@src/features/user/queries/get-me-query-options', () => ({
+jest.mock('@src/features/identity/user/queries/get-me-query-options', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'test-account' }),

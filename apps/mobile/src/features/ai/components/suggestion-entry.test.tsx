@@ -1,9 +1,9 @@
 import '@src/shared/i18n/init';
-import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
-import { UserService } from '@src/features/user/apis/user.service';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createErrorReporterStub, createMockHttpClient } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';

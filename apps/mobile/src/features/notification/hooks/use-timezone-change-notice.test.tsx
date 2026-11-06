@@ -3,8 +3,8 @@ import type { Logger } from '@src/core/ports/logger';
 import {
   createTodoDto,
   createTodoListResponseDto,
-} from '@src/features/todo/__tests__/todo.factories';
-import { TodoService } from '@src/features/todo/apis/todo.service';
+} from '@src/features/planning/todo/__tests__/todo.factories';
+import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createMemorySyncStorage,
   createMockAnalytics,

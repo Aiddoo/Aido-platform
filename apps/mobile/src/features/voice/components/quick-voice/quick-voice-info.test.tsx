@@ -2,8 +2,8 @@ import '@src/shared/i18n/init';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
-import { createEntitlementSnapshotDto } from '@src/features/subscription/__tests__/entitlement.factories';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
+import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import {
   createErrorReporterStub,
   createMockAnalytics,

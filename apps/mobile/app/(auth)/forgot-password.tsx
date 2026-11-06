@@ -1,13 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EmailVerificationCodeStep } from '@src/features/auth/components/email-verification-code-step';
-import { NewPasswordStep } from '@src/features/auth/components/new-password-step';
-import { SuggestedEmailDomainList } from '@src/features/auth/components/suggested-email-domain-list';
+import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
+import { NewPasswordStep } from '@src/features/identity/auth/components/new-password-step';
+import { SuggestedEmailDomainList } from '@src/features/identity/auth/components/suggested-email-domain-list';
 import {
   type ForgotPasswordFormInput,
   forgotPasswordFormSchema,
-} from '@src/features/auth/domains/forgot-password-form.schema';
-import { useForgotPasswordMutationOptions } from '@src/features/auth/queries/use-forgot-password-mutation-options';
-import { useResetPasswordMutationOptions } from '@src/features/auth/queries/use-reset-password-mutation-options';
+} from '@src/features/identity/auth/domains/forgot-password-form.schema';
+import { useForgotPasswordMutationOptions } from '@src/features/identity/auth/queries/use-forgot-password-mutation-options';
+import { useResetPasswordMutationOptions } from '@src/features/identity/auth/queries/use-reset-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';

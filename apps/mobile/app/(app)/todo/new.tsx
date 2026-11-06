@@ -1,4 +1,4 @@
-import { TodoCreateBottomSheet } from '@src/features/todo/components/todo-create-bottom-sheet';
+import { TodoCreateBottomSheet } from '@src/features/planning/todo/components/todo-create-bottom-sheet';
 import { SheetRouteScreen } from '@src/shared/ui';
 
 export default function TodoCreateSheetRoute() {

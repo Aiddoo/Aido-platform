@@ -1,4 +1,4 @@
-import type { User } from '@src/features/user/domains/user.model';
+import type { User } from '@src/features/identity/user/domains/user.model';
 
 import {
   type FeatureDiscoveryConfig,

@@ -1,7 +1,7 @@
-import { QuotaChip } from '@src/features/subscription/components/quota-chip';
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useRefillSentence } from '@src/features/subscription/hooks/use-refill-sentence';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
+import { QuotaChip } from '@src/features/billing/subscription/components/quota-chip';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useRefillSentence } from '@src/features/billing/subscription/hooks/use-refill-sentence';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { toDateFormatLocale } from '@src/shared/date/date-format';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';

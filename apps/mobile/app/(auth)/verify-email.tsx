@@ -1,10 +1,10 @@
-import { EmailVerificationCodeStep } from '@src/features/auth/components/email-verification-code-step';
+import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
 import {
   verifyEmailScreenParamsSchema,
   useVerifyEmailScreenParams,
-} from '@src/features/auth/hooks/use-verify-email-screen-params';
-import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
-import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
+} from '@src/features/identity/auth/hooks/use-verify-email-screen-params';
+import { useResendVerificationMutationOptions } from '@src/features/identity/auth/queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '@src/features/identity/auth/queries/use-verify-email-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';

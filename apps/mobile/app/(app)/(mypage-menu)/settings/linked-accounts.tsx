@@ -1,8 +1,11 @@
-import type { OAuthProvider, OAuthProviderSlug } from '@src/features/auth/domains/oauth.model';
-import { useGetLinkedAccountsQueryOptions } from '@src/features/auth/queries/get-linked-accounts-query-options';
-import { useLinkAccountMutationOptions } from '@src/features/auth/queries/use-link-account-mutation-options';
-import { useUnlinkAccountMutationOptions } from '@src/features/auth/queries/use-unlink-account-mutation-options';
-import { getProviderState } from '@src/features/auth/utils/get-provider-state';
+import type {
+  OAuthProvider,
+  OAuthProviderSlug,
+} from '@src/features/identity/auth/domains/oauth.model';
+import { useGetLinkedAccountsQueryOptions } from '@src/features/identity/auth/queries/get-linked-accounts-query-options';
+import { useLinkAccountMutationOptions } from '@src/features/identity/auth/queries/use-link-account-mutation-options';
+import { useUnlinkAccountMutationOptions } from '@src/features/identity/auth/queries/use-unlink-account-mutation-options';
+import { getProviderState } from '@src/features/identity/auth/utils/get-provider-state';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AppleIcon,

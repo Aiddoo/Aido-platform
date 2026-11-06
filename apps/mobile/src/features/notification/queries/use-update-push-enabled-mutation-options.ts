@@ -3,8 +3,8 @@ import {
   useLogger,
   usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
-import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-cache';
-import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
+import { unlockPushRegistrationForActivation } from '@src/features/device/activation/queries/activation-cache';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
 import { getErrorMessage } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 

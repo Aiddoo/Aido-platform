@@ -1,8 +1,8 @@
 import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
-import { type Consent, ConsentPolicy } from '@src/features/auth/domains/auth.model';
-import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { type Consent, ConsentPolicy } from '@src/features/identity/auth/domains/auth.model';
+import { useGetConsentQueryOptions } from '@src/features/identity/auth/queries/get-consent-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';

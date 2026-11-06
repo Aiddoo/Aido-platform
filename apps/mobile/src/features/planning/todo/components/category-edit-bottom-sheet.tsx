@@ -1,0 +1,168 @@
+import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { TodoCategory } from '@src/features/planning/todo/domains/todo-category.model';
+import { useTodoCategoryScreenParams } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
+import { useUpdateTodoCategoryMutationOptions } from '@src/features/planning/todo/queries/use-update-todo-category-mutation-options';
+import { isBusinessError } from '@src/shared/errors/result';
+import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
+import {
+  BottomSheetInput,
+  Button,
+  INQUIRY_SHEET_EXIT,
+  KeyboardBottomSheet,
+  QueryErrorActions,
+  QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  Result,
+  useSheetRoute,
+  VStack,
+} from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { Skeleton } from 'heroui-native';
+import { type ComponentProps, Suspense, useEffect } from 'react';
+import { useErrorBoundary } from 'react-error-boundary';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
+
+import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
+import { findSheetCategory } from '../utils/view-models/todo-sheet-target.view-model';
+import { CategoryColorInput } from './category-color-input';
+
+type CategoryEditBottomSheetProps = Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children' | 'isOpen' | 'onOpenChange'
+>;
+
+export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
+  const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
+
+  return (
+    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <CategoryEditBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
+        <Suspense fallback={<CategoryEditBottomSheet.Loading />}>
+          <CategoryEditBottomSheet.Content onClose={() => sheet.close()} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </KeyboardBottomSheet>
+  );
+}
+
+interface SheetContentProps {
+  onClose: () => void;
+}
+
+CategoryEditBottomSheet.Content = function Content({ onClose }: SheetContentProps) {
+  const { categoryId } = useTodoCategoryScreenParams();
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const category = useRetainedValue(findSheetCategory(categoriesResult.categories, categoryId));
+
+  useEffect(() => {
+    if (category == null) {
+      onClose();
+    }
+  }, [category, onClose]);
+
+  if (category == null) {
+    return null;
+  }
+
+  return <CategoryEditForm category={category} onClose={onClose} />;
+};
+
+CategoryEditBottomSheet.Loading = function Loading() {
+  return (
+    <VStack gap={40} pb={12}>
+      <Skeleton className="h-20 w-full rounded-xl" />
+      <Skeleton className="h-14 w-full rounded-xl" />
+    </VStack>
+  );
+};
+
+CategoryEditBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
+  const { t } = useTranslation('common');
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
+    />
+  );
+};
+
+interface CategoryEditFormProps extends SheetContentProps {
+  category: TodoCategory;
+}
+
+function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
+  const { showBoundary } = useErrorBoundary();
+
+  const { t } = useTranslation(['todo', 'common']);
+  const updateMutation = useMutation(useUpdateTodoCategoryMutationOptions());
+
+  const formMethods = useForm({
+    resolver: zodResolver(createTodoCategorySchema),
+    defaultValues: { name: category.name, color: category.color },
+  });
+  const { control, handleSubmit } = formMethods;
+  const { isSubmitting } = useFormState({ control });
+
+  const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
+    try {
+      await updateMutation.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
+    } catch (error) {
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
+    }
+  };
+
+  return (
+    <FormProvider {...formMethods}>
+      <VStack gap={40} pb={12}>
+        <VStack gap={20}>
+          <FormField control={control} name="name">
+            {({ onChange, value }, { error }) => (
+              <BottomSheetInput
+                autoFocus
+                label={t('category.nameLabel')}
+                placeholder={t('category.namePlaceholder')}
+                value={value}
+                onChange={onChange}
+                isInvalid={!!error}
+                errorMessage={resolveValidationMessage(error, {
+                  default: 'categoryName.required',
+                  byType: { too_big: 'categoryName.tooLong' },
+                })}
+                returnKeyType="done"
+                onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
+              />
+            )}
+          </FormField>
+          <FormField control={control} name="color">
+            {({ onChange, value }) => <CategoryColorInput value={value} onChange={onChange} />}
+          </FormField>
+        </VStack>
+
+        <Button
+          size="large"
+          onPress={() => handleSubmit(handleSubmitCategory)()}
+          isLoading={isSubmitting}
+        >
+          {t('common:actions.confirm')}
+        </Button>
+      </VStack>
+    </FormProvider>
+  );
+}

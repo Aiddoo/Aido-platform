@@ -1,7 +1,7 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { ActivationPushPermissionDialog } from '@src/features/activation/components/activation-push-permission-dialog';
-import { MyPagePaneLayoutProvider } from '@src/features/user/hooks/use-mypage-pane-layout';
+import { ActivationPushPermissionDialog } from '@src/features/device/activation/components/activation-push-permission-dialog';
+import { MyPagePaneLayoutProvider } from '@src/features/identity/user/hooks/use-mypage-pane-layout';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';

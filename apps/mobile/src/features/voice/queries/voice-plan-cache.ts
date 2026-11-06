@@ -1,8 +1,8 @@
-import type { FeatureQuota } from '@src/features/subscription/domains/entitlement.model';
+import type { FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
 import {
   invalidateEntitlements,
   setFeatureQuota,
-} from '@src/features/subscription/queries/entitlement-cache';
+} from '@src/features/billing/subscription/queries/entitlement-cache';
 import type { QueryClient } from '@tanstack/react-query';
 
 export function reflectFeatureQuota(queryClient: QueryClient, featureQuota: FeatureQuota | null) {

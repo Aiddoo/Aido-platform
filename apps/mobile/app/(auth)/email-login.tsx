@@ -1,8 +1,8 @@
 import idoCatHiImage from '@assets/images/ido_cat_hi.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PasswordInput } from '@src/features/auth/components/password-input';
-import { emailLoginFormSchema } from '@src/features/auth/domains/email-login-form.schema';
-import { useEmailLoginMutationOptions } from '@src/features/auth/queries/use-email-login-mutation-options';
+import { PasswordInput } from '@src/features/identity/auth/components/password-input';
+import { emailLoginFormSchema } from '@src/features/identity/auth/domains/email-login-form.schema';
+import { useEmailLoginMutationOptions } from '@src/features/identity/auth/queries/use-email-login-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

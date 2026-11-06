@@ -1,24 +1,24 @@
 import type { NudgeReplyKind } from '@aido/api';
-import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { todoThanksSheetHref } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
+import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import {
   blockUserConfirmHref,
   userReportSheetHref,
-} from '@src/features/moderation/utils/navigation/moderation-href';
-import { ThanksSummaryRow } from '@src/features/nudge/components/nudge-interactions/thanks-summary-row';
+} from '@src/features/social/moderation/utils/navigation/moderation-href';
+import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import {
   type NudgeInteraction,
   NudgeInteractionPolicy,
-} from '@src/features/nudge/domains/nudge-interaction.model';
+} from '@src/features/social/nudge/domains/nudge-interaction.model';
 import {
   nudgeScreenParamsSchema,
   useNudgeScreenParams,
-} from '@src/features/nudge/hooks/use-nudge-screen-params';
-import { useGetNudgeInteractionQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-query-options';
-import { useReplyToNudgeMutationOptions } from '@src/features/nudge/queries/use-reply-to-nudge-mutation-options';
-import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
-import { todoThanksSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
-import { UserAvatar } from '@src/features/user/components/user-avatar';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+} from '@src/features/social/nudge/hooks/use-nudge-screen-params';
+import { useGetNudgeInteractionQueryOptions } from '@src/features/social/nudge/queries/get-nudge-interaction-query-options';
+import { useReplyToNudgeMutationOptions } from '@src/features/social/nudge/queries/use-reply-to-nudge-mutation-options';
+import { getNudgeReplyLabelKey } from '@src/features/social/nudge/utils/nudge-reply-label';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { isApiError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';

@@ -1,7 +1,7 @@
 import { deleteAccountSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PasswordInput } from '@src/features/auth/components/password-input';
-import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
+import { PasswordInput } from '@src/features/identity/auth/components/password-input';
+import { useDeleteAccountMutationOptions } from '@src/features/identity/auth/queries/use-delete-account-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import {

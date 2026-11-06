@@ -6,8 +6,8 @@ import {
   useQueryCacheStorage,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { toUserAnalyticsProperties } from '@src/features/user/utils/user-analytics-properties';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { toUserAnalyticsProperties } from '@src/features/identity/user/utils/user-analytics-properties';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 

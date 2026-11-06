@@ -1,6 +1,6 @@
 import { todoCommentIdSchema } from '@aido/api';
-import { createTodoCommentHref } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
-import { todoScreenParamsSchema } from '@src/features/todo/hooks/use-todo-screen-params';
+import { createTodoCommentHref } from '@src/features/engagement/comment/utils/navigation/todo-comment-route';
+import { todoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 const legacyTodoCommentThreadParamsSchema = todoScreenParamsSchema.extend({

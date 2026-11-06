@@ -1,5 +1,5 @@
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { router } from 'expo-router';
 

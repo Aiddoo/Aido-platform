@@ -3,7 +3,7 @@ import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import {
   useWidgetSnapshotSync,
   type WidgetSyncAuthState,
-} from '@src/features/widget/hooks/use-widget-snapshot-sync';
+} from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';

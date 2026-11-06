@@ -1,4 +1,4 @@
-import { BlockedUserList } from '@src/features/moderation/components/blocked-user-list';
+import { BlockedUserList } from '@src/features/social/moderation/components/blocked-user-list';
 import { QueryErrorBoundary, ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { Suspense } from 'react';
 

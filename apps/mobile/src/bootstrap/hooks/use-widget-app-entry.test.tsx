@@ -1,13 +1,13 @@
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import {
   createWidgetNavigationRepository,
   type WidgetNavigationRepository,
-} from '@src/features/widget/apis/widget-navigation.repository';
-import type { WidgetNavigationStorage } from '@src/features/widget/bridge/widget-navigation-storage';
+} from '@src/features/device/widget/apis/widget-navigation.repository';
+import type { WidgetNavigationStorage } from '@src/features/device/widget/bridge/widget-navigation-storage';
 import {
   type WidgetNavigationCommand,
   WIDGET_NAVIGATION_COMMAND_TTL_MS,
-} from '@src/features/widget/domains/widget-navigation.model';
+} from '@src/features/device/widget/domains/widget-navigation.model';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
@@ -30,7 +30,7 @@ jest.mock('../providers/di-context', () => ({
   useErrorReporter: () => mockErrorReporter,
   useWidgetNavigationRepository: () => mockRepository,
 }));
-jest.mock('@src/features/user/queries/get-me-query-options', () => ({
+jest.mock('@src/features/identity/user/queries/get-me-query-options', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'original-account' }),

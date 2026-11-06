@@ -1,0 +1,316 @@
+import { createTodoItemSchema } from '@aido/api';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import {
+  useSubTodoScreenParams,
+  useTodoSheetDateParam,
+} from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { DictationButton } from '@src/features/voice/components/dictation-button';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useTranslation } from '@src/shared/i18n';
+import {
+  ArrowUpIcon,
+  BottomSheetInput,
+  Box,
+  HintPopoverContent,
+  HStack,
+  InfoIcon,
+  INQUIRY_SHEET_EXIT,
+  KeyboardBottomSheet,
+  MicIcon,
+  QueryErrorActions,
+  QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  Result,
+  Text,
+  TrashIcon,
+  useSheetRoute,
+  VStack,
+} from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
+import { cn } from '@src/shared/utils/cn';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { Popover, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
+import type { ComponentProps, ComponentRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import type { TextInput } from 'react-native';
+import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
+
+import type { SubTodo } from '../domains/sub-todo.model';
+import type { Todo } from '../domains/todo.model';
+import { useGetTodosByDateQueryOptions } from '../queries/get-todos-by-date-query-options';
+import { useAddSubTodoMutationOptions } from '../queries/use-add-sub-todo-mutation-options';
+import { useDeleteSubTodoMutationOptions } from '../queries/use-delete-sub-todo-mutation-options';
+import { useUpdateSubTodoMutationOptions } from '../queries/use-update-sub-todo-mutation-options';
+import { TODO_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
+import { findSheetSubTodo, findSheetTodo } from '../utils/view-models/todo-sheet-target.view-model';
+
+type AddSubTodoBottomSheetProps = Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children' | 'isOpen' | 'onOpenChange'
+> & {
+  mode: 'create' | 'edit';
+};
+
+export function AddSubTodoBottomSheet({ mode, ...props }: AddSubTodoBottomSheetProps) {
+  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+
+  return (
+    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <AddSubTodoBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
+        <Suspense fallback={<AddSubTodoBottomSheet.Loading />}>
+          {match(mode)
+            .with('create', () => <AddSubTodoBottomSheet.Create onClose={() => sheet.close()} />)
+            .with('edit', () => <AddSubTodoBottomSheet.Edit onClose={() => sheet.close()} />)
+            .exhaustive()}
+        </Suspense>
+      </QueryErrorBoundary>
+    </KeyboardBottomSheet>
+  );
+}
+
+interface SheetContentProps {
+  onClose: () => void;
+}
+
+AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
+  const { todoId } = useTodoScreenParams();
+  const [date] = useTodoSheetDateParam();
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+
+  useEffect(() => {
+    if (todo == null) {
+      onClose();
+    }
+  }, [todo, onClose]);
+
+  if (todo == null) {
+    return null;
+  }
+
+  return <SubTodoForm todo={todo} subTodo={null} onClose={onClose} />;
+};
+
+AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
+  const { todoId } = useTodoScreenParams();
+  const { subTodoId } = useSubTodoScreenParams();
+  const [date] = useTodoSheetDateParam();
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
+
+  useEffect(() => {
+    if (todo == null || subTodo == null) {
+      onClose();
+    }
+  }, [todo, subTodo, onClose]);
+
+  if (todo == null || subTodo == null) {
+    return null;
+  }
+
+  return <SubTodoForm todo={todo} subTodo={subTodo} onClose={onClose} />;
+};
+
+AddSubTodoBottomSheet.Loading = function Loading() {
+  return (
+    <VStack gap={12}>
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Box className="h-px bg-gray-2" />
+      <Skeleton className="h-9 w-24 self-end rounded-4xl" />
+    </VStack>
+  );
+};
+
+AddSubTodoBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
+  const { t } = useTranslation('common');
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
+    />
+  );
+};
+
+interface SubTodoFormProps {
+  todo: Todo;
+  subTodo: SubTodo | null;
+  onClose: () => void;
+}
+
+function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
+  const { t } = useTranslation('todo');
+  const [date] = useTodoSheetDateParam();
+  const fontScaledSize = useFontScaledSize();
+  const { color: spinnerColor } = useResolveClassNames('text-white');
+
+  const { control, handleSubmit, reset, setValue } = useForm({
+    resolver: zodResolver(createTodoItemSchema),
+    defaultValues: { title: subTodo?.title ?? '' },
+  });
+  const draftTitle = useWatch({ control, name: 'title' });
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+
+  const addSubTodo = useMutation(useAddSubTodoMutationOptions());
+  const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const isSubmitting = addSubTodo.isPending || updateSubTodo.isPending;
+  const isBusy = isSubmitting || deleteSubTodo.isPending;
+
+  const isSubmitDisabled = !draftTitle.trim() || isBusy;
+
+  const submitSubTodo = handleSubmit(async (values) => {
+    const title = values.title.trim();
+    if (!title || isBusy) {
+      return;
+    }
+
+    const saved = await (
+      subTodo == null
+        ? addSubTodo.mutateAsync({ todoId: todo.id, title, date })
+        : updateSubTodo.mutateAsync({
+            todoId: todo.id,
+            subTodoId: subTodo.id,
+            title,
+            date,
+          })
+    ).catch(() => null);
+
+    if (saved == null) {
+      return;
+    }
+
+    if (subTodo == null) {
+      reset();
+    }
+    onClose();
+  });
+
+  const handleDelete = async (target: SubTodo) => {
+    if (isBusy) {
+      return;
+    }
+
+    const removed = await deleteSubTodo
+      .mutateAsync({ todoId: todo.id, subTodoId: target.id, date })
+      .catch(() => null);
+
+    if (removed != null) {
+      onClose();
+    }
+  };
+
+  return (
+    <VStack gap={12}>
+      <FormField control={control} name="title">
+        {({ value, onChange }) => (
+          <BottomSheetInput
+            ref={inputRef}
+            testID="sub-todo-input"
+            autoFocus
+            placeholder={t('subTodo.placeholder')}
+            value={value}
+            onChange={onChange}
+            maxLength={createTodoItemSchema.shape.title.maxLength ?? undefined}
+            size="medium"
+            renderErrorMessage={false}
+            returnKeyType="done"
+            onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitSubTodo())}
+          />
+        )}
+      </FormField>
+
+      <Box className="h-px bg-gray-2" />
+
+      <HStack gap={8} align="center">
+        {subTodo != null && (
+          <PressableFeedback
+            testID="sub-todo-delete"
+            onPress={() => handleDelete(subTodo)}
+            isDisabled={isBusy}
+            className="size-9 items-center justify-center rounded-full bg-error/10"
+          >
+            <TrashIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-error"
+            />
+          </PressableFeedback>
+        )}
+
+        <Box className="flex-1" />
+
+        <SpeechTooltip />
+        <DictationButton value={draftTitle} onChange={(text) => setValue('title', text)} />
+        <PressableFeedback
+          testID="sub-todo-submit"
+          isDisabled={isSubmitDisabled}
+          onPress={() => submitSubTodo()}
+          style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+          className={cn(
+            'items-center justify-center rounded-4xl',
+            isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
+          )}
+        >
+          {isSubmitting ? (
+            <Spinner
+              size="sm"
+              color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+            />
+          ) : (
+            <ArrowUpIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-white"
+            />
+          )}
+        </PressableFeedback>
+      </HStack>
+    </VStack>
+  );
+}
+
+function SpeechTooltip() {
+  const fontScaledSize = useFontScaledSize();
+  const { t } = useTranslation('todo');
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger asChild>
+        <PressableFeedback onPress={() => setIsOpen(true)} className="items-center justify-center">
+          <HStack gap={4} align="center">
+            <Text size="e2" weight="medium" shade={6}>
+              {t('subTodo.voiceInput')}
+            </Text>
+
+            <InfoIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-6"
+            />
+          </HStack>
+        </PressableFeedback>
+      </Popover.Trigger>
+      <HintPopoverContent
+        icon={MicIcon}
+        title={t('subTodo.voiceTitle')}
+        description={t('subTodo.voiceHint')}
+      />
+    </Popover>
+  );
+}

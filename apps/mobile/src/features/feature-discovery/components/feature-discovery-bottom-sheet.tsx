@@ -4,8 +4,8 @@ import type {
   FeatureDiscoveryCard,
   FeatureDiscoveryCardId,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
-import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
-import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Button, H3, HStack, ModalBottomSheet, Text, TextButton, VStack } from '@src/shared/ui';

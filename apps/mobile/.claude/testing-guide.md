@@ -59,7 +59,7 @@
 fixture는 `createX(overrides)` 한 패턴이다. 필드가 늘면 한 곳만 고치면 되고, 기본값을 스키마로 검증해 모델과 어긋난 fixture로 통과하는 테스트를 막는다.
 
 ```ts
-// features/memo/__tests__/memo.fixtures.ts
+// features/notes/memo/__tests__/memo.fixtures.ts
 const DEFAULT_MEMO = memoSchema.parse({
   id: 1,
   content: '장보기',
@@ -74,7 +74,7 @@ export function createMemo(overrides: Partial<Memo> = {}): Memo {
 ```
 
 ```ts
-// features/memo/domains/memo.model.test.ts
+// features/notes/memo/domains/memo.model.test.ts
 describe('getMemoPreview', () => {
   it('첫 줄을 제목으로, 나머지를 본문으로 나눈다', () => {
     // Given
@@ -139,7 +139,7 @@ await renderUi(<PushPermissionCard />, {
 `jest.setup.ts`가 `expo-router`를 `src/shared/__tests__/mocks/expo-router.tsx`로 바꾸고, `beforeEach`의 `resetExpoRouterMock()`이 테스트마다 기본값으로 되돌린다. `clearMocks`는 호출 기록만 지워 `mockReturnValue`가 다음 테스트로 새기 때문이다. 테스트 파일에서 `jest.mock('expo-router', …)`를 새로 쓰지 않는다.
 
 ```tsx
-// features/memo/components/memo-editor.test.tsx
+// features/notes/memo/components/memo-editor.test.tsx
 jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
 ```
 
@@ -153,7 +153,7 @@ jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
 시트는 Portal로 `OverlayProvider`의 PortalHost에 그려지고, `useOverlay`는 Provider 밖에서 오류를 던진다. 시트와 시트를 여는 컴포넌트는 앱과 같게 `OverlayProvider`로 감싼다. `useToday`를 쓰면 `LocalDateProvider`도 함께 둔다.
 
 ```tsx
-// features/memo/components/memo-editor.test.tsx
+// features/notes/memo/components/memo-editor.test.tsx
 await renderUi(
   <LocalDateProvider>
     <OverlayProvider>

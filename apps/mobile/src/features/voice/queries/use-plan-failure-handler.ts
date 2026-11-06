@@ -1,13 +1,13 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
-import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
 import {
   findErrorFeatureQuota,
   isNotChargedError,
-} from '@src/features/subscription/apis/entitlement.mapper';
-import type { EntitlementFeature } from '@src/features/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { setFeatureQuota } from '@src/features/subscription/queries/entitlement-cache';
+} from '@src/features/billing/subscription/apis/entitlement.mapper';
+import type { EntitlementFeature } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
+import { markAiDataSharingConsentRequired } from '@src/features/identity/auth/queries/auth-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';

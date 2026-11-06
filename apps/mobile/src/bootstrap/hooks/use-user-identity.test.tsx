@@ -4,8 +4,8 @@ import {
   QUERY_CACHE_STORAGE_KEY,
   type QueryCacheStorage,
 } from '@src/bootstrap/providers/query-cache-persistence';
-import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
-import { UserService } from '@src/features/user/apis/user.service';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
   createMockAnalytics,

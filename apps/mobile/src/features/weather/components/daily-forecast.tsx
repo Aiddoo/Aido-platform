@@ -1,5 +1,5 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useGetDailyCompletionsQueryOptions } from '@src/features/todo/queries/get-daily-completions-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/get-daily-completions-query-options';
 import {
   formatClockTime,
   formatDateKeyLabel,

@@ -1,16 +1,16 @@
 import { useIdGenerator } from '@src/bootstrap/providers/di-context';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { CategoryHeaderPill } from '@src/features/todo/components/category-header-pill';
-import { SubTodoIndent } from '@src/features/todo/components/sub-todo-indent';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { CategoryHeaderPill } from '@src/features/planning/todo/components/category-header-pill';
+import { SubTodoIndent } from '@src/features/planning/todo/components/sub-todo-indent';
 import {
   TodoCheckbox,
   TodoLabel,
   TodoProgress,
   TodoRow,
   TodoTitleLine,
-} from '@src/features/todo/components/todo-row';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { formatRepeatSummary } from '@src/features/todo/utils/format-repeat-summary';
+} from '@src/features/planning/todo/components/todo-row';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
+import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import {
   formatDateKeyLabel,
   formatDateKeyRange,

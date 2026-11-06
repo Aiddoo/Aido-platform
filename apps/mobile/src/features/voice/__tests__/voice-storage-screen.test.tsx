@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
-import { UserService } from '@src/features/user/apis/user.service';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createErrorReporterStub,
   createHapticsStub,

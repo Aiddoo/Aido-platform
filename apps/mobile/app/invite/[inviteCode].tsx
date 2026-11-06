@@ -1,17 +1,17 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
-import { InvitePreviewCard } from '@src/features/invite/components/invite-preview-card';
-import { InvitePreviewPolicy } from '@src/features/invite/domains/invite-preview.model';
-import { InviteRedemptionPolicy } from '@src/features/invite/domains/invite-redemption.model';
-import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
-import type { InviteCode } from '@src/features/invite/domains/invite.model';
-import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
-import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-route-params';
-import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
-import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
-import { useRedeemInviteMutationOptions } from '@src/features/invite/queries/use-redeem-invite-mutation-options';
-import { ReceiptBenefitRow } from '@src/features/subscription/components/receipt-benefit-row';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
+import { InvitePreviewPolicy } from '@src/features/social/invite/domains/invite-preview.model';
+import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import type { InviteCode } from '@src/features/social/invite/domains/invite.model';
+import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
+import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
+import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
+import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/get-invite-preview-query-options';
+import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/use-redeem-invite-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,

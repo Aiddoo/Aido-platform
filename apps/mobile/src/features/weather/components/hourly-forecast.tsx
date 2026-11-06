@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import {
   formatClockTime,
   formatInstantHour,

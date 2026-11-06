@@ -1,16 +1,16 @@
 import { useClipboard, useInviteService } from '@src/bootstrap/providers/di-context';
-import { InviteCodeInput } from '@src/features/invite/components/invite-code-input';
+import { InviteCodeInput } from '@src/features/social/invite/components/invite-code-input';
 import {
   type InvalidCharacterSummary,
   InviteCodePolicy,
   parseInviteCode,
   toInviteCodeDraft,
-} from '@src/features/invite/domains/invite.model';
-import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-route-params';
-import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
-import { useGetClipboardPresenceQueryOptions } from '@src/features/invite/queries/get-clipboard-presence-query-options';
-import { getInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
-import { inviteCardHref } from '@src/features/invite/utils/navigation/invite-href';
+} from '@src/features/social/invite/domains/invite.model';
+import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
+import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
+import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/get-clipboard-presence-query-options';
+import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/get-invite-preview-query-options';
+import { inviteCardHref } from '@src/features/social/invite/utils/navigation/invite-href';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

@@ -1,12 +1,12 @@
-import { PaywallPane } from '@src/features/subscription/components/paywall-pane';
-import { SubscriberPane } from '@src/features/subscription/components/subscriber-pane';
-import { SubscriptionReceipt } from '@src/features/subscription/components/subscription-receipt';
-import { SubscriptionResult } from '@src/features/subscription/components/subscription-result';
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
-import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-subscription-view-param';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
-import { toSubscriptionLoadFailure } from '@src/features/subscription/utils/view-models/subscription-failure.view-model';
+import { PaywallPane } from '@src/features/billing/subscription/components/paywall-pane';
+import { SubscriberPane } from '@src/features/billing/subscription/components/subscriber-pane';
+import { SubscriptionReceipt } from '@src/features/billing/subscription/components/subscription-receipt';
+import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
+import { useSubscriptionViewParam } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/view-models/subscription-failure.view-model';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import {
   QueryErrorBoundary,

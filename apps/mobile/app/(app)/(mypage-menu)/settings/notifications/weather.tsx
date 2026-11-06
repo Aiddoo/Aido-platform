@@ -1,15 +1,15 @@
+import {
+  type Preference,
+  PreferencePolicy,
+} from '@src/features/identity/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
 import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
   SettingsTimeInput,
 } from '@src/features/notification/components/settings/settings-time-input';
 import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/settings-time-range';
-import {
-  type Preference,
-  PreferencePolicy,
-} from '@src/features/preference/domains/preference.model';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';

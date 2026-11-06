@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import { formatDateKeyRange, formatHourLabel, type TimeFormat } from '@src/shared/date/date-format';
 import { getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';

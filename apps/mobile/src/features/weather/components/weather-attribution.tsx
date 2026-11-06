@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import { formatClockTime } from '@src/shared/date/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';

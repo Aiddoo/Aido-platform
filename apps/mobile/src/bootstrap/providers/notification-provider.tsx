@@ -1,3 +1,4 @@
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useColdStartNotificationResponse } from '@src/features/notification/hooks/use-cold-start-notification-response';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useMarketingNotificationCategory } from '@src/features/notification/hooks/use-marketing-notification-category';
@@ -7,7 +8,6 @@ import { useNotificationResponseHandler } from '@src/features/notification/hooks
 import { useNotificationResponseProcessor } from '@src/features/notification/hooks/use-notification-response-processor';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification.gateway';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery } from '@tanstack/react-query';

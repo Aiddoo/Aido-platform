@@ -11,8 +11,8 @@ import { useNotificationDirectionParam } from '@src/features/notification/hooks/
 import {
   nudgeDirectionSchema,
   type NudgeDirection,
-} from '@src/features/nudge/domains/nudge-interaction.model';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-availability-query-options';
+} from '@src/features/social/nudge/domains/nudge-interaction.model';
+import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/get-nudge-interaction-availability-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

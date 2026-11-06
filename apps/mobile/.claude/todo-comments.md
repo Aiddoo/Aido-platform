@@ -160,7 +160,7 @@ export function TodoDetailPane({ presentation }) {
 ## 파일
 
 ```
-features/todo-comment/
+features/engagement/comment/
   domains/ todo-comment.model.ts  todo-comment-composer.model.ts
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
   constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts

@@ -1,11 +1,11 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
-import { TodoService } from '@src/features/todo/apis/todo.service';
-import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
-import { UserService } from '@src/features/user/apis/user.service';
-import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
+import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createMockAnalytics,
   createMockDIContainer,

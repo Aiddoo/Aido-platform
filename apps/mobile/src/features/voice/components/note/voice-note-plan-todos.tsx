@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useTranslation } from '@src/shared/i18n';
 import { Result } from '@src/shared/ui';

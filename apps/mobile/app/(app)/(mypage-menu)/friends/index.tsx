@@ -1,10 +1,10 @@
 import Check from '@expo/material-symbols/check.xml';
 import Edit from '@expo/material-symbols/edit.xml';
 import Search from '@expo/material-symbols/search.xml';
-import { FriendList } from '@src/features/friend/components/friend-list';
-import { ReceivedRequestList } from '@src/features/friend/components/received-request-list';
-import { SentRequestList } from '@src/features/friend/components/sent-request-list';
-import { useFriendListEditMode } from '@src/features/friend/hooks/use-friend-list-edit-mode';
+import { FriendList } from '@src/features/social/friend/components/friend-list';
+import { ReceivedRequestList } from '@src/features/social/friend/components/received-request-list';
+import { SentRequestList } from '@src/features/social/friend/components/sent-request-list';
+import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';

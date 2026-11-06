@@ -1,14 +1,14 @@
-import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/webhook-sync';
+import { WEBHOOK_SYNC_DELAY } from '@src/features/billing/subscription/constants/webhook-sync';
 import {
   type CustomerInfo,
   CustomerInfoPolicy,
-} from '@src/features/subscription/domains/customer-info.model';
-import type { PremiumAccess } from '@src/features/subscription/domains/premium-access.model';
-import { useRefreshOnPremiumEnd } from '@src/features/subscription/hooks/use-refresh-on-premium-end';
-import { invalidateEntitlements } from '@src/features/subscription/queries/entitlement-cache';
-import { watchPremiumEntitlementChanges } from '@src/features/subscription/queries/subscription-cache';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { invalidateMe } from '@src/features/user/queries/user-cache';
+} from '@src/features/billing/subscription/domains/customer-info.model';
+import type { PremiumAccess } from '@src/features/billing/subscription/domains/premium-access.model';
+import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
+import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
+import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { ENV } from '@src/shared/config/env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';

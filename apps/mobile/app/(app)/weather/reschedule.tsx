@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useGetTodosByDateQueryOptions } from '@src/features/todo/queries/get-todos-by-date-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import { WeatherRescheduleSubmitButton } from '@src/features/weather/components/weather-reschedule/weather-reschedule-submit-button';
 import { WeatherRescheduleTimeline } from '@src/features/weather/components/weather-reschedule/weather-reschedule-timeline';

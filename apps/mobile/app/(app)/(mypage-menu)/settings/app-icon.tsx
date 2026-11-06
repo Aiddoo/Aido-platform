@@ -1,11 +1,11 @@
 import { useAppIconService } from '@src/bootstrap/providers/di-context';
-import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker';
-import type { AppIconKey } from '@src/features/app-icon/domains/app-icon.model';
-import { useGetCurrentAppIconQueryOptions } from '@src/features/app-icon/queries/get-current-app-icon-query-options';
-import { useChangeAppIconMutationOptions } from '@src/features/app-icon/queries/use-change-app-icon-mutation-options';
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
+import type { AppIconKey } from '@src/features/device/app-icon/domains/app-icon.model';
+import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/queries/get-current-app-icon-query-options';
+import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/use-change-app-icon-mutation-options';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,

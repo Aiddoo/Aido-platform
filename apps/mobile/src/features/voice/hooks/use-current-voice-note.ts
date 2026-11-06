@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { useVoiceNoteParams } from './use-voice-note-params';

@@ -1,16 +1,16 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
-import { createConsent } from '@src/features/auth/__tests__/auth.factories';
-import { AuthService } from '@src/features/auth/apis/auth.service';
-import { AUTH_QUERY_KEYS } from '@src/features/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/auth/domains/auth.model';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
-import { UserService } from '@src/features/user/apis/user.service';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { createConsent } from '@src/features/identity/auth/__tests__/auth.factories';
+import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
+import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createErrorReporterStub,

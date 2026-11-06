@@ -1,11 +1,11 @@
-import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
-import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
-import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
+import { useGetConsentQueryOptions } from '@src/features/identity/auth/queries/get-consent-query-options';
+import { useUpdateMarketingConsentMutationOptions } from '@src/features/identity/auth/queries/use-update-marketing-consent-mutation-options';
+import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/auth/queries/use-update-marketing-push-consent-mutation-options';
+import { PreferencePolicy } from '@src/features/identity/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
 import { useUpdatePushEnabledMutationOptions } from '@src/features/notification/queries/use-update-push-enabled-mutation-options';
-import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';

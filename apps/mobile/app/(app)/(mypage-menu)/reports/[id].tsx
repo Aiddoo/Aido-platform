@@ -5,7 +5,7 @@ import {
   useReportScreenParams,
 } from '@src/features/ai/hooks/use-report-screen-params';
 import { useGetReportDetailQueryOptions } from '@src/features/ai/queries/get-report-detail-query-options';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useTrack } from '@src/shared/analytics';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';

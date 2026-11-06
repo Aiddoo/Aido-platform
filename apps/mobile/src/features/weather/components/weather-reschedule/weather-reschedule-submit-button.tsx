@@ -1,6 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import type { Todo } from '@src/features/todo/domains/todo.model';
-import { useGetTodosByDateQueryOptions } from '@src/features/todo/queries/get-todos-by-date-query-options';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

@@ -1,11 +1,11 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
-import { AuthService } from '@src/features/auth/apis/auth.service';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
-import { UserService } from '@src/features/user/apis/user.service';
+import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createErrorReporterStub,
   createHapticsStub,

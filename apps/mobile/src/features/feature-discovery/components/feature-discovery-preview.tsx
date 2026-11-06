@@ -1,7 +1,7 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import type { FeatureDiscoveryCardId } from '@src/features/feature-discovery/domains/feature-discovery.registry';
-import { TodoCheckbox, TodoLabel, TodoRow } from '@src/features/todo/components/todo-row';
-import { CATEGORY_COLORS } from '@src/features/todo/constants/todo-category-colors';
+import { TodoCheckbox, TodoLabel, TodoRow } from '@src/features/planning/todo/components/todo-row';
+import { CATEGORY_COLORS } from '@src/features/planning/todo/constants/todo-category-colors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,

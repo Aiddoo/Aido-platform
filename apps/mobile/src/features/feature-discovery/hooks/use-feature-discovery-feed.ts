@@ -6,8 +6,8 @@ import {
   filterAvailableCampaign,
   getBundledFeatureDiscoveryCampaign,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
-import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';

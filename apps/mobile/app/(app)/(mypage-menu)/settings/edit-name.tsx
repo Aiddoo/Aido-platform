@@ -2,9 +2,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   type UpdateNameFormInput,
   updateNameFormSchema,
-} from '@src/features/user/domains/update-name-form.schema';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useUpdateProfileMutationOptions } from '@src/features/user/queries/use-update-profile-mutation-options';
+} from '@src/features/identity/user/domains/update-name-form.schema';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/use-update-profile-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

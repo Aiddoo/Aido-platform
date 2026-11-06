@@ -1,10 +1,10 @@
-import { MemoEditor } from '@src/features/memo/components/memo-editor';
-import { MemoList } from '@src/features/memo/components/memo-list';
-import { MemoListScrollView } from '@src/features/memo/components/memo-list-scroll-view';
-import { MemoPolicy } from '@src/features/memo/domains/memo.model';
-import { useSelectedMemo } from '@src/features/memo/hooks/use-memo-params';
-import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/memo.queries';
-import { memoDetailHref } from '@src/features/memo/utils/memo-href';
+import { MemoEditor } from '@src/features/notes/memo/components/memo-editor';
+import { MemoList } from '@src/features/notes/memo/components/memo-list';
+import { MemoListScrollView } from '@src/features/notes/memo/components/memo-list-scroll-view';
+import { MemoPolicy } from '@src/features/notes/memo/domains/memo.model';
+import { useSelectedMemo } from '@src/features/notes/memo/hooks/use-memo-params';
+import { useGetMemoResourceLimitQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
+import { memoDetailHref } from '@src/features/notes/memo/utils/memo-href';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';

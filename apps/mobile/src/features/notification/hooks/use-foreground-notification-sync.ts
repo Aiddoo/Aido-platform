@@ -1,9 +1,9 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
-import { invalidateFriends } from '@src/features/friend/queries/friend-cache';
-import { invalidateOnInviteNotification } from '@src/features/invite/queries/invite-cache';
-import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
-import { invalidateMe } from '@src/features/user/queries/user-cache';
+import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { invalidateFriends } from '@src/features/social/friend/queries/friend-cache';
+import { invalidateOnInviteNotification } from '@src/features/social/invite/queries/invite-cache';
+import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';

@@ -26,7 +26,7 @@ function loadTypeScript() {
 }
 
 const ts = loadTypeScript();
-const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
+const TODO_COMMENT_ROOT = 'apps/mobile/src/features/engagement/comment';
 const FEATURE_AREAS = new Set([
   'app-config',
   'assistant',
@@ -94,23 +94,23 @@ const QUERY_HOOK_NAMES = new Set([
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
 const CLIENT_OWNED_MODEL_PATHS = [
-  'apps/mobile/src/features/memo/components/',
-  'apps/mobile/src/features/memo/constants/',
-  'apps/mobile/src/features/memo/domains/',
-  'apps/mobile/src/features/memo/hooks/',
-  'apps/mobile/src/features/memo/queries/',
-  'apps/mobile/src/features/memo/utils/',
+  'apps/mobile/src/features/notes/memo/components/',
+  'apps/mobile/src/features/notes/memo/constants/',
+  'apps/mobile/src/features/notes/memo/domains/',
+  'apps/mobile/src/features/notes/memo/hooks/',
+  'apps/mobile/src/features/notes/memo/queries/',
+  'apps/mobile/src/features/notes/memo/utils/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
-  'apps/mobile/src/features/subscription/domains/customer-info.model.ts',
-  'apps/mobile/src/features/subscription/domains/entitlement.model.ts',
-  'apps/mobile/src/features/todo-comment/domains/todo-comment.model.ts',
-  'apps/mobile/src/features/todo/domains/todo-repeat.model.ts',
+  'apps/mobile/src/features/billing/subscription/domains/customer-info.model.ts',
+  'apps/mobile/src/features/billing/subscription/domains/entitlement.model.ts',
+  'apps/mobile/src/features/engagement/comment/domains/todo-comment.model.ts',
+  'apps/mobile/src/features/planning/todo/domains/todo-repeat.model.ts',
   'apps/mobile/src/features/voice/domains/',
 ];
 /** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
-const SCHEMA_FOLDER_FEATURE_PATHS = ['apps/mobile/src/features/memo/'];
+const SCHEMA_FOLDER_FEATURE_PATHS = ['apps/mobile/src/features/notes/memo/'];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;
 
@@ -160,7 +160,7 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],
   ['apps/mobile/src/bootstrap/providers/query-provider.tsx', ['expo-application', 'expo-updates']],
   [
-    'apps/mobile/src/features/auth/apis/auth.service.ts',
+    'apps/mobile/src/features/identity/auth/apis/auth.service.ts',
     ['expo-linking', 'expo-web-browser', 'expo-apple-authentication', 'expo-crypto'],
   ],
   ['apps/mobile/src/features/feature-discovery/apis/native-app-version.ts', ['expo-application']],
@@ -171,11 +171,11 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ],
   ['apps/mobile/src/features/notification/hooks/use-notification-navigation.ts', ['expo-linking']],
   [
-    'apps/mobile/src/features/subscription/hooks/use-open-subscription-management.ts',
+    'apps/mobile/src/features/billing/subscription/hooks/use-open-subscription-management.ts',
     ['expo-linking', 'expo-application'],
   ],
   [
-    'apps/mobile/src/features/todo-comment/components/todo-comment-composer/todo-comment-form.tsx',
+    'apps/mobile/src/features/engagement/comment/components/todo-comment-composer/todo-comment-form.tsx',
     ['expo-crypto'],
   ],
   ['apps/mobile/src/features/weather/components/weather-hero.tsx', ['expo-localization']],
@@ -186,7 +186,7 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/features/weather/hooks/use-temperature-unit.ts', ['expo-localization']],
   ['apps/mobile/src/features/weather/hooks/use-weather-location.ts', ['expo-linking']],
   [
-    'apps/mobile/src/features/widget/bridge/android-widget-task-handler.ts',
+    'apps/mobile/src/features/device/widget/bridge/android-widget-task-handler.ts',
     ['expo-linking', 'expo-crypto'],
   ],
   ['apps/mobile/src/shared/config/device.ts', ['expo-device']],

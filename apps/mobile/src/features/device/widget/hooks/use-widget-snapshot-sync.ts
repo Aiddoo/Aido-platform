@@ -1,0 +1,160 @@
+import { useWidgetSyncService } from '@src/bootstrap/providers/di-context';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/get-daily-completions-query-options';
+import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/get-todo-summary-query-options';
+import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import { i18n } from '@src/shared/i18n';
+import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+
+import type {
+  WidgetSnapshotContext,
+  WidgetSummaryInput,
+  WidgetTranslateFn,
+} from '../apis/widget-snapshot.mapper';
+import type { WidgetSyncService } from '../apis/widget-sync.service';
+
+export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
+
+const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
+
+function buildContext(
+  timeZone: string,
+  weekCompletions?: WidgetSnapshotContext['weekCompletions'],
+  userId?: string,
+): WidgetSnapshotContext {
+  return {
+    t: translate,
+    locale: toResolvedLanguage(i18n.language),
+    now: new Date(),
+    timeZone,
+    weekCompletions,
+    userId,
+  };
+}
+
+interface LatestWidgetSnapshot {
+  authState: WidgetSyncAuthState;
+  userId?: string;
+  date: string;
+  timeZone: string;
+  tomorrowDate: string;
+  data?: WidgetSummaryInput;
+  tomorrowData?: WidgetSummaryInput;
+  completions?: Record<string, NonNullable<WidgetSnapshotContext['weekCompletions']>[number]>;
+}
+
+function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSnapshot): void {
+  if (latest.authState === 'unauthenticated') {
+    widgetSyncService.syncLoggedOut(latest.date, buildContext(latest.timeZone));
+    return;
+  }
+  if (
+    latest.authState === 'authenticated' &&
+    latest.userId != null &&
+    latest.data?.date === latest.date
+  ) {
+    widgetSyncService.syncSummary(
+      {
+        today: latest.data,
+        // 서버가 아직 같은 날짜를 돌려주지 않으면 내일 day 없이 쓰고 자정부터 stale을 보인다.
+        tomorrow:
+          latest.tomorrowData?.date === latest.tomorrowDate ? latest.tomorrowData : undefined,
+      },
+      buildContext(
+        latest.timeZone,
+        latest.completions ? Object.values(latest.completions) : undefined,
+        latest.userId,
+      ),
+    );
+  }
+}
+
+export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
+  const widgetSyncService = useWidgetSyncService();
+  const { currentLocalDateKey: date, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
+  const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeek(date);
+  const { data: user } = useQuery({
+    ...useGetMeQueryOptions(),
+    enabled: authState === 'authenticated',
+    throwOnError: false,
+  });
+  const userId = user?.id;
+  const tomorrowDate = addDaysToDateKey(date, 1);
+  const isUserDataEnabled = authState === 'authenticated' && userId != null;
+  const todayQueryOptions = useGetTodoSummaryQueryOptions({ date, todayDate: date, userId });
+  const tomorrowQueryOptions = useGetTodoSummaryQueryOptions({
+    date: tomorrowDate,
+    todayDate: date,
+    userId,
+  });
+  const [{ data }, { data: tomorrowData }] = useQueries({
+    queries: [
+      { ...todayQueryOptions, enabled: isUserDataEnabled, throwOnError: false },
+      { ...tomorrowQueryOptions, enabled: isUserDataEnabled, throwOnError: false },
+    ],
+  });
+  const { data: completions } = useQuery({
+    ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
+    enabled: isUserDataEnabled,
+    throwOnError: false,
+  });
+
+  useEffect(() => {
+    syncLatest(widgetSyncService, {
+      authState,
+      userId,
+      date,
+      timeZone: currentTimeZone,
+      tomorrowDate,
+      data,
+      tomorrowData,
+      completions,
+    });
+  }, [
+    authState,
+    data,
+    tomorrowData,
+    completions,
+    date,
+    tomorrowDate,
+    currentTimeZone,
+    currentUtcOffsetMinutes,
+    userId,
+    widgetSyncService,
+  ]);
+
+  const latestRef = useRef<LatestWidgetSnapshot>({
+    data,
+    tomorrowData,
+    completions,
+    authState,
+    userId,
+    date,
+    timeZone: currentTimeZone,
+    tomorrowDate,
+  });
+  useEffect(() => {
+    latestRef.current = {
+      data,
+      tomorrowData,
+      completions,
+      authState,
+      userId,
+      date,
+      timeZone: currentTimeZone,
+      tomorrowDate,
+    };
+  }, [data, tomorrowData, completions, authState, userId, date, currentTimeZone, tomorrowDate]);
+
+  useEffect(() => {
+    const handleLanguageChanged = () => {
+      syncLatest(widgetSyncService, latestRef.current);
+    };
+
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => i18n.off('languageChanged', handleLanguageChanged);
+  }, [widgetSyncService]);
+}

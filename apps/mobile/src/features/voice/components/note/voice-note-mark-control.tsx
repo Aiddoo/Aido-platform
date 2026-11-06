@@ -1,6 +1,6 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { usePendingCoachmark } from '@src/features/feature-discovery/hooks/use-pending-coachmark';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {

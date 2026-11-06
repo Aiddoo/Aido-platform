@@ -1,14 +1,14 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
-import { createConsent } from '@src/features/auth/__tests__/auth.factories';
-import { AuthService } from '@src/features/auth/apis/auth.service';
-import { AUTH_QUERY_KEYS } from '@src/features/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/auth/domains/auth.model';
 import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
-import { UserService } from '@src/features/user/apis/user.service';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { createConsent } from '@src/features/identity/auth/__tests__/auth.factories';
+import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
+import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { UserService } from '@src/features/identity/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createHapticsStub,
   createMemorySyncStorage,

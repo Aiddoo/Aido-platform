@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
-import { createActivationProgressRepository } from '@src/features/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/activation/apis/activation.service';
-import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
+import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import {
   createMemorySyncStorage,
   createMockAnalytics,

@@ -138,7 +138,7 @@ URI가 유실되는 경우를 실제 재현했다. launchMode 변경이나 OTA �
 renderer·timeline에서 손상 JSON, 이전 v1, 자정 직전/정각 day 선택, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 검증한다.
 
 ```sh
-pnpm --filter @aido/mobile exec jest --runInBand src/features/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx
+pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx
 pnpm lint && pnpm format:check && pnpm typecheck
 ```
 

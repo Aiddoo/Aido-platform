@@ -1,8 +1,8 @@
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
-import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
-import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
-import { createFeedHref } from '@src/features/todo/utils/feed-route';
-import { createTodoDetailHref } from '@src/features/todo/utils/navigation/todo-detail-href';
+import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
+import { createFeedHref } from '@src/features/planning/todo/utils/feed-route';
+import { createTodoDetailHref } from '@src/features/planning/todo/utils/navigation/todo-detail-href';
+import { myInviteHref } from '@src/features/social/invite/utils/navigation/invite-href';
 import { weatherHref } from '@src/features/weather/utils/navigation/weather-href';
 import { parseWeatherRescheduleUrl } from '@src/features/weather/utils/navigation/weather-reschedule-href';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';

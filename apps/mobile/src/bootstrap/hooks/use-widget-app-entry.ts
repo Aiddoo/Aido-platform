@@ -1,14 +1,14 @@
-import { feedSearchParamsSchema } from '@src/features/todo/utils/feed-search-params';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
 import {
   type WidgetNavigationCommand,
   WidgetNavigationPolicy,
-} from '@src/features/widget/domains/widget-navigation.model';
+} from '@src/features/device/widget/domains/widget-navigation.model';
 import {
   isWidgetAppRouteCurrent,
   resolveWidgetAppRoute,
-} from '@src/features/widget/utils/navigation/resolve-widget-app-route';
+} from '@src/features/device/widget/utils/navigation/resolve-widget-app-route';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { feedSearchParamsSchema } from '@src/features/planning/todo/utils/feed-search-params';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';

@@ -1,5 +1,5 @@
 import { featureDiscoveryMinAppVersionSchema } from '@aido/api';
-import { userSchema } from '@src/features/user/domains/user.model';
+import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { z } from 'zod';
 
 export const featureDiscoveryConfigSchema = z.discriminatedUnion('enabled', [

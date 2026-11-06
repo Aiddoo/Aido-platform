@@ -1,13 +1,13 @@
-import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
-import { Certificate } from '@src/features/achievement/components/certificate';
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '@src/features/achievement/constants/achievement-badge-labels';
-import { AchievementPolicy } from '@src/features/achievement/domains/achievement.model';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { BadgeIcon } from '@src/features/insights/achievement/components/badge-icon';
+import { Certificate } from '@src/features/insights/achievement/components/certificate';
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '@src/features/insights/achievement/constants/achievement-badge-labels';
+import { AchievementPolicy } from '@src/features/insights/achievement/domains/achievement.model';
 import {
   achievementScreenParamsSchema,
   useAchievementScreenParams,
-} from '@src/features/achievement/hooks/use-achievement-screen-params';
-import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/queries/get-weekly-achievement-query-options';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+} from '@src/features/insights/achievement/hooks/use-achievement-screen-params';
+import { useGetWeeklyAchievementQueryOptions } from '@src/features/insights/achievement/queries/get-weekly-achievement-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';

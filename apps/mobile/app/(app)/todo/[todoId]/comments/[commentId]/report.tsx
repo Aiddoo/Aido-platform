@@ -1,11 +1,11 @@
-import { ReportReasonBottomSheet } from '@src/features/moderation/components/report-reason-bottom-sheet';
-import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import { findCachedTodoComment } from '@src/features/engagement/comment/queries/todo-comment-cache';
+import { TODO_SHEET_FALLBACK_HREF } from '@src/features/planning/todo/utils/navigation/todo-sheet-href';
+import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
+import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import {
   commentReportRouteParamsSchema,
   useCommentReportRouteParams,
-} from '@src/features/moderation/hooks/use-comment-report-route-params';
-import { findCachedTodoComment } from '@src/features/todo-comment/queries/todo-comment-cache';
-import { TODO_SHEET_FALLBACK_HREF } from '@src/features/todo/utils/navigation/todo-sheet-href';
+} from '@src/features/social/moderation/hooks/use-comment-report-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';

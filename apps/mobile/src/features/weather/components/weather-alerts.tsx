@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';

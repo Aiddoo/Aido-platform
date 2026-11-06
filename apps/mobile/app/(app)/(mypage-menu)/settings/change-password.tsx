@@ -1,8 +1,8 @@
 import { type ChangePasswordInput, changePasswordSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { NewPasswordStep } from '@src/features/auth/components/new-password-step';
-import { PasswordInput } from '@src/features/auth/components/password-input';
-import { useChangePasswordMutationOptions } from '@src/features/auth/queries/use-change-password-mutation-options';
+import { NewPasswordStep } from '@src/features/identity/auth/components/new-password-step';
+import { PasswordInput } from '@src/features/identity/auth/components/password-input';
+import { useChangePasswordMutationOptions } from '@src/features/identity/auth/queries/use-change-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';

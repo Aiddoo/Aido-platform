@@ -1,4 +1,4 @@
-import type { WidgetNavigationStorage } from '@src/features/widget/bridge/widget-navigation-storage';
+import type { WidgetNavigationStorage } from '@src/features/device/widget/bridge/widget-navigation-storage';
 import { noop } from 'es-toolkit';
 
 export const widgetNavigationStorage: WidgetNavigationStorage = {

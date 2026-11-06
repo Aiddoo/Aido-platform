@@ -1,7 +1,7 @@
-import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
-import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { AiIcon, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';

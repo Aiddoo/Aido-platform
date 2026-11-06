@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-params';
-import { useGetMemoQueryOptions } from '@src/features/memo/queries/memo.queries';
-import { memoScreenParamsSchema } from '@src/features/memo/schemas/memo-params.schema';
-import { createMemoPlanDraftKey } from '@src/features/memo/utils/memo-plan-draft';
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useMemoScreenParams } from '@src/features/notes/memo/hooks/use-memo-params';
+import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
+import { memoScreenParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
+import { createMemoPlanDraftKey } from '@src/features/notes/memo/utils/memo-plan-draft';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/todo/queries/get-todo-categories-query-options';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import {
   planReviewFormSchema,

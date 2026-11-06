@@ -2,7 +2,7 @@
 
 **Version**: 3.0.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
-Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
+Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/notes/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
 
 | 주제                                                    | 원본                                                                           |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -44,7 +44,7 @@ src/
                                   # infra(어댑터), observability, preferences, providers, types, ui, utils
 ```
 
-- 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. 위젯의 네이티브 경계는 `features/widget/bridge/`에 둔다.
+- 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
 - 다른 피처는 `@src/features/{feature}/…` 절대 경로로 import한다.
 - 폴더 `index.ts` 재수출을 새로 만들지 않고 정의 파일에서 직접 import한다.
 
@@ -62,17 +62,17 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 `pnpm --filter @aido/mobile check:conventions`(`scripts/check-mobile-conventions.mjs`)가 다음을 실패시킨다.
 
-| 검사                 | 내용                                                                                                                                                                                    |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                            |
-| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                  |
-| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트 제외). 지금은 `memo`만 대상이다                                                                              |
-| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                |
-| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                            |
-| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                            |
-| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                          |
-| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                         |
-| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/todo-comment`와 할 일 상세 route에만 걸린다 |
+| 검사                 | 내용                                                                                                                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                  |
+| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                        |
+| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트 제외). 지금은 `memo`만 대상이다                                                                                    |
+| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                      |
+| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                  |
+| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                  |
+| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                                |
+| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                               |
+| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/engagement/comment`와 할 일 상세 route에만 걸린다 |
 
 아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: `xxxOf` 이름, Facade 별칭·인라인, 모듈 수준 화살표, 금지한 컴포넌트 이름, 메모 밖 feature의 계약 import, `shared` → feature import, `FormField` 사용, 쿼리·utils 파일 위치.
 
@@ -236,7 +236,7 @@ export default function MemoDetailRoute() {
 **화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 `use…ScreenParams()`나 상태 튜플 훅에서 직접 읽는다. 예외는 목록 행의 id다.
 
 ```tsx
-// features/memo/components/memo-editor.tsx
+// features/notes/memo/components/memo-editor.tsx
 function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
   const { t } = useTranslation(['memo', 'common']);
   const { memoId } = useMemoScreenParams();
@@ -252,7 +252,7 @@ function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogP
 **Props는 예측할 수 있게 쓴다.** 원본을 확장하면 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. `ReturnType<typeof useX>`로 props를 만들지 않고 인터페이스를 적는다.
 
 ```tsx
-// features/memo/components/memo-editor.tsx
+// features/notes/memo/components/memo-editor.tsx
 interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   icon: ReactNode;
   accessibilityLabel: string;
@@ -300,7 +300,7 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 - 원본을 그대로 넘기는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않는다. 같은 fallback은 `X.Error = UserList.Error`처럼 참조로 잇는다.
 
 ```tsx
-// features/memo/components/memo-list.tsx
+// features/notes/memo/components/memo-list.tsx
 MemoList.Loading = function Loading() {
   const columnCount = getColumnCount(useWindowSizeClass());
 
@@ -453,7 +453,7 @@ MemoList.Loading = function Loading() {
 모든 폼을 같은 모양으로 쓴다. 메모 작성의 실제 코드다.
 
 ```tsx
-// features/memo/schemas/memo-form.schema.ts
+// features/notes/memo/schemas/memo-form.schema.ts
 export const memoFormSchema = createMemoSchema.pick({ content: true });
 export type MemoFormValues = z.infer<typeof memoFormSchema>;
 
@@ -461,7 +461,7 @@ export const EMPTY_MEMO_FORM_VALUES: MemoFormValues = { content: '' };
 ```
 
 ```tsx
-// features/memo/components/memo-create-form.tsx
+// features/notes/memo/components/memo-create-form.tsx
 const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
   createMemoDraftKey({ userId: me.id }),
 );
@@ -504,7 +504,7 @@ const { isSubmitting, isValid } = useFormState({ control: form.control });
 생성과 수정은 같은 스키마와 같은 입력 부품을 쓴다. 폼과 제출은 생성 컴포넌트와 수정 컴포넌트가 각자 소유하고, 공통 부품에 `mode`나 `onSubmit` 분기를 넘기지 않는다. 그 파일만 읽으면 무엇이 저장되는지 보여야 한다. 메모는 `MemoCreateForm`과 `MemoEditor`가 `memoFormSchema`와 `TextArea`만 공유한다. 할 일 변환은 `MemoConvertBottomSheet`가 폼과 제출을 갖고 할 일 작성기의 칩(`TodoComposerChips`)만 가져다 쓴다.
 
 ```tsx
-// features/memo/components/memo-create-form.tsx
+// features/notes/memo/components/memo-create-form.tsx
 // mutate 콜백은 화면이 내려가면 불리지 않는다. 저장이 끝났는데 초안이 남지 않게 기다린 뒤에 지운다
 const saveMemo = (onFailed: (error: unknown) => void) =>
   form.handleSubmit(async ({ content }) => {
@@ -593,7 +593,7 @@ features/{feature}/
 스키마는 `schemas/` 한 곳에 모은다. 서버와 같은 값은 계약에서 `pick`·`extend`로 유도해 다시 적지 않는다. 앱에서 모양이 다른 값(응답 문자열 → `Date`)만 `extend`로 바꾼다.
 
 ```typescript
-// features/memo/schemas/memo.schema.ts
+// features/notes/memo/schemas/memo.schema.ts
 export const memoSchema = memoContractSchema
   .pick({ id: true, content: true, isPinned: true })
   .extend({ createdAt: z.date(), updatedAt: z.date() });
@@ -607,7 +607,7 @@ export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
 ```
 
 ```typescript
-// features/memo/domains/memo.model.ts
+// features/notes/memo/domains/memo.model.ts
 export function canCreateMemo(limit: MemoResourceLimit) {
   return limit.currentCount < limit.maxPerUser;
 }
@@ -678,7 +678,7 @@ export const MemoPolicy = {
 Service는 포트를 주입받아 HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 한다. `ApiError`는 번역하지 않고 그대로 넘긴다. class 하나이고 메서드는 arrow class field, private은 `#`다. 4xx는 `Result.err`, 5xx·네트워크·파싱은 throw다([errors](../../../docs/conventions/errors.md)).
 
 ```typescript
-// features/memo/apis/memo.service.ts
+// features/notes/memo/apis/memo.service.ts
 export class MemoService {
   readonly #httpClient: HttpClient;
 
@@ -696,7 +696,7 @@ export class MemoService {
 ```
 
 ```typescript
-// features/memo/apis/memo.mapper.ts
+// features/notes/memo/apis/memo.mapper.ts
 export function toMemo(dto: MemoDto): Memo {
   return {
     ...pick(dto, ['id', 'content', 'isPinned']),
@@ -729,7 +729,7 @@ HTTP(unknown)
 조회는 `queries/{entity}.queries.ts`, 변경은 `queries/{entity}.mutations.ts`, 무효화는 `queries/{feature}-cache.ts`에 모은다. 작은 feature는 파일 하나, 큰 feature는 엔티티별이다. 파일 위치는 검사하지 않는다.
 
 ```typescript
-// features/memo/queries/memo.queries.ts
+// features/notes/memo/queries/memo.queries.ts
 function selectMemos(data: InfiniteData<MemoPage>) {
   return data.pages.flatMap((page) => page.items);
 }
@@ -745,7 +745,7 @@ export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
 ```
 
 ```typescript
-// features/memo/constants/memo-query-keys.ts
+// features/notes/memo/constants/memo-query-keys.ts
 export const MEMO_QUERY_KEYS = {
   all: ['memo'] as const,
   list: () => [...MEMO_QUERY_KEYS.all, 'list'] as const,
@@ -756,7 +756,7 @@ export const MEMO_QUERY_KEYS = {
 ```
 
 ```typescript
-// features/memo/queries/memo.mutations.ts
+// features/notes/memo/queries/memo.mutations.ts
 export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
@@ -793,7 +793,7 @@ export function useCreateMemoMutationOptions() {
 
 ### 할 일 목록의 낙관적 갱신
 
-`features/todo/queries/todo-cache.ts` 한 곳의 규칙을 따른다.
+`features/planning/todo/queries/todo-cache.ts` 한 곳의 규칙을 따른다.
 
 - 날짜는 할 일의 `startDate`가 아니라 보고 있는 목록의 `date`다. 여러 날 할 일은 여러 날짜 목록에 있다.
 - `onMutate`: `cancelTodoQueries`(달력까지 바꾸면 `cancelTodoCompletionQueries`)로 조회를 멈추고 `updateCachedTodo`로 목록·상세를 함께 고친다. 달력은 `syncDailyCompletionWithList`로 목록에서 다시 계산한다.

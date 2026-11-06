@@ -1,9 +1,9 @@
 import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
-import { userReportSheetHref } from '@src/features/moderation/utils/navigation/moderation-href';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import { userReportSheetHref } from '@src/features/social/moderation/utils/navigation/moderation-href';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';

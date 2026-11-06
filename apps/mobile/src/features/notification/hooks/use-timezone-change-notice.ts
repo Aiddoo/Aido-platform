@@ -4,7 +4,7 @@ import {
   useLogger,
   useTodoService,
 } from '@src/bootstrap/providers/di-context';
-import { TodoPolicy } from '@src/features/todo/domains/todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { track } from '@src/shared/analytics';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { toHHmm } from '@src/shared/date/instant';

@@ -1,5 +1,5 @@
-import { BlockUserConfirmDialog } from '@src/features/moderation/components/block-user-confirm-dialog';
-import { blockUserRouteParamsSchema } from '@src/features/moderation/hooks/use-block-user-route-params';
+import { BlockUserConfirmDialog } from '@src/features/social/moderation/components/block-user-confirm-dialog';
+import { blockUserRouteParamsSchema } from '@src/features/social/moderation/hooks/use-block-user-route-params';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 

@@ -1,0 +1,109 @@
+import aidoBannerImage from '@assets/images/aido_banner.webp';
+import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useTranslation } from '@src/shared/i18n';
+import {
+  HStack,
+  PawIcon,
+  Result,
+  Text,
+  VStack,
+  type QueryErrorFallbackProps,
+} from '@src/shared/ui';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Image } from 'react-native';
+import { match } from 'ts-pattern';
+
+import { TodoNudgePolicy } from '../domains/todo-nudge.model';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
+
+export function PokeBanner() {
+  const { t } = useTranslation('todo');
+  const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
+  const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
+  const isLimitReached = bannerState.type === 'limitReached';
+
+  const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
+
+  const defaultTitle = (
+    <>
+      {t('nudge.promptPrefix')}{' '}
+      <Text size="b3" weight="bold" className="text-main">
+        {t('nudge.promptHighlight')}
+      </Text>{' '}
+      {t('nudge.promptSuffix')}
+    </>
+  );
+
+  const bannerText = match(bannerState)
+    .with({ type: 'limitReached' }, () => ({
+      title: t('nudge.limitSpentTitle'),
+      description: (
+        <Text size="e1" shade={6}>
+          {t('nudge.subscribeUnlimited')}
+        </Text>
+      ),
+    }))
+    .with({ type: 'available' }, () => ({
+      title: defaultTitle,
+      description: (
+        <HStack gap={2} align="center" className="flex-wrap">
+          <Text size="e1" shade={6}>
+            {t('nudge.hintPrefix')}
+          </Text>
+          <PawIcon width={14} height={14} colorClassName="text-main" />
+          <Text size="e1" shade={6}>
+            {t('nudge.hintSuffix')}
+          </Text>
+        </HStack>
+      ),
+    }))
+    .with({ type: 'remaining' }, ({ remainingToday }) => ({
+      title: defaultTitle,
+      description: (
+        <Text size="e1" shade={6}>
+          {t('nudge.remaining', { count: remainingToday })}
+        </Text>
+      ),
+    }))
+    .exhaustive();
+
+  return (
+    <PressableFeedback
+      onPress={() => gate.guard()}
+      isDisabled={!isLimitReached}
+      className="mx-4 rounded-xl"
+    >
+      <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
+        <Image
+          source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}
+          className="size-[72px]"
+          resizeMode="contain"
+        />
+        <VStack flex={1}>
+          <Text size="b3" weight="medium">
+            {bannerText.title}
+          </Text>
+          {bannerText.description}
+        </VStack>
+      </HStack>
+    </PressableFeedback>
+  );
+}
+
+PokeBanner.Loading = function Loading() {
+  return <Skeleton className="mx-4 h-[72px] rounded-xl" />;
+};
+
+PokeBanner.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'common']);
+  return (
+    <HStack mx={16} p={12} gap={8} align="center" className="rounded-xl bg-gray-1">
+      <Text size="b4" shade={6} className="flex-1">
+        {t('todo:nudge.statusUnavailable')}
+      </Text>
+      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+    </HStack>
+  );
+};

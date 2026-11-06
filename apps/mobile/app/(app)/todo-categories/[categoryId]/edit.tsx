@@ -1,5 +1,5 @@
-import { CategoryEditBottomSheet } from '@src/features/todo/components/category-edit-bottom-sheet';
-import { todoCategoryScreenParamsSchema } from '@src/features/todo/hooks/use-todo-sheet-params';
+import { CategoryEditBottomSheet } from '@src/features/planning/todo/components/category-edit-bottom-sheet';
+import { todoCategoryScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 

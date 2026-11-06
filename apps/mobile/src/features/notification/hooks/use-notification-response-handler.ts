@@ -1,5 +1,5 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isApiError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';

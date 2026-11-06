@@ -1,5 +1,5 @@
-import { AchievementSummaryCard } from '@src/features/achievement/components/achievement-summary-card';
-import { WeeklyAchievementList } from '@src/features/achievement/components/weekly-achievement-list';
+import { AchievementSummaryCard } from '@src/features/insights/achievement/components/achievement-summary-card';
+import { WeeklyAchievementList } from '@src/features/insights/achievement/components/weekly-achievement-list';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, Text, Box } from '@src/shared/ui';

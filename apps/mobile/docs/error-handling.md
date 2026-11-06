@@ -90,7 +90,7 @@ onError: (error) => {
 서버에 보내기 전에 Policy가 거부하거나(자기 자신에게 친구 요청, 한도 초과), 외부 SDK 오류를 도메인 언어로 바꿀 때 쓴다. 폼 형식 검증은 Zod + react-hook-form이 맡는다. `ApiError`와 별개다.
 
 ```typescript
-// features/friend/domains/friend.error.ts
+// features/social/friend/domains/friend.error.ts
 export const FriendErrorCode = {
   INVALID_TAG: 'FRIEND_INVALID_TAG',
 } as const;

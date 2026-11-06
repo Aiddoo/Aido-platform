@@ -1,5 +1,5 @@
-import { RemindNudgeBottomSheet } from '@src/features/nudge/components/nudge-bottom-sheet';
-import { remindNudgeRouteParamsSchema } from '@src/features/nudge/hooks/use-remind-nudge-route-params';
+import { RemindNudgeBottomSheet } from '@src/features/social/nudge/components/nudge-bottom-sheet';
+import { remindNudgeRouteParamsSchema } from '@src/features/social/nudge/hooks/use-remind-nudge-route-params';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
