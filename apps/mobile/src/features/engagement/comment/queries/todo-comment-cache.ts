@@ -31,15 +31,15 @@ export interface TodoCommentCacheSnapshot {
 }
 
 function threadQueries(todoId: number) {
-  return { queryKey: TODO_COMMENT_QUERY_KEYS.threadLists(todoId) };
+  return { queryKey: TODO_COMMENT_QUERY_KEYS.threadLists({ todoId }) };
 }
 
 function replyQueries(todoId: number) {
-  return { queryKey: TODO_COMMENT_QUERY_KEYS.replyLists(todoId) };
+  return { queryKey: TODO_COMMENT_QUERY_KEYS.replyLists({ todoId }) };
 }
 
 export function cancelTodoCommentQueries({ queryClient, todoId }: TodoCommentCacheParams) {
-  return queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo(todoId) });
+  return queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }) });
 }
 
 export function snapshotTodoCommentCaches({
@@ -132,7 +132,7 @@ export function invalidateTodoCommentCount({ queryClient, todoId }: TodoCommentC
 }
 
 export function refreshTodoComments({ queryClient, todoId }: TodoCommentCacheParams) {
-  return queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo(todoId) });
+  return queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }) });
 }
 
 /** 차단처럼 여러 할 일의 댓글 표시가 함께 바뀔 때 불러 둔 모든 댓글 목록을 다시 받는다 */

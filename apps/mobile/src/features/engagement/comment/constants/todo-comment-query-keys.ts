@@ -2,8 +2,9 @@ import type { TodoCommentSort } from '@aido/api';
 
 export const TODO_COMMENT_QUERY_KEYS = {
   all: ['todo-comment'] as const,
-  todo: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.all, todoId] as const,
-  threadLists: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.todo(todoId), 'threads'] as const,
+  todo: ({ todoId }: { todoId: number }) => [...TODO_COMMENT_QUERY_KEYS.all, { todoId }] as const,
+  threadLists: ({ todoId }: { todoId: number }) =>
+    [...TODO_COMMENT_QUERY_KEYS.todo({ todoId }), 'threads'] as const,
   threads: ({
     todoId,
     sort,
@@ -12,10 +13,11 @@ export const TODO_COMMENT_QUERY_KEYS = {
     todoId: number;
     sort: TodoCommentSort;
     anchorCommentId: string | null;
-  }) => [...TODO_COMMENT_QUERY_KEYS.threadLists(todoId), sort, anchorCommentId] as const,
-  replyLists: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.todo(todoId), 'replies'] as const,
+  }) => [...TODO_COMMENT_QUERY_KEYS.threadLists({ todoId }), { sort, anchorCommentId }] as const,
+  replyLists: ({ todoId }: { todoId: number }) =>
+    [...TODO_COMMENT_QUERY_KEYS.todo({ todoId }), 'replies'] as const,
   thread: ({ todoId, commentId }: { todoId: number; commentId: string }) =>
-    [...TODO_COMMENT_QUERY_KEYS.replyLists(todoId), commentId] as const,
+    [...TODO_COMMENT_QUERY_KEYS.replyLists({ todoId }), { commentId }] as const,
   replies: ({
     todoId,
     commentId,
@@ -24,5 +26,5 @@ export const TODO_COMMENT_QUERY_KEYS = {
     todoId: number;
     commentId: string;
     aroundReplyId: string | null;
-  }) => [...TODO_COMMENT_QUERY_KEYS.thread({ todoId, commentId }), aroundReplyId] as const,
+  }) => [...TODO_COMMENT_QUERY_KEYS.thread({ todoId, commentId }), { aroundReplyId }] as const,
 } as const;

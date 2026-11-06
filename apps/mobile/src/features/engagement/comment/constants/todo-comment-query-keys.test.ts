@@ -3,7 +3,7 @@ import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 describe('TODO_COMMENT_QUERY_KEYS', () => {
   it('묶음·답글 키는 할 일 키 아래에 있어 할 일 단위로 한 번에 취소·무효화된다', () => {
     // When
-    const todoKey = TODO_COMMENT_QUERY_KEYS.todo(42);
+    const todoKey = TODO_COMMENT_QUERY_KEYS.todo({ todoId: 42 });
     const threads = TODO_COMMENT_QUERY_KEYS.threads({
       todoId: 42,
       sort: 'LATEST',

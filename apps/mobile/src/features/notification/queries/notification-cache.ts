@@ -1,8 +1,10 @@
+import { readQueryKeyParams } from '@src/shared/utils/query-key-params';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../domains/notification.model';
+import { notificationListQueryParamsSchema } from '../schemas/notification-list-query-params.schema';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 
@@ -50,13 +52,7 @@ function containsUnreadNotification(
 }
 
 function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
-  const filters = queryKey[NOTIFICATION_QUERY_KEYS.lists().length];
-  return (
-    typeof filters === 'object' &&
-    filters != null &&
-    'unreadOnly' in filters &&
-    filters.unreadOnly === true
-  );
+  return readQueryKeyParams(queryKey, notificationListQueryParamsSchema)?.unreadOnly === true;
 }
 
 export async function optimisticallyMarkNotificationsRead(
