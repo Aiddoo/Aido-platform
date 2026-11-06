@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { dateSchema, timeOfDaySchema } from "../../../common/datetime.js";
-import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from "../../../vocabulary/todo.constants.js";
+import {
+  RECURRING_TODO_LIMITS,
+  TODO_ITEM_LIMITS,
+  TODO_LIMITS,
+} from "../../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
 import {
   dayOfWeekSchema,
@@ -18,7 +22,7 @@ export const createTodoSchema = z
     title: z
       .string()
       .min(1, "제목을 입력해주세요")
-      .max(200, "제목은 200자 이하로 입력해주세요")
+      .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
       .describe("할 일 제목 (1-200자, 예: 운동하기)"),
     categoryId: z
       .number()

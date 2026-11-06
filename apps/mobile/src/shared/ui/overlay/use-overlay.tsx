@@ -1,15 +1,16 @@
+import { noop } from 'es-toolkit';
 import { useCallback, useContext, useEffect, useId, useMemo, useRef } from 'react';
 
-import { OverlayItem, type OverlayRender } from './overlay-item';
+import { type OverlayAsyncRender, OverlayItem, type OverlayRender } from './overlay-item';
 import { OverlayContext } from './overlay-provider';
 
 /**
- * 화면 밖(루트)에 무언가를 띄우고, 닫힐 때 값을 돌려받는다.
+ * 화면 밖(루트)에 다이얼로그·시트를 띄운다. 값이 필요 없으면 `open`, 닫을 때 값을 받으려면 `openAsync`를 쓴다.
+ * 인터페이스는 overlay-kit과 같다. 훅으로 받아 이 컴포넌트가 사라지면 띄운 것도 함께 사라진다.
  *
  * ⚠️ **열 때의 화면이 스냅샷으로 굳는다.**
- * `open(render)`는 그 자리에서 element를 만들어 Provider에 넘긴다. 그 뒤 부모가 다시
- * 렌더돼도 이 element는 갱신되지 않으므로, **부모의 반응형 값을 props로 넘기면 그 값에
- * 얼어붙는다** — 예를 들어 `isSubmitting={mutation.isPending}`은 영원히 `false`로 남아
+ * 부모가 다시 렌더돼도 띄운 내용은 갱신되지 않으므로, **부모의 반응형 값을 props로 넘기면
+ * 그 값에 얼어붙는다** — 예를 들어 `isSubmitting={mutation.isPending}`은 영원히 `false`로 남아
  * 로딩 표시도 중복 탭 방지도 동작하지 않는다.
  *
  * 그래서 **띄우는 내용이 자기 상태를 스스로 가져야 한다.** 진행 중 여부가 필요하면
@@ -19,7 +20,7 @@ import { OverlayContext } from './overlay-provider';
  * @example
  * ```tsx
  * // ✅ 시트가 보내는 동안을 스스로 안다
- * onSubmit={async (value) => { await mutateAsync(value); close(value); }}
+ * onSubmit={async (value) => { await mutateAsync(value); close(); }}
  *
  * // ❌ 부모의 isPending은 스냅샷에 얼어붙는다
  * isSubmitting={mutation.isPending}
@@ -39,27 +40,38 @@ export const useOverlay = () => {
     return () => controller.unmount(id);
   }, [controller, id]);
 
-  const open = useCallback(
-    <T = void,>(render: OverlayRender<T>): Promise<T> => {
+  const mount = useCallback(
+    <T,>(render: OverlayAsyncRender<T>, onResolve: (value: T) => void) => {
       const generation = ++generationRef.current;
 
-      return new Promise<T>((resolve) => {
-        controller.mount(
-          id,
-          <OverlayItem<T>
-            render={render}
-            onResolve={resolve}
-            onUnmount={() => {
-              if (generationRef.current === generation) {
-                controller.unmount(id);
-              }
-            }}
-          />,
-        );
-      });
+      controller.mount(
+        id,
+        <OverlayItem<T>
+          render={render}
+          onResolve={onResolve}
+          onUnmount={() => {
+            if (generationRef.current === generation) {
+              controller.unmount(id);
+            }
+          }}
+        />,
+      );
     },
     [controller, id],
   );
 
-  return useMemo(() => ({ open }), [open]);
+  const open = useCallback(
+    (render: OverlayRender): void => {
+      mount<void>(({ close, ...props }) => render({ ...props, close: () => close() }), noop);
+    },
+    [mount],
+  );
+
+  const openAsync = useCallback(
+    <T,>(render: OverlayAsyncRender<T>): Promise<T> =>
+      new Promise<T>((resolve) => mount(render, resolve)),
+    [mount],
+  );
+
+  return useMemo(() => ({ open, openAsync }), [open, openAsync]);
 };

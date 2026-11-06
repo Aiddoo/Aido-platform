@@ -10,7 +10,6 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import {
-  type PlanReviewFormValues,
   planReviewFormSchema,
   toVoicePlanFromDraft,
 } from '@src/features/voice/domains/plan-review-form.schema';
@@ -49,7 +48,7 @@ function AiReviewScreen() {
   );
   const fallbackCategoryId = categoriesResult.categories[0]?.id;
 
-  const form = useForm<PlanReviewFormValues>({
+  const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
     defaultValues: restoredDraft?.form,
     mode: 'onChange',
@@ -67,7 +66,6 @@ function AiReviewScreen() {
       toast.warning(t('aiReview.draftLost'));
       goBack();
     }
-    // 화면이 열릴 때 초안이 없을 때 한 번만 알리고 돌아간다
   }, [restoredDraft, goBack]);
 
   if (restoredDraft == null) {

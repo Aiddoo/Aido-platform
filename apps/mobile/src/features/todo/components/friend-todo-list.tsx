@@ -89,14 +89,14 @@ function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
   const canNudge = cooldownInfo?.canNudge ?? true;
 
   const openRemindNudgeSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
+    overlay.open(({ isOpen, close, unmount }) => (
       <RemindNudgeBottomSheet
         receiver={friend}
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) {
             close();
-            exit();
+            unmount();
           }
         }}
       />

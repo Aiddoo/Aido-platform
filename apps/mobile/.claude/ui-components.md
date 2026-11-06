@@ -96,7 +96,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `FormStepLayout`                                                                           | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)             | `src/shared/ui/form-step-layout/form-step-layout.md`             |
 | `ActionChip`                                                                               | 아이콘 + 라벨 선택 칩 (필터·옵션)                                            | `src/shared/ui/action-chip/action-chip.md`                       |
 | `ListRow`                                                                                  | 썸네일·텍스트가 있는 목록 행                                                 | `src/shared/ui/list-row/list-row.md`                             |
-| `OverlayProvider`, `useOverlay`                                                            | 루트에 다이얼로그·시트를 띄우고 값을 Promise로 반환                          | `src/shared/ui/overlay/overlay.md`                               |
+| `OverlayProvider`, `useOverlay`                                                            | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                   | `src/shared/ui/overlay/overlay.md`                               |
 | `PremiumDialog`                                                                            | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움  | `src/shared/ui/premium-dialog/premium-dialog.md`                 |
 | `OfflineBanner`                                                                            | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                  | `src/shared/ui/offline-banner/offline-banner.md`                 |
 | `QueryErrorBoundary`                                                                       | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                   | `src/shared/ui/query-error-boundary/query-error-boundary.md`     |
@@ -443,7 +443,7 @@ import { Text, View } from 'react-native';
 
 ### 3. 오버레이에 진행 중 상태를 넘기지 않기 (중요!)
 
-`overlay.open(render)`는 **열 때의 클로저를 그대로 붙잡는다.** 부모가 다시 렌더돼도
+`overlay.open(render)`·`overlay.openAsync(render)`는 **열 때의 클로저를 그대로 붙잡는다.** 부모가 다시 렌더돼도
 그 클로저는 갱신되지 않으므로, 부모에서 읽어 props로 넘긴 반응형 값은 **열린 순간의
 값에 얼어붙는다.** 로딩 표시가 영영 안 뜨고, 그 값으로 막던 중복 요청이 그대로 나간다.
 

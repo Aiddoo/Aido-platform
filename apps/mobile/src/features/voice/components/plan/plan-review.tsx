@@ -74,7 +74,6 @@ const SELECT_HIT_SLOP = 12;
 /** 고르지 않은 행의 제목. 라이트 4.5:1, 다크 6:1 이상이라 흐려도 읽힌다 */
 const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-7 dark:text-gray-5';
 
-/** 저장 요청의 멱등 키와 내용 지문 */
 export interface PlanApplyRequest {
   idempotencyKey: string;
   fingerprint: string;
@@ -86,16 +85,12 @@ interface PlanApplyRequestStore {
 }
 
 interface PlanReviewProps extends Pick<ComponentProps<typeof VStack>, 'className' | 'style'> {
-  /** 폼은 화면이 소유한다. `createPlanReviewFormValues`로 만든 값으로 화면이 `useForm`을 만들어 넘긴다 */
   form: UseFormReturn<PlanReviewFormValues>;
   plan: VoicePlan;
-  /** 카테고리를 고르지 못한 할 일이 들어갈 시트의 현재 카테고리 */
   fallbackCategoryId: number;
   /** 계획을 만들 때 횟수를 썼는지. false면 빈 결과에서 "횟수는 차감되지 않았어요"를 보여 준다 */
   isCharged?: boolean;
-  /** 어디에 놓였는지. 스크롤이 잘리는 쪽을 그 면 색으로 덮는다 */
   surface?: 'screen' | 'sheet';
-  /** 추가 버튼 왼쪽에 둘 보조 동작(예: 다시 말하기). 카드가 없으면 안내 아래에 둔다 */
   secondaryAction?: ReactNode;
   /** 저장 요청의 키를 화면 밖에 남길 곳. 없으면 이 화면이 떠 있는 동안만 기억한다 */
   requestStore?: PlanApplyRequestStore;
@@ -103,14 +98,9 @@ interface PlanReviewProps extends Pick<ComponentProps<typeof VStack>, 'className
   onSaved?: (saved: { todoCount: number }) => void;
   /** 화면이 떠 있을 때 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
   onApplied?: () => void;
-  /** 메모에서 만든 계획의 원본 메모가 이미 없다. 초안을 버리고 떠나는 일은 화면이 맡는다 */
   onSourceMissing?: () => void;
 }
 
-/**
- * 계획 카드 검토. 카드는 실제 할 일 목록 행을 그대로 쓰고, 목록의 체크 자리에서 추가할지 고른다.
- * 행을 누르면 할 일 추가 시트와 같은 칩·바텀시트로 고친다. 저장은 고른 카드만 보낸다.
- */
 export function PlanReview({
   form,
   plan,
@@ -282,7 +272,6 @@ export function PlanReview({
   );
 }
 
-/** 카드 수를 아직 몰라 흔한 개수로 그린다. 제목·안내·행·아래 버튼 자리는 실제 검토 화면과 같다 */
 PlanReview.Loading = function Loading({
   className,
   style,
@@ -366,7 +355,7 @@ PlanReview.TodoRow = function PlanTodoRow({
   const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
 
   const handlePress = () => {
-    overlay.open(({ isOpen, close, exit }) => (
+    overlay.open(({ isOpen, close, unmount }) => (
       <QueryErrorBoundary fallback={() => null}>
         <Suspense fallback={null}>
           <PlanTodoEditSheet
@@ -376,7 +365,7 @@ PlanReview.TodoRow = function PlanTodoRow({
             onOpenChange={(open) => {
               if (!open) {
                 close();
-                exit();
+                unmount();
               }
             }}
             onConfirm={(edited) => {
@@ -385,7 +374,7 @@ PlanReview.TodoRow = function PlanTodoRow({
                 shouldValidate: true,
               });
               close();
-              exit();
+              unmount();
             }}
           />
         </Suspense>

@@ -32,7 +32,6 @@ type BlockedDecision = 'limit-reached' | 'locked';
 export type EntitlementGateDialogOptions = Partial<
   Pick<PremiumDialogProps, 'title' | 'description' | 'alternativeAction'>
 > & {
-  /** 구독 화면으로 가기 직전에 부른다(예: 열려 있던 시트 닫기) */
   onSubscribe?: () => void;
 };
 
@@ -41,10 +40,6 @@ interface EntitlementGateCopy {
   description: string;
 }
 
-/**
- * 한도·프리미엄 안내의 단일 진입점. 시작 전에는 스냅샷으로(`guard`), 서버가 막으면 오류 코드로(`handleError`)
- * 같은 `PremiumDialog`를 띄운다. 문구는 기능별로 한 줄씩 정하고 숫자는 서버 스냅샷과 PLAN_CATALOG에서 읽는다.
- */
 export function useEntitlementGate(
   feature: EntitlementFeature,
   { surface }: { surface: EntitlementGateSurface },
@@ -78,30 +73,28 @@ export function useEntitlementGate(
       }
 
       trackEvent('premium_gate_shown', { feature: analyticsFeature, surface });
-      overlay
-        .open(({ isOpen, close, exit }) => (
-          <PremiumDialog
-            title={title ?? copy.title}
-            description={description ?? copy.description}
-            alternativeAction={alternativeAction}
-            isOpen={isOpen}
-            onOpenChange={(nextOpen) => {
-              if (!nextOpen) {
-                close();
-                exit();
-              }
-            }}
-            onSubscribe={() => {
-              trackEvent('premium_gate_cta_tapped', { feature: analyticsFeature, surface });
-              if (isLimitReached) {
-                trackEvent('limit_reached_cta_tapped', { feature: analyticsFeature, surface });
-              }
-              onSubscribe?.();
-              router.navigate(subscriptionHref());
-            }}
-          />
-        ))
-        .catch(() => undefined);
+      overlay.open(({ isOpen, close, unmount }) => (
+        <PremiumDialog
+          title={title ?? copy.title}
+          description={description ?? copy.description}
+          alternativeAction={alternativeAction}
+          isOpen={isOpen}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              close();
+              unmount();
+            }
+          }}
+          onSubscribe={() => {
+            trackEvent('premium_gate_cta_tapped', { feature: analyticsFeature, surface });
+            if (isLimitReached) {
+              trackEvent('limit_reached_cta_tapped', { feature: analyticsFeature, surface });
+            }
+            onSubscribe?.();
+            router.navigate(subscriptionHref());
+          }}
+        />
+      ));
     };
 
     return {
@@ -118,7 +111,6 @@ export function useEntitlementGate(
           })
           .exhaustive();
       },
-      /** 스냅샷으로 알 수 없는 한도(녹음 길이)에 닿았을 때 같은 안내를 띄운다 */
       showLimit: (options?: EntitlementGateDialogOptions) => {
         open(feature, 'limit-reached', 'precheck', options);
       },
@@ -145,7 +137,6 @@ function getBlockedDecision({ feature, featureQuota }: LimitedFeature): BlockedD
   return PLAN_CATALOG[feature].kind === 'flag' ? 'locked' : 'limit-reached';
 }
 
-/** 기능별 한도·프리미엄 안내 문구. 경우마다 한 줄씩 두어 문구 하나만 고쳐도 되게 한다 */
 function useEntitlementGateCopy() {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();

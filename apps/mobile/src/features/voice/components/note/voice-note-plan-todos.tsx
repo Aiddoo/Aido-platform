@@ -11,11 +11,7 @@ import type { ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import {
-  type PlanReviewFormValues,
-  planReviewFormSchema,
-  toVoicePlanFromDraft,
-} from '../../domains/plan-review-form.schema';
+import { planReviewFormSchema, toVoicePlanFromDraft } from '../../domains/plan-review-form.schema';
 import { type VoiceNote, VoiceNotePolicy } from '../../domains/voice-note.model';
 import { voicePlanIdSchema } from '../../domains/voice-plan.model';
 import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
@@ -25,7 +21,6 @@ interface VoiceNotePlanTodosProps extends Pick<ComponentProps<typeof PlanReview>
   note: VoiceNote;
 }
 
-/** 말로 메모 결과의 할 일 칸. 고친 카드는 초안에 함께 남아 앱을 다시 켜도 그대로다 */
 export function VoiceNotePlanTodos({ note, className }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
@@ -34,7 +29,7 @@ export function VoiceNotePlanTodos({ note, className }: VoiceNotePlanTodosProps)
     queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
   });
   const fallbackCategoryId = categoriesResult.categories[0]?.id;
-  const form = useForm<PlanReviewFormValues>({
+  const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
     defaultValues: note.planDraft?.form ?? { actions: [] },
     mode: 'onChange',

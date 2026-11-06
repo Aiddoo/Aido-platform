@@ -92,9 +92,7 @@ interface UseVoiceCaptureSessionOptions {
 export interface BeginOptions {
   locale: SpeechLocale;
   contextualStrings: readonly string[];
-  /** `note`에서 녹음 파일을 남길 폴더 */
   recordingDirectory?: string | null;
-  /** 이어 받을 글자와 시간 */
   seed?: VoiceCaptureSeed;
 }
 
@@ -240,10 +238,6 @@ export function useVoiceCaptureSession({
     trackFinished(next.status === 'planning' ? 'completed' : 'empty', next);
   }
 
-  const markSpeaking = () => {
-    clearQuiet();
-  };
-
   const markSilence = () => {
     if (mode !== 'quick' || isQuietRef.current || !VoiceCapturePolicy.canFinish(stateRef.current)) {
       return;
@@ -383,7 +377,7 @@ export function useVoiceCaptureSession({
             lastTranscriptRef.current = transcript;
             lastTextAtRef.current = Date.now();
           }
-          markSpeaking();
+          clearQuiet();
           // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
           if (!isStopRequestedRef.current) {
             stallWatchRef.current = withTextHeard(stallWatchRef.current, Date.now());
@@ -399,7 +393,7 @@ export function useVoiceCaptureSession({
           markSilence();
         }, VOICE_NO_VOLUME_GAP_MS);
         if (VoiceCapturePolicy.isSpeaking(nextLevel, lastTextAtRef.current, Date.now())) {
-          markSpeaking();
+          clearQuiet();
         } else {
           markSilence();
         }
@@ -568,7 +562,6 @@ export function useVoiceCaptureSession({
     }
   };
 
-  /** 멈춘 세션(앱 이탈·끼어들기·네트워크 오류)을 이어서 듣는다 */
   const resume = () => {
     const { previous, next } = dispatch({ type: 'resume' });
     if (previous === next || startOptionsRef.current == null) {
@@ -610,7 +603,6 @@ export function useVoiceCaptureSession({
     dispatch({ type: 'retry-plan' });
   };
 
-  /** 듣는 중에 언어를 바꾸면 지금 구간을 닫고 새 언어로 이어 듣는다. 이미 들은 글자는 그대로다 */
   const changeLocale = async (locale: SpeechLocale) => {
     const startOptions = startOptionsRef.current;
     if (startOptions == null || startOptions.locale === locale) {
@@ -635,7 +627,6 @@ export function useVoiceCaptureSession({
     begin,
     finish,
     pause: () => pause('user'),
-    /** 알림을 눌러 다른 화면으로 가는 등 듣던 화면이 가려질 때 멈춘다. 들은 글자는 그대로 두고 돌아와 이어 듣는다 */
     interrupt: () => pause('interrupted'),
     resume,
     cancel,

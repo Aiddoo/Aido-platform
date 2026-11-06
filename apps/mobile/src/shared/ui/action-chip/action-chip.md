@@ -5,13 +5,10 @@
 ## 사용법
 
 ```tsx
-import { ActionChip, useActionChipIconSize } from '@src/shared/ui';
-import { CalendarIcon } from '@src/shared/ui';
-
-const iconSize = useActionChipIconSize();
+import { ActionChip, CalendarIcon } from '@src/shared/ui';
 
 <ActionChip
-  icon={<CalendarIcon width={iconSize} height={iconSize} colorClassName="text-main" />}
+  icon={<ActionChip.Icon as={CalendarIcon} colorClassName="text-main" />}
   label="오늘"
   isActive
   onPress={() => {}}
@@ -33,9 +30,9 @@ const iconSize = useActionChipIconSize();
 - `isActive=false`: `border-gray-3`, 텍스트 `shade={6}`
 - 공통: `h-8`, `rounded-full`, `gap-1.5`, `px-3`
 
-### 상수
+### 아이콘
 
-- `useActionChipIconSize()`: 아이콘 권장 크기 (`fontScaledSize(16, 0.3)`)
+- `ActionChip.Icon`: 글꼴 배율에 맞춘 칩 아이콘 크기(`fontScaledSize(16, 0.3)`)를 칩이 정한다. 아이콘이 아닌 표시(카테고리 색 점)는 `icon`에 바로 넘긴다.
 
 ## 파일 구조
 

@@ -15,13 +15,13 @@ function Harness() {
       <Pressable
         accessibilityRole="button"
         onPress={() => {
-          overlay.open(({ close, exit }) => (
+          overlay.open(({ close, unmount }) => (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="overlay-close"
               onPress={() => {
                 close();
-                exit();
+                unmount();
               }}
             />
           ));
@@ -32,6 +32,49 @@ function Harness() {
     </>
   );
 }
+
+function AsyncHarness({ onResolved }: { onResolved: (value: string) => void }) {
+  const overlay = useOverlay();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={async () => {
+        onResolved(
+          await overlay.openAsync<string>(({ close }) => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="overlay-pick"
+              onPress={() => close('고른 값')}
+            />
+          )),
+        );
+      }}
+    >
+      <Text>open</Text>
+    </Pressable>
+  );
+}
+
+describe('useOverlay.openAsync', () => {
+  it('close에 넘긴 값을 돌려준다', async () => {
+    // Given
+    const onResolved = jest.fn();
+    await render(
+      <OverlayProvider>
+        <AsyncHarness onResolved={onResolved} />
+      </OverlayProvider>,
+    );
+    fireEvent.press(screen.getByText('open')).catch(() => undefined);
+    const pick = await screen.findByLabelText('overlay-pick');
+
+    // When
+    await fireEvent.press(pick);
+
+    // Then
+    expect(onResolved).toHaveBeenCalledWith('고른 값');
+  });
+});
 
 describe('OverlayProvider 상태', () => {
   it('오버레이가 마운트되면 활성 상태를 노출한다', async () => {

@@ -36,6 +36,40 @@ function TimePicker({ style, ...props }: TimePickerProps) {
   );
 }
 
+interface TimePickerSheetContentProps extends Omit<TimePickerProps, 'value' | 'onChange'> {
+  title: string;
+  initialValue: Date;
+  onCancel: () => void;
+  onConfirm: (date: Date) => void;
+}
+
+function TimePickerSheetContent({
+  title,
+  initialValue,
+  onCancel,
+  onConfirm,
+  ...pickerProps
+}: TimePickerSheetContentProps) {
+  const [draft, setDraft] = useState(initialValue);
+
+  return (
+    <VStack gap={24}>
+      <PickerHeader title={title} onCancel={onCancel} onConfirm={() => onConfirm(draft)} />
+      <Box style={{ height: 216, alignItems: 'center' }}>
+        <TimePicker
+          {...pickerProps}
+          value={draft}
+          onChange={(_event, date) => {
+            if (date != null) {
+              setDraft(date);
+            }
+          }}
+        />
+      </Box>
+    </VStack>
+  );
+}
+
 interface AndroidTimePickerProps extends Omit<
   AndroidNativeProps,
   'mode' | 'display' | 'minuteInterval' | 'onChange'
@@ -157,12 +191,10 @@ export function SettingsTimeInput({
       return;
     }
 
-    let draft = timeToDate(value.hour, value.minute);
-
-    overlay.open(({ isOpen, close, exit }) => {
+    overlay.open(({ isOpen, close, unmount }) => {
       const dismiss = () => {
         close();
-        exit();
+        unmount();
       };
 
       return (
@@ -174,29 +206,18 @@ export function SettingsTimeInput({
             }
           }}
         >
-          <VStack gap={24}>
-            <PickerHeader
-              title={rowProps.label}
-              onCancel={dismiss}
-              onConfirm={() => {
-                commit(draft);
-                dismiss();
-              }}
-            />
-            <Box style={{ height: 216, alignItems: 'center' }}>
-              <TimePicker
-                value={draft}
-                minimumDate={minimumDate}
-                maximumDate={maximumDate}
-                onChange={(_event, date) => {
-                  if (date) {
-                    draft = date;
-                  }
-                }}
-                locale={getPickerLocale(resolvedLanguage, timeFormat)}
-              />
-            </Box>
-          </VStack>
+          <TimePickerSheetContent
+            title={rowProps.label}
+            initialValue={timeToDate(value.hour, value.minute)}
+            minimumDate={minimumDate}
+            maximumDate={maximumDate}
+            locale={getPickerLocale(resolvedLanguage, timeFormat)}
+            onCancel={dismiss}
+            onConfirm={(date) => {
+              commit(date);
+              dismiss();
+            }}
+          />
         </BottomSheet>
       );
     });

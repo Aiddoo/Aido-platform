@@ -79,7 +79,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
       <TodoTimePickerContent
         date={editValues.startDate}
         value={{
-          scheduledTime: editValues.scheduledTime ?? undefined,
+          scheduledTime: editValues.scheduledTime,
           isAllDay: todo.isAllDay,
         }}
         onCancel={onClose}
@@ -106,7 +106,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
               endDate: editValues.endDate
                 ? formatDateKey(editValues.endDate, getDeviceTimezone())
                 : null,
-              scheduledTime: isAllDay ? null : (scheduledTime ?? null),
+              scheduledTime: isAllDay ? null : scheduledTime,
               isAllDay,
             },
           });

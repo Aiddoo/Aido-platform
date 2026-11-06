@@ -3,13 +3,14 @@ import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consen
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useToday } from '@src/shared/hooks/use-today';
+import { useOverlay } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { MarketingPushConsentDialog } from '../components/marketing-push-consent-dialog';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
-import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet';
 
 interface MarketingPushOptInPrompt {
   /** 배너를 노출할지 여부 */
@@ -29,7 +30,7 @@ interface MarketingPushOptInPrompt {
 export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
   const marketingPushPromptService = useMarketingPushPromptService();
   const { trackEvent } = useTrack();
-  const consentSheet = useMarketingPushConsentSheet();
+  const overlay = useOverlay();
   const [{ data: consent }, { data: permission }, { data: preference }] = useSuspenseQueries({
     queries: [
       useGetConsentQueryOptions(),
@@ -54,10 +55,21 @@ export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
   };
 
   const open = () => {
-    consentSheet.open({
-      onAgree: () => trackEvent('marketing_push_opted_in', { source: 'feed_banner' }),
-      onDismiss: dismiss,
-    });
+    overlay.open(({ isOpen, close, unmount }) => (
+      <MarketingPushConsentDialog
+        isOpen={isOpen}
+        onAgree={() => {
+          trackEvent('marketing_push_opted_in', { source: 'feed_banner' });
+          close();
+          unmount();
+        }}
+        onDismiss={() => {
+          dismiss();
+          close();
+          unmount();
+        }}
+      />
+    ));
   };
 
   return { isVisible, open, dismiss };

@@ -1,5 +1,5 @@
 import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
-import { Box, ModalBottomSheet, useOverlay } from '@src/shared/ui';
+import { Box } from '@src/shared/ui';
 import { type PropsWithChildren, useState } from 'react';
 import { Keyboard } from 'react-native';
 
@@ -53,7 +53,6 @@ interface TodoScopeStepProps extends PropsWithChildren {
   step: ScopeStep;
 }
 
-/** 범위를 묻는 동안 children을 숨기고 같은 자리에 범위 선택을 보인다 */
 export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
   const { scopeRequest, settleScope } = step;
 
@@ -71,46 +70,4 @@ export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
       )}
     </>
   );
-}
-
-/**
- * 키보드를 쓰는 입력 시트에서 수정 범위를 묻는다. 안에서 내용을 갈아 끼우면 화면 폭 시트가 남고 키보드가 내려가는 동안
- * 높이가 튀어서, 날짜·반복 선택처럼 떠 있는 시트를 위에 올린다. 아래 폼은 그대로라 입력값이 남는다.
- * 뒤로 가거나 바깥을 눌러 닫으면 null이고, 닫히기 시작할 때 onBack을 부른다. 다른 피커처럼 키보드와 아래 시트가 함께 올라오고,
- * 닫히는 사이 범위 시트를 다시 열어도 늦게 올라온 키보드가 그 시트를 가리지 않는다.
- */
-export function useSelectTodoEditScopeInOverlay({ onBack }: { onBack: () => void }) {
-  const overlay = useOverlay();
-
-  return (
-    date: string,
-    { isFollowingOnly = false }: { isFollowingOnly?: boolean } = {},
-  ): Promise<TodoUpdateScope | null> => {
-    Keyboard.dismiss();
-    let selectedScope: TodoUpdateScope | null = null;
-
-    return overlay.open<TodoUpdateScope | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet
-        isOpen={isOpen}
-        onOpenChange={() => close(null)}
-        onCloseStart={() => {
-          if (selectedScope == null) {
-            onBack();
-          }
-        }}
-        onExit={exit}
-      >
-        <TodoScopeSelectContent
-          action="edit"
-          date={date}
-          scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
-          onChange={(scope) => {
-            selectedScope = scope === 'ALL' ? null : scope;
-            close(selectedScope);
-          }}
-          onBack={() => close(null)}
-        />
-      </ModalBottomSheet>
-    ));
-  };
 }

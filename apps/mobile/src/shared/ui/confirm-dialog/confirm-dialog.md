@@ -116,4 +116,4 @@ const handleLogoutPress = async () => {
 ```
 
 다이얼로그 안에서 진행 상태를 보여 줘야 하면 Overlay 스냅샷 규칙에 따라 내용 컴포넌트가
-자기 상태를 갖도록 직접 `overlay.open`을 쓴다.
+자기 상태를 갖도록 직접 `overlay.openAsync`를 쓴다.

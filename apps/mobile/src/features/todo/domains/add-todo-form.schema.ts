@@ -1,23 +1,17 @@
-import { createTodoSchema } from '@aido/api';
+import { TODO_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 import { todoRepeatSchema } from './todo-repeat.model';
 
-const { title, categoryId, scheduledTime, isAllDay, visibility } = createTodoSchema.shape;
-
-const todoSourceSchema = z.literal('manual').default('manual');
-
 export const addTodoFormSchema = z.object({
-  title,
+  title: z.string().min(1).max(TODO_LIMITS.TITLE_MAX_LENGTH),
   startDate: z.date(),
-  endDate: z.date().nullable().default(null),
-  scheduledTime,
-  isAllDay,
-  visibility,
-  categoryId,
-  repeat: todoRepeatSchema.nullable().default(null),
-  source: todoSourceSchema,
+  endDate: z.date().nullable(),
+  scheduledTime: z.iso.time({ precision: -1 }).nullable(),
+  isAllDay: z.boolean(),
+  visibility: z.enum(TODO_VISIBILITIES),
+  categoryId: z.int().positive(),
+  repeat: todoRepeatSchema.nullable(),
 });
 
-export type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
-export type AddTodoFormInput = z.output<typeof addTodoFormSchema>;
+export type AddTodoFormValues = z.infer<typeof addTodoFormSchema>;

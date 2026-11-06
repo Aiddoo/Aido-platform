@@ -70,7 +70,7 @@ features/{feature}/   # 단수 kebab-case
 상세와 이유는 [architecture.md](.claude/architecture.md)에 있다.
 
 - **[화면](.claude/architecture.md#화면)**: 위에서 아래로 읽힌다. Boundary·`Suspense`·`Spacing`을 스크린에 나열한다. 넘기기용 래퍼를 만들지 않는다. fallback은 `X.Loading`·`X.Error`다.
-- **[컴포넌트](.claude/architecture.md#컴포넌트-계약)**: 데이터는 쓰는 컴포넌트가 조회한다. 화면 id는 route hook에서 읽는다. 바깥 레이아웃을 모른다. Props는 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. 반복 표시는 `<Record />`를 나란히 쓴다. 래퍼는 역할이 있을 때만 만든다. 한 곳에서만 쓰면 파일 아래 지역 컴포넌트다.
+- **[컴포넌트](.claude/architecture.md#컴포넌트-계약)**: 데이터는 쓰는 컴포넌트가 조회한다. 화면 id는 route hook에서 읽는다. 바깥 레이아웃을 모른다. Props는 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. 반복 표시는 `<Record />`를 나란히 쓴다. 래퍼와 훅은 역할이 있을 때만 만든다. 한두 줄을 감싸는 훅은 만들지 않는다. 한 곳에서만 쓰면 파일 아래 지역 컴포넌트다.
 - **[모델](.claude/architecture.md#모델과-policy)**: Zod + 순수 함수 + Policy Facade. UI를 모른다. 모델이 첫 인자다. 동사형 이름이고 `xxxOf`는 쓰지 않는다. 서버 값을 다시 계산하지 않는다. 서버 응답은 mapper만 안다.
 - **[DI](.claude/architecture.md#portadapterdi)**: 포트는 앱의 말로 짓는다. SDK import는 `shared/infra`에서만 한다. `check:conventions`가 강제한다. Mapper는 DI에 넣지 않는다.
 - **[상태](.claude/architecture.md#상태)**: 서버·URL·MMKV·폼·임시 값을 구분하고 원천 하나에만 둔다.

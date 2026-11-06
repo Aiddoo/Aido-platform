@@ -1,4 +1,5 @@
 import { updateMemoSchema } from '@aido/api';
+import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDraftService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
@@ -603,19 +604,19 @@ function useConvertToTodoAction(onConverted: () => void) {
       return;
     }
 
-    overlay.open(({ isOpen, close, exit }) => (
+    overlay.open(({ isOpen, close, unmount }) => (
       <AddTodoBottomSheet
         mode="convert-memo"
         memoId={memoId}
         selectedDate={today}
         categoryId={defaultCategoryId}
-        initialValues={{ title: memo.content.slice(0, 200) }}
+        initialValues={{ title: memo.content.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH) }}
         isOpen={isOpen}
         onClose={close}
         onOpenChange={(open) => {
           if (!open) {
             close();
-            exit();
+            unmount();
           }
         }}
         onSuccess={onConverted}

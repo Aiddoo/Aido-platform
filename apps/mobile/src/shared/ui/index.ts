@@ -1,4 +1,4 @@
-export { ActionChip, type ActionChipProps, useActionChipIconSize } from './action-chip';
+export { ActionChip, type ActionChipProps } from './action-chip';
 export { AdaptivePane, type AdaptivePaneProps, getPrimaryPaneWidth } from './adaptive-pane';
 export { Avatar } from './avatar';
 export { Barcode, type BarcodeProps } from './barcode';
@@ -132,7 +132,7 @@ export {
   type ListRowVerticalPadding,
 } from './list-row';
 export { OfflineBanner } from './offline-banner';
-export { OverlayProvider, type OverlayRender, useOverlay, useOverlayState } from './overlay';
+export { OverlayProvider, useOverlay, useOverlayState } from './overlay';
 export { PremiumDialog, type PremiumDialogProps } from './premium-dialog';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
 export {

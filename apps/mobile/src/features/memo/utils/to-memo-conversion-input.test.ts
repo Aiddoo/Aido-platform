@@ -1,8 +1,8 @@
-import type { AddTodoFormInput } from '@src/features/todo/domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '@src/features/todo/domains/add-todo-form.schema';
 
 import { toMemoConversionInput } from './to-memo-conversion-input';
 
-const createFormData = (overrides: Partial<AddTodoFormInput> = {}): AddTodoFormInput => ({
+const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoFormValues => ({
   title: '수정한 메모 제목',
   startDate: new Date(2026, 9, 2),
   endDate: null,
@@ -11,7 +11,6 @@ const createFormData = (overrides: Partial<AddTodoFormInput> = {}): AddTodoFormI
   visibility: 'PUBLIC',
   categoryId: 7,
   repeat: null,
-  source: 'manual',
   ...overrides,
 });
 

@@ -51,18 +51,18 @@ function AppIconScreen() {
     }
 
     if (Platform.OS === 'android') {
-      overlay.open(({ isOpen, close, exit }) => (
+      overlay.open(({ isOpen, close, unmount }) => (
         <AppIconRestartDialog
           isOpen={isOpen}
           onOpenChange={(open) => {
             if (!open) {
               close();
-              exit();
+              unmount();
             }
           }}
           onConfirm={() => {
             close();
-            exit();
+            unmount();
             changeIcon(key);
           }}
         />

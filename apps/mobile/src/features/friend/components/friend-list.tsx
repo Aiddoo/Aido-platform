@@ -139,10 +139,10 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
   const overlay = useOverlay();
 
   const openDeleteConfirmDialog = () => {
-    overlay.open(({ isOpen, close, exit }) => {
+    overlay.open(({ isOpen, close, unmount }) => {
       const closeDialog = () => {
         close();
-        exit();
+        unmount();
       };
       return (
         <FriendDeleteConfirmDialog

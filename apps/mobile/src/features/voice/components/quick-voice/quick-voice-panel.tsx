@@ -31,7 +31,6 @@ import { match } from 'ts-pattern';
 import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
 import {
   createPlanReviewFormValues,
-  type PlanReviewFormValues,
   planReviewFormSchema,
 } from '../../domains/plan-review-form.schema';
 import {
@@ -57,11 +56,9 @@ interface ListeningProps {
   onFinish: () => void;
   onCancel: () => void;
   onResume: () => void;
-  /** 들은 글자를 들고 말로 메모하기에서 이어 말한다 */
   onContinueAsVoiceNote: () => void;
 }
 
-/** 빠른 말하기 패널. 시트 안에서 입력 칸 대신 보이고, 높이는 화면 비율로 키운다 */
 export function QuickVoicePanel({
   state,
   level,
@@ -187,7 +184,6 @@ QuickVoicePanel.Planning = function Planning({
   onCancel,
 }: {
   state: VoiceCaptureState;
-  /** 정리를 그만두고 들은 글자를 입력 칸으로 옮긴다 */
   onCancel: () => void;
 }) {
   const { t } = useTranslation('voice');
@@ -229,7 +225,6 @@ QuickVoicePanel.CardsLoading = function CardsLoading() {
 };
 
 interface ReviewProps extends CapturedPlan {
-  /** 카테고리를 고르지 못한 카드가 들어갈 시트의 현재 카테고리 */
   fallbackCategoryId: number;
   onApplied: () => void;
   onRestart: () => void;
@@ -246,7 +241,7 @@ QuickVoicePanel.Review = function Review({
   onTypeInstead,
 }: ReviewProps) {
   const { t } = useTranslation('voice');
-  const form = useForm<PlanReviewFormValues>({
+  const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
     defaultValues: createPlanReviewFormValues(plan),
     mode: 'onChange',
@@ -297,9 +292,7 @@ QuickVoicePanel.Failed = function Failed({
   onRetryPlanning,
 }: {
   state: VoiceCaptureState;
-  /** 정리가 AI 동의 때문에 막혔다. 다시 정리하면 동의 안내가 뜬다 */
   isConsentRequired?: boolean;
-  /** 입력 칸에 친 글자를 그대로 두고 들은 글자는 옮기지 않았다 */
   isTypedTextKept?: boolean;
   onResume: () => void;
   onRetryPlanning: () => void;
@@ -399,7 +392,6 @@ function ListeningClock({ state }: { state: VoiceCaptureState }) {
   );
 }
 
-/** 말이 멈추면 버튼 안쪽이 차오르다가 가득 차면 자동으로 넘어간다 */
 function SilenceFill({ isQuiet }: { isQuiet: boolean }) {
   const isReducedMotion = useReducedMotion();
   const progress = useSharedValue(0);

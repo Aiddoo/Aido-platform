@@ -25,21 +25,19 @@ export function TodoNudgeButton({
   const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
   const openNudgeSheet = () => {
-    overlay
-      .open(({ isOpen, close, exit }) => (
-        <NudgeBottomSheet
-          receiver={receiver}
-          todo={todo}
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-        />
-      ))
-      .catch(() => undefined);
+    overlay.open(({ isOpen, close, unmount }) => (
+      <NudgeBottomSheet
+        receiver={receiver}
+        todo={todo}
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            unmount();
+          }
+        }}
+      />
+    ));
   };
 
   const handlePress = () => {

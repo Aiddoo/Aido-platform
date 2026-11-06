@@ -30,7 +30,7 @@ import { PickerHeader } from './picker-header';
 const isIOS = Platform.OS === 'ios';
 
 export interface TodoTimeValue {
-  scheduledTime: string | undefined;
+  scheduledTime: string | null;
   isAllDay: boolean;
 }
 
@@ -59,7 +59,7 @@ export function TodoTimePickerContent({
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
 
   const handleConfirm = () => {
-    onChange({ scheduledTime: localIsAllDay ? undefined : localTime, isAllDay: localIsAllDay });
+    onChange({ scheduledTime: localIsAllDay ? null : localTime, isAllDay: localIsAllDay });
   };
 
   return (

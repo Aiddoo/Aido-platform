@@ -220,6 +220,8 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 
 - `useForm`·`useQuery`·`useMutation`은 쓰는 컴포넌트에서 직접 호출한다. Screen을 짧게 하려고 `useEditor`·`useActions` 같은 포괄 훅에 묶지 않는다.
 - 훅은 변화 이유가 하나다(route 읽기, 전환 조정, field focus). 계산은 순수 함수·Policy로 뺀다. 이름 변경이나 코드 이동은 단일 책임이 아니다.
+- 훅은 상태·effect·구독을 묶거나 여러 곳이 같은 규칙을 공유할 때만 만든다. 한두 줄을 감싸는 훅이나 파일을 짧게 하려는 훅은 만들지 않는다. `requestAnimationFrame(() => setFocus('title'))`처럼 몇 곳에 반복돼도 짧으면 쓰는 곳에 그대로 쓴다.
+- 입력을 여는 칩·행은 폼을 `useFormContext`·`useWatch`·`FormField`로 직접 읽고 쓰며 시트도 직접 연다. 부모에 핸들러를 두고 `value`·`onChange`·`onCloseStart`를 내려보내지 않는다. Props는 부모만 아는 값과 원본 컴포넌트의 props만 받는다. 부모도 같은 동작을 불러야 하면 부모가 소유하고 원본 prop(`onPress`)으로 넘긴다.
 - 상태 훅은 `[value, setValue]` 튜플을 돌려준다. 저장소가 URL·MMKV·`useState` 중 무엇이어도 사용처는 그대로다. 이름은 `[selectedTodoId, setSelectedTodoId]`다.
 - 쓰지 않는 요소는 비워 두지 않고 `_`를 붙인다(`const [_friendId, setFriendId]`).
 
@@ -276,6 +278,9 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 
 - 화면(가장 가까운 session 부모)이 `useForm`, `zodResolver`, 제출 mutation을 소유하고 지역 `FormProvider`로 넘긴다. `shared/ui/form-field`의 `FormField`만 `Controller`를 소유한다.
 - 하위는 `useWatch({ name })`·`useFormState({ name })`로 자기 값만 구독한다. 폼 값을 전역 상태에 복사하지 않는다.
+- `useForm`은 제네릭 없이 `resolver`에서 타입을 추론한다(`@hookform/resolvers` 권장). 스키마가 변환 없이 입력과 출력이 같으면 타입은 `z.infer` 하나로 쓴다.
+- 처음 값은 스키마의 `.default()`가 아니라 `defaultValues`에 둔다. 값이 없는 칸은 `undefined`가 아니라 `null`이다(RHF가 `undefined` 기본값을 권장하지 않고, 앱 모델의 "없음"도 `null`이다). 그래서 `?? null`·`?? undefined` 변환이 필요 없다.
+- 새로 만들거나 고치는 폼 스키마는 계약 스키마를 가져다 쓰지 않고 `@aido/api/vocabulary`의 상수로 만든다.
 - 생성과 수정은 같은 폼·스키마·컴포넌트를 쓴다. 차이는 `defaultValues`와 제출 변환뿐이다.
 - 저장 가능 여부는 스키마와 `formState.isValid`로 판단한다. 같은 규칙을 함수로 또 만들지 않는다.
 - 렌더 경로에서 `getValues()`를 읽지 않는다. `reactCompiler: true`라 값이 캐시돼 갱신되지 않는다. jest는 컴파일러 없이 돌아 이 버그를 못 잡으므로 시뮬레이터에서 확인한다. `getValues()`는 이벤트 핸들러에서만 쓴다.

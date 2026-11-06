@@ -80,7 +80,7 @@ export function TodoRepeatPickerContent({
   onChange,
   onCancel,
 }: TodoRepeatPickerContentProps) {
-  const methods = useForm<TodoRepeatFormValues>({
+  const methods = useForm({
     resolver: zodResolver(todoRepeatFormSchema),
     defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat),
     mode: 'onChange',
@@ -503,7 +503,6 @@ interface RepeatCalendarProps {
   today: Date;
   startDate: Date;
   endDate: Date | null;
-  /** 끝이 없는 반복이라 띠가 시작일부터 달력 끝까지 이어진다 */
   isOpenEnded: boolean;
   /** 띠 안에서 실제로 반복되는 날(YYYY-MM-DD). null이면 흐리게 하지 않는다 */
   occurrenceKeys: ReadonlySet<string> | null;

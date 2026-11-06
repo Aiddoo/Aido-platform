@@ -4,13 +4,11 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { PressableProps } from 'react-native';
 
+import type { StyledIcon } from '../icon/create-styled-icon';
 import { Text } from '../text';
 
-function useActionChipIconSize(): number {
-  const fontScaledSize = useFontScaledSize();
-
-  return fontScaledSize(16, 0.3);
-}
+const ICON_SIZE = 16;
+const ICON_FONT_SCALE_RATIO = 0.3;
 
 interface ActionChipProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
@@ -52,5 +50,17 @@ export function ActionChip({
   );
 }
 
+ActionChip.Icon = function Icon({
+  as: IconComponent,
+  colorClassName,
+}: {
+  as: StyledIcon;
+  colorClassName: string;
+}) {
+  const fontScaledSize = useFontScaledSize();
+  const size = fontScaledSize(ICON_SIZE, ICON_FONT_SCALE_RATIO);
+
+  return <IconComponent width={size} height={size} colorClassName={colorClassName} />;
+};
+
 export type { ActionChipProps };
-export { useActionChipIconSize };

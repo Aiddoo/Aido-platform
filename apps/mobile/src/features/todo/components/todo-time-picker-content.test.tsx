@@ -24,7 +24,7 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
     <LocalDateProvider>
       <TodoTimePickerContent
         date={new Date(2026, 10, 6, 12)}
-        value={{ scheduledTime: isAllDay ? undefined : '10:00', isAllDay }}
+        value={{ scheduledTime: isAllDay ? null : '10:00', isAllDay }}
         onChange={jest.fn()}
         onCancel={jest.fn()}
       />

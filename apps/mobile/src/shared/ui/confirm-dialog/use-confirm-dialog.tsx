@@ -29,10 +29,10 @@ export function useConfirmDialog() {
         cancelLabel,
         confirmTestID,
       }: ConfirmDialogOptions) =>
-        overlay.open<boolean>(({ isOpen, close, exit }) => {
+        overlay.openAsync<boolean>(({ isOpen, close, unmount }) => {
           const finish = (isConfirmed: boolean) => {
             close(isConfirmed);
-            exit();
+            unmount();
           };
 
           return (

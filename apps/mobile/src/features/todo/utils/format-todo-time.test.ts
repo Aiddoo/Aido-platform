@@ -44,6 +44,6 @@ describe('떠 있는 시각 표시', () => {
     // When
     const values = toTodoEditFormValues(todo, null);
     // Then
-    expect(values.scheduledTime).toBeUndefined();
+    expect(values.scheduledTime).toBeNull();
   });
 });

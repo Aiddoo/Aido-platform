@@ -1,6 +1,6 @@
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import { ConfirmDialog, useOverlay } from '@src/shared/ui';
+import { ConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { useRef } from 'react';
 
@@ -18,7 +18,7 @@ interface MarketingPushConsentDialogProps {
  * 요청 실패 시 조용히 롤백돼 유저가 오해하는 것을 막고, 처리 중 버튼을 비활성화해
  * 중복 제출을 방지한다.
  */
-function MarketingPushConsentDialog({
+export function MarketingPushConsentDialog({
   isOpen,
   onAgree,
   onDismiss,
@@ -74,33 +74,4 @@ function MarketingPushConsentDialog({
       }
     />
   );
-}
-
-interface OpenOptions {
-  onAgree?: () => void;
-  onDismiss?: () => void;
-}
-
-export function useMarketingPushConsentSheet() {
-  const overlay = useOverlay();
-
-  return {
-    open: (options?: OpenOptions) => {
-      overlay.open(({ isOpen, close, exit }) => (
-        <MarketingPushConsentDialog
-          isOpen={isOpen}
-          onAgree={() => {
-            options?.onAgree?.();
-            close();
-            exit();
-          }}
-          onDismiss={() => {
-            options?.onDismiss?.();
-            close();
-            exit();
-          }}
-        />
-      ));
-    },
-  };
 }

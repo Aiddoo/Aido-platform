@@ -2,11 +2,10 @@ import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CategorySelectInput } from '@src/features/todo/components/category-select-input';
 import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
-import {
-  type TodoTimeValue,
-  TodoTimePickerContent,
-} from '@src/features/todo/components/todo-time-picker-content';
+import { TodoRepeatPickerContent } from '@src/features/todo/components/todo-repeat-picker-content';
+import { TodoTimePickerContent } from '@src/features/todo/components/todo-time-picker-content';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
+import { formatRepeatSummary } from '@src/features/todo/utils/format-repeat-summary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,9 +20,9 @@ import {
   EyeOffIcon,
   KeyboardBottomSheet,
   ModalBottomSheet,
-  SHEET_CONTENT_PADDING,
   QueryErrorBoundary,
-  useActionChipIconSize,
+  RepeatIcon,
+  SHEET_CONTENT_PADDING,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -34,137 +33,186 @@ import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-f
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { useForm, useFormState, useWatch } from 'react-hook-form';
+import {
+  FormProvider,
+  useForm,
+  useFormContext,
+  useFormState,
+  useWatch,
+  type UseFormReturn,
+} from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import {
-  type PlanTodoEditFormValues,
   planTodoEditFormSchema,
+  type PlanTodoEditFormValues,
   type PlanTodoFormValues,
 } from '../../domains/plan-review-form.schema';
 import { type PlannedTodo, VoicePlanPolicy } from '../../domains/voice-plan.model';
-import { PlanRepeatChip } from './plan-repeat';
 
 interface PlanTodoEditSheetProps {
-  /** 고치기 시작할 카드. 시트는 이 값의 사본을 고친다 */
   todo: PlanTodoFormValues;
-  /** 카테고리를 고르지 못한 할 일이 시작하는 시트의 현재 카테고리 */
   fallbackCategoryId: number;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** 확인을 눌렀다. 검증을 지난 값만 온다. 닫기만 하면 고친 값을 버린다 */
   onConfirm: (todo: PlanTodoFormValues) => void;
 }
 
-/** 계획 카드 하나를 할 일 추가 시트와 같은 칩·바텀시트로 고친다. 고친 값은 이 시트의 폼에만 있다가 확인할 때 돌려준다 */
 export function PlanTodoEditSheet({
-  todo: initialTodo,
+  todo,
   fallbackCategoryId,
   isOpen,
   onOpenChange,
   onConfirm,
 }: PlanTodoEditSheetProps) {
-  const { t } = useTranslation(['todo', 'voicePlan', 'common']);
-  const iconSize = useActionChipIconSize();
-  const overlay = useOverlay();
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-  const { control, getValues, handleSubmit, setValue } = useForm<PlanTodoEditFormValues>({
+  const { t } = useTranslation('voicePlan');
+  const methods = useForm({
     resolver: zodResolver(planTodoEditFormSchema),
-    defaultValues: { todo: initialTodo },
+    defaultValues: { todo },
     mode: 'onChange',
   });
-  const todo = useWatch({ control, name: 'todo' });
-  const { isValid } = useFormState({ control });
-  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { isValid } = useFormState({ control: methods.control });
+  const handleConfirm = methods.handleSubmit((values) => onConfirm(values.todo));
 
-  const update = (change: (current: PlannedTodo) => PlannedTodo) => {
-    const { isSelected, ...current } = getValues('todo');
-    setValue(
-      'todo',
-      { ...change(current), isSelected },
-      { shouldDirty: true, shouldValidate: true },
-    );
-  };
-  const handleConfirm = handleSubmit((values) => onConfirm(values.todo));
+  return (
+    <FormProvider {...methods}>
+      <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+        <VStack gap={12}>
+          <FormField control={methods.control} name="todo.title">
+            {({ value, onChange }) => (
+              <BottomSheetInput
+                accessibilityLabel={t('edit.titleLabel')}
+                value={value}
+                onChange={onChange}
+                maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
+                size="medium"
+                renderErrorMessage={false}
+                returnKeyType="done"
+                onSubmitEditing={() => handleConfirm()}
+              />
+            )}
+          </FormField>
 
-  const dateLabel =
-    todo.endDate == null
-      ? todo.startDate === todayKey
-        ? t('common:dateSections.today')
-        : formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext)
-      : formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext);
-  const hasTime = todo.scheduledTime != null;
-  const categoryId = VoicePlanPolicy.getCategoryId(todo, fallbackCategoryId);
-  const category = categoriesResult.categories.find((candidate) => candidate.id === categoryId);
-  const isPrivate = todo.visibility === 'PRIVATE';
+          {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
+          >
+            <DateChip />
+            <TimeChip />
+            <RepeatChip />
+            <VisibilityChip />
+            <CategoryChip fallbackCategoryId={fallbackCategoryId} />
+          </ScrollView>
 
-  const handleDateChipPress = () => {
+          <Button
+            isDisabled={!isValid}
+            onPress={() => handleConfirm()}
+            testID="plan-todo-edit-confirm"
+          >
+            {t('edit.confirm')}
+          </Button>
+        </VStack>
+      </KeyboardBottomSheet>
+    </FormProvider>
+  );
+}
+
+function updateTodo(
+  { getValues, setValue }: UseFormReturn<PlanTodoEditFormValues>,
+  change: (current: PlannedTodo) => PlannedTodo,
+) {
+  const { isSelected, ...current } = getValues('todo');
+  setValue('todo', { ...change(current), isSelected }, { shouldDirty: true, shouldValidate: true });
+}
+
+function DateChip() {
+  const { t } = useTranslation('common');
+  const overlay = useOverlay();
+  const todayKey = useTodayKey();
+  const dateFormatContext = useDateFormatContext();
+  const form = useFormContext<PlanTodoEditFormValues>();
+  const [startDate, endDate] = useWatch({
+    control: form.control,
+    name: ['todo.startDate', 'todo.endDate'],
+  });
+  const singleDayLabel =
+    startDate === todayKey
+      ? t('dateSections.today')
+      : formatDateKeyLabel(startDate, 'monthDay', dateFormatContext);
+
+  const handlePress = () => {
     Keyboard.dismiss();
-    overlay.open<Date | null>(({ isOpen: isPickerOpen, close, exit }) => (
+    overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
-        isOpen={isPickerOpen}
-        onOpenChange={() => close(null)}
-        onExit={exit}
+        isOpen={isOpen}
+        onOpenChange={() => close()}
+        onExit={unmount}
       >
         <TodoDatePickerContent
-          value={toDate(todo.startDate)}
-          onChange={(date) => {
-            update((current) => VoicePlanPolicy.withStartDate(current, toDeviceDateKey(date)));
-            close(date);
+          value={toDate(startDate)}
+          onChange={(nextStartDate) => {
+            updateTodo(form, (current) =>
+              VoicePlanPolicy.withStartDate(current, toDeviceDateKey(nextStartDate)),
+            );
+            close();
           }}
-          onCancel={() => close(null)}
+          onCancel={close}
         />
       </ModalBottomSheet>
     ));
   };
 
-  const handleTimeChipPress = () => {
+  return (
+    <ActionChip
+      icon={<ActionChip.Icon as={CalendarIcon} colorClassName="text-main" />}
+      label={
+        endDate == null ? singleDayLabel : formatDateKeyRange(startDate, endDate, dateFormatContext)
+      }
+      isActive
+      onPress={handlePress}
+    />
+  );
+}
+
+function TimeChip() {
+  const { t } = useTranslation('todo');
+  const overlay = useOverlay();
+  const form = useFormContext<PlanTodoEditFormValues>();
+  const [startDate, scheduledTime] = useWatch({
+    control: form.control,
+    name: ['todo.startDate', 'todo.scheduledTime'],
+  });
+
+  const handlePress = () => {
     Keyboard.dismiss();
-    overlay.open<TodoTimeValue | null>(({ isOpen: isPickerOpen, close, exit }) => (
+    overlay.open(({ isOpen, close, unmount }) => (
       <ModalBottomSheet
         hasFixedHeader
-        isOpen={isPickerOpen}
-        onOpenChange={() => close(null)}
-        onExit={exit}
+        isOpen={isOpen}
+        onOpenChange={() => close()}
+        onExit={unmount}
       >
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
-              date={toDate(todo.startDate)}
-              value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: !hasTime }}
-              onChange={(value) => {
-                update((current) =>
+              date={toDate(startDate)}
+              value={{ scheduledTime, isAllDay: scheduledTime == null }}
+              onChange={(nextTime) => {
+                updateTodo(form, (current) =>
                   VoicePlanPolicy.withScheduledTime(
                     current,
-                    value.isAllDay ? null : (value.scheduledTime ?? null),
+                    nextTime.isAllDay ? null : nextTime.scheduledTime,
                   ),
                 );
-                close(value);
+                close();
               }}
-              onCancel={() => close(null)}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ModalBottomSheet>
-    ));
-  };
-
-  const handleCategoryChipPress = () => {
-    Keyboard.dismiss();
-    overlay.open<number | null>(({ isOpen: isPickerOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isPickerOpen} onOpenChange={() => close(null)} onExit={exit}>
-        <QueryErrorBoundary>
-          <Suspense fallback={<CategorySelectInput.Loading />}>
-            <CategorySelectInput
-              value={categoryId}
-              onChange={(nextCategoryId) => {
-                update((current) => ({ ...current, categoryId: nextCategoryId }));
-                close(nextCategoryId);
-              }}
-              submitLabel={t('todo:add.submit')}
+              onCancel={close}
             />
           </Suspense>
         </QueryErrorBoundary>
@@ -173,89 +221,137 @@ export function PlanTodoEditSheet({
   };
 
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={12}>
-        <FormField control={control} name="todo.title">
-          {({ value, onChange }) => (
-            <BottomSheetInput
-              accessibilityLabel={t('voicePlan:edit.titleLabel')}
-              value={value}
-              onChange={onChange}
-              maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
-              size="medium"
-              renderErrorMessage={false}
-              returnKeyType="done"
-              onSubmitEditing={() => handleConfirm()}
+    <ActionChip
+      icon={
+        <ActionChip.Icon
+          as={ClockIcon}
+          colorClassName={scheduledTime == null ? 'text-gray-5' : 'text-main'}
+        />
+      }
+      label={scheduledTime ?? t('chip.allDay')}
+      isActive={scheduledTime != null}
+      onPress={handlePress}
+    />
+  );
+}
+
+function RepeatChip() {
+  const { t } = useTranslation('todo');
+  const overlay = useOverlay();
+  const dateFormatContext = useDateFormatContext();
+  const form = useFormContext<PlanTodoEditFormValues>();
+  const [startDate, repeat] = useWatch({
+    control: form.control,
+    name: ['todo.startDate', 'todo.repeat'],
+  });
+
+  const handlePress = () => {
+    overlay.open(({ isOpen, close, unmount }) => (
+      <ModalBottomSheet
+        hasFixedHeader
+        isOpen={isOpen}
+        onOpenChange={() => close()}
+        onExit={unmount}
+      >
+        <TodoRepeatPickerContent
+          value={{ startDate: toDate(startDate), repeat }}
+          onChange={(next) => {
+            updateTodo(form, (current) =>
+              VoicePlanPolicy.withRepeat(
+                { ...current, startDate: toDeviceDateKey(next.startDate) },
+                next.repeat,
+              ),
+            );
+            close();
+          }}
+          onCancel={close}
+        />
+      </ModalBottomSheet>
+    ));
+  };
+
+  return (
+    <ActionChip
+      icon={
+        <ActionChip.Icon
+          as={RepeatIcon}
+          colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
+        />
+      }
+      label={repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, dateFormatContext)}
+      isActive={repeat != null}
+      onPress={handlePress}
+    />
+  );
+}
+
+function VisibilityChip() {
+  const { t } = useTranslation('todo');
+  const form = useFormContext<PlanTodoEditFormValues>();
+  const visibility = useWatch({ control: form.control, name: 'todo.visibility' });
+  const isPrivate = visibility === 'PRIVATE';
+
+  return (
+    <ActionChip
+      icon={
+        isPrivate ? (
+          <ActionChip.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
+        ) : (
+          <ActionChip.Icon as={EyeIcon} colorClassName="text-gray-5" />
+        )
+      }
+      label={isPrivate ? t('chip.private') : t('chip.public')}
+      onPress={() =>
+        updateTodo(form, (current) => ({
+          ...current,
+          visibility: isPrivate ? 'PUBLIC' : 'PRIVATE',
+        }))
+      }
+    />
+  );
+}
+
+function CategoryChip({ fallbackCategoryId }: { fallbackCategoryId: number }) {
+  const { t } = useTranslation('todo');
+  const overlay = useOverlay();
+  const form = useFormContext<PlanTodoEditFormValues>();
+  const todo = useWatch({ control: form.control, name: 'todo' });
+  const {
+    data: { categories },
+  } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const categoryId = VoicePlanPolicy.getCategoryId(todo, fallbackCategoryId);
+  const category = categories.find(({ id }) => id === categoryId);
+
+  const handlePress = () => {
+    Keyboard.dismiss();
+    overlay.open(({ isOpen, close, unmount }) => (
+      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={unmount}>
+        <QueryErrorBoundary>
+          <Suspense fallback={<CategorySelectInput.Loading />}>
+            <CategorySelectInput
+              value={categoryId}
+              onChange={(nextCategoryId) => {
+                updateTodo(form, (current) => ({ ...current, categoryId: nextCategoryId }));
+                close();
+              }}
+              submitLabel={t('add.submit')}
             />
-          )}
-        </FormField>
+          </Suspense>
+        </QueryErrorBoundary>
+      </ModalBottomSheet>
+    ));
+  };
 
-        {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-          contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-        >
-          <ActionChip
-            icon={<CalendarIcon width={iconSize} height={iconSize} colorClassName="text-main" />}
-            label={dateLabel}
-            isActive
-            onPress={handleDateChipPress}
-          />
-          <ActionChip
-            icon={
-              <ClockIcon
-                width={iconSize}
-                height={iconSize}
-                colorClassName={hasTime ? 'text-main' : 'text-gray-5'}
-              />
-            }
-            label={todo.scheduledTime ?? t('todo:chip.allDay')}
-            isActive={hasTime}
-            onPress={handleTimeChipPress}
-          />
-          <PlanRepeatChip
-            value={todo.repeat}
-            startDate={todo.startDate}
-            onChange={(repeat, startDate) =>
-              update((current) => VoicePlanPolicy.withRepeat({ ...current, startDate }, repeat))
-            }
-          />
-          <ActionChip
-            icon={
-              isPrivate ? (
-                <EyeOffIcon width={iconSize} height={iconSize} colorClassName="text-gray-6" />
-              ) : (
-                <EyeIcon width={iconSize} height={iconSize} colorClassName="text-gray-5" />
-              )
-            }
-            label={isPrivate ? t('todo:chip.private') : t('todo:chip.public')}
-            onPress={() =>
-              update((current) => ({ ...current, visibility: isPrivate ? 'PUBLIC' : 'PRIVATE' }))
-            }
-          />
-          <ActionChip
-            icon={
-              <Box
-                className={cn('size-2 rounded-full', category == null && 'bg-gray-5')}
-                style={category == null ? undefined : { backgroundColor: category.color }}
-              />
-            }
-            label={category?.name ?? t('todo:chip.category')}
-            onPress={handleCategoryChipPress}
-          />
-        </ScrollView>
-
-        <Button
-          isDisabled={!isValid}
-          onPress={() => handleConfirm()}
-          testID="plan-todo-edit-confirm"
-        >
-          {t('voicePlan:edit.confirm')}
-        </Button>
-      </VStack>
-    </KeyboardBottomSheet>
+  return (
+    <ActionChip
+      icon={
+        <Box
+          className={cn('size-2 rounded-full', category == null && 'bg-gray-5')}
+          style={category == null ? undefined : { backgroundColor: category.color }}
+        />
+      }
+      label={category?.name ?? t('chip.category')}
+      onPress={handlePress}
+    />
   );
 }

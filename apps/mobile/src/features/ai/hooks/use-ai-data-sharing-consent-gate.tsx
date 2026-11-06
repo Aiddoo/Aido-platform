@@ -68,7 +68,7 @@ export function useAiDataSharingConsentGate() {
 
   /** 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다 */
   const requestAgreement = ({ isRenewal = false }: { isRenewal?: boolean } = {}) =>
-    overlay.open<boolean>(({ isOpen, close, exit }) => (
+    overlay.openAsync<boolean>(({ isOpen, close, unmount }) => (
       <AiConsentBottomSheet
         isOpen={isOpen}
         isRenewal={isRenewal}
@@ -77,7 +77,7 @@ export function useAiDataSharingConsentGate() {
             close(false);
           }
         }}
-        onExit={exit}
+        onExit={unmount}
         onAgree={() => close(true)}
       />
     ));

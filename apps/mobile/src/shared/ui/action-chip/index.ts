@@ -1,1 +1,1 @@
-export { ActionChip, type ActionChipProps, useActionChipIconSize } from './action-chip';
+export { ActionChip, type ActionChipProps } from './action-chip';

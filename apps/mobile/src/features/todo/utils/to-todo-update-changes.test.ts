@@ -1,11 +1,11 @@
-import type { AddTodoFormInput } from '../domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 import {
   hasOnlyDateChanges,
   hasTodoUpdateChanges,
   toTodoUpdateChanges,
 } from './to-todo-update-changes';
 
-const DEFAULTS: AddTodoFormInput = {
+const DEFAULTS: AddTodoFormValues = {
   title: '운동',
   startDate: new Date(2026, 10, 5, 12),
   endDate: null,
@@ -14,7 +14,6 @@ const DEFAULTS: AddTodoFormInput = {
   categoryId: 1,
   visibility: 'PUBLIC',
   repeat: { frequency: 'WEEKLY', interval: 1, weekdays: ['MON', 'THU'], end: { type: 'NEVER' } },
-  source: 'manual',
 };
 
 describe('toTodoUpdateChanges', () => {

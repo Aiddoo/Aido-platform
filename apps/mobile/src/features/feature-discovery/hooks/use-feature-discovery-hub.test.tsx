@@ -8,7 +8,7 @@ import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';
 
 const mockTrackEvent = jest.fn();
 const mockClose = jest.fn();
-const mockExit = jest.fn();
+const mockUnmount = jest.fn();
 const mockPush = jest.fn();
 const mockFeatureAttribution = {
   record: jest.fn(),
@@ -21,15 +21,14 @@ const mockOverlayOpen = jest.fn(
     renderOverlay: (controls: {
       isOpen: boolean;
       close: () => void;
-      exit: () => void;
+      unmount: () => void;
     }) => ReactNode,
   ) => {
     renderedOverlay = renderOverlay({
       isOpen: true,
       close: mockClose,
-      exit: mockExit,
+      unmount: mockUnmount,
     });
-    return Promise.resolve();
   },
 );
 
@@ -78,7 +77,7 @@ describe('useFeatureDiscoveryHub', () => {
     renderedOverlay = null;
     mockTrackEvent.mockReset();
     mockClose.mockReset();
-    mockExit.mockReset();
+    mockUnmount.mockReset();
     mockPush.mockReset();
     mockOverlayOpen.mockClear();
     mockFeatureAttribution.record.mockReset();

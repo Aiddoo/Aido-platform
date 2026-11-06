@@ -127,8 +127,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
         changedField: 'date',
         input: {
           startDate: formatDateKey(startDate, getDeviceTimezone()),
-          endDate: endDate ? formatDateKey(endDate, getDeviceTimezone()) : null,
-          scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
+          endDate: endDate == null ? null : formatDateKey(endDate, getDeviceTimezone()),
+          scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
           isAllDay: todo.isAllDay,
         },
       },

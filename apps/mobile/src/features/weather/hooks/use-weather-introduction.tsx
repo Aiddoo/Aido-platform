@@ -40,13 +40,13 @@ export function useWeatherIntroduction(): { isPending: boolean } {
       }
       hasClaimed.current = true;
       overlay
-        .open<boolean>(({ isOpen, close, exit }) => (
+        .openAsync<boolean>(({ isOpen, close, unmount }) => (
           <ConfirmDialog
             isOpen={isOpen}
             onOpenChange={(open) => {
               if (!open) {
                 close(false);
-                exit();
+                unmount();
               }
             }}
             title={<ConfirmDialog.Title>{t('weather:introduction.title')}</ConfirmDialog.Title>}
@@ -59,7 +59,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
               <ConfirmDialog.CancelButton
                 onPress={() => {
                   close(false);
-                  exit();
+                  unmount();
                 }}
               >
                 {t('weather:introduction.later')}
@@ -69,7 +69,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
               <ConfirmDialog.ConfirmButton
                 onPress={() => {
                   close(true);
-                  exit();
+                  unmount();
                 }}
               >
                 {t('weather:locationPrompt.register')}

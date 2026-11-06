@@ -86,14 +86,14 @@ CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
   const isActive = useIsActive();
 
   const openDeleteDialog = () => {
-    deleteOverlay.open(({ isOpen, close, exit }) => (
+    deleteOverlay.open(({ isOpen, close, unmount }) => (
       <CategoryDeleteDialog
         categoryId={category.id}
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) {
             close();
-            exit();
+            unmount();
           }
         }}
       />

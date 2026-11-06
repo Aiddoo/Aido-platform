@@ -88,7 +88,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
           input: {
             startDate: startDateKey,
             endDate: TodoPolicy.getShiftedEndDate(todo, startDateKey),
-            scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
+            scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
             isAllDay: todo.isAllDay,
           },
         });

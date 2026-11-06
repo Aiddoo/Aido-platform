@@ -44,7 +44,7 @@ export function useFeatureDiscoveryHub() {
       });
 
       let isFinished = false;
-      overlay.open<void>(({ isOpen, close, exit }) => {
+      overlay.open(({ isOpen, close, unmount }) => {
         const handleDismiss = () => {
           if (isFinished) {
             return;
@@ -83,7 +83,7 @@ export function useFeatureDiscoveryHub() {
             campaign={campaign}
             viewportHeight={viewportHeight}
             onOpenChange={handleDismiss}
-            onExit={exit}
+            onExit={unmount}
             onCardCta={handleCardCta}
           />
         );
