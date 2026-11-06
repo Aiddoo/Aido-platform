@@ -65,9 +65,11 @@ describe('AuthProvider', () => {
   let deviceTimezoneService: DeviceTimezoneService;
   let unsubscribes: Array<() => void>;
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
+  let writeSnapshot: jest.Mock;
 
   beforeEach(() => {
     jest.useFakeTimers();
+    writeSnapshot = jest.fn().mockResolvedValue(undefined);
     tokenStore = createMockTokenStore();
     errorReporter = createMockErrorReporter();
     analytics = createAnalyticsStub();
@@ -100,10 +102,7 @@ describe('AuthProvider', () => {
     const userHttpClient = createHttpClientStub();
     userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const userService = new UserService(userHttpClient);
-    const widgetSyncService = new WidgetSyncService(
-      { writeSnapshot: jest.fn().mockResolvedValue(undefined) },
-      errorReporter,
-    );
+    const widgetSyncService = new WidgetSyncService({ writeSnapshot }, errorReporter);
 
     const mountedProvider = await render(
       <StaticDIProvider
@@ -215,6 +214,74 @@ describe('AuthProvider', () => {
 
       // Then
       expect(tokenStore.clear).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('부팅 불변식', () => {
+    it('미인증으로 부팅해도 캐시를 비우고 초안은 남긴다', async () => {
+      // Given
+      const draftKey = createDraftKey({
+        ownerId: 'user-1',
+        scope: 'memo',
+        target: ['create'],
+        schema: z.object({ content: z.string() }),
+      });
+      draftService.save(draftKey, { content: '작성 중' });
+      const clearSpy = jest.spyOn(queryClient, 'clear');
+      tokenStore.readRefreshToken.mockResolvedValue(null);
+
+      // When
+      await renderProvider();
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(clearSpy).toHaveBeenCalled();
+      expect(draftService.restore(draftKey)).toEqual({
+        status: 'restored',
+        value: { content: '작성 중' },
+      });
+    });
+
+    it('어떤 판정이든 토큰을 쓰거나 지우지 않는다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+
+      // When
+      await renderProvider();
+
+      // Then
+      await expectStatus('authenticated');
+      expect(tokenStore.save).not.toHaveBeenCalled();
+      expect(tokenStore.clear).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('위젯 상태', () => {
+    it('잠금으로 판정을 미룬 동안에는 위젯을 로그아웃으로 덮어쓰지 않는다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+
+      // When
+      await renderProvider();
+
+      // Then
+      await expectStatus('locked');
+      await act(async () => {
+        await jest.runOnlyPendingTimersAsync();
+      });
+      expect(writeSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('미인증으로 확정되면 위젯을 로그아웃 상태로 쓴다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue(null);
+
+      // When
+      await renderProvider();
+
+      // Then
+      await expectStatus('unauthenticated');
+      await waitFor(() => expect(writeSnapshot).toHaveBeenCalled());
     });
   });
 

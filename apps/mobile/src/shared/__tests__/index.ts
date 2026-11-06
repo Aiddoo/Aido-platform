@@ -8,6 +8,7 @@ export { createTestDiContainer } from './create-test-di-container';
 export { createHttpClientStub } from './create-http-client-stub';
 export { createStorageStub } from './create-storage-stub';
 export { createSyncStorageStub } from './create-sync-storage-stub';
+export { createMemoryTokenStore } from './create-memory-token-store';
 export { createMockTokenStore } from './create-mock-token-store';
 export { createPendingResponse } from './create-pending-response';
 export { createMemorySyncStorage } from './create-memory-sync-storage';

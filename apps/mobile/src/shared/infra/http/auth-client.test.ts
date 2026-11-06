@@ -2,6 +2,7 @@ import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import ky, { type KyInstance } from 'ky';
 
+import { createAuthClient } from './auth-client';
 import { recordApiFailureBreadcrumb } from './error-handler';
 import { KyHttpClient } from './ky-client';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
@@ -58,6 +59,48 @@ const toRequest = (input: Parameters<typeof fetch>[0]): Request => {
   }
   return input;
 };
+
+describe('createAuthClient: 동시 401', () => {
+  const ROTATED = JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } });
+
+  it('동시에 온 401은 갱신을 한 번만 하고 전부 새 토큰으로 재시도한다', async () => {
+    // Given
+    const authorizations: Array<string | null> = [];
+    global.fetch = jest.fn(async (input) => {
+      const request = toRequest(input);
+      if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
+        authorizations.push(request.headers.get('Authorization'));
+        return successBody({ url: request.url });
+      }
+      return errorBody(401, 'AUTH_0102', 'access token expired');
+    });
+    const tokenStore = createStatefulTokenStore({
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+    });
+    const requestRefresh = jest.fn(
+      async () =>
+        new Response(ROTATED, { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+    const endSession = jest.fn(async () => undefined);
+    const http = new KyHttpClient(
+      createAuthClient({
+        tokenStore,
+        refresh: createTokenRefresher({ tokenStore, requestRefresh }),
+        endSession,
+      }),
+    );
+
+    // When
+    const results = await Promise.all([http.get('a'), http.get('b'), http.get('c')]);
+
+    // Then
+    expect(results.map((result) => result.ok)).toEqual([true, true, true]);
+    expect(requestRefresh).toHaveBeenCalledTimes(1);
+    expect(authorizations).toEqual(['Bearer access-2', 'Bearer access-2', 'Bearer access-2']);
+    expect(endSession).not.toHaveBeenCalled();
+  });
+});
 
 describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   let fetchMock: jest.MockedFunction<typeof fetch>;

@@ -13,6 +13,8 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 const getItemAsync = jest.mocked(ExpoSecureStore.getItemAsync);
+const setItemAsync = jest.mocked(ExpoSecureStore.setItemAsync);
+const deleteItemAsync = jest.mocked(ExpoSecureStore.deleteItemAsync);
 
 describe('SecureStorage — 벤더 에러 분류', () => {
   let storage: SecureStorage;
@@ -20,6 +22,22 @@ describe('SecureStorage — 벤더 에러 분류', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     storage = new SecureStorage();
+  });
+
+  it('읽기, 쓰기, 삭제 모두 출시된 키체인 접근 옵션을 쓴다', async () => {
+    // Given
+    const options = { keychainAccessible: 'afterFirstUnlock' };
+    getItemAsync.mockResolvedValue(null);
+
+    // When
+    await storage.get('key', z.string());
+    await storage.set('key', 'value');
+    await storage.remove('key');
+
+    // Then
+    expect(getItemAsync).toHaveBeenCalledWith('key', options);
+    expect(setItemAsync).toHaveBeenCalledWith('key', JSON.stringify('value'), options);
+    expect(deleteItemAsync).toHaveBeenCalledWith('key', options);
   });
 
   it('값이 있으면 파싱해서 돌려준다', async () => {

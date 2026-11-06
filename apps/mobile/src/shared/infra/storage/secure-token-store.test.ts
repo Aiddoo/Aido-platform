@@ -26,6 +26,21 @@ describe('createSecureTokenStore', () => {
     expect(refreshToken).toBe('refresh');
   });
 
+  it('출시된 설치의 키체인 항목을 가리키는 키 이름을 바꾸지 않는다', async () => {
+    // Given
+    const stored = new Map<string, unknown>();
+    storage.set.mockImplementation(async (key, value) => {
+      stored.set(key, value);
+    });
+    const tokenStore = createSecureTokenStore(storage);
+
+    // When
+    await tokenStore.save({ accessToken: 'a', refreshToken: 'r' });
+
+    // Then
+    expect(new Set(stored.keys())).toEqual(new Set(['accessToken', 'refreshToken']));
+  });
+
   it('읽기 실패는 null로 삼키지 않고 그대로 전파한다', async () => {
     // Given — "토큰이 없다"와 "지금 읽을 수 없다"를 혼동하면 살아있는 세션이 죽는다
     storage.get.mockRejectedValue(new Error('User interaction is not allowed.'));
