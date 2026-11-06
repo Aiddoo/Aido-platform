@@ -1,8 +1,12 @@
 import { PREMIUM_SOURCE } from '@aido/api';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
-import { getCachedMe, invalidateMe } from '@src/features/identity/user/queries/user-cache';
-import { hashKey, type Query, type QueryClient } from '@tanstack/react-query';
+import {
+  getCachedMe,
+  invalidateMe,
+  isMeQuery,
+  refetchMe,
+} from '@src/features/identity/user/queries/user-cache';
+import type { Query, QueryClient } from '@tanstack/react-query';
 import { delay } from 'es-toolkit';
 
 /** 조회 옵션이 `meta.refreshOnPremiumChange`로 프리미엄에 따라 달라진다고 밝힌 쿼리 */
@@ -26,15 +30,10 @@ export function refreshAfterPremiumEnded(queryClient: QueryClient) {
  * 내 정보를 갱신해도 이 한 곳이 따라간다. 반환값은 구독 해제 함수다.
  */
 export function watchPremiumEntitlementChanges(queryClient: QueryClient) {
-  const meQueryHash = hashKey(USER_QUERY_KEYS.me());
   let previousMe = getCachedMe(queryClient);
 
   return queryClient.getQueryCache().subscribe((event) => {
-    if (
-      event.type !== 'updated' ||
-      event.action.type !== 'success' ||
-      event.query.queryHash !== meQueryHash
-    ) {
+    if (event.type !== 'updated' || event.action.type !== 'success' || !isMeQuery(event.query)) {
       return;
     }
 
@@ -71,7 +70,7 @@ export async function syncMeUntilStorePremium(
       return true;
     }
     await wait(ms);
-    await queryClient.refetchQueries({ queryKey: USER_QUERY_KEYS.me(), exact: true });
+    await refetchMe(queryClient);
   }
 
   return getCachedMe(queryClient)?.premiumAccess.source === PREMIUM_SOURCE.STORE;

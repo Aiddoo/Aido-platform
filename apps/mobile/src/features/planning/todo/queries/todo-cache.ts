@@ -68,6 +68,13 @@ export function getCachedTodosByDate(
   return queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }))?.todos;
 }
 
+/** 이미 불러온 모든 날짜의 할 일 제목. 따로 요청하지 않는다 */
+export function getCachedTodoTitles(queryClient: QueryClient): string[] {
+  return queryClient
+    .getQueriesData<TodoListResult>({ queryKey: TODO_QUERY_KEYS.lists() })
+    .flatMap(([, data]) => (data?.todos ?? []).map((todo) => todo.title));
+}
+
 export function updateCachedTodo(
   queryClient: QueryClient,
   { date, todoId }: { date: string; todoId: number },
@@ -150,6 +157,10 @@ export function invalidateTodos(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
     queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all }),
   ]);
+}
+
+export function invalidateTodoCategories(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
 }
 
 export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { todoId: number }) {

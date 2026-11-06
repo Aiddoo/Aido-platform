@@ -1,6 +1,5 @@
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { getCachedTodoTitles } from '@src/features/planning/todo/queries/todo-cache';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
@@ -16,15 +15,10 @@ export function useSpeechContext() {
 
   return useCallback(() => {
     const categories = queryClient.getQueryData(categoriesQueryKey)?.categories ?? [];
-    const todoLists = queryClient.getQueriesData<{ todos: readonly Pick<Todo, 'title'>[] }>({
-      queryKey: TODO_QUERY_KEYS.lists(),
-    });
 
     return getSpeechContextStrings({
       categoryNames: categories.map((category) => category.name),
-      todoTitles: todoLists.flatMap(([_queryKey, data]) =>
-        (data?.todos ?? []).map((todo) => todo.title),
-      ),
+      todoTitles: getCachedTodoTitles(queryClient),
     });
   }, [queryClient, categoriesQueryKey]);
 }

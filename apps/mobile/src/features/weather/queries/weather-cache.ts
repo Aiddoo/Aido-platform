@@ -58,6 +58,11 @@ export function refetchWeatherLocation(queryClient: QueryClient) {
   return queryClient.refetchQueries({ queryKey: WEATHER_QUERY_KEYS.location() });
 }
 
+/** 리포트를 받는 중인지 볼 때 쓰는 필터 */
+export function weatherReportsFilters() {
+  return { queryKey: WEATHER_QUERY_KEYS.reports() };
+}
+
 export function invalidateWeatherReports(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: WEATHER_QUERY_KEYS.reports() });
 }

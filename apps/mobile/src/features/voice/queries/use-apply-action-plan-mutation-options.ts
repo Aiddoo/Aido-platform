@@ -5,9 +5,14 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import {
+  invalidateMemoList,
+  invalidateMemoResourceLimit,
+} from '@src/features/notes/memo/queries/memo-cache';
+import {
+  invalidateTodoCategories,
+  invalidateTodos,
+} from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -69,8 +74,8 @@ export const useApplyActionPlanMutationOptions = ({
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });
+        invalidateMemoList(queryClient);
+        invalidateMemoResourceLimit(queryClient);
       }
       toast.success(
         todoCount > 0 && hasMemo
@@ -105,10 +110,10 @@ export const useApplyActionPlanMutationOptions = ({
       haptics.notify('error');
       const cause = getVoicePlanFailureCause(error);
       if (cause === 'rejected') {
-        queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+        invalidateTodoCategories(queryClient);
       }
       if (cause === 'source-memo-missing') {
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
+        invalidateMemoList(queryClient);
       }
       toast.error(t(`voicePlan:failure.${cause}.title`), {
         description: t(`voicePlan:failure.${cause}.description`),
