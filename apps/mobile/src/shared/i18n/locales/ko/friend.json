@@ -41,8 +41,7 @@
     "placeholder": "이름 또는 해시태그로 검색",
     "action": {
       "add": "추가",
-      "cancel": "요청 취소",
-      "friend": "친구"
+      "cancel": "요청 취소"
     },
     "empty": {
       "prompt": "이름이나 해시태그로 친구를 찾아보세요",

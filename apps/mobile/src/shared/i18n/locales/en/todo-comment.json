@@ -17,7 +17,6 @@
     "viewMore_one": "View {{formatted}} more reply",
     "viewMore_other": "View {{formatted}} more replies",
     "hide": "Hide replies",
-    "loading": "Loading replies",
     "retry": "Couldn't load replies. Tap to retry"
   },
   "sort": {

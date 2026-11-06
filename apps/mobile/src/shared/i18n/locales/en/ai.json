@@ -34,11 +34,6 @@
       "nextWeekly": "Next weekly report",
       "nextMonthly": "Next monthly report"
     },
-    "premiumBanner": {
-      "title": "Your personal AI-powered report",
-      "description": "Subscribe to Premium to get\nweekly and monthly AI reports",
-      "subscribe": "Subscribe"
-    },
     "list": {
       "premiumTitle": "AI reports",
       "freeTitle": "Your personal AI-powered report",

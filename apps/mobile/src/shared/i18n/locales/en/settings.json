@@ -40,9 +40,7 @@
     "version": "Version: {{version}}",
     "notAgreed": "Not agreed",
     "marketing": "Marketing emails",
-    "marketingDescription": "Receive events and promotional updates",
     "marketingPush": "Promotional push notifications",
-    "marketingPushDescription": "Receive recommendations and return reminders by push",
     "aiDataSharing": {
       "label": "AI data sharing",
       "description": "What you type or say goes to Anthropic, Google, and OpenAI for processing. Apple or Google speech recognition may turn speech into text. Audio files aren't sent to Aido's servers.",

@@ -15,7 +15,6 @@
     "view": "답글 {{formatted}}개 보기",
     "viewMore": "답글 {{formatted}}개 더 보기",
     "hide": "답글 숨기기",
-    "loading": "답글을 불러오는 중",
     "retry": "답글을 불러오지 못했어요. 눌러서 다시 보기"
   },
   "sort": {

@@ -31,11 +31,6 @@
       "nextWeekly": "다음 주간 리포트",
       "nextMonthly": "다음 월간 리포트"
     },
-    "premiumBanner": {
-      "title": "AI가 분석한 나만의 리포트",
-      "description": "프리미엄 구독으로 매주/매월\nAI 리포트를 받아보세요",
-      "subscribe": "구독하기"
-    },
     "list": {
       "premiumTitle": "AI 리포트",
       "freeTitle": "AI가 분석한 나만의 리포트",

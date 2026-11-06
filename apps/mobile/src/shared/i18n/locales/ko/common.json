@@ -47,7 +47,6 @@
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
-    "retry": "다시 시도",
     "description": "잠시 후 다시 시도해주세요. 계속되면 알려주세요",
     "inquiry": "문의하기",
     "restart": "앱 다시 시작",

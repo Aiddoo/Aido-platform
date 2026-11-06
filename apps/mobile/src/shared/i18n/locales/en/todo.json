@@ -68,8 +68,6 @@
     "nudgeMessageTooLong_other": "Your message can be up to {{count}} characters"
   },
   "form": {
-    "titleRequired": "Please enter a title",
-    "titleMaxLength": "Title can be up to 200 characters",
     "nudgeMessageMax_one": "Your message can be up to {{count}} character",
     "nudgeMessageMax_other": "Your message can be up to {{count}} characters"
   },
@@ -191,7 +189,6 @@
     "promptHighlight": "nudge",
     "promptSuffix": "to cheer them on?",
     "hintPrefix": "To share a little support, tap",
-    "hintHighlight": "nudge",
     "hintSuffix": "and cheer them on",
     "remaining_one": "{{count}} nudge left today (unlimited with Premium)",
     "remaining_other": "{{count}} nudges left today (unlimited with Premium)",
@@ -199,8 +196,6 @@
     "whenTodo": "Cheering you on: {{title}}",
     "placeholder": "(Optional) Take it at your pace. I’m cheering for you!",
     "send": "Send encouragement",
-    "dialogTarget": "Send some encouragement to {{name}}",
-    "dialogPlaceholder": "(Optional) Cheering you on for {{title}}!",
     "remindTitle": "Shall we start today together?",
     "remindPlaceholder": "(Optional) Let’s start with one small to-do!",
     "statusUnavailable": "Couldn’t check if you can send a nudge",
@@ -214,8 +209,7 @@
     "todoCount_one": "It contains {{count}} to-do",
     "todoCount_other": "It contains {{count}} to-dos",
     "moveSelect": "Please choose a category to move them to",
-    "select": "Choose a category",
-    "fallback": "Category"
+    "select": "Choose a category"
   },
   "calendar": {
     "week": "Week",
@@ -263,37 +257,11 @@
     "selectPrompt": "Select a to-do to see its details and comments here",
     "unavailableTitle": "This to-do is no longer available",
     "unavailableDescription": "It may have been deleted, or your friendship may have changed",
-    "title": "To-do",
     "open": "Comments",
     "pageTitle": "To-do details",
     "views": "{{count}} views",
     "unknownOwner": "User",
     "metrics": "{{views}} views · {{comments}} comments"
-  },
-  "comments": {
-    "title": "Comments",
-    "popular": "Popular",
-    "latest": "Latest",
-    "empty": "Start the conversation.",
-    "placeholder": "Add a comment...",
-    "replyPlaceholder": "Add a reply...",
-    "replyingTo": "Replying to {{name}}",
-    "more": "Load more comments",
-    "viewReplies": "View {{count}} replies",
-    "moreReplies": "Load more replies",
-    "viewAllComments": "View all comments",
-    "edited": "Edited",
-    "loadRepliesError": "Couldn't load replies. Try again",
-    "reply": "Reply",
-    "edit": "Edit",
-    "delete": "Delete",
-    "cancel": "Cancel",
-    "save": "Save",
-    "deleted": "This comment was deleted.",
-    "deletedUser": "Deleted comment",
-    "unknownUser": "User",
-    "authorBadge": "Author",
-    "loadError": "Couldn't load comments. Try again"
   },
   "interaction": {
     "detailTitle": "A little encouragement",

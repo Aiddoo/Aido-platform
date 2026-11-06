@@ -43,8 +43,7 @@
     "placeholder": "Search by name or hashtag",
     "action": {
       "add": "Add",
-      "cancel": "Cancel",
-      "friend": "Friends"
+      "cancel": "Cancel"
     },
     "empty": {
       "prompt": "Search for friends by name or hashtag",

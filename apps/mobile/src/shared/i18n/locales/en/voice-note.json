@@ -146,8 +146,7 @@
     "deleteDescription": "Deletes the summary, what we heard, and the audio from this device. This can't be undone.",
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
-    "notFound": "We can't find this voice note",
-    "close": "Close"
+    "notFound": "We can't find this voice note"
   },
   "drafts": {
     "title": "Voice notes",

@@ -145,8 +145,7 @@
     "deleteDescription": "요약과 들은 내용, 녹음 파일을 기기에서 삭제해요. 되돌릴 수 없어요.",
     "deleteConfirm": "삭제",
     "deleteCancel": "취소",
-    "notFound": "메모를 찾을 수 없어요",
-    "close": "닫기"
+    "notFound": "메모를 찾을 수 없어요"
   },
   "drafts": {
     "title": "말로 남긴 메모",

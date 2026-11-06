@@ -67,8 +67,6 @@
     "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
   },
   "form": {
-    "titleRequired": "제목을 입력해주세요",
-    "titleMaxLength": "제목은 200자까지 입력할 수 있어요",
     "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"
   },
   "picker": {
@@ -187,15 +185,12 @@
     "promptHighlight": "콕",
     "promptSuffix": "응원을 보내볼까요?",
     "hintPrefix": "오늘을 함께하고 싶다면",
-    "hintHighlight": "콕",
     "hintSuffix": "을 눌러 마음을 전해보세요",
     "remaining": "오늘 {{count}}번 남았어요 (구독하면 무제한)",
     "sheetTitle": "친구에게 콕 응원 보내기",
     "whenTodo": "이 할 일을 함께 응원해요: {{title}}",
     "placeholder": "(선택) 네 속도로 해도 괜찮아. 응원할게!",
     "send": "응원 보내기",
-    "dialogTarget": "{{name}}님에게 응원을 보내요",
-    "dialogPlaceholder": "(선택) {{title}} 응원할게!",
     "remindTitle": "오늘 할 일, 함께 시작해볼까요?",
     "remindPlaceholder": "(선택) 작은 할 일 하나부터 같이 시작해보자!",
     "statusUnavailable": "콕 찌르기 상태를 불러오지 못했어요",
@@ -208,8 +203,7 @@
     "deleteDescription": "삭제하면 되돌릴 수 없어요",
     "todoCount": "할 일 {{count}}개가 포함되어 있어요",
     "moveSelect": "이동할 카테고리를 선택해주세요",
-    "select": "카테고리 선택",
-    "fallback": "카테고리"
+    "select": "카테고리 선택"
   },
   "calendar": {
     "week": "주",
@@ -256,37 +250,11 @@
     "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
     "unavailableTitle": "지금은 볼 수 없는 할 일이에요",
     "unavailableDescription": "할 일이 삭제됐거나 친구 관계가 바뀌었을 수 있어요",
-    "title": "할 일",
     "open": "댓글",
     "pageTitle": "할 일 상세",
     "views": "조회 {{count}}회",
     "unknownOwner": "사용자",
     "metrics": "조회 {{views}} · 댓글 {{comments}}"
-  },
-  "comments": {
-    "title": "댓글",
-    "popular": "인기순",
-    "latest": "최신순",
-    "empty": "첫 댓글을 남겨보세요.",
-    "placeholder": "댓글 달기...",
-    "replyPlaceholder": "답글 달기...",
-    "replyingTo": "{{name}}님에게 답글 남기는 중",
-    "more": "댓글 더 보기",
-    "viewReplies": "답글 {{count}}개 보기",
-    "moreReplies": "답글 더 보기",
-    "viewAllComments": "전체 댓글 보기",
-    "edited": "수정됨",
-    "loadRepliesError": "답글을 불러오지 못했어요. 다시 시도",
-    "reply": "답글",
-    "edit": "수정",
-    "delete": "삭제",
-    "cancel": "취소",
-    "save": "저장",
-    "deleted": "삭제된 댓글이에요.",
-    "deletedUser": "삭제된 댓글",
-    "unknownUser": "사용자",
-    "authorBadge": "작성자",
-    "loadError": "댓글을 불러오지 못했어요. 다시 시도"
   },
   "interaction": {
     "detailTitle": "친구의 응원",

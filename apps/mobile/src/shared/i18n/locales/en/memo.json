@@ -36,7 +36,6 @@
     "convertedOne": "Converted your memo to a to-do",
     "deleted": "Memo deleted",
     "retryLater": "Please try again later",
-    "reorderFailed": "Couldn't change the order",
     "deleteRetry": "Please try deleting again later",
     "limitReached": "You can't add more memos",
     "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
