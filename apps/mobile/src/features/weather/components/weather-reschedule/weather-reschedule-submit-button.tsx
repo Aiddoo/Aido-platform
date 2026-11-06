@@ -1,19 +1,23 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { useTranslation } from '@src/shared/i18n';
+import { t as translate, useTranslation } from '@src/shared/i18n';
 import { Button } from '@src/shared/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
 import {
   toMovedScheduleInput,
   toOriginalScheduleInput,
+  toRescheduleOutcome,
   toRescheduleTargets,
   type WeatherRescheduleFormValues,
 } from '../../domains/weather-reschedule-form.schema';
@@ -24,6 +28,8 @@ import { useRescheduleTodoMutationOptions } from '../../queries/use-reschedule-t
 export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation('weather');
   const toast = useAppToast();
+  const queryClient = useQueryClient();
+  const showFailure = useMutationFailure(translate('todo:toast.updateFailedRetry'));
   const logger = useLogger();
   const { trackEvent } = useTrack();
   const [{ todoIds, reason }] = useWeatherRescheduleParams();
@@ -36,15 +42,28 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
   const selections = useWatch({ control, name: 'selections' }) ?? {};
   const hasTargets = toRescheduleTargets({ selections }, todoIds, todayTodos).length > 0;
 
+  const settle = (failures: unknown[]) => {
+    invalidateTodos(queryClient);
+    invalidateNudgeInteractions(queryClient);
+    const [firstFailure] = failures;
+    if (failures.length > 0) {
+      showFailure(firstFailure);
+    }
+  };
+
   const handleUndo = async (todos: Todo[]) => {
     const results = await Promise.allSettled(
       todos.map((todo) =>
         updateSchedule.mutateAsync({ todoId: todo.id, input: toOriginalScheduleInput(todo) }),
       ),
     );
-    const restoredCount = results.filter((result) => result.status === 'fulfilled').length;
-    if (restoredCount > 0) {
-      trackEvent('weather_reschedule_undone', { moved_count: restoredCount, reason });
+    const { moved: restored, failures } = toRescheduleOutcome(
+      todos.map((todo) => ({ todo })),
+      results,
+    );
+    settle(failures);
+    if (restored.length > 0) {
+      trackEvent('weather_reschedule_undone', { moved_count: restored.length, reason });
       toast.success(t('reschedule.undone'));
     }
   };
@@ -59,9 +78,8 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
         }),
       ),
     );
-    const moved = targets
-      .filter((_, index) => results[index]?.status === 'fulfilled')
-      .map(({ todo }) => todo);
+    const { moved, failures } = toRescheduleOutcome(targets, results);
+    settle(failures);
     if (moved.length === 0) {
       return;
     }

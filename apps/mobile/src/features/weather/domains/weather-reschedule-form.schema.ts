@@ -93,3 +93,16 @@ export function toRescheduleTargets<TTodo extends { id: number; completed: boole
     return todo == null || todo.completed ? [] : [{ todo, startsAt }];
   });
 }
+
+/** 일괄 변경 결과. 성공한 할 일만 모으고, 실패는 이유만 모아 한 번에 알린다. */
+export function toRescheduleOutcome<TTodo>(
+  targets: readonly { todo: TTodo }[],
+  results: readonly PromiseSettledResult<unknown>[],
+): { moved: TTodo[]; failures: unknown[] } {
+  return {
+    moved: targets.flatMap(({ todo }, index) =>
+      results[index]?.status === 'fulfilled' ? [todo] : [],
+    ),
+    failures: results.flatMap((result) => (result.status === 'rejected' ? [result.reason] : [])),
+  };
+}
