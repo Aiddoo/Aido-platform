@@ -5,6 +5,7 @@ import { errorReporter } from '@src/shared/infra/error-reporter/global-error-rep
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import ky, { type AfterResponseHook } from 'ky';
+import { match } from 'ts-pattern';
 
 import { getPathname } from './error-handler';
 import type { TokenRefresher } from './token-refresher';
@@ -81,13 +82,13 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     }
 
     const outcome = await refresh();
-    switch (outcome.kind) {
-      case 'refreshed':
-        return forceRetryWithToken(request, outcome.accessToken);
-      case 'invalid':
+    return match(outcome)
+      .with({ kind: 'refreshed' }, ({ accessToken }) => forceRetryWithToken(request, accessToken))
+      .with({ kind: 'invalid' }, async ({ details }) => {
         // 살아있다고 믿던 세션이었는지는 AuthProvider가 판단한다(로그아웃 상태의 401은 잡음).
-        await endSession(outcome.details);
+        await endSession(details);
         return response;
-    }
+      })
+      .exhaustive();
   };
 };

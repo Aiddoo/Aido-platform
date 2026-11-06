@@ -1,4 +1,5 @@
 import { isEqual } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
 export type StepperContexts = Record<string, object>;
 
@@ -79,12 +80,9 @@ export function stepperReducer<Contexts extends StepperContexts>(
   state: StepperState<Contexts>,
   action: StepperAction<Contexts>,
 ): StepperState<Contexts> {
-  switch (action.type) {
-    case 'push':
-      return push(state, action.entry);
-    case 'replace':
-      return replace(state, action.entry);
-    case 'go':
-      return go(state, action.delta);
-  }
+  return match(action)
+    .with({ type: 'push' }, ({ entry }) => push(state, entry))
+    .with({ type: 'replace' }, ({ entry }) => replace(state, entry))
+    .with({ type: 'go' }, ({ delta }) => go(state, delta))
+    .exhaustive();
 }

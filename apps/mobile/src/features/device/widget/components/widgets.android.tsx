@@ -14,6 +14,7 @@ import {
   type WidgetInfo,
   type WidgetRepresentation,
 } from 'react-native-android-widget';
+import { match } from 'ts-pattern';
 
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../bridge/android-widget';
 import type { WidgetProps } from '../domains/widget-props.model';
@@ -243,7 +244,10 @@ function WeekDay({
         layout={layout}
         text={day.weekdayLabel}
         size={10}
-        color={index === 0 ? '#FF5858' : index === 6 ? '#2598E8' : palette.muted}
+        color={match(index)
+          .with(0, () => '#FF5858' as const)
+          .with(6, () => '#2598E8' as const)
+          .otherwise(() => palette.muted)}
       />
       <FlexWidget
         style={{
@@ -570,7 +574,11 @@ export function renderAndroidWidget(
     Number.isFinite(value) && value > 0 ? value : fallback;
   const width = resolveDimension(widgetInfo.width, isSmall ? 160 : 340);
   const height = resolveDimension(widgetInfo.height, isLarge ? 380 : 160);
-  const cardHeight = Math.min(height, width / (isSmall ? 1 : isLarge ? 0.97 : 2.05));
+  const aspectRatio = match({ isSmall, isLarge })
+    .with({ isSmall: true }, () => 1)
+    .with({ isLarge: true }, () => 0.97)
+    .otherwise(() => 2.05);
+  const cardHeight = Math.min(height, width / aspectRatio);
   const scale = Math.min(1, width / (isSmall ? 160 : 340), cardHeight / (isLarge ? 380 : 160));
   // Include WidgetKit's content margins so all three cards keep the same visual spacing.
   const padding = (isSmall ? 28 : 32) * scale;

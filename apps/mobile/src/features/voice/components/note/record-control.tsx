@@ -4,6 +4,7 @@ import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ReactNode } from 'react';
 import { Easing } from 'react-native-reanimated';
+import { match } from 'ts-pattern';
 
 export const RECORD_CONTROL_GAP = 8;
 const RECORD_CONTROL_SIDE_SIZE = 52;
@@ -91,7 +92,10 @@ RecordControl.Button = function Button({
       style={{ width: size, height: size }}
       className={cn(
         'items-center justify-center rounded-full',
-        isPrimary ? 'bg-main' : isActive ? 'bg-main/10' : 'bg-gray-2',
+        match({ isPrimary, isActive })
+          .with({ isPrimary: true }, () => 'bg-main')
+          .with({ isActive: true }, () => 'bg-main/10')
+          .otherwise(() => 'bg-gray-2'),
         pressableProps.isDisabled === true && 'opacity-50',
       )}
       {...pressableProps}

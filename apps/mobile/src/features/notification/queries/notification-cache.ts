@@ -1,4 +1,5 @@
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
+import { match, P } from 'ts-pattern';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../domains/notification.model';
@@ -85,7 +86,10 @@ export async function optimisticallyMarkNotificationsRead(
       );
     }
     queryClient.setQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount(), (old = 0) =>
-      notificationId == null ? 0 : shouldDecrement ? Math.max(0, old - 1) : old,
+      match({ notificationId, shouldDecrement })
+        .with({ notificationId: P.nullish }, () => 0)
+        .with({ shouldDecrement: true }, () => Math.max(0, old - 1))
+        .otherwise(() => old),
     );
   });
   return snapshot;

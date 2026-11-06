@@ -1,5 +1,6 @@
 import type { CodedError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { match } from 'ts-pattern';
 
 import type { OAuthProviderSlug } from './oauth.model';
 
@@ -59,17 +60,15 @@ export const AuthErrors = {
   unknown: (msg?: string) => new AuthError(AuthErrorCode.UNKNOWN, msg ?? t('auth:errors.unknown')),
 
   fromExpoAppleError: (error: ExpoCodedError): AuthError => {
-    switch (error.code) {
-      case EXPO_APPLE_ERROR_CODES.REQUEST_CANCELED:
-        return AuthErrors.loginCancelled();
-      case EXPO_APPLE_ERROR_CODES.REQUEST_FAILED:
-      case EXPO_APPLE_ERROR_CODES.INVALID_RESPONSE:
-        return AuthErrors.providerError('apple', t('auth:errors.appleInvalidResponse'));
-      case EXPO_APPLE_ERROR_CODES.NOT_AVAILABLE:
-        return AuthErrors.providerError('apple', t('auth:errors.appleUnavailable'));
-      default:
-        return AuthErrors.unknown(error.message);
-    }
+    return match(error.code)
+      .with(EXPO_APPLE_ERROR_CODES.REQUEST_CANCELED, () => AuthErrors.loginCancelled())
+      .with(EXPO_APPLE_ERROR_CODES.REQUEST_FAILED, EXPO_APPLE_ERROR_CODES.INVALID_RESPONSE, () =>
+        AuthErrors.providerError('apple', t('auth:errors.appleInvalidResponse')),
+      )
+      .with(EXPO_APPLE_ERROR_CODES.NOT_AVAILABLE, () =>
+        AuthErrors.providerError('apple', t('auth:errors.appleUnavailable')),
+      )
+      .otherwise(() => AuthErrors.unknown(error.message));
   },
 
   fromUnknown: (error: unknown): AuthError => {

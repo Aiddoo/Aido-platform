@@ -20,6 +20,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
 import { Chip, Separator, SkeletonGroup } from 'heroui-native';
 import type { ReactNode } from 'react';
+import { match, P } from 'ts-pattern';
 
 import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
 
@@ -214,7 +215,10 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
             <Box
               className={cn(
                 'w-8 h-8 rounded-full items-center justify-center',
-                item.rate >= 80 ? 'bg-main/20' : item.rate >= 50 ? 'bg-main/10' : 'bg-gray-3',
+                match(item.rate)
+                  .with(P.number.gte(80), () => 'bg-main/20')
+                  .with(P.number.gte(50), () => 'bg-main/10')
+                  .otherwise(() => 'bg-gray-3'),
               )}
             >
               <Text size="e2" weight="bold" shade={item.rate >= 50 ? 9 : 5}>

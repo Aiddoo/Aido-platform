@@ -651,7 +651,10 @@ const RepeatDateCell = memo(function RepeatDateCell({
           size="b3"
           weight="medium"
           tone={isDisabled || isDimmed ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
-          shade={isSelected ? undefined : isDimmed ? 5 : 7}
+          shade={match({ isSelected, isDimmed })
+            .with({ isSelected: true }, () => undefined)
+            .with({ isDimmed: true }, () => 5 as const)
+            .otherwise(() => 7 as const)}
         >
           {dayOfMonth}
         </Text>
