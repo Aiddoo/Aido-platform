@@ -205,6 +205,31 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/shared/utils/device-headers.ts', ['expo-device']],
 ]);
 
+// es-toolkit/compat은 lodash 호환 계층이라 메인 패키지보다 무겁다. 메인에 없는 기능만 이유와 함께 허용한다.
+const ES_TOOLKIT_COMPAT_ALLOWLIST = new Set([
+  // 메인 debounce에는 maxWait이 없어 입력이 계속돼도 초안이 저장되도록 compat을 쓴다.
+  'apps/mobile/src/features/voice/apis/voice-note-draft.repository.ts',
+]);
+
+function checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (ES_TOOLKIT_COMPAT_ALLOWLIST.has(relativePath)) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+      statement.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text.startsWith('es-toolkit/compat')
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} es-toolkit/compat 대신 메인 'es-toolkit'을 쓰세요. times는 range(n).map으로 바꿉니다.`,
+      );
+    }
+  }
+}
+
 function getSdkModule(moduleName) {
   return SDK_MODULES.find((sdk) => moduleName === sdk || moduleName.startsWith(`${sdk}/`));
 }
@@ -875,6 +900,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     );
     checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
     checkSdkImports(sourceFile, repositoryRoot, errors);
+    checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors);
   }
 
   const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];

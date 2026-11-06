@@ -524,3 +524,23 @@ test('shared/infra와 허용된 경계 훅, 테스트의 SDK import는 통과한
     },
   );
 });
+
+test('es-toolkit/compat import는 거부하고 허용 목록의 파일만 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/planning/todo/components/new-list.tsx': `
+        import { times } from 'es-toolkit/compat';
+      `,
+      'apps/mobile/src/features/voice/apis/voice-note-draft.repository.ts': `
+        import { debounce } from 'es-toolkit/compat';
+      `,
+      'apps/mobile/src/features/planning/todo/components/ok-list.tsx': `
+        import { range } from 'es-toolkit';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /new-list\.tsx.*es-toolkit\/compat 대신/);
+    },
+  );
+});
