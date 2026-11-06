@@ -1,10 +1,4 @@
-import type {
-  InviteFriendship,
-  RedeemOutcome,
-  ReplyToNudgeInput,
-  UserReportReason,
-  UserReportTargetType,
-} from '@aido/api';
+import type { InviteFriendship, RedeemOutcome, ReplyToNudgeInput } from '@aido/api';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
@@ -200,13 +194,6 @@ interface FriendEventMap {
   friend_request_rejected: undefined;
   friend_removed: undefined;
   friend_reordered: undefined;
-}
-
-/** 차단·신고. 상대 사용자 id·신고 상세는 넣지 않는다 */
-interface ModerationEventMap {
-  user_blocked: undefined;
-  user_unblocked: undefined;
-  content_reported: { target_type: UserReportTargetType; reason: UserReportReason };
 }
 
 interface NudgeEventMap {
@@ -480,7 +467,6 @@ export type LegacyEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
   FriendEventMap &
-  ModerationEventMap &
   InviteEventMap &
   NudgeEventMap &
   GrowthEventMap &

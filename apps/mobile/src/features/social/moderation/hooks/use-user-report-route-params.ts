@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
-import type { UserReportTarget } from '../domains/user-report.model';
 import { userReportRouteParamsSchema } from '../schemas/moderation-params.schema';
+import type { UserReportTarget } from '../schemas/user-report.schema';
 
 export function useUserReportRouteParams(): { target: UserReportTarget; displayName: string } {
   const { userId, name, targetType, targetId } =

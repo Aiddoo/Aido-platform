@@ -346,7 +346,7 @@ function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
         <Stack.Toolbar.MenuAction
           icon={STACK_MENU_ICON.report}
           onPress={() => {
-            const target = UserReportPolicy.nudgeMessageTarget({
+            const target = UserReportPolicy.createNudgeMessageReportTarget({
               nudgeId: nudge.id,
               senderId: nudge.senderId,
             });

@@ -38,7 +38,7 @@ function CommentReportSheet() {
 
   return (
     <ReportReasonBottomSheet
-      target={UserReportPolicy.commentTarget({ commentId, authorId: author.id })}
+      target={UserReportPolicy.createCommentReportTarget({ commentId, authorId: author.id })}
       targetDisplayName={author.name ?? t('fallbackName')}
     />
   );

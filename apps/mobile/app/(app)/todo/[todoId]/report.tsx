@@ -35,7 +35,7 @@ function TodoReportSheet() {
 
   return (
     <ReportReasonBottomSheet
-      target={UserReportPolicy.todoTarget({ todoId, ownerId: detail.owner.id })}
+      target={UserReportPolicy.createTodoReportTarget({ todoId, ownerId: detail.owner.id })}
       targetDisplayName={detail.owner.name ?? t('fallbackName')}
     />
   );

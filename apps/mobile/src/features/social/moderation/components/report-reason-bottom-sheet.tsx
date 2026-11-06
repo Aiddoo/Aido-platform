@@ -1,11 +1,5 @@
-import {
-  type UserReportFormInput,
-  type UserReportTargetType,
-  USER_REPORT_LIMITS,
-  userReportFormSchema,
-} from '@aido/api';
+import { USER_REPORT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -26,7 +20,6 @@ import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 import {
   type Control,
   FormProvider,
@@ -35,11 +28,15 @@ import {
   useFormState,
   useWatch,
 } from 'react-hook-form';
-import { match } from 'ts-pattern';
 
-import { toReportFailureAction } from '../domains/moderation.error';
-import type { UserReportTarget } from '../domains/user-report.model';
+import { isReportTargetUnavailable } from '../domains/moderation.error';
 import { useReportContentMutationOptions } from '../queries/moderation.mutations';
+import {
+  type UserReportFormInput,
+  userReportFormSchema,
+  type UserReportTarget,
+  type UserReportTargetType,
+} from '../schemas/user-report.schema';
 
 const TARGET_CAPTION_KEYS = {
   PROFILE: 'report.caption.PROFILE',
@@ -68,8 +65,7 @@ export function ReportReasonBottomSheet({
   ...sheetProps
 }: ReportReasonBottomSheetProps) {
   const { t } = useTranslation('moderation');
-  const { showBoundary } = useErrorBoundary();
-  const { success, error: showErrorToast } = useAppToast();
+  const { success } = useAppToast();
   const sheet = useSheetRoute('/feed');
   const reportContent = useMutation(useReportContentMutationOptions());
   const formMethods = useForm({
@@ -81,16 +77,10 @@ export function ReportReasonBottomSheet({
   const handleReport = async (form: UserReportFormInput) => {
     try {
       await reportContent.mutateAsync({ target, form });
-    } catch (reportError) {
-      if (!isApiError(reportError)) {
-        showBoundary(reportError);
-        return;
+    } catch (error) {
+      if (isReportTargetUnavailable(error)) {
+        sheet.close();
       }
-      showErrorToast(reportError.message);
-      match(toReportFailureAction(reportError))
-        .with('close', () => sheet.close())
-        .with('stay', () => undefined)
-        .exhaustive();
       return;
     }
 

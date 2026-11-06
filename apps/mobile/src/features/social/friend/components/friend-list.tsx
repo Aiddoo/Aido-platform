@@ -3,8 +3,8 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
-import type { BlockTarget } from '@src/features/social/moderation/domains/user-block.model';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import type { BlockTarget } from '@src/features/social/moderation/schemas/user-block.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -264,7 +264,7 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
             icon={FlagIcon}
             title={t('menu.report')}
             onPress={() => {
-              const target = UserReportPolicy.profileTarget({ userId });
+              const target = UserReportPolicy.createProfileReportTarget({ userId });
               push({
                 pathname: '/users/[userId]/report',
                 params: { userId, name: displayName, targetType: target.targetType },

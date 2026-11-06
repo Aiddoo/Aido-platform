@@ -152,7 +152,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
     receivedCheer == null
       ? undefined
       : () => {
-          const target = UserReportPolicy.cheerMessageTarget(receivedCheer);
+          const target = UserReportPolicy.createCheerMessageReportTarget(receivedCheer);
           push({
             pathname: '/users/[userId]/report',
             params: {

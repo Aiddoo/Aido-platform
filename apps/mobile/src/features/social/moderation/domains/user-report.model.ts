@@ -1,12 +1,10 @@
-import type { CreateUserReportInput, UserReportFormInput } from '@aido/api';
+import type {
+  UserReportFormInput,
+  UserReportRequest,
+  UserReportTarget,
+} from '../schemas/user-report.schema';
 
-/** 신고할 대상. 시트를 연 화면이 정하고 시트는 사유와 상세만 받는다 */
-export type UserReportTarget = Pick<
-  CreateUserReportInput,
-  'targetUserId' | 'targetType' | 'targetId'
->;
-
-function toTodoReportTarget({
+export function createTodoReportTarget({
   todoId,
   ownerId,
 }: {
@@ -16,7 +14,7 @@ function toTodoReportTarget({
   return { targetUserId: ownerId, targetType: 'TODO', targetId: String(todoId) };
 }
 
-export function toCommentReportTarget({
+export function createCommentReportTarget({
   commentId,
   authorId,
 }: {
@@ -26,11 +24,11 @@ export function toCommentReportTarget({
   return { targetUserId: authorId, targetType: 'COMMENT', targetId: commentId };
 }
 
-function toProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
+export function createProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
   return { targetUserId: userId, targetType: 'PROFILE' };
 }
 
-function toNudgeMessageReportTarget({
+export function createNudgeMessageReportTarget({
   nudgeId,
   senderId,
 }: {
@@ -40,7 +38,7 @@ function toNudgeMessageReportTarget({
   return { targetUserId: senderId, targetType: 'NUDGE_MESSAGE', targetId: String(nudgeId) };
 }
 
-function toCheerMessageReportTarget({
+export function createCheerMessageReportTarget({
   cheerId,
   senderId,
 }: {
@@ -51,11 +49,12 @@ function toCheerMessageReportTarget({
 }
 
 /** 공백만 적은 상세 내용은 보내지 않아 서버가 상세 없이 접수한다 */
-export function toCreateUserReportInput(
+export function createUserReportRequest(
   target: UserReportTarget,
   form: UserReportFormInput,
-): CreateUserReportInput {
+): UserReportRequest {
   const detail = form.detail?.trim();
+
   return {
     ...target,
     reason: form.reason,
@@ -64,10 +63,10 @@ export function toCreateUserReportInput(
 }
 
 export const UserReportPolicy = {
-  todoTarget: toTodoReportTarget,
-  commentTarget: toCommentReportTarget,
-  profileTarget: toProfileReportTarget,
-  nudgeMessageTarget: toNudgeMessageReportTarget,
-  cheerMessageTarget: toCheerMessageReportTarget,
-  toRequest: toCreateUserReportInput,
+  createTodoReportTarget,
+  createCommentReportTarget,
+  createProfileReportTarget,
+  createNudgeMessageReportTarget,
+  createCheerMessageReportTarget,
+  createUserReportRequest,
 } as const;

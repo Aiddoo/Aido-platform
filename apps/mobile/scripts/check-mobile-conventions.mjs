@@ -156,6 +156,9 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/device/store-review/domains/',
   'apps/mobile/src/features/device/store-review/hooks/',
   'apps/mobile/src/features/device/store-review/utils/',
+  'apps/mobile/src/features/social/moderation/constants/',
+  'apps/mobile/src/features/social/moderation/domains/',
+  'apps/mobile/src/features/social/moderation/queries/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -196,6 +199,12 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/device/coachmark/',
   'apps/mobile/src/features/device/store-review/',
   'apps/mobile/src/features/planning/category/',
+  // route 훅과 스키마는 공용 useRouteParams로 옮기는 작업이 맡아 그 폴더는 뺀다
+  'apps/mobile/src/features/social/moderation/apis/',
+  'apps/mobile/src/features/social/moderation/components/',
+  'apps/mobile/src/features/social/moderation/constants/',
+  'apps/mobile/src/features/social/moderation/domains/',
+  'apps/mobile/src/features/social/moderation/queries/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;
