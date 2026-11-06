@@ -48,7 +48,7 @@ function PostReplyButton({ threadCommentId }: { threadCommentId: string }) {
   return <Pressable testID="post-reply" onPress={() => expandThread(threadCommentId)} />;
 }
 
-/** 할 일 상세 화면(`TodoDetailPane`)이 답글 묶음 위에 두는 Provider를 그대로 둔다 */
+/** 할 일 상세 화면이 답글 묶음 위에 두는 Provider를 그대로 둔다 */
 function PostedReplyThread({ thread }: { thread: TodoCommentThread }) {
   const composer = useForm({ defaultValues: NEW_TODO_COMMENT_FORM_VALUES });
 

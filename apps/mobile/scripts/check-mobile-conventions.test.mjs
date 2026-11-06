@@ -133,8 +133,8 @@ test('개요에서 대화로 가는 한 단계 route, 대화 위 신고 시트�
         'export default function Screen() { return null }',
       'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]/report.tsx':
         'export default function ReportSheet() { return null }',
-      'apps/mobile/src/features/engagement/comment/hooks/use-todo-comment-route.ts': `
-        export function useTodoCommentRoute() { router.push({ pathname: '/todo/[todoId]/comments/[commentId]' }); }
+      'apps/mobile/src/features/engagement/comment/hooks/use-comment-params.ts': `
+        export function useCommentParams() { router.push({ pathname: '/todo/[todoId]/comments/[commentId]' }); }
       `,
     },
     (errors) => {
