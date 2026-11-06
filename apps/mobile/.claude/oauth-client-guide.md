@@ -28,7 +28,7 @@ AuthService.openKakaoLogin()                  # openGoogleLogin·openNaverLogin�
 
 ## Apple: 네이티브
 
-iOS에서만 버튼을 보인다(`Platform.OS === 'ios'`). `usesAppleSignIn`은 `app.config.ts`에 있다.
+iOS에서만 버튼을 보인다(`process.env.EXPO_OS === 'ios'`). `usesAppleSignIn`은 `app.config.ts`에 있다.
 
 ```
 AuthService.openAppleLogin()

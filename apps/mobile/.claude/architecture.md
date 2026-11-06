@@ -123,7 +123,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | [함수 형태](#함수-형태)           | `export const useX = () =>` 143개와 그 밖의 모듈 수준 화살표가 남아 있다(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                     |
 | [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
 | [feature 경계](#query와-mutation) | `voice/queries/use-apply-action-plan-mutation-options.ts`가 `MEMO_QUERY_KEYS`를 직접 쓴다                                                                                                                                      |
-| [Expo 권장](#라우팅)              | `Platform.OS` 45개 파일(`process.env.EXPO_OS`로), `useContext` 7개 파일(`use`로)                                                                                                                                               |
+| [Expo 권장](#라우팅)              | `useContext` 7개 파일(`use`로)                                                                                                                                                                                                 |
 | 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                               |
 
 ---
@@ -392,7 +392,7 @@ MemoList.Loading = function Loading() {
 
 **유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`).
 
-**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `feed-date-provider`, `use-mypage-pane-layout`, `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`, `auth-provider`.
+**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `use-mypage-pane-layout`, `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`, `auth-provider`.
 
 ### 함수 형태
 
@@ -429,12 +429,16 @@ MemoList.Loading = function Loading() {
 
 - 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`다(`/todo/[todoId]`). `[id]`는 쓰지 않는다.
 - 같은 화면의 보기 상태(선택 항목, 필터, 날짜, 친구, 작성기)는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`).
-- param은 `features/{area}/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod로 검증해 읽는다. `as`로 건너뛰지 않는다. 타입은 `z.output`에서 얻고 기존 스키마(`routeIdSchema`, `feedDateParamSchema`)를 재사용한다. 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`).
+- query param은 nuqs처럼 쓴다. 값 하나면 `[value, setValue]`, 함께 쓰는 값이면 `[values, setValues]`다. 패키지는 넣지 않고 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`) 위에 훅을 만든다. 읽기와 쓰기가 `schemas/{name}-params.schema.ts`의 스키마 하나를 지난다. 스키마 이름은 `{name}ParamsSchema`이고 훅 파일에 두지 않는다.
+- 쓰는 필드의 URL 형식은 문자열이고 `z.codec`이다(`routeIdSchema`, `weatherRescheduleParamsSchema.todoIds`). `.transform`은 `z.encode`에서 터지고 `z.coerce`는 숫자로 남아 조용히 지워지므로 읽기 전용 필드(`routeIntegerStringSchema`, `openedAt`)에만 쓴다. 값 지우기는 `setParams({ date: undefined })`다. boolean은 `?isEditing=false`를 남기지 않도록 끌 때 `undefined`를 넘긴다. 없거나 잘못된 값은 `.catch`로 읽는다.
+- 호출하는 곳 없는 세터는 만들지 않는다. 쓰기가 없는 값은 튜플 없이 값 그대로 돌려준다(`useTodoSheetDateParam(): string`, `useInquiryParams()`). 경로 세그먼트(`/todo/[todoId]`)는 URL 상태가 아니라 화면의 정체성이라 객체를 돌려준다(`useTodoScreenParams()`, `useAchievementParams()`).
+- 값을 바꿀 때 함께 지울 값이 있으면 그 규칙은 세터 안에 둔다. 호출부가 잊을 수 없다(`useFeedFriendParam`의 `selectFriend`, `useFeedSelectedTodo`의 세터, `CLEARED_TODO_SELECTION`). 공개 세터로 안 되는 넘김(접힌 화면의 상세 넘김)도 훅이 맡는다(`useFeedTodoDetailHandoff`, `useMemoDetailHandoff`). `router.setParams`, `useLocalSearchParams` 구조 분해, 파라미터 훅 파일의 `z.object`는 `check:conventions`가 막는다.
+- 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`). `as`로 건너뛰지 않는다.
 - `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
 - `useGlobalSearchParams`를 화면 훅에서 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 렌더된다. 레이아웃은 내비게이터와 Provider만 두고 자식 params를 읽지 않는다.
 - 이동은 호출부에서 `router.push({ pathname, params })`로 직접 쓴다. typed routes가 `pathname`과 동적 세그먼트를 컴파일 때 검사하므로 href 래퍼를 만들지 않는다. 경로 문자열을 잇지 않는다. 알림은 `utils/notification-destination.ts`, 위젯은 `WidgetNavigationPolicy.getRoute`가 목적지를 정한다.
 - 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의 `parse` 훅으로 좁혀진 값을 읽는다.
-- 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` param으로 바뀐다. 친구 전환은 `router.setParams`라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
+- 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` param으로 바뀐다. 친구 전환은 `useFeedFriendParam`의 세터(`router.setParams`)라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 메모(`memo`)와 말로 메모(`voice-notes`) 스택은 `slide_from_bottom`이다. `voice-notes`는 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다(`gestureEnabled: false`). 시스템 모달은 토스트·한도 안내가 뒤로 가려져 쓰지 않는다.
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenUrl`(OS 앱 안 브라우저)로 연다. 앱 자체 WebView는 없다. 예전 `aido://webview/…` 링크는 `+not-found`로 간다.
 
@@ -444,15 +448,15 @@ MemoList.Loading = function Loading() {
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복사하지 않는다. 계산할 수 있는 값은 상태로 두지 않는다.
 
-| 상태                                                  | 도구                                                                    | 판단 기준·예                                                        |
-| ----------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`     | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
-| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                          | 비동기·재조회가 필요하면 Query                                      |
-| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useXParams()` 훅(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
-| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`          | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
-| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
-| 폼 값                                                 | react-hook-form + `zodResolver`                                         | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
-| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                 | 나머지 전부                                                         |
+| 상태                                                  | 도구                                                                                | 판단 기준·예                                                        |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`                 | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
+| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                                      | 비동기·재조회가 필요하면 Query                                      |
+| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useRouteParams` 위의 튜플 훅(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
+| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage`·`ObservableSyncStorage` + `useSyncExternalStore`                      | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
+| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                            | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
+| 폼 값                                                 | react-hook-form + `zodResolver`                                                     | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
+| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                             | 나머지 전부                                                         |
 
 라이브러리가 주는 상태를 다시 만들지 않는다. 이 라이브러리 훅을 한 번 더 감싸는 훅도 만들지 않는다.
 
