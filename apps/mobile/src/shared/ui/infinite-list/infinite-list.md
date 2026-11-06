@@ -32,6 +32,7 @@ const [refreshing, onRefresh] = useRefresh(refetch);
 | ----------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------- |
 | hasNextPage, isFetchingNextPage, isFetchNextPageError | `boolean`                                     | TanStack 원본 값을 그대로 넘긴다                                           |
 | fetchNextPage                                         | `(options?: FetchNextPageOptions) => Promise` | TanStack 원본                                                              |
+| ref                                                   | `Ref<FlashListRef<T>>`                        | 스크롤 이동처럼 FlashList 명령이 필요할 때 넘긴다                          |
 | refreshing, onRefresh                                 | FlashList 원본                                | `onRefresh`가 있을 때만 당겨서 새로고침                                    |
 | ...props                                              | `FlashListProps`                              | `onEndReached`, `refreshControl`, `ListFooterComponent`는 이 부품이 맡는다 |
 

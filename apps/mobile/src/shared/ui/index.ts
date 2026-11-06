@@ -122,7 +122,12 @@ export {
 } from './icon';
 export { IconButton, type IconButtonProps } from './icon-button';
 export * from './icon-count-button';
-export { InfiniteList, type InfiniteListProps } from './infinite-list';
+export {
+  InfiniteList,
+  InfiniteListFooter,
+  useFetchNextPage,
+  type InfiniteListProps,
+} from './infinite-list';
 export { InlineNotice, type InlineNoticeProps } from './inline-notice';
 export {
   BottomSheetInput,

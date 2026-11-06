@@ -17,8 +17,8 @@ import {
   MenuActionItem,
   Button,
   DocsIcon,
-  Flex,
   HintPopoverContent,
+  InfiniteListFooter,
   HStack,
   InfoIcon,
   ListRow,
@@ -29,6 +29,7 @@ import {
   TextButton,
   TextSkeleton,
   VStack,
+  useFetchNextPage,
   useOverlay,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -36,7 +37,7 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { ActivityIndicator, Image, RefreshControl } from 'react-native';
+import { Image, RefreshControl } from 'react-native';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -57,8 +58,21 @@ import { UserList } from './user-list';
 
 export function FriendList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, dataUpdatedAt } =
-    useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
+    dataUpdatedAt,
+  } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
+  const { fetchOnEndReached, retry } = useFetchNextPage({
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  });
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
   const [refreshing, onRefresh] = useRefresh(refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
@@ -95,17 +109,13 @@ export function FriendList() {
       renderItem={({ item }) => <FriendList.Item friend={item} />}
       ListEmptyComponent={<FriendList.Empty />}
       ListFooterComponent={
-        isFetchingNextPage ? (
-          <Flex py={16} align="center">
-            <ActivityIndicator />
-          </Flex>
-        ) : undefined
+        <InfiniteListFooter
+          isFetchingNextPage={isFetchingNextPage}
+          isFetchNextPageError={isFetchNextPageError}
+          onRetry={retry}
+        />
       }
-      onEndReached={() => {
-        if (hasNextPage) {
-          return fetchNextPage({ cancelRefetch: false });
-        }
-      }}
+      onEndReached={fetchOnEndReached}
       onEndReachedThreshold={0.5}
       refreshControl={
         <RefreshControl

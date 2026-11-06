@@ -1,7 +1,8 @@
-import { FlashList, type FlashListProps } from '@shopify/flash-list';
+import { FlashList, type FlashListProps, type FlashListRef } from '@shopify/flash-list';
 import { useTranslation } from '@src/shared/i18n';
 import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
+import type { Ref } from 'react';
 import { RefreshControl } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
@@ -17,6 +18,7 @@ export interface InfiniteListProps<T> extends Omit<
   FlashListProps<T>,
   'onEndReached' | 'refreshControl' | 'ListFooterComponent'
 > {
+  ref?: Ref<FlashListRef<T>>;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   isFetchNextPageError: boolean;
@@ -24,6 +26,7 @@ export interface InfiniteListProps<T> extends Omit<
 }
 
 export function InfiniteList<T>({
+  ref,
   hasNextPage,
   isFetchingNextPage,
   isFetchNextPageError,
@@ -43,6 +46,7 @@ export function InfiniteList<T>({
   return (
     <FlashList
       {...props}
+      ref={ref}
       ListFooterComponent={
         <InfiniteListFooter
           isFetchingNextPage={isFetchingNextPage}
@@ -66,7 +70,7 @@ export function InfiniteList<T>({
   );
 }
 
-function InfiniteListFooter({
+export function InfiniteListFooter({
   isFetchingNextPage,
   isFetchNextPageError,
   onRetry,

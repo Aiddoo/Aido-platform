@@ -3,9 +3,9 @@ import { useDebouncedValue } from '@src/shared/hooks/use-debounced-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   Button,
   CheckIcon,
+  InfiniteList,
   Result,
   SearchIcon,
   VStack,
@@ -22,10 +22,9 @@ import { useGetUserSearchQueryOptions } from '../queries/get-user-search-query-o
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
 import { useSendRequestByTagMutationOptions } from '../queries/use-send-request-by-tag-mutation-options';
 import type { SearchedUserViewModel } from '../utils/view-models/searched-user.view-model';
-import { UserList } from './user-list';
+import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function FriendSearchList({ query }: { query: string }) {
-  const { t } = useTranslation('common');
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
@@ -45,7 +44,7 @@ export function FriendSearchList({ query }: { query: string }) {
   }
 
   return (
-    <UserList
+    <InfiniteList
       // 검색 중에는 키보드가 떠 있으므로 첫 탭이 키보드를 내리는 데 먹히지 않게 하고, 끌면 내린다
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
@@ -53,62 +52,60 @@ export function FriendSearchList({ query }: { query: string }) {
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <FriendSearchList.Item user={item} />}
       ListEmptyComponent={<FriendSearchList.Empty query={normalizedQuery} />}
-      ListFooterComponent={
-        search.isFetchNextPageError ? (
-          <Box py={16}>
-            <Button variant="weak" onPress={() => search.fetchNextPage()}>
-              {t('actions.retry')}
-            </Button>
-          </Box>
-        ) : undefined
-      }
-      hasNextPage={search.hasNextPage && !search.isFetchNextPageError}
+      contentContainerStyle={USER_LIST_CONTENT_STYLE}
+      hasNextPage={search.hasNextPage}
       isFetchingNextPage={search.isFetchingNextPage}
+      isFetchNextPageError={search.isFetchNextPageError}
       fetchNextPage={search.fetchNextPage}
     />
   );
 }
 
 FriendSearchList.Item = function Item({ user }: { user: SearchedUserViewModel }) {
-  const { t } = useTranslation('friend');
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
-  const cancelRequest = useMutation(useCancelRequestMutationOptions());
-  const isProcessing = sendRequest.isPending || cancelRequest.isPending;
-
   return (
     <UserList.Item
       displayName={user.displayName}
       subtitle={formatUserHashtag(user.userTag)}
       profileImage={user.profileImage}
-      right={match(user.actionState)
-        .with('friend', () => <CheckIcon width={20} height={20} colorClassName="text-gray-4" />)
-        .with('pending', () => (
-          <Button
-            variant="weak"
-            color="danger"
-            size="small"
-            display="inline"
-            isDisabled={isProcessing}
-            onPress={() => cancelRequest.mutate(user.id)}
-          >
-            {t('search.action.cancel')}
-          </Button>
-        ))
-        .with('add', () => (
-          <Button
-            variant="fill"
-            color="primary"
-            size="small"
-            display="inline"
-            isDisabled={isProcessing}
-            onPress={() => sendRequest.mutate(user.userTag)}
-          >
-            {t('search.action.add')}
-          </Button>
-        ))
-        .exhaustive()}
+      right={<FriendSearchList.Action key={user.id} user={user} />}
     />
   );
+};
+
+/** 목록이 행을 재활용해도 처리 중 상태가 다른 사용자로 넘어가지 않게 사용자마다 새로 만든다 */
+FriendSearchList.Action = function Action({ user }: { user: SearchedUserViewModel }) {
+  const { t } = useTranslation('friend');
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
+  const cancelRequest = useMutation(useCancelRequestMutationOptions());
+  const isProcessing = sendRequest.isPending || cancelRequest.isPending;
+
+  return match(user.actionState)
+    .with('friend', () => <CheckIcon width={20} height={20} colorClassName="text-gray-4" />)
+    .with('pending', () => (
+      <Button
+        variant="weak"
+        color="danger"
+        size="small"
+        display="inline"
+        isDisabled={isProcessing}
+        onPress={() => cancelRequest.mutate(user.id)}
+      >
+        {t('search.action.cancel')}
+      </Button>
+    ))
+    .with('add', () => (
+      <Button
+        variant="fill"
+        color="primary"
+        size="small"
+        display="inline"
+        isDisabled={isProcessing}
+        onPress={() => sendRequest.mutate(user.userTag)}
+      >
+        {t('search.action.add')}
+      </Button>
+    ))
+    .exhaustive();
 };
 
 FriendSearchList.Loading = function Loading() {

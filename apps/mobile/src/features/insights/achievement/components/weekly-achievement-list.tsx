@@ -1,4 +1,4 @@
-import { FlashList, type FlashListProps } from '@shopify/flash-list';
+import type { FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -11,6 +11,7 @@ import {
   ArrowRightIcon,
   Box,
   HStack,
+  InfiniteList,
   ListRow,
   QueryErrorActions,
   type QueryErrorFallbackProps,
@@ -23,7 +24,6 @@ import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { ActivityIndicator, RefreshControl } from 'react-native';
 
 import { AchievementPolicy, type WeeklyAchievement } from '../domains/achievement.model';
 import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
@@ -31,6 +31,7 @@ import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/get-wee
 import { BadgeIcon } from './badge-icon';
 
 const LOADING_ROW_COUNT = 5;
+const LIST_BOTTOM_SPACE = 32;
 
 type WeeklyAchievementListProps = Pick<FlashListProps<WeeklyAchievement>, 'ListHeaderComponent'>;
 
@@ -38,41 +39,31 @@ export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievement
   const today = useToday();
   const year = today.getFullYear();
   const queryClient = useQueryClient();
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
   const [refreshing, onRefresh] = useRefresh(() =>
     invalidateWeeklyAchievements(queryClient, { year }),
   );
 
   return (
-    <FlashList
+    <InfiniteList
       data={data.items}
       keyExtractor={(item) => String(item.id)}
       contentContainerClassName="px-4"
       contentContainerStyle={{
         flexGrow: 1,
         justifyContent: data.items.length === 0 ? 'center' : 'flex-start',
+        paddingBottom: LIST_BOTTOM_SPACE,
       }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      onEndReached={() => {
-        if (hasNextPage && !isFetching) {
-          return fetchNextPage({ cancelRefetch: false });
-        }
-      }}
-      onEndReachedThreshold={0.5}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item }) => <WeeklyAchievementList.Item achievement={item} />}
       ListEmptyComponent={<WeeklyAchievementList.Empty />}
-      ListFooterComponent={
-        <>
-          {isFetchingNextPage && (
-            <Box className="py-4 items-center">
-              <ActivityIndicator />
-            </Box>
-          )}
-          <Spacing size={32} />
-        </>
-      }
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      isFetchNextPageError={isFetchNextPageError}
+      fetchNextPage={fetchNextPage}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     />
   );
 }

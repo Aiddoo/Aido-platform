@@ -1,4 +1,3 @@
-import { FlashList } from '@shopify/flash-list';
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
@@ -9,12 +8,12 @@ import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   ChatBubbleIcon,
   CloseIcon,
   Flex,
   HeartFilledIcon,
   HStack,
+  InfiniteList,
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Result,
@@ -25,7 +24,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from 'react';
-import { RefreshControl, type ScrollViewProps } from 'react-native';
+import type { ScrollViewProps } from 'react-native';
 import Animated, {
   cancelAnimation,
   type SharedValue,
@@ -36,7 +35,6 @@ import Animated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import { useResolveClassNames } from 'uniwind';
 
 import {
   TodoCommentPolicy,
@@ -53,7 +51,6 @@ import { useTodoCommentReveal } from './todo-comment-reveal';
 import { TodoCommentRailRow } from './todo-comment-thread-rail';
 
 const LOADING_ROW_COUNT = 3;
-const END_REACHED_THRESHOLD = 0.5;
 const ANCHOR_VIEW_POSITION = 0.2;
 const HINT_HEART_SIZE = 20;
 const HINT_CLOSE_SIZE = 16;
@@ -63,19 +60,21 @@ const HINT_PULSE = { delayMs: 1_200, peakScale: 1.28 } as const;
 const contentContainerStyle = { flexGrow: 1 };
 const keyExtractor = (thread: TodoCommentThread) => thread.comment.id;
 
-type ThreadFlashListProps = ComponentProps<typeof FlashList<TodoCommentThread>>;
+type ThreadListProps = ComponentProps<typeof InfiniteList<TodoCommentThread>>;
 
 interface TodoCommentThreadListProps extends Omit<
-  ThreadFlashListProps,
+  ThreadListProps,
   | 'data'
   | 'keyExtractor'
   | 'renderItem'
   | 'renderScrollComponent'
-  | 'refreshControl'
-  | 'onEndReached'
-  | 'onEndReachedThreshold'
+  | 'refreshing'
+  | 'onRefresh'
+  | 'hasNextPage'
+  | 'isFetchingNextPage'
+  | 'isFetchNextPageError'
+  | 'fetchNextPage'
   | 'ListEmptyComponent'
-  | 'ListFooterComponent'
   | 'ListHeaderComponent'
   | 'extraData'
 > {
@@ -91,14 +90,12 @@ interface TodoCommentThreadListProps extends Omit<
 export function TodoCommentThreadList({
   header,
   extraContentPadding,
-  ...flashListProps
+  ...listProps
 }: TodoCommentThreadListProps) {
   const { todoId } = useTodoScreenParams();
   const { sort, comment } = useCommentParams();
   const queryClient = useQueryClient();
   const { listRef } = useTodoCommentReveal();
-  const { t } = useTranslation('todoComment');
-  const { color: refreshTint } = useResolveClassNames('text-main');
   const threadsQuery = useInfiniteQuery(
     useGetTodoCommentThreadsInfiniteQueryOptions({ todoId, sort, anchorCommentId: comment }),
   );
@@ -132,8 +129,8 @@ export function TodoCommentThreadList({
   }
 
   return (
-    <FlashList
-      {...flashListProps}
+    <InfiniteList
+      {...listProps}
       ref={listRef}
       key={`${todoId}:${sort}:${comment ?? ''}`}
       data={threads}
@@ -160,27 +157,12 @@ export function TodoCommentThreadList({
       ListEmptyComponent={
         threadsQuery.isPending ? TodoCommentThreadList.Loading : TodoCommentThreadList.Empty
       }
-      ListFooterComponent={
-        threadsQuery.isFetchingNextPage ? (
-          <Box py={12} className="items-center">
-            <Spinner size="sm" accessibilityLabel={t('list.loadingMore')} />
-          </Box>
-        ) : null
-      }
-      onEndReached={() => {
-        if (threadsQuery.hasNextPage && !threadsQuery.isFetchingNextPage) {
-          threadsQuery.fetchNextPage({ cancelRefetch: false }).catch(noop);
-        }
-      }}
-      onEndReachedThreshold={END_REACHED_THRESHOLD}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={refresh}
-          tintColor={refreshTint}
-          colors={refreshTint == null ? undefined : [refreshTint]}
-        />
-      }
+      hasNextPage={threadsQuery.hasNextPage}
+      isFetchingNextPage={threadsQuery.isFetchingNextPage}
+      isFetchNextPageError={threadsQuery.isFetchNextPageError}
+      fetchNextPage={threadsQuery.fetchNextPage}
+      refreshing={isRefreshing}
+      onRefresh={refresh}
     />
   );
 }

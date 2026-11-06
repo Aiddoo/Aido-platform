@@ -7,9 +7,7 @@ import { Skeleton } from 'heroui-native';
 import type { FriendRequest } from '../domains/friend.model';
 import { useGetSentRequestsQueryOptions } from '../queries/get-sent-requests-query-options';
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
-import { UserList } from './user-list';
-
-const LIST_CONTENT_STYLE = { flexGrow: 1 };
+import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function SentRequestList() {
   const { t } = useTranslation('friend');
@@ -25,7 +23,7 @@ export function SentRequestList() {
       data={requests}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <SentRequestList.Item request={item} />}
-      contentContainerStyle={LIST_CONTENT_STYLE}
+      contentContainerStyle={USER_LIST_CONTENT_STYLE}
       ListHeaderComponent={
         <Box py={12}>
           <Text size="b4" shade={6}>

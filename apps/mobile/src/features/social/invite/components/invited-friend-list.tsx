@@ -1,8 +1,11 @@
 import type { RedemptionStatus } from '@aido/api';
-import { UserList } from '@src/features/social/friend/components/user-list';
+import {
+  USER_LIST_CONTENT_STYLE,
+  UserList,
+} from '@src/features/social/friend/components/user-list';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { PawIcon, type Result } from '@src/shared/ui';
+import { InfiniteList, PawIcon, type Result } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import type { ComponentProps, ReactElement } from 'react';
@@ -25,20 +28,21 @@ export function InvitedFriendList({
   ListEmptyComponent = <InvitedFriendList.Empty />,
 }: InvitedFriendListProps) {
   const queryClient = useQueryClient();
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useSuspenseInfiniteQuery(
-    useGetInvitedFriendsInfiniteQueryOptions({ status }),
-  );
+  const { data, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
+    useSuspenseInfiniteQuery(useGetInvitedFriendsInfiniteQueryOptions({ status }));
   // 발자국 요약(탭 숫자)과 목록을 함께 새로 고친다
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateInvite(queryClient));
 
   return (
-    <UserList
+    <InfiniteList
       data={data}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
+      contentContainerStyle={USER_LIST_CONTENT_STYLE}
       ListEmptyComponent={ListEmptyComponent}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
+      isFetchNextPageError={isFetchNextPageError}
       fetchNextPage={fetchNextPage}
       refreshing={isRefreshing}
       onRefresh={handleRefresh}

@@ -1,4 +1,3 @@
-import { FlashList, type FlashListProps } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -9,66 +8,12 @@ import {
   type QueryErrorFallbackProps,
   Result,
 } from '@src/shared/ui';
-import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
+import { ScrollView } from 'react-native';
 
-const contentContainerStyle = { flexGrow: 1 };
-
-interface UserListProps<T> extends Omit<
-  FlashListProps<T>,
-  'onEndReached' | 'refreshControl' | 'contentContainerStyle'
-> {
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  fetchNextPage: (options?: FetchNextPageOptions) => Promise<unknown>;
-}
-
-export function UserList<T>({
-  hasNextPage,
-  isFetchingNextPage,
-  fetchNextPage,
-  refreshing,
-  onRefresh,
-  ListFooterComponent,
-  ...props
-}: UserListProps<T>) {
-  const { color: refreshTint } = useResolveClassNames('text-main');
-
-  return (
-    <FlashList
-      {...props}
-      ListFooterComponent={
-        ListFooterComponent ??
-        (isFetchingNextPage ? (
-          <Flex py={16} align="center">
-            <ActivityIndicator color={refreshTint} />
-          </Flex>
-        ) : null)
-      }
-      onEndReached={() => {
-        if (hasNextPage) {
-          return fetchNextPage({ cancelRefetch: false });
-        }
-      }}
-      onEndReachedThreshold={0.5}
-      refreshControl={
-        onRefresh == null ? undefined : (
-          <RefreshControl
-            refreshing={refreshing ?? false}
-            onRefresh={onRefresh}
-            tintColor={refreshTint}
-            colors={refreshTint == null ? undefined : [refreshTint]}
-          />
-        )
-      }
-      contentContainerStyle={contentContainerStyle}
-    />
-  );
-}
+export const USER_LIST_CONTENT_STYLE = { flexGrow: 1 };
 
 interface UserListItemProps extends Omit<ListRowProps, 'left' | 'contents'> {
   displayName: string;
@@ -76,12 +21,7 @@ interface UserListItemProps extends Omit<ListRowProps, 'left' | 'contents'> {
   profileImage: string | null;
 }
 
-UserList.Item = function Item({
-  displayName,
-  subtitle,
-  profileImage,
-  ...props
-}: UserListItemProps) {
+function Item({ displayName, subtitle, profileImage, ...props }: UserListItemProps) {
   return (
     <ListRow
       left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}
@@ -101,7 +41,7 @@ UserList.Item = function Item({
       {...props}
     />
   );
-};
+}
 
 interface UserListLoadingProps {
   rows?: number;
@@ -110,14 +50,14 @@ interface UserListLoadingProps {
   ListHeaderComponent?: ReactNode;
 }
 
-UserList.Loading = function Loading({
+function Loading({
   rows = 3,
   hasSubtitle = false,
   right,
   ListHeaderComponent,
 }: UserListLoadingProps) {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={contentContainerStyle}>
+    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE}>
       {ListHeaderComponent}
       {range(rows).map((index) => (
         <ListRow
@@ -129,17 +69,20 @@ UserList.Loading = function Loading({
       ))}
     </ScrollView>
   );
-};
+}
 
-UserList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation();
   return <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />;
-};
+}
 
-UserList.Empty = function Empty(props: ComponentProps<typeof Result>) {
+function Empty(props: ComponentProps<typeof Result>) {
   return (
     <Flex flex={1} justify="center" align="center">
       <Result {...props} />
     </Flex>
   );
-};
+}
+
+/** 사용자 행 목록의 행, 로딩, 오류, 빈 상태. 목록 자체는 InfiniteList가 맡는다 */
+export const UserList = { Item, Loading, Error: ErrorState, Empty };
