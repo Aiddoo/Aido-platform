@@ -155,7 +155,7 @@ export function TodoDetailPane({ presentation }) {
 
 ## 분석
 
-`telemetry-keys.ts`의 `TodoCommentEventMap`만 쓴다. 이벤트와 매개변수는 [측정 계획](../docs/analytics-measurement-plan.md#1-2-이벤트-기능별)에 있다.
+`constants/todo-comment.events.ts`의 `AppEventMap`만 쓴다. 이벤트와 매개변수는 [측정 계획](../docs/analytics-measurement-plan.md#1-2-이벤트-기능별)에 있다.
 
 ## 파일
 
@@ -163,7 +163,7 @@ export function TodoDetailPane({ presentation }) {
 features/engagement/comment/
   domains/ todo-comment.model.ts  todo-comment-composer.model.ts
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
-  constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts
+  constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
   queries/ todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
   hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-comment-double-tap.ts  use-is-todo-comment-submitting.ts  use-todo-comment-mutation-error-handler.ts
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
