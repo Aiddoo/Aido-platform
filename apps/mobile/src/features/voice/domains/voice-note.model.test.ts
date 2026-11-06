@@ -1,4 +1,5 @@
 import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
+import { range } from 'es-toolkit';
 
 import {
   createVoiceNoteDigest,
@@ -308,7 +309,7 @@ describe('createDigestInput', () => {
 
   test('문장이 서버 상한을 넘으면 이웃끼리 묶어 상한 안에 넣고 깃발은 남긴다', () => {
     // Given
-    const sentences = Array.from({ length: 1_000 }, (_, index) =>
+    const sentences = range(1_000).map((index) =>
       createVoiceNoteSentence({
         text: `문장 ${index}`,
         startMs: index * 1_000,

@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import {
   applyCaptionResult,
   commitProvisional,
@@ -32,7 +34,9 @@ describe('splitIntoSentences', () => {
 
   test('문장부호가 없는 긴 말은 띄어쓰기에서 끊어 카드가 끝없이 길어지지 않게 한다', () => {
     // Given
-    const text = Array.from({ length: 40 }, () => '가나다라').join(' ');
+    const text = range(40)
+      .map(() => '가나다라')
+      .join(' ');
 
     // When
     const sentences = splitIntoSentences(text, 30);

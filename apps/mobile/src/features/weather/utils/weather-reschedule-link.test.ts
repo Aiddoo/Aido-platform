@@ -1,4 +1,5 @@
 import { buildWeatherRescheduleDeepLink } from '@aido/api';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
 
 import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
@@ -31,7 +32,10 @@ describe('weatherRescheduleParamsSchema', () => {
 
   it('한 번에 옮길 할 일은 50개까지만 받는다', () => {
     // Given 50개와 51개 id
-    const ids = (count: number) => Array.from({ length: count }, (_, index) => index + 1).join(',');
+    const ids = (count: number) =>
+      range(count)
+        .map((index) => index + 1)
+        .join(',');
 
     // When / Then
     expect(rescheduleTodoIdsParamSchema.safeParse({ todoIds: ids(50) }).success).toBe(true);

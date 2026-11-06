@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { getSpeechHints } from './speech-hints';
 
 describe('getSpeechHints', () => {
@@ -15,7 +17,7 @@ describe('getSpeechHints', () => {
 
   test('내 단어가 많아도 Apple 권장 상한 100개를 넘지 않는다', () => {
     // Given
-    const personalHints = Array.from({ length: 150 }, (_, index) => `단어${index}`);
+    const personalHints = range(150).map((index) => `단어${index}`);
 
     // When
     const hints = getSpeechHints('ko-KR', personalHints);

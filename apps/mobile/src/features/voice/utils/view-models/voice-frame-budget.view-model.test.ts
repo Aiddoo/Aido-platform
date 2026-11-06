@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { VOICE_FRAME_BUDGET } from '../../constants/voice.constants';
 import { addFrameTime, shouldUseLightOrb } from './voice-frame-budget.view-model';
 
@@ -14,7 +16,7 @@ describe('저사양 판단', () => {
     const frameCount = Math.ceil(VOICE_FRAME_BUDGET.sustainedSlowMs / SLOW_FRAME);
 
     // When
-    const slowMs = runFrames(Array.from({ length: frameCount }, () => SLOW_FRAME));
+    const slowMs = runFrames(range(frameCount).map(() => SLOW_FRAME));
 
     // Then
     expect(shouldUseLightOrb(slowMs)).toBe(true);
@@ -22,8 +24,8 @@ describe('저사양 판단', () => {
 
   it('잠깐 느렸다가 빨라지면 쌓인 시간이 줄어 내리지 않는다', () => {
     // Given
-    const hiccup = Array.from({ length: 20 }, () => SLOW_FRAME);
-    const recovered = Array.from({ length: 200 }, () => FAST_FRAME);
+    const hiccup = range(20).map(() => SLOW_FRAME);
+    const recovered = range(200).map(() => FAST_FRAME);
 
     // When
     const slowMs = runFrames([...hiccup, ...recovered]);

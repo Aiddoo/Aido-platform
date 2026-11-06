@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { createInvite } from '../../__tests__/invite.factories';
 import {
   calculateBoardIndex,
@@ -64,7 +66,7 @@ describe('calculatePawPrintGrid', () => {
 
   it('어떤 폭에서도 줄 폭이 판 폭을 넘지 않고 생선 뼈가 최소 길이 이상이다', () => {
     // Given 접힌 Duo부터 iPad까지 1pt 간격
-    const widths = Array.from({ length: 300 }, (_, offset) => 200 + offset);
+    const widths = range(300).map((offset) => 200 + offset);
 
     // When
     const grids = widths.map((width) => ({ width, grid: calculatePawPrintGrid(width) }));

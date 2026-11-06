@@ -1,3 +1,4 @@
+import { range } from 'es-toolkit';
 import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
@@ -86,14 +87,14 @@ function buildProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
     weekRangeLabel: '9/27 – 10/3',
     openAppUrl: 'aido-dev://feed?date=today',
     addTodoUrl: 'aido-dev://feed?date=today&action=add-todo',
-    topTodos: Array.from({ length: 8 }, (_, index) => ({
+    topTodos: range(8).map((index) => ({
       id: index + 1,
       title: `Widget QA ${index + 1}`,
       completed: index < 3,
       color: '#4CBFA8',
       destination: `aido-dev://todo/${index + 1}`,
     })),
-    weekDays: Array.from({ length: 7 }, (_, index) => ({
+    weekDays: range(7).map((index) => ({
       date: `2026-10-0${index + 1}`,
       weekdayLabel:
         (locale === 'ko'

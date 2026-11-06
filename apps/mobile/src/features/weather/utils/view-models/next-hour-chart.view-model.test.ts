@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from './next-hour-chart.view-model';
 
 const START = Date.parse('2026-11-02T06:26:00.000Z');
@@ -30,7 +32,7 @@ describe('강수 강도와 그래프 높이', () => {
 describe('toNextHourChart', () => {
   it('강수가 없으면 선이 바닥선 위에 놓이고 길이는 그래프 폭 이상이다', () => {
     // Given 1시간 내내 0mm/h When 그래프를 만들면 Then 선이 바닥선을 따라간다
-    const chart = toNextHourChart(createMinutes(Array.from({ length: 60 }, () => 0)));
+    const chart = toNextHourChart(createMinutes(range(60).map(() => 0)));
 
     expect(chart?.line.startsWith(`M0,${NEXT_HOUR_CHART_SIZE.baseline}`)).toBe(true);
     expect(chart?.length).toBeGreaterThanOrEqual(NEXT_HOUR_CHART_SIZE.width);

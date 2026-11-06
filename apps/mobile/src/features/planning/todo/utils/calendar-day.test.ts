@@ -1,4 +1,5 @@
 import { isDateToday, isSaturday, isSunday } from '@src/features/planning/todo/utils/calendar-date';
+import { range } from 'es-toolkit';
 
 import {
   getDatePickerDayStyle,
@@ -298,7 +299,7 @@ describe('getWeekRangeBand', () => {
     ...overrides,
   });
   const week = (overrides: Record<number, Parameters<typeof day>[0]>) =>
-    Array.from({ length: 7 }, (_, index) => day(overrides[index]));
+    range(7).map((index) => day(overrides[index]));
 
   test('시작 칸 가운데부터 끝 칸 가운데까지 한 덩어리로 칠한다', () => {
     // Given
@@ -317,7 +318,7 @@ describe('getWeekRangeBand', () => {
 
   test('주 전체가 기간 안이면 양 끝까지 칠한다', () => {
     // Given
-    const days = Array.from({ length: 7 }, () => day({ isInRange: true }));
+    const days = range(7).map(() => day({ isInRange: true }));
 
     // When
     const band = getWeekRangeBand(days);

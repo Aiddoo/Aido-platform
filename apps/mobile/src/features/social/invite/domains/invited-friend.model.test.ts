@@ -1,4 +1,4 @@
-import { orderBy } from 'es-toolkit';
+import { orderBy, range } from 'es-toolkit';
 
 import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.factories';
 import {
@@ -140,9 +140,7 @@ describe('InvitedFriendPolicy.summaryFriends', () => {
     [100, 5],
   ])('친구 %i명이면 앞에서 %i명을 반환한다', (count, expected) => {
     // Given
-    const friends = Array.from({ length: count }, (_, index) =>
-      createInvitedFriend({ userId: `friend-${index}` }),
-    );
+    const friends = range(count).map((index) => createInvitedFriend({ userId: `friend-${index}` }));
 
     // When
     const result = InvitedFriendPolicy.summaryFriends(friends);

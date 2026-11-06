@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import type { VoiceNoteSentence } from '../../domains/voice-note.model';
 
@@ -27,7 +29,7 @@ export function createSpeechLevels(
     }
   }
 
-  return Array.from({ length: barCount }, (_, index) => {
+  return range(barCount).map((index) => {
     if (!speechBars.has(index)) {
       return QUIET_LEVEL;
     }
@@ -125,7 +127,7 @@ export function resampleLevels(levels: readonly number[], count: number): number
   }
   const size = levels.length / count;
 
-  return Array.from({ length: count }, (_, slot) => {
+  return range(count).map((slot) => {
     const from = Math.floor(slot * size);
     const to = Math.max(from + 1, Math.floor((slot + 1) * size));
     return Math.max(...levels.slice(from, to));

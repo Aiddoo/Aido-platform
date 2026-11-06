@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { getSpeechContextStrings } from './speech-context';
 
 describe('getSpeechContextStrings', () => {
@@ -18,7 +20,7 @@ describe('getSpeechContextStrings', () => {
   it('너무 긴 제목은 힌트로 쓰지 않고 전체는 100개를 넘기지 않는다', () => {
     // Given
     const source = {
-      categoryNames: Array.from({ length: 120 }, (_, index) => `카테고리${index}`),
+      categoryNames: range(120).map((index) => `카테고리${index}`),
       todoTitles: ['가'.repeat(31)],
     };
 

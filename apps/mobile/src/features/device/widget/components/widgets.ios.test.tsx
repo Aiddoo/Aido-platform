@@ -2,6 +2,7 @@ import { runInNewContext } from 'node:vm';
 
 import * as widgetComponents from '@expo/ui/swift-ui';
 import * as widgetModifiers from '@expo/ui/swift-ui/modifiers';
+import { range } from 'es-toolkit';
 import { createWidget } from 'expo-widgets';
 import { Children, createElement, isValidElement, type ReactNode } from 'react';
 
@@ -105,7 +106,7 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
       } = toWidgetSnapshot(
         {
           today: buildWidgetSummary({
-            topTodos: Array.from({ length: 8 }, (_, index) => ({
+            topTodos: range(8).map((index) => ({
               id: index + 1,
               title: `QA 할 일 ${index + 1}`,
               completed: false,

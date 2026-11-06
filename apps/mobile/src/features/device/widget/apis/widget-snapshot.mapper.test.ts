@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import {
   buildWidgetSnapshotContext,
   buildWidgetSummary,
@@ -143,7 +145,7 @@ describe('toWidgetSnapshot', () => {
 
   it('표시 한도(10개) 초과분은 절단한다', () => {
     // Given - 총 13개 중 topTodos 10개 도착
-    const topTodos = Array.from({ length: 10 }, (_, i) => ({
+    const topTodos = range(10).map((i) => ({
       id: i + 1,
       title: `할 일 ${i + 1}`,
       completed: false,

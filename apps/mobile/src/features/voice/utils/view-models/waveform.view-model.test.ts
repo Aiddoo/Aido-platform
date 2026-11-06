@@ -1,3 +1,5 @@
+import { range } from 'es-toolkit';
+
 import { createVoiceNoteSentence } from '../../__tests__/voice-note.factories';
 import {
   appendLevelSample,
@@ -109,10 +111,9 @@ describe('getTimelineLevel', () => {
 describe('appendTimelineBar', () => {
   test('오래 녹음해도 칸 수는 정한 길이를 넘지 않고 최근 칸을 남긴다', () => {
     // Given
-    const bars = Array.from({ length: 18_000 }, (_, index) => index).reduce<readonly number[]>(
-      (current, bar) => appendTimelineBar(current, bar, 160),
-      [],
-    );
+    const bars = range(18_000)
+      .map((index) => index)
+      .reduce<readonly number[]>((current, bar) => appendTimelineBar(current, bar, 160), []);
 
     // Then
     expect(bars).toHaveLength(160);

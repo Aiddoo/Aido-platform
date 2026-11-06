@@ -1,4 +1,5 @@
 import type { WeatherHourlyForecast } from '@aido/api';
+import { range } from 'es-toolkit';
 
 import {
   createHourlyForecastDto,
@@ -66,7 +67,7 @@ describe('WeatherHourlyPolicy.summary', () => {
   it('내일 비가 오면 그 전 하늘과 함께 다음 날이라고 표시한다', () => {
     // Given 오늘 밤까지 흐리고 다음 날 새벽 비 When 요약하면 Then 내일 비와 흐린 하늘을 반환한다
     const report = createWeatherReport({
-      hourly: createHours([...Array.from({ length: 10 }, () => DRY_CLOUDY), RAIN]),
+      hourly: createHours([...range(10).map(() => DRY_CLOUDY), RAIN]),
     });
 
     expect(WeatherHourlyPolicy.summary(report, NOW)).toEqual({
