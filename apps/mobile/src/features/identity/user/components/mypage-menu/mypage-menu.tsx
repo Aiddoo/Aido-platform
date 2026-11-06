@@ -34,7 +34,7 @@ import {
   type MyPageMenuPathname,
   useMyPageMenuNavigation,
 } from '../../hooks/use-mypage-menu-navigation';
-import { useGetMeQueryOptions } from '../../queries/get-me-query-options';
+import { useGetMeQueryOptions } from '../../queries/user.queries';
 
 const MENU_ICON_SIZE = 20;
 

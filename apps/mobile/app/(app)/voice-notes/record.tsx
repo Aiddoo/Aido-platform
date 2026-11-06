@@ -1,7 +1,7 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import {
   RECORD_CONTROL_ICON_SIZE,
   RecordControl,

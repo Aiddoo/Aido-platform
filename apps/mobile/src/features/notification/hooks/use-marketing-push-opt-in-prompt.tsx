@@ -1,5 +1,5 @@
 import { useMarketingPushPromptService } from '@src/bootstrap/providers/di-context';
-import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
+import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack } from '@src/shared/analytics';
 import { useToday } from '@src/shared/hooks/use-today';

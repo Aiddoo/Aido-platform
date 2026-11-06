@@ -1,6 +1,6 @@
 import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';

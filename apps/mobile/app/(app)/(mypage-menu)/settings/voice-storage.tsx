@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import { useTrack } from '@src/shared/analytics';

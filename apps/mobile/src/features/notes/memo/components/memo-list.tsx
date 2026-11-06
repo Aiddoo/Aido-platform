@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
 import { formatDateLabel } from '@src/shared/date/date-format';

@@ -4,8 +4,8 @@ import { BottomSheet, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { useGetMeQueryOptions } from '../queries/get-me-query-options';
-import { useUpdateProfileMutationOptions } from '../queries/use-update-profile-mutation-options';
+import { useUpdateProfileMutationOptions } from '../queries/user.mutations';
+import { useGetMeQueryOptions } from '../queries/user.queries';
 import { UserAvatar } from './user-avatar';
 
 interface ProfileImageBottomSheetProps {

@@ -26,7 +26,7 @@ import { Suspense } from 'react';
 
 import { UserPolicy } from '../../domains/user.model';
 import { useMyPageMenuNavigation } from '../../hooks/use-mypage-menu-navigation';
-import { useGetMeQueryOptions } from '../../queries/get-me-query-options';
+import { useGetMeQueryOptions } from '../../queries/user.queries';
 import { MyPageMenu } from '../mypage-menu/mypage-menu';
 import { ProfileCard } from '../profile-card';
 

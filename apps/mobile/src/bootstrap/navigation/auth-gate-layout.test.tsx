@@ -48,7 +48,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     useFeatureAttribution: () => featureAttribution,
   };
 });
-jest.mock('@src/features/identity/user/queries/get-me-query-options', () => ({
+jest.mock('@src/features/identity/user/queries/user.queries', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'test-account' }),

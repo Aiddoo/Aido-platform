@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { BadgeIcon } from '@src/features/insights/achievement/components/badge-icon';
 import { Certificate } from '@src/features/insights/achievement/components/certificate';
 import { AchievementPolicy } from '@src/features/insights/achievement/domains/achievement.model';

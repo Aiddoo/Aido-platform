@@ -1,5 +1,5 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { type CurrentUserResponse, toUser } from '@src/features/identity/user/apis/user.mapper';
 
 import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';

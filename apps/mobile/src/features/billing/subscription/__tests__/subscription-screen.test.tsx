@@ -3,7 +3,7 @@ import type { AccessTier } from '@aido/api';
 import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { type CurrentUserResponse, toUser } from '@src/features/identity/user/apis/user.mapper';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';

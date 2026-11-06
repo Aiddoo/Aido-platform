@@ -1,4 +1,4 @@
-import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-marketing-push-consent-mutation-options';
+import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';

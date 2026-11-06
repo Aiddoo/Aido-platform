@@ -1,4 +1,4 @@
-import { createConsent } from '@src/features/identity/consent/__tests__/consent.factories';
+import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import dayjs from 'dayjs';
 
 import {

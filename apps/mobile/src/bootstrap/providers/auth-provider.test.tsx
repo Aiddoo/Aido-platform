@@ -5,7 +5,7 @@ import { createPendingRevocationRepository } from '@src/features/identity/auth/a
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
 import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';

@@ -30,7 +30,7 @@ jest.mock('../providers/di-context', () => ({
   useErrorReporter: () => mockErrorReporter,
   useWidgetNavigationRepository: () => mockRepository,
 }));
-jest.mock('@src/features/identity/user/queries/get-me-query-options', () => ({
+jest.mock('@src/features/identity/user/queries/user.queries', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'original-account' }),

@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useColdStartNotificationResponse } from '@src/features/notification/hooks/use-cold-start-notification-response';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useMarketingNotificationCategory } from '@src/features/notification/hooks/use-marketing-notification-category';

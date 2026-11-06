@@ -1,7 +1,7 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { WHATS_NEW_QUERY_KEYS } from '@src/features/app-config/whats-new/constants/whats-new-query-keys';
 import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';

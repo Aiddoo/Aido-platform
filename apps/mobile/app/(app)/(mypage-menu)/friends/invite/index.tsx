@@ -1,6 +1,6 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import ShareIcon from '@expo/material-symbols/share.xml';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { InviteLinkCard } from '@src/features/social/invite/components/invite-link-card';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { InviteRewardLines } from '@src/features/social/invite/components/invite-reward-lines';

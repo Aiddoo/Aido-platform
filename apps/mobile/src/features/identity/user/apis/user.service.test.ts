@@ -5,7 +5,7 @@ import {
   createUpdateProfileDto,
   createUserApiError,
   INVALID_DTO,
-} from '../__tests__/user.factories';
+} from '../__tests__/user.fixtures';
 import { UserService } from './user.service';
 
 describe('UserService', () => {

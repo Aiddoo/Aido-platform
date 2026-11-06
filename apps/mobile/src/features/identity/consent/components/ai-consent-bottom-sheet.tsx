@@ -1,4 +1,4 @@
-import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-ai-data-sharing-consent-mutation-options';
+import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';

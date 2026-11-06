@@ -6,7 +6,7 @@ import {
   filterAvailableCampaign,
   getBundledWhatsNewCampaign,
 } from '@src/features/app-config/whats-new/domains/whats-new.registry';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useQuery } from '@tanstack/react-query';

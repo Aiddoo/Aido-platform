@@ -1,7 +1,7 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
 import { InvitePreviewPolicy } from '@src/features/social/invite/domains/invite-preview.model';
 import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';

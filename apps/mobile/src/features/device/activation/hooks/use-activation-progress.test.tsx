@@ -18,7 +18,7 @@ jest.mock('@src/features/app-config/whats-new/queries/get-whats-new-query-option
   }),
 }));
 
-jest.mock('@src/features/identity/user/queries/get-me-query-options', () => ({
+jest.mock('@src/features/identity/user/queries/user.queries', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['me'],
     queryFn: async () => ({

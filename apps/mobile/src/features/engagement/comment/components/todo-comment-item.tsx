@@ -1,6 +1,6 @@
 import { useClipboard, useLogger } from '@src/bootstrap/providers/di-context';
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';

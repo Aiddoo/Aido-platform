@@ -1,5 +1,5 @@
 import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
-import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
+import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

@@ -4,7 +4,7 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { createConsent } from '@src/features/identity/consent/__tests__/consent.factories';
+import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type { Consent } from '@src/features/identity/consent/domains/consent.model';

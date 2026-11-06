@@ -7,8 +7,8 @@ import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
 import type { PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { ENV } from '@src/shared/config/env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';

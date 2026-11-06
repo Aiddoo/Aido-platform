@@ -1,4 +1,4 @@
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
   type CurrentUserResponse,
   CurrentUserSchema,

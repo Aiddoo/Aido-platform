@@ -2,8 +2,8 @@ import {
   type WidgetNavigationCommand,
   WidgetNavigationPolicy,
 } from '@src/features/device/widget/domains/widget-navigation.model';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLinkingURL } from 'expo-linking';

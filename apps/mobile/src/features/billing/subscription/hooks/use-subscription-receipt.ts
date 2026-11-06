@@ -1,5 +1,5 @@
 import { usePurchasesSdkManager } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useSuspenseQuery } from '@tanstack/react-query';
 

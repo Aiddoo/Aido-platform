@@ -4,7 +4,7 @@ import {
 } from '@src/features/identity/auth/__tests__/auth.factories';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
-import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.factories';
+import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.fixtures';
 import { ConsentService } from './consent.service';
 
 describe('ConsentService', () => {

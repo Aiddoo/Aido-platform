@@ -1,6 +1,6 @@
 import type { NudgeReplyKind } from '@aido/api';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import {

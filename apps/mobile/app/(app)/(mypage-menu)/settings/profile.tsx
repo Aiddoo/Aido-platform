@@ -1,7 +1,7 @@
 import { ProfileImageBottomSheet } from '@src/features/identity/user/components/profile-image-bottom-sheet';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {

@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

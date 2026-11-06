@@ -1,7 +1,7 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { useFriendStripHintService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/get-friends-infinite-query-options';
 import type { FriendUserViewModel } from '@src/features/social/friend/utils/view-models/friend-user.view-model';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';

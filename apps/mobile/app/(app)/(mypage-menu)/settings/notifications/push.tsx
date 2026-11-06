@@ -1,6 +1,6 @@
-import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
-import { useUpdateMarketingConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-marketing-consent-mutation-options';
-import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-marketing-push-consent-mutation-options';
+import { useUpdateMarketingConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
+import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
+import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';

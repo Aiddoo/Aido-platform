@@ -19,7 +19,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
 
 import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
-import { useGetMeQueryOptions } from '../queries/get-me-query-options';
+import { useGetMeQueryOptions } from '../queries/user.queries';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
 

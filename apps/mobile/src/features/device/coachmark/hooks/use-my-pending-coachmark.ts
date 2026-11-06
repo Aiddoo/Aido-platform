@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useQuery } from '@tanstack/react-query';
 
 import type { CoachmarkKind } from '../apis/coachmark.repository';

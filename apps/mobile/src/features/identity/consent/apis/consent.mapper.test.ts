@@ -1,4 +1,4 @@
-import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.factories';
+import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.fixtures';
 import { toConsent, toUpdateMarketingConsentResult } from './consent.mapper';
 
 describe('toConsent', () => {
