@@ -4,8 +4,9 @@ import { t, useTranslation } from '@src/shared/i18n';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { buildSupportMailUrl, createDiagnosticCode } from '@src/shared/utils/support-mail';
 import * as Application from 'expo-application';
+import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { Linking, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
 import { Result } from '../result/result';
