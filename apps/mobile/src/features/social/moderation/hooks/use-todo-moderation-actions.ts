@@ -1,4 +1,4 @@
-import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/get-todo-details-query-options';
+import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';

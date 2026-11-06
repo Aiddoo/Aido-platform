@@ -1,7 +1,7 @@
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { findSheetTodo } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -17,7 +17,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { useGetTodoSeriesQueryOptions } from '../queries/get-todo-series-query-options';
+import { useGetTodoSeriesQueryOptions } from '../queries/todo-composer.queries';
 import { AddTodoBottomSheet } from './add-todo-bottom-sheet';
 
 /** 키보드 시트가 폼 기본값을 할 일로 정하므로, 할 일을 읽는 동안에는 시트를 띄우지 않는다. */

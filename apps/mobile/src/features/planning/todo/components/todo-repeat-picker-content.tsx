@@ -33,15 +33,15 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
+import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { useDatePicker } from '../hooks/use-date-picker';
 import {
   getTodoRepeatFormIssue,
   getTodoRepeatFormMonthDay,
   toTodoRepeat,
   todoRepeatFormSchema,
   type TodoRepeatFormValues,
-} from '../domains/todo-repeat-form.schema';
-import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { useDatePicker } from '../hooks/use-date-picker';
+} from '../schemas/todo-repeat-form.schema';
 import {
   DAY_TYPE_TONE,
   getDatePickerDayStyle,

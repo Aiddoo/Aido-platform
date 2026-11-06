@@ -42,11 +42,11 @@ import { Suspense, useState } from 'react';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
-import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
-import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
-import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
-import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
+import { useCreateRecurringTodoMutationOptions } from '../queries/todo-composer.mutations';
+import { useCreateTodoMutationOptions } from '../queries/todo-composer.mutations';
+import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
+import { type AddTodoFormValues, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import {
   hasOnlyDateChanges,
   hasTodoUpdateChanges,

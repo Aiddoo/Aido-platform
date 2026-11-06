@@ -39,7 +39,7 @@ import { useMemo, useState } from 'react';
 
 import { useFeedDateParam } from '../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
-import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
+import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { groupFriendTodosByCategory } from '../utils/group-friend-todos-by-category';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';

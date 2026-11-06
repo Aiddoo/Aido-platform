@@ -7,7 +7,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useGetHasUpcomingRepeatQueryOptions } from '../../queries/get-has-upcoming-repeat-query-options';
+import { useGetHasUpcomingRepeatQueryOptions } from '../../queries/todo.queries';
 import { RepeatHintLine } from '../repeat-hint-line';
 
 /** 달을 넘기면 닫히고, 읽을 틈 없이 넘긴 경우에는 본 것으로 남기지 않아 멈춘 달에서 다시 열린다 */

@@ -1,5 +1,5 @@
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
-import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/todo/queries/use-update-todo-schedule-mutation-options';
+import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 

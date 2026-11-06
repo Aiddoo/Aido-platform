@@ -5,7 +5,7 @@ import {
   TodoComposerChips,
   TodoComposerSubmitButton,
 } from '@src/features/planning/composer/components/todo-composer-fields';
-import { addTodoFormSchema } from '@src/features/planning/composer/domains/add-todo-form.schema';
+import { addTodoFormSchema } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';

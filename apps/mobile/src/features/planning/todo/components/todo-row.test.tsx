@@ -3,7 +3,7 @@ import { createErrorReporterStub, createAnalyticsStub } from '@src/shared/__test
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 
-import { createParentTodo } from '../__tests__/sub-todo.factories';
+import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { TodoScheduleLine } from './todo-row';
 

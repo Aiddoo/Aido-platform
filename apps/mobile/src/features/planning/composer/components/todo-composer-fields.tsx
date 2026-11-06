@@ -39,7 +39,7 @@ import { useFormContext, type UseFormReturn, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useResolveClassNames } from 'uniwind';
 
-import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
 interface TodoComposerChipsProps {
   isSeriesOccurrence?: boolean;

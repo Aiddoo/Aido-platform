@@ -25,7 +25,7 @@ import { Suspense } from 'react';
 
 import { TodoPolicy, type TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
-import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
+import { useGetTodoDetailsQueryOptions } from '../queries/todo.queries';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 

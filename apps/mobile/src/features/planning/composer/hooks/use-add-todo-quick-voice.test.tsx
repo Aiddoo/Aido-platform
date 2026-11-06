@@ -37,7 +37,7 @@ import { router } from 'expo-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { Pressable, TextInput } from 'react-native';
 
-import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));

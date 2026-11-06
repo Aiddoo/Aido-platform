@@ -1,5 +1,5 @@
 import { TODO_REPEAT_WEEKDAYS } from '../constants/todo-repeat.constants';
-import type { TodoRepeatFormValues } from '../domains/todo-repeat-form.schema';
+import type { TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 import {
   isTodoRepeatFormPreset,
   withTodoRepeatFormBiweeklyToggled,

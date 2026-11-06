@@ -11,8 +11,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
-import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/use-create-todo-mutation-options';
-import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.factories';
+import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
+import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createMemorySyncStorage,

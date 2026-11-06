@@ -6,8 +6,8 @@ import {
   TodoProgress,
   TodoRow,
 } from '@src/features/planning/todo/components/todo-row';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/use-toggle-todo-mutation-options';
+import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import { toHHmm } from '@src/shared/date/instant';

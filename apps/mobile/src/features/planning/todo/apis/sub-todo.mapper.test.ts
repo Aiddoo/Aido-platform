@@ -1,4 +1,4 @@
-import { createTodoItemResponseDto } from '../__tests__/todo.factories';
+import { createTodoItemResponseDto } from '../__tests__/todo.fixtures';
 import { toSubTodo } from './sub-todo.mapper';
 
 describe('toSubTodo', () => {

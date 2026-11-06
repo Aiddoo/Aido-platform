@@ -1,4 +1,4 @@
-import { createParentTodo } from '../__tests__/sub-todo.factories';
+import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { type DailyCompletionsResult, TodoPolicy } from './todo.model';
 
 describe('TodoPolicy.completesAllTodos', () => {

@@ -5,7 +5,7 @@ import {
   createDailyCompletionsDto,
   createTodoDto,
   createTodoItemResponseDto,
-} from '../__tests__/todo.factories';
+} from '../__tests__/todo.fixtures';
 import { toDailyCompletionsResult, toTodo } from './todo.mapper';
 
 jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });

@@ -4,7 +4,7 @@ import { useLogger, useTodoCommentService } from '@src/bootstrap/providers/di-co
 import { TodoDetailCard } from '@src/features/planning/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
-import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/get-todo-details-query-options';
+import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';

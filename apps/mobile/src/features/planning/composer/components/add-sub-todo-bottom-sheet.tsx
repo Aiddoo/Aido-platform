@@ -7,8 +7,8 @@ import {
   useSubTodoScreenParams,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
-import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/use-delete-sub-todo-mutation-options';
+import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import {
   findSheetSubTodo,
   findSheetTodo,
@@ -48,8 +48,8 @@ import type { TextInput } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { useAddSubTodoMutationOptions } from '../queries/use-add-sub-todo-mutation-options';
-import { useUpdateSubTodoMutationOptions } from '../queries/use-update-sub-todo-mutation-options';
+import { useAddSubTodoMutationOptions } from '../queries/todo-composer.mutations';
+import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 
 type AddSubTodoBottomSheetProps = Omit<
   ComponentProps<typeof KeyboardBottomSheet>,

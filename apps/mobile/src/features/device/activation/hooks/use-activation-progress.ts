@@ -1,7 +1,7 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useGetWhatsNewQueryOptions } from '@src/features/app-config/whats-new/queries/get-whats-new-query-options';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/get-todo-existence-query-options';
+import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { toInstant } from '@src/shared/date/instant';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useQuery } from '@tanstack/react-query';

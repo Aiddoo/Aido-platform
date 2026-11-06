@@ -1,4 +1,4 @@
-import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 import {
   hasOnlyDateChanges,
   hasTodoUpdateChanges,

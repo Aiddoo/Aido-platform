@@ -5,7 +5,7 @@ import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { useCalendarRange } from '../../hooks/use-calendar-range';
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useGetDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
+import { useGetDailyCompletionsQueryOptions } from '../../queries/todo.queries';
 import { Calendar } from './calendar';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 

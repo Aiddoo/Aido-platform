@@ -41,11 +41,11 @@ import { match } from 'ts-pattern';
 
 import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
-import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
-import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub-todos-mutation-options';
-import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
-import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
-import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
+import { useReorderSubTodosMutationOptions } from '../../queries/sub-todo.mutations';
+import { useToggleSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
+import { useReorderTodoMutationOptions } from '../../queries/todo.mutations';
+import { useToggleTodoMutationOptions } from '../../queries/todo.mutations';
+import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { groupTodosByCategory } from '../../utils/group-todos-by-category';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {

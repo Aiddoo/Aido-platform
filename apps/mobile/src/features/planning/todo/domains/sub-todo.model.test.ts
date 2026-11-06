@@ -1,4 +1,4 @@
-import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories';
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
 import { SubTodoPolicy } from './sub-todo.model';
 
 describe('SubTodoPolicy', () => {

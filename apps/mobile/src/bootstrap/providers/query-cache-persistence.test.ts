@@ -1,4 +1,4 @@
-import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.factories';
+import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import type {
   DailyCompletionsResult,

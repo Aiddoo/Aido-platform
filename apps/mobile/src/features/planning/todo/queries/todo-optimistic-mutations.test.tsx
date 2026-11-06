@@ -4,9 +4,9 @@ import { ActivationService } from '@src/features/device/activation/apis/activati
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import { useAddSubTodoMutationOptions } from '@src/features/planning/composer/queries/use-add-sub-todo-mutation-options';
-import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/use-create-todo-mutation-options';
-import { useUpdateSubTodoMutationOptions } from '@src/features/planning/composer/queries/use-update-sub-todo-mutation-options';
+import { useAddSubTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
+import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
+import { useUpdateSubTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
@@ -21,8 +21,8 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 
-import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories';
-import { createTodoApiError, createTodoDto } from '../__tests__/todo.factories';
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
+import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
 import { SubTodoService } from '../apis/sub-todo.service';
 import { TodoService } from '../apis/todo.service';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -32,11 +32,11 @@ import type {
   TodoDetails,
   TodoListResult,
 } from '../domains/todo.model';
-import { useDeleteSubTodoMutationOptions } from './use-delete-sub-todo-mutation-options';
-import { useDeleteTodoMutationOptions } from './use-delete-todo-mutation-options';
-import { useReorderSubTodosMutationOptions } from './use-reorder-sub-todos-mutation-options';
-import { useToggleSubTodoMutationOptions } from './use-toggle-sub-todo-mutation-options';
-import { useToggleTodoMutationOptions } from './use-toggle-todo-mutation-options';
+import { useDeleteSubTodoMutationOptions } from './sub-todo.mutations';
+import { useReorderSubTodosMutationOptions } from './sub-todo.mutations';
+import { useToggleSubTodoMutationOptions } from './sub-todo.mutations';
+import { useDeleteTodoMutationOptions } from './todo.mutations';
+import { useToggleTodoMutationOptions } from './todo.mutations';
 
 const DAY_1 = '2026-03-08';
 const DAY_2 = '2026-03-09';

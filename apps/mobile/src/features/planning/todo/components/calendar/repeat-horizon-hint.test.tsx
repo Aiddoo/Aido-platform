@@ -19,7 +19,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
-import { createTodoDto, createTodoListResponseDto } from '../../__tests__/todo.factories';
+import { createTodoDto, createTodoListResponseDto } from '../../__tests__/todo.fixtures';
 import { TodoService } from '../../apis/todo.service';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 

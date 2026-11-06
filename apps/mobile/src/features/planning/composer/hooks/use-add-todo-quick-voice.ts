@@ -32,7 +32,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 
-import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
 interface UseAddTodoQuickVoiceOptions {
   methods: UseFormReturn<AddTodoFormValues>;

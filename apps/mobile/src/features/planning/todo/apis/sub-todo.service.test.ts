@@ -1,6 +1,6 @@
 import { createHttpClientStub } from '@src/shared/__tests__';
 
-import { createTodoApiError, createTodoDto, INVALID_DTO } from '../__tests__/todo.factories';
+import { createTodoApiError, createTodoDto, INVALID_DTO } from '../__tests__/todo.fixtures';
 import { SubTodoService } from './sub-todo.service';
 
 describe('SubTodoService', () => {

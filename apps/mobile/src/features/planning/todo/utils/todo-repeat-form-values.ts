@@ -10,8 +10,8 @@ import { without, xor } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
-import { toTodoRepeat, type TodoRepeatFormValues } from '../domains/todo-repeat-form.schema';
 import { getWeekday, type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 
 export function toTodoRepeatFormValues(
   startDate: Date,

@@ -1,9 +1,9 @@
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderHook } from '@testing-library/react-native';
 
-import { createParentTodo } from '../__tests__/sub-todo.factories';
+import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import type { Todo } from '../domains/todo.model';
-import { useToggleTodoMutationOptions } from './use-toggle-todo-mutation-options';
+import { useToggleTodoMutationOptions } from './todo.mutations';
 
 const TODAY = '2026-10-27';
 const YESTERDAY = '2026-10-26';

@@ -6,7 +6,7 @@ import {
 import { toDateKey } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
-import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
 function toFormDateKey(date: Date) {
   return toDateKey(date, getDeviceTimezone());

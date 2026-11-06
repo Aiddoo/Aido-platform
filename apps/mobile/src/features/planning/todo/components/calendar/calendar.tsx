@@ -38,7 +38,7 @@ import {
 import { match } from 'ts-pattern';
 
 import type { DailyCompletionSummary } from '../../domains/todo.model';
-import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
+import type { CompletionsByDate } from '../../queries/todo.queries';
 import {
   clampCalendarPage,
   getCalendarPageAtOffset,

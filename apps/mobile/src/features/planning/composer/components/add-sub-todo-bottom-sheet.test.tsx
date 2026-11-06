@@ -3,7 +3,7 @@ import '@src/shared/i18n/init';
 import {
   createParentTodo,
   createSubTodo,
-} from '@src/features/planning/todo/__tests__/sub-todo.factories';
+} from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';

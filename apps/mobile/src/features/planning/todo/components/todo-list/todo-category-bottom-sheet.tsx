@@ -17,8 +17,8 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
-import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
+import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
+import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 
 type TodoCategoryBottomSheetProps = Omit<

@@ -6,7 +6,7 @@ import {
   createTodoDto,
   createTodoListResponseDto,
   INVALID_DTO,
-} from '../__tests__/todo.factories';
+} from '../__tests__/todo.fixtures';
 import { TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import type { RepeatingTodoDraft } from './todo-series.mapper';
 import { TodoService } from './todo.service';

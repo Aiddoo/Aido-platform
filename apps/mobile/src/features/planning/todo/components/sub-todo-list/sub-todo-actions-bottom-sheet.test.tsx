@@ -13,7 +13,7 @@ import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
-import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.factories';
+import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.fixtures';
 import { SubTodoService } from '../../apis/sub-todo.service';
 import { TodoService } from '../../apis/todo.service';
 import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';

@@ -26,8 +26,8 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
-import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
+import { useDeleteSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
+import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import {
   findSheetSubTodo,
   findSheetTodo,

@@ -2,7 +2,7 @@ import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
-import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/get-todo-summary-query-options';
+import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, CloseIcon, HStack, Text, VStack, Image } from '@src/shared/ui';

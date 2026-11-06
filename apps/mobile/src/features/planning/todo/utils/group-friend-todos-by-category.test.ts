@@ -1,4 +1,4 @@
-import { createTodoDto } from '../__tests__/todo.factories';
+import { createTodoDto } from '../__tests__/todo.fixtures';
 import { toTodo } from '../apis/todo.mapper';
 import { groupFriendTodosByCategory } from './group-friend-todos-by-category';
 

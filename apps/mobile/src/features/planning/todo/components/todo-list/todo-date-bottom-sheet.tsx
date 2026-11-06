@@ -18,8 +18,8 @@ import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
-import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
+import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
+import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { toTodoEditFormValues } from '../../utils/to-todo-edit-form-values';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 import { TodoDatePickerContent } from '../todo-date-picker-content';

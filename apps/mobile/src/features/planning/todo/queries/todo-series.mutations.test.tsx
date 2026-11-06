@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { useUpdateTodoMutationOptions } from '@src/features/planning/composer/queries/use-update-todo-mutation-options';
+import { useUpdateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import {
   createHapticsStub,
   createAnalyticsStub,

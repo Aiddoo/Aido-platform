@@ -11,7 +11,7 @@ import { recordTodoCreatedForActivation } from '@src/features/device/activation/
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-form.schema';
 import {

@@ -1,7 +1,7 @@
 import { useWidgetSyncService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/get-daily-completions-query-options';
-import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/get-todo-summary-query-options';
+import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';

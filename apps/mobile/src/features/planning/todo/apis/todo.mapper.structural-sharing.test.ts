@@ -1,6 +1,6 @@
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 
-import { createTodoDto } from '../__tests__/todo.factories';
+import { createTodoDto } from '../__tests__/todo.fixtures';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { todoSchema, TodoPolicy } from '../domains/todo.model';
 import { toTodo } from './todo.mapper';

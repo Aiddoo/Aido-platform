@@ -6,7 +6,7 @@ import {
   type MemoListResponse,
   type MemoResourceLimitResponse,
 } from '@aido/api';
-import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
+import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { toRepeatDto } from '@src/features/planning/todo/apis/todo-series.mapper';
 import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
