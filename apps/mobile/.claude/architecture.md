@@ -62,7 +62,7 @@ src/
 | `assistant`  | `suggestion`                                                    |
 | `billing`    | `subscription`                                                  |
 | `support`    | `inquiry`                                                       |
-| `app-config` | `app-version`, `whats-new`                                      |
+| `app-config` | `app-version`, `feature-campaign`, `whats-new`                  |
 | `device`     | `widget`, `app-icon`, `store-review`, `activation`, `coachmark` |
 
 새 기능은 이 순서로 판단한다.

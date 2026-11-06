@@ -3,9 +3,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import type { FeatureCampaignConfig } from '../schemas/feature-campaign.schema';
 
-export const toFeatureCampaignConfig = (
-  response: FeatureDiscoveryResponse,
-): FeatureCampaignConfig => {
+export function toFeatureCampaignConfig(response: FeatureDiscoveryResponse): FeatureCampaignConfig {
   if (!response.enabled) {
     return { enabled: false };
   }
@@ -14,4 +12,4 @@ export const toFeatureCampaignConfig = (
     ...response,
     launchedAt: toInstant(response.launchedAt),
   };
-};
+}
