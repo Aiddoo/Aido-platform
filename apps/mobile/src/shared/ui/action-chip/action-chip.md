@@ -42,3 +42,7 @@ ActionChip/
 ├── ActionChip.md    # 문서
 └── index.ts         # export
 ```
+
+## heroui `Chip`으로 옮기지 않은 이유
+
+heroui `Chip`은 `Pressable`이라 눌림 크기 변화가 없고 role도 없다. `ActionChip`은 `PressableFeedback` 위에서 눌림, 고정 높이 32, role `button`을 함께 갖는다.

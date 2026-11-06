@@ -233,19 +233,44 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 아래 부품은 아직 HeroUI 원본 조합이 아니거나 옛 규칙이다. 옮길 때는 하나씩 전후 화면을 비교하고, 동등하지 않으면 유지한 뒤 이유를 남긴다.
 
-| 부품                 | 지금                                                        | 옮길 모양                                                    | 볼 것                  |
-| -------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | ---------------------- |
-| `TextButton`         | `PressableFeedback` 위 구현                                 | heroui `LinkButton`                                          | 밑줄·화살표            |
-| 닫기 버튼            | 화면별 구현                                                 | heroui `CloseButton`                                         | 터치 영역              |
-| `Button`             | `PressableFeedback` + `Spinner` 구현                        | heroui `Button` 위 얇은 확장. `isLoading`, 크기, `dark` 색만 | 전후 모양              |
-| `Input`, `TextArea`  | heroui 조합이 아닌 구현                                     | `TextField`, `Input`, `TextArea`, `FieldError` 조합          | 시트 키보드, 글꼴 배율 |
-| `PasswordInput`      | `features/identity/auth/components/password-input.tsx`      | `InputGroup`                                                 |                        |
-| 친구 검색            | shared `Input`                                              | `SearchField`                                                |                        |
-| `AppToast`           | `toastProps` 묶음                                           | `Toast.Title`, `.Description`, `.Action` 조합                | 위치·색                |
-| `HintPopoverContent` | 앱의 자리 계산                                              | `Popover`의 `avoidCollisions`, `insets`                      | 뒤집기 동작            |
-| `FormField`          | 21개 파일이 사용                                            | RHF `Controller` 직접 사용 후 삭제                           |                        |
-| spacing prop         | `gap` 외 `p`, `pb` 등이 `className`과 섞임(`MemoList` 포함) | `className`                                                  | 전후 간격              |
-| `Flex`               | 외부에서 직접 사용                                          | `HStack`·`VStack` 내부 구현                                  |                        |
+| 부품                 | 지금                                                        | 옮길 모양                                           | 볼 것                  |
+| -------------------- | ----------------------------------------------------------- | --------------------------------------------------- | ---------------------- |
+| `Input`, `TextArea`  | heroui 조합이 아닌 구현                                     | `TextField`, `Input`, `TextArea`, `FieldError` 조합 | 시트 키보드, 글꼴 배율 |
+| `PasswordInput`      | `features/identity/auth/components/password-input.tsx`      | `InputGroup`                                        | 눈 버튼은 `IconButton` |
+| 친구 검색            | shared `Input`                                              | `SearchField`                                       | 아래 "그대로 둔 것"    |
+| `AppToast`           | `toastProps` 묶음                                           | `Toast.Title`, `.Description`, `.Action` 조합       | 위치·색                |
+| `HintPopoverContent` | 앱의 자리 계산                                              | `Popover`의 `avoidCollisions`, `insets`             | 뒤집기 동작            |
+| `FormField`          | 21개 파일이 사용                                            | RHF `Controller` 직접 사용 후 삭제                  |                        |
+| spacing prop         | `gap` 외 `p`, `pb` 등이 `className`과 섞임(`MemoList` 포함) | `className`                                         | 전후 간격              |
+| `Flex`               | 외부에서 직접 사용                                          | `HStack`·`VStack` 내부 구현                         |                        |
+
+### HeroUI로 옮긴 것 (계획 2.7)
+
+| 부품             | 지금                                                                    | 비고                                                                                                                        |
+| ---------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `Button`         | heroui `Button`(`feedbackVariant="scale"`) + 앱 높이 4종·색·`isLoading` | role과 `accessibilityState`는 heroui가 넣는다. 눌림 하이라이트는 기존 옅은 회색을 자식 `PressableFeedback.Highlight`로 유지 |
+| `TextButton`     | heroui `LinkButton`(ghost) + 자식 `Text`                                | 눌림은 크기 변화만(기존과 같다). 비활성은 `disabled:opacity-40`                                                             |
+| 닫기 버튼 10곳   | heroui `CloseButton variant="ghost"` + 앱 `CloseIcon` 자식              | 기존 아이콘 자리는 `className`/`style`로 지키고 `hitSlop` 12로 44를 채운다. `picker-header`는 터치 20에서 44가 됐다         |
+| 로딩 표시 4곳    | heroui `Spinner`                                                        | 색은 기본(accent)                                                                                                           |
+| 구분선           | heroui `Separator thickness={1}`(날씨 카드는 0.5)                       | 세로 구분선은 `orientation="vertical"`                                                                                      |
+| 정적 칩          | heroui `Chip` + 자식 `Text`                                             | `self-start` 기본이라 가운데 정렬 줄에서는 `self-center`를 준다                                                             |
+| 색 고르기        | heroui `RadioGroup`(색 원은 `RadioGroup.Item` 자식)                     | role `radiogroup`·`radio`는 heroui가 넣는다                                                                                 |
+| 아이콘 단독 버튼 | `IconButton`                                                            | 레이아웃을 지키려 `min-h-0 min-w-0`로 줄이고 `hitSlop`으로 44를 채운다. 라벨이 없던 곳에 라벨을 더했다                      |
+
+### 그대로 둔 것과 이유
+
+동등하지 않으면 유지한다는 규칙에 따라 아래는 바꾸지 않았다.
+
+| 대상                                                                                               | 이유                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ActionChip`, 눌리는 칩(오늘 칩, 초대 코드 붙여넣기, 반복 프리셋·요일)                             | heroui `Chip`은 `PressableFeedback`이 아니라 `Pressable`이라 눌림 크기 변화가 사라진다. 요일 `TagGroup`은 프리셋·요일이 한 가로 `ScrollView`에서 폼 값으로 토글되는 구조와 맞지 않는다                                              |
+| 친구 검색 `SearchField`                                                                            | 안쪽 `Input`의 포커스 표시가 iOS outline·Android border로 앱 `Input`(테두리 `main`)과 다르고, 글꼴 5단계는 `resolveSize` 스타일을 따로 줘야 한다. `Input` 본체 교체 금지 목록의 이유(시트·키보드 회귀)와 같아 기기 비교 후에 옮긴다 |
+| 행 버튼 13곳 `ListGroup.Item`                                                                      | `ListRow`가 앱 글꼴·들여쓴 구분선·슬롯을 이미 맡는다. `ListGroup.Item`의 제목·설명은 heroui 글꼴이고 안쪽 여백 16이 달라 모양이 바뀐다                                                                                              |
+| 구분선 `border-t` 컨테이너(반복 푸터), `AdaptivePane`, `DashedDivider`, `Input`/`Tabs` 아래 테두리 | 컨테이너 테두리이거나 점선·교체 금지 대상이다                                                                                                                                                                                       |
+| `Menu.Trigger asChild`의 더보기 버튼, 고정 크기 원형 버튼(메모 만들기, 빠른 말하기, 날씨 ⋯ 등)     | 크기·색이 버튼마다 달라 `IconButton` 기본(44)과 어긋난다. role과 라벨은 이미 있다                                                                                                                                                   |
+| key-point 시간 칩, 개발용 날씨 배지                                                                | 부모 `Pressable` 안의 `Text` 접근성 속성 또는 개발 전용이라 효과가 작다                                                                                                                                                             |
+
+Uniwind는 CSS 순서가 아니라 규칙의 구체성(variant가 붙으면 높음)과 같을 때 뒤에 온 클래스로 정한다. 그래서 heroui 기본 클래스를 `className`으로 덮을 수 있지만, `disabled:`처럼 variant가 붙은 기본값(`disabled:element-disabled`)은 같은 variant(`disabled:opacity-40`)로만 덮인다.
 
 `PremiumDialog`, `OfflineBanner`는 아직 `shared/ui`에 있다.
 
