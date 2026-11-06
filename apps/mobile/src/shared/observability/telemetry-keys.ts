@@ -6,7 +6,6 @@ import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscrip
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/purchase-failed-reason';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/schemas/oauth.schema';
 import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
-import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';
 import type { InviteLinkSource } from '@src/features/social/invite/domains/invite-redemption.model';
 import type { InviteShareChannel } from '@src/features/social/invite/domains/invite-share.model';
@@ -385,7 +384,6 @@ export interface VoiceEventMap {
 interface AiEventMap {
   ai_parse_used: { success: boolean };
   ai_suggestion_acted: { action: 'accept' | 'dismiss' };
-  ai_report_viewed: { report_id: number; report_type: ReportType };
   ai_data_sharing_consent_changed: { agreed: boolean };
 }
 

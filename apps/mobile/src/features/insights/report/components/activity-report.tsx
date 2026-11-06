@@ -1,5 +1,4 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import type { AiReport } from '@src/features/insights/report/domains/report.model';
 import { formatDateKeyRange, formatHourLabel, type TimeFormat } from '@src/shared/date/date-format';
 import { getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -19,11 +18,11 @@ import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
-import { Chip, Separator, Skeleton } from 'heroui-native';
-import type { ReactNode } from 'react';
+import { Separator, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report.constants';
+import type { AiReport } from '../schemas/report.schema';
+import { ReportTypeChip } from './report-type-chip';
 
 interface ActivityReportProps {
   report: AiReport;
@@ -37,66 +36,59 @@ export function ActivityReport({ report }: ActivityReportProps) {
         <ReportPeriodLabel report={report} />
       </Box>
       <VStack className="px-5 pb-4">
-        <ReportSection hasDivider={false}>
+        <Box className="py-4">
           <TodoCompletionStats report={report} />
-        </ReportSection>
+        </Box>
         {report.categoryBreakdown.length > 0 && (
-          <ReportSection>
-            <CategoryBreakdown items={report.categoryBreakdown} />
-          </ReportSection>
+          <>
+            <DashedDivider />
+            <Box className="py-4">
+              <CategoryBreakdown items={report.categoryBreakdown} />
+            </Box>
+          </>
         )}
         {report.dayPatterns.length > 0 && (
-          <ReportSection>
-            <DayPatternChart items={report.dayPatterns} />
-          </ReportSection>
+          <>
+            <DashedDivider />
+            <Box className="py-4">
+              <DayPatternChart items={report.dayPatterns} />
+            </Box>
+          </>
         )}
         {report.timePatterns.length > 0 && (
-          <ReportSection>
-            <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
-          </ReportSection>
+          <>
+            <DashedDivider />
+            <Box className="py-4">
+              <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
+            </Box>
+          </>
         )}
         {report.aiSummary && (
-          <ReportSection>
-            <AiAnalysis summary={report.aiSummary} />
-          </ReportSection>
+          <>
+            <DashedDivider />
+            <Box className="py-4">
+              <AiAnalysis summary={report.aiSummary} />
+            </Box>
+          </>
         )}
         {report.aiTips.length > 0 && (
-          <ReportSection>
-            <ImprovementTipList tips={report.aiTips} />
-          </ReportSection>
+          <>
+            <DashedDivider />
+            <Box className="py-4">
+              <ImprovementTipList tips={report.aiTips} />
+            </Box>
+          </>
         )}
       </VStack>
     </ScallopedContainer>
   );
 }
 
-interface ReportSectionProps {
-  hasDivider?: boolean;
-  children: ReactNode;
-}
-
-function ReportSection({ hasDivider = true, children }: ReportSectionProps) {
-  return (
-    <VStack>
-      {hasDivider && <DashedDivider />}
-      <Box className="py-4">{children}</Box>
-    </VStack>
-  );
-}
-
 function ReportPeriodLabel({ report }: { report: AiReport }) {
-  const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
   return (
     <HStack align="center" gap={8} className="flex-wrap">
-      <Chip
-        size="sm"
-        variant="soft"
-        color={REPORT_TYPE_CHIP_COLORS[report.type]}
-        className="self-center"
-      >
-        <Chip.Label>{t(REPORT_TYPE_LABEL_KEYS[report.type])}</Chip.Label>
-      </Chip>
+      <ReportTypeChip type={report.type} className="self-center" />
 
       <Text size="b2" weight="semibold" shade={9}>
         {report.periodLabel}

@@ -1,4 +1,3 @@
-import type { AiReport } from '@src/features/insights/report/domains/report.model';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -10,8 +9,9 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
 
-import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report.constants';
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
+import type { AiReport } from '../schemas/report.schema';
+import { ReportTypeChip } from './report-type-chip';
 
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
@@ -41,12 +41,12 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
             <HStack align="center" gap={6}>
               {isSample && (
                 <Chip size="sm" variant="soft" color="warning">
-                  <Chip.Label>{t('report.sampleBadge')}</Chip.Label>
+                  <Text size="e1" weight="medium" className="text-warning">
+                    {t('report.sampleBadge')}
+                  </Text>
                 </Chip>
               )}
-              <Chip size="sm" variant="soft" color={REPORT_TYPE_CHIP_COLORS[report.type]}>
-                <Chip.Label>{t(REPORT_TYPE_LABEL_KEYS[report.type])}</Chip.Label>
-              </Chip>
+              <ReportTypeChip type={report.type} />
             </HStack>
 
             <VStack align="end">

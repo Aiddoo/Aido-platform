@@ -1,4 +1,3 @@
-import { reportTypeSchema } from '@aido/api';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
@@ -9,13 +8,16 @@ import {
   getSampleReport,
   SAMPLE_REPORT_IDS,
 } from '@src/features/insights/report/constants/sample-reports';
-import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import { useReportTypeParam } from '@src/features/insights/report/hooks/use-report-type-param';
 import { invalidateAiReports } from '@src/features/insights/report/queries/report-cache';
 import {
   useGetReportsQueryOptions,
   useGetReportStatusQueryOptions,
 } from '@src/features/insights/report/queries/report.queries';
+import {
+  type ReportType,
+  reportTypeSchema,
+} from '@src/features/insights/report/schemas/report.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

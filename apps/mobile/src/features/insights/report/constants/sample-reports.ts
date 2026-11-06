@@ -1,5 +1,7 @@
-import type { AiReport, ReportType } from '@src/features/insights/report/domains/report.model';
+import { toInstant } from '@src/shared/date/instant';
 import { t } from '@src/shared/i18n';
+
+import type { AiReport, ReportType } from '../schemas/report.schema';
 
 export const SAMPLE_REPORT_IDS = {
   WEEKLY: 'sample-weekly',
@@ -84,7 +86,7 @@ const buildWeeklySampleReport = (): AiReport => ({
     t('ai:sampleReport.weekly.tip4'),
   ],
   hasActivity: true,
-  generatedAt: new Date('2026-03-09T00:00:00.000Z'),
+  generatedAt: toInstant('2026-03-09T00:00:00.000Z'),
 });
 
 const buildMonthlySampleReport = (): AiReport => ({
@@ -163,7 +165,7 @@ const buildMonthlySampleReport = (): AiReport => ({
     t('ai:sampleReport.monthly.tip4'),
   ],
   hasActivity: true,
-  generatedAt: new Date('2026-03-01T00:00:00.000Z'),
+  generatedAt: toInstant('2026-03-01T00:00:00.000Z'),
 });
 
 /** 샘플 route param → 빌더 매핑 (표시 시점 언어 반영) */

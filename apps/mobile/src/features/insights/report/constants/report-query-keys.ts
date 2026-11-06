@@ -1,5 +1,6 @@
-import type { GetAiReportsParams } from '../domains/report.model';
+import type { GetAiReportsParams } from '../schemas/report.schema';
 
+// 'ai' 접두어는 제안과 같은 서버 모듈(ai) 키 공간을 쓰던 옛 키라 그대로 둔다
 export const REPORT_QUERY_KEYS = {
   all: ['ai'] as const,
   status: () => [...REPORT_QUERY_KEYS.all, 'status'] as const,
