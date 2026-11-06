@@ -35,8 +35,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { keyBy } from 'es-toolkit';
-import { times } from 'es-toolkit/compat';
+import { keyBy, range } from 'es-toolkit';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Fragment, Suspense } from 'react';
@@ -193,7 +192,7 @@ function RescheduleLoading() {
     <VStack px={20} gap={12} pb={8}>
       <TextSkeleton size="t3" className="w-40" />
       <TextSkeleton size="b3" className="w-56" />
-      {times(LOADING_TODO_COUNT, (index) => (
+      {range(LOADING_TODO_COUNT).map((index) => (
         <TextSkeleton key={index} size="b2" className="w-full" />
       ))}
     </VStack>

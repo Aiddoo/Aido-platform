@@ -32,7 +32,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router, useFocusEffect } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
@@ -173,7 +173,7 @@ function InviteBenefitReceiptLoading() {
         <DashedDivider />
 
         <VStack>
-          {times(3, (index) => (
+          {range(3).map((index) => (
             <ListRow
               key={index}
               verticalPadding="small"

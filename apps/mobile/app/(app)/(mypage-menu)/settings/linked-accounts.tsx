@@ -25,7 +25,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
@@ -209,7 +209,7 @@ LinkedAccountsList.Loading = function Loading() {
   return (
     <SettingsCard>
       <SkeletonGroup isLoading isSkeletonOnly>
-        {times(PROVIDER_ROW_COUNT, (index) => (
+        {range(PROVIDER_ROW_COUNT).map((index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
             {index < PROVIDER_ROW_COUNT - 1 && <SettingsCard.Separator />}

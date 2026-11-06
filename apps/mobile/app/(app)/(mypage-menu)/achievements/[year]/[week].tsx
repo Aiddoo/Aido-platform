@@ -28,7 +28,7 @@ import {
   Box,
 } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useRef } from 'react';
@@ -199,7 +199,7 @@ WeeklyAchievementCertificate.Loading = function Loading() {
       <Spacing size={16} />
 
       <VStack align="center">
-        {times(CERTIFICATE_LINE_COUNT, (index) => (
+        {range(CERTIFICATE_LINE_COUNT).map((index) => (
           <Skeleton key={index} className="w-full rounded" style={{ height: fontScaledSize(20) }} />
         ))}
       </VStack>
