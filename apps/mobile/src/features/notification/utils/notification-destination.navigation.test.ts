@@ -2,7 +2,7 @@ import { NOTIFICATION_NAVIGATION_KIND, NOTIFICATION_TYPE } from '@aido/api/vocab
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 
 import { NAVIGATION_CASES, toLegacySource } from '../__tests__/notification-navigation-cases';
-import { fromNavigation, resolveNotificationDestination } from './notification-destination';
+import { resolveNotificationDestination } from './notification-destination';
 
 const WINDOW_SIZE_CLASSES: readonly WindowSizeClass[] = ['compact', 'medium', 'expanded'];
 const OWNER_ID = 'cmfriend00000000000000001';
@@ -43,8 +43,9 @@ describe('서버 navigation과 구 필드 대조', () => {
       ),
     )('$name: navigation과 구 필드가 같은 곳으로 간다', ({ navigation, source }) => {
       // When
-      const fromServer = fromNavigation(navigation, options);
-      const fromLegacy = resolveNotificationDestination(toLegacySource(source), options);
+      const legacySource = toLegacySource(source);
+      const fromServer = resolveNotificationDestination({ ...legacySource, navigation }, options);
+      const fromLegacy = resolveNotificationDestination(legacySource, options);
 
       // Then
       expect(fromServer).toEqual(fromLegacy);
@@ -60,10 +61,34 @@ describe('서버 navigation과 구 필드 대조', () => {
     const options = { windowSizeClass: 'compact', today: '2026-11-06' } as const;
 
     // When
-    const fromServer = fromNavigation(navigation, options);
-    const fromLegacy = resolveNotificationDestination(toLegacySource(source), options);
+    const legacySource = toLegacySource(source);
+    const fromServer = resolveNotificationDestination({ ...legacySource, navigation }, options);
+    const fromLegacy = resolveNotificationDestination(legacySource, options);
 
     // Then
     expect(fromServer).not.toEqual(fromLegacy);
+  });
+});
+
+describe('푸시 호환', () => {
+  const OPTIONS = { windowSizeClass: 'compact', today: '2026-11-06' } as const;
+
+  it('모르는 타입이어도 navigation이 있으면 따른다', () => {
+    // When
+    const destination = resolveNotificationDestination(
+      { type: null, navigation: { kind: 'ACHIEVEMENTS' } },
+      OPTIONS,
+    );
+
+    // Then
+    expect(destination).toEqual({ kind: 'route', href: '/achievements' });
+  });
+
+  it('모르는 타입에 navigation도 없으면 알림 목록으로 간다', () => {
+    // When
+    const destination = resolveNotificationDestination({ type: null }, OPTIONS);
+
+    // Then
+    expect(destination).toEqual({ kind: 'route', href: '/notifications' });
   });
 });

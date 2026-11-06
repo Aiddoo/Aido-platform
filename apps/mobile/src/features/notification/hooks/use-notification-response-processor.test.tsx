@@ -121,7 +121,7 @@ describe('useNotificationResponseProcessor', () => {
     const { process, handleNotificationResponse, gateway } = await setup();
 
     // When
-    await process(createResponse({ data: { unknown: true } }));
+    await process(createResponse({ data: { context: 'broken' } }));
 
     // Then
     expect(handleNotificationResponse).not.toHaveBeenCalled();

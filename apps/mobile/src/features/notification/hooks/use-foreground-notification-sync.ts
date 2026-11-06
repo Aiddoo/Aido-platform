@@ -31,7 +31,7 @@ export function useForegroundNotificationSync({
           notificationService.syncBadgeCount(),
         ];
         const result = toPushNotificationPayload(notification?.data);
-        if (result.success) {
+        if (result.success && result.payload.type != null) {
           tasks.push(invalidateByType(result.payload.type));
         }
 

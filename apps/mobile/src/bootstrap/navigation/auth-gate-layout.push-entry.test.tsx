@@ -227,7 +227,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     hideLog.push(route.getPathname());
   });
 
-  return { route, gateway, httpClient, focusLog, hideLog, container };
+  return { route, gateway, httpClient, focusLog, hideLog, analytics: container.analytics };
 }
 
 describe('푸시 탭 진입 (지금 동작)', () => {
@@ -426,9 +426,9 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
   });
 
-  it('모르는 타입: 파싱에 실패해 탭해도 아무 반응이 없다', async () => {
+  it('모르는 타입: navigation이 없으면 알림 목록으로 간다', async () => {
     // Given
-    const { route, gateway, httpClient } = await setup({ status: 'authenticated' });
+    const { route, gateway, analytics } = await setup({ status: 'authenticated' });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
 
     // When
@@ -440,8 +440,33 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     );
 
     // Then
-    expect(route.getPathname()).toBe('/feed');
-    expect(httpClient.patch).not.toHaveBeenCalled();
+    await waitFor(() => expect(route.getPathname()).toBe('/notifications'));
+    expect(analytics.trackEvent).toHaveBeenCalledWith(
+      'push_notification_opened',
+      expect.objectContaining({ type: 'UNKNOWN', action: 'DEEP_LINK' }),
+    );
+  });
+
+  it('모르는 타입: navigation이 있으면 그 목적지로 간다', async () => {
+    // Given
+    const { route, gateway } = await setup({ status: 'authenticated' });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...TODO_RESPONSE,
+        data: {
+          notificationId: 7,
+          type: 'NEW_KIND',
+          action: { type: 'DEEP_LINK' },
+          navigation: { kind: 'TODO', todoId: 42 },
+        },
+      }),
+    );
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
   });
 
   it('수신 거부 버튼: 로그인 없이 처리하고 이동하지 않는다', async () => {

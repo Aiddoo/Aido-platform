@@ -157,7 +157,7 @@ describe('toPushNotificationPayload', () => {
     });
   });
 
-  test.each([undefined, {}, { ...validData, type: 'UNKNOWN_TYPE' }])(
+  test.each([undefined, { ...validData, context: 'broken' }])(
     '모양이 맞지 않으면 오류를 돌려준다: %j',
     (data) => {
       // Given
@@ -219,5 +219,61 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
         windowSizeClass: 'compact',
       }),
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
+  });
+});
+
+describe('toPushNotificationPayload', () => {
+  const BASE = { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'DEEP_LINK' } };
+
+  it('navigation을 앱 모델로 넘긴다', () => {
+    // When
+    const result = toPushNotificationPayload({ ...BASE, navigation: { kind: 'FRIEND_REQUESTS' } });
+
+    // Then
+    expect(result).toMatchObject({
+      success: true,
+      payload: { navigation: { kind: 'FRIEND_REQUESTS' } },
+    });
+  });
+
+  it('모르는 타입은 그 필드만 버린다', () => {
+    // When
+    const result = toPushNotificationPayload({ ...BASE, type: 'NEW_KIND' });
+
+    // Then
+    expect(result).toMatchObject({ success: true, payload: { type: null, notificationId: 7 } });
+  });
+
+  it('서버의 새 kind나 틀린 모양의 navigation은 버려 구 필드로 간다', () => {
+    // When
+    const newKind = toPushNotificationPayload({ ...BASE, navigation: { kind: 'NEW_SCREEN' } });
+    const wrongShape = toPushNotificationPayload({
+      ...BASE,
+      navigation: { kind: 'TODO', todoId: 'x' },
+    });
+
+    // Then
+    expect(newKind).toMatchObject({ success: true, payload: { type: 'FOLLOW_NEW' } });
+    expect(newKind.success && newKind.payload.navigation).toBeUndefined();
+    expect(wrongShape.success && wrongShape.payload.navigation).toBeUndefined();
+  });
+
+  it('읽음 ID와 액션이 깨져도 탭은 동작한다', () => {
+    // When
+    const result = toPushNotificationPayload({ type: 'FOLLOW_NEW' });
+
+    // Then
+    expect(result).toMatchObject({
+      success: true,
+      payload: { notificationId: 0, action: { type: 'DEEP_LINK' } },
+    });
+  });
+
+  it('dispatchId는 앱 모델에 넣지 않는다', () => {
+    // When
+    const result = toPushNotificationPayload({ ...BASE, dispatchId: 3 });
+
+    // Then
+    expect(result.success && 'dispatchId' in result.payload).toBe(false);
   });
 });

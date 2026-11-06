@@ -25,11 +25,16 @@ export type NotificationDestination =
   | { kind: 'webview'; url: string };
 
 export interface NotificationDestinationSource {
-  type: NotificationType;
+  /** 새 서버의 모르는 타입이면 null이다 */
+  type: NotificationType | null;
   context?: NotificationContext;
   routing?: NotificationRouting;
   action?: NotificationAction;
+  /** 서버가 고른 목적지. 푸시에만 있고 알림함 항목은 영구히 구 필드로 간다 */
+  navigation?: NotificationNavigation;
 }
+
+type LegacyDestinationSource = NotificationDestinationSource & { type: NotificationType };
 
 const FEED_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
   NOTIFICATION_TYPE.DAILY_COMPLETE,
@@ -62,6 +67,19 @@ interface NotificationDestinationOptions {
 
 export function resolveNotificationDestination(
   source: NotificationDestinationSource,
+  options: NotificationDestinationOptions,
+): NotificationDestination {
+  if (source.navigation != null) {
+    return fromNavigation(source.navigation, options);
+  }
+  if (source.type == null) {
+    return { kind: 'route', href: '/notifications' };
+  }
+  return fromLegacyFields({ ...source, type: source.type }, options);
+}
+
+function fromLegacyFields(
+  source: LegacyDestinationSource,
   { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
 ): NotificationDestination {
   if (source.action?.type === 'NONE') {
@@ -97,7 +115,7 @@ export function resolveNotificationDestination(
  * 서버가 푸시에 실어 보낸 목적지를 앱 경로로 바꾼다. 구 필드로 고른 곳과 같아야 하며,
  * `packages/api/test-fixtures/notification-navigation.cases.json`으로 서버·앱·구 필드를 함께 묶는다.
  */
-export function fromNavigation(
+function fromNavigation(
   navigation: NotificationNavigation,
   { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
 ): NotificationDestination {
@@ -209,7 +227,7 @@ function toNoticeDestination(url: string | undefined, today?: string): Notificat
 }
 
 function parseNotificationRouting(
-  source: NotificationDestinationSource,
+  source: LegacyDestinationSource,
 ): NotificationDestinationRouting | null {
   const candidate = {
     type: FEED_NOTIFICATION_TYPES.has(source.type) ? 'FEED' : source.type,

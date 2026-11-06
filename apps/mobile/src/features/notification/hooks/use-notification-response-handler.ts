@@ -77,7 +77,7 @@ export function useNotificationResponseHandler() {
 
       try {
         trackEvent('push_notification_opened', {
-          type: data.type,
+          type: data.type ?? 'UNKNOWN',
           action: data.action.type,
           ...(data.campaignKey && { campaign_key: data.campaignKey }),
           ...(data.variantId && { variant_id: data.variantId }),

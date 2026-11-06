@@ -6,7 +6,7 @@ import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
-import { fromNavigation, resolveNotificationDestination } from './notification-destination';
+import { resolveNotificationDestination } from './notification-destination';
 
 const APP_DIRECTORY = join(__dirname, '../../../../app');
 const ROUTE_GROUP = /^\(.+\)$/;
@@ -67,13 +67,30 @@ describe('알림 목적지와 라우트 파일', () => {
   )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
     WINDOW_SIZE_CLASSES.forEach((windowSizeClass) => {
       // When
-      const destination = fromNavigation(navigation, { windowSizeClass, today: '2026-11-06' });
+      const destination = resolveNotificationDestination(
+        { type: null, navigation },
+        { windowSizeClass, today: '2026-11-06' },
+      );
 
       // Then
       if (destination.kind === 'route') {
         expect(routePathnames).toContain(getHrefPathname(destination.href));
       }
     });
+  });
+
+  it('모르는 타입의 목적지는 있는 화면이다', () => {
+    // When
+    const destination = resolveNotificationDestination(
+      { type: null },
+      { windowSizeClass: 'compact' },
+    );
+
+    // Then
+    expect(destination.kind === 'route' && getHrefPathname(destination.href)).toBe(
+      '/notifications',
+    );
+    expect(routePathnames).toContain('/notifications');
   });
 
   it.each(Object.values(NOTICE_DEEP_LINK_PATH))('공지 경로 %s는 있는 화면이다', (url) => {
