@@ -12,6 +12,7 @@ import {
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
+import { getPlanHeadline } from '@src/features/voice/utils/plan-headline.view-model';
 import {
   formatDateKeyLabel,
   formatDateKeyRange,
@@ -140,7 +141,7 @@ export function PlanReview({
   const selection = toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
-  const headline = VoicePlanPolicy.getPlanHeadline(plan, selection);
+  const headline = getPlanHeadline(plan, selection);
   const ScrollFade = surface === 'sheet' ? SheetScrollShadow : ScreenScrollShadow;
 
   const handleApply = handleSubmit((values) => {

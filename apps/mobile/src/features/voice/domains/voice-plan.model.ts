@@ -123,28 +123,6 @@ export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).length > 0;
 }
 
-export type PlanHeadline =
-  | { kind: 'todos'; count: number }
-  | { kind: 'memo' }
-  | { kind: 'already-added' };
-
-export function getPlanHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
-  const selectedTodoCount = countSelectedTodos(plan, selection);
-  if (selectedTodoCount > 0) {
-    return { kind: 'todos', count: selectedTodoCount };
-  }
-  if (getSelectedActions(plan, selection).length > 0) {
-    return { kind: 'memo' };
-  }
-  const todos = plan.actions.filter(isTodoAction);
-  if (todos.length === 0) {
-    return { kind: 'memo' };
-  }
-  return todos.every(isDuplicateAction)
-    ? { kind: 'already-added' }
-    : { kind: 'todos', count: todos.length };
-}
-
 /** 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다 */
 export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
   return { ...todo, repeat, endDate: repeat == null ? todo.endDate : null };
@@ -231,7 +209,6 @@ export const VoicePlanPolicy = {
   getSelectedActions,
   countSelectedTodos,
   canApplyPlan,
-  getPlanHeadline,
   getPlanActionGroups,
   sortPlanActionsByGroup,
 } as const;
