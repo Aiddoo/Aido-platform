@@ -1,7 +1,7 @@
 import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
 import { isSampleReportId, getSampleReport } from '@src/features/ai/constants/sample-reports';
 
-import { routeIntegerStringSchema } from './route-params';
+import { routeIdSchema, routeIntegerStringSchema } from './route-params';
 
 const reportIdSchema = routeIntegerStringSchema.pipe(aiReportIdParamSchema.shape.id);
 const weekSchema = routeIntegerStringSchema.pipe(weeklyAchievementParamSchema.shape.week);
@@ -40,5 +40,25 @@ describe('route params', () => {
     expect(reportIdSchema.parse('42')).toBe(42);
     expect(weekSchema.safeParse('54').success).toBe(false);
     expect(weekSchema.parse('53')).toBe(53);
+  });
+});
+
+describe('routeIdSchema', () => {
+  it.each([
+    { value: '12', expected: 12 },
+    { value: '0', expected: undefined },
+    { value: '-1', expected: undefined },
+    { value: '1.5', expected: undefined },
+    { value: 'abc', expected: undefined },
+    { value: '99999999999999999999', expected: undefined },
+  ])('$value는 $expected로 읽는다', ({ value, expected }) => {
+    // Given
+    const param = value;
+
+    // When
+    const result = routeIdSchema.safeParse(param);
+
+    // Then
+    expect(result.data).toBe(expected);
   });
 });

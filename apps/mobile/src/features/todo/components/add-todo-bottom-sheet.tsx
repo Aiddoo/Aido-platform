@@ -2,7 +2,7 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
-import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
+import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/memo.mutations';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';

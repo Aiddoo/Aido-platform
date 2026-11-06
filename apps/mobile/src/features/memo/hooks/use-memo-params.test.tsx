@@ -2,7 +2,7 @@ import { mockWindowDimensions } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { useSelectedMemo } from './use-selected-memo';
+import { useSelectedMemo } from './use-memo-params';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), setParams: jest.fn() },
@@ -55,6 +55,19 @@ describe('useSelectedMemo', () => {
       pathname: '/memo/[memoId]',
       params: { memoId: '5' },
     });
+    expect(router.setParams).not.toHaveBeenCalled();
+  });
+
+  it('compact에서 선택 해제는 아무것도 하지 않는다', async () => {
+    // Given
+    givenWindow(390);
+    const { result } = await renderHook(() => useSelectedMemo());
+
+    // When
+    result.current[1](undefined);
+
+    // Then
+    expect(router.push).not.toHaveBeenCalled();
     expect(router.setParams).not.toHaveBeenCalled();
   });
 

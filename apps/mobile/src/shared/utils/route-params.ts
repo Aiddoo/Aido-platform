@@ -1,6 +1,14 @@
 import { z } from 'zod';
 
+const ROUTE_INTEGER_PATTERN = /^[1-9]\d*$/;
+
 export const routeIntegerStringSchema = z
   .string()
-  .regex(/^[1-9]\d*$/)
+  .regex(ROUTE_INTEGER_PATTERN)
   .transform((value): unknown => value);
+
+export const routeIdSchema = z
+  .string()
+  .regex(ROUTE_INTEGER_PATTERN)
+  .transform(Number)
+  .pipe(z.int().positive());

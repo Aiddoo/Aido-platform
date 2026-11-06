@@ -20,36 +20,50 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
+import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { clamp } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
+import { match, P } from 'ts-pattern';
 
-import { MemoPolicy } from '../domains/memo.model';
-import { useSelectedMemo } from '../hooks/use-selected-memo';
-import { useGetMemosInfiniteQueryOptions } from '../queries/get-memos-infinite-query-options';
-import { distributeMemosIntoColumns, getMemoColumnCount } from '../utils/memo-list-layout';
+import { type Memo, MemoPolicy } from '../domains/memo.model';
+import { useSelectedMemo } from '../hooks/use-memo-params';
+import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
 
 const LOADING_ITEMS_PER_COLUMN = 2;
+const MAX_ENTERING_STAGGER_STEP = 8;
+
+/** 펼친 화면에서는 목록 pane이 좁아 한 열로 보여준다. */
+function getColumnCount(windowSizeClass: WindowSizeClass) {
+  return match(windowSizeClass)
+    .with('compact', () => 2)
+    .with(P.union('medium', 'expanded'), () => 1)
+    .exhaustive();
+}
 
 export function MemoList() {
   const { t } = useTranslation('memo');
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
+  const {
+    data: memos,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const hasVoiceNotes = useVoiceNotes(me.id).length > 0;
   const windowSizeClass = useWindowSizeClass();
-  const dateFormatContext = useDateFormatContext();
-  const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
     return hasVoiceNotes ? null : <MemoList.Empty />;
   }
 
   // 메모가 하나면 옆 칸이 비지 않게 한 열로 보여 준다
-  const columnCount = Math.min(getMemoColumnCount(windowSizeClass), memos.length);
-  const columns = distributeMemosIntoColumns(memos, columnCount);
+  const columnCount = Math.min(getColumnCount(windowSizeClass), memos.length);
 
   return (
     <VStack gap={20}>
@@ -59,29 +73,30 @@ export function MemoList() {
             {t('list.savedTitle')}
           </Text>
         )}
+
         <HStack gap={12} align="start">
-          {columns.map((column, colIndex) => (
-            <VStack key={column.key} flex={1} gap={12}>
-              {column.items.map((item, rowIndex) => (
-                <Animated.View
-                  key={item.id}
-                  layout={LinearTransition.springify().damping(18).stiffness(120)}
-                  entering={FadeInDown.delay(Math.min(rowIndex * 2 + colIndex, 8) * 40)
-                    .duration(400)
-                    .damping(15)}
-                >
-                  <MemoList.Item
-                    id={item.id}
-                    content={item.content}
-                    isPinned={item.isPinned}
-                    date={formatDateLabel(item.createdAt, 'monthDay', dateFormatContext)}
-                  />
-                </Animated.View>
-              ))}
+          {times(columnCount, (columnIndex) => (
+            <VStack key={columnIndex} flex={1} gap={12}>
+              {memos
+                .filter((_, memoIndex) => memoIndex % columnCount === columnIndex)
+                .map((memo, rowIndex) => (
+                  <Animated.View
+                    key={memo.id}
+                    layout={LinearTransition.springify().damping(18).stiffness(120)}
+                    entering={FadeInDown.delay(
+                      clamp(rowIndex * 2 + columnIndex, MAX_ENTERING_STAGGER_STEP) * 40,
+                    )
+                      .duration(400)
+                      .damping(15)}
+                  >
+                    <MemoList.Item memo={memo} />
+                  </Animated.View>
+                ))}
             </VStack>
           ))}
         </HStack>
       </VStack>
+
       {hasNextPage && (
         <MemoList.More
           onPress={() => fetchNextPage({ cancelRefetch: false })}
@@ -94,29 +109,20 @@ export function MemoList() {
   );
 }
 
-MemoList.Item = function Item({
-  id,
-  content,
-  isPinned,
-  date,
-}: {
-  id: number;
-  content: string;
-  isPinned: boolean;
-  date: string;
-}) {
+MemoList.Item = function Item({ memo }: { memo: Memo }) {
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
   const selectMemo = useSingleTap(setSelectedMemoId);
-  const { title, body } = MemoPolicy.getPreview(content);
+  const dateFormatContext = useDateFormatContext();
+  const { title, body } = MemoPolicy.getMemoPreview(memo);
 
   return (
-    <PressableFeedback onPress={() => selectMemo(id)} className="rounded-2xl">
+    <PressableFeedback onPress={() => selectMemo(memo.id)} className="rounded-2xl">
       <VStack
         gap={8}
         p={16}
         className={cn(
           'rounded-2xl border bg-gray-1',
-          selectedMemoId === id ? 'border-main' : 'border-transparent',
+          selectedMemoId === memo.id ? 'border-main' : 'border-transparent',
         )}
       >
         <HStack align="start" gap={8}>
@@ -129,7 +135,7 @@ MemoList.Item = function Item({
           >
             {title}
           </Text>
-          {isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
+          {memo.isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
         </HStack>
         {body.length > 0 && (
           <Text size="b4" shade={6} maxLines={3} lineBreakStrategyIOS="hangul-word">
@@ -137,7 +143,7 @@ MemoList.Item = function Item({
           </Text>
         )}
         <Text size="e1" shade={5}>
-          {date}
+          {formatDateLabel(memo.createdAt, 'monthDay', dateFormatContext)}
         </Text>
       </VStack>
     </PressableFeedback>
@@ -145,7 +151,7 @@ MemoList.Item = function Item({
 };
 
 MemoList.Loading = function Loading() {
-  const columnCount = getMemoColumnCount(useWindowSizeClass());
+  const columnCount = getColumnCount(useWindowSizeClass());
 
   return (
     <HStack gap={12} align="start">

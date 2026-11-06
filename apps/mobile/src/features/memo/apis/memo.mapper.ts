@@ -1,23 +1,34 @@
-import type { Memo, MemoListResponse, MemoResourceLimitResponse } from '@aido/api';
+import type {
+  CreateMemoInput,
+  Memo as MemoDto,
+  MemoListResponse,
+  MemoResourceLimitResponse,
+} from '@aido/api';
+import { pick } from 'es-toolkit';
 
-import type { MemoItem, MemoPage, MemoResourceLimit } from '../domains/memo.model';
+import type { MemoFormValues } from '../domains/memo-form.schema';
+import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
 
-export const toMemoItem = (dto: Memo): MemoItem => ({
-  id: dto.id,
-  content: dto.content,
-  isPinned: dto.isPinned,
-  sortOrder: dto.sortOrder,
-  createdAt: new Date(dto.createdAt),
-  updatedAt: new Date(dto.updatedAt),
-});
+export function toMemo(dto: MemoDto): Memo {
+  return {
+    ...pick(dto, ['id', 'content', 'isPinned']),
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
+  };
+}
 
-export const toMemoPage = (dto: MemoListResponse): MemoPage => ({
-  items: dto.items.map(toMemoItem),
-  nextCursor: dto.pagination.nextCursor,
-  hasNext: dto.pagination.hasNext,
-});
+export function toMemoPage(dto: MemoListResponse): MemoPage {
+  return {
+    items: dto.items.map(toMemo),
+    nextCursor: dto.pagination.nextCursor,
+    hasNext: dto.pagination.hasNext,
+  };
+}
 
-export const toMemoResourceLimit = (dto: MemoResourceLimitResponse): MemoResourceLimit => ({
-  currentCount: dto.currentCount,
-  maxPerUser: dto.maxPerUser,
-});
+export function toMemoResourceLimit(dto: MemoResourceLimitResponse): MemoResourceLimit {
+  return pick(dto, ['currentCount', 'maxPerUser']);
+}
+
+export function toMemoRequest({ content }: MemoFormValues): CreateMemoInput {
+  return { content };
+}

@@ -81,6 +81,7 @@ const QUERY_HOOK_NAMES = new Set([
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
 const CLIENT_OWNED_MODEL_PATHS = [
+  'apps/mobile/src/features/memo/domains/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -138,7 +139,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
   ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],
   ['apps/mobile/src/bootstrap/providers/query-provider.tsx', ['expo-application', 'expo-updates']],
-  ['apps/mobile/src/features/ai/queries/use-parse-memo-mutation-options.ts', ['expo-crypto']],
   [
     'apps/mobile/src/features/auth/apis/auth.service.ts',
     ['expo-linking', 'expo-web-browser', 'expo-apple-authentication', 'expo-crypto'],

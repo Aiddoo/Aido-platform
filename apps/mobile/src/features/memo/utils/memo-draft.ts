@@ -3,13 +3,7 @@ import { z } from 'zod';
 
 const memoDraftSchema = z.object({ content: z.string() });
 
-interface CreateMemoDraftKeyInput {
-  userId: string;
-  /** 없으면 새 메모 작성 초안이다. */
-  memoId?: number;
-}
-
-export function createMemoDraftKey({ userId, memoId }: CreateMemoDraftKeyInput) {
+export function createMemoDraftKey({ userId, memoId }: { userId: string; memoId?: number }) {
   return createDraftKey({
     ownerId: userId,
     scope: 'memo',

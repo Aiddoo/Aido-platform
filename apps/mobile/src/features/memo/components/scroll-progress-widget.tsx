@@ -1,4 +1,4 @@
-import { ArrowUpIcon } from '@src/shared/ui/icon/icons';
+import { ArrowUpIcon, StyledSafeAreaView } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 import { StyleSheet } from 'react-native';
@@ -12,8 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ReText } from 'react-native-redash';
 import { useResolveClassNames } from 'uniwind';
-
-import { StyledSafeAreaView } from '../styled-safe-area-view';
 
 const WIDGET_SIZE = { collapsed: 56, expanded: 180 } as const;
 const TIMING = { fast: 250, normal: 400 } as const;

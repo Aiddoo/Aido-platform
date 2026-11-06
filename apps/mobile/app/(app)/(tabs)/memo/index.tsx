@@ -1,17 +1,16 @@
-import { SelectedMemoDetailPane } from '@src/features/memo/components/memo-detail-pane/selected-memo-detail-pane';
+import { MemoEditor } from '@src/features/memo/components/memo-editor';
 import { MemoList } from '@src/features/memo/components/memo-list';
+import { MemoListScrollView } from '@src/features/memo/components/memo-list-scroll-view';
 import { MemoPolicy } from '@src/features/memo/domains/memo.model';
-import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
-import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
-import { invalidateMemos } from '@src/features/memo/queries/memo-cache';
-import { memoDetailHref } from '@src/features/memo/utils/navigation/memo-href';
+import { useSelectedMemo } from '@src/features/memo/hooks/use-memo-params';
+import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/memo.queries';
+import { memoDetailHref } from '@src/features/memo/utils/memo-href';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -22,106 +21,83 @@ import {
   PlusIcon,
   QueryErrorBoundary,
   RefreshIcon,
-  ScrollProgressWidget,
   Spacing,
   StyledSafeAreaView,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useRef } from 'react';
-import { RefreshControl } from 'react-native';
-import Animated, { clamp, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { Suspense } from 'react';
 
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
-  const queryClient = useQueryClient();
-  const scrollRef = useRef<Animated.ScrollView>(null);
-
-  const progress = useSharedValue(0);
-
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateMemos(queryClient));
-
-  const handleScroll = useAnimatedScrollHandler({
-    onScroll: ({ contentOffset: { y }, contentSize, layoutMeasurement }) => {
-      const scrollable = contentSize.height - layoutMeasurement.height;
-      progress.set(scrollable > 0 ? clamp(y / scrollable, 0, 1) : 0);
-    },
-  });
-
-  const handleScrollToTop = useCallback(() => {
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-  }, []);
-
-  const [selectedMemoId] = useSelectedMemo();
+  const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
+  const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
 
   useCompactDetailHandoff(selectedMemoId, (memoId) => {
     router.setParams({ memoId: undefined });
     router.push(memoDetailHref(memoId));
   });
 
-  const memoListPane = (
-    <Box className="flex-1">
-      <StyledSafeAreaView edges={['left', 'right']}>
-        <HStack align="center" gap={8} px={16}>
-          <Box flex={1}>
-            <H3 maxLines={1}>{t('tab.title')}</H3>
-          </Box>
-          <VoiceNoteStartButton />
-          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
-            <Suspense fallback={<MemoCreateButton.Loading />}>
-              <MemoCreateButton />
-            </Suspense>
-          </QueryErrorBoundary>
-        </HStack>
-
-        <Spacing size={16} />
-      </StyledSafeAreaView>
-
-      <Animated.ScrollView
-        ref={scrollRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: 24,
-        }}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={handleScroll}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-      >
-        <StyledSafeAreaView edges={['left', 'right']} className="grow">
-          <Box px={16} gap={16} style={{ flexGrow: 1 }}>
-            {/* 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */}
-            <QueryErrorBoundary fallback={() => null}>
-              <Suspense fallback={null}>
-                <VoiceNoteDraftList />
-              </Suspense>
-            </QueryErrorBoundary>
-
-            <QueryErrorBoundary fallback={MemoList.Error}>
-              <Suspense fallback={<MemoList.Loading />}>
-                <MemoList />
-              </Suspense>
-            </QueryErrorBoundary>
-          </Box>
-        </StyledSafeAreaView>
-      </Animated.ScrollView>
-
-      <ScrollProgressWidget
-        progress={progress}
-        onScrollToTop={handleScrollToTop}
-        bottomOffset={16}
-      />
-    </Box>
-  );
-
   return (
     <>
       <NotificationBell.Toolbar />
-      <AdaptivePane primary={memoListPane} secondary={<SelectedMemoDetailPane />} />
+
+      <AdaptivePane
+        primary={
+          <Box className="flex-1">
+            <StyledSafeAreaView edges={['left', 'right']}>
+              <HStack align="center" gap={8} className="px-4">
+                <Box className="flex-1">
+                  <H3 maxLines={1}>{t('tab.title')}</H3>
+                </Box>
+                <VoiceNoteStartButton />
+                <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+                  <Suspense fallback={<MemoCreateButton.Loading />}>
+                    <MemoCreateButton />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </HStack>
+
+              <Spacing size={16} />
+            </StyledSafeAreaView>
+
+            <MemoListScrollView>
+              {/* 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */}
+              <QueryErrorBoundary fallback={() => null}>
+                <Suspense fallback={null}>
+                  <VoiceNoteDraftList />
+                </Suspense>
+              </QueryErrorBoundary>
+
+              <QueryErrorBoundary fallback={MemoList.Error}>
+                <Suspense fallback={<MemoList.Loading />}>
+                  <MemoList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </MemoListScrollView>
+          </Box>
+        }
+        secondary={
+          selectedMemoId == null ? (
+            <MemoEditor.Empty />
+          ) : (
+            <StyledSafeAreaView
+              key={selectedMemoId}
+              edges={['left', 'right']}
+              className="flex-1 bg-white"
+            >
+              <QueryErrorBoundary resetKeys={[selectedMemoId]} fallback={MemoEditor.PaneError}>
+                <Suspense fallback={<MemoEditor.PaneLoading />}>
+                  <MemoEditor toolbar={MemoEditor.PaneToolbar} onLeave={deselectMemo} />
+                </Suspense>
+              </QueryErrorBoundary>
+            </StyledSafeAreaView>
+          )
+        }
+      />
     </>
   );
 }
@@ -133,7 +109,7 @@ function MemoCreateButton() {
   const toast = useAppToast();
   const { t } = useTranslation('memo');
   const { data: resourceLimit } = useSuspenseQuery(useGetMemoResourceLimitQueryOptions());
-  const canCreate = MemoPolicy.isCreatable(resourceLimit);
+  const canCreate = MemoPolicy.canCreateMemo(resourceLimit);
 
   const handleCreate = () => {
     if (!canCreate) {
