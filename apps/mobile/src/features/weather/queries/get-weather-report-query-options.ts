@@ -5,9 +5,10 @@ import { isBusinessError, unwrap } from '@src/shared/errors';
 import { type QueryClient, queryOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
+import type { WeatherSceneInput } from '../components/weather-scene/weather-scene';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import type { LocationReading } from '../domains/weather-location.model';
-import { type WeatherReport, WeatherReportPolicy } from '../domains/weather-report.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
 import {
   applyDevWeatherOverride,
@@ -117,5 +118,15 @@ export const WeatherReportSelect = {
   sunMoon: (report: WeatherReport) => pick(report, ['location', 'current', 'daily']),
   airQuality: (report: WeatherReport) => report.airQuality,
   attribution: (report: WeatherReport) => pick(report, ['location', 'attribution', 'fetchedAt']),
-  scene: (report: WeatherReport) => WeatherReportPolicy.toSceneInput(report),
+  scene: (report: WeatherReport): WeatherSceneInput => ({
+    ...pick(report.current, [
+      'condition',
+      'isDaylight',
+      'precipitationIntensity',
+      'cloudCover',
+      'windSpeed',
+    ]),
+    observedAt: report.fetchedAt,
+    latitude: report.location.latitude,
+  }),
 } as const;

@@ -16,7 +16,6 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import type { WeatherScene } from '../../domains/weather-scene.model';
 import { useWeatherSceneClock } from '../../hooks/use-weather-scene-clock';
 import { type CloudLight, CloudLayer } from './cloud-layer';
 import { FogBandLayer } from './fog-band-layer';
@@ -35,6 +34,7 @@ import { BelowHeader, HeroScrimLayer, ScrimLayer } from './scrim-layer';
 import { SkyGradientLayer } from './sky-gradient-layer';
 import { SnowLayer } from './snow-layer';
 import { SunLayer } from './sun-layer';
+import type { WeatherScene } from './weather-scene';
 import { getCelestialCenter } from './weather-scene-particles';
 
 const LOW_END_MEMORY_BYTES = 3 * 1024 ** 3;

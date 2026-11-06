@@ -15,7 +15,7 @@ import {
 import { useEffect, useMemo } from 'react';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { WeatherScenePolicy } from '../../domains/weather-scene.model';
+import { getMoonIllumination } from './weather-scene';
 import {
   createStarField,
   getShootingStarProgress,
@@ -191,7 +191,7 @@ NightSkyLayer.Moon = function Moon({
 }: MoonProps) {
   const texture = useMoonTexture(phase);
   const radius = getSceneReferenceWidth(width) * MOON.radius;
-  const lit = WeatherScenePolicy.moonIllumination(phase);
+  const lit = getMoonIllumination(phase);
   const glowStrength = THEME_MOON_GLOW[isDark ? 'dark' : 'light'];
   const visibility = 1 - clouds * MOON.cloudDimming;
   const opacity = useDerivedValue(() => visibility * (1 - occlusion.get() * MOON.occlusionDimming));

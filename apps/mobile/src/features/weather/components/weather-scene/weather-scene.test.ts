@@ -1,11 +1,26 @@
 import { WEATHER_CONDITIONS, type WeatherCondition } from '@aido/api';
+import { z } from 'zod';
 
 import {
   WEATHER_SCENE_MAX_PRECIPITATION_ANGLE,
+  getMoonIllumination,
+  getMoonPhase,
+  toWeatherScene,
   type WeatherSceneInput,
-  weatherSceneSchema,
-  WeatherScenePolicy,
-} from './weather-scene.model';
+} from './weather-scene';
+
+const unit = z.number().min(0).max(1);
+const weatherSceneRangeSchema = z.object({
+  precipitation: z.object({
+    density: unit,
+    speed: unit,
+    angle: z.number().min(0).max(WEATHER_SCENE_MAX_PRECIPITATION_ANGLE),
+  }),
+  clouds: unit,
+  fog: unit,
+  wind: unit,
+  moonPhase: unit,
+});
 
 const createInput = (overrides: Partial<WeatherSceneInput> = {}): WeatherSceneInput => ({
   condition: 'CLEAR',
@@ -35,13 +50,13 @@ describe('날씨 장면 변환', () => {
       [condition, true] as const,
       [condition, false] as const,
     ]),
-  )('%s 상태(낮 %s)는 스키마를 만족하는 장면이 된다', (condition, isDaylight) => {
+  )('%s 상태(낮 %s)는 각 값이 범위 안에 있는 장면이 된다', (condition, isDaylight) => {
     // Given
     const input = createInput({ condition, isDaylight, cloudCover: 50, windSpeed: 4 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
-    expect(weatherSceneSchema.safeParse(scene).success).toBe(true);
+    expect(weatherSceneRangeSchema.safeParse(scene).success).toBe(true);
     expect(scene.isDaylight).toBe(isDaylight);
   });
 
@@ -57,7 +72,7 @@ describe('날씨 장면 변환', () => {
     // Given
     const input = createInput({ condition });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.precipitation.kind).toBe(kind);
   });
@@ -67,7 +82,7 @@ describe('날씨 장면 변환', () => {
     const day = createInput({ isDaylight: true });
     const night = createInput({ isDaylight: false });
     // When
-    const [dayScene, nightScene] = [day, night].map(WeatherScenePolicy.fromInput);
+    const [dayScene, nightScene] = [day, night].map(toWeatherScene);
     // Then
     expect(dayScene).toMatchObject({
       sky: 'clearDay',
@@ -109,7 +124,7 @@ describe('날씨 장면 변환', () => {
     '%s 상태는 %s 대기 효과를 그린다',
     (condition, atmosphere) => {
       // When
-      const scene = WeatherScenePolicy.fromInput(createInput({ condition }));
+      const scene = toWeatherScene(createInput({ condition }));
       // Then
       expect(scene.atmosphere).toBe(atmosphere);
     },
@@ -122,7 +137,7 @@ describe('날씨 장면 변환', () => {
     ['FRIGID', 'bright'],
   ] as const)('%s 낮의 해는 %s 모양이다', (condition, sun) => {
     // When
-    const scene = WeatherScenePolicy.fromInput(createInput({ condition }));
+    const scene = toWeatherScene(createInput({ condition }));
     // Then
     expect(scene.sun).toBe(sun);
   });
@@ -136,7 +151,7 @@ describe('날씨 장면 변환', () => {
     // Given
     const input = createInput({ condition, isDaylight, cloudCover: 0 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.sky.endsWith(isDaylight ? 'Day' : 'Night')).toBe(true);
     if (isDaylight) {
@@ -150,7 +165,7 @@ describe('날씨 장면 변환', () => {
     // Given
     const input = createInput({ condition: 'CLOUDY', isDaylight: false, cloudCover: 90 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene).toMatchObject({
       sky: 'overcastNight',
@@ -167,7 +182,7 @@ describe('날씨 장면 변환', () => {
     const inputs = WEATHER_CONDITIONS.map((condition) => createInput({ condition }));
     // When
     const flared = inputs
-      .filter((input) => WeatherScenePolicy.fromInput(input).lensFlare)
+      .filter((input) => toWeatherScene(input).lensFlare)
       .map((input) => input.condition);
     // Then
     expect(flared).toEqual(['CLEAR', 'MOSTLY_CLEAR']);
@@ -177,7 +192,7 @@ describe('날씨 장면 변환', () => {
     // Given
     const input = createInput({ condition: 'HAZY', cloudCover: 100 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.sun).toBe('diffuse');
   });
@@ -187,7 +202,7 @@ describe('날씨 장면 변환', () => {
     const clear = createInput({ condition: 'MOSTLY_CLEAR', isDaylight: false, cloudCover: 10 });
     const cloudy = createInput({ condition: 'PARTLY_CLOUDY', isDaylight: false, cloudCover: 50 });
     // When
-    const [clearScene, cloudyScene] = [clear, cloudy].map(WeatherScenePolicy.fromInput);
+    const [clearScene, cloudyScene] = [clear, cloudy].map(toWeatherScene);
     // Then
     expect(clearScene?.shootingStars).toBe(true);
     expect(cloudyScene).toMatchObject({ moon: true, stars: true, shootingStars: false });
@@ -199,7 +214,7 @@ describe('날씨 장면 변환', () => {
       // Given
       const input = createInput({ condition, isDaylight: false, cloudCover: 0 });
       // When
-      const scene = WeatherScenePolicy.fromInput(input);
+      const scene = toWeatherScene(input);
       // Then
       expect(scene).toMatchObject({ sun: 'hidden', moon: false, stars: false });
       expect(scene.precipitation.kind).not.toBe('none');
@@ -222,7 +237,7 @@ describe('날씨 장면 변환', () => {
     // Given
     const input = createInput({ condition, isDaylight });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.sky).toBe(sky);
   });
@@ -232,7 +247,7 @@ describe('날씨 장면 변환', () => {
     const conditions = WEATHER_CONDITIONS.map((condition) => createInput({ condition }));
     // When
     const withLightning = conditions
-      .map(WeatherScenePolicy.fromInput)
+      .map(toWeatherScene)
       .flatMap((scene, index) => (scene.lightning ? [conditions[index]?.condition] : []));
     // Then
     expect(withLightning).toEqual(['THUNDERSTORMS']);
@@ -242,7 +257,7 @@ describe('날씨 장면 변환', () => {
     // Given
     const input = createInput({ condition: 'FOGGY', isDaylight: false, cloudCover: 0 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene).toMatchObject({ moon: false, stars: false });
   });
@@ -253,9 +268,7 @@ describe('날씨 장면 변환', () => {
     const cloudyWithoutClouds = createInput({ condition: 'CLOUDY', cloudCover: 0 });
     const unknownCover = createInput({ condition: 'PARTLY_CLOUDY', cloudCover: Number.NaN });
     // When
-    const scenes = [clearWithClouds, cloudyWithoutClouds, unknownCover].map(
-      WeatherScenePolicy.fromInput,
-    );
+    const scenes = [clearWithClouds, cloudyWithoutClouds, unknownCover].map(toWeatherScene);
     // Then
     expect(scenes.map((scene) => scene.clouds)).toEqual([0.15, 0.85, 0.3]);
   });
@@ -263,8 +276,8 @@ describe('날씨 장면 변환', () => {
 
 describe('강수 강도와 밀도', () => {
   const rainDensity = (precipitationIntensity: number) =>
-    WeatherScenePolicy.fromInput(createInput({ condition: 'RAIN', precipitationIntensity }))
-      .precipitation.density;
+    toWeatherScene(createInput({ condition: 'RAIN', precipitationIntensity })).precipitation
+      .density;
 
   test.each([10, 500, Number.POSITIVE_INFINITY])(
     '강수 강도 %pmm/h 이상은 밀도가 1에서 멈춘다',
@@ -297,7 +310,7 @@ describe('강수 강도와 밀도', () => {
     // Given
     const input = createInput({ condition: 'CLEAR', precipitationIntensity: 5 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.precipitation).toMatchObject({ kind: 'none', density: 0, angle: 0 });
   });
@@ -315,7 +328,7 @@ describe('바람과 강수 각도', () => {
     // Given
     const input = createInput({ condition: 'RAIN', windSpeed });
     // When
-    const { angle } = WeatherScenePolicy.fromInput(input).precipitation;
+    const { angle } = toWeatherScene(input).precipitation;
     // Then
     expect(angle).toBeCloseTo(expected);
   });
@@ -324,7 +337,7 @@ describe('바람과 강수 각도', () => {
     // Given
     const input = createInput({ condition: 'HEAVY_RAIN', windSpeed: 0 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.precipitation.angle).toBeGreaterThan(0);
     expect(scene.precipitation.angle).toBeLessThanOrEqual(WEATHER_SCENE_MAX_PRECIPITATION_ANGLE);
@@ -338,14 +351,14 @@ describe('달의 위상', () => {
     ['2000-02-05T06:51:00.000Z', 0],
   ])('%s의 위상은 %p에 가깝다', (iso, expected) => {
     // When
-    const phase = WeatherScenePolicy.moonPhase(new Date(iso));
+    const phase = getMoonPhase(new Date(iso));
     // Then
     expect(Math.min(Math.abs(phase - expected), 1 - Math.abs(phase - expected))).toBeLessThan(0.01);
   });
 
   test('보름달은 다 밝고 삭은 보이지 않는다', () => {
     // When
-    const [full, fresh] = [0.5, 0].map(WeatherScenePolicy.moonIllumination);
+    const [full, fresh] = [0.5, 0].map(getMoonIllumination);
     // Then
     expect(full).toBeCloseTo(1);
     expect(fresh).toBeCloseTo(0);
@@ -355,7 +368,7 @@ describe('달의 위상', () => {
     // Given
     const input = createInput({ isDaylight: false, latitude: -33.9 });
     // When
-    const scene = WeatherScenePolicy.fromInput(input);
+    const scene = toWeatherScene(input);
     // Then
     expect(scene.isSouthernHemisphere).toBe(true);
   });

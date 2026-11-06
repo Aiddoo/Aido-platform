@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import {
+  toWeatherScene,
   type WeatherScene,
   type WeatherSceneInput,
-  WeatherScenePolicy,
-} from '../domains/weather-scene.model';
+} from '../components/weather-scene/weather-scene';
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
@@ -34,5 +34,5 @@ export function useWeatherScene(): WeatherScene {
     select: WeatherReportSelect.scene,
     enabled: WeatherLocationPolicy.canFetchReport(location.status),
   });
-  return WeatherScenePolicy.fromInput(sceneInput ?? DEFAULT_SCENE_INPUT);
+  return toWeatherScene(sceneInput ?? DEFAULT_SCENE_INPUT);
 }

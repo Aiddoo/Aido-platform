@@ -2,7 +2,7 @@ import { Circle, Group, Image, RadialGradient, vec } from '@shopify/react-native
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import type { WeatherSceneSun } from '../../domains/weather-scene.model';
+import type { WeatherSceneSun } from './weather-scene';
 import { getSceneReferenceWidth } from './weather-scene-particles';
 import { useSunRaysTexture } from './weather-scene-textures';
 

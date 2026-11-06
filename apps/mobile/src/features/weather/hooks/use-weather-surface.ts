@@ -2,9 +2,9 @@ import { useReduceTransparency } from '@src/shared/hooks/use-reduce-transparency
 import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
 
+import { toWeatherScene, type WeatherSceneSky } from '../components/weather-scene/weather-scene';
 import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette';
 import type { WeatherReport } from '../domains/weather-report.model';
-import { type WeatherSceneSky, WeatherScenePolicy } from '../domains/weather-scene.model';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
@@ -26,7 +26,7 @@ export type WeatherSurface = {
 };
 
 function selectSky(report: WeatherReport): WeatherSceneSky {
-  return WeatherScenePolicy.fromInput(WeatherReportSelect.scene(report)).sky;
+  return toWeatherScene(WeatherReportSelect.scene(report)).sky;
 }
 
 /**

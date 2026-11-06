@@ -2,7 +2,6 @@ import type { WeatherCondition } from '@aido/api';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
 const WEATHER_SCENE_SKIES = [
   'clearDay',
@@ -38,7 +37,7 @@ const WEATHER_SCENE_PRECIPITATION_KINDS = [
   'hail',
 ] as const;
 
-type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
+export type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
 
 /** 날씨마다 하나씩 두는 대표 대기 효과 */
 const WEATHER_SCENE_ATMOSPHERES = [
@@ -51,7 +50,7 @@ const WEATHER_SCENE_ATMOSPHERES = [
   'frost',
 ] as const;
 
-type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
+export type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
 
 const WEATHER_SCENE_SUNS = ['hidden', 'bright', 'diffuse', 'blazing'] as const;
 
@@ -72,35 +71,31 @@ const CELESTIAL_MAX_FOG = 0.5;
 const SYNODIC_MONTH_DAYS = 29.530588853;
 const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14);
 
-const unitSchema = z.number().min(0).max(1);
-
-export const weatherSceneSchema = z.object({
-  sky: z.enum(WEATHER_SCENE_SKIES),
-  isDaylight: z.boolean(),
-  precipitation: z.object({
-    kind: z.enum(WEATHER_SCENE_PRECIPITATION_KINDS),
-    density: unitSchema,
-    speed: unitSchema,
-    angle: z.number().min(0).max(WEATHER_SCENE_MAX_PRECIPITATION_ANGLE),
-  }),
-  clouds: unitSchema,
+export interface WeatherScene {
+  sky: WeatherSceneSky;
+  isDaylight: boolean;
+  precipitation: {
+    kind: WeatherScenePrecipitationKind;
+    density: number;
+    speed: number;
+    angle: number;
+  };
+  clouds: number;
   /** 화면 아래에 낮게 깔리는 물안개 양 */
-  fog: unitSchema,
-  wind: unitSchema,
-  atmosphere: z.enum(WEATHER_SCENE_ATMOSPHERES),
-  lightning: z.boolean(),
-  sun: z.enum(WEATHER_SCENE_SUNS),
-  lensFlare: z.boolean(),
-  moon: z.boolean(),
+  fog: number;
+  wind: number;
+  atmosphere: WeatherSceneAtmosphere;
+  lightning: boolean;
+  sun: WeatherSceneSun;
+  lensFlare: boolean;
+  moon: boolean;
   /** 달의 위상. 0은 삭, 0.5는 보름, 1에 가까울수록 그믐이다. */
-  moonPhase: z.number().min(0).max(1),
+  moonPhase: number;
   /** 남반구에서는 달의 밝은 면이 반대로 보인다. */
-  isSouthernHemisphere: z.boolean(),
-  stars: z.boolean(),
-  shootingStars: z.boolean(),
-});
-
-export type WeatherScene = z.infer<typeof weatherSceneSchema>;
+  isSouthernHemisphere: boolean;
+  stars: boolean;
+  shootingStars: boolean;
+}
 
 export type WeatherSceneInput = {
   condition: WeatherCondition;
@@ -281,14 +276,14 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
 }
 
 /** 기준 삭에서 지난 날수를 삭망월로 나눈 나머지로 그 시각의 위상(0~1)을 구한다. */
-function getMoonPhase(date: Date): number {
+export function getMoonPhase(date: Date): number {
   const days = (date.getTime() - KNOWN_NEW_MOON_MS) / DAY_MS;
   const cycles = days / SYNODIC_MONTH_DAYS;
   return cycles - Math.floor(cycles);
 }
 
 /** 위상에서 밝게 보이는 면적 비율(0~1) */
-function getMoonIllumination(phase: number): number {
+export function getMoonIllumination(phase: number): number {
   return (1 - Math.cos(phase * Math.PI * 2)) / 2;
 }
 
@@ -339,7 +334,7 @@ function resolveSun(sky: OpenSky, sun: VisibleSun): WeatherSceneSun {
   return 'hidden';
 }
 
-function toWeatherScene(input: WeatherSceneInput): WeatherScene {
+export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
   const profile = getConditionProfile(input.condition);
   const isDry = profile.precipitation === 'none';
   const wind = Math.max(profile.minWind, normalizeWindSpeed(input.windSpeed));
@@ -377,9 +372,3 @@ function toWeatherScene(input: WeatherSceneInput): WeatherScene {
     shootingStars: moon && isSkyVisible(sky, SHOOTING_STARS_MAX_CLOUDS),
   };
 }
-
-export const WeatherScenePolicy = {
-  fromInput: toWeatherScene,
-  moonPhase: getMoonPhase,
-  moonIllumination: getMoonIllumination,
-} as const;

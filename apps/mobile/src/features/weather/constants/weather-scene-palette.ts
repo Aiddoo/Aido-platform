@@ -1,4 +1,4 @@
-import type { WeatherSceneSky } from '../domains/weather-scene.model';
+import type { WeatherSceneSky } from '../components/weather-scene/weather-scene';
 
 type SkyStops = readonly [top: string, upper: string, lower: string, bottom: string];
 

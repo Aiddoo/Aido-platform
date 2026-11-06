@@ -3,7 +3,7 @@ import { range } from 'es-toolkit';
 import type { SharedValue } from 'react-native-reanimated';
 
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
-import type { WeatherSceneSky } from '../../domains/weather-scene.model';
+import type { WeatherSceneSky } from './weather-scene';
 import {
   createParticleSeeds,
   getSceneReferenceWidth,

@@ -16,8 +16,6 @@ import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { hasSameWallClock, toDateKey } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-import type { WeatherSceneInput } from './weather-scene.model';
-
 const currentWeatherSchema = weatherCurrentConditionsSchema.extend({
   observedAt: z.date(),
 });
@@ -286,21 +284,6 @@ function getUvLevel(uvIndex: number): UvLevel {
 
 export type TemperatureUnit = 'celsius' | 'fahrenheit';
 
-function toSceneInput(
-  report: Pick<WeatherReport, 'current' | 'location' | 'fetchedAt'>,
-): WeatherSceneInput {
-  const { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed } = report.current;
-  return {
-    condition,
-    isDaylight,
-    precipitationIntensity,
-    cloudCover,
-    windSpeed,
-    observedAt: report.fetchedAt,
-    latitude: report.location.latitude,
-  };
-}
-
 type SunEvents =
   | { kind: 'regular'; sunrise: Date | null; sunset: Date | null }
   | { kind: 'polarDay' }
@@ -371,5 +354,4 @@ export const WeatherReportPolicy = {
   compareFeelsLike,
   getAirQualityGrade,
   getUvLevel,
-  toSceneInput,
 } as const;
