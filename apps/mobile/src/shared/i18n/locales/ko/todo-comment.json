@@ -5,7 +5,7 @@
     "deleted": "삭제된 댓글이에요",
     "blockedAuthor": "차단한 사용자의 댓글이에요",
     "unknownUser": "알 수 없음",
-    "emptyTitle": "아직 댓글이 없어요",
+    "heading": "댓글",
     "emptyDescription": "첫 댓글을 남겨보세요",
     "loadFailed": "댓글을 불러오지 못했어요",
     "loadingMore": "다음 댓글을 불러오는 중",

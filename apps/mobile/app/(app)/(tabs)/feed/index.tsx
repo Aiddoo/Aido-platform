@@ -57,7 +57,6 @@ import {
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Separator } from 'heroui-native';
 import { type PropsWithChildren, Suspense, useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
@@ -400,8 +399,6 @@ function FeedTodoDetail({ onClose }: { onClose: () => void }) {
       >
         <TodoCommentSession onExit={onClose}>
           <TodoCommentTitleBar date={date} />
-
-          <Separator />
 
           {isTodoUnavailable ? (
             <TodoDetailCard.Unavailable onClose={onClose} />

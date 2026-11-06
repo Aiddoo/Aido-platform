@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
@@ -15,31 +15,23 @@ import {
   STACK_MORE_ICON,
   Text,
   useStackScreenOptions,
-  VStack,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
-import { Menu, PressableFeedback } from 'heroui-native';
+import { Button, Menu } from 'heroui-native';
 import { useState } from 'react';
 
 import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 
-const SUBTITLE_LAYOUT_PLACEHOLDER = ' ';
-
 /** 펼친 피드의 상세 pane 제목 바. pane은 Stack 화면이 아니라 네이티브 헤더가 없고, 선택 해제는 목록 pane이 맡는다 */
 export function TodoCommentTitleBar({ date }: { date: string }) {
-  const { title, subtitle } = useTodoCommentTitle();
+  const { t } = useTranslation('todo');
 
   return (
-    <HStack align="center" gap={4} pl={20} pr={4} className="min-h-16">
-      <VStack flex={1} gap={1} className="min-w-0">
-        <Text size="b2" weight="bold" numberOfLines={1}>
-          {title}
-        </Text>
-        <Text size="e1" shade={7} numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </VStack>
+    <HStack align="center" gap={4} pl={20} pr={4} className="min-h-14">
+      <Text size="b2" weight="bold" numberOfLines={1} className="min-w-0 flex-1">
+        {t('detail.pageTitle')}
+      </Text>
 
       <TodoActionsButton date={date} />
       <TodoModerationMenu />
@@ -47,13 +39,12 @@ export function TodoCommentTitleBar({ date }: { date: string }) {
   );
 }
 
-/** `/todo/[todoId]` 전체 화면의 네이티브 헤더. 조회수를 함께 보이려고 제목만 커스텀 뷰로 둔다. */
+/** `/todo/[todoId]` 전체 화면의 네이티브 헤더 */
 TodoCommentTitleBar.StackHeader = function StackHeader() {
   const screenOptions = useStackScreenOptions();
-  const { t } = useTranslation(['common', 'moderation', 'todoComment']);
+  const { t } = useTranslation(['common', 'moderation', 'todo', 'todoComment']);
   const { todoId } = useTodoScreenParams();
   const moderation = useTodoModerationActions({ todoId });
-  const { title, subtitle } = useTodoCommentTitle();
   const { result: backResult, handleBack } = useTodoCommentBack();
 
   const handleBackPress = useSingleTap(() => {
@@ -70,7 +61,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
           ...screenOptions,
           // 작성기가 열려 있으면 swipe가 화면을 닫지 않고 뒤로가기가 작성기부터 닫는다
           gestureEnabled: backResult === 'native',
-          headerTitle: () => <StackHeaderTitle title={title} subtitle={subtitle} />,
+          title: t('todo:detail.pageTitle'),
         }}
       />
       <Stack.Toolbar placement="left">
@@ -107,45 +98,27 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
   );
 };
 
-interface StackHeaderTitleProps {
-  title: string;
-  subtitle: string;
-}
-
-function StackHeaderTitle({ title, subtitle }: StackHeaderTitleProps) {
-  return (
-    <VStack align="center" gap={1} className="max-w-60">
-      <Text size="b2" weight="bold" numberOfLines={1}>
-        {title}
-      </Text>
-      <Text size="e1" shade={5} numberOfLines={1}>
-        {subtitle}
-      </Text>
-    </VStack>
-  );
-}
-
 /** 내 할 일이면 기존 할 일 옵션 시트를 연다. 친구 할 일의 신고·차단은 TodoModerationMenu가 맡는다. */
 function TodoActionsButton({ date }: { date: string }) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoScreenParams();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: me } = useQuery(useGetMeQueryOptions());
 
-  if (detail == null || me == null || me.id !== detail.owner.id) {
+  if (detail == null || !TodoPolicy.isOwnTodo(detail)) {
     return null;
   }
 
   return (
-    <PressableFeedback
-      onPress={() => push({ pathname: '/todo/[todoId]/actions', params: { todoId, date } })}
-      className="size-11 items-center justify-center rounded-full"
-      accessibilityRole="button"
+    <Button
+      isIconOnly
+      variant="ghost"
+      className="size-11 rounded-full"
       accessibilityLabel={t('actions.more')}
+      onPress={() => push({ pathname: '/todo/[todoId]/actions', params: { todoId, date } })}
     >
       <MoreIcon width={22} height={22} colorClassName="text-gray-9" />
-    </PressableFeedback>
+    </Button>
   );
 }
 
@@ -163,15 +136,15 @@ function TodoModerationMenu() {
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
       <Menu.Trigger asChild>
-        <PressableFeedback
-          hitSlop={8}
-          className="size-11 items-center justify-center rounded-full"
-          accessibilityRole="button"
+        <Button
+          isIconOnly
+          variant="ghost"
+          className="size-11 rounded-full"
           accessibilityLabel={t('menu.more')}
           accessibilityState={{ expanded: isOpen }}
         >
           <MoreIcon width={20} height={20} colorClassName="text-gray-9" />
-        </PressableFeedback>
+        </Button>
       </Menu.Trigger>
       <Menu.Portal disableFullWindowOverlay={false}>
         <Menu.Overlay />
@@ -193,19 +166,4 @@ function TodoModerationMenu() {
       </Menu.Portal>
     </Menu>
   );
-}
-
-/** 제목은 할 일 상세, 부제목은 조회수다 */
-function useTodoCommentTitle() {
-  const { todoId } = useTodoScreenParams();
-  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { t } = useTranslation('todo');
-
-  return {
-    title: t('detail.pageTitle'),
-    subtitle:
-      detail == null
-        ? SUBTITLE_LAYOUT_PLACEHOLDER
-        : t('detail.views', { count: detail.metrics.viewCount }),
-  };
 }

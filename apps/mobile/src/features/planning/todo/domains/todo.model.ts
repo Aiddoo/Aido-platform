@@ -260,10 +260,22 @@ function hasUpcomingTimedTodo(
   );
 }
 
+/** 서버가 준 수정 권한이 곧 내 할 일이다. 사용자 id를 다시 비교하지 않는다 */
+function isOwnTodo(details: Pick<TodoDetails, 'permissions'>): boolean {
+  return details.permissions.canEdit;
+}
+
+/** 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다 */
+function getDetailListDate(todo: Pick<Todo, 'startDate' | 'endDate'>, todayKey: string): string {
+  return isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
+}
+
 export const TodoPolicy = {
   isPrivate,
   findTodo,
   findSubTodo,
+  isOwnTodo,
+  getDetailListDate,
   isTodoOnDate,
   isRecurringTodo,
   isMultiDayTodo,

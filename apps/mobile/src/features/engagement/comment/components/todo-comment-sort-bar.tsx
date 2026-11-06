@@ -38,20 +38,20 @@ export function TodoCommentSortBar({
     <Menu {...menuProps} isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
       <Menu.Trigger asChild>
         <PressableFeedback
-          className="min-h-11 flex-row items-center gap-1 self-start py-1 pr-3"
+          className="min-h-11 flex-row items-center gap-1 ps-3"
           isDisabled={isPending}
           accessibilityRole="button"
           accessibilityLabel={t('sort.label', { value: currentLabel })}
           accessibilityState={{ expanded: isMenuOpen, busy: isPending, disabled: isPending }}
         >
-          <Text size="b2" weight="bold">
+          <Text size="b4" shade={6}>
             {currentLabel}
           </Text>
           {isPending ? (
             <Spinner size="sm" />
           ) : (
             <HStack className="rotate-90">
-              <ArrowRightIcon width={15} height={15} colorClassName="text-gray-6" />
+              <ArrowRightIcon width={13} height={13} colorClassName="text-gray-6" />
             </HStack>
           )}
         </PressableFeedback>
@@ -61,7 +61,7 @@ export function TodoCommentSortBar({
         <Menu.Content
           presentation="popover"
           placement="bottom"
-          align="start"
+          align="end"
           width={208}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >

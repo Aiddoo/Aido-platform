@@ -1,6 +1,10 @@
 import '@src/shared/i18n/init';
+import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import {
+  createTodoDto,
+  createTodoListResponseDto,
+} from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { createHttpClientStub } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -18,6 +22,7 @@ import { TODO_COMMENT_INPUT_NATIVE_ID } from '../constants/todo-comment.constant
 const TODO_ID = 42;
 const COMMENT_ID = 'ckcomment0001';
 const USER_ID = 'clz7x5p8k0001qz0z8z8z8z8z';
+const FRIEND_ID = 'clz7x5p8k0002qz0z8z8z8z8z';
 const CREATED_AT = '2026-08-15T09:00:00.000Z';
 /** 새 댓글은 연결 실패를 두 번 더 시도해 1.5초 뒤에 실패로 끝난다 */
 const RETRY_WAIT = { timeout: 4_000 };
@@ -60,14 +65,20 @@ const COMMENT_DTO = {
   editedAt: null,
 };
 
-function createDetailsDto() {
+function createDetailsDto(overrides: Record<string, unknown> = {}) {
   return {
     todo: createTodoDto({ id: TODO_ID, userId: USER_ID, title: '운동하기' }),
     owner: { id: USER_ID, name: '나', userTag: 'TEST2025', profileImage: null },
     permissions: { canEdit: true, canComment: true, canNudge: false },
     metrics: { viewCount: 3, commentCount: 1 },
+    ...overrides,
   };
 }
+
+const FRIEND_DETAILS = {
+  owner: { id: FRIEND_ID, name: '안드친구', userTag: 'FRIEND01', profileImage: null },
+  permissions: { canEdit: false, canComment: true, canNudge: false },
+};
 
 type HostNode = ReturnType<typeof screen.getByTestId>;
 
@@ -90,17 +101,33 @@ function findHostsWithProp(propName: string, value?: unknown) {
   return found;
 }
 
-async function renderTodoDetail() {
+interface RenderTodoDetailOptions {
+  details?: Record<string, unknown>;
+  threadItems?: unknown[];
+  listItems?: ReturnType<typeof createTodoDto>[];
+}
+
+async function renderTodoDetail({
+  details,
+  threadItems,
+  listItems = [],
+}: RenderTodoDetailOptions = {}) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (path: string) => {
     if (path === 'v1/auth/me') {
       return ok(createCurrentUserDto({ userId: USER_ID }));
     }
     if (path === `v1/todos/${TODO_ID}/details`) {
-      return ok(createDetailsDto());
+      return ok(createDetailsDto(details));
+    }
+    if (path === 'v1/auth/preference') {
+      return ok(createPreferenceDto());
+    }
+    if (path === 'v1/todos') {
+      return ok(createTodoListResponseDto({ items: listItems }));
     }
     return ok({
-      items: [
+      items: threadItems ?? [
         {
           comment: COMMENT_DTO,
           previewReply: null,
@@ -122,7 +149,7 @@ async function renderTodoDetail() {
     }),
   });
   await screen.findByTestId('todo-comment-input-0');
-  await screen.findByText('오늘도 화이팅!');
+  await screen.findByTestId('todo-comment-count');
 
   return { ...view, httpClient };
 }
@@ -262,5 +289,78 @@ describe('할 일 상세 입력창과 키보드', () => {
     } finally {
       onlineManager.setOnline(true);
     }
+  });
+});
+
+describe('할 일 상세 카드', () => {
+  it('조회수는 지표 줄 한 곳이고 댓글 수와 정렬이 한 줄이며 내 할 일에는 작성자 줄이 없다', async () => {
+    // Given
+    await renderTodoDetail();
+
+    // When
+    const title = await screen.findByText('운동하기');
+
+    // Then
+    expect(title).toBeOnTheScreen();
+    expect(screen.queryByText('조회 3회')).toBeNull();
+    expect(screen.queryByTestId('todo-detail-owner')).toBeNull();
+    expect(screen.getByText('댓글')).toBeOnTheScreen();
+    expect(screen.getByTestId('todo-comment-count')).toHaveTextContent('1');
+    expect(screen.getByLabelText(/댓글 정렬 기준/u)).toBeOnTheScreen();
+  });
+
+  it('친구 할 일은 작성자 줄이 보이고 체크박스는 읽기 전용이다', async () => {
+    // Given
+    await renderTodoDetail({ details: FRIEND_DETAILS });
+
+    // When
+    const checkbox = await screen.findByTestId('todo-detail-checkbox');
+
+    // Then
+    expect(screen.getByTestId('todo-detail-owner')).toHaveTextContent('안드친구');
+    expect(checkbox).toBeDisabled();
+  });
+
+  it('친구의 반복 할 일은 규칙을 몰라 반복이라고만 보이고 내 목록을 받지 않는다', async () => {
+    // Given
+    const { httpClient } = await renderTodoDetail({
+      details: {
+        ...FRIEND_DETAILS,
+        todo: createTodoDto({ id: TODO_ID, recurrenceGroupId: 'series-1' }),
+      },
+    });
+
+    // When
+    const label = await screen.findByText('반복');
+
+    // Then
+    expect(label).toBeOnTheScreen();
+    expect(httpClient.get).not.toHaveBeenCalledWith('v1/todos', expect.anything());
+  });
+
+  it('내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약을 보인다', async () => {
+    // Given
+    const repeat = { frequency: 'DAILY' as const, end: { type: 'NEVER' as const } };
+
+    // When
+    await renderTodoDetail({
+      details: { todo: createTodoDto({ id: TODO_ID, recurrenceGroupId: 'series-1' }) },
+      listItems: [createTodoDto({ id: TODO_ID, recurrenceGroupId: 'series-1', repeat })],
+    });
+
+    // Then
+    expect(await screen.findByText('매일')).toBeOnTheScreen();
+  });
+
+  it('댓글이 없으면 큰 아이콘 없이 짧은 안내만 보인다', async () => {
+    // Given
+    await renderTodoDetail({ threadItems: [] });
+
+    // When
+    const empty = await screen.findByText('첫 댓글을 남겨보세요');
+
+    // Then
+    expect(empty).toBeOnTheScreen();
+    expect(screen.queryByText('아직 댓글이 없어요')).toBeNull();
   });
 });

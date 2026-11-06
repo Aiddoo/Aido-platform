@@ -258,7 +258,6 @@
     "unavailableDescription": "It may have been deleted, or your friendship may have changed",
     "open": "Comments",
     "pageTitle": "To-do details",
-    "views": "{{count}} views",
     "unknownOwner": "User",
     "metrics": "{{views}} views · {{comments}} comments"
   },

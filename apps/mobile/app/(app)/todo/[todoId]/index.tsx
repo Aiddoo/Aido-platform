@@ -11,7 +11,6 @@ import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-
 import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 
 /** 할 일 상세와 댓글·답글 한 화면. 알림·링크는 `?comment=`로 그 댓글 위치를 연다 */
@@ -34,8 +33,6 @@ function TodoDetailScreen() {
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']} testID="todo-detail">
       <TodoCommentSession>
         <TodoCommentTitleBar.StackHeader />
-
-        <Separator />
 
         {isTodoUnavailable ? (
           <TodoDetailCard.Unavailable onClose={router.back} />

@@ -291,3 +291,20 @@ describe('TodoPolicy 시트 대상과 공개 범위', () => {
     expect(deleted).toBeNull();
   });
 });
+
+describe('TodoPolicy.getDetailListDate', () => {
+  it('오늘이 기간 안인 여러 날 할 일은 오늘 목록을, 그 밖은 시작일 목록을 고친다', () => {
+    // Given
+    const multiDay = { startDate: '2026-11-05', endDate: '2026-11-09' };
+    const pastOneDay = { startDate: '2026-11-01', endDate: null };
+
+    // When
+    const dates = [
+      TodoPolicy.getDetailListDate(multiDay, '2026-11-07'),
+      TodoPolicy.getDetailListDate(pastOneDay, '2026-11-07'),
+    ];
+
+    // Then
+    expect(dates).toEqual(['2026-11-07', '2026-11-01']);
+  });
+});

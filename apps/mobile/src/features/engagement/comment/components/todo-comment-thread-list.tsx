@@ -8,7 +8,7 @@ import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ChatBubbleIcon,
+  Box,
   Flex,
   HeartFilledIcon,
   InfiniteList,
@@ -178,13 +178,11 @@ TodoCommentThreadList.Empty = function Empty() {
   const { t } = useTranslation('todoComment');
 
   return (
-    <Flex flex={1} justify="center" align="center" py={32}>
-      <Result
-        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
-        title={t('list.emptyTitle')}
-        description={t('list.emptyDescription')}
-      />
-    </Flex>
+    <Box px={16} py={8}>
+      <Text size="b4" shade={6}>
+        {t('list.emptyDescription')}
+      </Text>
+    </Box>
   );
 };
 
