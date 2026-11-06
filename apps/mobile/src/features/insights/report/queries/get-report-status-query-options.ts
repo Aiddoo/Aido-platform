@@ -1,14 +1,14 @@
-import { useAiService } from '@src/bootstrap/providers/di-context';
-import type { AiService } from '@src/features/ai/apis/ai.service';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { useReportService } from '@src/bootstrap/providers/di-context';
+import type { ReportService } from '@src/features/insights/report/apis/report.service';
+import { REPORT_QUERY_KEYS } from '@src/features/insights/report/constants/report-query-keys';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getReportStatusQueryOptions(aiService: AiService) {
+export function getReportStatusQueryOptions(reportService: ReportService) {
   return queryOptions({
-    queryKey: AI_QUERY_KEYS.status(),
+    queryKey: REPORT_QUERY_KEYS.status(),
     queryFn: async ({ signal }) => {
-      const result = await aiService.getReportStatus(signal);
+      const result = await reportService.getReportStatus(signal);
       return unwrap(result);
     },
     meta: { refreshOnPremiumChange: true },
@@ -16,5 +16,5 @@ export function getReportStatusQueryOptions(aiService: AiService) {
 }
 
 export function useGetReportStatusQueryOptions() {
-  return getReportStatusQueryOptions(useAiService());
+  return getReportStatusQueryOptions(useReportService());
 }

@@ -4,10 +4,10 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { createConsent } from '@src/features/identity/auth/__tests__/auth.factories';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
-import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { createConsent } from '@src/features/identity/consent/__tests__/consent.factories';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import type { Consent } from '@src/features/identity/consent/domains/consent.model';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
@@ -20,7 +20,6 @@ import {
   createMockAnalytics,
   createMockHttpClient,
   createMockStorage,
-  createMockTokenStore,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -40,7 +39,6 @@ import { Pressable, TextInput } from 'react-native';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 
-// AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));
 
 const ACCOUNT_ID = 'user-1';
@@ -139,7 +137,7 @@ async function renderQuickVoice({
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   if (consent != null) {
-    queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consent));
+    queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consent));
   }
   if (aiParseUsed != null) {
     queryClient.setQueryData(
@@ -161,7 +159,7 @@ async function renderQuickVoice({
         voiceService: new VoiceService(httpClient, logger),
         userService: new UserService(httpClient),
         todoCategoryService: new TodoCategoryService(httpClient),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+        consentService: new ConsentService(httpClient),
         entitlementService: new EntitlementService(httpClient, logger),
         coachmarkService: new CoachmarkService({
           isSeen: () => isCoachmarkSeen,
@@ -471,7 +469,7 @@ describe('useAddTodoQuickVoice', () => {
     // Given
     const { speechRecognizer, queryClient } = await renderQuickVoice();
     queryClient.setQueryData(
-      AUTH_QUERY_KEYS.consent(),
+      CONSENT_QUERY_KEYS.consent(),
       createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
     );
     await fireEvent.press(screen.getByTestId('begin'));

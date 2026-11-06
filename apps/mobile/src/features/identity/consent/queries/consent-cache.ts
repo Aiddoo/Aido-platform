@@ -1,5 +1,5 @@
-import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import type { Consent } from '@src/features/identity/consent/domains/consent.model';
 import type { QueryClient } from '@tanstack/react-query';
 
 /**
@@ -7,7 +7,7 @@ import type { QueryClient } from '@tanstack/react-query';
  * 다른 기기에서 철회했거나 안내 버전이 바뀐 경우라, 다음 AI 동작 전에 동의 안내를 다시 띄운다.
  */
 export function markAiDataSharingConsentRequired(queryClient: QueryClient) {
-  queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (consent) =>
+  queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (consent) =>
     consent == null
       ? consent
       : { ...consent, aiDataSharingDecision: 'UNDECIDED', aiDataSharingAgreedAt: null },

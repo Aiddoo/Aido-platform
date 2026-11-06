@@ -1,13 +1,13 @@
 import { ErrorCode } from '@aido/api/errors';
 import {
   useActivationService,
-  useAiService,
+  useSuggestionService,
   useHaptics,
   useLogger,
 } from '@src/bootstrap/providers/di-context';
-import { AI_LOG_EVENT } from '@src/features/ai/constants/ai-log-events';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
-import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
+import { SUGGESTION_LOG_EVENT } from '@src/features/assistant/suggestion/constants/suggestion-log-events';
+import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
+import type { AiSuggestionActionInput } from '@src/features/assistant/suggestion/domains/suggestion.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
@@ -25,7 +25,7 @@ interface HandleSuggestionParams {
 
 export const useHandleSuggestionMutationOptions = () => {
   const haptics = useHaptics();
-  const aiService = useAiService();
+  const suggestionService = useSuggestionService();
   const activationService = useActivationService();
   const { trackEvent } = useTrack();
   const logger = useLogger();
@@ -35,12 +35,12 @@ export const useHandleSuggestionMutationOptions = () => {
 
   return mutationOptions({
     mutationFn: async ({ suggestionId, input }: HandleSuggestionParams) => {
-      const result = await aiService.handleSuggestionAction(suggestionId, input);
+      const result = await suggestionService.handleSuggestionAction(suggestionId, input);
       return unwrap(result);
     },
     onSuccess: (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
-      queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.suggestions() });
+      queryClient.invalidateQueries({ queryKey: SUGGESTION_QUERY_KEYS.suggestions() });
 
       if (input.action === 'accept') {
         recordTodoCreatedForActivation({ queryClient, service: activationService });
@@ -66,7 +66,7 @@ export const useHandleSuggestionMutationOptions = () => {
           error.hasCode(ErrorCode.AI_1306) ||
           error.hasCode(ErrorCode.AI_1307))
       ) {
-        queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.suggestions() });
+        queryClient.invalidateQueries({ queryKey: SUGGESTION_QUERY_KEYS.suggestions() });
         toast.error(error.message);
         return;
       }
@@ -76,7 +76,7 @@ export const useHandleSuggestionMutationOptions = () => {
         return;
       }
 
-      logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
+      logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
       toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });

@@ -1,9 +1,9 @@
 import { createSessionManager } from '@src/core/session/session-manager';
-import { AiService } from '@src/features/ai/apis/ai.service';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { createWhatsNewStateRepository } from '@src/features/app-config/whats-new/apis/whats-new-state.repository';
 import { WhatsNewStateService } from '@src/features/app-config/whats-new/apis/whats-new-state.service';
 import { WhatsNewService } from '@src/features/app-config/whats-new/apis/whats-new.service';
+import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
@@ -19,9 +19,11 @@ import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
+import { ReportService } from '@src/features/insights/report/apis/report.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
@@ -189,7 +191,9 @@ export function DIProvider({
     const achievementService = new AchievementService(authHttpClient);
 
     // AI
-    const aiService = new AiService(authHttpClient, logger);
+    const reportService = new ReportService(authHttpClient, logger);
+    const suggestionService = new SuggestionService(authHttpClient, logger);
+    const consentService = new ConsentService(authHttpClient);
 
     // Auth
     const authService = new AuthService(publicHttpClient, authHttpClient, tokenStore);
@@ -345,7 +349,9 @@ export function DIProvider({
         encryptedStorageBootstrap.draftStorage,
       ),
       achievementService,
-      aiService,
+      reportService,
+      suggestionService,
+      consentService,
       authService,
       preferenceService,
       activationService,

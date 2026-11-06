@@ -1,4 +1,4 @@
-import type { AiReport } from '@src/features/ai/domains/ai.model';
+import type { AiReport } from '@src/features/insights/report/domains/report.model';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

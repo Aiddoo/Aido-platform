@@ -5,7 +5,7 @@ import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/const
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -19,7 +19,6 @@ import {
   createMockAnalytics,
   createMockHttpClient,
   createMockStorage,
-  createMockTokenStore,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -37,8 +36,6 @@ import { VoiceService } from '../apis/voice.service';
 import { createPlanReviewDraft } from '../domains/plan-review-form.schema';
 import { voicePlanSchema } from '../domains/voice-plan.model';
 import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.factories';
-
-// AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
@@ -120,7 +117,7 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
         userService: new UserService(httpClient),
         todoCategoryService: new TodoCategoryService(httpClient),
         preferenceService: new PreferenceService(httpClient),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+        consentService: new ConsentService(httpClient),
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMockStorage(),
         voiceNoteStorageService: storage,

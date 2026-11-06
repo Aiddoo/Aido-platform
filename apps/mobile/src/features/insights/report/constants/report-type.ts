@@ -1,4 +1,4 @@
-import type { ReportType } from '@src/features/ai/domains/ai.model';
+import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import type { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 

@@ -1,4 +1,4 @@
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
@@ -19,7 +19,7 @@ import {
 const DEPENDENT_KEYS = [
   NUDGE_QUERY_KEYS.limit(),
   ENTITLEMENT_QUERY_KEYS.snapshot(),
-  AI_QUERY_KEYS.suggestions(),
+  SUGGESTION_QUERY_KEYS.suggestions(),
   MEMO_QUERY_KEYS.resourceLimit(),
   PREFERENCE_QUERY_KEYS.current(),
 ];

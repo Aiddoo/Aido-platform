@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { AiService } from '@src/features/ai/apis/ai.service';
+import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
@@ -37,7 +37,7 @@ describe('SuggestionEntry', () => {
     // When
     await renderUi(<SuggestionEntry />, {
       di: {
-        aiService: new AiService(httpClient, silentLogger),
+        suggestionService: new SuggestionService(httpClient, silentLogger),
         entitlementService: new EntitlementService(httpClient, silentLogger),
         userService: new UserService(httpClient),
         errorReporter: createErrorReporterStub(),

@@ -3,13 +3,12 @@ import type { HttpClient } from '@src/core/ports/http';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
   createMockAnalytics,
-  createMockTokenStore,
 } from '@src/shared/__tests__';
 
 import { MemoService } from '../apis/memo.service';
@@ -21,7 +20,7 @@ export function createMemoTestDi(httpClient: HttpClient): Partial<DIContainer> {
     memoService: new MemoService(httpClient, logger),
     userService: new UserService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
-    authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+    consentService: new ConsentService(httpClient),
     coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
     analytics: createMockAnalytics(),
     errorReporter: createErrorReporterStub(),

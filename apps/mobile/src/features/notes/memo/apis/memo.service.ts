@@ -10,8 +10,8 @@ import {
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
-import { AI_LOG_EVENT } from '@src/features/ai/constants/ai-log-events';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { MEMO_LOG_EVENT } from '@src/features/notes/memo/constants/memo-log-events';
 import type { AddTodoFormValues } from '@src/features/planning/composer/domains/add-todo-form.schema';
 import { toVoicePlanFromParsedMemo } from '@src/features/voice/apis/voice-plan.mapper';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
@@ -133,7 +133,7 @@ export class MemoService {
 
     const parsed = parseMemoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
+      this.#logger.error(MEMO_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'parseMemo',
         zodError: parsed.error.message,
       });

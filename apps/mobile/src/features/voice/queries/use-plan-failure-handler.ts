@@ -1,5 +1,4 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import {
   findErrorFeatureQuota,
   isNotChargedError,
@@ -7,6 +6,7 @@ import {
 import type { EntitlementFeature } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
+import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

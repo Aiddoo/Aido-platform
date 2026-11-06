@@ -3,7 +3,7 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
@@ -15,7 +15,6 @@ import {
   createMockAnalytics,
   createMockHttpClient,
   createMockStorage,
-  createMockTokenStore,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -28,8 +27,6 @@ import { router, useIsFocused } from 'expo-router';
 
 import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
 import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
-
-// AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
 
 const ACCOUNT_ID = 'user-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -58,7 +55,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
         entitlementService: new EntitlementService(httpClient, logger),
         userService: new UserService(httpClient),
         todoCategoryService: new TodoCategoryService(httpClient),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+        consentService: new ConsentService(httpClient),
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),

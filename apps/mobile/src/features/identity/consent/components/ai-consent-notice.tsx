@@ -1,4 +1,4 @@
-import { ConsentPolicy } from '@src/features/identity/auth/domains/auth.model';
+import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton } from '@src/shared/ui';

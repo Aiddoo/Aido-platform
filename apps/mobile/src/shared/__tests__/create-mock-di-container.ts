@@ -112,8 +112,14 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get achievementService() {
       return dependency('achievementService');
     },
-    get aiService() {
-      return dependency('aiService');
+    get reportService() {
+      return dependency('reportService');
+    },
+    get suggestionService() {
+      return dependency('suggestionService');
+    },
+    get consentService() {
+      return dependency('consentService');
     },
     get authService() {
       return dependency('authService');

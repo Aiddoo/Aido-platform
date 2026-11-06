@@ -1,4 +1,4 @@
-import { ConsentPolicy } from '@src/features/identity/auth/domains/auth.model';
+import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
 import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/consent/queries/use-update-ai-data-sharing-consent-mutation-options';
 import { legalUrl } from '@src/shared/constants/legal-urls';

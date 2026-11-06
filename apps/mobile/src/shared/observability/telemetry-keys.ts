@@ -9,13 +9,13 @@ import type {
 } from '@aido/api';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
-import type { ReportType } from '@src/features/ai/domains/ai.model';
 import type { SubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
 import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/analytics/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/analytics/purchase-failed-reason';
 import type { CoachmarkKind } from '@src/features/device/coachmark/apis/coachmark.repository';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/domains/oauth.model';
 import type { SubscriptionStatus } from '@src/features/identity/user/domains/user.model';
+import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';
 import type { InviteLinkSource } from '@src/features/social/invite/domains/invite-redemption.model';
 import type { InviteShareChannel } from '@src/features/social/invite/domains/invite-share.model';

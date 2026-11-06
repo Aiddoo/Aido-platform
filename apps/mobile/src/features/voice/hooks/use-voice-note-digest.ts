@@ -1,7 +1,7 @@
 import { useIdGenerator, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
-import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { isNotChargedError } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';

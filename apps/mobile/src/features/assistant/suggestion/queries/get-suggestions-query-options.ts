@@ -1,16 +1,16 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useAiService } from '@src/bootstrap/providers/di-context';
-import type { AiService } from '@src/features/ai/apis/ai.service';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { useSuggestionService } from '@src/bootstrap/providers/di-context';
+import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
+import { SUGGESTION_QUERY_KEYS } from '@src/features/assistant/suggestion/constants/suggestion-query-keys';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getSuggestionsQueryOptions(aiService: AiService) {
+export function getSuggestionsQueryOptions(suggestionService: SuggestionService) {
   return queryOptions({
-    queryKey: AI_QUERY_KEYS.suggestions(),
+    queryKey: SUGGESTION_QUERY_KEYS.suggestions(),
     queryFn: async ({ signal }) => {
-      const result = await aiService.getSuggestions(signal);
+      const result = await suggestionService.getSuggestions(signal);
       return unwrap(result);
     },
     throwOnError: (error, query) =>
@@ -20,7 +20,7 @@ export function getSuggestionsQueryOptions(aiService: AiService) {
 }
 
 export function useGetSuggestionsQueryOptions() {
-  return getSuggestionsQueryOptions(useAiService());
+  return getSuggestionsQueryOptions(useSuggestionService());
 }
 
 export const isSuggestionsPremiumRequiredError = (error: unknown): boolean =>

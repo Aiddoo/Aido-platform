@@ -1,6 +1,4 @@
 import { reportTypeSchema } from '@aido/api';
-import type { ReportType } from '@src/features/ai/domains/ai.model';
-import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
 import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
@@ -12,8 +10,10 @@ import {
   getSampleReport,
   SAMPLE_REPORT_IDS,
 } from '@src/features/insights/report/constants/sample-reports';
+import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import { useGetReportStatusQueryOptions } from '@src/features/insights/report/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/insights/report/queries/get-reports-query-options';
+import { invalidateAiReports } from '@src/features/insights/report/queries/report-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

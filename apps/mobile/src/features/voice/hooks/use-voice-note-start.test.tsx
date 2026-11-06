@@ -5,10 +5,10 @@ import { EntitlementService } from '@src/features/billing/subscription/apis/enti
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { createConsent } from '@src/features/identity/auth/__tests__/auth.factories';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
-import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { createConsent } from '@src/features/identity/consent/__tests__/consent.factories';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import type { Consent } from '@src/features/identity/consent/domains/consent.model';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
@@ -17,7 +17,6 @@ import {
   createMemorySyncStorage,
   createMockAnalytics,
   createMockHttpClient,
-  createMockTokenStore,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -68,7 +67,7 @@ async function renderStart({
   seenCoachmarks.forEach((kind) => coachmarkRepository.markSeen({ accountId: ACCOUNT_ID, kind }));
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
-  queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consent));
+  queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consent));
   if (voiceNoteUsed != null) {
     queryClient.setQueryData(
       ENTITLEMENT_QUERY_KEYS.snapshot(),
@@ -86,7 +85,7 @@ async function renderStart({
       queryClient,
       di: {
         userService: new UserService(httpClient),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+        consentService: new ConsentService(httpClient),
         entitlementService: new EntitlementService(httpClient, logger),
         coachmarkService: new CoachmarkService(coachmarkRepository),
         recognitionLanguageRepository:

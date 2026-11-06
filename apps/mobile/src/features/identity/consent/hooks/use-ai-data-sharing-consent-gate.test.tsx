@@ -2,10 +2,10 @@ import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { createConsent } from '@src/features/identity/auth/__tests__/auth.factories';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
-import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { createConsent } from '@src/features/identity/consent/__tests__/consent.factories';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import type { Consent } from '@src/features/identity/consent/domains/consent.model';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
@@ -14,7 +14,6 @@ import {
   createMemorySyncStorage,
   createMockAnalytics,
   createMockHttpClient,
-  createMockTokenStore,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -64,7 +63,7 @@ async function renderGate(
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   if (consentOverrides != null) {
-    queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consentOverrides));
+    queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consentOverrides));
   }
   if (me != null) {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), me);
@@ -79,7 +78,7 @@ async function renderGate(
         analytics: createMockAnalytics(),
         haptics: createHapticsStub(),
         logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-        authService: new AuthService(createMockHttpClient(), authHttp, createMockTokenStore()),
+        consentService: new ConsentService(authHttp),
         userService: new UserService(userHttp),
         coachmarkService: new CoachmarkService(
           createCoachmarkRepository(createMemorySyncStorage()),

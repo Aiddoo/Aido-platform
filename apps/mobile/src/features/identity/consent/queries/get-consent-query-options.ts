@@ -1,19 +1,19 @@
-import { useAuthService } from '@src/bootstrap/providers/di-context';
-import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
-import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
+import { useConsentService } from '@src/bootstrap/providers/di-context';
+import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getConsentQueryOptions(authService: AuthService) {
+export function getConsentQueryOptions(consentService: ConsentService) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEYS.consent(),
+    queryKey: CONSENT_QUERY_KEYS.consent(),
     queryFn: async ({ signal }) => {
-      const result = await authService.getConsent(signal);
+      const result = await consentService.getConsent(signal);
       return unwrap(result);
     },
   });
 }
 
 export function useGetConsentQueryOptions() {
-  return getConsentQueryOptions(useAuthService());
+  return getConsentQueryOptions(useConsentService());
 }

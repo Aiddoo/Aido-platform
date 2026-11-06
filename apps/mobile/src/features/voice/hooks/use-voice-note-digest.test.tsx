@@ -4,7 +4,7 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createErrorReporterStub,
@@ -12,7 +12,6 @@ import {
   createMockAnalytics,
   createMockHttpClient,
   createMockStorage,
-  createMockTokenStore,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -30,8 +29,6 @@ import { createVoiceNoteFixture } from '../__tests__/voice-note.factories';
 import { VoiceService } from '../apis/voice.service';
 import { VoiceNoteDigestButton } from '../components/note/voice-note-digest-button';
 import { useVoiceNoteDigest } from './use-voice-note-digest';
-
-// AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
@@ -85,7 +82,7 @@ async function renderDigest() {
         voiceService: new VoiceService(httpClient, logger),
         entitlementService: new EntitlementService(httpClient, logger),
         userService: new UserService(httpClient),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+        consentService: new ConsentService(httpClient),
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMockStorage(),
         voiceNoteStorageService: storage,

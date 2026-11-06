@@ -1,4 +1,4 @@
-import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
+import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
 
 export function findSheetSuggestion(
   suggestions: AiSuggestion[],

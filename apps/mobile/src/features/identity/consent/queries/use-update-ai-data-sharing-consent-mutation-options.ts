@@ -1,7 +1,7 @@
 import { AI_DATA_SHARING_CONSENT, type UpdateAiDataSharingConsentInput } from '@aido/api';
-import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
-import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';
-import type { Consent } from '@src/features/identity/auth/domains/auth.model';
+import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import type { Consent } from '@src/features/identity/consent/domains/consent.model';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -12,7 +12,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export const useUpdateAiDataSharingConsentMutationOptions = () => {
   const haptics = useHaptics();
-  const authService = useAuthService();
+  const consentService = useConsentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -21,7 +21,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
     // 오프라인에 멈춰 있으면 시트의 버튼이 돌기만 하고 나중에도 누를 수 없다. 바로 실패해 시트를 그대로 둔다
     networkMode: 'always',
     mutationFn: async ({ agreed }: Pick<UpdateAiDataSharingConsentInput, 'agreed'>) => {
-      const result = await authService.updateAiDataSharingConsent({
+      const result = await consentService.updateAiDataSharingConsent({
         agreed,
         version: AI_DATA_SHARING_CONSENT.VERSION,
       });
@@ -29,10 +29,10 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
     },
 
     onMutate: async ({ agreed }) => {
-      await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEYS.consent() });
-      const previousData = queryClient.getQueryData<Consent>(AUTH_QUERY_KEYS.consent());
+      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.consent() });
+      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent());
 
-      queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (consent) =>
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (consent) =>
         consent == null
           ? consent
           : {
@@ -48,7 +48,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
 
     onSuccess: (result, { agreed }) => {
       trackEvent('ai_data_sharing_consent_changed', { agreed });
-      queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (consent) =>
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (consent) =>
         consent == null ? consent : { ...consent, ...result },
       );
     },
@@ -56,7 +56,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
     onError: (error, _input, context) => {
       haptics.notify('error');
       if (context?.previousData != null) {
-        queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);
+        queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
       toast.error(isApiError(error) ? error.message : undefined, {
         fallback: t('ai:consent.saveFailed'),

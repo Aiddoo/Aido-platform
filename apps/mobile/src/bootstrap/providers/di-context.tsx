@@ -12,10 +12,10 @@ import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionManager } from '@src/core/session/session-manager';
-import type { AiService } from '@src/features/ai/apis/ai.service';
 import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import type { WhatsNewStateService } from '@src/features/app-config/whats-new/apis/whats-new-state.service';
 import type { WhatsNewService } from '@src/features/app-config/whats-new/apis/whats-new.service';
+import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import type { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
 import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
@@ -27,9 +27,11 @@ import type { WidgetNavigationRepository } from '@src/features/device/widget/api
 import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import type { UserService } from '@src/features/identity/user/apis/user.service';
 import type { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
+import type { ReportService } from '@src/features/insights/report/apis/report.service';
 import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import type { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
@@ -90,7 +92,9 @@ export interface DIContainer {
 
   // Services
   achievementService: AchievementService;
-  aiService: AiService;
+  reportService: ReportService;
+  suggestionService: SuggestionService;
+  consentService: ConsentService;
   authService: AuthService;
   preferenceService: PreferenceService;
   activationService: ActivationService;
@@ -173,7 +177,9 @@ export const useOfflineModelPromptRepository = () => useDI().offlineModelPromptR
 
 // Service Hooks
 export const useAchievementService = () => useDI().achievementService;
-export const useAiService = () => useDI().aiService;
+export const useReportService = () => useDI().reportService;
+export const useSuggestionService = () => useDI().suggestionService;
+export const useConsentService = () => useDI().consentService;
 export const useAuthService = () => useDI().authService;
 export const usePreferenceService = () => useDI().preferenceService;
 export const useActivationService = () => useDI().activationService;

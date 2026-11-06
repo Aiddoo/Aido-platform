@@ -1,6 +1,6 @@
 import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
-import { AI_LOG_EVENT } from '@src/features/ai/constants/ai-log-events';
-import { type Consent, ConsentPolicy } from '@src/features/identity/auth/domains/auth.model';
+import { CONSENT_LOG_EVENT } from '@src/features/identity/consent/constants/consent-log-events';
+import { type Consent, ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/get-consent-query-options';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -57,7 +57,7 @@ export function useAiDataSharingConsentGate() {
   const meQueryOptions = useGetMeQueryOptions();
 
   const logConsentCheckFailure = (error: unknown) =>
-    logger.warn(AI_LOG_EVENT.CONSENT_CHECK_FAILED, { error: getErrorMessage(error) });
+    logger.warn(CONSENT_LOG_EVENT.CONSENT_CHECK_FAILED, { error: getErrorMessage(error) });
 
   const readConsent = () =>
     readWithoutBlocking(

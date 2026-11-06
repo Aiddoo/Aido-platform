@@ -1,4 +1,4 @@
-import type { AiReport, ReportType } from '@src/features/ai/domains/ai.model';
+import type { AiReport, ReportType } from '@src/features/insights/report/domains/report.model';
 import { t } from '@src/shared/i18n';
 
 export const SAMPLE_REPORT_IDS = {

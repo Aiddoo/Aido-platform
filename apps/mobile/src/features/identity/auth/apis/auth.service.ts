@@ -3,7 +3,6 @@ import {
   authTokensSchema as authTokensDtoSchema,
   type ChangePasswordInput,
   changePasswordResponseSchema,
-  consentResponseSchema,
   type DeleteAccountInput,
   deleteAccountResponseSchema,
   type ExchangeCodeInput,
@@ -18,12 +17,6 @@ import {
   registerResponseSchema,
   resendVerificationResponseSchema,
   resetPasswordResponseSchema,
-  type UpdateAiDataSharingConsentInput,
-  type UpdateMarketingConsentInput,
-  type UpdateMarketingPushConsentInput,
-  updateAiDataSharingConsentResponseSchema,
-  updateMarketingConsentResponseSchema,
-  updateMarketingPushConsentResponseSchema,
   type VerifyEmailInput,
 } from '@aido/api';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
@@ -45,15 +38,11 @@ import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../do
 import type {
   AuthTokens,
   ChangePasswordResult,
-  Consent,
   DeleteAccountResult,
   ForgotPasswordResult,
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
-  UpdateAiDataSharingConsentResult,
-  UpdateMarketingConsentResult,
-  UpdateMarketingPushConsentResult,
 } from '../domains/auth.model';
 import type {
   LinkedAccountsResult,
@@ -65,16 +54,12 @@ import type {
 import {
   toAuthTokens,
   toChangePasswordResult,
-  toConsent,
   toDeleteAccountResult,
   toForgotPasswordResult,
   toLinkedAccounts,
   toRegisterResult,
   toResendVerificationResult,
   toResetPasswordResult,
-  toUpdateAiDataSharingConsentResult,
-  toUpdateMarketingConsentResult,
-  toUpdateMarketingPushConsentResult,
 } from './auth.mapper';
 
 const OAUTH_PATHS: Record<OAuthStartProvider, string> = {
@@ -359,72 +344,6 @@ export class AuthService {
     const tokens = this.#parseAuthTokens(result);
     await this.#saveTokens(tokens.accessToken, tokens.refreshToken);
     return ok(tokens);
-  };
-
-  getConsent = async (signal?: AbortSignal): Promise<Result<Consent, ApiError>> => {
-    const result = await this.#authHttpClient.get('v1/auth/consent', { signal });
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = consentResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[AuthService] Invalid getConsent response: ${parsed.error.message}`);
-    }
-
-    return ok(toConsent(parsed.data));
-  };
-
-  updateMarketingConsent = async (
-    input: UpdateMarketingConsentInput,
-  ): Promise<Result<UpdateMarketingConsentResult, ApiError>> => {
-    const result = await this.#authHttpClient.patch('v1/auth/consent/marketing', input);
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateMarketingConsentResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AuthService] Invalid updateMarketingConsent response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toUpdateMarketingConsentResult(parsed.data));
-  };
-
-  updateMarketingPushConsent = async (
-    input: UpdateMarketingPushConsentInput,
-  ): Promise<Result<UpdateMarketingPushConsentResult, ApiError>> => {
-    const result = await this.#authHttpClient.patch('v1/auth/consent/marketing-push', input);
-    if (!result.ok) {
-      return result;
-    }
-    const parsed = updateMarketingPushConsentResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AuthService] Invalid updateMarketingPushConsent response: ${parsed.error.message}`,
-      );
-    }
-    return ok(toUpdateMarketingPushConsentResult(parsed.data));
-  };
-
-  updateAiDataSharingConsent = async (
-    input: UpdateAiDataSharingConsentInput,
-  ): Promise<Result<UpdateAiDataSharingConsentResult, ApiError>> => {
-    const result = await this.#authHttpClient.patch('v1/auth/consent/ai-data-sharing', input);
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateAiDataSharingConsentResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AuthService] Invalid updateAiDataSharingConsent response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toUpdateAiDataSharingConsentResult(parsed.data));
   };
 
   register = async (input: RegisterInput): Promise<Result<RegisterResult, ApiError>> => {

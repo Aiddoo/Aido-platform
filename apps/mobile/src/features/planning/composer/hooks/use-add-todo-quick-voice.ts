@@ -4,8 +4,8 @@ import {
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
