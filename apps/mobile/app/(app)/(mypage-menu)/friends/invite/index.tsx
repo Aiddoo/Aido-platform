@@ -32,10 +32,10 @@ import {
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { type ReactNode, Suspense } from 'react';
-import { Image, Platform, RefreshControl, ScrollView } from 'react-native';
+import { Image, RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-const SHARE_ICON = Platform.OS === 'ios' ? 'square.and.arrow.up' : ShareIcon;
+const SHARE_ICON = process.env.EXPO_OS === 'ios' ? 'square.and.arrow.up' : ShareIcon;
 
 export default function MyInviteScreen() {
   const queryClient = useQueryClient();

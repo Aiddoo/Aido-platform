@@ -8,11 +8,10 @@ import { useTranslation } from '@src/shared/i18n';
 import { SHEET_ROUTE_SCREEN_OPTIONS, useStackBackToolbar } from '@src/shared/ui';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-const ALERT_SETTINGS_ICON = Platform.OS === 'ios' ? 'bell' : Notifications;
-const REFRESH_ICON = Platform.OS === 'ios' ? 'arrow.clockwise' : Refresh;
+const ALERT_SETTINGS_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
+const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh;
 
 export default function WeatherLayout() {
   const { t } = useTranslation('weather');

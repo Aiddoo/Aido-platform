@@ -19,7 +19,6 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
 function AppIconScreen() {
@@ -51,7 +50,7 @@ function AppIconScreen() {
       return;
     }
 
-    if (Platform.OS === 'android') {
+    if (process.env.EXPO_OS === 'android') {
       overlay.open(({ isOpen, close, unmount }) => (
         <AppIconRestartDialog
           isOpen={isOpen}

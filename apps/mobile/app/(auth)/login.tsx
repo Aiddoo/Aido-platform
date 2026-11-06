@@ -27,7 +27,6 @@ import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Avatar, Separator } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { Platform } from 'react-native';
 
 function LoginScreen() {
   const push = useSingleTap(router.push);
@@ -69,7 +68,7 @@ function LoginScreen() {
         </VStack>
 
         <VStack gap={8}>
-          {Platform.OS === 'ios' && (
+          {process.env.EXPO_OS === 'ios' && (
             <SocialLoginButton
               icon={
                 <AppleIcon

@@ -60,7 +60,7 @@ import { noop } from 'es-toolkit';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { type ComponentProps, Suspense, useState } from 'react';
-import { Platform, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -69,9 +69,9 @@ const SCAN_PREVIEW_SENTENCES = 12;
 const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
 
 const VOICE_NOTE_TOOLBAR_ICON = {
-  saveMemo: Platform.OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,
-  memoSaved: Platform.OS === 'ios' ? 'checkmark' : Check,
-  delete: Platform.OS === 'ios' ? 'trash' : Delete,
+  saveMemo: process.env.EXPO_OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,
+  memoSaved: process.env.EXPO_OS === 'ios' ? 'checkmark' : Check,
+  delete: process.env.EXPO_OS === 'ios' ? 'trash' : Delete,
 } as const;
 
 const closeScreen = () => {

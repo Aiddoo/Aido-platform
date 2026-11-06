@@ -29,7 +29,6 @@ import { range } from 'es-toolkit';
 import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
-import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
 function LinkedAccountsScreen() {
@@ -51,7 +50,7 @@ function LinkedAccountsScreen() {
 
 export default LinkedAccountsScreen;
 
-const PROVIDER_ROW_COUNT = Platform.OS === 'ios' ? 4 : 3;
+const PROVIDER_ROW_COUNT = process.env.EXPO_OS === 'ios' ? 4 : 3;
 
 function LinkedAccountsList() {
   const { t } = useTranslation(['auth', 'common']);
@@ -127,7 +126,7 @@ function LinkedAccountsList() {
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
-        {Platform.OS === 'ios' && (
+        {process.env.EXPO_OS === 'ios' && (
           <>
             <SettingsCard.Separator />
             <ProviderListRow

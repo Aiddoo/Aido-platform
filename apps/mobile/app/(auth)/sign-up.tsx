@@ -16,11 +16,10 @@ import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm } from 'react-hook-form';
-import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
 /** iOS는 글자 버튼, Android 툴바는 글자를 그리지 않아 아이콘을 쓴다 */
-const INVITE_CODE_ICON = Platform.OS === 'ios' ? undefined : ConfirmationNumber;
+const INVITE_CODE_ICON = process.env.EXPO_OS === 'ios' ? undefined : ConfirmationNumber;
 
 const SIGN_UP_STEPS = ['userInfo', 'password', 'verification'] as const;
 type SignUpStep = (typeof SIGN_UP_STEPS)[number];
