@@ -1,38 +1,4 @@
-import { claimAndOpenWhatsNew, isStableFeedForeground } from './whats-new-auto-open';
-
-const stableInput = {
-  isAuthenticated: true,
-  isFocused: true,
-  appState: 'active' as const,
-  isKeyboardVisible: false,
-  hasActiveOverlay: false,
-  hasPendingDeepLink: false,
-};
-
-describe('isStableFeedForeground', () => {
-  it('인증된 피드가 포그라운드에서 방해 요소 없이 포커스되면 true를 반환한다', () => {
-    // When
-    const result = isStableFeedForeground(stableInput);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it.each([
-    [{ isAuthenticated: false }, '미인증'],
-    [{ isFocused: false }, '다른 화면'],
-    [{ appState: 'background' as const }, '백그라운드'],
-    [{ isKeyboardVisible: true }, '키보드'],
-    [{ hasActiveOverlay: true }, '피드 폼 또는 다른 오버레이'],
-    [{ hasPendingDeepLink: true }, '딥 링크'],
-  ])('%s 상태에서는 false를 반환한다', (overrides, _label) => {
-    // When
-    const result = isStableFeedForeground({ ...stableInput, ...overrides });
-
-    // Then
-    expect(result).toBe(false);
-  });
-});
+import { claimAndOpenWhatsNew } from './whats-new-auto-open';
 
 describe('claimAndOpenWhatsNew', () => {
   it('안정된 자격 사용자는 본 상태를 먼저 claim한 뒤 허브를 연다', () => {

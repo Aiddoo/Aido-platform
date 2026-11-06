@@ -1,5 +1,3 @@
-export { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground';
-
 interface ClaimAndOpenWhatsNewInput {
   canAutoOpen: boolean;
   isStable: boolean;
