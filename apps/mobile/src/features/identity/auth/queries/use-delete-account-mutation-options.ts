@@ -1,45 +1,25 @@
 import type { DeleteAccountInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import {
-  useAnalytics,
-  useAuthService,
-  useHaptics,
-  useLogger,
-  usePushDeviceService,
-} from '@src/bootstrap/providers/di-context';
+import { useAnalytics, useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage, isApiError } from '@src/shared/errors';
+import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
-
-import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 
 export const useDeleteAccountMutationOptions = () => {
   const haptics = useHaptics();
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
-  const pushDeviceService = usePushDeviceService();
   const toast = useAppToast();
-  const logger = useLogger();
   const { setStatus } = useAuth();
 
   return mutationOptions({
+    // 푸시 기기는 서버 탈퇴가 전 세션과 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     mutationFn: async (input: DeleteAccountInput) => {
-      try {
-        const unregisterResult = await pushDeviceService.unregister();
-        if (!unregisterResult.ok) {
-          logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
-            error: getErrorMessage(unregisterResult.error),
-          });
-        }
-      } catch (error) {
-        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error: getErrorMessage(error) });
-      }
-
       const result = await authService.deleteAccount(input);
       return unwrap(result);
     },

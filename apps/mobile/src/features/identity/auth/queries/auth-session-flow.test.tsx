@@ -201,6 +201,33 @@ describe('탈퇴', () => {
   });
 });
 
+describe('탈퇴 실패와 푸시', () => {
+  it('실패하면 이 기기의 푸시를 풀지 않아 알림이 계속 온다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account'
+        ? err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        : ok({}),
+    );
+    const { result } = await session.renderSession(
+      () => useMutation(useDeleteAccountMutationOptions()),
+      'authenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync({ password: 'wrong' }).catch(() => undefined);
+    });
+
+    // Then
+    expect(session.authHttp.delete).not.toHaveBeenCalledWith(
+      'v1/notifications/token',
+      expect.anything(),
+    );
+  });
+});
+
 describe('로그인', () => {
   const dto = createAuthTokensDto({ accessToken: 'access-new', refreshToken: 'refresh-new' });
 
