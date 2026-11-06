@@ -9,7 +9,7 @@ export const RELEASE_ID = {
 export const releaseIdSchema = z.enum(RELEASE_ID);
 export type ReleaseId = z.infer<typeof releaseIdSchema>;
 
-export const releaseSchema = z.object({
+const releaseSchema = z.object({
   id: releaseIdSchema,
   /** 서버 설정의 campaignId, 기기의 본 기록 키와 같은 값이다 */
   campaignId: z.string().min(1),

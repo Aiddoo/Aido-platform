@@ -5,7 +5,7 @@ import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { releaseIdSchema } from './release.schema';
 
-export const whatsNewSourceSchema = z.enum([
+const whatsNewSourceSchema = z.enum([
   'auto',
   'feed_reentry',
   'mypage',
