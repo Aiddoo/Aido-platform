@@ -491,6 +491,11 @@ function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
     .otherwise(() => null);
 }
 
+/** 차감된 계획을 고르는 단계인지. 떠나면 이미 쓴 횟수를 잃는다 */
+function isChargedReview(state: VoiceCaptureState): boolean {
+  return state.status === 'review' && state.isCharged;
+}
+
 /** 듣기를 끝낸 뒤의 상태로 결과를 나눈다. 글자가 있으면 정리로 가고 없으면 처음으로 돌아간다 */
 function getCaptureOutcome(state: Pick<VoiceCaptureState, 'status'>): 'completed' | 'empty' {
   return state.status === 'planning' ? 'completed' : 'empty';
@@ -532,5 +537,6 @@ export const VoiceCapturePolicy = {
   isOverQuickLimit,
   shouldOfferVoiceNote,
   getDismissAction,
+  isChargedReview,
   getElapsedMs,
 } as const;

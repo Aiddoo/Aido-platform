@@ -35,11 +35,11 @@ import { Keyboard } from 'react-native';
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
 interface UseAddTodoQuickVoiceOptions {
-  methods: UseFormReturn<AddTodoFormValues>;
+  form: UseFormReturn<AddTodoFormValues>;
   onExit: () => void;
 }
 
-export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOptions) {
+export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptions) {
   const { t: tVoice } = useTranslation('voice');
   const logger = useLogger();
   const idGenerator = useIdGenerator();
@@ -102,11 +102,11 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,
     onFailed: (transcript) => {
-      const title = methods.getValues('title').trim();
+      const title = form.getValues('title').trim();
       const heardText = VoiceTranscriptPolicy.getTranscriptText(transcript);
       setIsTypedTextKept(title.length > 0 && title !== heardText);
       if (title.length === 0) {
-        methods.setValue('title', heardText, { shouldDirty: true });
+        form.setValue('title', heardText, { shouldDirty: true });
       }
     },
   });
@@ -121,10 +121,10 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   }, []);
 
   const moveTranscriptToTitle = () => {
-    methods.setValue(
+    form.setValue(
       'title',
       VoiceTranscriptPolicy.mergeHeardTextIntoTitle(
-        methods.getValues('title'),
+        form.getValues('title'),
         VoiceTranscriptPolicy.getTranscriptText(session.state.transcript),
       ),
       { shouldDirty: true },

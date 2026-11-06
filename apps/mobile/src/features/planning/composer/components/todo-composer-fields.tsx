@@ -13,7 +13,6 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ActionChip,
   ArrowUpIcon,
@@ -29,13 +28,12 @@ import {
   SHEET_CONTENT_PADDING,
   useOverlay,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
-import { useFormContext, type UseFormReturn, useWatch } from 'react-hook-form';
+import { Controller, useFormContext, type UseFormReturn, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useResolveClassNames } from 'uniwind';
 
@@ -154,8 +152,8 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
   const dateFormatContext = useDateFormatContext();
   const { control, getValues, setFocus, setValue } = useFormContext<AddTodoFormValues>();
   const [startDate, endDate] = useWatch({ control, name: ['startDate', 'endDate'] });
-  const startDateKey = toDateKey(startDate, getDeviceTimezone());
-  const endDateKey = endDate == null ? null : toDateKey(endDate, getDeviceTimezone());
+  const startDateKey = toDateKey(startDate, dateFormatContext.timeZone);
+  const endDateKey = endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone);
   const singleDayLabel =
     startDateKey === todayDateKey
       ? t('dateSections.today')
@@ -169,18 +167,18 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
         'repeat',
         TodoRepeatPolicy.withRepeatStartDate(
           repeat,
-          toDateKey(startDate, getDeviceTimezone()),
-          toDateKey(nextStartDate, getDeviceTimezone()),
+          toDateKey(startDate, dateFormatContext.timeZone),
+          toDateKey(nextStartDate, dateFormatContext.timeZone),
         ),
       );
     }
     // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
     const nextEndDate = TodoPolicy.getShiftedEndDate(
       {
-        startDate: toDateKey(startDate, getDeviceTimezone()),
-        endDate: endDate == null ? null : toDateKey(endDate, getDeviceTimezone()),
+        startDate: toDateKey(startDate, dateFormatContext.timeZone),
+        endDate: endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone),
       },
-      toDateKey(nextStartDate, getDeviceTimezone()),
+      toDateKey(nextStartDate, dateFormatContext.timeZone),
     );
     setValue('startDate', nextStartDate);
     setValue('endDate', toNullableDate(nextEndDate));
@@ -299,9 +297,11 @@ function VisibilityChip() {
   const { control } = useFormContext<AddTodoFormValues>();
 
   return (
-    <FormField control={control} name="visibility">
-      {({ value, onChange }) => {
-        const isPrivate = value === 'PRIVATE';
+    <Controller
+      control={control}
+      name="visibility"
+      render={({ field: { value, onChange } }) => {
+        const isPrivate = TodoPolicy.isPrivate({ visibility: value });
 
         return (
           <ActionChip
@@ -317,7 +317,7 @@ function VisibilityChip() {
           />
         );
       }}
-    </FormField>
+    />
   );
 }
 
@@ -330,8 +330,10 @@ function CategoryChip() {
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
-    <FormField control={control} name="categoryId">
-      {({ value: categoryId, onChange }) => {
+    <Controller
+      control={control}
+      name="categoryId"
+      render={({ field: { value: categoryId, onChange } }) => {
         const category = categories.find(({ id }) => id === categoryId);
 
         return (
@@ -369,6 +371,6 @@ function CategoryChip() {
           />
         );
       }}
-    </FormField>
+    />
   );
 }

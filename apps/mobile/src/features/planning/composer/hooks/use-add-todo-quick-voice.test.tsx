@@ -76,11 +76,11 @@ const WORKOUT_ACTION = {
 const titlesRenderedAsFailed: string[] = [];
 
 function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
-  const methods = useForm<AddTodoFormValues>({
+  const form = useForm<AddTodoFormValues>({
     defaultValues: { title: '', startDate: new Date(2026, 10, 5), repeat: null },
   });
-  const quickVoice = useAddTodoQuickVoice({ methods, onExit });
-  const title = useWatch({ control: methods.control, name: 'title' });
+  const quickVoice = useAddTodoQuickVoice({ form, onExit });
+  const title = useWatch({ control: form.control, name: 'title' });
   const { state } = quickVoice;
   if (state.status === 'failed') {
     titlesRenderedAsFailed.push(title);
@@ -113,7 +113,7 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Text testID="title">{title}</Text>
       <TextInput
         testID="title-input"
-        onChangeText={(text) => methods.setValue('title', text, { shouldDirty: true })}
+        onChangeText={(text) => form.setValue('title', text, { shouldDirty: true })}
       />
       <Text testID="plan">
         {state.status === 'review'

@@ -919,3 +919,32 @@ describe('isRestartLooping', () => {
     expect(isLooping).toBe(false);
   });
 });
+
+describe('VoiceCapturePolicy.isChargedReview', () => {
+  const planned = (isCharged: boolean) =>
+    reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
+      type: 'planned',
+      result: {
+        plan: voicePlanSchema.parse({
+          planId: 'plan-1',
+          source: 'quick-voice',
+          sourceMemoId: null,
+          actions: [],
+          omittedTodoCount: 0,
+        }),
+        isCharged,
+      },
+    });
+
+  it('횟수를 쓴 고르기 단계만 떠나면 잃는 것이 있다', () => {
+    // When
+    const results = [
+      VoiceCapturePolicy.isChargedReview(planned(true)),
+      VoiceCapturePolicy.isChargedReview(planned(false)),
+      VoiceCapturePolicy.isChargedReview(createCaptureState({ status: 'planning' })),
+    ];
+
+    // Then
+    expect(results).toEqual([true, false, false]);
+  });
+});

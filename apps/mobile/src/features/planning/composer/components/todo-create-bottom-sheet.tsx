@@ -1,26 +1,67 @@
+import { TODO_LIMITS } from '@aido/api/vocabulary';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import {
   useTodoCreateCategoryParam,
   useTodoCreatePrefillParam,
   useTodoCreateVoiceHintParam,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { toDate } from '@src/shared/date/instant';
+import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
+import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
+import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
+import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
+import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
+import { toDate, toDateKey } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheet,
+  BottomSheetInput,
+  BottomSheetTextArea,
+  HStack,
   INQUIRY_SHEET_EXIT,
+  KeyboardBottomSheet,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
+  useConfirmDialog,
+  useOverlay,
   useSheetRoute,
+  VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { Suspense, useEffect } from 'react';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { Separator } from 'heroui-native';
+import { type ComponentProps, Suspense, useEffect, useState } from 'react';
+import {
+  Controller,
+  FormProvider,
+  useForm,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
+import { match, P } from 'ts-pattern';
 
-import { AddTodoBottomSheet } from './add-todo-bottom-sheet';
+import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
+import {
+  useCreateRecurringTodoMutationOptions,
+  useCreateTodoMutationOptions,
+} from '../queries/todo-composer.mutations';
+import { type AddTodoFormValues, addTodoFormSchema } from '../schemas/add-todo-form.schema';
+import {
+  openTodoRepeatPicker,
+  TodoComposerChips,
+  TodoComposerSubmitButton,
+} from './todo-composer-fields';
 
 /** 기본 카테고리가 폼 기본값을 정하므로, 카테고리를 읽는 동안에는 시트를 띄우지 않아 폼이 열린 뒤 바뀌지 않게 한다. */
 export function TodoCreateBottomSheet() {
@@ -38,7 +79,7 @@ TodoCreateBottomSheet.Form = function Form() {
   const date = useTodoSheetDateParam();
   const requestedCategoryId = useTodoCreateCategoryParam();
   const prefill = useTodoCreatePrefillParam();
-  const isVoiceHintForced = useTodoCreateVoiceHintParam();
+  const isVoiceHintRequested = useTodoCreateVoiceHintParam();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesResult.categories,
@@ -56,16 +97,18 @@ TodoCreateBottomSheet.Form = function Form() {
   }
 
   return (
-    <AddTodoBottomSheet
-      mode="create"
-      selectedDate={toDate(date)}
-      categoryId={categoryId}
-      isVoiceHintForced={isVoiceHintForced}
-      initialValues={{
-        title: prefill.title,
+    <TodoCreateForm
+      defaultValues={{
+        title: prefill.title ?? '',
+        startDate: toDate(date),
+        endDate: null,
         scheduledTime: prefill.time ?? null,
         isAllDay: prefill.time == null,
+        categoryId,
+        visibility: 'PUBLIC',
+        repeat: null,
       }}
+      isVoiceHintRequested={isVoiceHintRequested}
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
       onClose={() => sheet.close()}
@@ -89,3 +132,277 @@ TodoCreateBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallba
     </BottomSheet>
   );
 };
+
+interface TodoCreateFormProps {
+  defaultValues: AddTodoFormValues;
+  isVoiceHintRequested: boolean;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onClose: () => void;
+  /** 닫기 애니메이션 없이 바로 다른 화면으로 떠날 때(구독 화면 이동) */
+  onExit: () => void;
+}
+
+function TodoCreateForm({
+  defaultValues,
+  isVoiceHintRequested,
+  isOpen,
+  onOpenChange,
+  onClose,
+  onExit,
+}: TodoCreateFormProps) {
+  const { t } = useTranslation('todo');
+  const { t: tVoice } = useTranslation('voice');
+  const { timeZone } = useDateFormatContext();
+  const reportUnexpectedError = useReportUnexpectedError('todo');
+  const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
+
+  const form = useForm({
+    resolver: zodResolver(addTodoFormSchema),
+    defaultValues,
+  });
+  const { isSubmitting } = useFormState({ control: form.control });
+  const title = useWatch({ control: form.control, name: 'title' });
+
+  const createTodo = useMutation(useCreateTodoMutationOptions());
+  const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
+
+  const voice = useAddTodoQuickVoice({ form, onExit });
+  useOnScreenBlur(voice.interrupt);
+  const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
+  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [hasTouchedForm, setHasTouchedForm] = useState(false);
+
+  const submitTodo = form.handleSubmit(async (values) => {
+    const common = {
+      title: values.title,
+      startDate: toDateKey(values.startDate, timeZone),
+      scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
+      isAllDay: values.isAllDay,
+      visibility: values.visibility,
+      categoryId: values.categoryId,
+    };
+
+    try {
+      if (values.repeat != null) {
+        await createRecurringTodo.mutateAsync(
+          { input: { ...common, repeat: values.repeat }, source: 'manual' },
+          { onSuccess: onClose },
+        );
+      } else {
+        await createTodo.mutateAsync(
+          {
+            input: {
+              ...common,
+              endDate: values.endDate == null ? undefined : toDateKey(values.endDate, timeZone),
+            },
+            source: 'manual',
+          },
+          { onSuccess: onClose },
+        );
+      }
+    } catch (error) {
+      // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
+      reportUnexpectedError(error);
+      if (shouldReopenRepeatPicker(error)) {
+        openTodoRepeatPicker(overlay, form);
+      }
+    }
+  });
+
+  const isFormStep = voice.state.status === 'idle' || voice.state.status === 'failed';
+  const isSubmitDisabled = title.trim().length === 0 || isSubmitting;
+
+  const confirmDiscardPlan = async () => {
+    const isCharged = VoiceCapturePolicy.isChargedReview(voice.state);
+    const shouldDiscard = await confirmDialog.open({
+      title: tVoice('review.leaveTitle'),
+      description: tVoice(isCharged ? 'review.leaveDescriptionCharged' : 'review.leaveDescription'),
+      confirmLabel: tVoice('review.leaveConfirm'),
+      cancelLabel: tVoice('review.leaveCancel'),
+    });
+    if (shouldDiscard) {
+      onClose();
+    }
+  };
+
+  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+  const handleVoiceDismissRequest =
+    voiceDismissAction == null
+      ? undefined
+      : () => {
+          match(voiceDismissAction)
+            .with('cancel-capture', () => voice.cancel())
+            .with('cancel-planning', () => voice.cancelPlanning())
+            .with('confirm-discard', () => {
+              confirmDiscardPlan().catch(reportUnexpectedError);
+            })
+            .exhaustive();
+        };
+
+  return (
+    <KeyboardBottomSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      backgroundDecoration={
+        voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
+      }
+      isContentPanEnabled={
+        !VoiceCapturePolicy.isActive(voice.state) &&
+        voice.state.status !== 'planning' &&
+        voice.state.status !== 'review'
+      }
+      onDismissRequest={handleVoiceDismissRequest}
+      footer={
+        isFormStep ? (
+          <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
+            <Separator thickness={1} className="bg-gray-2" />
+
+            <HStack gap={8} align="center" justify="end">
+              <QuickVoiceInfo />
+              <CoachmarkPopover
+                kind="voice-quick-start"
+                title={tVoice('coach.quickStart.title')}
+                description={tVoice('coach.quickStart.description')}
+                placement="left"
+                align="center"
+                isEnabled={!isTitleFocused}
+                isPassThrough
+                isDismissed={hasTouchedForm}
+                isForced={isVoiceHintForced}
+                onDismiss={() => setIsVoiceHintForced(false)}
+              >
+                <QuickVoiceButton
+                  onPress={() => {
+                    setIsVoiceHintForced(false);
+                    return voice.start();
+                  }}
+                  testID="todo-quick-voice-button"
+                />
+              </CoachmarkPopover>
+              <TodoComposerSubmitButton
+                isDisabled={isSubmitDisabled}
+                isSubmitting={isSubmitting}
+                onPress={() => submitTodo()}
+              />
+            </HStack>
+          </VStack>
+        ) : undefined
+      }
+    >
+      <FormProvider {...form}>
+        {match(voice.state)
+          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
+            <QuickVoicePanel
+              state={voice.state}
+              level={voice.level}
+              isQuiet={voice.isQuiet}
+              locale={voice.locale}
+              onLocaleChange={voice.setLocale}
+              onFinish={voice.finish}
+              onCancel={voice.cancel}
+              onResume={voice.resume}
+              onContinueAsVoiceNote={voice.continueAsVoiceNote}
+            />
+          ))
+          .with({ status: 'planning' }, () => (
+            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
+          ))
+          .with({ status: 'review' }, ({ plan, isCharged }) => (
+            <TodoCreateVoiceReview
+              plan={plan}
+              isCharged={isCharged}
+              onApplied={onClose}
+              onRestart={voice.restart}
+              onTypeInstead={voice.typeInstead}
+            />
+          ))
+          .otherwise(() => (
+            <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
+              <QuickVoicePanel.Failed
+                state={voice.state}
+                isConsentRequired={voice.isConsentRequired}
+                isTypedTextKept={voice.isTypedTextKept}
+                onResume={voice.resume}
+                onRetryPlanning={voice.retryPlanning}
+              />
+
+              <Controller
+                control={form.control}
+                name="title"
+                render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
+                  voice.state.status === 'failed' ? (
+                    // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
+                    // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
+                    <BottomSheetTextArea
+                      ref={ref}
+                      autoFocus={!voice.isRestarting}
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      isInvalid={error != null}
+                      errorMessage={
+                        error == null
+                          ? undefined
+                          : resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+                      }
+                      growsWithContent
+                      textSize="b3"
+                      preserveErrorSpace={false}
+                      className="min-h-12 max-h-28"
+                      returnKeyType="done"
+                      submitBehavior="submit"
+                      onFocus={() => setIsTitleFocused(true)}
+                      onBlur={() => setIsTitleFocused(false)}
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+                    />
+                  ) : (
+                    <BottomSheetInput
+                      ref={ref}
+                      // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
+                      autoFocus={
+                        !isVoiceHintRequested && !isVoiceHintPending && !voice.isRestarting
+                      }
+                      onFocus={() => setIsTitleFocused(true)}
+                      onBlur={() => setIsTitleFocused(false)}
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
+                      size="medium"
+                      renderErrorMessage={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+                    />
+                  )
+                }
+              />
+
+              <TodoComposerChips />
+            </VStack>
+          ))}
+      </FormProvider>
+    </KeyboardBottomSheet>
+  );
+}
+
+type TodoCreateVoiceReviewProps = Omit<
+  ComponentProps<typeof QuickVoicePanel.Review>,
+  'fallbackCategoryId'
+>;
+
+/** 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다 */
+function TodoCreateVoiceReview(props: TodoCreateVoiceReviewProps) {
+  const { control } = useFormContext<AddTodoFormValues>();
+  const categoryId = useWatch({ control, name: 'categoryId' });
+
+  return (
+    <QueryErrorBoundary>
+      <Suspense fallback={<QuickVoicePanel.CardsLoading />}>
+        <QuickVoicePanel.Review {...props} fallbackCategoryId={categoryId} />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+}

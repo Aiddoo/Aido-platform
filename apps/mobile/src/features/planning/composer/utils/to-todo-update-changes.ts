@@ -4,16 +4,11 @@ import {
   type TodoRepeat,
 } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { toDateKey } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
-function toFormDateKey(date: Date) {
-  return toDateKey(date, getDeviceTimezone());
-}
-
-function toNullableDateKey(date: Date | null) {
-  return date == null ? null : toFormDateKey(date);
+function toNullableDateKey(date: Date | null, timeZone: string) {
+  return date == null ? null : toDateKey(date, timeZone);
 }
 
 const toScheduledTime = ({ isAllDay, scheduledTime }: AddTodoFormValues) =>
@@ -29,9 +24,10 @@ export interface TodoUpdateChanges {
 export function toTodoUpdateChanges(
   values: AddTodoFormValues,
   defaults: AddTodoFormValues,
+  timeZone: string,
 ): TodoUpdateChanges {
-  const startDate = toFormDateKey(values.startDate);
-  const endDate = toNullableDateKey(values.endDate);
+  const startDate = toDateKey(values.startDate, timeZone);
+  const endDate = toNullableDateKey(values.endDate, timeZone);
   const scheduledTime = toScheduledTime(values);
   const isScheduleChanged =
     values.isAllDay !== defaults.isAllDay || scheduledTime !== toScheduledTime(defaults);
@@ -40,8 +36,8 @@ export function toTodoUpdateChanges(
     input: {
       ...(values.title !== defaults.title && { title: values.title }),
       ...(values.categoryId !== defaults.categoryId && { categoryId: values.categoryId }),
-      ...(startDate !== toFormDateKey(defaults.startDate) && { startDate }),
-      ...(endDate !== toNullableDateKey(defaults.endDate) && { endDate }),
+      ...(startDate !== toDateKey(defaults.startDate, timeZone) && { startDate }),
+      ...(endDate !== toNullableDateKey(defaults.endDate, timeZone) && { endDate }),
       ...(isScheduleChanged && { scheduledTime, isAllDay: values.isAllDay }),
       ...(values.visibility !== defaults.visibility && { visibility: values.visibility }),
     },

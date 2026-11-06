@@ -5,6 +5,8 @@ import {
   toTodoUpdateChanges,
 } from './to-todo-update-changes';
 
+const TIME_ZONE = 'Asia/Seoul';
+
 const DEFAULTS: AddTodoFormValues = {
   title: '운동',
   startDate: new Date(2026, 10, 5, 12),
@@ -19,7 +21,7 @@ const DEFAULTS: AddTodoFormValues = {
 describe('toTodoUpdateChanges', () => {
   test('바뀐 게 없으면 보낼 것이 없다', () => {
     // When
-    const changes = toTodoUpdateChanges({ ...DEFAULTS }, DEFAULTS);
+    const changes = toTodoUpdateChanges({ ...DEFAULTS }, DEFAULTS, TIME_ZONE);
 
     // Then
     expect(changes).toEqual({ input: {} });
@@ -28,7 +30,7 @@ describe('toTodoUpdateChanges', () => {
 
   test('제목만 고치면 제목만 보낸다', () => {
     // When
-    const changes = toTodoUpdateChanges({ ...DEFAULTS, title: '달리기' }, DEFAULTS);
+    const changes = toTodoUpdateChanges({ ...DEFAULTS, title: '달리기' }, DEFAULTS, TIME_ZONE);
 
     // Then
     expect(changes).toEqual({ input: { title: '달리기' } });
@@ -36,7 +38,7 @@ describe('toTodoUpdateChanges', () => {
 
   test('카테고리도 바뀐 값으로 보낸다', () => {
     // When
-    const changes = toTodoUpdateChanges({ ...DEFAULTS, categoryId: 2 }, DEFAULTS);
+    const changes = toTodoUpdateChanges({ ...DEFAULTS, categoryId: 2 }, DEFAULTS, TIME_ZONE);
 
     // Then
     expect(changes.input).toEqual({ categoryId: 2 });
@@ -44,7 +46,7 @@ describe('toTodoUpdateChanges', () => {
 
   test('종일로 바꾸면 시간은 null로 비운다', () => {
     // When
-    const changes = toTodoUpdateChanges({ ...DEFAULTS, isAllDay: true }, DEFAULTS);
+    const changes = toTodoUpdateChanges({ ...DEFAULTS, isAllDay: true }, DEFAULTS, TIME_ZONE);
 
     // Then
     expect(changes.input).toEqual({ scheduledTime: null, isAllDay: true });
@@ -63,6 +65,7 @@ describe('toTodoUpdateChanges', () => {
         },
       },
       DEFAULTS,
+      TIME_ZONE,
     );
 
     // Then
@@ -71,7 +74,7 @@ describe('toTodoUpdateChanges', () => {
 
   test('반복을 없애면 repeat null로 보낸다', () => {
     // When
-    const changes = toTodoUpdateChanges({ ...DEFAULTS, repeat: null }, DEFAULTS);
+    const changes = toTodoUpdateChanges({ ...DEFAULTS, repeat: null }, DEFAULTS, TIME_ZONE);
 
     // Then
     expect(changes).toEqual({ input: {}, repeat: null });
@@ -83,6 +86,7 @@ describe('toTodoUpdateChanges', () => {
     const changes = toTodoUpdateChanges(
       { ...DEFAULTS, startDate: new Date(2026, 10, 6, 12) },
       DEFAULTS,
+      TIME_ZONE,
     );
 
     // Then

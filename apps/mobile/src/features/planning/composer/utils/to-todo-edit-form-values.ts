@@ -1,10 +1,14 @@
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { toNullableDate } from '@src/features/planning/todo/utils/calendar-date';
 import { toDate } from '@src/shared/date/instant';
 
-import type { TodoRepeat } from '../domains/todo-repeat.model';
-import type { Todo } from '../domains/todo.model';
+import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
-export function toTodoEditFormValues(todo: Todo, repeat: TodoRepeat | null = todo.repeat) {
+export function toTodoEditFormValues(
+  todo: Todo,
+  repeat: TodoRepeat | null = todo.repeat,
+): AddTodoFormValues {
   return {
     title: todo.title,
     startDate: toDate(todo.startDate),
