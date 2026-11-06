@@ -16,7 +16,7 @@ import {
   entitlementSnapshotSchema,
   type FeatureQuota,
   featureQuotaSchema,
-} from '../domains/entitlement.model';
+} from '../schemas/entitlement.schema';
 
 export const toFeatureQuota = (dto: FeatureQuotaDto): FeatureQuota =>
   featureQuotaSchema.parse({

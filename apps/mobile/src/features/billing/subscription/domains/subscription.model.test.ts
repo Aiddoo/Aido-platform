@@ -1,10 +1,9 @@
+import type { SubscriptionOffering, SubscriptionPlan } from '../schemas/subscription.schema';
 import {
   getAnnualDiscountPercent,
   getMonthlyEquivalent,
   getSelectedPlan,
   SubscriptionPolicy,
-  type SubscriptionOffering,
-  type SubscriptionPlan,
 } from './subscription.model';
 
 function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {

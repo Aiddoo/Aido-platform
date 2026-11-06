@@ -1,4 +1,5 @@
-import { type CustomerInfo, CustomerInfoPolicy } from './customer-info.model';
+import type { CustomerInfo } from '../schemas/customer-info.schema';
+import { CustomerInfoPolicy } from './customer-info.model';
 
 const createCustomerInfo = (
   activeEntitlements: CustomerInfo['activeEntitlements'] = [],

@@ -1,7 +1,6 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { toPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +22,7 @@ export function useVoiceNoteRecordLimit() {
       finish();
       return;
     }
-    const { voiceNoteMinutes: premiumMinutes } = toPremiumBenefitAmounts();
+    const { voiceNoteMinutes: premiumMinutes } = EntitlementPolicy.getPremiumBenefitAmounts();
     gate.showLimit({
       title: t('limit.title', { minutes }),
       description: hasText

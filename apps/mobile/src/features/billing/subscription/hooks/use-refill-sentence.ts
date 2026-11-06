@@ -6,11 +6,8 @@ import { formatCount } from '@src/shared/utils/format';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 
-import {
-  type EntitlementFeature,
-  EntitlementPolicy,
-  type EntitlementSnapshot,
-} from '../domains/entitlement.model';
+import { EntitlementPolicy } from '../domains/entitlement.model';
+import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
 
 export function useRefillSentence() {
   const { t } = useTranslation('subscription');

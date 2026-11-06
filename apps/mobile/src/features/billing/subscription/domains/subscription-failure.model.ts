@@ -1,10 +1,4 @@
-import {
-  isApiError,
-  NetworkError,
-  ParseError,
-  ServerError,
-  TimeoutError,
-} from '@src/shared/errors';
+import { NetworkError, TimeoutError } from '@src/shared/errors';
 import { match, P } from 'ts-pattern';
 
 import { SubscriptionError, SubscriptionErrorCode } from './subscription.error';
@@ -40,16 +34,6 @@ function getSubscriptionErrorCause(error: SubscriptionError): SubscriptionFailur
     .exhaustive();
 }
 
-/**
- * 스토어를 쓸 수 없어 요금제를 보여 줄 수 없는 상태. 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다.
- * - setup: 앱·스토어 설정 문제다
- * - temporary: 스토어가 잠시 응답하지 못했다
- */
-export interface StoreUnavailable {
-  kind: 'setup' | 'temporary';
-  diagnosticCode: string;
-}
-
 function getFailureCause(error: unknown): SubscriptionFailureCause {
   return match(error)
     .with(P.instanceOf(SubscriptionError), getSubscriptionErrorCause)
@@ -58,43 +42,24 @@ function getFailureCause(error: unknown): SubscriptionFailureCause {
 }
 
 /**
- * 문의에 붙일 짧은 오류 코드. 메시지·사용자 정보 없이 원인을 찾을 만큼만 담는다.
- * 스토어 SDK 코드가 있으면 괄호로 덧붙인다.
+ * 스토어를 쓸 수 없어 요금제를 보여 줄 수 없는 상태의 종류. 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다.
+ * - setup: 앱·스토어 설정 문제다
+ * - temporary: 스토어가 잠시 응답하지 못했다
  */
-function getDiagnosticCode(error: unknown): string {
-  return match(error)
-    .with(P.instanceOf(SubscriptionError), ({ code, storeErrorCode }) =>
-      storeErrorCode == null ? code : `${code} (${storeErrorCode})`,
-    )
-    .with(P.when(isApiError), ({ code }) => code)
-    .with(P.instanceOf(NetworkError), () => 'NETWORK')
-    .with(P.instanceOf(TimeoutError), () => 'TIMEOUT')
-    .with(P.instanceOf(ServerError), ({ statusCode }) => `SERVER_${statusCode}`)
-    .with(P.instanceOf(ParseError), () => 'INVALID_RESPONSE')
-    .otherwise(() => 'UNKNOWN');
-}
-
-function getStoreUnavailable(error: unknown): StoreUnavailable | null {
+function getStoreUnavailableKind(error: unknown): 'setup' | 'temporary' | null {
   return match(error)
     .with(
       P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_UNAVAILABLE }),
-      (storeError) => ({
-        kind: 'setup' as const,
-        diagnosticCode: getDiagnosticCode(storeError),
-      }),
+      () => 'setup' as const,
     )
     .with(
       P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_PROBLEM }),
-      (storeError) => ({
-        kind: 'temporary' as const,
-        diagnosticCode: getDiagnosticCode(storeError),
-      }),
+      () => 'temporary' as const,
     )
     .otherwise(() => null);
 }
 
 export const SubscriptionFailurePolicy = {
   getFailureCause,
-  getStoreUnavailable,
-  getDiagnosticCode,
+  getStoreUnavailableKind,
 } as const;

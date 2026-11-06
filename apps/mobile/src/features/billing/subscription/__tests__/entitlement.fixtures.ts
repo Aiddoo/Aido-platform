@@ -12,7 +12,7 @@ import { ApiError } from '@src/shared/errors/api-error';
 import { match } from 'ts-pattern';
 
 import { toEntitlementSnapshot } from '../apis/entitlement.mapper';
-import type { EntitlementSnapshot } from '../domains/entitlement.model';
+import type { EntitlementSnapshot } from '../schemas/entitlement.schema';
 
 /** 다음 달 1일 00:00 KST */
 export const MONTHLY_RESETS_AT = '2026-11-30T15:00:00.000Z';

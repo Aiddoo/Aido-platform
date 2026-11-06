@@ -3,9 +3,9 @@ import {
   findErrorFeatureQuota,
   isNotChargedError,
 } from '@src/features/billing/subscription/apis/entitlement.mapper';
-import type { EntitlementFeature } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
+import type { EntitlementFeature } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { useTrack } from '@src/shared/analytics';

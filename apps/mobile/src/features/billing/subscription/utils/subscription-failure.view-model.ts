@@ -1,10 +1,11 @@
 import { match } from 'ts-pattern';
 
 import {
-  type StoreUnavailable,
   type SubscriptionFailureCause,
   SubscriptionFailurePolicy,
 } from '../domains/subscription-failure.model';
+import type { StoreUnavailable } from './offerings-availability';
+import { getDiagnosticCode } from './subscription-diagnostic-code';
 
 /** 구독 화면에서 실패할 수 있는 곳. 앞의 둘은 불러오기, 뒤의 둘은 사용자가 누른 동작이다 */
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
@@ -66,7 +67,7 @@ function toSupportFailure(
   return {
     titleKey: FAILURE_TITLE_KEYS[target],
     descriptionKey: toDescriptionKey(SubscriptionFailurePolicy.getFailureCause(error)),
-    diagnosticCode: SubscriptionFailurePolicy.getDiagnosticCode(error),
+    diagnosticCode: getDiagnosticCode(error),
   };
 }
 

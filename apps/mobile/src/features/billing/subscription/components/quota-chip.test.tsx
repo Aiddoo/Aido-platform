@@ -12,7 +12,7 @@ import {
 } from '../__tests__/entitlement.fixtures';
 import { EntitlementService } from '../apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
-import type { EntitlementFeature, EntitlementSnapshot } from '../domains/entitlement.model';
+import type { EntitlementFeature, EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { QuotaChip } from './quota-chip';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };

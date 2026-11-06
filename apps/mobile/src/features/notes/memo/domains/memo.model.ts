@@ -1,4 +1,4 @@
-import type { FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import type { VoicePlan } from '@src/features/voice/domains/voice-plan.model';
 
 import type { Memo, MemoResourceLimit } from '../schemas/memo.schema';

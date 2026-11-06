@@ -1,11 +1,9 @@
 import { WEBHOOK_SYNC_DELAY } from '@src/features/billing/subscription/constants/webhook-sync';
-import {
-  type CustomerInfo,
-  CustomerInfoPolicy,
-} from '@src/features/billing/subscription/domains/customer-info.model';
+import { CustomerInfoPolicy } from '@src/features/billing/subscription/domains/customer-info.model';
 import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
+import { type CustomerInfo } from '@src/features/billing/subscription/schemas/customer-info.schema';
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';

@@ -22,8 +22,8 @@ import { Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
+import { EntitlementPolicy } from '../domains/entitlement.model';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
-import { toPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
@@ -36,7 +36,7 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
   const { t } = useTranslation('subscription');
   const { variant, rows, footnote } = useSubscriptionReceipt();
   const dateFormatContext = useDateFormatContext();
-  const premium = toPremiumBenefitAmounts();
+  const premium = EntitlementPolicy.getPremiumBenefitAmounts();
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
   const receiptDateLabel = variant === 'paid' ? 'fullDate' : 'monthDay';

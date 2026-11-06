@@ -1,31 +1,10 @@
-import type { PlatformOSType } from 'react-native';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
 import {
   APP_STORE_SUBSCRIPTIONS_URL,
   PLAY_STORE_SUBSCRIPTIONS_URL,
 } from '../constants/subscription.constants';
-
-const planTypeSchema = z.enum(['monthly', 'annual']);
-export type PlanType = z.infer<typeof planTypeSchema>;
-
-const subscriptionPlanSchema = z.object({
-  identifier: z.string(),
-  planType: planTypeSchema,
-  priceString: z.string(),
-  price: z.number(),
-  currencyCode: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-});
-export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
-
-const subscriptionOfferingSchema = z.object({
-  identifier: z.string(),
-  plans: z.array(subscriptionPlanSchema),
-});
-export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
+import type { SubscriptionOffering } from '../schemas/subscription.schema';
 
 export function getAnnualDiscountPercent(monthlyPrice: number, annualPrice: number) {
   return Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
@@ -54,7 +33,7 @@ interface SubscriptionManagementTarget {
  * 스토어가 없는 플랫폼은 null이다.
  */
 function getManagementUrl(
-  platform: PlatformOSType,
+  platform: string,
   { productId, applicationId }: SubscriptionManagementTarget,
 ): string | null {
   return match(platform)

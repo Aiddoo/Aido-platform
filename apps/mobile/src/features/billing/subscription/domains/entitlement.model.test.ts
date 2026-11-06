@@ -298,3 +298,70 @@ describe('EntitlementPolicy', () => {
     });
   });
 });
+
+describe('EntitlementPolicy.getPlanBenefitAmounts', () => {
+  it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 카탈로그를 쓴다', () => {
+    // Given
+    const snapshot = EntitlementPolicy.withFeatureQuota(
+      createEntitlementSnapshot(),
+      toFeatureQuota({ ...createFeatureQuotaDto('FRIEND'), limit: 7 }),
+    );
+
+    // When
+    const amounts = EntitlementPolicy.getPlanBenefitAmounts(snapshot);
+
+    // Then
+    expect(amounts.free.friend).toBe(7);
+    expect(amounts.premium).toEqual({
+      aiParse: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      voiceNote: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+      voiceNoteMinutes: 30,
+      category: PLAN_CATALOG.TODO_CATEGORY.premium,
+    });
+  });
+
+  it.each(['PREMIUM', 'ADMIN'] as const)(
+    '%s에게도 무료 쪽은 카탈로그의 무료 양을 보여 준다',
+    (tier) => {
+      // Given
+      const snapshot = createEntitlementSnapshot({ tier });
+
+      // When
+      const amounts = EntitlementPolicy.getPlanBenefitAmounts(snapshot);
+
+      // Then
+      expect(amounts.free).toEqual({
+        aiParse: PLAN_CATALOG.AI_PARSE.free,
+        voiceNote: PLAN_CATALOG.VOICE_NOTE.free,
+        voiceNoteMinutes: 3,
+        nudge: PLAN_CATALOG.NUDGE.free,
+        friend: PLAN_CATALOG.FRIEND.free,
+        category: PLAN_CATALOG.TODO_CATEGORY.free,
+      });
+    },
+  );
+});
+
+describe('EntitlementPolicy 막힌 기능 판단', () => {
+  it.each([
+    ['서버가 한도를 열어 두고 줬으면', 'AI_PARSE', { allowed: true }, 'limit-reached'],
+    ['서버가 등급에서 닫았다고 줬으면', 'AI_PARSE', { allowed: false }, 'locked'],
+    ['한도 정보가 없는 횟수 기능이면', 'AI_PARSE', null, 'limit-reached'],
+    ['한도 정보가 없는 켜고 끄는 기능이면', 'APP_ICON', null, 'locked'],
+  ] as const)('%s %s는 %s다', (_label, feature, quota, expected) => {
+    // When
+    const decision = EntitlementPolicy.getBlockedDecision(feature, quota);
+
+    // Then
+    expect(decision).toBe(expected);
+  });
+
+  it.each([
+    ['스냅샷을 모르면', undefined, true],
+    ['무료면', createEntitlementSnapshot({ tier: 'FREE' }), true],
+    ['프리미엄이면', createEntitlementSnapshot({ tier: 'PREMIUM' }), false],
+    ['관리자면', createEntitlementSnapshot({ tier: 'ADMIN' }), false],
+  ] as const)('%s 구독을 권하는 것은 %s다', (_label, snapshot, expected) => {
+    expect(EntitlementPolicy.shouldOfferPremium(snapshot)).toBe(expected);
+  });
+});

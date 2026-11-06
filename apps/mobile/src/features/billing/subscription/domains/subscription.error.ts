@@ -1,5 +1,4 @@
 import type { CodedError } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
 
 export const SubscriptionErrorCode = {
   /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */
@@ -24,68 +23,35 @@ export class SubscriptionError extends Error implements CodedError {
 
   constructor(
     public readonly code: SubscriptionErrorCode,
-    message: string,
     /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
     public readonly storeErrorCode: string | null = null,
   ) {
-    super(message);
+    super(code);
   }
 }
 
 export const SubscriptionErrors = {
   storeUnavailable: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.STORE_UNAVAILABLE,
-      t('subscription:errors.storeUnavailable'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.STORE_UNAVAILABLE, storeErrorCode),
 
   storeProblem: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.STORE_PROBLEM,
-      t('subscription:errors.storeProblem'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.STORE_PROBLEM, storeErrorCode),
 
   offeringsUnavailable: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.OFFERINGS_UNAVAILABLE,
-      t('subscription:errors.offeringsUnavailable'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.OFFERINGS_UNAVAILABLE, storeErrorCode),
 
   network: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.NETWORK,
-      t('subscription:errors.network'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.NETWORK, storeErrorCode),
 
   purchaseCancelled: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.PURCHASE_CANCELLED,
-      t('subscription:errors.purchaseCancelled'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.PURCHASE_CANCELLED, storeErrorCode),
 
   paymentPending: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.PAYMENT_PENDING,
-      t('subscription:errors.paymentPending'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.PAYMENT_PENDING, storeErrorCode),
 
   purchaseFailed: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.PURCHASE_FAILED,
-      t('subscription:errors.purchaseFailed'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.PURCHASE_FAILED, storeErrorCode),
 
   restoreFailed: (storeErrorCode?: string | null) =>
-    new SubscriptionError(
-      SubscriptionErrorCode.RESTORE_FAILED,
-      t('subscription:errors.restoreFailed'),
-      storeErrorCode,
-    ),
+    new SubscriptionError(SubscriptionErrorCode.RESTORE_FAILED, storeErrorCode),
 } as const;

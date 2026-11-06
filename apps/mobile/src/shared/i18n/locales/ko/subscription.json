@@ -16,16 +16,6 @@
     "purchaseSuccessWithReward": "구독을 시작했어요. 남은 초대 보상은 구독이 끝나면 이어져요",
     "restoreEmptyWithReward": "복원할 구매가 없어요. 초대 보상은 그대로 유지돼요"
   },
-  "errors": {
-    "storeUnavailable": "스토어를 사용할 수 없어요",
-    "storeProblem": "스토어가 잠시 응답하지 않아요",
-    "offeringsUnavailable": "구독 상품을 불러오지 못했어요",
-    "network": "스토어에 연결하지 못했어요",
-    "purchaseCancelled": "구매를 취소했어요",
-    "paymentPending": "결제 승인 대기 중이에요",
-    "purchaseFailed": "구매를 마치지 못했어요",
-    "restoreFailed": "구매를 복원하지 못했어요"
-  },
   "benefits": {
     "aiParsing": {
       "title": "AI 할 일 만들기 넉넉하게",

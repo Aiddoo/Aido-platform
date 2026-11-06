@@ -20,10 +20,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { getSelectedPlan, type SubscriptionOffering } from '../domains/subscription.model';
+import { getSelectedPlan } from '../domains/subscription.model';
 import { useSubscriptionViewParam } from '../hooks/use-subscription-view-param';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import { type SubscriptionOffering } from '../schemas/subscription.schema';
 import {
   toSubscriptionLoadFailure,
   toSubscriptionStoreUnavailableFailure,

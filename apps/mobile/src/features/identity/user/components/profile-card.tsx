@@ -1,6 +1,6 @@
 import { useClipboard } from '@src/bootstrap/providers/di-context';
-import type { AccessTier } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import type { AccessTier } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';

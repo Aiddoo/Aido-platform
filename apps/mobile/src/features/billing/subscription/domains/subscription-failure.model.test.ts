@@ -24,45 +24,14 @@ describe('SubscriptionFailurePolicy.getFailureCause', () => {
   });
 });
 
-describe('SubscriptionFailurePolicy.getDiagnosticCode', () => {
-  it.each<[string, unknown, string]>([
-    [
-      '스토어 코드가 있으면 괄호로 붙인다',
-      SubscriptionErrors.purchaseFailed('2'),
-      'SUBSCRIPTION_PURCHASE_FAILED (2)',
-    ],
-    [
-      '스토어 코드가 없으면 도메인 코드만 쓴다',
-      SubscriptionErrors.storeUnavailable(),
-      'SUBSCRIPTION_STORE_UNAVAILABLE',
-    ],
-    ['서버 오류 코드는 그대로 쓴다', new ApiError('SYS_0001', 'message', 400), 'SYS_0001'],
-    ['네트워크 오류', new NetworkError(), 'NETWORK'],
-    ['시간 초과', new TimeoutError(), 'TIMEOUT'],
-    ['5xx는 상태 코드를 붙인다', new ServerError(502), 'SERVER_502'],
-    ['응답 계약 불일치', new ParseError('사용자에게 보이면 안 되는 상세'), 'INVALID_RESPONSE'],
-    ['모르는 값', { token: 'secret' }, 'UNKNOWN'],
-  ])('%s', (_case, error, expected) => {
-    expect(SubscriptionFailurePolicy.getDiagnosticCode(error)).toBe(expected);
-  });
-});
-
-describe('SubscriptionFailurePolicy.getStoreUnavailable', () => {
-  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getStoreUnavailable>]>([
-    [
-      'SDK가 초기화되지 않았으면 설정 문제로 본다',
-      SubscriptionErrors.storeUnavailable(),
-      { kind: 'setup', diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE' },
-    ],
-    [
-      '스토어 설정 오류면 설정 문제로 본다',
-      SubscriptionErrors.storeUnavailable('23'),
-      { kind: 'setup', diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)' },
-    ],
+describe('SubscriptionFailurePolicy.getStoreUnavailableKind', () => {
+  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getStoreUnavailableKind>]>([
+    ['SDK가 초기화되지 않았으면 설정 문제로 본다', SubscriptionErrors.storeUnavailable(), 'setup'],
+    ['스토어 설정 오류면 설정 문제로 본다', SubscriptionErrors.storeUnavailable('23'), 'setup'],
     [
       '스토어가 잠시 응답하지 못하면 일시적 문제로 본다',
       SubscriptionErrors.storeProblem('2'),
-      { kind: 'temporary', diagnosticCode: 'SUBSCRIPTION_STORE_PROBLEM (2)' },
+      'temporary',
     ],
     ['연결 문제는 스토어 상태가 아니다', SubscriptionErrors.network('10'), null],
     [
@@ -73,9 +42,9 @@ describe('SubscriptionFailurePolicy.getStoreUnavailable', () => {
     ['서버 오류는 스토어 상태가 아니다', new ServerError(503), null],
   ])('%s', (_case, error, expected) => {
     // When
-    const result = SubscriptionFailurePolicy.getStoreUnavailable(error);
+    const result = SubscriptionFailurePolicy.getStoreUnavailableKind(error);
 
     // Then
-    expect(result).toEqual(expected);
+    expect(result).toBe(expected);
   });
 });

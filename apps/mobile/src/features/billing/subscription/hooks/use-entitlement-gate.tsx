@@ -1,4 +1,3 @@
-import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
 import { toInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -15,15 +14,11 @@ import { router } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import { match } from 'ts-pattern';
 
-import { findLimitedFeature, type LimitedFeature } from '../apis/entitlement.mapper';
-import {
-  type EntitlementFeature,
-  EntitlementPolicy,
-  type EntitlementSnapshot,
-} from '../domains/entitlement.model';
+import { findLimitedFeature } from '../apis/entitlement.mapper';
+import { EntitlementPolicy } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { toPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
+import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { getPremiumGateAnalyticsFeature } from '../utils/premium-gate-feature';
 import { useRefillSentence } from './use-refill-sentence';
 
@@ -67,7 +62,7 @@ export function useEntitlementGate(
       }
 
       // 프리미엄·관리자가 공정 사용 한도에 닿으면 구독을 권하지 않고 언제 다시 쓸 수 있는지만 알린다
-      if (latest != null && EntitlementPolicy.hasFullAccess(latest)) {
+      if (!EntitlementPolicy.shouldOfferPremium(latest)) {
         toast.warning(title ?? copy.title, { description: copy.refill ?? undefined });
         return;
       }
@@ -129,18 +124,16 @@ export function useEntitlementGate(
         if (limited.featureQuota != null) {
           setFeatureQuota(queryClient, limited.featureQuota);
         }
-        open(limited.feature, getBlockedDecision(limited), 'server', options);
+        open(
+          limited.feature,
+          EntitlementPolicy.getBlockedDecision(limited.feature, limited.featureQuota),
+          'server',
+          options,
+        );
         return true;
       },
     };
   }, [feature, surface, snapshot, overlay, toast, trackEvent, queryClient, getCopy]);
-}
-
-function getBlockedDecision({ feature, featureQuota }: LimitedFeature): BlockedDecision {
-  if (featureQuota != null) {
-    return featureQuota.allowed ? 'limit-reached' : 'locked';
-  }
-  return PLAN_CATALOG[feature].kind === 'flag' ? 'locked' : 'limit-reached';
 }
 
 function useEntitlementGateCopy() {
@@ -154,7 +147,7 @@ function useEntitlementGateCopy() {
       snapshot: EntitlementSnapshot | undefined,
     ): EntitlementGateCopy & { refill: string | null } => {
       const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
-      const premium = toPremiumBenefitAmounts();
+      const premium = EntitlementPolicy.getPremiumBenefitAmounts();
 
       const getRefillSentence = () => getRefill(snapshot, feature);
 

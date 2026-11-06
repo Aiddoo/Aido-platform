@@ -1,53 +1,19 @@
-import {
-  ACCESS_TIERS,
-  PLAN_CATALOG,
-  PLAN_FEATURE_KEYS,
-  PLAN_QUOTA_PERIODS,
-  type PlanLimitFeatureKey,
-} from '@aido/api/vocabulary';
+import { PLAN_CATALOG, type PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import {
   calculateDaysLeft,
   hasPassed,
 } from '@src/features/identity/user/domains/premium-access.model';
-import { type Instant, instantSchema } from '@src/shared/date/instant';
-import { z } from 'zod';
+import type { Instant } from '@src/shared/date/instant';
 
-const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
-export type EntitlementFeature = z.infer<typeof entitlementFeatureSchema>;
-
-const accessTierSchema = z.enum(ACCESS_TIERS);
-export type AccessTier = z.infer<typeof accessTierSchema>;
-
-const quotaPeriodSchema = z.enum(PLAN_QUOTA_PERIODS);
-type QuotaPeriod = z.infer<typeof quotaPeriodSchema>;
-
-/** 서버가 계산한 기능 하나의 한도·사용량. 앱은 이 값을 그대로 쓰고 다시 계산하지 않는다 */
-export const featureQuotaSchema = z.object({
-  feature: entitlementFeatureSchema,
-  allowed: z.boolean(),
-  /** null은 정말 무제한(ADMIN, 켜진 flag)일 때만이다. 프리미엄의 넉넉한 한도는 숫자 + isFairUse다 */
-  limit: z.int().nonnegative().nullable(),
-  used: z.int().nonnegative().nullable(),
-  remaining: z.int().nonnegative().nullable(),
-  period: quotaPeriodSchema.nullable(),
-  resetsAt: instantSchema.nullable(),
-  isFairUse: z.boolean(),
-  perUse: z
-    .object({ maxSeconds: z.int().positive(), maxCharacters: z.int().positive() })
-    .nullable(),
-});
-export type FeatureQuota = z.infer<typeof featureQuotaSchema>;
-
-export const entitlementSnapshotSchema = z.object({
-  /** 유효한 스토어 구독·보상 기간이 있는지. ADMIN은 반영하지 않는다 */
-  isPremium: z.boolean(),
-  tier: accessTierSchema,
-  features: z.partialRecord(entitlementFeatureSchema, featureQuotaSchema),
-});
-export type EntitlementSnapshot = z.infer<typeof entitlementSnapshotSchema>;
+import type {
+  EntitlementFeature,
+  EntitlementSnapshot,
+  FeatureQuota,
+  QuotaPeriod,
+} from '../schemas/entitlement.schema';
 
 /** 기능을 지금 시작해도 되는지. 모르는 기능은 서버가 판단하도록 allow다 */
-type AccessDecision = 'allow' | 'limit-reached' | 'locked';
+export type AccessDecision = 'allow' | 'limit-reached' | 'locked';
 
 /** 남은 횟수를 알릴지와 무엇을 알릴지. 무제한·공정 사용 한도·횟수가 없는 기능은 hidden이다 */
 type QuotaStatus =
@@ -159,6 +125,47 @@ function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): E
   return { ...snapshot, features: { ...snapshot.features, [quota.feature]: quota } };
 }
 
+/** 서버가 막은 기능의 오류가 한도 소진인지 등급 잠금인지. 서버가 한도를 함께 줬으면 그 값을 따른다 */
+function getBlockedDecision(
+  feature: EntitlementFeature,
+  quota: Pick<FeatureQuota, 'allowed'> | null,
+): Exclude<AccessDecision, 'allow'> {
+  if (quota != null) {
+    return quota.allowed ? 'limit-reached' : 'locked';
+  }
+  return PLAN_CATALOG[feature].kind === 'flag' ? 'locked' : 'limit-reached';
+}
+
+/** 프리미엄·관리자가 공정 사용 한도에 닿으면 구독을 권하지 않는다. 스냅샷을 모르면 권한다 */
+function shouldOfferPremium(snapshot: EntitlementSnapshot | undefined) {
+  return snapshot == null || !hasFullAccess(snapshot);
+}
+
+const SECONDS_PER_MINUTE = 60;
+
+function getPremiumBenefitAmounts() {
+  return {
+    aiParse: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+    voiceNote: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+    voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium / SECONDS_PER_MINUTE,
+    category: PLAN_CATALOG.TODO_CATEGORY.premium,
+  } as const;
+}
+
+function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
+  return {
+    free: {
+      aiParse: getFreeLimit(snapshot, 'AI_PARSE'),
+      voiceNote: getFreeLimit(snapshot, 'VOICE_NOTE'),
+      voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.free / SECONDS_PER_MINUTE,
+      nudge: getFreeLimit(snapshot, 'NUDGE'),
+      friend: getFreeLimit(snapshot, 'FRIEND'),
+      category: getFreeLimit(snapshot, 'TODO_CATEGORY'),
+    },
+    premium: getPremiumBenefitAmounts(),
+  } as const;
+}
+
 export const EntitlementPolicy = {
   hasFullAccess,
   findFeatureQuota,
@@ -171,4 +178,8 @@ export const EntitlementPolicy = {
   getResetNotice,
   getFreeLimit,
   withFeatureQuota,
+  getBlockedDecision,
+  shouldOfferPremium,
+  getPremiumBenefitAmounts,
+  getPlanBenefitAmounts,
 } as const;

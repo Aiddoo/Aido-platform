@@ -6,12 +6,9 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import {
-  getAnnualDiscountPercent,
-  getMonthlyEquivalent,
-  type SubscriptionPlan,
-} from '../domains/subscription.model';
+import { getAnnualDiscountPercent, getMonthlyEquivalent } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import { type SubscriptionPlan } from '../schemas/subscription.schema';
 
 type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 

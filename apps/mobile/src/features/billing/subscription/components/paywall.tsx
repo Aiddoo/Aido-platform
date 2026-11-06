@@ -28,8 +28,8 @@ import { formatCount } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
+import { EntitlementPolicy } from '../domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { toPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
 
 export function Paywall() {
@@ -66,7 +66,7 @@ Paywall.Benefits = function Benefits() {
   const { t } = useTranslation('subscription');
   const { locale } = useDateFormatContext();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = toPlanBenefitAmounts(entitlements);
+  const { free, premium } = EntitlementPolicy.getPlanBenefitAmounts(entitlements);
   const formatAmount = (value: number) => formatCount(value, locale);
 
   return (
@@ -102,7 +102,7 @@ Paywall.AdditionalBenefits = function AdditionalBenefits() {
   const { t } = useTranslation('subscription');
   const { locale } = useDateFormatContext();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = toPlanBenefitAmounts(entitlements);
+  const { free, premium } = EntitlementPolicy.getPlanBenefitAmounts(entitlements);
   const formatAmount = (value: number) => formatCount(value, locale);
 
   return (

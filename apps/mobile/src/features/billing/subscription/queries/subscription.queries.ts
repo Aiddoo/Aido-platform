@@ -12,9 +12,9 @@ import { match } from 'ts-pattern';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { SUBSCRIPTION_QUERY_KEYS } from '../constants/subscription-query-keys';
-import type { StoreUnavailable } from '../domains/subscription-failure.model';
 import {
   type OfferingsAvailability,
+  type StoreUnavailable,
   toOfferingsAvailability,
   toStoreUnavailableReport,
 } from '../utils/offerings-availability';

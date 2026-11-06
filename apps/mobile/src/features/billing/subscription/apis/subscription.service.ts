@@ -6,13 +6,10 @@ import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import {
-  type CustomerInfo,
-  CustomerInfoPolicy,
-  type SubscriptionStore,
-} from '../domains/customer-info.model';
+import { CustomerInfoPolicy } from '../domains/customer-info.model';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
-import type { SubscriptionOffering } from '../domains/subscription.model';
+import { type CustomerInfo, type SubscriptionStore } from '../schemas/customer-info.schema';
+import type { SubscriptionOffering } from '../schemas/subscription.schema';
 import type { PurchasesSdkManager } from './purchases-sdk-manager';
 import { toSubscriptionError } from './subscription-error.mapper';
 import { toCustomerInfo, toSubscriptionOffering } from './subscription.mapper';

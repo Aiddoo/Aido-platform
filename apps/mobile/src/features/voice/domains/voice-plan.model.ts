@@ -1,5 +1,5 @@
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import type { FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import {
   type TodoRepeat,
   TodoRepeatPolicy,

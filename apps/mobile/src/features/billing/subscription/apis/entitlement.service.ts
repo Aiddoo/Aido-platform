@@ -6,7 +6,7 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import type { EntitlementSnapshot } from '../domains/entitlement.model';
+import type { EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { toEntitlementSnapshot } from './entitlement.mapper';
 
 export class EntitlementService {

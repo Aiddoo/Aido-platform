@@ -2,12 +2,16 @@ import type { Severity } from '@src/core/ports/severity';
 import type { Result } from '@src/shared/errors/result';
 import { match } from 'ts-pattern';
 
-import {
-  type StoreUnavailable,
-  SubscriptionFailurePolicy,
-} from '../domains/subscription-failure.model';
+import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import type { SubscriptionError } from '../domains/subscription.error';
-import type { SubscriptionOffering } from '../domains/subscription.model';
+import type { SubscriptionOffering } from '../schemas/subscription.schema';
+import { getDiagnosticCode } from './subscription-diagnostic-code';
+
+/** 스토어를 쓸 수 없는 이유와 문의에 붙일 코드 */
+export interface StoreUnavailable {
+  kind: 'setup' | 'temporary';
+  diagnosticCode: string;
+}
 
 export type OfferingsAvailability =
   | { status: 'available'; offering: SubscriptionOffering }
@@ -21,12 +25,14 @@ export function toOfferingsAvailability(
     return { status: 'available', offering: result.value };
   }
 
-  const unavailable = SubscriptionFailurePolicy.getStoreUnavailable(result.error);
-  if (unavailable == null) {
+  const kind = SubscriptionFailurePolicy.getStoreUnavailableKind(result.error);
+  if (kind == null) {
     throw result.error;
   }
-
-  return { status: 'unavailable', unavailable };
+  return {
+    status: 'unavailable',
+    unavailable: { kind, diagnosticCode: getDiagnosticCode(result.error) },
+  };
 }
 
 export type StoreUnavailableReport =

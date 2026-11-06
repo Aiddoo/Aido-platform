@@ -16,16 +16,6 @@
     "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
     "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
   },
-  "errors": {
-    "storeUnavailable": "The store isn't available",
-    "storeProblem": "The store isn't responding right now",
-    "offeringsUnavailable": "Couldn't load subscription products",
-    "network": "Couldn't connect to the store",
-    "purchaseCancelled": "Purchase canceled",
-    "paymentPending": "Payment approval is pending",
-    "purchaseFailed": "Couldn't complete your purchase",
-    "restoreFailed": "Couldn't restore purchases"
-  },
   "benefits": {
     "aiParsing": {
       "title": "More AI to-dos",
