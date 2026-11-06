@@ -4,6 +4,11 @@ import { useCallback, useContext, useEffect, useId, useMemo, useRef } from 'reac
 import { type OverlayAsyncRender, OverlayItem, type OverlayRender } from './overlay-item';
 import { OverlayContext } from './overlay-provider';
 
+export interface Overlay {
+  open: (render: OverlayRender) => void;
+  openAsync: <T>(render: OverlayAsyncRender<T>) => Promise<T>;
+}
+
 /**
  * 화면 밖(루트)에 다이얼로그·시트를 띄운다. 값이 필요 없으면 `open`, 닫을 때 값을 받으려면 `openAsync`를 쓴다.
  * 인터페이스는 overlay-kit과 같다. 훅으로 받아 이 컴포넌트가 사라지면 띄운 것도 함께 사라진다.
@@ -26,7 +31,7 @@ import { OverlayContext } from './overlay-provider';
  * isSubmitting={mutation.isPending}
  * ```
  */
-export const useOverlay = () => {
+export function useOverlay(): Overlay {
   const controller = useContext(OverlayContext);
 
   if (!controller) {
@@ -74,4 +79,4 @@ export const useOverlay = () => {
   );
 
   return useMemo(() => ({ open, openAsync }), [open, openAsync]);
-};
+}

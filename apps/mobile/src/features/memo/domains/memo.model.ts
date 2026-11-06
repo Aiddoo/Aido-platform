@@ -1,26 +1,13 @@
-import { z } from 'zod';
+import type { FeatureQuota } from '@src/features/subscription/domains/entitlement.model';
+import type { VoicePlan } from '@src/features/voice/domains/voice-plan.model';
 
-export const memoSchema = z.object({
-  id: z.int().positive(),
-  content: z.string(),
-  isPinned: z.boolean(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
-export type Memo = z.infer<typeof memoSchema>;
+import type { Memo, MemoResourceLimit } from '../schemas/memo.schema';
 
-export const memoPageSchema = z.object({
-  items: z.array(memoSchema),
-  nextCursor: z.int().nullable(),
-  hasNext: z.boolean(),
-});
-export type MemoPage = z.infer<typeof memoPageSchema>;
-
-export const memoResourceLimitSchema = z.object({
-  currentCount: z.int().nonnegative(),
-  maxPerUser: z.int().positive(),
-});
-export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
+/** 메모 정리 결과. 계획과, 이 요청을 반영한 AI 할 일 만들기 한도(1.15.0 이전 서버는 보내지 않아 null) */
+export interface ParsedMemoPlan {
+  plan: VoicePlan;
+  featureQuota: FeatureQuota | null;
+}
 
 export function canCreateMemo(limit: MemoResourceLimit) {
   return limit.currentCount < limit.maxPerUser;

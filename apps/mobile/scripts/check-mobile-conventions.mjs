@@ -81,7 +81,12 @@ const QUERY_HOOK_NAMES = new Set([
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
 const CLIENT_OWNED_MODEL_PATHS = [
+  'apps/mobile/src/features/memo/components/',
+  'apps/mobile/src/features/memo/constants/',
   'apps/mobile/src/features/memo/domains/',
+  'apps/mobile/src/features/memo/hooks/',
+  'apps/mobile/src/features/memo/queries/',
+  'apps/mobile/src/features/memo/utils/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -91,6 +96,8 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/todo/domains/todo-repeat.model.ts',
   'apps/mobile/src/features/voice/domains/',
 ];
+/** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
+const SCHEMA_FOLDER_FEATURE_PATHS = ['apps/mobile/src/features/memo/'];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;
 
@@ -635,7 +642,10 @@ function isWireContractModule(moduleName) {
 
 function checkClientOwnedModelImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
-  if (!CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path))) {
+  if (
+    relativePath.includes('.test.') ||
+    !CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path))
+  ) {
     return;
   }
   for (const statement of sourceFile.statements) {
@@ -647,6 +657,28 @@ function checkClientOwnedModelImports(sourceFile, repositoryRoot, errors) {
     ) {
       errors.push(
         `${getLocation(sourceFile, statement, repositoryRoot)} 클라이언트 모델은 요청·응답 계약(${statement.moduleSpecifier.text})을 import하지 않습니다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꿔야 서버가 바뀌어도 mapper만 고칩니다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져오세요.`,
+      );
+    }
+  }
+}
+
+function checkSchemaFolderImports(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (
+    relativePath.includes('.test.') ||
+    relativePath.includes('/schemas/') ||
+    !SCHEMA_FOLDER_FEATURE_PATHS.some((path) => relativePath.startsWith(path))
+  ) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === 'zod'
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} Zod 스키마는 feature의 schemas/ 폴더에 둡니다.`,
       );
     }
   }
@@ -806,6 +838,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
     checkTestQueryClientFactory(sourceFile, repositoryRoot, errors);
     checkClientOwnedModelImports(sourceFile, repositoryRoot, errors);
+    checkSchemaFolderImports(sourceFile, repositoryRoot, errors);
   }
 
   for (const file of ['apps/mobile/src', 'apps/mobile/app'].flatMap((root) =>

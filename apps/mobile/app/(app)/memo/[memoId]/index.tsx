@@ -1,5 +1,5 @@
 import { MemoEditor } from '@src/features/memo/components/memo-editor';
-import { memoScreenParamsSchema } from '@src/features/memo/hooks/use-memo-params';
+import { memoScreenParamsSchema } from '@src/features/memo/schemas/memo-params.schema';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';

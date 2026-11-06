@@ -1,7 +1,5 @@
-import type { ConvertMemoToTodosInput } from '@aido/api';
 import {
   useActivationService,
-  useAiService,
   useDraftService,
   useHaptics,
   useIdGenerator,
@@ -12,6 +10,7 @@ import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai
 import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
 import { isNotChargedError } from '@src/features/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import type { AddTodoFormValues } from '@src/features/todo/domains/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-form.schema';
@@ -26,15 +25,15 @@ import {
   toAnalyticsSource,
 } from '@src/features/voice/utils/analytics/voice-plan-analytics';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
+import { isApiError, NetworkError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { MEMO_MUTATION_KEYS, MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { MemoFormValues } from '../domains/memo-form.schema';
+import type { MemoFormValues } from '../schemas/memo-form.schema';
 import {
   createMemoPlanDraftKey,
   createMemoPlanRequestDraftKey,
@@ -149,8 +148,8 @@ export function useConvertMemoToTodosMutationOptions() {
   const showFailure = useMemoMutationFailure();
 
   return mutationOptions({
-    mutationFn: async ({ memoId, input }: { memoId: number; input: ConvertMemoToTodosInput }) =>
-      unwrap(await memoService.convertToTodos(memoId, input)),
+    mutationFn: async ({ memoId, values }: { memoId: number; values: AddTodoFormValues }) =>
+      unwrap(await memoService.convertToTodos(memoId, values)),
     onSuccess: (_result, { memoId }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       toast.success(t('memo:toasts.convertedOne'));
@@ -174,7 +173,7 @@ interface ParseMemoVariables {
 
 export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
   const haptics = useHaptics();
-  const aiService = useAiService();
+  const memoService = useMemoService();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const queryClient = useQueryClient();
@@ -191,8 +190,13 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
 
   return mutationOptions({
     ...planInProgressRetryOptions,
+    // 오프라인에 멈춰 두면 정리 중 표시가 끝나지 않고, 연결되는 순간 나도 모르게 차감된다. 바로 실패해 안내한다
+    networkMode: 'always',
     mutationKey: MEMO_MUTATION_KEYS.parse({ memoId }),
     mutationFn: async ({ content, categoryId, sourceUpdatedAt }: ParseMemoVariables) => {
+      if (!onlineManager.isOnline()) {
+        throw new NetworkError();
+      }
       const accountId = getCachedMe(queryClient)?.id;
       const idempotencyKey =
         accountId == null
@@ -205,7 +209,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
               sourceUpdatedAt,
               createIdempotencyKey: () => idGenerator.create(),
             });
-      return unwrap(await aiService.parseMemo(content, categoryId, idempotencyKey));
+      return unwrap(await memoService.parseMemo(content, categoryId, idempotencyKey));
     },
     onSuccess: ({ plan, featureQuota }, { sourceUpdatedAt }) => {
       forgetIdempotencyKey();

@@ -1,4 +1,4 @@
-import { type Memo, memoSchema } from '../domains/memo.model';
+import { type Memo, memoSchema } from '../schemas/memo.schema';
 
 const DEFAULT_MEMO = memoSchema.parse({
   id: 1,

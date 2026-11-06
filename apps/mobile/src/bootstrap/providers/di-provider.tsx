@@ -238,7 +238,7 @@ export function DIProvider({
     const inquiryService = new InquiryService(authHttpClient);
 
     // Memo
-    const memoService = new MemoService(authHttpClient);
+    const memoService = new MemoService(authHttpClient, logger);
     const voiceService = new VoiceService(authHttpClient, logger);
     const moderationService = new ModerationService(authHttpClient);
 

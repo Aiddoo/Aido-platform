@@ -2,55 +2,36 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
-import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/memo.mutations';
-import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
-import { toNullableDate } from '@src/features/todo/utils/calendar-date';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
-import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
 import { toDateKey } from '@src/shared/date/instant';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
-  ActionChip,
   useConfirmDialog,
-  ArrowUpIcon,
   BottomSheetInput,
   BottomSheetTextArea,
   Box,
-  CalendarIcon,
-  ClockIcon,
-  EyeIcon,
-  EyeOffIcon,
   HStack,
   KeyboardBottomSheet,
   ModalBottomSheet,
-  SHEET_CONTENT_PADDING,
   QueryErrorBoundary,
-  RepeatIcon,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback, Spinner } from 'heroui-native';
+import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { Suspense, useState } from 'react';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
-import { ScrollView } from 'react-native-gesture-handler';
 import { match, P } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
 import {
@@ -61,22 +42,21 @@ import {
 import { shouldReopenRepeatPicker } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
-import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
-import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import {
   hasOnlyDateChanges,
   hasTodoUpdateChanges,
   toTodoUpdateChanges,
 } from '../utils/to-todo-update-changes';
-import { CategorySelectInput } from './category-select-input';
-import { TodoDatePickerContent } from './todo-date-picker-content';
-import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
+import {
+  openTodoRepeatPicker,
+  TodoComposerChips,
+  TodoComposerSubmitButton,
+} from './todo-composer-fields';
 import { TodoScopeSelectContent } from './todo-scope-select-content';
-import { TodoTimePickerContent } from './todo-time-picker-content';
 
 interface AddTodoBottomSheetBaseProps {
   isOpen: boolean;
@@ -106,21 +86,7 @@ interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
   repeat?: TodoRepeat | null;
 }
 
-interface AddTodoBottomSheetConvertMemoProps extends AddTodoBottomSheetBaseProps {
-  mode: 'convert-memo';
-  memoId: number;
-  selectedDate: Date;
-  categoryId: number;
-  initialValues?: {
-    title?: string;
-  };
-  onSuccess?: () => void;
-}
-
-type AddTodoBottomSheetProps =
-  | AddTodoBottomSheetCreateProps
-  | AddTodoBottomSheetEditProps
-  | AddTodoBottomSheetConvertMemoProps;
+type AddTodoBottomSheetProps = AddTodoBottomSheetCreateProps | AddTodoBottomSheetEditProps;
 
 function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
   return match(props)
@@ -136,24 +102,12 @@ function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues 
       visibility: 'PUBLIC',
       repeat: null,
     }))
-    .with({ mode: 'convert-memo' }, ({ selectedDate, categoryId, initialValues }) => ({
-      title: initialValues?.title ?? '',
-      startDate: selectedDate,
-      endDate: null,
-      scheduledTime: null,
-      isAllDay: true,
-      categoryId,
-      visibility: 'PUBLIC',
-      repeat: null,
-    }))
     .exhaustive();
 }
 
 export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const { t } = useTranslation('todo');
   const { t: tVoice } = useTranslation('voice');
-  const fontScaledSize = useFontScaledSize();
-  const { color: spinnerColor } = useResolveClassNames('text-white');
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
 
@@ -199,7 +153,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const createMutation = useMutation(useCreateTodoMutationOptions());
   const updateMutation = useMutation(useUpdateTodoMutationOptions());
   const createRecurringMutation = useMutation(useCreateRecurringTodoMutationOptions());
-  const convertMemoMutation = useMutation(useConvertMemoToTodosMutationOptions());
 
   const { isSubmitting } = useFormState({ control: methods.control });
   const voice = useAddTodoQuickVoice({ methods, onExit });
@@ -252,20 +205,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             { onSuccess: onClose },
           );
         })
-        .with({ mode: 'convert-memo' }, async (convertProps) => {
-          await convertMemoMutation.mutateAsync(
-            {
-              memoId: convertProps.memoId,
-              input: toMemoConversionInput(values),
-            },
-            {
-              onSuccess: () => {
-                onClose();
-                convertProps.onSuccess?.();
-              },
-            },
-          );
-        })
         .with({ mode: 'create' }, async (createProps) => {
           const handleMutationSuccess = () => {
             onClose();
@@ -314,38 +253,10 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       reportUnexpectedError(error);
       if (shouldReopenRepeatPicker(error)) {
-        openRepeatPicker();
+        openTodoRepeatPicker(overlay, methods);
       }
     }
   });
-
-  const openRepeatPicker = () => {
-    overlay.open(({ isOpen: isPickerOpen, close, unmount }) => (
-      <ModalBottomSheet
-        hasFixedHeader
-        isOpen={isPickerOpen}
-        onOpenChange={() => close()}
-        onCloseStart={focusTitle}
-        onExit={unmount}
-      >
-        <TodoRepeatPickerContent
-          value={{
-            startDate: methods.getValues('startDate'),
-            repeat: methods.getValues('repeat'),
-          }}
-          onChange={({ startDate, repeat }) => {
-            methods.setValue('startDate', startDate);
-            methods.setValue('repeat', repeat);
-            if (repeat != null) {
-              methods.setValue('endDate', null);
-            }
-            close();
-          }}
-          onCancel={close}
-        />
-      </ModalBottomSheet>
-    ));
-  };
 
   const isFormStep = voice.state.status === 'idle' || voice.state.status === 'failed';
   const title = useWatch({ control: methods.control, name: 'title' });
@@ -422,28 +333,11 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                   </CoachmarkPopover>
                 </>
               )}
-              <PressableFeedback
+              <TodoComposerSubmitButton
                 isDisabled={isSubmitDisabled}
+                isSubmitting={isSubmitting}
                 onPress={() => handleSubmitTodo()}
-                style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-                className={cn(
-                  'items-center justify-center rounded-4xl',
-                  isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
-                )}
-              >
-                {isSubmitting ? (
-                  <Spinner
-                    size="sm"
-                    color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
-                  />
-                ) : (
-                  <ArrowUpIcon
-                    width={fontScaledSize(18)}
-                    height={fontScaledSize(18)}
-                    colorClassName="text-white"
-                  />
-                )}
-              </PressableFeedback>
+              />
             </HStack>
           </VStack>
         ) : undefined
@@ -537,259 +431,14 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 }
               </FormField>
 
-              {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-                contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-              >
-                <DateChip
-                  isSeriesOccurrence={
-                    props.mode === 'edit' && TodoPolicy.isRecurringTodo(props.todo)
-                  }
-                />
-                <TimeChip />
-                {canChangeRepeat && <RepeatChip onPress={openRepeatPicker} />}
-                <VisibilityChip />
-                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-                <QueryErrorBoundary fallback={() => null}>
-                  <Suspense fallback={null}>
-                    <CategoryChip />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </ScrollView>
+              <TodoComposerChips
+                isSeriesOccurrence={props.mode === 'edit' && TodoPolicy.isRecurringTodo(props.todo)}
+                canChangeRepeat={canChangeRepeat}
+              />
             </VStack>
           ))}
       </FormProvider>
     </KeyboardBottomSheet>
-  );
-}
-
-function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
-  const { t } = useTranslation('common');
-  const overlay = useOverlay();
-  const todayDateKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
-  const { control, getValues, setFocus, setValue } = useFormContext<AddTodoFormValues>();
-  const [startDate, endDate] = useWatch({ control, name: ['startDate', 'endDate'] });
-  const startDateKey = toDateKey(startDate, getDeviceTimezone());
-  const endDateKey = endDate == null ? null : toDateKey(endDate, getDeviceTimezone());
-  const singleDayLabel =
-    startDateKey === todayDateKey
-      ? t('dateSections.today')
-      : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext);
-
-  const applyStartDate = (nextStartDate: Date) => {
-    const repeat = getValues('repeat');
-    // 반복 회차의 날짜 이동은 이 회차에만 적용되므로 규칙은 그대로 둔다
-    if (repeat != null && !isSeriesOccurrence) {
-      setValue(
-        'repeat',
-        TodoRepeatPolicy.withRepeatStartDate(
-          repeat,
-          toDateKey(startDate, getDeviceTimezone()),
-          toDateKey(nextStartDate, getDeviceTimezone()),
-        ),
-      );
-    }
-    // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
-    const nextEndDate = TodoPolicy.getShiftedEndDate(
-      {
-        startDate: toDateKey(startDate, getDeviceTimezone()),
-        endDate: endDate == null ? null : toDateKey(endDate, getDeviceTimezone()),
-      },
-      toDateKey(nextStartDate, getDeviceTimezone()),
-    );
-    setValue('startDate', nextStartDate);
-    setValue('endDate', toNullableDate(nextEndDate));
-  };
-
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet
-        hasFixedHeader
-        isOpen={isOpen}
-        onOpenChange={() => close()}
-        onCloseStart={() => requestAnimationFrame(() => setFocus('title'))}
-        onExit={unmount}
-      >
-        <TodoDatePickerContent
-          value={startDate}
-          onChange={(nextStartDate) => {
-            applyStartDate(nextStartDate);
-            close();
-          }}
-          onCancel={close}
-        />
-      </ModalBottomSheet>
-    ));
-  };
-
-  return (
-    <ActionChip
-      icon={<ActionChip.Icon as={CalendarIcon} colorClassName="text-main" />}
-      label={
-        endDateKey == null || endDateKey === startDateKey
-          ? singleDayLabel
-          : formatDateKeyCompactRange(startDateKey, endDateKey, dateFormatContext)
-      }
-      isActive
-      onPress={handlePress}
-    />
-  );
-}
-
-function TimeChip() {
-  const { t } = useTranslation('todo');
-  const overlay = useOverlay();
-  const { control, setFocus, setValue } = useFormContext<AddTodoFormValues>();
-  const [startDate, scheduledTime, isAllDay] = useWatch({
-    control,
-    name: ['startDate', 'scheduledTime', 'isAllDay'],
-  });
-  const displayedTime = isAllDay ? null : scheduledTime;
-
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet
-        hasFixedHeader
-        isOpen={isOpen}
-        onOpenChange={() => close()}
-        onCloseStart={() => requestAnimationFrame(() => setFocus('title'))}
-        onExit={unmount}
-      >
-        <QueryErrorBoundary>
-          <Suspense fallback={<TodoTimePickerContent.Loading />}>
-            <TodoTimePickerContent
-              date={startDate}
-              value={{ scheduledTime, isAllDay }}
-              onChange={(nextTime) => {
-                setValue('scheduledTime', nextTime.scheduledTime);
-                setValue('isAllDay', nextTime.isAllDay);
-                close();
-              }}
-              onCancel={close}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ModalBottomSheet>
-    ));
-  };
-
-  return (
-    <ActionChip
-      icon={
-        <ActionChip.Icon
-          as={ClockIcon}
-          colorClassName={displayedTime == null ? 'text-gray-5' : 'text-main'}
-        />
-      }
-      label={displayedTime ?? t('chip.allDay')}
-      isActive={displayedTime != null}
-      onPress={handlePress}
-    />
-  );
-}
-
-function RepeatChip({ onPress }: Pick<ComponentProps<typeof ActionChip>, 'onPress'>) {
-  const { t } = useTranslation('todo');
-  const dateFormatContext = useDateFormatContext();
-  const { control } = useFormContext<AddTodoFormValues>();
-  const repeat = useWatch({ control, name: 'repeat' });
-
-  return (
-    <ActionChip
-      icon={
-        <ActionChip.Icon
-          as={RepeatIcon}
-          colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
-        />
-      }
-      label={repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, dateFormatContext)}
-      isActive={repeat != null}
-      onPress={onPress}
-    />
-  );
-}
-
-function VisibilityChip() {
-  const { t } = useTranslation('todo');
-  const { control } = useFormContext<AddTodoFormValues>();
-
-  return (
-    <FormField control={control} name="visibility">
-      {({ value, onChange }) => {
-        const isPrivate = value === 'PRIVATE';
-
-        return (
-          <ActionChip
-            icon={
-              isPrivate ? (
-                <ActionChip.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
-              ) : (
-                <ActionChip.Icon as={EyeIcon} colorClassName="text-gray-5" />
-              )
-            }
-            label={isPrivate ? t('chip.private') : t('chip.public')}
-            onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
-          />
-        );
-      }}
-    </FormField>
-  );
-}
-
-function CategoryChip() {
-  const { t } = useTranslation('todo');
-  const overlay = useOverlay();
-  const { control, setFocus } = useFormContext<AddTodoFormValues>();
-  const {
-    data: { categories },
-  } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-
-  return (
-    <FormField control={control} name="categoryId">
-      {({ value: categoryId, onChange }) => {
-        const category = categories.find(({ id }) => id === categoryId);
-
-        return (
-          <ActionChip
-            icon={
-              <Box
-                className={cn('size-2 rounded-full', category == null && 'bg-gray-5')}
-                style={category == null ? undefined : { backgroundColor: category.color }}
-              />
-            }
-            label={category?.name ?? t('chip.category')}
-            onPress={() => {
-              overlay.open(({ isOpen, close, unmount }) => (
-                <ModalBottomSheet
-                  isOpen={isOpen}
-                  onOpenChange={() => close()}
-                  onCloseStart={() => requestAnimationFrame(() => setFocus('title'))}
-                  onExit={unmount}
-                >
-                  <QueryErrorBoundary>
-                    <Suspense fallback={<CategorySelectInput.Loading />}>
-                      <CategorySelectInput
-                        value={categoryId}
-                        onChange={(nextCategoryId) => {
-                          onChange(nextCategoryId);
-                          close();
-                        }}
-                        submitLabel={t('add.submit')}
-                      />
-                    </Suspense>
-                  </QueryErrorBoundary>
-                </ModalBottomSheet>
-              ));
-            }}
-          />
-        );
-      }}
-    </FormField>
   );
 }
 

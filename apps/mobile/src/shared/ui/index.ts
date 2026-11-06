@@ -130,7 +130,7 @@ export {
   type ListRowVerticalPadding,
 } from './list-row';
 export { OfflineBanner } from './offline-banner';
-export { OverlayProvider, useOverlay, useOverlayState } from './overlay';
+export { type Overlay, OverlayProvider, useOverlay, useOverlayState } from './overlay';
 export { PremiumDialog, type PremiumDialogProps } from './premium-dialog';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
 export {

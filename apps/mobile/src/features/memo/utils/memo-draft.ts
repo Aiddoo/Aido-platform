@@ -1,7 +1,6 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
-import { z } from 'zod';
 
-const memoDraftSchema = z.object({ content: z.string() });
+import { memoDraftSchema } from '../schemas/memo-draft.schema';
 
 export function createMemoDraftKey({ userId, memoId }: { userId: string; memoId?: number }) {
   return createDraftKey({

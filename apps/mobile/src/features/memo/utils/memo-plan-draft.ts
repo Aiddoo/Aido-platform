@@ -2,17 +2,12 @@ import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.mode
 import { createPlanReviewDraftKey } from '@src/features/voice/domains/plan-review-form.schema';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import type { DraftService } from '@src/shared/draft/draft.service';
-import { z } from 'zod';
+
+import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';
 
 export function createMemoPlanDraftKey({ userId, memoId }: { userId: string; memoId: number }) {
   return createPlanReviewDraftKey({ userId, scope: 'memo-plan', target: [memoId] });
 }
-
-const memoPlanRequestDraftSchema = z.object({
-  fingerprint: z.string(),
-  idempotencyKey: z.string(),
-  input: z.object({ content: z.string(), categoryId: z.int() }),
-});
 
 /** 응답을 받지 못한 요청의 멱등 키. 앱을 다시 켜고 다시 눌러도 같은 키를 보내야 두 번 차감되지 않는다 */
 export function createMemoPlanRequestDraftKey({

@@ -4,7 +4,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { MemoPage } from '../domains/memo.model';
+import type { MemoPage } from '../schemas/memo.schema';
 
 const FIRST_PAGE_CURSOR: number | null = null;
 

@@ -1,11 +1,9 @@
-import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useQuotaStatus } from '@src/features/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
-import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
@@ -69,7 +67,6 @@ import { useResolveClassNames } from 'uniwind';
 
 import { MEMO_MUTATION_KEYS } from '../constants/memo-query-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
-import { memoFormSchema, type MemoFormValues } from '../domains/memo-form.schema';
 import { useMemoScreenParams, useSelectedMemo } from '../hooks/use-memo-params';
 import {
   useDeleteMemoMutationOptions,
@@ -78,9 +75,11 @@ import {
   useUpdateMemoMutationOptions,
 } from '../queries/memo.mutations';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
+import { memoFormSchema, type MemoFormValues } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { memoAiReviewHref } from '../utils/memo-href';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
+import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
 const MEMO_MORE_MENU_WIDTH = 220;
 const MEMO_NOT_FOUND_STATUS = 404;
@@ -140,7 +139,10 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   const handleSave = form.handleSubmit(async ({ content }) => {
     const trimmedContent = content.trim();
     try {
-      await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
+      // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
+      if (trimmedContent !== memo.content) {
+        await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
+      }
       form.reset({ content: trimmedContent });
       discardDraft();
       setIsEditing(false);
@@ -151,8 +153,11 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   });
 
   const saveAndLeave = form.handleSubmit(async ({ content }) => {
+    const trimmedContent = content.trim();
     try {
-      await updateMemo.mutateAsync({ memoId, values: { content: content.trim() } });
+      if (trimmedContent !== memo.content) {
+        await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
+      }
       discardDraft();
     } catch (error) {
       reportUnexpectedError(error);
@@ -722,12 +727,10 @@ function useMemoConvertToTodo(onConverted: () => void) {
     }
 
     overlay.open(({ isOpen, close, unmount }) => (
-      <AddTodoBottomSheet
-        mode="convert-memo"
-        memoId={memoId}
+      <MemoConvertBottomSheet
+        memo={memo}
         selectedDate={today}
         categoryId={defaultCategoryId}
-        initialValues={{ title: memo.content.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH) }}
         isOpen={isOpen}
         onClose={close}
         onOpenChange={(open) => {
@@ -736,7 +739,7 @@ function useMemoConvertToTodo(onConverted: () => void) {
             unmount();
           }
         }}
-        onSuccess={onConverted}
+        onConverted={onConverted}
       />
     ));
   };

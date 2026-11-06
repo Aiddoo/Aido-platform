@@ -1,17 +1,12 @@
 import {
   aiReportListResponseSchema,
   aiReportResponseSchema,
-  parseMemoResponseSchema,
   reportStatusResponseSchema,
   suggestionActionResponseSchema,
   suggestionListResponseSchema,
 } from '@aido/api';
-import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
-import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
-import { toVoicePlanFromParsedMemo } from '@src/features/voice/apis/voice-plan.mapper';
-import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
@@ -23,7 +18,6 @@ import type {
   AiSuggestionActionInput,
   AiSuggestionActionResult,
   GetAiReportsParams,
-  ParsedMemoPlan,
   ReportStatus,
 } from '../domains/ai.model';
 import {
@@ -32,9 +26,6 @@ import {
   toAiSuggestionActionResult,
   toReportStatus,
 } from './ai.mapper';
-
-// 서버 업체 체인 제한(AI_DEADLINE_PARSE_MEMO_MS 25초)보다 길게 기다려야 앱이 먼저 끊어 차감된 결과를 잃지 않는다
-const PARSE_MEMO_TIMEOUT_MS = 30_000;
 
 export class AiService {
   readonly #httpClient: HttpClient;
@@ -125,45 +116,6 @@ export class AiService {
     }
 
     return ok(parsed.data.suggestions.map(toAiSuggestion));
-  };
-
-  parseMemo = async (
-    content: string,
-    categoryId: number,
-    idempotencyKey: string,
-  ): Promise<Result<ParsedMemoPlan, ApiError>> => {
-    const result = await this.#httpClient.post(
-      'v1/ai/parse-memo',
-      { content, categoryId },
-      { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: PARSE_MEMO_TIMEOUT_MS },
-    );
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = parseMemoResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
-        method: 'parseMemo',
-        zodError: parsed.error.message,
-      });
-      throw new ParseError(`[AiService] Invalid parseMemo response: ${parsed.error.message}`);
-    }
-
-    try {
-      return ok({
-        plan: toVoicePlanFromParsedMemo(idempotencyKey, parsed.data),
-        featureQuota:
-          parsed.data.featureQuota == null ? null : toFeatureQuota(parsed.data.featureQuota),
-      });
-    } catch (error) {
-      this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
-        method: 'parseMemo',
-        zodError: error instanceof Error ? error.message : undefined,
-      });
-      throw new ParseError('[AiService] Invalid parseMemo plan');
-    }
   };
 
   handleSuggestionAction = async (

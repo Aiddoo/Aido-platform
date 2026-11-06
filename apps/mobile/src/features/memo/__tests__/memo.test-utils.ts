@@ -18,7 +18,7 @@ export function createMemoTestDi(httpClient: HttpClient): Partial<DIContainer> {
   const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
   return {
-    memoService: new MemoService(httpClient),
+    memoService: new MemoService(httpClient, logger),
     userService: new UserService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
     authService: new AuthService(httpClient, httpClient, createMockTokenStore()),

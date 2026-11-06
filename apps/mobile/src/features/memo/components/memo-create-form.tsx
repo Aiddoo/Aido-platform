@@ -16,8 +16,8 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useResolveClassNames } from 'uniwind';
 
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
-import { EMPTY_MEMO_FORM_VALUES, memoFormSchema } from '../domains/memo-form.schema';
 import { useCreateMemoMutationOptions } from '../queries/memo.mutations';
+import { EMPTY_MEMO_FORM_VALUES, memoFormSchema } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 
 export function MemoCreateForm() {

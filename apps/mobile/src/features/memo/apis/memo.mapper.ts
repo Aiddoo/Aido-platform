@@ -1,13 +1,19 @@
-import type {
-  CreateMemoInput,
-  Memo as MemoDto,
-  MemoListResponse,
-  MemoResourceLimitResponse,
+import {
+  type ConvertMemoToTodosInput,
+  convertMemoToTodosSchema,
+  type CreateMemoInput,
+  type Memo as MemoDto,
+  type MemoListResponse,
+  type MemoResourceLimitResponse,
 } from '@aido/api';
+import { toRepeatDto } from '@src/features/todo/apis/todo-series.mapper';
+import type { AddTodoFormValues } from '@src/features/todo/domains/add-todo-form.schema';
+import { toDateKey } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { pick } from 'es-toolkit';
 
-import type { MemoFormValues } from '../domains/memo-form.schema';
-import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
+import type { MemoFormValues } from '../schemas/memo-form.schema';
+import type { Memo, MemoPage, MemoResourceLimit } from '../schemas/memo.schema';
 
 export function toMemo(dto: MemoDto): Memo {
   return {
@@ -31,4 +37,23 @@ export function toMemoResourceLimit(dto: MemoResourceLimitResponse): MemoResourc
 
 export function toMemoRequest({ content }: MemoFormValues): CreateMemoInput {
   return { content };
+}
+
+export function toConvertMemoToTodosRequest(values: AddTodoFormValues): ConvertMemoToTodosInput {
+  const timeZone = getDeviceTimezone();
+
+  return convertMemoToTodosSchema.parse({
+    todos: [
+      {
+        title: values.title,
+        categoryId: values.categoryId,
+        startDate: toDateKey(values.startDate, timeZone),
+        endDate: values.endDate == null ? undefined : toDateKey(values.endDate, timeZone),
+        scheduledTime: values.isAllDay ? undefined : (values.scheduledTime ?? undefined),
+        isAllDay: values.isAllDay,
+        visibility: values.visibility,
+        ...(values.repeat != null && { repeat: toRepeatDto(values.repeat) }),
+      },
+    ],
+  });
 }

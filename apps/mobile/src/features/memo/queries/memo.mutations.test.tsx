@@ -1,20 +1,27 @@
 import type { Memo as MemoDto } from '@aido/api';
 import {
   createHapticsStub,
+  createMemorySyncStorage,
   createMockAnalytics,
   createMockHttpClient,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import { ok } from '@src/shared/errors/result';
-import { type QueryClient } from '@tanstack/react-query';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 
+import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { toMemo } from '../apis/memo.mapper';
 import { MemoService } from '../apis/memo.service';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { Memo } from '../domains/memo.model';
-import { useUpdateMemoMutationOptions } from './memo.mutations';
+import type { Memo } from '../schemas/memo.schema';
+import { useParseMemoMutationOptions, useUpdateMemoMutationOptions } from './memo.mutations';
 
 const originalMemo: MemoDto = {
   id: 5,
@@ -31,6 +38,10 @@ const updatedMemo: MemoDto = {
   updatedAt: '2026-10-02T00:01:00.000Z',
 };
 
+function createLoggerStub() {
+  return { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+}
+
 async function updateMemo(client: QueryClient) {
   const httpClient = createMockHttpClient();
   httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: updatedMemo }));
@@ -42,7 +53,7 @@ async function updateMemo(client: QueryClient) {
   const { unmount } = await renderUi(<CaptureOptions />, {
     queryClient: client,
     di: {
-      memoService: new MemoService(httpClient),
+      memoService: new MemoService(httpClient, createLoggerStub()),
       haptics: createHapticsStub(),
       analytics: createMockAnalytics(),
     },
@@ -106,5 +117,46 @@ describe('메모 수정 후 상세 cache', () => {
     expect(client.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId: 5 }))).toEqual(
       toMemo(updatedMemo),
     );
+  });
+});
+
+describe('오프라인에서 AI 정리', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it('멈춰 기다리지 않고 바로 실패해 연결될 때 나도 모르게 차감되지 않는다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const httpClient = createMockHttpClient();
+    let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
+    function useMutationCapture() {
+      return useMutation(useParseMemoMutationOptions({ memoId: 5 })).mutateAsync;
+    }
+    function Capture() {
+      mutateAsync = useMutationCapture();
+      return null;
+    }
+    await renderUi(
+      <LocalDateProvider>
+        <OverlayProvider>
+          <Capture />
+        </OverlayProvider>
+      </LocalDateProvider>,
+      {
+        di: {
+          ...createMemoTestDi(httpClient),
+          haptics: createHapticsStub(),
+          draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+        },
+      },
+    );
+
+    // When
+    const result = mutateAsync?.({ content: '메모', categoryId: 1, sourceUpdatedAt: 0 });
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
+    expect(httpClient.post).not.toHaveBeenCalled();
   });
 });

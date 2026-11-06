@@ -1,9 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  memoScreenParamsSchema,
-  useMemoScreenParams,
-} from '@src/features/memo/hooks/use-memo-params';
+import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-params';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/memo.queries';
+import { memoScreenParamsSchema } from '@src/features/memo/schemas/memo-params.schema';
 import { createMemoPlanDraftKey } from '@src/features/memo/utils/memo-plan-draft';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';

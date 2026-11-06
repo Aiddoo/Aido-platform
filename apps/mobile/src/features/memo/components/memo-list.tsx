@@ -29,9 +29,10 @@ import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
-import { type Memo, MemoPolicy } from '../domains/memo.model';
+import { MemoPolicy } from '../domains/memo.model';
 import { useSelectedMemo } from '../hooks/use-memo-params';
 import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
+import type { Memo } from '../schemas/memo.schema';
 
 const LOADING_ITEMS_PER_COLUMN = 2;
 const MAX_ENTERING_STAGGER_STEP = 8;

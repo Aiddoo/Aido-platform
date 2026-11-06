@@ -1,5 +1,4 @@
 import '@src/shared/i18n/init';
-import { AiService } from '@src/features/ai/apis/ai.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { createMemorySyncStorage, createMockHttpClient } from '@src/shared/__tests__';
@@ -31,7 +30,6 @@ const SAVED_MEMO_DTO = {
   createdAt: '2026-11-06T00:00:00.000Z',
   updatedAt: '2026-11-06T00:01:00.000Z',
 };
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 async function renderEditor(toolbar: 'stack' | 'pane') {
   jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
@@ -67,7 +65,6 @@ async function renderEditor(toolbar: 'stack' | 'pane') {
       di: {
         ...createMemoTestDi(httpClient),
         todoCategoryService: new TodoCategoryService(httpClient),
-        aiService: new AiService(httpClient, logger),
         draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
       },
     },
@@ -105,6 +102,21 @@ describe('MemoEditor', () => {
     );
     await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
     expect(screen.getByDisplayValue('고친 메모')).toBeTruthy();
+  });
+
+  it('공백만 넣고 저장하면 요청 없이 편집을 끝낸다', async () => {
+    // Given
+    const { httpClient } = await renderEditor('pane');
+
+    // When
+    await editContent('처음 메모  ');
+    await act(async () => {
+      fireEvent.press(await screen.findByLabelText('저장'));
+    });
+
+    // Then
+    await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
+    expect(httpClient.patch).not.toHaveBeenCalled();
   });
 
   it('고친 글자가 있으면 뒤로 갈 때 저장한 뒤 떠난다', async () => {

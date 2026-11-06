@@ -1,18 +1,11 @@
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { routeIdSchema } from '@src/shared/utils/route-params';
 import { noop } from 'es-toolkit';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
-import { z } from 'zod';
 
+import { memoScreenParamsSchema, selectedMemoParamsSchema } from '../schemas/memo-params.schema';
 import { memoDetailHref } from '../utils/memo-href';
-
-export const memoScreenParamsSchema = z.object({ memoId: routeIdSchema });
-
-const selectedMemoParamsSchema = z.object({
-  memoId: routeIdSchema.optional().catch(undefined),
-});
 
 export function useMemoScreenParams() {
   return memoScreenParamsSchema.parse(useLocalSearchParams());
