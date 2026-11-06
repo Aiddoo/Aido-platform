@@ -1,7 +1,6 @@
 import { logger } from '@src/shared/infra/logger/global-logger';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -38,7 +37,7 @@ const ExtraSchema = z.object({
 // Types
 // =============================================================================
 
-type PlatformType = typeof Platform.OS;
+type PlatformType = typeof process.env.EXPO_OS;
 
 type ApiUrlContext = {
   platform: PlatformType;
@@ -98,7 +97,7 @@ const toDeviceUrl = (url: string, devMachineIp?: string): string => {
 
 const resolveApiUrl = (): string => {
   const context: ApiUrlContext = {
-    platform: Platform.OS,
+    platform: process.env.EXPO_OS,
     env: extra.env,
     apiUrl: extra.apiUrl,
     isPhysicalDevice: Device.isDevice,
@@ -146,16 +145,16 @@ export const ENV = {
   IS_DEV: extra.isDevelopment,
   IS_PRODUCTION: extra.isProduction,
 
-  PLATFORM: Platform.OS,
-  IS_ANDROID: Platform.OS === 'android',
-  IS_IOS: Platform.OS === 'ios',
+  PLATFORM: process.env.EXPO_OS,
+  IS_ANDROID: process.env.EXPO_OS === 'android',
+  IS_IOS: process.env.EXPO_OS === 'ios',
 
   API_URL: resolveApiUrl(),
   SCHEME: resolveScheme(),
   REVENUECAT_API_KEY: resolveRevenueCatApiKey({
     isDebugBuild: __DEV__,
     isDevelopmentEnvironment: extra.isDevelopment,
-    platform: Platform.OS,
+    platform: process.env.EXPO_OS,
     appleApiKey: extra.revenueCatAppleApiKey,
     googleApiKey: extra.revenueCatGoogleApiKey,
     testApiKey: extra.revenueCatTestApiKey,

@@ -1,18 +1,14 @@
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';
 import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform } from 'react-native';
 
 export const expoApplicationMetadataGateway: NativeApplicationMetadataGateway = {
   getInstallation() {
-    if (
-      Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
-      (Platform.OS !== 'ios' && Platform.OS !== 'android')
-    ) {
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
       return undefined;
     }
     return {
-      platform: Platform.OS,
+      platform: process.env.EXPO_OS,
       currentVersion: Application.nativeApplicationVersion ?? undefined,
       currentBuild: Application.nativeBuildVersion ?? undefined,
     };

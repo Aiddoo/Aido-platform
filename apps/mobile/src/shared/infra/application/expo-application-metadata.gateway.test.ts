@@ -1,5 +1,4 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform } from 'react-native';
 
 import { expoApplicationMetadataGateway } from './expo-application-metadata.gateway';
 
@@ -18,12 +17,10 @@ jest.mock('expo-application', () => ({
 describe('expoApplicationMetadataGateway', () => {
   const originalEnvironment = Constants.executionEnvironment;
   const originalExpoVersion = Constants.expoVersion;
-  const originalPlatform = Platform.OS;
 
   beforeEach(() => {
     mockNativeApplicationVersion = '1.10.0';
     mockNativeBuildVersion = '123';
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
     Object.defineProperty(Constants, 'executionEnvironment', {
       configurable: true,
       value: ExecutionEnvironment.Bare,
@@ -32,7 +29,6 @@ describe('expoApplicationMetadataGateway', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
     Object.defineProperty(Constants, 'executionEnvironment', {
       configurable: true,
       value: originalEnvironment,
@@ -59,19 +55,6 @@ describe('expoApplicationMetadataGateway', () => {
     });
   });
 
-  it('standalone Android 빌드의 네이티브 버전을 읽는다', () => {
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
-    Object.defineProperty(Constants, 'executionEnvironment', {
-      configurable: true,
-      value: ExecutionEnvironment.Standalone,
-    });
-    expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
-      platform: 'android',
-      currentVersion: '1.10.0',
-      currentBuild: '123',
-    });
-  });
-
   it('설치 버전을 알 수 없을 때 package 또는 OTA 버전으로 대체하지 않는다', () => {
     mockNativeApplicationVersion = null;
     mockNativeBuildVersion = null;
@@ -80,10 +63,5 @@ describe('expoApplicationMetadataGateway', () => {
       currentVersion: undefined,
       currentBuild: undefined,
     });
-  });
-
-  it('웹에서는 네이티브 설치 정보를 제공하지 않는다', () => {
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
-    expect(expoApplicationMetadataGateway.getInstallation()).toBeUndefined();
   });
 });

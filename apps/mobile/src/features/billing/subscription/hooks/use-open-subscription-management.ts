@@ -4,7 +4,6 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import * as Application from 'expo-application';
 import * as Linking from 'expo-linking';
-import { Platform } from 'react-native';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/view-models/subscription-failure.view-model';
@@ -19,10 +18,10 @@ export function useOpenSubscriptionManagement() {
 
   return useSingleTap(async () => {
     const productId =
-      Platform.OS === 'android'
+      process.env.EXPO_OS === 'android'
         ? await subscriptionService.getActiveStoreProductId('PLAY_STORE')
         : null;
-    const url = SubscriptionPolicy.getManagementUrl(Platform.OS, {
+    const url = SubscriptionPolicy.getManagementUrl(process.env.EXPO_OS, {
       productId,
       applicationId: Application.applicationId,
     });
@@ -38,7 +37,7 @@ export function useOpenSubscriptionManagement() {
         level: 'warning',
         message: 'subscription management open failed',
         data: {
-          platform: Platform.OS,
+          platform: process.env.EXPO_OS,
           hasProductId: productId != null,
           error: error instanceof Error ? error.message : String(error),
         },

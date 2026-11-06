@@ -1,7 +1,6 @@
 import { getToastTopInset } from '@src/shared/ui/toast';
 import { HeroUINativeProvider } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function HeroUIProvider({
@@ -24,7 +23,7 @@ export function HeroUIProvider({
             : {
                 ...toastConfig,
                 insets: {
-                  top: getToastTopInset(safeAreaTop, Platform.OS),
+                  top: getToastTopInset(safeAreaTop, process.env.EXPO_OS),
                   ...toastConfig?.insets,
                 },
                 defaultProps: {

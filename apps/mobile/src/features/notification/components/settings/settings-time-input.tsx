@@ -20,7 +20,6 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
-import { Platform } from 'react-native';
 
 type TimePickerProps = Omit<IOSNativeProps, 'mode' | 'display' | 'minuteInterval'>;
 
@@ -186,7 +185,7 @@ export function SettingsTimeInput({
       return;
     }
 
-    if (Platform.OS === 'android') {
+    if (process.env.EXPO_OS === 'android') {
       setAndroidPickerOpen(true);
       return;
     }

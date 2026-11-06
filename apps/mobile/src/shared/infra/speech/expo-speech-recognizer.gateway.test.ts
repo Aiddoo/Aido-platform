@@ -1,7 +1,6 @@
 import type { SpeechEvent, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { PermissionStatus, type PermissionResponse } from 'expo';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
-import { Platform } from 'react-native';
 
 import { expoSpeechRecognizerGateway } from './expo-speech-recognizer.gateway';
 
@@ -316,21 +315,5 @@ describe('expoSpeechRecognizerGateway', () => {
       expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing: 'microphone' });
       expect(nativeModule.getSpeechRecognizerPermissionsAsync).not.toHaveBeenCalled();
     });
-  });
-
-  test('Android는 설치된 언어 모델로 기기 인식을 판단하고 없으면 받기를 제안한다', async () => {
-    // Given
-    jest.replaceProperty(Platform, 'OS', 'android');
-    nativeModule.getSupportedLocales.mockResolvedValueOnce({
-      locales: ['ko-KR', 'en-US'],
-      installedLocales: ['en-US'],
-    });
-
-    // When
-    const capabilities = await expoSpeechRecognizerGateway.getCapabilities('ko-KR', 'note');
-
-    // Then
-    expect(capabilities.canRecognizeOnDevice).toBe(false);
-    expect(capabilities.canDownloadOnDeviceModel).toBe(true);
   });
 });

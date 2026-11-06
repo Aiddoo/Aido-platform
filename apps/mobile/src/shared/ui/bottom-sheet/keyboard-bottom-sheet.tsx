@@ -24,7 +24,6 @@ import {
   AppState,
   type AppStateStatus,
   Keyboard,
-  Platform,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -186,8 +185,8 @@ export function KeyboardBottomSheet({
       return;
     }
 
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showEvent = process.env.EXPO_OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = process.env.EXPO_OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const showSubscription = Keyboard.addListener(showEvent, () => {
       isKeyboardShown.set(true);
     });

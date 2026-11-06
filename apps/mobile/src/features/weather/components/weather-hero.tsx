@@ -17,7 +17,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { useLocales } from 'expo-localization';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
@@ -65,23 +64,23 @@ const DISPLAY_FONT_SIZE = 96;
  * 숫자 글리프가 줄 상자 안에서 놓이는 높이가 플랫폼마다 달라(iOS는 위로 붙고 Android는 아래로 내려온다),
  * 지명·날씨 줄과 위아래 간격이 같아 보이도록 em 단위로 옮긴다. 76·96 모두 같은 비율로 맞는다.
  */
-const TEMPERATURE_OFFSET_EM = Platform.select({
-  ios: { top: 0.06, bottomTrim: 0.14 },
-  default: { top: -0.05, bottomTrim: 0.03 },
-});
+const TEMPERATURE_OFFSET_EM =
+  process.env.EXPO_OS === 'ios'
+    ? { top: 0.06, bottomTrim: 0.14 }
+    : { top: -0.05, bottomTrim: 0.03 };
 /**
  * 영하 기호는 숫자의 0.52배 크기로 숫자 세로 가운데에, °는 0.42배 크기로 숫자 위쪽에 붙인다.
  * 글리프가 줄 상자 안에 놓이는 높이가 플랫폼마다 달라 위치를 em 단위로 맞춘다.
  */
 const SIGN = {
   scale: 0.52,
-  top: Platform.select({ ios: 0.27, default: 0.33 }),
+  top: process.env.EXPO_OS === 'ios' ? 0.27 : 0.33,
 } as const;
 /** 숫자가 가운데에 오도록 양쪽에 같은 폭의 기호 자리를 둔다. */
 const SYMBOL_SLOT_EM = 0.32;
 const DEGREE = {
   scale: 0.42,
-  top: Platform.select({ ios: 0.1, default: 0.18 }),
+  top: process.env.EXPO_OS === 'ios' ? 0.1 : 0.18,
 } as const;
 const HERO_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1).factory())

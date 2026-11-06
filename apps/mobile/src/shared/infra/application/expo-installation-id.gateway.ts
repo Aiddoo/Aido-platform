@@ -2,7 +2,6 @@ import type { InstallationIdGateway } from '@src/core/ports/installation-id';
 import { noop } from 'es-toolkit';
 import * as Application from 'expo-application';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
 
 const IOS_INSTALLATION_ID_KEY = 'aido_installation_id';
 
@@ -37,11 +36,11 @@ async function getIosInstallationId() {
 
 export const expoInstallationIdGateway: InstallationIdGateway = {
   async get() {
-    if (Platform.OS === 'ios') {
+    if (process.env.EXPO_OS === 'ios') {
       return getIosInstallationId();
     }
     // Android ID는 같은 서명 키·사용자·기기에서 재설치해도 같다
-    if (Platform.OS === 'android') {
+    if (process.env.EXPO_OS === 'android') {
       return Application.getAndroidId();
     }
 

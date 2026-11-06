@@ -18,9 +18,11 @@ interface TodoCommentKeyboardScrollViewProps extends Omit<
 }
 
 const isLegacyAndroidKeyboard =
-  Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version < 30;
+  process.env.EXPO_OS === 'android' &&
+  typeof Platform.Version === 'number' &&
+  Platform.Version < 30;
 const keyboardDismissMode =
-  Platform.OS === 'ios' ? 'interactive' : isLegacyAndroidKeyboard ? 'on-drag' : 'none';
+  process.env.EXPO_OS === 'ios' ? 'interactive' : isLegacyAndroidKeyboard ? 'on-drag' : 'none';
 
 export function TodoCommentKeyboardScrollView({
   keyboardLiftBehavior = 'whenAtEnd',

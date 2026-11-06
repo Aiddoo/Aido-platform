@@ -3,7 +3,6 @@ import {
   type HostInstance,
   Keyboard,
   type KeyboardEvent,
-  Platform,
   type ScrollView,
   TextInput,
 } from 'react-native';
@@ -37,10 +36,10 @@ const MAX_FOCUS_WAIT_FRAMES = 30;
 
 // iOS는 키보드가 움직이기 시작할 때 맞추고 다 올라온 뒤 확인한다. Android는 다 올라온 뒤에만 알려 주며 gorhom도 그때 시트를 옮긴다.
 const KEYBOARD_SHOW_EVENTS =
-  Platform.OS === 'ios'
+  process.env.EXPO_OS === 'ios'
     ? (['keyboardWillShow', 'keyboardDidShow'] as const)
     : (['keyboardDidShow'] as const);
-const KEYBOARD_HIDE_EVENT = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+const KEYBOARD_HIDE_EVENT = process.env.EXPO_OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
 const measureInWindow = (node: Pick<HostInstance, 'measureInWindow'>) =>
   new Promise<VerticalRect>((resolve) => {

@@ -20,12 +20,11 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton, Switch } from 'heroui-native';
 import { useState } from 'react';
-import { Platform } from 'react-native';
 
 import { DEFAULT_TODO_TIME } from '../constants/todo-default-time';
 import { PickerHeader } from './picker-header';
 
-const isIOS = Platform.OS === 'ios';
+const isIOS = process.env.EXPO_OS === 'ios';
 
 export interface TodoTimeValue {
   scheduledTime: string | null;

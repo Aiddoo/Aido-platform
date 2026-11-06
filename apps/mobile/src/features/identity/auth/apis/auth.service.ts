@@ -32,7 +32,6 @@ import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
-import { Platform } from 'react-native';
 
 import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../domains/auth.error';
 import type {
@@ -301,7 +300,7 @@ export class AuthService {
     const result = await this.#publicHttpClient.post('v1/auth/login', {
       email,
       password,
-      deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+      deviceType: process.env.EXPO_OS === 'ios' ? 'IOS' : 'ANDROID',
     });
     if (!result.ok) {
       return result;

@@ -57,7 +57,7 @@ async function toPermissionSnapshot(
 
 function supportsContinuousRecognition() {
   return (
-    Platform.OS !== 'android' ||
+    process.env.EXPO_OS !== 'android' ||
     (typeof Platform.Version === 'number' && Platform.Version >= ANDROID_CONTINUOUS_API_LEVEL)
   );
 }
@@ -84,12 +84,12 @@ async function canRecognizeOnDevice(locale: SpeechLocale) {
   if (!(await getInstalledOnDeviceLocales()).includes(locale)) {
     return false;
   }
-  return Platform.OS !== 'ios' || getLocales()[0]?.languageTag === locale;
+  return process.env.EXPO_OS !== 'ios' || getLocales()[0]?.languageTag === locale;
 }
 
 /** iOS 한국어는 서버 인식이 더 정확해(2026-11 실기기 비교) 짧은 말은 서버로 보낸다. 긴 녹음은 끊기지 않게 기기 인식을 우선한다 */
 async function shouldRecognizeOnDevice(mode: SpeechMode, locale: SpeechLocale) {
-  if (Platform.OS === 'ios' && mode !== 'note') {
+  if (process.env.EXPO_OS === 'ios' && mode !== 'note') {
     return false;
   }
   return canRecognizeOnDevice(locale);
@@ -97,7 +97,7 @@ async function shouldRecognizeOnDevice(mode: SpeechMode, locale: SpeechLocale) {
 
 /** iOS 기기 안 인식은 음성이 Apple 서버로 가지 않아 마이크 권한만 있으면 된다 */
 async function usesMicrophoneOnlyPermission(mode: SpeechMode, locale: SpeechLocale) {
-  return Platform.OS === 'ios' && (await shouldRecognizeOnDevice(mode, locale));
+  return process.env.EXPO_OS === 'ios' && (await shouldRecognizeOnDevice(mode, locale));
 }
 
 function normalizeVolume(value: number) {
@@ -182,7 +182,7 @@ export const expoSpeechRecognizerGateway: SpeechRecognizer = {
       isAvailable: ExpoSpeechRecognitionModule.isRecognitionAvailable(),
       canRecognizeOnDevice: isOnDevice,
       canDownloadOnDeviceModel:
-        Platform.OS === 'android' &&
+        process.env.EXPO_OS === 'android' &&
         ExpoSpeechRecognitionModule.supportsOnDeviceRecognition() &&
         !isOnDevice,
       canSaveRecording: ExpoSpeechRecognitionModule.supportsRecording(),
@@ -191,7 +191,7 @@ export const expoSpeechRecognizerGateway: SpeechRecognizer = {
   },
 
   requestOfflineModel: async (locale: SpeechLocale): Promise<OfflineModelResult> => {
-    if (Platform.OS !== 'android') {
+    if (process.env.EXPO_OS !== 'android') {
       return 'unavailable';
     }
     try {

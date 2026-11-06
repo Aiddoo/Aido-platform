@@ -1,6 +1,5 @@
 import * as Application from 'expo-application';
 import * as Crypto from 'expo-crypto';
-import { Platform } from 'react-native';
 
 import type { DeviceIdRepository } from './device-id.repository';
 
@@ -36,8 +35,8 @@ export class DeviceIdService {
 
   async #getDeviceComponents(): Promise<DeviceIdComponents> {
     const [iosId, androidId, installId] = await Promise.all([
-      Platform.OS === 'ios' ? Application.getIosIdForVendorAsync() : Promise.resolve(null),
-      Platform.OS === 'android'
+      process.env.EXPO_OS === 'ios' ? Application.getIosIdForVendorAsync() : Promise.resolve(null),
+      process.env.EXPO_OS === 'android'
         ? Promise.resolve(Application.getAndroidId())
         : Promise.resolve(null),
       Crypto.randomUUID(),
@@ -51,6 +50,6 @@ export class DeviceIdService {
     const { iosId, androidId, installId } = components;
     const platformId = iosId ?? androidId ?? installId;
 
-    return `${Platform.OS}_${platformId}`;
+    return `${process.env.EXPO_OS}_${platformId}`;
   }
 }

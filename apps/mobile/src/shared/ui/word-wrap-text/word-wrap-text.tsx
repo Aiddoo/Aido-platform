@@ -1,5 +1,4 @@
 import type { ComponentProps } from 'react';
-import { Platform } from 'react-native';
 
 import { Box } from '../box';
 import { Text } from '../text';
@@ -36,7 +35,7 @@ function WordRuns({
 export function WordWrapText({ children, className, ...textProps }: WordWrapTextProps) {
   const runs: readonly TextRun[] = typeof children === 'string' ? [{ text: children }] : children;
 
-  if (Platform.OS !== 'android') {
+  if (process.env.EXPO_OS !== 'android') {
     return (
       <Text {...textProps} className={className} lineBreakStrategyIOS="hangul-word">
         <WordRuns {...textProps} runs={runs} />

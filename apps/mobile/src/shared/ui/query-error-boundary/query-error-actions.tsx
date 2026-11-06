@@ -6,7 +6,6 @@ import { buildSupportMailUrl, createDiagnosticCode } from '@src/shared/utils/sup
 import * as Application from 'expo-application';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { Platform } from 'react-native';
 
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
 import { Result } from '../result/result';
@@ -31,7 +30,7 @@ export const openBugReportInquiry = () => router.push(BUG_REPORT_INQUIRY_HREF);
 /** 내비게이터가 없을 때(루트 경계)의 문의: 진단 코드만 담은 메일을 연다 */
 export const openSupportMail = () => {
   const code = createDiagnosticCode({
-    platform: Platform.OS,
+    platform: process.env.EXPO_OS,
     appVersion: Application.nativeApplicationVersion,
     occurredAt: new Date(),
   });

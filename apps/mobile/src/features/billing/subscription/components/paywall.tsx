@@ -27,7 +27,6 @@ import {
 import { formatCount } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Platform } from 'react-native';
 
 import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
 import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
@@ -163,7 +162,7 @@ const RENEWAL_NOTICE_KEYS = {
 
 Paywall.RenewalNotice = function RenewalNotice() {
   const { t } = useTranslation('subscription');
-  const store = getSubscriptionStore(Platform.OS);
+  const store = getSubscriptionStore(process.env.EXPO_OS);
 
   if (store == null) {
     return null;

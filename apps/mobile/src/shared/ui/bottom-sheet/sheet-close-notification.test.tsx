@@ -2,7 +2,7 @@ import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bott
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
 import { act, render, screen } from '@testing-library/react-native';
-import { BackHandler, Platform } from 'react-native';
+import { BackHandler } from 'react-native';
 
 import { BottomSheet } from './bottom-sheet';
 import { KeyboardBottomSheet } from './keyboard-bottom-sheet';
@@ -100,8 +100,6 @@ describe('KeyboardBottomSheet 시트 면', () => {
 
   it('닫기 요청 핸들러가 렌더마다 바뀌어도 최신 것을 부르고 backdrop을 다시 만들지 않는다', async () => {
     // Given
-    const originalPlatform = Platform.OS;
-    Platform.OS = 'android';
     const subscribe = jest.spyOn(BackHandler, 'addEventListener');
     const previousRequest = jest.fn();
     const nextRequest = jest.fn();
@@ -124,7 +122,6 @@ describe('KeyboardBottomSheet 시트 면', () => {
       throw new Error('뒤로가기 구독이 없어요');
     }
     await act(async () => subscription[1]({ type: 'hardwareBackPress', timeStamp: 0 }));
-    Platform.OS = originalPlatform;
     subscribe.mockRestore();
 
     // Then

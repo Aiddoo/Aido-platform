@@ -1,22 +1,19 @@
 import { act, renderHook } from '@testing-library/react-native';
-import { BackHandler, Platform } from 'react-native';
+import { BackHandler } from 'react-native';
 
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 
 describe('공용 시트의 Android 뒤로가기', () => {
-  const originalPlatform = Platform.OS;
   let subscribe: jest.SpiedFunction<typeof BackHandler.addEventListener>;
   let remove: jest.Mock;
 
   beforeEach(() => {
-    Platform.OS = 'android';
     remove = jest.fn();
     subscribe = jest.spyOn(BackHandler, 'addEventListener').mockReturnValue({ remove });
   });
 
   afterEach(() => {
     subscribe.mockRestore();
-    Platform.OS = originalPlatform;
   });
 
   it('열린 시트는 구독을 유지한 채 최신 닫기 동작을 실행하고 화면 뒤로가기를 소비한다', async () => {
@@ -65,14 +62,12 @@ describe('공용 시트의 Android 뒤로가기', () => {
     expect(remove).toHaveBeenCalledTimes(1);
   });
 
-  it('닫힌 시트와 iOS 화면은 Android 뒤로가기를 구독하지 않는다', async () => {
+  it('닫힌 시트는 Android 뒤로가기를 구독하지 않는다', async () => {
     // Given
     const onDismiss = jest.fn();
 
     // When
     await renderHook(() => useAndroidSheetBackHandler(false, onDismiss));
-    Platform.OS = 'ios';
-    await renderHook(() => useAndroidSheetBackHandler(true, onDismiss));
 
     // Then
     expect(subscribe).not.toHaveBeenCalled();

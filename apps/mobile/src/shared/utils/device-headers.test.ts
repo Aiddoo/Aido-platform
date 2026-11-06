@@ -1,5 +1,4 @@
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 
 import { getDeviceHeaders } from './device-headers';
 
@@ -15,14 +14,11 @@ const setOsVersion = (value: string | null) => {
 
 describe('getDeviceHeaders', () => {
   afterEach(() => {
-    Platform.OS = 'ios';
     setModelName('iPhone 15 Pro');
     setOsVersion(null);
   });
 
   it('iOS 플랫폼과 모델명을 반환한다', () => {
-    Platform.OS = 'ios';
-
     expect(getDeviceHeaders()).toEqual({
       'X-Device-Type': 'IOS',
       'X-Device-Name': 'iPhone 15 Pro',
@@ -30,10 +26,9 @@ describe('getDeviceHeaders', () => {
   });
 
   it('Android 플랫폼을 반환한다', () => {
-    Platform.OS = 'android';
     setModelName('Galaxy S24');
 
-    expect(getDeviceHeaders()).toEqual({
+    expect(getDeviceHeaders('android')).toEqual({
       'X-Device-Type': 'ANDROID',
       'X-Device-Name': 'Galaxy S24',
     });
@@ -62,12 +57,11 @@ describe('getDeviceHeaders', () => {
 
   it('OS 버전을 함께 보낸다', () => {
     // Given
-    Platform.OS = 'android';
     setModelName('Pixel 9');
     setOsVersion('15');
 
     // When
-    const headers = getDeviceHeaders();
+    const headers = getDeviceHeaders('android');
 
     // Then
     expect(headers).toEqual({
