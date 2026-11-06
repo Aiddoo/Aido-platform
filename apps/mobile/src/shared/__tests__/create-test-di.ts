@@ -8,6 +8,8 @@ import { ConsentService } from '@src/features/identity/consent/apis/consent.serv
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import { createPushNotificationGatewayStub } from '@src/features/notification/__tests__/notification.fixtures';
+import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 
@@ -33,6 +35,8 @@ export function createTestDi({
   ...overrides
 }: TestDiOverrides = {}): Partial<DIContainer> {
   const logger = createLoggerStub();
+  const pushNotificationGateway =
+    overrides.pushNotificationGateway ?? createPushNotificationGatewayStub();
 
   return {
     memoService: new MemoService(httpClient, logger),
@@ -46,6 +50,8 @@ export function createTestDi({
     coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
     analytics: createAnalyticsStub(),
     errorReporter: createErrorReporterStub(),
+    pushNotificationGateway,
+    notificationService: new NotificationService(httpClient, pushNotificationGateway, httpClient),
     logger,
     ...overrides,
   };
