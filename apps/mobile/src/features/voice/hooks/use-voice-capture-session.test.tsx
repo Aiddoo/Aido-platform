@@ -7,6 +7,7 @@ import {
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { AppState, type AppStateStatus, Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -40,6 +41,18 @@ function SessionProbe({
       <Pressable
         testID="begin"
         onPress={() => session.begin({ locale: 'ko-KR', contextualStrings: ['기획팀'] })}
+      />
+      <Pressable
+        testID="begin-without-waiting"
+        onPress={() => {
+          session.begin({ locale: 'ko-KR', contextualStrings: [] }).catch(jest.fn());
+        }}
+      />
+      <Pressable
+        testID="change-locale-without-waiting"
+        onPress={() => {
+          session.changeLocale('en-US').catch(jest.fn());
+        }}
       />
       <Pressable testID="finish" onPress={session.finish} />
       <Pressable testID="pause" onPress={session.pause} />
@@ -75,6 +88,20 @@ async function renderSession({
     { di: { speechRecognizer, analytics, logger, errorReporter } },
   );
   return { speechRecognizer, analytics, errorReporter, onCaptured, unmount };
+}
+
+function createDeferred<T>() {
+  let resolve: (value: T) => void = noop;
+  let reject: (reason: unknown) => void = noop;
+  const promise = new Promise<T>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return {
+    promise,
+    resolve: (value: T) => resolve(value),
+    reject: (reason: unknown) => reject(reason),
+  };
 }
 
 /** 앱 상태 구독을 잡아 테스트가 포그라운드·백그라운드 전환을 보낸다 */
@@ -805,6 +832,73 @@ describe('useVoiceCaptureSession', () => {
     expect(speechRecognizer.start).toHaveBeenLastCalledWith(
       expect.objectContaining({ locale: 'en-US', isOnDevice: false }),
     );
+  });
+
+  describe('기능 확인을 기다리는 사이 화면이 내려가면', () => {
+    const FULL = {
+      isAvailable: true,
+      canRecognizeOnDevice: true,
+      canDownloadOnDeviceModel: false,
+      canSaveRecording: true,
+      canContinue: true,
+    };
+
+    const beginThenUnmount = async () => {
+      const session = await renderSession();
+      const capabilities = createDeferred<typeof FULL>();
+      session.speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
+      await fireEvent.press(screen.getByTestId('begin-without-waiting'));
+      await act(async () => session.unmount());
+      return { ...session, capabilities };
+    };
+
+    it('인식기를 시작하지 않아 마이크가 켜진 채 남지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics, capabilities } = await beginThenUnmount();
+
+      // When
+      await act(async () => capabilities.resolve(FULL));
+
+      // Then
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'voice_capture_started',
+        expect.anything(),
+      );
+    });
+
+    it('확인이 늦게 실패해도 오류와 실패 이벤트를 남기지 않는다', async () => {
+      // Given
+      const { analytics, capabilities } = await beginThenUnmount();
+      logger.error.mockClear();
+
+      // When
+      await act(async () => capabilities.reject(new Error('native')));
+
+      // Then
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'voice_capture_failed',
+        expect.anything(),
+      );
+    });
+
+    it('언어 확인이 늦게 끝나도 다른 세션의 인식기를 멈추지 않는다', async () => {
+      // Given
+      const { speechRecognizer, unmount } = await renderSession();
+      await fireEvent.press(screen.getByTestId('begin'));
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      const capabilities = createDeferred<typeof FULL>();
+      speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
+      await fireEvent.press(screen.getByTestId('change-locale-without-waiting'));
+
+      // When
+      await act(async () => unmount());
+      await act(async () => capabilities.resolve(FULL));
+
+      // Then
+      expect(speechRecognizer.stop).not.toHaveBeenCalled();
+    });
   });
 
   describe('분석과 진단 값', () => {

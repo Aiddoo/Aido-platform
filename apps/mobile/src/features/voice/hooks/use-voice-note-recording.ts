@@ -93,6 +93,7 @@ export function useVoiceNoteRecording({
   const hasHandedOffRef = useRef(false);
   /** 사용자가 초안을 지웠다. 뒤늦은 글자·파일이 초안을 되살리지 않게 막는다 */
   const hasDiscardedRef = useRef(false);
+  const isUnmountedRef = useRef(false);
 
   /** 일시정지·한도 직후에 끝내면 파일이 아직 안 왔을 수 있어 잠깐 기다린다 */
   const waitForRecordings = () =>
@@ -115,7 +116,10 @@ export function useVoiceNoteRecording({
     persist('now');
     hasHandedOffRef.current = true;
     hasBegunRef.current = false;
-    onFinished(baseNote.draftId);
+    // 끝내는 동안 사용자가 이미 떠났다. 글자는 저장했고 다른 화면에서 끌어오지 않는다
+    if (!isUnmountedRef.current) {
+      onFinished(baseNote.draftId);
+    }
     return null;
   };
 
@@ -255,9 +259,11 @@ export function useVoiceNoteRecording({
   });
 
   useEffect(() => {
+    isUnmountedRef.current = false;
     const unsubscribe = speechRecognizer.subscribe(handleSpeechEvent);
 
     return () => {
+      isUnmountedRef.current = true;
       unsubscribe();
       keepListeningForLateRecordings();
     };
@@ -291,6 +297,9 @@ export function useVoiceNoteRecording({
     }
   }, [status]);
 
+  /** 확인을 기다리는 사이 화면이 내려갔거나 초안을 지웠다. 묻지도 듣지도 않는다 */
+  const isStartAbandoned = () => isUnmountedRef.current || hasDiscardedRef.current;
+
   /**
    * Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
    * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
@@ -300,6 +309,9 @@ export function useVoiceNoteRecording({
       startLocale,
       'note',
     );
+    if (isStartAbandoned()) {
+      return;
+    }
     if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
       return;
     }
@@ -337,6 +349,9 @@ export function useVoiceNoteRecording({
     contextualStrings: readonly string[];
   }) => {
     await offerOnDeviceModel(startLocale);
+    if (isStartAbandoned()) {
+      return;
+    }
     const hasBegun = await session.begin({
       locale: startLocale,
       contextualStrings,

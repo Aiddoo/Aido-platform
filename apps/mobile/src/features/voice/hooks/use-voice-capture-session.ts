@@ -134,6 +134,8 @@ export function useVoiceCaptureSession({
   const lastStartedAtRef = useRef(0);
   const quickEndCountRef = useRef(0);
   const stallWatchRef = useRef(createVoiceStallWatch(0));
+  /** 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜면 아무도 끄지 못한다 */
+  const isUnmountedRef = useRef(false);
 
   const dispatch = useCallback((event: VoiceCaptureEvent) => {
     const previous = stateRef.current;
@@ -428,6 +430,7 @@ export function useVoiceCaptureSession({
   const pauseForBackground = useEffectEvent(() => pause('app-background'));
 
   useEffect(() => {
+    isUnmountedRef.current = false;
     const unsubscribe = speechRecognizer.subscribe(handleEvent);
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'background') {
@@ -436,6 +439,7 @@ export function useVoiceCaptureSession({
     });
 
     return () => {
+      isUnmountedRef.current = true;
       unsubscribe();
       appStateSubscription.remove();
       clearTimers();
@@ -522,13 +526,13 @@ export function useVoiceCaptureSession({
     recordingDirectory = null,
     seed,
   }: BeginOptions): Promise<boolean> => {
-    if (getStatus() !== 'idle') {
+    if (isUnmountedRef.current || getStatus() !== 'idle') {
       return false;
     }
     dispatch({ type: 'prepare', seed });
     try {
       const capabilities = await speechRecognizer.getCapabilities(locale, mode);
-      if (getStatus() !== 'preparing') {
+      if (isUnmountedRef.current || getStatus() !== 'preparing') {
         return false;
       }
       if (!capabilities.isAvailable) {
@@ -554,6 +558,9 @@ export function useVoiceCaptureSession({
       addBreadcrumb('capture.started', { mode, locale, on_device: isOnDevice });
       return true;
     } catch (error) {
+      if (isUnmountedRef.current) {
+        return false;
+      }
       logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(getErrorMessage(error)), {
         speech_error: 'unknown',
       });
@@ -609,6 +616,9 @@ export function useVoiceCaptureSession({
       return;
     }
     const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale, mode);
+    if (isUnmountedRef.current) {
+      return;
+    }
     startOptionsRef.current = { ...startOptions, locale, isOnDevice: canRecognizeOnDevice };
     if (VoiceCapturePolicy.isActive(stateRef.current)) {
       trackEvent('voice_capture_locale_changed', { mode, locale, on_device: canRecognizeOnDevice });

@@ -691,6 +691,134 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 
+  describe('시작을 준비하는 사이 화면이 내려가거나 초안을 지우면', () => {
+    const NO_MODEL = {
+      isAvailable: true,
+      canRecognizeOnDevice: false,
+      canDownloadOnDeviceModel: true,
+      canSaveRecording: true,
+      canContinue: true,
+    };
+
+    const createDeferredCapabilities = () => {
+      let resolve: (value: typeof NO_MODEL) => void = jest.fn();
+      const promise = new Promise<typeof NO_MODEL>((onResolve) => {
+        resolve = onResolve;
+      });
+      return { promise, resolve: (value: typeof NO_MODEL) => resolve(value) };
+    };
+
+    const renderStartingProbe = async () => {
+      const speechRecognizer = createSpeechRecognizerStub();
+      const capabilities = createDeferredCapabilities();
+      speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
+      const probe = (
+        <RecordingProbe
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={jest.fn()}
+          onEmpty={jest.fn()}
+        />
+      );
+      const { rerender } = await renderUi(<OverlayProvider>{probe}</OverlayProvider>, {
+        di: {
+          speechRecognizer,
+          voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+          analytics: createMockAnalytics(),
+          errorReporter: createErrorReporterStub(),
+          haptics: createHapticsStub(),
+          logger,
+        },
+      });
+      await fireEvent.press(screen.getByTestId('start'));
+      return {
+        speechRecognizer,
+        capabilities,
+        leaveScreen: () => rerender(<OverlayProvider>{null}</OverlayProvider>),
+      };
+    };
+
+    test('화면이 내려갔으면 모델을 받을지 묻지 않고 인식기도 시작하지 않는다', async () => {
+      // Given
+      const { speechRecognizer, capabilities, leaveScreen } = await renderStartingProbe();
+      await act(async () => leaveScreen());
+
+      // When
+      await act(async () => capabilities.resolve(NO_MODEL));
+
+      // Then
+      expect(screen.queryByText('나중에')).toBeNull();
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+    });
+
+    test('모델이 있는 기기도 화면이 내려갔으면 인식기를 시작하지 않는다', async () => {
+      // Given
+      const { speechRecognizer, capabilities, leaveScreen } = await renderStartingProbe();
+      await act(async () => leaveScreen());
+
+      // When
+      await act(async () => capabilities.resolve({ ...NO_MODEL, canDownloadOnDeviceModel: false }));
+
+      // Then
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+    });
+
+    test('닫아서 초안을 지웠으면 화면이 내려가기 전이어도 인식기를 시작하지 않는다', async () => {
+      // Given
+      const { speechRecognizer, capabilities } = await renderStartingProbe();
+      await fireEvent.press(screen.getByTestId('discard'));
+
+      // When
+      await act(async () => capabilities.resolve({ ...NO_MODEL, canDownloadOnDeviceModel: false }));
+
+      // Then
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+    });
+  });
+
+  test('끝내는 동안 화면이 내려가면 글자는 저장하되 결과 화면으로 끌어오지 않는다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    const storage = createVoiceNoteStorageServiceFake();
+    const onFinished = jest.fn();
+    const { unmount } = await renderUi(
+      <OverlayProvider>
+        <RecordingProbe
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={onFinished}
+          onEmpty={jest.fn()}
+        />
+      </OverlayProvider>,
+      {
+        di: {
+          speechRecognizer,
+          voiceNoteStorageService: storage,
+          analytics: createMockAnalytics(),
+          errorReporter: createErrorReporterStub(),
+          haptics: createHapticsStub(),
+          logger,
+        },
+      },
+    );
+    await start(speechRecognizer);
+    await act(async () =>
+      speechRecognizer.emit({ type: 'recording-started', uri: 'file:///recording_a.wav' }),
+    );
+    await say(speechRecognizer, '첫 문장.');
+    const draftId = screen.getByTestId('draft-id').props.children;
+    await fireEvent.press(screen.getByTestId('finish'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // When
+    await act(async () => unmount());
+    await act(async () => jest.advanceTimersByTimeAsync(3_100));
+
+    // Then
+    expect(onFinished).not.toHaveBeenCalled();
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
+  });
+
   test('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecording();
