@@ -1,3 +1,4 @@
+import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
@@ -139,7 +140,10 @@ function AiDataSharingConsentCard() {
       <SettingsCard.Content className="pt-0">
         {match(consent)
           .with(
-            { aiDataSharingDecision: 'AGREED', aiDataSharingAgreedAt: P.nonNullable },
+            {
+              aiDataSharingDecision: AI_DATA_SHARING_DECISION.AGREED,
+              aiDataSharingAgreedAt: P.nonNullable,
+            },
             ({ aiDataSharingAgreedAt }) => (
               <Text size="e1" shade={6}>
                 {t('settings:terms.aiDataSharing.agreedOn', {
@@ -148,13 +152,13 @@ function AiDataSharingConsentCard() {
               </Text>
             ),
           )
-          .with({ aiDataSharingDecision: 'AGREED' }, () => null)
-          .with({ aiDataSharingDecision: 'DECLINED' }, () => (
+          .with({ aiDataSharingDecision: AI_DATA_SHARING_DECISION.AGREED }, () => null)
+          .with({ aiDataSharingDecision: AI_DATA_SHARING_DECISION.DECLINED }, () => (
             <Text size="e1" shade={6}>
               {t('settings:terms.aiDataSharing.declinedStatus')}
             </Text>
           ))
-          .with({ aiDataSharingDecision: 'UNDECIDED' }, () => (
+          .with({ aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED }, () => (
             <HStack gap={12} align="center">
               <Text size="e1" shade={6} className="flex-1">
                 {t('settings:terms.aiDataSharing.undecidedStatus')}
