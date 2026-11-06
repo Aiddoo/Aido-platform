@@ -28,17 +28,17 @@
 
 ## 파일 위치
 
-| 대상           | 위치와 이름                                            |
-| -------------- | ------------------------------------------------------ |
-| Model·Policy   | `domains/{entity}.model.test.ts`                       |
-| 폼 스키마      | `schemas/{name}-form.schema.test.ts`                   |
-| Mapper         | `apis/{entity}.mapper.test.ts`                         |
-| Service        | `apis/{feature}.service.test.ts`                       |
-| 피처 순수 util | `utils/{name}.test.ts`                                 |
-| view-model     | view-model 파일 옆 `{name}.view-model.test.ts`         |
-| 공용 유틸      | `shared/utils/{name}.test.ts`                          |
-| 테스트 fixture | `features/{feature}/__tests__/{entity}.fixtures.ts`    |
-| 테스트 DI 조립 | `features/{feature}/__tests__/{feature}.test-utils.ts` |
+| 대상           | 위치와 이름                                                   |
+| -------------- | ------------------------------------------------------------- |
+| Model·Policy   | `domains/{entity}.model.test.ts`                              |
+| 폼 스키마      | `schemas/{name}-form.schema.test.ts`                          |
+| Mapper         | `apis/{entity}.mapper.test.ts`                                |
+| Service        | `apis/{feature}.service.test.ts`                              |
+| 피처 순수 util | `utils/{name}.test.ts`                                        |
+| view-model     | view-model 파일 옆 `{name}.view-model.test.ts`                |
+| 공용 유틸      | `shared/utils/{name}.test.ts`                                 |
+| 테스트 fixture | `features/{area}/{feature}/__tests__/{entity}.fixtures.ts`    |
+| 테스트 DI 조립 | `features/{area}/{feature}/__tests__/{feature}.test-utils.ts` |
 
 테스트 파일은 구현 파일 옆에 둔다. `.test.ts`가 기본이고 JSX가 꼭 필요할 때만 `.test.tsx`다.
 
@@ -104,8 +104,8 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 
 | 도구                                                    | 용도                                                         |
 | ------------------------------------------------------- | ------------------------------------------------------------ |
-| `features/{f}/__tests__/{entity}.fixtures.ts`           | 모델 fixture(`createX(overrides)`)                           |
-| `features/{f}/__tests__/{f}.test-utils.ts`              | 그 feature 화면 테스트의 `di` 조립(`createMemoTestDi`)       |
+| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`    | 모델 fixture(`createX(overrides)`)                           |
+| `features/{area}/{f}/__tests__/{f}.test-utils.ts`       | 그 feature 화면 테스트의 `di` 조립(`createMemoTestDi`)       |
 | `renderUi(ui, { di, queryClient })`                     | 실제 provider 위에 `di` 필드만 덮어써 렌더                   |
 | `createMockDIContainer(overrides)` + `StaticDIProvider` | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패 |
 | `createMemorySyncStorage()`                             | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                  |

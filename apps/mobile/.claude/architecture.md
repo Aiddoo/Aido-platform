@@ -30,7 +30,7 @@ src/
 │   ├── ports/                    # 포트 인터페이스
 │   ├── events/
 │   └── session/
-├── features/{feature}/           # 단수 kebab-case
+├── features/{area}/{feature}/    # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능
 │   ├── schemas/                  # Zod 스키마. {entity}.schema.ts, {name}-form.schema.ts, {name}-params.schema.ts
 │   ├── domains/                  # {entity}.model.ts(순수 함수 + Policy), {feature}.error.ts
 │   ├── apis/                     # {feature}.service.ts, {entity}.mapper.ts, {name}.repository.ts
@@ -45,7 +45,34 @@ src/
 ```
 
 - 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
-- 다른 피처는 `@src/features/{feature}/…` 절대 경로로 import한다.
+- 다른 피처는 `@src/features/{area}/{feature}/…` 절대 경로로 import한다.
+
+### 기능을 어디에 두나
+
+최상위는 서버 모듈과 같은 이름의 업무 영역이다. 서버와 앱에서 같은 이름으로 찾기 위해서다. `voice`, `notification`, `weather`는 영역이 곧 기능이라 한 단계다.
+
+| 영역         | 기능                                                            |
+| ------------ | --------------------------------------------------------------- |
+| `identity`   | `auth`, `user`, `preference`, `consent`                         |
+| `planning`   | `todo`, `category`, `composer`                                  |
+| `notes`      | `memo`                                                          |
+| `social`     | `friend`, `invite`, `nudge`, `moderation`                       |
+| `engagement` | `comment`                                                       |
+| `insights`   | `achievement`, `report`                                         |
+| `assistant`  | `suggestion`                                                    |
+| `billing`    | `subscription`                                                  |
+| `support`    | `inquiry`                                                       |
+| `app-config` | `app-version`, `whats-new`                                      |
+| `device`     | `widget`, `app-icon`, `store-review`, `activation`, `coachmark` |
+
+새 기능은 이 순서로 판단한다.
+
+1. 서버 모듈이 있으면 그 이름 아래에 둔다.
+2. 서버 없이 기기에서만 동작하면 `device/`에 둔다.
+3. 같은 영역에 파일 몇 개뿐이고 화면과 데이터가 같으면 새 폴더를 만들지 않고 기존 기능에 넣는다.
+4. 제품 말 없이 설명되고 2곳 이상이 쓰면 `shared`로 올린다.
+5. 여러 영역을 함께 보여 주는 일은 `app/`이 조립한다.
+
 - 폴더 `index.ts` 재수출을 새로 만들지 않고 정의 파일에서 직접 import한다.
 
 ## 의존성 흐름
@@ -402,7 +429,7 @@ MemoList.Loading = function Loading() {
 
 - 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`다(`/todo/[todoId]`). `[id]`는 쓰지 않는다.
 - 같은 화면의 보기 상태(선택 항목, 필터, 날짜, 친구, 작성기)는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`).
-- param은 `features/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod로 검증해 읽는다. `as`로 건너뛰지 않는다. 타입은 `z.output`에서 얻고 기존 스키마(`routeIdSchema`, `feedDateParamSchema`)를 재사용한다. 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`).
+- param은 `features/{area}/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod로 검증해 읽는다. `as`로 건너뛰지 않는다. 타입은 `z.output`에서 얻고 기존 스키마(`routeIdSchema`, `feedDateParamSchema`)를 재사용한다. 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`).
 - `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
 - `useGlobalSearchParams`를 화면 훅에서 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 렌더된다. 레이아웃은 내비게이터와 Provider만 두고 자식 params를 읽지 않는다.
 - href는 피처의 순수 함수가 typed 객체로 만든다(`createFeedHref`, `todoActionsSheetHref`, `memoDetailHref`). 경로 문자열을 잇지 않는다. 알림·위젯 목적지는 `utils/navigation` resolver가 이 함수로 정한다.
@@ -579,7 +606,7 @@ const saveMemo = (onFailed: (error: unknown) => void) =>
 **비즈니스 규칙만 둔다. 가장 중요한 규칙이다.** `saving-product.model.ts`처럼 모델 스키마, 규칙 함수, Policy만 둔다. 문구, i18n 키, 색, 크기, 레이아웃, 화면 상태, 폼 값, 초안·저장 키는 넣지 않는다. 그런 값은 `*.view-model.ts`, `*-form.schema.ts`, `*-draft.ts`나 컴포넌트에 둔다. 규칙이 바뀔 때 함수 하나만 고쳐 사용처가 모두 바뀌게 하려면, 다른 이유로 바뀌는 값이 이 파일에 섞이면 안 된다.
 
 ```
-features/{feature}/
+features/{area}/{feature}/
 ├── schemas/
 │   ├── {entity}.schema.ts       # 앱 모델 스키마와 타입
 │   ├── {name}-form.schema.ts    # 폼 값

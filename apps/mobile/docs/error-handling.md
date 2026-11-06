@@ -113,12 +113,12 @@ export const FriendErrors = {
 export const isFriendError = (error: unknown): error is FriendError => error instanceof FriendError;
 ```
 
-| 요소      | 패턴                 | 위치                                            |
-| --------- | -------------------- | ----------------------------------------------- |
-| 코드 상수 | `{Feature}ErrorCode` | `features/{feature}/domains/{feature}.error.ts` |
-| 클래스    | `{Feature}Error`     | 같은 파일                                       |
-| 팩토리    | `{Feature}Errors`    | 같은 파일                                       |
-| 가드      | `is{Feature}Error`   | 같은 파일                                       |
+| 요소      | 패턴                 | 위치                                                   |
+| --------- | -------------------- | ------------------------------------------------------ |
+| 코드 상수 | `{Feature}ErrorCode` | `features/{area}/{feature}/domains/{feature}.error.ts` |
+| 클래스    | `{Feature}Error`     | 같은 파일                                              |
+| 팩토리    | `{Feature}Errors`    | 같은 파일                                              |
+| 가드      | `is{Feature}Error`   | 같은 파일                                              |
 
 SDK 오류 변환은 어댑터·Service 경계에서만 한다(`AuthErrors.fromExpoAppleError`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
 

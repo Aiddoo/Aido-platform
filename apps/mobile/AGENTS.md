@@ -40,7 +40,7 @@ Expo SDK 58.0.23 · React Native 0.88 · React 19.3 · Expo Router · TanStack Q
 ## 구조
 
 ```
-features/{feature}/   # 단수 kebab-case
+features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능 (voice, notification, weather는 한 단계)
 ├── schemas/          # Zod 스키마(모델, 폼, 초안, route). 계약에서 pick·extend로 유도
 ├── domains/          # 비즈니스 규칙(순수 함수 + Policy), 오류
 ├── apis/             # Service, Mapper, 로컬 저장소 repository

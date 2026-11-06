@@ -25,7 +25,7 @@
 ## 3. 모바일
 
 - 사용자 문구는 `errors` 네임스페이스에서 **키 = ErrorCode**, 해요체로 둔다. 모르는 코드는 서버 message → `errors:fallback` 순서다([i18n](../../apps/mobile/.claude/i18n-guide.md#에러-메시지)).
-- 기능 오류는 `features/{feature}/domains/{feature}.error.ts` 하나에 `XxxErrorCode` 상수 · `XxxError`(`BusinessError` 구현) · `XxxErrors` 팩토리 · `isXxxError` 가드를 둔다.
+- 기능 오류는 `features/{area}/{feature}/domains/{feature}.error.ts` 하나에 `XxxErrorCode` 상수 · `XxxError`(`BusinessError` 구현) · `XxxErrors` 팩토리 · `isXxxError` 가드를 둔다.
 - 분류는 `KyHttpClient` 한 곳이 한다.
   - 4xx·Policy 실패 → `Result.err(ApiError | XxxError)` → mutation `onError`에서 코드별로 처리한다.
   - 5xx·네트워크·타임아웃·Zod 파싱 실패 → `throw InfraError` → Suspense 조회는 `QueryErrorBoundary` fallback(다시 시도 + 문의하기)이 받는다.
