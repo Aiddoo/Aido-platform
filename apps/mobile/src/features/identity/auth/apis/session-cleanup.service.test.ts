@@ -8,7 +8,11 @@ function createPorts() {
   return {
     calls,
     ports: {
-      queryCache: { clear: record('queryCache') },
+      queryCache: {
+        abandonPendingMutations: record('abandonPendingMutations'),
+        clear: record('queryCache'),
+        clearQueries: record('clearQueries'),
+      },
       persistedQueryCache: { clear: record('persistedQueryCache') },
       drafts: { removeAll: record('drafts') },
       voiceNotes: { removeAll: record('voiceNotes') },
@@ -28,6 +32,7 @@ describe('SessionCleanupService', () => {
 
     // Then
     expect(calls).toEqual([
+      'abandonPendingMutations',
       'queryCache',
       'persistedQueryCache',
       'drafts',
@@ -44,7 +49,18 @@ describe('SessionCleanupService', () => {
     new SessionCleanupService(ports).afterSessionEnded();
 
     // Then
-    expect(calls).toEqual(['queryCache', 'persistedQueryCache']);
+    expect(calls).toEqual(['abandonPendingMutations', 'queryCache', 'persistedQueryCache']);
+  });
+
+  it('로그인 직전 정리는 조회 캐시만 비운다', () => {
+    // Given
+    const { calls, ports } = createPorts();
+
+    // When
+    new SessionCleanupService(ports).beforeSignIn();
+
+    // Then
+    expect(calls).toEqual(['clearQueries']);
   });
 
   it('한 단계가 실패해도 나머지를 지우고 실패를 남긴다', () => {
@@ -58,7 +74,13 @@ describe('SessionCleanupService', () => {
     new SessionCleanupService(ports).afterSignedOut();
 
     // Then
-    expect(calls).toEqual(['persistedQueryCache', 'drafts', 'voiceNotes', 'deviceTimezone']);
+    expect(calls).toEqual([
+      'abandonPendingMutations',
+      'persistedQueryCache',
+      'drafts',
+      'voiceNotes',
+      'deviceTimezone',
+    ]);
     expect(ports.logger.warn).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ step: 'query-cache' }),

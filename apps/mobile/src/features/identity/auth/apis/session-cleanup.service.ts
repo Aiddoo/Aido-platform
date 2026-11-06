@@ -7,7 +7,10 @@ import { getErrorMessage } from '@src/shared/errors';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 
 export interface SessionQueryCache {
+  /** 진행 중 mutation이 끝나도 콜백이 돌지 않게 한다. 요청은 끊지 않는다 */
+  abandonPendingMutations(): void;
   clear(): void;
+  clearQueries(): void;
 }
 
 export interface SessionPersistedQueryCache {
@@ -46,8 +49,17 @@ export class SessionCleanupService {
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */
   afterSessionEnded = (): void => {
+    this.#run('pending-mutations', () => this.#ports.queryCache.abandonPendingMutations());
     this.#run('query-cache', () => this.#ports.queryCache.clear());
     this.#run('persisted-query-cache', () => this.#ports.persistedQueryCache.clear());
+  };
+
+  /**
+   * 마운트된 채 다시 그려진 관찰자는 비운 콜백을 복구한다. 그 콜백이 정리 뒤 캐시를 채워도
+   * 다음 계정이 지난 값을 신선한 값으로 읽어 지난 계정의 초안만 남기는 일이 없게 다시 비운다.
+   */
+  beforeSignIn = (): void => {
+    this.#run('sign-in-queries', () => this.#ports.queryCache.clearQueries());
   };
 
   #run(step: string, cleanup: () => void): void {

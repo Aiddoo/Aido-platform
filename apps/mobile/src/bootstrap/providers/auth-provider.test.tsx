@@ -2,6 +2,7 @@ import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/se
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
+import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
@@ -116,7 +117,7 @@ describe('AuthProvider', () => {
           userService,
           widgetSyncService,
           sessionCleanupService: new SessionCleanupService({
-            queryCache: queryClient,
+            queryCache: createSessionQueryCache(queryClient),
             persistedQueryCache: queryCacheStorage,
             drafts: draftService,
             voiceNotes: createVoiceNoteStorageServiceFake(),

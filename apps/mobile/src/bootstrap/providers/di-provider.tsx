@@ -21,6 +21,7 @@ import { createWidgetBridge } from '@src/features/device/widget/bridge/create-wi
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
+import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -334,7 +335,7 @@ export function DIProvider({
     const widgetNavigationRepository = createWidgetNavigationRepository(widgetNavigationStorage);
 
     const sessionCleanupService = new SessionCleanupService({
-      queryCache: queryClient,
+      queryCache: createSessionQueryCache(queryClient),
       persistedQueryCache: queryCacheStorage,
       drafts: draftService,
       voiceNotes: voiceNoteStorageService,

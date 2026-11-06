@@ -64,9 +64,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const setStatus = useCallback(
     (next: AuthStatus) => {
       isUserInitiatedSignOutRef.current = next === 'unauthenticated';
+      if (next === 'authenticated' && statusRef.current !== 'authenticated') {
+        sessionCleanupService.beforeSignIn();
+      }
       applyStatus(next);
     },
-    [applyStatus],
+    [applyStatus, sessionCleanupService],
   );
 
   /**

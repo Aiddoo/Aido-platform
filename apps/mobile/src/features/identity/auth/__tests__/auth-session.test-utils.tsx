@@ -35,6 +35,7 @@ import type { PropsWithChildren } from 'react';
 
 import { AuthService } from '../apis/auth.service';
 import { SessionCleanupService } from '../apis/session-cleanup.service';
+import { createSessionQueryCache } from '../apis/session-query-cache';
 
 export const ACCOUNT_A_TOKENS: AuthTokenPair = {
   accessToken: 'access-a',
@@ -65,7 +66,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
   const errorReporter = createErrorReporterStub();
   const writeSnapshot = jest.fn(async () => undefined);
   const sessionCleanupService = new SessionCleanupService({
-    queryCache: queryClient,
+    queryCache: createSessionQueryCache(queryClient),
     persistedQueryCache: queryCacheStorage,
     drafts: draftService,
     voiceNotes: createVoiceNoteStorageServiceFake(),
