@@ -64,6 +64,7 @@ export const SENTRY_FEATURES = [
   'todo_comment',
   'todo_nudge',
   'token_refresher',
+  'user',
   'voice',
   'weather',
   'weather_location',

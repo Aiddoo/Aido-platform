@@ -2,7 +2,7 @@ import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useUpdateProfileMutationOptions } from '../queries/user.mutations';
 import { useGetMeQueryOptions } from '../queries/user.queries';
@@ -16,29 +16,30 @@ interface ProfileImageBottomSheetProps {
 export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBottomSheetProps) {
   const { t } = useTranslation('user');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
+  // undefined는 아직 고르지 않았다는 뜻이라 저장된 사진을 보여 준다. 서버 값을 state로 복사하지 않는다
+  const [chosenIcon, setChosenIcon] = useState<string | null | undefined>(undefined);
+  const selectedIcon = chosenIcon === undefined ? user.profileImage : chosenIcon;
 
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(user.profileImage);
-
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedIcon(user.profileImage);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setChosenIcon(undefined);
     }
-  }, [isOpen, user.profileImage]);
+    onOpenChange(nextOpen);
+  };
 
   const handleSave = (profileImage: string | null) => {
     if (profileImage !== user.profileImage) {
-      updateProfileMutation.mutate({ profileImage }, { onSuccess: () => onOpenChange(false) });
+      updateProfileMutation.mutate({ profileImage }, { onSuccess: () => handleOpenChange(false) });
     } else {
-      onOpenChange(false);
+      handleOpenChange(false);
     }
   };
 
   return (
     <BottomSheet
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       footer={
         <HStack gap={12}>
           <Button
@@ -69,7 +70,6 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
         <Text size="b2" weight="semibold" accessibilityRole="header">
           {t('profile.imageSheet.title')}
         </Text>
-
         <VStack align="center">
           <UserAvatar
             className="w-24 h-24 rounded-full"
@@ -77,10 +77,9 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
             profileImage={selectedIcon}
           />
         </VStack>
-
         <AppIconPicker
           value={selectedIcon}
-          onChange={setSelectedIcon}
+          onChange={setChosenIcon}
           isDisabled={updateProfileMutation.isPending}
         />
       </VStack>

@@ -1,21 +1,22 @@
-import { useHaptics, useUserService } from '@src/bootstrap/providers/di-context';
+import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { ProfileChange, User } from '@src/features/identity/user/schemas/user.schema';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 
 export const useUpdateProfileMutationOptions = () => {
-  const haptics = useHaptics();
   const userService = useUserService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('user:profile.updateFailed'));
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 저장 버튼이 돌기만 한다. 바로 실패해 입력값을 남긴 채 알린다
+    networkMode: 'always',
     mutationFn: async (input: ProfileChange) => {
       const result = await userService.updateProfile(input);
       return unwrap(result);
@@ -53,8 +54,7 @@ export const useUpdateProfileMutationOptions = () => {
       });
     },
     onError: (error, _input, context) => {
-      haptics.notify('error');
-      toast.error(error, { fallback: t('user:profile.updateFailed') });
+      showFailure(error);
 
       if (context?.previousData) {
         queryClient.setQueryData(USER_QUERY_KEYS.me(), context.previousData);

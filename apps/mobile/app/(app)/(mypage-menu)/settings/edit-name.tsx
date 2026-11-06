@@ -1,111 +1,95 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import {
-  type UpdateNameFormInput,
-  updateNameFormSchema,
-} from '@src/features/identity/user/schemas/update-name-form.schema';
-import { isBusinessError } from '@src/shared/errors/result';
+import { updateNameFormSchema } from '@src/features/identity/user/schemas/update-name-form.schema';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  H3,
+  FormStepLayout,
   Input,
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
   ReadableContent,
-  Spacing,
-  StyledSafeAreaView,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { Suspense } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { ScrollView } from 'react-native';
+import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
 function EditNameScreen() {
-  const { showBoundary } = useErrorBoundary();
-
-  const goBack = useSingleTap(router.back);
-
   const { t } = useTranslation('user');
+  const navigation = useNavigation();
+  const reportUnexpectedError = useReportUnexpectedError('user');
+  const goBack = useSingleTap(router.back);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
+  const updateProfile = useMutation(useUpdateProfileMutationOptions());
 
-  const formMethods = useForm({
+  const form = useForm({
     resolver: zodResolver(updateNameFormSchema),
     defaultValues: { name: user.name },
     mode: 'onChange',
   });
-  const { control, handleSubmit } = formMethods;
-  const { isSubmitting, isValid, isDirty } = useFormState({ control });
-
+  const { isSubmitting, isValid, isDirty } = useFormState({ control: form.control });
   const canSubmit = isValid && isDirty;
 
-  const handleSubmitName = async (values: UpdateNameFormInput) => {
+  // 실패하면 토스트는 mutation이 한 번 알리고 화면과 입력값은 그대로 둔다
+  const submitName = form.handleSubmit(async ({ name }) => {
     try {
-      await updateProfileMutation.mutateAsync({ name: values.name }, { onSuccess: () => goBack() });
-    } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
+      await updateProfile.mutateAsync({ name });
+      // 저장하는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
+      if (navigation.isFocused()) {
+        goBack();
       }
+    } catch (error) {
+      reportUnexpectedError(error);
     }
-  };
+  });
+  const handleSubmit = useSingleTap(() => submitName());
 
   return (
-    <FormProvider {...formMethods}>
-      <Box className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-          keyboardShouldPersistTaps="always"
-          showsVerticalScrollIndicator={false}
-        >
-          <StyledSafeAreaView edges={['left', 'right']}>
-            <H3>{t('editName.header')}</H3>
-
-            <Spacing size={24} />
-
-            <FormField control={control} name="name">
-              {({ onChange, value }, { error }) => (
-                <Input
-                  label={t('editName.label')}
-                  placeholder={t('editName.placeholder')}
-                  value={value}
-                  onChange={onChange}
-                  autoFocus
-                  autoCapitalize="none"
-                  submitBehavior="submit"
-                  returnKeyType="done"
-                  isInvalid={!!error}
-                  errorMessage={match(error)
-                    .with(P.nullish, () => undefined)
-                    .with({ type: 'too_big' }, () => t('editName.maxLength'))
-                    .otherwise(() => t('editName.required'))}
-                  onSubmitEditing={() => {
-                    if (canSubmit) {
-                      handleSubmit(handleSubmitName)();
-                    }
-                  }}
-                />
-              )}
-            </FormField>
-          </StyledSafeAreaView>
-        </ScrollView>
-
-        <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(handleSubmitName)()}
-          isDisabled={!canSubmit}
-          isLoading={isSubmitting}
-        >
-          {t('editName.submit')}
-        </KeyboardAdaptiveButton>
-      </Box>
-    </FormProvider>
+    <Box className="flex-1">
+      <FormStepLayout title={t('editName.header')}>
+        <Controller
+          control={form.control}
+          name="name"
+          render={({ field: { value, onChange, ref }, fieldState: { error } }) => (
+            <Input
+              ref={ref}
+              testID="edit-name-input"
+              label={t('editName.label')}
+              placeholder={t('editName.placeholder')}
+              value={value}
+              onChange={onChange}
+              autoFocus
+              autoCapitalize="none"
+              submitBehavior="submit"
+              returnKeyType="done"
+              isInvalid={error != null}
+              errorMessage={match(error)
+                .with(P.nullish, () => undefined)
+                .with({ type: 'too_big' }, () => t('editName.maxLength'))
+                .otherwise(() => t('editName.required'))}
+              onSubmitEditing={() => {
+                if (canSubmit) {
+                  handleSubmit();
+                }
+              }}
+            />
+          )}
+        />
+      </FormStepLayout>
+      <KeyboardAdaptiveButton
+        testID="edit-name-submit"
+        onPress={handleSubmit}
+        isDisabled={!canSubmit}
+        isLoading={isSubmitting}
+      >
+        {t('editName.submit')}
+      </KeyboardAdaptiveButton>
+    </Box>
   );
 }
 
@@ -114,6 +98,7 @@ export default function EditNameRoute() {
     <Box className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <QueryErrorBoundary>
+          {/* 내 정보는 마이페이지에서 이미 불러와 캐시에서 바로 읽혀 따로 보여 줄 로딩이 없다 */}
           <Suspense fallback={<Box className="flex-1" />}>
             <EditNameScreen />
           </Suspense>
