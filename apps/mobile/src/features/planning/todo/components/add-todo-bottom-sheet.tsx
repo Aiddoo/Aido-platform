@@ -1,7 +1,7 @@
 import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
-import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
+import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';

@@ -1,5 +1,5 @@
-import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
-import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
+import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FlagIcon, HStack, PlayIcon, Text, VStack, WordWrapText } from '@src/shared/ui';

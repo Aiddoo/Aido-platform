@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,

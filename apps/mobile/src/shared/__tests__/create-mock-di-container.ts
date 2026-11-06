@@ -139,11 +139,11 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get inviteShareService() {
       return dependency('inviteShareService');
     },
-    get featureDiscoveryService() {
-      return dependency('featureDiscoveryService');
+    get whatsNewService() {
+      return dependency('whatsNewService');
     },
-    get featureDiscoveryStateService() {
-      return dependency('featureDiscoveryStateService');
+    get whatsNewStateService() {
+      return dependency('whatsNewStateService');
     },
     get inquiryService() {
       return dependency('inquiryService');

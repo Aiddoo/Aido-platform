@@ -1,23 +1,23 @@
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AiService } from '@src/features/ai/apis/ai.service';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
+import { createWhatsNewStateRepository } from '@src/features/app-config/whats-new/apis/whats-new-state.repository';
+import { WhatsNewStateService } from '@src/features/app-config/whats-new/apis/whats-new-state.service';
+import { WhatsNewService } from '@src/features/app-config/whats-new/apis/whats-new.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/apis/feature-discovery-state.repository';
-import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/apis/feature-discovery-state.service';
-import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -201,17 +201,15 @@ export function DIProvider({
     // Friend
     const friendService = new FriendService(authHttpClient);
 
-    // Feature discovery — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
-    const featureDiscoveryService = new FeatureDiscoveryService(publicJsonFetcher);
+    // Whats-new — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
+    const whatsNewService = new WhatsNewService(publicJsonFetcher);
     const appVersionService = new AppVersionService(
       publicJsonFetcher,
       expoApplicationMetadataGateway,
       expoAppStoreGateway,
     );
-    const featureDiscoveryStateRepository = createFeatureDiscoveryStateRepository(mmkvSyncStorage);
-    const featureDiscoveryStateService = new FeatureDiscoveryStateService(
-      featureDiscoveryStateRepository,
-    );
+    const whatsNewStateRepository = createWhatsNewStateRepository(mmkvSyncStorage);
+    const whatsNewStateService = new WhatsNewStateService(whatsNewStateRepository);
 
     // Invite
     const inviteService = new InviteService({
@@ -354,8 +352,8 @@ export function DIProvider({
       appVersionService,
       appIconService: new AppIconService(expoAppIconGateway),
       friendService,
-      featureDiscoveryService,
-      featureDiscoveryStateService,
+      whatsNewService,
+      whatsNewStateService,
       inviteService,
       inviteShareService,
       inquiryService,

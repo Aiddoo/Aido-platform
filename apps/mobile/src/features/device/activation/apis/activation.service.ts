@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import type { GrowthEventMap } from '@src/shared/analytics';
 
 import {
@@ -9,7 +9,7 @@ import {
 import type { ActivationProgressRepository } from './activation-progress.repository';
 
 interface ActivationActionInput {
-  config: FeatureDiscoveryConfig | undefined;
+  config: WhatsNewConfig | undefined;
   user: ActivationUser | undefined;
   now: Date;
 }
@@ -31,7 +31,7 @@ export class ActivationService {
   }
 
   getProgress = (
-    config: FeatureDiscoveryConfig | undefined,
+    config: WhatsNewConfig | undefined,
     user: ActivationUser | undefined,
   ): ActivationProgress => {
     const identity = ActivationPolicy.activationIdentity(config, user);

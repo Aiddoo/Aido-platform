@@ -1,12 +1,12 @@
 import {
-  featureDiscoveryConfigSchema,
-  type FeatureDiscoveryConfig,
-} from '@src/features/feature-discovery/domains/feature-discovery.model';
+  whatsNewConfigSchema,
+  type WhatsNewConfig,
+} from '@src/features/app-config/whats-new/domains/whats-new.model';
 import {
-  FEATURE_DISCOVERY_CAMPAIGN_ID,
-  LEGACY_FEATURE_DISCOVERY_CAMPAIGN_ID,
-  PREVIOUS_FEATURE_DISCOVERY_CAMPAIGN_ID,
-} from '@src/features/feature-discovery/domains/feature-discovery.registry';
+  WHATS_NEW_CAMPAIGN_ID,
+  LEGACY_WHATS_NEW_CAMPAIGN_ID,
+  PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
+} from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { userSchema } from '@src/features/identity/user/domains/user.model';
 import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time.constants';
@@ -14,9 +14,9 @@ import { z } from 'zod';
 
 // 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다
 const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
-  LEGACY_FEATURE_DISCOVERY_CAMPAIGN_ID,
-  PREVIOUS_FEATURE_DISCOVERY_CAMPAIGN_ID,
-  FEATURE_DISCOVERY_CAMPAIGN_ID,
+  LEGACY_WHATS_NEW_CAMPAIGN_ID,
+  PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
+  WHATS_NEW_CAMPAIGN_ID,
 ]);
 // 1.9.0(2026-08 캠페인)부터 새 가입자의 푸시 등록을 첫 활성화 뒤로 미뤘다. 캠페인이 바뀌어도 기준은 유지한다
 const PUSH_REGISTRATION_DEFERRED_SINCE = '2026-08-01T00:00:00.000Z';
@@ -33,7 +33,7 @@ export type ActivationIdentity = z.infer<typeof activationIdentitySchema>;
 const activationUserSchema = userSchema.pick({ id: true, createdAt: true });
 export type ActivationUser = z.infer<typeof activationUserSchema>;
 const pushRegistrationInputSchema = z.object({
-  config: featureDiscoveryConfigSchema.optional(),
+  config: whatsNewConfigSchema.optional(),
   user: activationUserSchema.optional(),
   progress: activationProgressSchema,
 });
@@ -52,7 +52,7 @@ const checklistVisibilityInputSchema = checklistEligibilityInputSchema.extend({
 type ChecklistVisibilityInput = z.infer<typeof checklistVisibilityInputSchema>;
 
 function resolveEnabledCampaign(
-  config: FeatureDiscoveryConfig,
+  config: WhatsNewConfig,
 ): { campaignId: string; launchedAt: Date } | null {
   if (config.enabled && ACTIVATION_CAMPAIGN_IDS.has(config.campaignId)) {
     return {
@@ -64,7 +64,7 @@ function resolveEnabledCampaign(
 }
 
 function isNewUserCohort(
-  config: FeatureDiscoveryConfig | undefined,
+  config: WhatsNewConfig | undefined,
   user: ActivationUser | undefined,
 ): boolean {
   const campaign = config ? resolveEnabledCampaign(config) : null;
@@ -72,7 +72,7 @@ function isNewUserCohort(
 }
 
 function activationIdentity(
-  config: FeatureDiscoveryConfig | undefined,
+  config: WhatsNewConfig | undefined,
   user: ActivationUser | undefined,
 ): ActivationIdentity | null {
   const campaign = config ? resolveEnabledCampaign(config) : null;

@@ -163,7 +163,10 @@ const SDK_IMPORT_ALLOWLIST = new Map([
     'apps/mobile/src/features/identity/auth/apis/auth.service.ts',
     ['expo-linking', 'expo-web-browser', 'expo-apple-authentication', 'expo-crypto'],
   ],
-  ['apps/mobile/src/features/feature-discovery/apis/native-app-version.ts', ['expo-application']],
+  [
+    'apps/mobile/src/features/app-config/whats-new/apis/native-app-version.ts',
+    ['expo-application'],
+  ],
   ['apps/mobile/src/features/notification/apis/device-id.repository.ts', ['expo-secure-store']],
   [
     'apps/mobile/src/features/notification/apis/device-id.service.ts',

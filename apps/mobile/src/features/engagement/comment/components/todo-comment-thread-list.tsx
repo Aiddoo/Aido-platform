@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
-import { usePendingCoachmark } from '@src/features/feature-discovery/hooks/use-pending-coachmark';
+import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';

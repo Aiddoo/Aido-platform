@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createConsent } from '@src/features/identity/auth/__tests__/auth.factories';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { AUTH_QUERY_KEYS } from '@src/features/identity/auth/constants/auth-query-keys';

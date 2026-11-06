@@ -1,11 +1,11 @@
-import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-context';
-import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
+import { useWhatsNewStateService } from '@src/bootstrap/providers/di-context';
 import {
-  FEATURE_DISCOVERY_CAMPAIGN_ID,
+  WHATS_NEW_CAMPAIGN_ID,
   filterAvailableCampaign,
-  getBundledFeatureDiscoveryCampaign,
-} from '@src/features/feature-discovery/domains/feature-discovery.registry';
-import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/use-feature-discovery-hub';
+  getBundledWhatsNewCampaign,
+} from '@src/features/app-config/whats-new/domains/whats-new.registry';
+import { useWhatsNewHub } from '@src/features/app-config/whats-new/hooks/use-whats-new-hub';
+import { subscriptionHref } from '@src/features/billing/subscription/utils/navigation/subscription-href';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -75,20 +75,19 @@ function MyPageMenuIcon({ Icon }: { Icon: StyledIconType }) {
 function Activity() {
   const { t } = useTranslation(['user', 'featureDiscovery']);
   const { data: user } = useQuery(useGetMeQueryOptions());
-  const { openHub } = useFeatureDiscoveryHub();
-  const featureDiscoveryState = useFeatureDiscoveryStateService();
+  const { openHub } = useWhatsNewHub();
+  const whatsNewState = useWhatsNewStateService();
   const isInviteAvailable = useInviteAvailability();
   // 소개할 기능이 모두 꺼져 있으면 기능 가이드 항목을 숨긴다
-  const campaign = filterAvailableCampaign(
-    getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID),
-    { isInviteAvailable },
-  );
+  const campaign = filterAvailableCampaign(getBundledWhatsNewCampaign(WHATS_NEW_CAMPAIGN_ID), {
+    isInviteAvailable,
+  });
 
   const openFeatureGuide = () => {
     if (!campaign || !user) {
       return;
     }
-    featureDiscoveryState.claimSeen({
+    whatsNewState.claimSeen({
       userId: user.id,
       campaignId: campaign.id,
     });

@@ -1,7 +1,7 @@
 import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
+import { WhatsNewReentryCard } from '@src/features/app-config/whats-new/components/whats-new-reentry-card';
+import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
-import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
-import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
@@ -84,7 +84,7 @@ function MyFeed() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   const weatherIntroduction = useWeatherIntroduction();
-  const featureDiscovery = useFeatureDiscoveryFeed({
+  const whatsNew = useWhatsNewFeed({
     isWeatherIntroductionPending: weatherIntroduction.isPending,
   });
   const [refreshing, onRefresh] = useRefresh(() =>
@@ -118,12 +118,12 @@ function MyFeed() {
 
         <InviteEntryBanner className="mx-4 mb-5" />
 
-        {featureDiscovery.isReentryVisible && (
+        {whatsNew.isReentryVisible && (
           <>
             <Box px={16}>
-              <FeatureDiscoveryReentryCard
-                onPress={featureDiscovery.openFromReentry}
-                onDismiss={featureDiscovery.dismissReentry}
+              <WhatsNewReentryCard
+                onPress={whatsNew.openFromReentry}
+                onDismiss={whatsNew.dismissReentry}
               />
             </Box>
             <Spacing size={12} />

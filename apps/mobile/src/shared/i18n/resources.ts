@@ -5,7 +5,7 @@ import enAppVersion from './locales/en/app-version.json';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enErrors from './locales/en/errors.json';
-import enFeatureDiscovery from './locales/en/feature-discovery.json';
+import enWhatsNew from './locales/en/feature-discovery.json';
 import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
 import enInvite from './locales/en/invite.json';
@@ -30,7 +30,7 @@ import koAppVersion from './locales/ko/app-version.json';
 import koAuth from './locales/ko/auth.json';
 import koCommon from './locales/ko/common.json';
 import koErrors from './locales/ko/errors.json';
-import koFeatureDiscovery from './locales/ko/feature-discovery.json';
+import koWhatsNew from './locales/ko/feature-discovery.json';
 import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
 import koInvite from './locales/ko/invite.json';
@@ -74,7 +74,7 @@ export const resources = {
     appIcon: koAppIcon,
     appVersion: koAppVersion,
     widget: koWidget,
-    featureDiscovery: koFeatureDiscovery,
+    featureDiscovery: koWhatsNew,
     voice: koVoice,
     voiceNote: koVoiceNote,
   },
@@ -101,7 +101,7 @@ export const resources = {
     appIcon: enAppIcon,
     appVersion: enAppVersion,
     widget: enWidget,
-    featureDiscovery: enFeatureDiscovery,
+    featureDiscovery: enWhatsNew,
     voice: enVoice,
     voiceNote: enVoiceNote,
   },

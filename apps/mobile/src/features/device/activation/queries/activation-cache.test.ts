@@ -1,6 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { FEATURE_DISCOVERY_QUERY_KEYS } from '@src/features/feature-discovery/constants/feature-discovery-query-keys';
-import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
+import { WHATS_NEW_QUERY_KEYS } from '@src/features/app-config/whats-new/constants/whats-new-query-keys';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
@@ -26,7 +26,7 @@ function createService(): ActivationService {
   return new ActivationService(createActivationProgressRepository(storage));
 }
 
-const config: FeatureDiscoveryConfig = {
+const config: WhatsNewConfig = {
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',
@@ -45,7 +45,7 @@ describe('activation mutation bridge', () => {
   });
   it('생성 진행 상태를 공용 Query 캐시에 반영한다', () => {
     // Given
-    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
     const service = createService();
 
@@ -73,7 +73,7 @@ describe('activation mutation bridge', () => {
 
   it('완료 성공에서 이벤트를 한 번 반환하고 활성 상태를 캐시에 반영한다', () => {
     // Given
-    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
     const service = createService();
     recordTodoCreatedForActivation({
@@ -118,7 +118,7 @@ describe('activation mutation bridge', () => {
 
   it('설정의 명시적 푸시 동작을 진행 상태와 공용 캐시에 기록한다', () => {
     // Given
-    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
     const service = createService();
 
@@ -147,7 +147,7 @@ describe('activation mutation bridge', () => {
 
   it('기존 사용자는 신규 코호트 게이트 해제 대상이 아님을 반환한다', () => {
     // Given
-    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), {
       ...user,
       id: 'existing-user',

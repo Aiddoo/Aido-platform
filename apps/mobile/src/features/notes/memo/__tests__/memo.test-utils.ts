@@ -1,8 +1,8 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import type { HttpClient } from '@src/core/ports/http';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {

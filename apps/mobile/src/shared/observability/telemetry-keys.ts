@@ -13,7 +13,7 @@ import type { ReportType } from '@src/features/ai/domains/ai.model';
 import type { SubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
 import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/analytics/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/analytics/purchase-failed-reason';
-import type { CoachmarkKind } from '@src/features/feature-discovery/apis/coachmark.repository';
+import type { CoachmarkKind } from '@src/features/device/coachmark/apis/coachmark.repository';
 import type { OAuthProviderSlug } from '@src/features/identity/auth/domains/oauth.model';
 import type { SubscriptionStatus } from '@src/features/identity/user/domains/user.model';
 import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';

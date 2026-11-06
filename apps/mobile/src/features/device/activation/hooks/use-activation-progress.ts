@@ -1,5 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useGetFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/queries/get-feature-discovery-query-options';
+import { useGetWhatsNewQueryOptions } from '@src/features/app-config/whats-new/queries/get-whats-new-query-options';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/get-todo-existence-query-options';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export function useActivationProgress() {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const configQuery = useQuery({
-    ...useGetFeatureDiscoveryQueryOptions(),
+    ...useGetWhatsNewQueryOptions(),
     enabled: isAuthenticated,
   });
   const userQuery = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });

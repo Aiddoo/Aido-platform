@@ -4,7 +4,7 @@ import { EntitlementService } from '@src/features/billing/subscription/apis/enti
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';

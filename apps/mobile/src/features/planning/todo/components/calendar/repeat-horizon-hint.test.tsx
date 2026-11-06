@@ -1,7 +1,7 @@
 import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';

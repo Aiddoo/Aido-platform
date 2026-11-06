@@ -1,5 +1,5 @@
-import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
-import { getCachedFeatureDiscoveryConfig } from '@src/features/feature-discovery/queries/feature-discovery-cache';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import { getCachedWhatsNewConfig } from '@src/features/app-config/whats-new/queries/whats-new-cache';
 import type { User } from '@src/features/identity/user/domains/user.model';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { GrowthEventMap } from '@src/shared/analytics';
@@ -21,14 +21,14 @@ interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
 
 function getContext(queryClient: QueryClient) {
   return {
-    config: getCachedFeatureDiscoveryConfig(queryClient),
+    config: getCachedWhatsNewConfig(queryClient),
     user: getCachedMe(queryClient),
   };
 }
 
 function updateProgressCache(
   queryClient: QueryClient,
-  config: FeatureDiscoveryConfig | undefined,
+  config: WhatsNewConfig | undefined,
   user: User | undefined,
   progress: ReturnType<ActivationService['getProgress']>,
 ) {

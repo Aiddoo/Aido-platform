@@ -10,8 +10,8 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({
   useAuth: () => ({ status: 'authenticated' }),
 }));
 
-jest.mock('@src/features/feature-discovery/queries/get-feature-discovery-query-options', () => ({
-  useGetFeatureDiscoveryQueryOptions: () => ({
+jest.mock('@src/features/app-config/whats-new/queries/get-whats-new-query-options', () => ({
+  useGetWhatsNewQueryOptions: () => ({
     queryKey: ['feature-discovery'],
     queryFn: () => Promise.reject(new Error('campaign config unavailable')),
     retry: false,

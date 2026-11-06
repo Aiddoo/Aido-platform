@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 
 import {
   ACTIVATION_CHECKLIST_WINDOW_MS,
@@ -9,8 +9,8 @@ import {
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');
 
 const createConfig = (
-  overrides?: Partial<Extract<FeatureDiscoveryConfig, { enabled: true }>>,
-): FeatureDiscoveryConfig => ({
+  overrides?: Partial<Extract<WhatsNewConfig, { enabled: true }>>,
+): WhatsNewConfig => ({
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',
