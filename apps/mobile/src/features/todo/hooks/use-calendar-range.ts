@@ -3,12 +3,12 @@ import { getCalendarRange, getWeekRange } from '@src/shared/utils/date';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
-import { useCalendarContext } from '../components/providers/calendar-provider';
+import { useCalendarViewMode } from './use-calendar-view-mode';
 
 /** 현재 뷰 모드(주/월)에 해당하는 캘린더 조회 범위 */
 export function useCalendarRange() {
   const [selectedDate] = useFeedDate();
-  const { viewMode } = useCalendarContext();
+  const [viewMode] = useCalendarViewMode();
 
   return useMemo(
     () =>

@@ -16,7 +16,6 @@ import { FeedListPane } from '@src/features/todo/components/feed-list-pane';
 import { FeedTodoDetailPane } from '@src/features/todo/components/feed-todo-detail-pane';
 import { FriendStrip } from '@src/features/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
-import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/todo/components/todo-list/todo-list';
 import { useFeedActionParam } from '@src/features/todo/hooks/use-feed-action-param';
@@ -52,7 +51,7 @@ export default function FeedScreen() {
   const [friendId] = useFeedFriendIdParam();
 
   return (
-    <CalendarProvider>
+    <>
       <NotificationBell.Toolbar />
       <FeedDateProvider date={date} onDateChange={setDate}>
         <AdaptivePane
@@ -74,7 +73,7 @@ export default function FeedScreen() {
           secondary={<FeedTodoDetailPane />}
         />
       </FeedDateProvider>
-    </CalendarProvider>
+    </>
   );
 }
 

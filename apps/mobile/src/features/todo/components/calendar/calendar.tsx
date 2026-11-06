@@ -1,7 +1,12 @@
+import { useCalendarViewMode } from '@src/features/todo/hooks/use-calendar-view-mode';
 import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import {
+  type CalendarViewMode,
+  calendarViewModeSchema,
+} from '@src/shared/preferences/calendar-view-mode.preference';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
@@ -22,7 +27,7 @@ import {
 import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { range } from 'es-toolkit';
-import { PressableFeedback } from 'heroui-native';
+import { PressableFeedback, Tabs } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -40,10 +45,8 @@ import {
   getCalendarPageAtOffset,
   shiftCalendarDate,
 } from '../../utils/view-models/calendar-paging.view-model';
-import { useCalendarContext } from '../providers/calendar-provider';
 import { CalendarDateCell } from './calendar-date-cell';
 import { CalendarNavigation } from './calendar-navigation';
-import { CalendarViewModeToggle } from './calendar-view-mode-toggle';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
@@ -62,7 +65,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
   const today = useToday();
-  const { viewMode } = useCalendarContext();
+  const [viewMode] = useCalendarViewMode();
 
   const pagerHeight = match(viewMode)
     .with('week', () => DATE_CELL_HEIGHT)
@@ -89,7 +92,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
         </HStack>
 
         <HStack gap={8} align="center" className="ml-auto">
-          <CalendarViewModeToggle />
+          <CalendarViewModeTabs />
           <CalendarNavigation onPrevious={handlePrevious} onNext={handleNext} />
         </HStack>
       </HStack>
@@ -107,8 +110,47 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   );
 }
 
+function CalendarViewModeTabs() {
+  const { t } = useTranslation('todo');
+  const [viewMode, setViewMode] = useCalendarViewMode();
+
+  return (
+    <Tabs
+      value={viewMode}
+      onValueChange={(next) => setViewMode(calendarViewModeSchema.parse(next))}
+    >
+      <Tabs.List className="gap-0 rounded-lg bg-gray-2">
+        <Tabs.Indicator className="rounded-md bg-white shadow-none" />
+        <CalendarViewModeTrigger value="week">{t('calendar.week')}</CalendarViewModeTrigger>
+        <CalendarViewModeTrigger value="month">{t('calendar.month')}</CalendarViewModeTrigger>
+      </Tabs.List>
+    </Tabs>
+  );
+}
+
+function CalendarViewModeTrigger({
+  value,
+  children,
+}: {
+  value: CalendarViewMode;
+  children: string;
+}) {
+  return (
+    <Tabs.Trigger value={value} hitSlop={4} className="p-0">
+      {({ isSelected }) => (
+        // 저장된 보기로 앱을 켜면 Tabs.Indicator가 그려지지 않을 때가 있어 선택 배경을 칸에도 둔다
+        <Box className={cn('h-[22px] justify-center rounded-md px-2.5', isSelected && 'bg-white')}>
+          <Text size="e1" weight="medium" shade={isSelected ? 9 : 5}>
+            {children}
+          </Text>
+        </Box>
+      )}
+    </Tabs.Trigger>
+  );
+}
+
 function CalendarHeaderText() {
-  const { viewMode } = useCalendarContext();
+  const [viewMode] = useCalendarViewMode();
   const selectedDateKey = useFeedDateKey();
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
