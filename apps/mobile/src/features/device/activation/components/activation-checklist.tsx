@@ -30,6 +30,8 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
   const openMyInvite = useOpenMyInvite();
   // 끝나서 숨길 때도 접히는 동안은 그려 두어 아래 목록이 한 번에 뛰지 않게 한다
   const [isMounted, setIsMounted] = useState(isVisible);
+  // 첫 화면부터 보이던 카드는 그대로 두고, 조회가 끝난 뒤 늦게 나타나는 카드만 펼치며 보여 아래 목록이 뛰지 않게 한다
+  const [isRevealedLate] = useState(!isVisible);
   if (isVisible && !isMounted) {
     setIsMounted(true);
   }
@@ -40,7 +42,11 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
   }
 
   return (
-    <ActivationChecklistCollapse isOpen={isVisible} onCollapsed={handleCollapsed}>
+    <ActivationChecklistCollapse
+      isOpen={isVisible}
+      isRevealedLate={isRevealedLate}
+      onCollapsed={handleCollapsed}
+    >
       <VStack
         gap={12}
         className={cn('rounded-2xl border border-gray-2 bg-gray-1 p-4', className)}
@@ -70,22 +76,26 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
 
 interface ActivationChecklistCollapseProps {
   isOpen: boolean;
+  isRevealedLate: boolean;
   onCollapsed: () => void;
   children: ReactNode;
 }
 
-/** 닫히면 지금 높이에서 0으로 접고 흐리게 한 뒤 알린다. 동작 줄이기 설정이면 바로 닫힌다 */
+/** 늦게 나타나면 0에서 펼치고, 닫히면 지금 높이에서 0으로 접고 흐리게 한 뒤 알린다. 동작 줄이기 설정이면 바로 바뀐다 */
 function ActivationChecklistCollapse({
   isOpen,
+  isRevealedLate,
   onCollapsed,
   children,
 }: ActivationChecklistCollapseProps) {
   const contentHeight = useSharedValue(0);
-  const progress = useSharedValue(1);
+  const progress = useSharedValue(isRevealedLate ? 0 : 1);
 
   useEffect(() => {
     if (isOpen) {
-      progress.set(1);
+      progress.set(
+        withTiming(1, { duration: ANIMATION.duration.slow, reduceMotion: ReduceMotion.System }),
+      );
       return;
     }
     progress.set(
