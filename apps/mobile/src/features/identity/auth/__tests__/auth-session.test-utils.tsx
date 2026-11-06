@@ -79,6 +79,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     logger: silentLogger,
   });
   const sessionCleanupService = new SessionCleanupService({
+    accountGuides: [],
     queryCache: createSessionQueryCache(queryClient),
     persistedQueryCache: queryCacheStorage,
     drafts: draftService,

@@ -123,6 +123,7 @@ describe('AuthProvider', () => {
           userService,
           widgetSyncService,
           sessionCleanupService: new SessionCleanupService({
+            accountGuides: [],
             queryCache: createSessionQueryCache(queryClient),
             persistedQueryCache: queryCacheStorage,
             drafts: draftService,

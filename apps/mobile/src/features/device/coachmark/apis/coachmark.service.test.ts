@@ -1,15 +1,13 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 
 import { coachmarkStorageKey, createCoachmarkRepository } from './coachmark.repository';
 import { CoachmarkService } from './coachmark.service';
 
-function createMemoryStorage(initial: Record<string, string> = {}): SyncStorage {
-  const values = new Map(Object.entries(initial));
-  return {
-    get: (key) => values.get(key),
-    set: (key, value) => values.set(key, value),
-    remove: (key) => values.delete(key),
-  };
+function createMemoryStorage(initial: Record<string, string> = {}) {
+  const storage = createMemorySyncStorage();
+  Object.entries(initial).forEach(([key, value]) => storage.set(key, value));
+
+  return storage;
 }
 
 describe('CoachmarkService', () => {

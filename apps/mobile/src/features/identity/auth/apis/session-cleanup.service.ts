@@ -26,6 +26,8 @@ interface SessionCleanupPorts {
   deviceTimezone: Pick<DeviceTimezoneService, 'clear'>;
   /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다 */
   pendingRedemption: Pick<PendingRedemptionRepository, 'clear'>;
+  /** 계정별 안내 기록. 위층 기능이라 조립하는 곳이 넘긴다 */
+  accountGuides: readonly { removeAccount(accountId: string): void }[];
   logger: Pick<Logger, 'warn'>;
 }
 
@@ -49,6 +51,13 @@ export class SessionCleanupService {
     this.#run('voice-notes', () => this.#ports.voiceNotes.removeAll());
     this.#run('device-timezone', () => this.#ports.deviceTimezone.clear());
     this.#run('pending-redemption', () => this.#ports.pendingRedemption.clear());
+  };
+
+  /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
+  afterAccountDeleted = (accountId: string): void => {
+    this.#ports.accountGuides.forEach((guides) => {
+      this.#run('account-guides', () => guides.removeAccount(accountId));
+    });
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */

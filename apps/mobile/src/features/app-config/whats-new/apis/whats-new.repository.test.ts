@@ -1,4 +1,4 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
@@ -7,12 +7,12 @@ import { createWhatsNewRepository, whatsNewSeenKey } from './whats-new.repositor
 const identity = { userId: 'user-1', campaignId: 'feature-discovery-2026-08' };
 const claimedAt = toInstant('2026-08-02T00:00:00.000Z');
 
-function createFailingStorage(): SyncStorage {
+function createFailingStorage(): SyncStorage & Pick<EnumerableSyncStorage, 'keys'> {
   const fail = () => {
     throw new Error('storage unavailable');
   };
 
-  return { get: fail, set: fail, remove: fail };
+  return { get: fail, set: fail, remove: fail, keys: fail };
 }
 
 describe('whats-new 본 기록', () => {
@@ -135,5 +135,53 @@ describe('whats-new 재진입 시각', () => {
 
     // Then
     expect(() => repository.dismissReentry(identity)).not.toThrow();
+  });
+});
+
+describe('whats-new 키 정리', () => {
+  const SEEN = 'aido_feature_discovery_seen_v1';
+  const REENTRY = 'aido_feature_discovery_reentry_v1';
+  const CURRENT = 'feature-discovery-2026-12';
+  const RETIRED = 'feature-discovery-2026-08';
+
+  it('번들에 없는 캠페인 키와 14일 지난 재진입 키만 지운다', () => {
+    // Given
+    const storage = createMemorySyncStorage();
+    storage.set(`${SEEN}:user-1:${CURRENT}`, claimedAt);
+    storage.set(`${REENTRY}:user-1:${CURRENT}`, claimedAt);
+    storage.set(`${REENTRY}:user-2:${CURRENT}`, '2026-08-20T00:00:00.000Z');
+    storage.set(`${SEEN}:user-1:${RETIRED}`, claimedAt);
+    storage.set(`${REENTRY}:user-1:${RETIRED}`, claimedAt);
+    storage.set('aido_activation_v1:user-1:feature-discovery-2026-08', '{}');
+
+    // When
+    createWhatsNewRepository(storage).removeRetiredKeys({
+      campaignIds: [CURRENT],
+      now: toInstant('2026-08-21T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(storage.keys().sort()).toEqual(
+      [
+        'aido_activation_v1:user-1:feature-discovery-2026-08',
+        `${REENTRY}:user-2:${CURRENT}`,
+        `${SEEN}:user-1:${CURRENT}`,
+      ].sort(),
+    );
+  });
+
+  it('탈퇴한 계정의 키만 지운다', () => {
+    // Given
+    const storage = createMemorySyncStorage();
+    const repository = createWhatsNewRepository(storage);
+    repository.claimSeen({ userId: 'user-1', campaignId: CURRENT }, claimedAt);
+    repository.claimSeen({ userId: 'user-10', campaignId: CURRENT }, claimedAt);
+
+    // When
+    repository.removeAccount('user-1');
+
+    // Then
+    expect(repository.isSeen({ userId: 'user-1', campaignId: CURRENT })).toBe(false);
+    expect(repository.isSeen({ userId: 'user-10', campaignId: CURRENT })).toBe(true);
   });
 });

@@ -18,6 +18,7 @@ function createPorts() {
       voiceNotes: { removeAll: record('voiceNotes') },
       deviceTimezone: { clear: record('deviceTimezone') },
       pendingRedemption: { clear: record('pendingRedemption') },
+      accountGuides: [{ removeAccount: (accountId: string) => calls.push(`guides:${accountId}`) }],
       logger: { warn: jest.fn() },
     },
   };
@@ -41,6 +42,17 @@ describe('SessionCleanupService', () => {
       'deviceTimezone',
       'pendingRedemption',
     ]);
+  });
+
+  it('탈퇴 정리는 그 계정의 안내 기록을 지운다', () => {
+    // Given
+    const { calls, ports } = createPorts();
+
+    // When
+    new SessionCleanupService(ports).afterAccountDeleted('user-1');
+
+    // Then
+    expect(calls).toEqual(['guides:user-1']);
   });
 
   it('세션 만료 정리는 캐시만 지우고 초안과 녹음은 남긴다', () => {

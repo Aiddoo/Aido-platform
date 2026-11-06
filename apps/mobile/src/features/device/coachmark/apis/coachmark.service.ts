@@ -5,10 +5,10 @@ import type { CoachmarkInput, CoachmarkRepository } from './coachmark.repository
  * complete는 구독자에게 알려 같은 안내를 보이는 화면이 바로 닫힌다.
  */
 export class CoachmarkService {
-  readonly #repository: CoachmarkRepository;
+  readonly #repository: Pick<CoachmarkRepository, 'isSeen' | 'markSeen'>;
   readonly #listeners = new Set<() => void>();
 
-  constructor(repository: CoachmarkRepository) {
+  constructor(repository: Pick<CoachmarkRepository, 'isSeen' | 'markSeen'>) {
     this.#repository = repository;
   }
 

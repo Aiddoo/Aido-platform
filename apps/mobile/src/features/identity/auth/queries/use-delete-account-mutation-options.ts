@@ -1,13 +1,19 @@
 import type { DeleteAccountInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAnalytics, useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
+import {
+  useAnalytics,
+  useAuthService,
+  useHaptics,
+  useSessionCleanupService,
+} from '@src/bootstrap/providers/di-context';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { mutationOptions } from '@tanstack/react-query';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 export const useDeleteAccountMutationOptions = () => {
   const haptics = useHaptics();
@@ -16,6 +22,8 @@ export const useDeleteAccountMutationOptions = () => {
   const { trackEvent } = useTrack();
   const toast = useAppToast();
   const { setStatus } = useAuth();
+  const queryClient = useQueryClient();
+  const sessionCleanupService = useSessionCleanupService();
 
   return mutationOptions({
     // 푸시 기기는 서버 탈퇴가 전 세션과 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
@@ -28,6 +36,10 @@ export const useDeleteAccountMutationOptions = () => {
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       analytics.resetData();
+      const accountId = getCachedMe(queryClient)?.id;
+      if (accountId != null) {
+        sessionCleanupService.afterAccountDeleted(accountId);
+      }
     },
     onError: (error) => {
       haptics.notify('error');
