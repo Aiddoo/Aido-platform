@@ -1,6 +1,6 @@
 import {
   createStepperState,
-  currentEntryOf,
+  getCurrentEntry,
   type StepperState,
   stepperReducer,
 } from './stepper-reducer';
@@ -35,7 +35,7 @@ describe('stepperReducer', () => {
 
     // Then
     expect(next.cursor).toBe(1);
-    expect(currentEntryOf(next).step).toBe('password');
+    expect(getCurrentEntry(next).step).toBe('password');
   });
 
   it('같은 단계에 같은 context를 또 push하면 기록을 늘리지 않는다', () => {
@@ -125,6 +125,6 @@ describe('stepperReducer', () => {
     const forward = stepperReducer(back, { type: 'go', delta: 1 });
 
     // Then
-    expect(currentEntryOf(forward).step).toBe('password');
+    expect(getCurrentEntry(forward).step).toBe('password');
   });
 });

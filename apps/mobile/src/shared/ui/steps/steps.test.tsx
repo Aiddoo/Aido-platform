@@ -1,27 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { fireEvent, screen } from '@testing-library/react-native';
 
 import { Steps } from './steps';
-
-jest.mock('heroui-native', () => {
-  const { Pressable } = require('react-native');
-  return {
-    PressableFeedback: ({ children, ...props }: { children: ReactNode }) => (
-      <Pressable {...props}>{children}</Pressable>
-    ),
-  };
-});
-
-jest.mock('uniwind', () => ({ useResolveClassNames: () => ({ backgroundColor: '#ffffff' }) }));
-
-jest.mock('../icon/icons', () => ({ FillCheckIcon: () => null }));
-
-jest.mock('@src/shared/hooks/use-reduce-motion', () => ({ useReduceMotion: () => false }));
 
 async function renderButtons(props: { index: number; isLast: boolean }) {
   const onBack = jest.fn();
   const onNext = jest.fn();
-  await render(
+  await renderUi(
     <Steps.Buttons {...props} backLabel="이전" nextLabel="다음" onBack={onBack} onNext={onNext} />,
   );
   return { onBack, onNext };
@@ -46,6 +31,18 @@ describe('Steps.Buttons', () => {
     // Then
     expect(screen.queryByText('이전')).toBeNull();
     expect(screen.getByText('이전', { includeHiddenElements: true })).toBeTruthy();
+  });
+
+  it('다음 버튼을 연달아 눌러도 onNext를 한 번만 부른다', async () => {
+    // Given
+    const { onNext } = await renderButtons({ index: 0, isLast: false });
+
+    // When
+    await fireEvent.press(screen.getByText('다음'));
+    await fireEvent.press(screen.getByText('다음'));
+
+    // Then
+    expect(onNext).toHaveBeenCalledTimes(1);
   });
 
   it('둘째 단계부터 뒤로 버튼을 눌러 onBack을 부른다', async () => {

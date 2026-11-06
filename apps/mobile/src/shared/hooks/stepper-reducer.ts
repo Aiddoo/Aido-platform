@@ -4,7 +4,7 @@ export type StepperContexts = Record<string, object>;
 
 export type StepName<Contexts extends StepperContexts> = keyof Contexts & string;
 
-/** 단계 이름과 그 단계의 context가 짝으로 묶인 판별 유니온. K를 좁히면 그 단계만 남는다 */
+/** 단계 이름과 그 단계의 context가 짝으로 묶인 판별 유니온. Name을 좁히면 그 단계만 남는다 */
 export type StepEntry<
   Contexts extends StepperContexts,
   Name extends StepName<Contexts> = StepName<Contexts>,
@@ -26,7 +26,7 @@ export function createStepperState<Contexts extends StepperContexts>(
   return { entries: [initial], cursor: 0 };
 }
 
-export function currentEntryOf<Contexts extends StepperContexts>(
+export function getCurrentEntry<Contexts extends StepperContexts>(
   state: StepperState<Contexts>,
 ): StepEntry<Contexts> {
   const entry = state.entries[state.cursor];
@@ -36,12 +36,12 @@ export function currentEntryOf<Contexts extends StepperContexts>(
   return entry;
 }
 
-/** 같은 단계에 같은 context를 다시 밀어 넣는 연속 탭은 기록을 늘리지 않는다 */
+/** 지금과 같은 단계·context를 다시 넣는 호출은 무시한다. 렌더러의 같은 핸들러가 연달아 불릴 때 기록이 늘지 않게 한다 */
 function push<Contexts extends StepperContexts>(
   state: StepperState<Contexts>,
   entry: StepEntry<Contexts>,
 ): StepperState<Contexts> {
-  if (isEqual(currentEntryOf(state), entry)) {
+  if (isEqual(getCurrentEntry(state), entry)) {
     return state;
   }
   return {
@@ -54,6 +54,9 @@ function replace<Contexts extends StepperContexts>(
   state: StepperState<Contexts>,
   entry: StepEntry<Contexts>,
 ): StepperState<Contexts> {
+  if (isEqual(getCurrentEntry(state), entry)) {
+    return state;
+  }
   return {
     entries: state.entries.map((existing, index) => (index === state.cursor ? entry : existing)),
     cursor: state.cursor,

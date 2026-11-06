@@ -10,7 +10,7 @@ type InlineNoticeStatus = NonNullable<ComponentProps<typeof Alert>['status']>;
 export interface InlineNoticeProps extends Omit<ComponentProps<typeof Alert>, 'children'> {
   title: string;
   description?: string;
-  /** 제목 앞 그림. 없으면 상태에 맞는 기본 표시를 그린다 */
+  /** 제목 앞 그림. 넘기지 않으면 상태에 맞는 기본 표시, null이면 표시 없음 */
   image?: ReactNode;
   /** 설명 아래 행동. 버튼 같은 눌리는 요소 */
   action?: ReactNode;
@@ -35,10 +35,10 @@ export function InlineNotice({
 
   return (
     <Alert status={status} {...props}>
-      {image ?? <Alert.Indicator />}
+      {image === undefined ? <Alert.Indicator /> : image}
       <Alert.Content>
         <Alert.Title>
-          <Text size="b3" weight="semibold" tone={toneOf(status)}>
+          <Text size="b3" weight="semibold" tone={getTextTone(status)}>
             {title}
           </Text>
         </Alert.Title>
@@ -58,7 +58,7 @@ export function InlineNotice({
   );
 }
 
-function toneOf(status: InlineNoticeStatus): TextTone {
+function getTextTone(status: InlineNoticeStatus): TextTone {
   return match(status)
     .with('default', () => 'neutral' as const)
     .with('accent', () => 'brand' as const)

@@ -1,5 +1,7 @@
 {
   "actions": {
+    "back": "Back",
+    "continue": "Continue",
     "confirm": "OK",
     "cancel": "Cancel",
     "save": "Save",

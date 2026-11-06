@@ -12,7 +12,7 @@ import { AspectRatio, type AspectRatioProps } from '../aspect-ratio';
 type MediaStatus = 'loading' | 'loaded' | 'failed';
 
 export interface FeatureMediaProps extends Omit<AspectRatioProps, 'children'> {
-  source: ImageProps['source'];
+  source: NonNullable<ImageProps['source']>;
   /** 스크린 리더가 읽는 설명. 장식이면 빈 문자열 */
   alt: string;
   contentFit?: ImageProps['contentFit'];
@@ -43,6 +43,8 @@ export function FeatureMedia({
       <Image
         source={source}
         alt={alt}
+        accessible={alt !== ''}
+        accessibilityRole="image"
         contentFit={contentFit}
         cachePolicy="memory-disk"
         recyclingKey={recyclingKey}

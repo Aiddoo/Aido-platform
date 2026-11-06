@@ -13,7 +13,7 @@ import { BackHandler } from 'react-native';
 
 import {
   createStepperState,
-  currentEntryOf,
+  getCurrentEntry,
   type StepEntry,
   type StepName,
   type StepperAction,
@@ -122,8 +122,9 @@ function renderStep<Contexts extends StepperContexts, Name extends StepName<Cont
 }
 
 /**
- * Render의 정체성은 훅이 만들어질 때 한 번 정해진다. 단계가 바뀌어도 같은 컴포넌트라
- * 그 안의 입력 포커스와 상태가 렌더마다 날아가지 않는다.
+ * Render의 정체성은 훅이 만들어질 때 한 번 정해져서, 부모가 다시 그려져도 단계 안의 입력 포커스와
+ * 상태가 유지된다. 단계가 바뀔 때만 key로 초기화한다. 렌더러는 함수로 직접 부르므로 그 안에서
+ * 훅을 쓰지 않고 컴포넌트를 돌려준다. 단계마다 훅 순서가 달라지면 안 된다.
  */
 function createRender<Contexts extends StepperContexts>(
   store: StepperStore<Contexts>,
@@ -131,7 +132,7 @@ function createRender<Contexts extends StepperContexts>(
 ) {
   return function StepperRender(renderers: StepRenderers<Contexts>) {
     const state = useSyncExternalStore(store.subscribe, store.getState);
-    const entry = currentEntryOf(state);
+    const entry = getCurrentEntry(state);
 
     return (
       <Fragment key={`${state.cursor}:${entry.step}`}>
@@ -154,7 +155,7 @@ export function useStepper<Contexts extends StepperContexts>({
   const [history] = useState(() => createHistory(store));
   const [Render] = useState(() => createRender(store, history));
   const state = useSyncExternalStore(store.subscribe, store.getState);
-  const current = currentEntryOf(state);
+  const current = getCurrentEntry(state);
   const lastNotified = useRef<StepEntry<Contexts> | null>(null);
   const notifyStepChange = useEffectEvent((change: StepChange<Contexts>) => {
     onStepChange?.(change);

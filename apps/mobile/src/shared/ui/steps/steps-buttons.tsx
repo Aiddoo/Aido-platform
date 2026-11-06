@@ -1,4 +1,5 @@
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { LayoutChangeEvent } from 'react-native';
@@ -14,7 +15,6 @@ import { FillCheckIcon } from '../icon/icons';
 import { Text } from '../text/text';
 import { STEPS_SPRING_CONFIG, springTo } from './steps-motion';
 
-const BUTTON_HEIGHT = 60;
 const GAP = 10;
 const BACK_WIDTH_RATIO = 0.25;
 const CHECK_SLOT_WIDTH = 22;
@@ -30,7 +30,10 @@ interface StepsButtonsProps {
   onNext: () => void;
 }
 
-/** 첫 단계는 다음 버튼이 전체 폭이고, 둘째 단계부터 뒤로 버튼이 폭의 25%로 나타난다 */
+/**
+ * 첫 단계는 다음 버튼이 전체 폭이고, 둘째 단계부터 뒤로 버튼이 폭의 25%로 나타난다.
+ * 버튼은 단계가 바뀌어도 그대로 남아, 막지 않으면 연타가 다음 단계까지 건너뛴다.
+ */
 export function StepsButtons({
   index,
   isLast,
@@ -42,6 +45,8 @@ export function StepsButtons({
   const isReduced = useReduceMotion();
   const containerWidth = useSharedValue(0);
   const canGoBack = index > 0;
+  const handleBack = useSingleTap(onBack);
+  const handleNext = useSingleTap(onNext);
 
   const backProgress = useDerivedValue(() =>
     springTo(canGoBack ? 1 : 0, isReduced, STEPS_SPRING_CONFIG),
@@ -84,7 +89,7 @@ export function StepsButtons({
         <Animated.View style={backInnerStyle}>
           <PressableFeedback
             accessibilityRole="button"
-            onPress={onBack}
+            onPress={handleBack}
             className={cn(BUTTON_CLASS, 'bg-gray-9/10')}
           >
             <Text size="b2" weight="bold" shade={10}>
@@ -96,7 +101,7 @@ export function StepsButtons({
       <View style={styles.next}>
         <PressableFeedback
           accessibilityRole="button"
-          onPress={onNext}
+          onPress={handleNext}
           className={cn(BUTTON_CLASS, 'bg-main')}
         >
           <View style={styles.label}>
@@ -122,7 +127,6 @@ const BUTTON_CLASS = 'h-[60px] items-center justify-center rounded-[30px]';
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    height: BUTTON_HEIGHT,
     width: '100%',
   },
   next: { flex: 1 },

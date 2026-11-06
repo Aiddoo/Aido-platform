@@ -1,17 +1,25 @@
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { range } from 'es-toolkit';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useResolveClassNames } from 'uniwind';
 
 import { fadeTo, springTo } from './steps-motion';
-import { useStepsBackgroundColor } from './use-steps-color';
 
 const DOT_SIZE = 10;
 const DOT_SPACING = 20;
 const BAR_PADDING = 20;
+const BAR_HEIGHT = DOT_SIZE + 20;
 
 interface StepsDotsProps {
   index: number;
   count: number;
+}
+
+/** 워크릿에서 색을 섞으려면 문자열 색이 필요해서 토큰 클래스를 색 값으로 풀어 둔다 */
+function useBackgroundColor(className: string): string {
+  const { backgroundColor } = useResolveClassNames(className);
+  return typeof backgroundColor === 'string' ? backgroundColor : 'transparent';
 }
 
 interface StepsDotProps {
@@ -34,9 +42,9 @@ function StepsDot({ dotIndex, index, passedColor, upcomingColor, isReduced }: St
 /** 점 뒤 막대가 현재 단계까지 늘어나고, 지난 점은 막대 위에서 밝아진다 */
 export function StepsDots({ index, count }: StepsDotsProps) {
   const isReduced = useReduceMotion();
-  const passedColor = useStepsBackgroundColor('bg-white');
-  const upcomingColor = useStepsBackgroundColor('bg-gray-4');
-  const barColor = useStepsBackgroundColor('bg-main');
+  const passedColor = useBackgroundColor('bg-white dark:bg-gray-9');
+  const upcomingColor = useBackgroundColor('bg-gray-4');
+  const barColor = useBackgroundColor('bg-main');
 
   const barStyle = useAnimatedStyle(() => ({
     width: springTo((index + 1) * DOT_SIZE + index * DOT_SPACING + BAR_PADDING, isReduced),
@@ -49,7 +57,7 @@ export function StepsDots({ index, count }: StepsDotsProps) {
       style={styles.row}
     >
       <Animated.View style={[styles.bar, { backgroundColor: barColor }, barStyle]} />
-      {Array.from({ length: count }, (_, dotIndex) => (
+      {range(count).map((dotIndex) => (
         <StepsDot
           key={dotIndex}
           dotIndex={dotIndex}
@@ -68,12 +76,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: DOT_SPACING,
+    height: BAR_HEIGHT,
     paddingHorizontal: BAR_PADDING / 2,
   },
   bar: {
     borderCurve: 'continuous',
     borderRadius: 100,
-    height: DOT_SIZE + 20,
+    height: BAR_HEIGHT,
     position: 'absolute',
   },
   dot: {

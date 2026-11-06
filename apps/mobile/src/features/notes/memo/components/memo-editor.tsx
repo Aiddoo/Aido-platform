@@ -479,6 +479,8 @@ function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
   return (
     <IconButton
       accessibilityLabel={t(isPinned ? 'detail.unpin' : 'detail.pin')}
+      hitSlop={4}
+      className="min-h-9 min-w-9"
       icon={
         isPinned ? (
           <PinFilledIcon width={20} height={20} colorClassName="text-main" />
@@ -533,6 +535,8 @@ function MemoMoreMenu({
           testID="memo-more"
           accessibilityLabel={t('memo:detail.more')}
           accessibilityState={{ expanded: isOpen }}
+          hitSlop={4}
+          className="min-h-9 min-w-9"
           icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
         />
       </Menu.Trigger>

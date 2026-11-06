@@ -1,3 +1,4 @@
+import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps } from 'react';
 import { View } from 'react-native';
 
@@ -6,9 +7,9 @@ export interface AspectRatioProps extends ComponentProps<typeof View> {
   ratio: number;
 }
 
-export function AspectRatio({ ratio, style, children, ...props }: AspectRatioProps) {
+export function AspectRatio({ ratio, className, style, children, ...props }: AspectRatioProps) {
   return (
-    <View style={[{ width: '100%', aspectRatio: ratio }, style]} {...props}>
+    <View className={cn('w-full', className)} style={[{ aspectRatio: ratio }, style]} {...props}>
       {children}
     </View>
   );

@@ -1,5 +1,7 @@
 {
   "actions": {
+    "back": "이전",
+    "continue": "다음",
     "confirm": "확인",
     "cancel": "취소",
     "save": "저장",
