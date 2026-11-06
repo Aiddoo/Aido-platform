@@ -109,6 +109,8 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })`           | 실제 provider 위에 `di` 필드만 덮어써 렌더. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다 |
 | `createTestDiContainer(overrides)` + `StaticDIProvider`                   | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패                             |
 | `createMemorySyncStorage()`                                               | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                                              |
+| `createMemoryStorage()`                                                   | 키체인(`Storage` 포트) 대신 메모리 저장소                                                |
+| `createMemoryTokenStore(tokens)`                                          | 저장·삭제가 다음 읽기에 반영되는 토큰 저장소 fake                                        |
 | `createHttpClientStub()`                                                  | HTTP 포트 stub                                                                           |
 | `createAnalyticsStub()`, `createStorageStub()`, `createSyncStorageStub()` | Analytics·저장소 포트 stub                                                               |
 | `createLoggerStub()`                                                      | Logger 포트 stub. `jest.fn()` 네 개를 파일마다 만들지 않는다                             |

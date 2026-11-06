@@ -63,7 +63,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 ## 401은 ErrorBoundary로 새지 않는다
 
-- `queryClient.clear()`는 만료 리스너가 아니라 `status === 'unauthenticated'` effect에서 부른다. 같은 tick에 비우면 아직 마운트된 인증 화면의 `useSuspenseQuery`가 즉시 재요청 → 401 → 다시 만료 → ErrorBoundary 루프를 돈다.
+- 캐시 정리(`SessionCleanupService`)는 만료 리스너가 아니라 `status === 'unauthenticated'` effect에서 부른다. 같은 tick에 비우면 아직 마운트된 인증 화면의 `useSuspenseQuery`가 즉시 재요청 → 401 → 다시 만료 → ErrorBoundary 루프를 돈다.
 - 인증이 끝난 뒤 도착한 401은 `(app)/_layout.tsx`의 ErrorBoundary가 통과시킨다. 라우트 게이트가 화면을 바꾼다.
 - 미인증 상태에서 인증 API를 부르지 않는다. 푸시 토큰 해제는 아직 인증된 로그아웃 흐름(`logOutDevice`)이 맡는다.
 

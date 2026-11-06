@@ -189,7 +189,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`AuthErrors.fromE
 - 저장소는 초안과 같은 SecureStore 키로 연 AES-256 MMKV `aido.query-cache.encrypted`다. 키를 읽지 못한 실행(잠금 해제 전 실행·키체인 오류)은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다.
 - 조회 옵션에 `...PERSISTED_QUERY_OPTIONS`(`meta.persist` + `gcTime` 24시간)를 붙인다. 토큰·결제·배지 수·AI 제안은 붙이지 않는다.
 - 복원 직후 전체를 invalidate한다. 앱이 꺼지기 전의 낙관적 반영이 서버 값처럼 남지 않게 하기 위해서다.
-- 로그인한 사용자 키에만 쓰고(`useUserIdentity`가 주인 지정), 미인증 전환 때 `AuthProvider`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
+- 로그인한 사용자 키에만 쓰고(`useUserIdentity`가 주인 지정), 미인증 전환 때 `SessionCleanupService`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
 
 ## 저장소 에러: KeychainLockedError
 
