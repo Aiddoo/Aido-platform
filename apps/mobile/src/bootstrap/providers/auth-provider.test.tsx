@@ -26,7 +26,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, Text } from 'react-native';
 import { z } from 'zod';
 
-import { AuthProvider, useAuth, useAuthStatus } from './auth-provider';
+import { AuthProvider, useAuth } from './auth-provider';
 import { StaticDIProvider } from './di-context';
 import {
   createQueryCacheStorage,
@@ -44,7 +44,7 @@ const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
   setUserId: jest.fn(),
 });
 
-const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
+const StatusProbe = () => <Text testID="status">{useAuth().status}</Text>;
 
 const LogoutProbe = () => {
   const { setStatus } = useAuth();

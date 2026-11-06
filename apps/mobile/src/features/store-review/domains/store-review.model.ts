@@ -1,5 +1,5 @@
 import { dateSchema } from '@aido/api';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

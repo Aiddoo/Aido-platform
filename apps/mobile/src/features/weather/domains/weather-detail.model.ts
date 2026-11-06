@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { clamp, round, sumBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -10,9 +11,6 @@ import {
   PM25_UPPER_BOUNDS,
   selectUpcomingHours,
 } from './weather-report.model';
-
-const MINUTE_MS = 60_000;
-const HOUR_MS = 60 * MINUTE_MS;
 
 /** 막대 끝에 점이 반쯤 잘리지 않도록 3%~97% 안에 둔다. */
 const METER_MIN = 0.03;

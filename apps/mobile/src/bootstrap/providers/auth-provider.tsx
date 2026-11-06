@@ -218,11 +218,3 @@ export const useAuth = (): AuthContextValue => {
   }
   return context;
 };
-
-export const useAuthStatus = () => useAuth().status;
-export const useIsAuthenticated = () => useAuth().status === 'authenticated';
-/** 아직 인증 여부를 확정하지 못한 상태(부팅 중 또는 키체인 잠김). 로딩 화면을 유지한다. */
-export const useIsAuthResolving = () => {
-  const { status } = useAuth();
-  return status === 'loading' || status === 'locked';
-};

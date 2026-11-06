@@ -1,6 +1,6 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { chunk, sumBy } from 'es-toolkit';
 import { z } from 'zod';
 

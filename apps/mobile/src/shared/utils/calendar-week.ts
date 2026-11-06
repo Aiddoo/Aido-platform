@@ -1,3 +1,4 @@
+import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
 import dayjs from 'dayjs';
 
 import { addDaysToDateKey, getDayOfWeekOfDateKey, toDeviceDateKey } from './date-key';
@@ -7,8 +8,6 @@ export interface CalendarWeekOfDateKey {
   endDateKey: string;
   weekOfMonth: number;
 }
-
-const DAYS_PER_WEEK = 7;
 
 /**
  * 앱 달력 주(일요일 시작). YYYY-MM-DD 그대로 계산해 기기 시간대·DST·표시 언어와 무관하다.

@@ -30,7 +30,6 @@ import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
 import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
 
 // AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
-jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
 
 const ACCOUNT_ID = 'user-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };

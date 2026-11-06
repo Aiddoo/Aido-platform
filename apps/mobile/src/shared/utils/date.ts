@@ -105,20 +105,8 @@ export const getMonthStart = (date: Date): Date => {
   return dayjs(date).startOf('month').toDate();
 };
 
-export const getWeekEnd = (date: Date): Date => {
-  return getCalendarWeek(date).end;
-};
-
 export const getNextDay = (date: Date): Date => {
   return dayjs(date).add(1, 'day').toDate();
-};
-
-export const getPreviousWeek = (date: Date): Date => {
-  return dayjs(date).subtract(1, 'week').toDate();
-};
-
-export const getNextWeek = (date: Date): Date => {
-  return dayjs(date).add(1, 'week').toDate();
 };
 
 export const getPreviousMonth = (date: Date): Date => {

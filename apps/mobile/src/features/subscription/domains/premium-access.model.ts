@@ -1,5 +1,6 @@
 import { PREMIUM_GRANT_ENDING_NOTICE_DAYS, PREMIUM_SOURCE, premiumSourceSchema } from '@aido/api';
-import { DAY_MS, formatDateKey } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
+import { formatDateKey } from '@src/shared/utils/date-format';
 import { z } from 'zod';
 
 export const PremiumAccessSchema = z.object({

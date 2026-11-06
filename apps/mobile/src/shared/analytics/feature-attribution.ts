@@ -1,9 +1,9 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { FEATURE_KEYS, type FeatureKey } from '@src/shared/observability/telemetry-keys';
-import { DAY_MS } from '@src/shared/utils/date-format';
 import { z } from 'zod';
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';

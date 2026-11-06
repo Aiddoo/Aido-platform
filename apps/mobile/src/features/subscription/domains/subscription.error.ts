@@ -89,6 +89,3 @@ export const SubscriptionErrors = {
       storeErrorCode,
     ),
 } as const;
-
-export const isSubscriptionError = (error: unknown): error is SubscriptionError =>
-  error instanceof SubscriptionError;

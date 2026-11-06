@@ -90,6 +90,3 @@ export const isExpoCodedError = (error: unknown): error is ExpoCodedError =>
 
 export const isCancelledError = (error: unknown): boolean =>
   error instanceof AuthError && error.code === AuthErrorCode.LOGIN_CANCELLED;
-
-export const isValidationError = (error: unknown): boolean =>
-  error instanceof AuthError && error.code === AuthErrorCode.VALIDATION_FAILED;

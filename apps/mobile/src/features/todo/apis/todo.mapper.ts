@@ -82,8 +82,6 @@ export const toTodo = (dto: TodoDto): Todo => ({
   commentCount: dto.commentCount,
 });
 
-export const toTodos = (dtos: TodoDto[]): Todo[] => dtos.map(toTodo);
-
 export const toDailyCompletionSummary = (
   dto: DailyCompletionSummaryDTO,
 ): DailyCompletionSummary => ({

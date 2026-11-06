@@ -3,6 +3,7 @@ import {
   type WeatherCondition,
   type WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
+import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { toDate } from '@src/shared/utils/date';
 import { formatDateKey, getZonedHour } from '@src/shared/utils/date-format';
 import { addDaysToDateKey } from '@src/shared/utils/date-key';
@@ -17,7 +18,6 @@ import {
   isWetHour,
 } from './weather-report.model';
 
-const HOUR_MS = 60 * 60_000;
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */

@@ -1,5 +1,6 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
+import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/query.constants';
 import { unwrap } from '@src/shared/errors/result';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
@@ -26,7 +27,7 @@ export function getNudgeInteractionsInfiniteQueryOptions(
         await todoNudgeService.getInteractions(
           {
             direction,
-            limit: 20,
+            limit: DEFAULT_PAGE_SIZE,
             cursor: pageParam.cursor,
           },
           signal,

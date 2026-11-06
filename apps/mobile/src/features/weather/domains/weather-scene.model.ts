@@ -1,4 +1,5 @@
 import type { WeatherCondition } from '@aido/api';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -70,7 +71,6 @@ const CELESTIAL_MAX_FOG = 0.5;
 /** 삭망월(일)과 기준 삭 시각(2000-01-06 18:14 UTC) */
 const SYNODIC_MONTH_DAYS = 29.530588853;
 const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14);
-const DAY_MS = 86_400_000;
 
 const unitSchema = z.number().min(0).max(1);
 

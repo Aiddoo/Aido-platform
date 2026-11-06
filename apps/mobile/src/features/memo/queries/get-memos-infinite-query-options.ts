@@ -1,5 +1,6 @@
 import { useMemoService } from '@src/bootstrap/providers/di-context';
 import type { MemoService } from '@src/features/memo/apis/memo.service';
+import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/query.constants';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
@@ -14,7 +15,7 @@ export function getMemosInfiniteQueryOptions(service: MemoService) {
       const result = await service.getMemos(
         {
           cursor: pageParam ?? undefined,
-          size: 20,
+          size: DEFAULT_PAGE_SIZE,
         },
         signal,
       );

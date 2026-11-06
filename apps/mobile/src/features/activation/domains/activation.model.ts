@@ -9,7 +9,7 @@ import {
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import type { TodoExistence } from '@src/features/todo/domains/todo.model';
 import { userSchema } from '@src/features/user/domains/user.model';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { z } from 'zod';
 
 // 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다

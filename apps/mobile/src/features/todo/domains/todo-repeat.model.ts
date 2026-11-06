@@ -6,6 +6,7 @@ import {
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
 import {
   addDaysToDateKey,
   diffDateKeysInDays,
@@ -213,8 +214,6 @@ export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEdit
   }
   return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
 }
-
-const DAYS_PER_WEEK = 7;
 
 function getMondayOfDateKey(dateKey: string): string {
   return addDaysToDateKey(dateKey, -((getDayOfWeekOfDateKey(dateKey) + 6) % DAYS_PER_WEEK));

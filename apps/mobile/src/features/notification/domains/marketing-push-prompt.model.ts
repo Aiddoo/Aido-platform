@@ -1,5 +1,5 @@
 import type { Consent } from '@src/features/auth/domains/auth.model';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 
 /** 마케팅 푸시 옵트인 배너의 도배 방지 상태 */
 export interface MarketingPushPromptState {

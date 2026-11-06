@@ -1,5 +1,5 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

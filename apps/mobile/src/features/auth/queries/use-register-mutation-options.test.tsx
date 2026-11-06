@@ -21,7 +21,6 @@ jest.mock('@src/shared/hooks/use-app-toast', () => ({
   useAppToast: () => ({ success: jest.fn(), error: jest.fn(), warning: mockToastWarning }),
 }));
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
-jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
 
 const input = {
   email: 'test@example.com',

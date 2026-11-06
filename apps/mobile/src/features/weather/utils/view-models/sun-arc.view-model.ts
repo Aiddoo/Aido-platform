@@ -1,4 +1,4 @@
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { round } from 'es-toolkit';
 
 import { type DailyForecastEntry, toUnitPosition } from '../../domains/weather-report.model';

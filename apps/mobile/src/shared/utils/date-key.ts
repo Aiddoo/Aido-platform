@@ -1,4 +1,6 @@
-import { DAY_MS, formatDateKey } from './date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
+
+import { formatDateKey } from './date-format';
 import { getDeviceTimezone } from './timezone';
 
 /** LocalDateProvider와 같은 기기 시간대로 Date가 놓인 달력 날짜(YYYY-MM-DD)를 구한다. */

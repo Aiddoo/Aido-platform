@@ -1,4 +1,5 @@
 import type { TIME_FORMATS } from '@aido/api/vocabulary';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
@@ -218,9 +219,6 @@ export function formatInstantHour(
   return formatHourLabel(getZonedHour(date, context.timeZone), timeFormat, context);
 }
 
-const MINUTE_MS = 60_000;
-const HOUR_MS = 60 * MINUTE_MS;
-export const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAY_LIMIT = 7;
 
 export interface RelativeTimeLabels {

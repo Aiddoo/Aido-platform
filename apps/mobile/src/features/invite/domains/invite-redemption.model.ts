@@ -6,7 +6,7 @@ import {
   redeemInviteResponseSchema,
 } from '@aido/api';
 import type { PremiumAccess } from '@src/features/subscription/domains/premium-access.model';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

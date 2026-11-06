@@ -1,6 +1,7 @@
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { z } from 'zod';
 
-export const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const DRAFT_TTL_MS = 7 * DAY_MS;
 
 const draftKeyIdSchema = z.string().brand<'DraftKeyId'>();
 

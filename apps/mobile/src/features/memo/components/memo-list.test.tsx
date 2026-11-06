@@ -28,8 +28,6 @@ import { Suspense } from 'react';
 
 import { MemoList } from './memo-list';
 
-jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://test' } }));
-
 const ACCOUNT_ID = 'account-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 const EMPTY_TITLE = '아직 메모가 없어요';

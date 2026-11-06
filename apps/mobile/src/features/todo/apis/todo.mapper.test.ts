@@ -5,7 +5,7 @@ import {
   createTodoDto,
   createTodoItemResponseDto,
 } from '../__tests__/todo.factories';
-import { toDailyCompletionsResult, toTodo, toTodos } from './todo.mapper';
+import { toDailyCompletionsResult, toTodo } from './todo.mapper';
 
 jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
 
@@ -107,29 +107,6 @@ describe('toTodo — subTodos/subTodoStats', () => {
     // Then
     expect(result.subTodos).toEqual([]);
     expect(result.subTodoStats).toEqual({ total: 0, completed: 0 });
-  });
-});
-
-describe('toTodos', () => {
-  test('배열 변환', () => {
-    // Given
-    const dtos = [createTodoDto({ id: 1 }), createTodoDto({ id: 2 })];
-
-    // When
-    const result = toTodos(dtos);
-
-    // Then
-    expect(result).toHaveLength(2);
-    expect(result[0]?.id).toBe(1);
-    expect(result[1]?.id).toBe(2);
-  });
-
-  test('빈 배열 → 빈 배열', () => {
-    // When
-    const result = toTodos([]);
-
-    // Then
-    expect(result).toEqual([]);
   });
 });
 

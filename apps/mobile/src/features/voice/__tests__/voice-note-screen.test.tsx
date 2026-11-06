@@ -39,7 +39,6 @@ import { voicePlanSchema } from '../domains/voice-plan.model';
 import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.factories';
 
 // AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
-jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';

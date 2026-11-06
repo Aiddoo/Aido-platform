@@ -1,5 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
+import { SECOND_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { clamp } from 'es-toolkit';
 import {
@@ -13,8 +14,6 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
-
-const SECOND_MS = 1_000;
 
 export interface VoiceNotePlayerPart {
   uri: string;

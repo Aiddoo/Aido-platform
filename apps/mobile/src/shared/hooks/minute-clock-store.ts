@@ -1,4 +1,4 @@
-const MINUTE_MS = 60_000;
+import { MINUTE_MS } from '@src/shared/constants/time.constants';
 
 type MinuteClockSource = {
   now: () => number;

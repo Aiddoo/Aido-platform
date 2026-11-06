@@ -13,6 +13,7 @@ import {
   type WeatherCondition,
   type WeatherPrecipitationType,
 } from '@aido/api';
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { formatDateKey, hasSameWallClock } from '@src/shared/utils/date-format';
 import { clamp, maxBy, minBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -73,8 +74,6 @@ const weatherReportModelSchema = z.object({
 export type WeatherReport = z.infer<typeof weatherReportModelSchema>;
 export type AttributionInfo = WeatherReport['attribution'];
 
-const HOUR_MS = 60 * 60_000;
-const MINUTE_MS = 60_000;
 const NEXT_HOUR_RANGE_MS = HOUR_MS;
 const STALE_AFTER_MS = 30 * MINUTE_MS;
 const NOWCAST_EXPIRES_AFTER_MS = 6 * HOUR_MS;

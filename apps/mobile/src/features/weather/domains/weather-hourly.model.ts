@@ -1,4 +1,5 @@
 import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
+import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { countBy, maxBy, minBy, sortBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -10,7 +11,6 @@ import {
   type WeatherReport,
 } from './weather-report.model';
 
-const HOUR_MS = 60 * 60_000;
 /** 요약 문장은 앞으로 하루 안의 강수만 말한다. */
 const PRECIPITATION_RANGE_HOURS = 24;
 /** 하늘 변화·기온 정점은 반나절 안에서만 찾는다. */

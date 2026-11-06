@@ -1,8 +1,9 @@
+import { HOUR_MS } from '@src/shared/constants/time.constants';
+
 import { type HourlyForecastEntry, isWetHour } from './weather-report.model';
 
 /** 분 단위 예보가 없는 지역은 이 시간 안의 시간별 예보로만 곧 올 비를 알린다. */
 const HOURLY_OUTLOOK_RANGE_HOURS = 6;
-const HOUR_MS = 60 * 60_000;
 
 export interface HourlyPrecipitationOutlook {
   hour: HourlyForecastEntry;

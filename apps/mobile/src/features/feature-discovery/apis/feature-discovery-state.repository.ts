@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { DAY_MS } from '@src/shared/constants/time.constants';
 import { z } from 'zod';
 
 const SEEN_KEY_PREFIX = 'aido_feature_discovery_seen_v1';

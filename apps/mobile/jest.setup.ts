@@ -17,6 +17,29 @@ if (isFetch(originalFetch)) {
 Reflect.deleteProperty(Array.prototype, 'toSorted');
 Reflect.deleteProperty(Array, 'fromAsync');
 
+// env.ts가 읽는 빌드 값. 테스트마다 env를 mock하지 않게 앱 시작과 같은 경로로 준다.
+jest.mock('expo-constants', () => {
+  const actual = jest.requireActual('expo-constants');
+  return {
+    ...actual,
+    __esModule: true,
+    default: Object.create(actual.default, {
+      expoConfig: {
+        configurable: true,
+        value: {
+          scheme: 'aido',
+          version: '0.0.0-test',
+          extra: {
+            env: 'development',
+            apiUrl: 'http://localhost:3000',
+            isDevelopment: true,
+            isProduction: false,
+          },
+        },
+      },
+    }),
+  };
+});
 // Reanimated 4.7 requires its web resolver for CSS initialization in Jest.
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
 // 네이티브 모듈이 없으면 randomUUID가 undefined를 준다. 멱등 키처럼 호출마다 달라야 하는 값을 테스트한다.
