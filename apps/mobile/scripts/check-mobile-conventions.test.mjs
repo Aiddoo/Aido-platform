@@ -326,6 +326,26 @@ test('다른 피처를 상대경로로 import하면 거부하고 절대경로는
   );
 });
 
+test('업무 영역 아래 피처는 영역/피처를 경계로 보고 다른 피처의 상대경로 import를 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/social/nudge/components/nudge-card.tsx': `
+        import { FriendRow } from '../../friend/components/friend-row';
+        import { TodoRow } from '../../../planning/todo/components/todo-row';
+        import { NUDGE_LIMIT } from '../constants/nudge.constants';
+      `,
+      'apps/mobile/src/features/voice/components/voice-card.tsx': `
+        import { VoiceIcon } from './voice-icon';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /@src\/features\/social\/friend/u);
+      assert.match(errors.join('\n'), /@src\/features\/planning\/todo/u);
+    },
+  );
+});
+
 test('서버·모바일·공용 패키지의 엄격한 null·undefined 비교를 거부한다', () => {
   withFixture(
     {
@@ -426,8 +446,8 @@ test('옮긴 클라이언트 모델이 요청·응답 계약을 import하면 거
       'apps/mobile/src/features/voice/apis/voice-plan.mapper.ts': `
         import type { QuickPlanResponse } from '@aido/api';
       `,
-      'apps/mobile/src/features/memo/domains/memo.model.ts': `
-        import { memoSchema } from '@aido/api';
+      'apps/mobile/src/features/preference/domains/preference.model.ts': `
+        import { preferenceSchema } from '@aido/api';
       `,
     },
     (errors) => {

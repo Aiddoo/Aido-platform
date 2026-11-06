@@ -27,6 +27,19 @@ function loadTypeScript() {
 
 const ts = loadTypeScript();
 const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
+const FEATURE_AREAS = new Set([
+  'app-config',
+  'assistant',
+  'billing',
+  'device',
+  'engagement',
+  'identity',
+  'insights',
+  'notes',
+  'planning',
+  'social',
+  'support',
+]);
 const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/components`;
 const TODO_COMMENT_TEST_ROOTS = [
   `${TODO_COMMENT_ROOT}/constants/`,
@@ -606,7 +619,12 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
 }
 
 function getFeatureName(path) {
-  return /\/src\/features\/([^/]+)\//u.exec(path)?.[1] ?? null;
+  const match = /\/src\/features\/([^/]+)\/(?:([^/]+)\/)?/u.exec(path);
+  if (match === null) {
+    return null;
+  }
+  const [, topLevel, nested] = match;
+  return FEATURE_AREAS.has(topLevel) && nested !== undefined ? `${topLevel}/${nested}` : topLevel;
 }
 
 function checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors) {
