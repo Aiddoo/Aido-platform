@@ -13,9 +13,9 @@ import {
   Text,
   VStack,
   WordWrapText,
+  Image,
 } from '@src/shared/ui';
 import { Trans } from 'react-i18next';
-import { Image } from 'react-native';
 import { match } from 'ts-pattern';
 
 export function WhatsNewPreview({ cardId }: { cardId: WhatsNewCardId }) {
@@ -48,7 +48,7 @@ function FriendInvitePreview() {
         source={catHiImage}
         accessibilityIgnoresInvertColors
         className="absolute -bottom-6 -right-2.5 size-[140px]"
-        resizeMode="contain"
+        contentFit="contain"
       />
     </Box>
   );

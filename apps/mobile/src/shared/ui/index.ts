@@ -122,6 +122,7 @@ export {
 } from './icon';
 export { IconButton, type IconButtonProps } from './icon-button';
 export * from './icon-count-button';
+export { Image } from './image';
 export {
   InfiniteList,
   InfiniteListFooter,

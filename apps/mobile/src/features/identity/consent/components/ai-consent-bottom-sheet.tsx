@@ -18,10 +18,10 @@ import {
   TextButton,
   VStack,
   WordWrapText,
+  Image,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
-import { Image } from 'react-native';
 
 const ITEM_ICON_SIZE = 16;
 const PRIVACY_LINK_MIN_HEIGHT = 44;
@@ -89,7 +89,7 @@ export function AiConsentBottomSheet({
           <Image
             source={require('@assets/images/ido_cat_suggestion.webp')}
             style={{ width: 72, height: 72 }}
-            resizeMode="contain"
+            contentFit="contain"
             accessibilityIgnoresInvertColors
           />
           <VStack gap={6} align="center">

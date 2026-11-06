@@ -50,6 +50,7 @@ jest.mock('@src/shared/ui', () => {
       Fallback: Container,
     }),
     H3: Text,
+    Image: () => null,
     HStack: Container,
     VStack: Container,
     Text,

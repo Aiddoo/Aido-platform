@@ -9,10 +9,10 @@ import {
   Text,
   VStack,
   type QueryErrorFallbackProps,
+  Image,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Image } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
@@ -79,7 +79,7 @@ export function PokeBanner() {
         <Image
           source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}
           className="size-[72px]"
-          resizeMode="contain"
+          contentFit="contain"
         />
         <VStack flex={1}>
           <Text size="b3" weight="medium">

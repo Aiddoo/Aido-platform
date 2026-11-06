@@ -24,12 +24,12 @@ import {
   Text,
   TextSkeleton,
   VStack,
+  Image,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { Image } from 'react-native';
 
 import {
   isSuggestionsPremiumRequiredError,
@@ -50,7 +50,7 @@ function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
       <Image
         source={require('@assets/images/ido_cat_suggestion.webp')}
         style={{ width: 100, height: 100 }}
-        resizeMode="contain"
+        contentFit="contain"
       />
       <Spacing size={8} />
       <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
@@ -279,7 +279,7 @@ SuggestionsList.Loading = function Loading() {
         <Image
           source={require('@assets/images/ido_cat_suggestion.webp')}
           style={{ width: 100, height: 100 }}
-          resizeMode="contain"
+          contentFit="contain"
         />
         <Spacing size={8} />
         <TextSkeleton size="t3" className="w-48" />

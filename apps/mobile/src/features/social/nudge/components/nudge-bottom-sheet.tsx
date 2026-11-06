@@ -11,12 +11,12 @@ import {
   VStack,
   Box,
   useSheetRoute,
+  Image,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { Image } from 'react-native';
 
 import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
@@ -147,7 +147,7 @@ function NudgeMessageSheet({
             <Image
               source={aidoBannerImage}
               className="absolute right-4 size-[72px] -translate-y-11"
-              resizeMode="contain"
+              contentFit="contain"
             />
             <FormField control={control} name="message">
               {({ onChange, value }, { error }) => (

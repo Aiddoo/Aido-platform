@@ -22,10 +22,11 @@ import {
   TextButton,
   useSheetRoute,
   VStack,
+  Image,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -319,7 +320,7 @@ function WelcomeCat() {
         source={catHiImage}
         accessibilityIgnoresInvertColors
         className="size-[140px]"
-        resizeMode="contain"
+        contentFit="contain"
       />
     </Box>
   );

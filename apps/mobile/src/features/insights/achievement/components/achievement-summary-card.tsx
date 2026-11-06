@@ -21,6 +21,7 @@ import {
   Text,
   TextSkeleton,
   VStack,
+  Image,
 } from '@src/shared/ui';
 import {
   usePrefetchQuery,
@@ -31,7 +32,6 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
-import { Image } from 'react-native';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-badge-labels';
@@ -196,7 +196,7 @@ AchievementSummaryCard.Empty = function Empty() {
         <Image
           source={require('@assets/images/badge_empty.webp')}
           style={{ width: 80, height: 80 }}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </VStack>
 

@@ -32,13 +32,14 @@ import {
   useFetchNextPage,
   useOverlay,
   IconButton,
+  Image,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { Image, RefreshControl } from 'react-native';
+import { RefreshControl } from 'react-native';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -319,7 +320,7 @@ FriendList.Empty = function Empty() {
             source={catHiImage}
             accessibilityIgnoresInvertColors
             className="size-[120px]"
-            resizeMode="contain"
+            contentFit="contain"
           />
         }
         title={t('invite:entry.friendsEmptyTitle')}

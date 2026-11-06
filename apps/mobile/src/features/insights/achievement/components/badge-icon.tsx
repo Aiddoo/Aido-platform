@@ -1,4 +1,4 @@
-import { Image } from 'react-native';
+import { Image } from '@src/shared/ui';
 
 import type { BadgeType } from '../domains/achievement.model';
 
@@ -20,7 +20,7 @@ export function BadgeIcon({ type, size = 'small' }: BadgeIconProps) {
     <Image
       source={BADGE_IMAGE[type]}
       style={{ width: dimension, height: dimension }}
-      resizeMode="contain"
+      contentFit="contain"
     />
   );
 }

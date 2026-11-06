@@ -5,13 +5,12 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/get-todo-summary-query-options';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { Button, CloseIcon, HStack, Text, VStack, Image } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useCallback, useSyncExternalStore } from 'react';
-import { Image } from 'react-native';
 
 import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
@@ -62,7 +61,7 @@ export function InviteEntryBanner({ className, ...props }: ComponentProps<typeof
         source={catHiImage}
         accessibilityIgnoresInvertColors
         className="size-[72px]"
-        resizeMode="contain"
+        contentFit="contain"
       />
       <VStack flex={1} gap={2}>
         <Text size="b3" weight="medium" className="pr-6">
