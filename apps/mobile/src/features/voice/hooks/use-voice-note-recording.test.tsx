@@ -724,7 +724,7 @@ describe('useVoiceNoteRecording', () => {
         di: {
           speechRecognizer,
           voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
           logger,
@@ -794,7 +794,7 @@ describe('useVoiceNoteRecording', () => {
         di: {
           speechRecognizer,
           voiceNoteStorageService: storage,
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
           logger,
@@ -840,7 +840,7 @@ describe('useVoiceNoteRecording', () => {
         di: {
           speechRecognizer,
           voiceNoteStorageService: storage,
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
           logger,
@@ -894,7 +894,7 @@ describe('useVoiceNoteRecording', () => {
           di: {
             speechRecognizer,
             voiceNoteStorageService: storage,
-            analytics: createMockAnalytics(),
+            analytics: createAnalyticsStub(),
             errorReporter: createErrorReporterStub(),
             haptics: createHapticsStub(),
             logger,

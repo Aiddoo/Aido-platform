@@ -347,7 +347,7 @@ describe('useAddTodoQuickVoice', () => {
       // Given
       const { speechRecognizer, analytics, queryClient, closeSheet } = await renderQuickVoice();
       queryClient.setQueryData(
-        AUTH_QUERY_KEYS.consent(),
+        CONSENT_QUERY_KEYS.consent(),
         createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
       );
       await fireEvent.press(screen.getByTestId('begin'));
