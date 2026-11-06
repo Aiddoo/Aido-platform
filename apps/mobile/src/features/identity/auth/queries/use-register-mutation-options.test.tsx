@@ -11,7 +11,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createRegisterDto } from '../__tests__/auth.factories';
+import { createRegisterDto } from '../__tests__/auth.fixtures';
 import { AuthService } from '../apis/auth.service';
 import { useRegisterMutationOptions } from './use-register-mutation-options';
 

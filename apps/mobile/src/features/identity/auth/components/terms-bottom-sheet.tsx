@@ -11,12 +11,11 @@ import {
   VStack,
   IconButton,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { useFormContext, useFormState, useWatch, Controller } from 'react-hook-form';
 
-import type { SignUpFormInput } from '../domains/sign-up-form.schema';
+import type { SignUpFormInput } from '../schemas/sign-up-form.schema';
 
 interface TermsBottomSheetProps {
   isOpen: boolean;
@@ -69,8 +68,10 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
           <Separator />
 
           <VStack gap={20}>
-            <FormField control={control} name="termsAgreed">
-              {({ value, onChange }) => (
+            <Controller
+              control={control}
+              name="termsAgreed"
+              render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
                   label={t('terms.termsOfService')}
                   isRequired
@@ -79,18 +80,22 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
                   onPressLink={() => openUrl(legalUrl('terms', resolvedLanguage))}
                 />
               )}
-            </FormField>
-            <FormField control={control} name="marketingPushAgreed">
-              {({ value, onChange }) => (
+            />
+            <Controller
+              control={control}
+              name="marketingPushAgreed"
+              render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
                   label={t('terms.marketingPush')}
                   isSelected={value}
                   onSelectedChange={onChange}
                 />
               )}
-            </FormField>
-            <FormField control={control} name="privacyAgreed">
-              {({ value, onChange }) => (
+            />
+            <Controller
+              control={control}
+              name="privacyAgreed"
+              render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
                   label={t('terms.privacyPolicy')}
                   isRequired
@@ -99,16 +104,18 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
                   onPressLink={() => openUrl(legalUrl('privacy', resolvedLanguage))}
                 />
               )}
-            </FormField>
-            <FormField control={control} name="marketingAgreed">
-              {({ value, onChange }) => (
+            />
+            <Controller
+              control={control}
+              name="marketingAgreed"
+              render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
                   label={t('terms.marketing')}
                   isSelected={value}
                   onSelectedChange={onChange}
                 />
               )}
-            </FormField>
+            />
           </VStack>
         </VStack>
 

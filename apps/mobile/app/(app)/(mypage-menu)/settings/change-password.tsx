@@ -4,35 +4,38 @@ import { NewPasswordStep } from '@src/features/identity/auth/components/new-pass
 import { PasswordInput } from '@src/features/identity/auth/components/password-input';
 import { useChangePasswordMutationOptions } from '@src/features/identity/auth/queries/use-change-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import {
-  Box,
-  FormStepLayout,
-  KeyboardAdaptiveButton,
-  QueryErrorBoundary,
-  ReadableContent,
-} from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
+import { Box, FormStepLayout, KeyboardAdaptiveButton, ReadableContent } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
-import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
+import {
+  useFormState,
+  FormProvider,
+  useForm,
+  useFormContext,
+  useWatch,
+  Controller,
+} from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { match } from 'ts-pattern';
 
-const STEPS = ['currentPassword', 'newPassword'] as const;
-type ChangePasswordStep = (typeof STEPS)[number];
+type ChangePasswordStepContexts = {
+  currentPassword: Record<string, never>;
+  newPassword: Record<string, never>;
+};
 
-function ChangePasswordScreen() {
+export default function ChangePasswordScreen() {
   const form = useForm({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: { currentPassword: '', newPassword: '', newPasswordConfirm: '' },
     mode: 'onChange',
   });
-  const [step, setStep] = useState<ChangePasswordStep>('currentPassword');
-  const { showBoundary } = useErrorBoundary();
+  const stepper = useStepper<ChangePasswordStepContexts>({
+    id: 'change-password',
+    initial: { step: 'currentPassword', context: {} },
+  });
+  const reportUnexpectedError = useReportUnexpectedError('auth');
   const changePassword = useMutation(useChangePasswordMutationOptions());
   const { t } = useTranslation('auth');
 
@@ -40,16 +43,14 @@ function ChangePasswordScreen() {
     try {
       await changePassword.mutateAsync(input);
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   });
 
   const handleNextStep = async () => {
     const isValid = await form.trigger(['currentPassword']);
     if (isValid) {
-      setStep('newPassword');
+      stepper.history.push('newPassword', {});
     }
   };
 
@@ -57,28 +58,19 @@ function ChangePasswordScreen() {
     <Box className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <FormProvider {...form}>
-          {match(step)
-            .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
-            .with('newPassword', () => (
+          {stepper.Render({
+            currentPassword: () => <CurrentPasswordStep onNext={handleNextStep} />,
+            newPassword: () => (
               <NewPasswordStep
                 onSubmit={submitNewPassword}
                 nextLabel={t('changePassword.next')}
                 submitLabel={t('changePassword.submit')}
               />
-            ))
-            .exhaustive()}
+            ),
+          })}
         </FormProvider>
       </ReadableContent>
     </Box>
-  );
-}
-
-/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
-export default function ChangePasswordRoute() {
-  return (
-    <QueryErrorBoundary>
-      <ChangePasswordScreen />
-    </QueryErrorBoundary>
   );
 }
 
@@ -97,8 +89,10 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
     <Box className="flex-1">
       <FormStepLayout title={t('changePassword.currentTitle')}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="currentPassword">
-            {({ onChange, value }, { error }) => (
+          <Controller
+            control={control}
+            name="currentPassword"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <PasswordInput
                 label={t('changePassword.currentLabel')}
                 placeholder={t('changePassword.currentPlaceholder')}
@@ -120,7 +114,7 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
                 }}
               />
             )}
-          </FormField>
+          />
         </Animated.View>
       </FormStepLayout>
 

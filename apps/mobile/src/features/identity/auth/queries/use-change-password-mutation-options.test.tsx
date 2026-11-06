@@ -11,7 +11,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createAuthApiError } from '../__tests__/auth.factories';
+import { createAuthApiError } from '../__tests__/auth.fixtures';
 import { AuthService } from '../apis/auth.service';
 import { useChangePasswordMutationOptions } from './use-change-password-mutation-options';
 
@@ -72,7 +72,7 @@ describe('비밀번호 변경 실패 안내', () => {
     expect(mockToastError).toHaveBeenCalledWith(apiError, expect.anything());
   });
 
-  it('네트워크 오류는 화면 오류 경계에 맡기고 toast를 띄우지 않는다', async () => {
+  it('네트워크 오류도 오류 화면으로 바꾸지 않고 toast 한 번으로 알린다', async () => {
     // Given
     authHttp.patch.mockRejectedValue(new NetworkError());
 
@@ -80,6 +80,6 @@ describe('비밀번호 변경 실패 안내', () => {
     await changePassword();
 
     // Then
-    expect(mockToastError).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalledTimes(1);
   });
 });

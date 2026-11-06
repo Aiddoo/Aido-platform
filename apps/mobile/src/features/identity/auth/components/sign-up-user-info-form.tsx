@@ -9,16 +9,15 @@ import {
   FormStepLayout,
   Box,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { useFormContext, useWatch, Controller } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
-import { type SignUpFormInput, signUpFormSchema } from '../domains/sign-up-form.schema';
+import { type SignUpFormInput, signUpFormSchema } from '../schemas/sign-up-form.schema';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
 const USER_INFO_STEPS = ['name', 'email'] as const;
@@ -74,8 +73,10 @@ export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
                 }
               })}
           >
-            <FormField control={control} name="email">
-              {({ onChange, value }, { error }) => (
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <Input
                     ref={emailInputRef}
@@ -104,14 +105,16 @@ export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
                   <SuggestedEmailDomainList value={value} onChange={onChange} />
                 </VStack>
               )}
-            </FormField>
+            />
             <Spacing size={20} />
           </Animated.View>
         )}
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="name">
-            {({ onChange, value }, { error }) => (
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <Input
                 label={t('auth:signUp.nicknameLabel')}
                 placeholder={t('auth:signUp.nicknamePlaceholder')}
@@ -133,7 +136,7 @@ export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
                 }}
               />
             )}
-          </FormField>
+          />
         </Animated.View>
       </FormStepLayout>
 

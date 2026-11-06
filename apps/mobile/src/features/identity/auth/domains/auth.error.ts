@@ -2,7 +2,7 @@ import type { CodedError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
-import type { OAuthProviderSlug } from './oauth.model';
+import type { OAuthProviderSlug } from '../schemas/oauth.schema';
 
 export interface ExpoCodedError extends Error {
   code?: string;

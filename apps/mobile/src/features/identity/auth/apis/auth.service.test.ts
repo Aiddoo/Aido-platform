@@ -11,7 +11,7 @@ import {
   createResendVerificationDto,
   createResetPasswordDto,
   INVALID_DTO,
-} from '../__tests__/auth.factories';
+} from '../__tests__/auth.fixtures';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {

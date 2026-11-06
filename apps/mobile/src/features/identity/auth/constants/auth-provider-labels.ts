@@ -1,6 +1,6 @@
 import { t } from '@src/shared/i18n';
 
-import type { OAuthProvider } from '../domains/oauth.model';
+import type { OAuthProvider } from '../schemas/oauth.schema';
 
 const OAUTH_PROVIDER_LABEL_KEYS = {
   APPLE: 'auth:providers.APPLE',

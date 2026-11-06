@@ -2,7 +2,7 @@ import type { ChangePasswordInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
-import { isBusinessError, unwrap } from '@src/shared/errors/result';
+import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
@@ -27,10 +27,6 @@ export const useChangePasswordMutationOptions = () => {
       goBack();
     },
     onError: (error) => {
-      if (!isBusinessError(error)) {
-        return;
-      }
-
       haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {

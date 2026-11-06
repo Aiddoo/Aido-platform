@@ -34,7 +34,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { z } from 'zod';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
-import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.factories';
+import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.fixtures';
 import { AuthService } from '../apis/auth.service';
 import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from '../utils/log-out-device';
 import { useDeleteAccountMutationOptions } from './use-delete-account-mutation-options';

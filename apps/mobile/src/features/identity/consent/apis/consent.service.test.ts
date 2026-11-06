@@ -1,7 +1,7 @@
 import {
   createAuthApiError,
   INVALID_DTO,
-} from '@src/features/identity/auth/__tests__/auth.factories';
+} from '@src/features/identity/auth/__tests__/auth.fixtures';
 import { createHttpClientStub } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 

@@ -9,7 +9,8 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
 import { isAuthError, isCancelledError } from '../domains/auth.error';
-import { type OAuthProviderSlug, toOAuthProvider } from '../domains/oauth.model';
+import { toOAuthProvider } from '../domains/oauth.model';
+import { type OAuthProviderSlug } from '../schemas/oauth.schema';
 
 export const useLinkAccountMutationOptions = () => {
   const haptics = useHaptics();

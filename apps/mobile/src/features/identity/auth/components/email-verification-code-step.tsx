@@ -1,10 +1,9 @@
 import { verifyEmailSchema } from '@aido/api';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
 
 import { useCooldown } from '../hooks/use-cooldown';
 import { maskEmail } from '../utils/mask-email';
@@ -33,7 +32,7 @@ export function EmailVerificationCodeStep({
   isSeparated,
 }: EmailVerificationCodeStepProps) {
   const { t } = useTranslation('auth');
-  const { showBoundary } = useErrorBoundary();
+  const reportUnexpectedError = useReportUnexpectedError('auth');
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [code, setCode] = useState('');
   const [isInvalid, setIsInvalid] = useState(false);
@@ -60,9 +59,7 @@ export function EmailVerificationCodeStep({
     } catch (error) {
       setIsInvalid(true);
       clearCode();
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     } finally {
       setIsVerifying(false);
     }

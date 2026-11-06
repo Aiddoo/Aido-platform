@@ -10,7 +10,7 @@ import type {
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { AuthTokens } from '../domains/auth.model';
+import type { AuthTokens } from '../schemas/auth.schema';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',

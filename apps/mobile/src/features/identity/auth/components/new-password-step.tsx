@@ -5,10 +5,9 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { useFormContext, useFormState, useWatch, Controller } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -80,8 +79,10 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
               })}
           >
             <VStack mb={8}>
-              <FormField control={control} name="newPasswordConfirm">
-                {({ onChange, value }, { error }) => (
+              <Controller
+                control={control}
+                name="newPasswordConfirm"
+                render={({ field: { onChange, value }, fieldState: { error } }) => (
                   <PasswordInput
                     ref={newPasswordConfirmInputRef}
                     label={t('forgotPassword.newPasswordConfirmLabel')}
@@ -102,14 +103,16 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
                     }}
                   />
                 )}
-              </FormField>
+              />
             </VStack>
           </Animated.View>
         )}
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="newPassword">
-            {({ onChange, value }, { error }) => (
+          <Controller
+            control={control}
+            name="newPassword"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <VStack gap={4}>
                 <PasswordInput
                   label={t('forgotPassword.newPasswordLabel')}
@@ -131,7 +134,7 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
                 <PasswordStrengthIndicator password={newPassword} />
               </VStack>
             )}
-          </FormField>
+          />
         </Animated.View>
       </FormStepLayout>
 

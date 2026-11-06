@@ -18,8 +18,8 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
-} from '../domains/auth.model';
-import type { LinkedAccount, LinkedAccountsResult } from '../domains/oauth.model';
+} from '../schemas/auth.schema';
+import type { LinkedAccount, LinkedAccountsResult } from '../schemas/oauth.schema';
 
 export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   userId: dto.userId,

@@ -7,7 +7,7 @@ import {
   createRegisterDto,
   createResendVerificationDto,
   createResetPasswordDto,
-} from '../__tests__/auth.factories';
+} from '../__tests__/auth.fixtures';
 import {
   toAuthTokens,
   toChangePasswordResult,

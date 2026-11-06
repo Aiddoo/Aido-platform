@@ -3,17 +3,16 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { useFormContext, useWatch, Controller } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
-import type { SignUpFormInput } from '../domains/sign-up-form.schema';
+import type { SignUpFormInput } from '../schemas/sign-up-form.schema';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { TermsBottomSheet } from './terms-bottom-sheet';
@@ -73,8 +72,10 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
                 })}
             >
               <VStack mb={20}>
-                <FormField control={control} name="passwordConfirm">
-                  {({ onChange, value }, { error }) => (
+                <Controller
+                  control={control}
+                  name="passwordConfirm"
+                  render={({ field: { onChange, value }, fieldState: { error } }) => (
                     <PasswordInput
                       ref={passwordConfirmInputRef}
                       label={t('signUp.passwordConfirmLabel')}
@@ -95,14 +96,16 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
                       }}
                     />
                   )}
-                </FormField>
+                />
               </VStack>
             </Animated.View>
           )}
 
           <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-            <FormField control={control} name="password">
-              {({ onChange, value }, { error }) => (
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <PasswordInput
                     label={t('signUp.passwordLabel')}
@@ -130,7 +133,7 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
                   <PasswordStrengthIndicator password={password} />
                 </VStack>
               )}
-            </FormField>
+            />
           </Animated.View>
         </FormStepLayout>
 

@@ -1,4 +1,4 @@
-import type { LinkedAccount, OAuthProvider, OAuthProviderSlug } from '../domains/oauth.model';
+import type { LinkedAccount, OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
 
 interface ProviderStateInput {
   accounts: readonly LinkedAccount[];

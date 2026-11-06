@@ -14,10 +14,9 @@ import {
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { useForm, useFormState } from 'react-hook-form';
+import { useForm, useFormState, Controller } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -52,8 +51,10 @@ function DeleteAccountScreen() {
     <Box className="flex-1">
       <FormStepLayout title={t('deleteAccount.passwordTitle')}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="password">
-            {({ onChange, value }) => (
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
               <PasswordInput
                 label={t('deleteAccount.currentPasswordLabel')}
                 placeholder={t('deleteAccount.passwordPlaceholder')}
@@ -68,7 +69,7 @@ function DeleteAccountScreen() {
                 onSubmitEditing={() => handleDeletePress()}
               />
             )}
-          </FormField>
+          />
         </Animated.View>
 
         <Animated.View

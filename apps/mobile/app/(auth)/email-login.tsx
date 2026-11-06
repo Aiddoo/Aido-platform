@@ -1,9 +1,9 @@
 import idoCatHiImage from '@assets/images/ido_cat_hi.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PasswordInput } from '@src/features/identity/auth/components/password-input';
-import { emailLoginFormSchema } from '@src/features/identity/auth/domains/email-login-form.schema';
 import { useEmailLoginMutationOptions } from '@src/features/identity/auth/queries/use-email-login-mutation-options';
-import { isBusinessError } from '@src/shared/errors/result';
+import { emailLoginFormSchema } from '@src/features/identity/auth/schemas/email-login-form.schema';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -16,27 +16,24 @@ import {
   ReadableContent,
   Spacing,
   TextButton,
-  QueryErrorBoundary,
   StyledSafeAreaView,
   Box,
   Image,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { useRef, useState } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider, useFormState, useForm } from 'react-hook-form';
+import { FormProvider, useFormState, useForm, Controller } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 /** 이메일 칸에 있을 때 아래 비밀번호 칸까지 버튼 위에 보여 바로 누를 수 있게 조금 더 올린다 */
 const NEXT_FIELD_OFFSET = 52;
 
-function EmailLoginScreen() {
-  const { showBoundary } = useErrorBoundary();
+export default function EmailLoginScreen() {
+  const reportUnexpectedError = useReportUnexpectedError('auth');
 
   const push = useSingleTap(router.push);
 
@@ -58,9 +55,7 @@ function EmailLoginScreen() {
     try {
       await emailLoginMutation.mutateAsync({ email: values.email, password: values.password });
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   });
 
@@ -91,8 +86,10 @@ function EmailLoginScreen() {
 
               <Spacing size={60} />
 
-              <FormField control={control} name="email">
-                {({ onChange, onBlur, value }, { error }) => (
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
                   <Input
                     testID="email-login-email"
                     placeholder={t('emailLogin.emailPlaceholder')}
@@ -114,12 +111,14 @@ function EmailLoginScreen() {
                     onSubmitEditing={() => passwordRef.current?.focus()}
                   />
                 )}
-              </FormField>
+              />
 
               <Spacing size={4} />
 
-              <FormField control={control} name="password">
-                {({ onChange, onBlur, value }, { error }) => (
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
                   <PasswordInput
                     testID="email-login-password"
                     ref={passwordRef}
@@ -136,7 +135,7 @@ function EmailLoginScreen() {
                     onSubmitEditing={() => handleSubmitEmailLogin()}
                   />
                 )}
-              </FormField>
+              />
 
               <Spacing size={24} />
 
@@ -163,14 +162,5 @@ function EmailLoginScreen() {
         </ReadableContent>
       </Box>
     </FormProvider>
-  );
-}
-
-/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
-export default function EmailLoginRoute() {
-  return (
-    <QueryErrorBoundary>
-      <EmailLoginScreen />
-    </QueryErrorBoundary>
   );
 }

@@ -2,14 +2,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
 import { NewPasswordStep } from '@src/features/identity/auth/components/new-password-step';
 import { SuggestedEmailDomainList } from '@src/features/identity/auth/components/suggested-email-domain-list';
+import { useForgotPasswordMutationOptions } from '@src/features/identity/auth/queries/use-forgot-password-mutation-options';
+import { useResetPasswordMutationOptions } from '@src/features/identity/auth/queries/use-reset-password-mutation-options';
 import {
   type ForgotPasswordFormInput,
   forgotPasswordFormSchema,
-} from '@src/features/identity/auth/domains/forgot-password-form.schema';
-import { useForgotPasswordMutationOptions } from '@src/features/identity/auth/queries/use-forgot-password-mutation-options';
-import { useResetPasswordMutationOptions } from '@src/features/identity/auth/queries/use-reset-password-mutation-options';
+} from '@src/features/identity/auth/schemas/forgot-password-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -17,22 +18,27 @@ import {
   KeyboardAdaptiveButton,
   ReadableContent,
   VStack,
-  QueryErrorBoundary,
   FormStepLayout,
   Box,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
-import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
+import {
+  useFormState,
+  FormProvider,
+  useForm,
+  useFormContext,
+  useWatch,
+  Controller,
+} from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { match } from 'ts-pattern';
 
-const STEPS = ['email', 'verificationCode', 'newPassword'] as const;
-type ForgotPasswordStep = (typeof STEPS)[number];
+type ForgotPasswordStepContexts = {
+  email: Record<string, never>;
+  verificationCode: { email: string };
+  newPassword: Record<string, never>;
+};
 
-function ForgotPasswordScreen() {
+export default function ForgotPasswordScreen() {
   const form = useForm({
     resolver: zodResolver(forgotPasswordFormSchema),
     defaultValues: {
@@ -43,20 +49,22 @@ function ForgotPasswordScreen() {
     },
     mode: 'onChange',
   });
-  const [step, setStep] = useState<ForgotPasswordStep>('email');
-  const { showBoundary } = useErrorBoundary();
+  const stepper = useStepper<ForgotPasswordStepContexts>({
+    id: 'forgot-password',
+    initial: { step: 'email', context: {} },
+  });
+  const reportUnexpectedError = useReportUnexpectedError('auth');
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());
   const { t } = useTranslation('auth');
 
   const requestCode = async () => {
     try {
-      await forgotPassword.mutateAsync({ email: form.getValues('email') });
-      setStep('verificationCode');
+      const email = form.getValues('email');
+      await forgotPassword.mutateAsync({ email });
+      stepper.history.push('verificationCode', { email });
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   };
 
@@ -64,9 +72,7 @@ function ForgotPasswordScreen() {
     try {
       await resetPassword.mutateAsync(input);
     } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+      reportUnexpectedError(error);
     }
   });
 
@@ -74,31 +80,31 @@ function ForgotPasswordScreen() {
     <Box className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <FormProvider {...form}>
-          {match(step)
-            .with('email', () => (
+          {stepper.Render({
+            email: () => (
               <EmailStep onSubmit={requestCode} isSubmitting={forgotPassword.isPending} />
-            ))
-            .with('verificationCode', () => (
+            ),
+            verificationCode: ({ context: { email }, history }) => (
               <EmailVerificationCodeStep
-                email={form.getValues('email')}
+                email={email}
                 onComplete={async (code) => {
                   form.setValue('code', code, { shouldValidate: true });
-                  setStep('newPassword');
+                  history.push('newPassword', {});
                 }}
                 onResend={async () => {
-                  await forgotPassword.mutateAsync({ email: form.getValues('email') });
+                  await forgotPassword.mutateAsync({ email });
                   return {};
                 }}
               />
-            ))
-            .with('newPassword', () => (
+            ),
+            newPassword: () => (
               <NewPasswordStep
                 onSubmit={submitNewPassword}
                 nextLabel={t('forgotPassword.next')}
                 submitLabel={t('forgotPassword.submit')}
               />
-            ))
-            .exhaustive()}
+            ),
+          })}
         </FormProvider>
       </ReadableContent>
     </Box>
@@ -122,8 +128,10 @@ function EmailStep({ onSubmit, isSubmitting }: EmailStepProps) {
       <FormStepLayout title={t('forgotPassword.emailTitle')}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <VStack gap={8}>
-            <FormField control={control} name="email">
-              {({ onChange, onBlur, value }, { error }) => (
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <Input
                     placeholder={t('forgotPassword.emailPlaceholder')}
@@ -152,7 +160,7 @@ function EmailStep({ onSubmit, isSubmitting }: EmailStepProps) {
                   <SuggestedEmailDomainList value={value} onChange={onChange} />
                 </VStack>
               )}
-            </FormField>
+            />
           </VStack>
         </Animated.View>
       </FormStepLayout>
@@ -161,14 +169,5 @@ function EmailStep({ onSubmit, isSubmitting }: EmailStepProps) {
         {t('forgotPassword.next')}
       </KeyboardAdaptiveButton>
     </Box>
-  );
-}
-
-/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
-export default function ForgotPasswordRoute() {
-  return (
-    <QueryErrorBoundary>
-      <ForgotPasswordScreen />
-    </QueryErrorBoundary>
   );
 }

@@ -1,7 +1,7 @@
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderHook } from '@testing-library/react-native';
 
-import { createAuthTokens } from '../__tests__/auth.factories';
+import { createAuthTokens } from '../__tests__/auth.fixtures';
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
 
 const mockSetStatus = jest.fn();

@@ -42,14 +42,14 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
-} from '../domains/auth.model';
+} from '../schemas/auth.schema';
 import type {
   LinkedAccountsResult,
   OAuthProvider,
   OAuthProviderSlug,
   OAuthStartMode,
   OAuthStartProvider,
-} from '../domains/oauth.model';
+} from '../schemas/oauth.schema';
 import {
   toAuthTokens,
   toChangePasswordResult,

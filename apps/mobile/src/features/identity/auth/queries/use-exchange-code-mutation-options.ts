@@ -6,7 +6,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 
-import type { OAuthProviderSlug } from '../domains/oauth.model';
+import type { OAuthProviderSlug } from '../schemas/oauth.schema';
 
 export const useExchangeCodeMutationOptions = () => {
   const haptics = useHaptics();
