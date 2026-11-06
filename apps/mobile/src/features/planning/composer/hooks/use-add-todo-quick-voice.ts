@@ -23,6 +23,7 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/voice.mutations';
+import { toInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
@@ -191,7 +192,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
         const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
           draftId: idGenerator.create(),
           locale,
-          createdAt: new Date(),
+          createdAt: toInstant(new Date().toISOString()),
           transcript,
           durationMs: elapsedMs,
         });

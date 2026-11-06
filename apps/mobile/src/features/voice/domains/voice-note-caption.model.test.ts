@@ -1,3 +1,4 @@
+import { toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
@@ -294,7 +295,7 @@ describe('createVoiceNoteFromTranscript', () => {
   const input = {
     draftId: 'draft-1',
     locale: 'ko-KR',
-    createdAt: new Date('2026-11-05T00:00:00.000Z'),
+    createdAt: toInstant('2026-11-05T00:00:00.000Z'),
   } as const;
 
   test('확정 문장과 인식 중 꼬리까지 글자를 잃지 않고 들은 시간에 나눠 담는다', () => {

@@ -1,4 +1,5 @@
 import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
+import { toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
@@ -173,7 +174,7 @@ describe('VoiceNotePolicy.findKeyPointAt', () => {
 });
 
 describe('VoiceNotePolicy.isExpired', () => {
-  const note = createVoiceNoteFixture({ createdAt: new Date('2026-11-01T00:00:00.000Z') });
+  const note = createVoiceNoteFixture({ createdAt: toInstant('2026-11-01T00:00:00.000Z') });
 
   test('만든 지 30일이 되기 직전까지는 만료되지 않는다', () => {
     // Given
@@ -469,7 +470,7 @@ describe('VoiceNotePolicy 계획 칸 상태', () => {
   test('이미 추가했으면 카드가 남아 있어도 추가했다고 본다', () => {
     // Given
     const note = createVoiceNoteFixture({
-      appliedAt: new Date('2026-11-05T12:00:00.000Z'),
+      appliedAt: toInstant('2026-11-05T12:00:00.000Z'),
       planDraft: createPlanDraftWithTodo(),
     });
 

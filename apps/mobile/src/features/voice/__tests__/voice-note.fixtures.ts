@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import {
   createVoiceNote,
   type VoiceNote,
@@ -49,7 +51,7 @@ export const createVoiceNoteFixture = ({
   ...createVoiceNote({
     draftId,
     locale: 'ko-KR',
-    createdAt: new Date('2026-11-01T00:00:00.000Z'),
+    createdAt: toInstant('2026-11-01T00:00:00.000Z'),
   }),
   durationMs: 178_000,
   sentences: [createVoiceNoteSentence()],

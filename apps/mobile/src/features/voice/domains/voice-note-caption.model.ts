@@ -1,4 +1,5 @@
 import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
+import type { Instant } from '@src/shared/date/instant';
 import { clamp, sumBy } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
@@ -258,7 +259,7 @@ export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
 interface CreateVoiceNoteFromTranscriptInput {
   draftId: string;
   locale: SpeechLocale;
-  createdAt: Date;
+  createdAt: Instant;
   transcript: VoiceTranscript;
   durationMs: number;
 }

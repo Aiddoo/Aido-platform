@@ -1,4 +1,5 @@
 import { createLocalFileSystemFake, createMemorySyncStorage } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createVoiceNoteDigest, createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
@@ -65,7 +66,7 @@ describe('VoiceNoteStorageService', () => {
       'user-1',
       createVoiceNoteFixture({
         draftId: 'draft-2',
-        createdAt: new Date('2026-12-01T00:00:00.000Z'),
+        createdAt: toInstant('2026-12-01T00:00:00.000Z'),
       }),
     );
 
@@ -82,7 +83,7 @@ describe('VoiceNoteStorageService', () => {
     const createNoteWithRecording = (draftId: string, createdAt: string) =>
       createVoiceNoteFixture({
         draftId,
-        createdAt: new Date(createdAt),
+        createdAt: toInstant(createdAt),
         digest: createVoiceNoteDigest(),
         recordings: [
           { fileName: `${draftId}-0.wav`, startMs: 0 },

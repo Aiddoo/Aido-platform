@@ -1,4 +1,5 @@
 import { useIdGenerator, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { toInstant } from '@src/shared/date/instant';
 import { useMutation } from '@tanstack/react-query';
 
 import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
@@ -18,7 +19,10 @@ export function useVoiceNoteSaveMemo(note: VoiceNote) {
       onSaved: () => {
         const latest = drafts.find(accountId, draftId);
         if (latest != null) {
-          drafts.save(accountId, VoiceNotePolicy.withMemoSavedAt(latest, new Date()));
+          drafts.save(
+            accountId,
+            VoiceNotePolicy.withMemoSavedAt(latest, toInstant(new Date().toISOString())),
+          );
         }
       },
     }),

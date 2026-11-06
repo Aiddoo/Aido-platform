@@ -23,6 +23,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { ApiError } from '@src/shared/errors/api-error';
 import { err, ok } from '@src/shared/errors/result';
@@ -259,7 +260,7 @@ describe('말로 메모 화면', () => {
 
   test('이미 할 일을 추가한 메모는 할 일 탭에서 다시 추가하지 않게 안내한다', async () => {
     // Given
-    const appliedAt = new Date('2026-11-02T00:00:00.000Z');
+    const appliedAt = toInstant('2026-11-02T00:00:00.000Z');
 
     // When
     await renderScreen({ digest: createVoiceNoteDigest(), planDraft: null, appliedAt }, 'todos');
@@ -290,7 +291,7 @@ describe('말로 메모 화면', () => {
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).toBeInstanceOf(Date),
+      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).not.toBeNull(),
     );
   });
 
@@ -339,7 +340,7 @@ describe('말로 메모 화면', () => {
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSavedAt).toBeInstanceOf(Date),
+      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSavedAt).not.toBeNull(),
     );
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull();
   });

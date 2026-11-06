@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import { toInstant } from '@src/shared/date/instant';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useTranslation } from '@src/shared/i18n';
 import { Result } from '@src/shared/ui';
@@ -95,7 +96,14 @@ export function VoiceNotePlanTodos({ note, className }: VoiceNotePlanTodosProps)
           onSaved={({ todoCount }) => {
             const latest = drafts.find(accountId, draftId);
             if (latest != null) {
-              drafts.save(accountId, VoiceNotePolicy.withAppliedAt(latest, new Date(), todoCount));
+              drafts.save(
+                accountId,
+                VoiceNotePolicy.withAppliedAt(
+                  latest,
+                  toInstant(new Date().toISOString()),
+                  todoCount,
+                ),
+              );
             }
           }}
         />

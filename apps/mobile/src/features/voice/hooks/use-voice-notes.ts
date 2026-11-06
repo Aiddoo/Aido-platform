@@ -1,4 +1,5 @@
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { toEpochMs } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 import { useSyncExternalStore } from 'react';
 
@@ -13,7 +14,7 @@ export function useVoiceNotes(accountId: string) {
   const notes = useStoredVoiceNotes(accountId);
   return orderBy(
     notes.filter(VoiceNotePolicy.hasText),
-    [(note) => note.createdAt.getTime()],
+    [(note) => toEpochMs(note.createdAt)],
     ['desc'],
   );
 }

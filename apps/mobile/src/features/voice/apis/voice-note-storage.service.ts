@@ -1,3 +1,4 @@
+import { toEpochMs } from '@src/shared/date/instant';
 import { orderBy, partition, sumBy } from 'es-toolkit';
 
 import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
@@ -43,7 +44,7 @@ export class VoiceNoteStorageService {
 
     return {
       totalBytes: sumBy(notes, ({ bytes }) => bytes),
-      notes: orderBy(notes, [({ note }) => note.createdAt.getTime()], ['desc']),
+      notes: orderBy(notes, [({ note }) => toEpochMs(note.createdAt)], ['desc']),
     };
   };
 
