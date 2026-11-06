@@ -54,7 +54,7 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 
 TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
   const { todoId } = useTodoScreenParams();
-  const [date] = useTodoSheetDateParam();
+  const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());

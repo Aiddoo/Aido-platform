@@ -1,5 +1,5 @@
 import { SubTodoActionsBottomSheet } from '@src/features/planning/todo/components/sub-todo-list/sub-todo-actions-bottom-sheet';
-import { subTodoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { subTodoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 

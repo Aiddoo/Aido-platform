@@ -1,10 +1,8 @@
 import { findCachedTodoComment } from '@src/features/engagement/comment/queries/todo-comment-cache';
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import {
-  commentReportRouteParamsSchema,
-  useCommentReportRouteParams,
-} from '@src/features/social/moderation/hooks/use-comment-report-route-params';
+import { useCommentReportRouteParams } from '@src/features/social/moderation/hooks/use-comment-report-route-params';
+import { commentReportRouteParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';

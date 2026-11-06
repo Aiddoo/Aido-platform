@@ -1,8 +1,6 @@
-import {
-  todoScreenParamsSchema,
-  useTodoScreenParams,
-} from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/get-todo-details-query-options';
+import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import { useTranslation } from '@src/shared/i18n';

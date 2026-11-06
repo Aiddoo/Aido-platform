@@ -35,9 +35,9 @@ export function TodoCreateBottomSheet() {
 
 TodoCreateBottomSheet.Form = function Form() {
   const sheet = useSheetRoute('/feed');
-  const [date] = useTodoSheetDateParam();
-  const [requestedCategoryId] = useTodoCreateCategoryParam();
-  const [prefill] = useTodoCreatePrefillParam();
+  const date = useTodoSheetDateParam();
+  const requestedCategoryId = useTodoCreateCategoryParam();
+  const prefill = useTodoCreatePrefillParam();
   const isVoiceHintForced = useTodoCreateVoiceHintParam();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = resolveSheetCategoryId(requestedCategoryId, categoriesResult.categories);

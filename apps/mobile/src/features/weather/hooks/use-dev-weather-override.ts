@@ -1,19 +1,13 @@
-import { WEATHER_CONDITIONS } from '@aido/api';
 import { useLocalSearchParams } from 'expo-router';
-import { z } from 'zod';
 
 import type { WeatherReport } from '../domains/weather-report.model';
-
-const devSceneParamsSchema = z.object({
-  devScene: z.enum(WEATHER_CONDITIONS),
-  devNight: z.enum(['0', '1']).default('0'),
-});
+import { weatherDevParamsSchema } from '../schemas/weather-dev-params.schema';
 
 export type DevWeatherOverride = Pick<WeatherReport['current'], 'condition' | 'isDaylight'>;
 
 /** 개발 빌드 QA용: `/weather?devScene=HAIL&devNight=1`로 연 날씨 화면에서만 지금 날씨를 바꿔 보여 준다. */
 function useOverrideFromParams(): DevWeatherOverride | null {
-  const parsed = devSceneParamsSchema.safeParse(useLocalSearchParams());
+  const parsed = weatherDevParamsSchema.safeParse(useLocalSearchParams());
   if (!parsed.success) {
     return null;
   }

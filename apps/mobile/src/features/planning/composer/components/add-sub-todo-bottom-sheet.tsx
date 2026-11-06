@@ -88,7 +88,7 @@ interface SheetContentProps {
 
 AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
   const { todoId } = useTodoScreenParams();
-  const [date] = useTodoSheetDateParam();
+  const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
 
@@ -108,7 +108,7 @@ AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
 AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
   const { todoId } = useTodoScreenParams();
   const { subTodoId } = useSubTodoScreenParams();
-  const [date] = useTodoSheetDateParam();
+  const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
@@ -157,7 +157,7 @@ interface SubTodoFormProps {
 
 function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const { t } = useTranslation('todo');
-  const [date] = useTodoSheetDateParam();
+  const date = useTodoSheetDateParam();
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 

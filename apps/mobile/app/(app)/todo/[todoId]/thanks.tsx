@@ -1,4 +1,4 @@
-import { todoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { NudgeThanksBottomSheet } from '@src/features/social/nudge/components/nudge-interactions/nudge-thanks-bottom-sheet';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';

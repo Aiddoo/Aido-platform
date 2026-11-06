@@ -1,10 +1,6 @@
-import { userIdParamSchema } from '@aido/api';
 import { useLocalSearchParams } from 'expo-router';
-import { z } from 'zod';
 
-const friendScreenParamsSchema = z.object({
-  friendId: userIdParamSchema.shape.userId,
-});
+import { friendScreenParamsSchema } from '../schemas/friend-params.schema';
 
 export function useFriendScreenParams() {
   return friendScreenParamsSchema.parse(useLocalSearchParams());

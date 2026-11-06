@@ -1,10 +1,6 @@
-import { todoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useLocalSearchParams } from 'expo-router';
-import { z } from 'zod';
 
-export const commentReportRouteParamsSchema = todoScreenParamsSchema.extend({
-  commentId: z.cuid(),
-});
+import { commentReportRouteParamsSchema } from '../schemas/moderation-params.schema';
 
 export function useCommentReportRouteParams() {
   return commentReportRouteParamsSchema.parse(useLocalSearchParams());

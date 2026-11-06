@@ -1,8 +1,6 @@
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
-import {
-  userReportRouteParamsSchema,
-  useUserReportRouteParams,
-} from '@src/features/social/moderation/hooks/use-user-report-route-params';
+import { useUserReportRouteParams } from '@src/features/social/moderation/hooks/use-user-report-route-params';
+import { userReportRouteParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 

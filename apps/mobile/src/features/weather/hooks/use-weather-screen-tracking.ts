@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import type { WeatherLocationStatus } from '../domains/weather-location.model';
-import { weatherEntryParamSchema } from '../schemas/weather-entry-params.schema';
+import { weatherEntryParamsSchema } from '../schemas/weather-entry-params.schema';
 import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
@@ -14,7 +14,7 @@ import {
  * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 화면에서는 더 세지 않는다.
  */
 export function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
-  const { entry } = weatherEntryParamSchema.parse(useLocalSearchParams());
+  const { entry } = weatherEntryParamsSchema.parse(useLocalSearchParams());
   const { trackEvent } = useTrack();
   const hasTrackedLocation = useRef(false);
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);

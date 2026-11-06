@@ -1,11 +1,9 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { getSampleReport } from '@src/features/insights/report/constants/sample-reports';
-import {
-  reportScreenParamsSchema,
-  useReportScreenParams,
-} from '@src/features/insights/report/hooks/use-report-screen-params';
+import { useReportScreenParams } from '@src/features/insights/report/hooks/use-report-screen-params';
 import { useGetReportDetailQueryOptions } from '@src/features/insights/report/queries/get-report-detail-query-options';
+import { reportScreenParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useTrack } from '@src/shared/analytics';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';

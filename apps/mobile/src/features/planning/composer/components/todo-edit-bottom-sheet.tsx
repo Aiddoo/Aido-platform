@@ -34,7 +34,7 @@ export function TodoEditBottomSheet() {
 TodoEditBottomSheet.Form = function Form() {
   const sheet = useSheetRoute('/feed');
   const { todoId } = useTodoScreenParams();
-  const [date] = useTodoSheetDateParam();
+  const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
 

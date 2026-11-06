@@ -1,5 +1,5 @@
 import { todoCommentIdSchema } from '@aido/api';
-import { todoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 const legacyTodoCommentThreadParamsSchema = todoScreenParamsSchema.extend({

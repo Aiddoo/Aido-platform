@@ -1,7 +1,6 @@
-import { verifyEmailSchema } from '@aido/api';
 import { useLocalSearchParams } from 'expo-router';
 
-export const verifyEmailScreenParamsSchema = verifyEmailSchema.pick({ email: true });
+import { verifyEmailScreenParamsSchema } from '../schemas/verify-email-params.schema';
 
 export function useVerifyEmailScreenParams() {
   return verifyEmailScreenParamsSchema.parse(useLocalSearchParams());
