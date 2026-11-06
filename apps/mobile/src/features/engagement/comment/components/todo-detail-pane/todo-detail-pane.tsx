@@ -1,7 +1,6 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { TodoDetailCard } from '@src/features/planning/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
@@ -43,6 +42,7 @@ import { TodoCommentRevealProvider } from '../todo-comment-reveal';
 import { TodoCommentSortBar } from '../todo-comment-sort-bar';
 import { TodoCommentThreadList } from '../todo-comment-thread-list';
 import { TodoCommentTitleBar } from '../todo-comment-title-bar';
+import { TodoDetailCard } from '../todo-detail-card';
 
 const NOT_FOUND_STATUS = 404;
 

@@ -1,4 +1,14 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { SubTodoIndent } from '@src/features/planning/todo/components/sub-todo-indent';
+import {
+  TodoCheckbox,
+  TodoLabel,
+  TodoProgress,
+  TodoRow,
+} from '@src/features/planning/todo/components/todo-row';
+import { TodoPolicy, type TodoDetails } from '@src/features/planning/todo/domains/todo.model';
+import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
@@ -22,12 +32,6 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
-
-import { TodoPolicy, type TodoDetails } from '../domains/todo.model';
-import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
-import { useGetTodoDetailsQueryOptions } from '../queries/todo.queries';
-import { SubTodoIndent } from './sub-todo-indent';
-import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 export function TodoDetailCard() {
   const { todoId } = useTodoScreenParams();
