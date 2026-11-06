@@ -1,6 +1,7 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
@@ -12,6 +13,7 @@ import {
   createHttpClientStub,
   createMockTokenStore,
   createMemorySyncStorage,
+  createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -113,9 +115,14 @@ describe('AuthProvider', () => {
           todoService,
           userService,
           widgetSyncService,
-          draftService,
-          queryCacheStorage,
-          deviceTimezoneService,
+          sessionCleanupService: new SessionCleanupService({
+            queryCache: queryClient,
+            persistedQueryCache: queryCacheStorage,
+            drafts: draftService,
+            voiceNotes: createVoiceNoteStorageServiceFake(),
+            deviceTimezone: deviceTimezoneService,
+            logger: { warn: jest.fn() },
+          }),
         })}
       >
         <QueryClientProvider client={queryClient}>

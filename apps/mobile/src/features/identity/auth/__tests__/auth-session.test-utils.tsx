@@ -11,6 +11,8 @@ import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.factories';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createPushNotificationGatewayStub } from '@src/features/notification/__tests__/notification.factories';
+import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
+import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
@@ -20,6 +22,7 @@ import {
   createAnalyticsStub,
   createTestDiContainer,
   createHttpClientStub,
+  createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -31,6 +34,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { AuthService } from '../apis/auth.service';
+import { SessionCleanupService } from '../apis/session-cleanup.service';
 
 export const ACCOUNT_A_TOKENS: AuthTokenPair = {
   accessToken: 'access-a',
@@ -60,6 +64,16 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
   const queryCacheStorage: QueryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
   const errorReporter = createErrorReporterStub();
   const writeSnapshot = jest.fn(async () => undefined);
+  const sessionCleanupService = new SessionCleanupService({
+    queryCache: queryClient,
+    persistedQueryCache: queryCacheStorage,
+    drafts: draftService,
+    voiceNotes: createVoiceNoteStorageServiceFake(),
+    deviceTimezone: new DeviceTimezoneService(
+      createDeviceTimezoneRepository(createMemorySyncStorage()),
+    ),
+    logger: silentLogger,
+  });
 
   const container = createTestDiContainer({
     tokenStore: store,
@@ -79,6 +93,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     widgetSyncService: new WidgetSyncService({ writeSnapshot }, errorReporter),
     draftService,
     queryCacheStorage,
+    sessionCleanupService,
     ...di,
   });
 

@@ -27,6 +27,7 @@ import type { WidgetNavigationRepository } from '@src/features/device/widget/api
 import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import type { UserService } from '@src/features/identity/user/apis/user.service';
@@ -80,6 +81,8 @@ export interface DIContainer {
   tokenStore: TokenStore;
   /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
   sessionManager: SessionManager;
+  /** 세션이 끝난 뒤 기기에 남은 계정 데이터를 정리한다 */
+  sessionCleanupService: SessionCleanupService;
   /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
   tokenRefresher: TokenRefresher;
   featureAttribution: FeatureAttributionStore;
@@ -162,6 +165,7 @@ export const useLocationGateway = () => useDI().locationGateway;
 export const useClipboard = () => useDI().clipboard;
 export const useNetworkStatus = () => useDI().networkStatus;
 export const useTokenStore = () => useDI().tokenStore;
+export const useSessionCleanupService = () => useDI().sessionCleanupService;
 export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;

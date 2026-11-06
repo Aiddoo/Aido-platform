@@ -7,7 +7,6 @@ import {
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   type PropsWithChildren,
@@ -23,12 +22,9 @@ import { type ResolvedAuthStatus, resolveInitialAuthStatus } from './auth-boot';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
 import {
   useAnalytics,
-  useDeviceTimezoneService,
-  useDraftService,
   useErrorReporter,
-  useQueryCacheStorage,
+  useSessionCleanupService,
   useTokenStore,
-  useVoiceNoteStorageService,
 } from './di-context';
 
 /**
@@ -50,11 +46,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const tokenStore = useTokenStore();
   const errorReporter = useErrorReporter();
   const analytics = useAnalytics();
-  const queryClient = useQueryClient();
-  const draftService = useDraftService();
-  const queryCacheStorage = useQueryCacheStorage();
-  const voiceNoteStorageService = useVoiceNoteStorageService();
-  const deviceTimezoneService = useDeviceTimezoneService();
+  const sessionCleanupService = useSessionCleanupService();
 
   const [status, setStatusState] = useState<AuthStatus>('loading');
 
@@ -186,27 +178,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
   // 만료 리스너에서 같은 tick에 clear()하면, 아직 마운트된 인증 화면의 useSuspenseQuery들이
   // 즉시 재요청 → 토큰 없음 → 401 → 다시 만료 → clear 루프를 돈다. 그 401은 ErrorBoundary로
   // 던져져 "재시도/로그아웃" 화면을 띄운다. effect는 인증 화면이 언마운트된 뒤 실행된다.
-  // 초안과 말로 메모하기 녹음은 사용자가 로그아웃·탈퇴했을 때만 같은 시점에 비운다. 세션 만료 때는 남기고,
-  // 다른 사용자가 로그인하면 `useUserIdentity`가 이전 소유자의 초안을 정리한다.
-  // 기기에 저장한 조회 캐시는 세션 만료 때도 지워 다음에 로그인한 사람에게 복원되지 않게 한다.
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      queryClient.clear();
-      queryCacheStorage.clear();
-      if (isUserInitiatedSignOutRef.current) {
-        draftService.removeAll();
-        voiceNoteStorageService.removeAll();
-        deviceTimezoneService.clear();
-      }
+    if (status !== 'unauthenticated') {
+      return;
     }
-  }, [
-    status,
-    queryClient,
-    draftService,
-    queryCacheStorage,
-    voiceNoteStorageService,
-    deviceTimezoneService,
-  ]);
+    if (isUserInitiatedSignOutRef.current) {
+      sessionCleanupService.afterSignedOut();
+    } else {
+      sessionCleanupService.afterSessionEnded();
+    }
+  }, [status, sessionCleanupService]);
 
   return <AuthContext.Provider value={{ status, setStatus }}>{children}</AuthContext.Provider>;
 }

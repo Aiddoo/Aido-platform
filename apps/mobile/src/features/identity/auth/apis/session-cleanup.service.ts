@@ -1,0 +1,63 @@
+import type { Logger } from '@src/core/ports/logger';
+import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
+import type { DraftService } from '@src/shared/draft/draft.service';
+import { getErrorMessage } from '@src/shared/errors';
+
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+
+export interface SessionQueryCache {
+  clear(): void;
+}
+
+export interface SessionPersistedQueryCache {
+  clear(): void;
+}
+
+interface SessionCleanupPorts {
+  queryCache: SessionQueryCache;
+  persistedQueryCache: SessionPersistedQueryCache;
+  drafts: Pick<DraftService, 'removeAll'>;
+  voiceNotes: Pick<VoiceNoteStorageService, 'removeAll'>;
+  deviceTimezone: Pick<DeviceTimezoneService, 'clear'>;
+  logger: Pick<Logger, 'warn'>;
+}
+
+/**
+ * 세션이 끝날 때 기기에 남은 계정 데이터를 정리한다.
+ * 다음 사람에게 보이면 안 되는 데이터라 한 단계가 실패해도 나머지를 계속한다.
+ * 호출은 미인증 전환이 커밋된 뒤여야 한다. 같은 tick에 비우면 아직 마운트된 인증 화면이
+ * 다시 요청해 401 루프를 돈다.
+ */
+export class SessionCleanupService {
+  readonly #ports: SessionCleanupPorts;
+
+  constructor(ports: SessionCleanupPorts) {
+    this.#ports = ports;
+  }
+
+  /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다 */
+  afterSignedOut = (): void => {
+    this.afterSessionEnded();
+    this.#run('drafts', () => this.#ports.drafts.removeAll());
+    this.#run('voice-notes', () => this.#ports.voiceNotes.removeAll());
+    this.#run('device-timezone', () => this.#ports.deviceTimezone.clear());
+  };
+
+  /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */
+  afterSessionEnded = (): void => {
+    this.#run('query-cache', () => this.#ports.queryCache.clear());
+    this.#run('persisted-query-cache', () => this.#ports.persistedQueryCache.clear());
+  };
+
+  #run(step: string, cleanup: () => void): void {
+    try {
+      cleanup();
+    } catch (error) {
+      this.#ports.logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
+        step,
+        error: getErrorMessage(error),
+      });
+    }
+  }
+}

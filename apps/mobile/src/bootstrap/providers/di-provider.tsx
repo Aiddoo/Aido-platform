@@ -20,6 +20,7 @@ import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -105,6 +106,7 @@ import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
@@ -123,6 +125,7 @@ export function DIProvider({
   encryptedStorageBootstrap,
   queryCacheStorage,
 }: DIProviderProps) {
+  const queryClient = useQueryClient();
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
     const sessionEpoch = createSessionEpoch();
@@ -330,6 +333,15 @@ export function DIProvider({
     const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
     const widgetNavigationRepository = createWidgetNavigationRepository(widgetNavigationStorage);
 
+    const sessionCleanupService = new SessionCleanupService({
+      queryCache: queryClient,
+      persistedQueryCache: queryCacheStorage,
+      drafts: draftService,
+      voiceNotes: voiceNoteStorageService,
+      deviceTimezone: deviceTimezoneService,
+      logger,
+    });
+
     return {
       storage,
       logger,
@@ -342,6 +354,7 @@ export function DIProvider({
       pushNotificationGateway: expoPushNotificationGateway,
       tokenStore,
       sessionManager,
+      sessionCleanupService,
       tokenRefresher,
       featureAttribution,
       draftService,
