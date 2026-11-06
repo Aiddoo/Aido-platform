@@ -3,7 +3,9 @@ import { useGetWhatsNewQueryOptions } from '@src/features/app-config/whats-new/q
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/get-todo-existence-query-options';
 import { toInstant } from '@src/shared/date/instant';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { ActivationPolicy } from '../domains/activation.model';
 import { useGetActivationProgressQueryOptions } from '../queries/activation.queries';
@@ -53,7 +55,9 @@ export function useActivationProgress() {
 
 export function useActivationChecklist() {
   const activation = useActivationProgress();
-  const now = toInstant(new Date().toISOString());
+  // React Compiler가 인자 없는 new Date()를 렌더 사이에 붙잡아 두므로, 날짜가 바뀔 때 다시 읽는다
+  const today = useToday();
+  const now = useMemo(() => toInstant(new Date().toISOString()), [today]);
   const isEligible =
     activation.isReady &&
     ActivationPolicy.isChecklistEligible({
