@@ -1,11 +1,14 @@
-import { Flex, HStack } from '@src/shared/ui';
+import { Flex } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
+import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { CATEGORY_COLORS } from '../constants/todo-category-colors';
 
-interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
+interface CategoryColorInputProps extends Omit<
+  ComponentProps<typeof RadioGroup>,
+  'children' | 'value' | 'onValueChange'
+> {
   value: string;
   onChange: (color: string) => void;
 }
@@ -18,23 +21,15 @@ export function CategoryColorInput({
   ...props
 }: CategoryColorInputProps) {
   return (
-    <HStack
-      align="center"
-      justify="center"
-      className={cn('flex-wrap gap-2.5', className)}
-      accessibilityRole="radiogroup"
+    <RadioGroup
+      value={value}
+      onValueChange={onChange}
+      className={cn('flex-row flex-wrap items-center justify-center gap-2.5', className)}
       {...props}
     >
-      {CATEGORY_COLORS.map((color) => {
-        const isSelected = value === color;
-
-        return (
-          <PressableFeedback
-            key={color}
-            onPress={() => onChange(color)}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: isSelected }}
-          >
+      {CATEGORY_COLORS.map((color) => (
+        <RadioGroup.Item key={color} value={color}>
+          {({ isSelected }) => (
             <Flex
               align="center"
               justify="center"
@@ -46,9 +41,9 @@ export function CategoryColorInput({
                 style={{ backgroundColor: color }}
               />
             </Flex>
-          </PressableFeedback>
-        );
-      })}
-    </HStack>
+          )}
+        </RadioGroup.Item>
+      ))}
+    </RadioGroup>
   );
 }
