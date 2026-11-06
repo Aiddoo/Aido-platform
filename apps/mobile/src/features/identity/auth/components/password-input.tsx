@@ -1,7 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
-import { EyeIcon, EyeOffIcon, Input } from '@src/shared/ui';
+import { EyeIcon, EyeOffIcon, IconButton, Input } from '@src/shared/ui';
 import { useState, type ComponentProps } from 'react';
-import { Pressable } from 'react-native';
 
 export interface PasswordInputProps extends Omit<
   ComponentProps<typeof Input>,
@@ -18,18 +17,17 @@ export function PasswordInput(props: PasswordInputProps) {
       autoCorrect={false}
       secureTextEntry={isSecure}
       rightContent={
-        <Pressable
-          accessibilityRole="button"
+        <IconButton
           accessibilityLabel={t(isSecure ? 'forms.showPassword' : 'forms.hidePassword')}
-          className="min-w-11 min-h-11 items-center justify-center"
+          icon={
+            isSecure ? (
+              <EyeIcon colorClassName="text-gray-5" />
+            ) : (
+              <EyeOffIcon colorClassName="text-gray-5" />
+            )
+          }
           onPress={() => setIsSecure((value) => !value)}
-        >
-          {isSecure ? (
-            <EyeIcon colorClassName="text-gray-5" />
-          ) : (
-            <EyeOffIcon colorClassName="text-gray-5" />
-          )}
-        </Pressable>
+        />
       }
       {...props}
     />

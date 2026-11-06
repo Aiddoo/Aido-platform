@@ -2,12 +2,19 @@ import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { ArrowRightIcon, BottomSheet, Button, HStack, Text, VStack } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  BottomSheet,
+  Button,
+  HStack,
+  Text,
+  VStack,
+  IconButton,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
-import { Pressable } from 'react-native';
 
 import type { SignUpFormInput } from '../domains/sign-up-form.schema';
 
@@ -148,9 +155,13 @@ TermsBottomSheet.AgreementItem = function AgreementItem({
           </HStack>
         </Label>
         {onPressLink && (
-          <Pressable hitSlop={8} onPress={onPressLink}>
-            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
-          </Pressable>
+          <IconButton
+            accessibilityLabel={label}
+            icon={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />}
+            className="min-h-0 min-w-0"
+            hitSlop={8}
+            onPress={onPressLink}
+          />
         )}
       </HStack>
     </ControlField>
