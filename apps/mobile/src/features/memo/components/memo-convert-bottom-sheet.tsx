@@ -9,15 +9,9 @@ import { addTodoFormSchema } from '@src/features/todo/domains/add-todo-form.sche
 import { shouldReopenRepeatPicker } from '@src/features/todo/domains/todo-series.error';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  BottomSheetInput,
-  Box,
-  HStack,
-  KeyboardBottomSheet,
-  useOverlay,
-  VStack,
-} from '@src/shared/ui';
+import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, FormProvider, useForm, useFormState, useWatch } from 'react-hook-form';
 
@@ -86,7 +80,7 @@ export function MemoConvertBottomSheet({
       onOpenChange={onOpenChange}
       footer={
         <VStack gap={12}>
-          <Box className="h-px bg-gray-2" />
+          <Separator thickness={1} className="bg-gray-2" />
 
           <HStack align="center" justify="end">
             <TodoComposerSubmitButton
