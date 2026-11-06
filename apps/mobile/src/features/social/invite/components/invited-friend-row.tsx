@@ -1,6 +1,6 @@
 import { REDEMPTION_REJECTION_REASON } from '@aido/api';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { useGetFriendQueryOptions } from '@src/features/social/friend/queries/get-friend-query-options';
+import { useGetFriendQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/get-remind-nudge-cooldown-query-options';
 import { formatDateLabel } from '@src/shared/date/date-format';

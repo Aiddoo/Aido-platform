@@ -4,7 +4,7 @@ import {
   createSearchUsersDto,
   createSendFriendRequestDto,
   createSentRequestsDto,
-} from '../__tests__/friend.factories';
+} from '../__tests__/friend.fixtures';
 import {
   toFriendRequest,
   toFriendRequestsPage,

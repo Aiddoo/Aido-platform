@@ -11,7 +11,7 @@ import {
   createSendFriendRequestDto,
   createSentRequestsDto,
   INVALID_DTO,
-} from '../__tests__/friend.factories';
+} from '../__tests__/friend.fixtures';
 import { FRIEND_ERROR_CODE } from '../domains/friend.error';
 import { FriendService } from './friend.service';
 

@@ -3,7 +3,7 @@ import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/get-friends-infinite-query-options';
+import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import type { FriendUserViewModel } from '@src/features/social/friend/utils/view-models/friend-user.view-model';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';

@@ -5,9 +5,9 @@ import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createSearchUsersDto } from '../__tests__/friend.factories';
+import { createSearchUsersDto } from '../__tests__/friend.fixtures';
 import { FriendService } from '../apis/friend.service';
-import { useGetUserSearchQueryOptions } from './get-user-search-query-options';
+import { useGetUserSearchQueryOptions } from './friend.queries';
 
 const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
   const queryClient = createTestQueryClient();

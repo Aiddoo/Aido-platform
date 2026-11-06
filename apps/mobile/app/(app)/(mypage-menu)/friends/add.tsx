@@ -1,6 +1,6 @@
 import { type UserTagParam, userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useSendRequestByTagMutationOptions } from '@src/features/social/friend/queries/use-send-request-by-tag-mutation-options';
+import { useSendRequestByTagMutationOptions } from '@src/features/social/friend/queries/friend.mutations';
 import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/get-invite-availability-query-options';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
 import { isBusinessError } from '@src/shared/errors/result';

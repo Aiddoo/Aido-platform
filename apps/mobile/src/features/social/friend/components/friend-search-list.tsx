@@ -18,9 +18,9 @@ import { match } from 'ts-pattern';
 
 import { FriendPolicy } from '../domains/friend.model';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
-import { useGetUserSearchQueryOptions } from '../queries/get-user-search-query-options';
-import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
-import { useSendRequestByTagMutationOptions } from '../queries/use-send-request-by-tag-mutation-options';
+import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
+import { useSendRequestByTagMutationOptions } from '../queries/friend.mutations';
+import { useGetUserSearchQueryOptions } from '../queries/friend.queries';
 import type { SearchedUserViewModel } from '../utils/view-models/searched-user.view-model';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 

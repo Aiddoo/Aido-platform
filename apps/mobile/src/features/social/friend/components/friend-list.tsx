@@ -51,9 +51,9 @@ import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-r
 import { useResolveClassNames } from 'uniwind';
 
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
-import { useGetFriendsInfiniteQueryOptions } from '../queries/get-friends-infinite-query-options';
-import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
-import { useReorderFriendMutationOptions } from '../queries/use-reorder-friend-mutation-options';
+import { useRemoveFriendMutationOptions } from '../queries/friend.mutations';
+import { useReorderFriendMutationOptions } from '../queries/friend.mutations';
+import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
 import type { FriendUserViewModel } from '../utils/view-models/friend-user.view-model';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
 import { UserList } from './user-list';
