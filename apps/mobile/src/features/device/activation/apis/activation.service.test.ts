@@ -1,11 +1,11 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
 import { ActivationService } from './activation.service';
 
-const config: WhatsNewConfig = {
+const config: FeatureCampaignConfig = {
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',

@@ -1,9 +1,9 @@
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
+import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createWhatsNewStateRepository } from '@src/features/app-config/whats-new/apis/whats-new-state.repository';
 import { WhatsNewStateService } from '@src/features/app-config/whats-new/apis/whats-new-state.service';
-import { WhatsNewService } from '@src/features/app-config/whats-new/apis/whats-new.service';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
@@ -218,8 +218,8 @@ export function DIProvider({
     // Friend
     const friendService = new FriendService(authHttpClient);
 
-    // Whats-new — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
-    const whatsNewService = new WhatsNewService(publicJsonFetcher);
+    // 소개 캠페인 설정: app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
+    const featureCampaignService = new FeatureCampaignService(publicJsonFetcher);
     const appVersionService = new AppVersionService(
       publicJsonFetcher,
       expoApplicationMetadataGateway,
@@ -384,7 +384,7 @@ export function DIProvider({
       appVersionService,
       appIconService: new AppIconService(expoAppIconGateway),
       friendService,
-      whatsNewService,
+      featureCampaignService,
       whatsNewStateService,
       inviteService,
       inviteShareService,

@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useWhatsNewStateService } from '@src/bootstrap/providers/di-context';
+import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { getNativeAppVersion } from '@src/features/app-config/whats-new/apis/native-app-version';
 import { WhatsNewPolicy } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import {
@@ -12,7 +13,6 @@ import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreg
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 
-import { useGetWhatsNewQueryOptions } from '../queries/whats-new.queries';
 import { claimAndOpenWhatsNew } from '../utils/whats-new-auto-open';
 import { useWhatsNewHub } from './use-whats-new-hub';
 
@@ -25,7 +25,7 @@ export function useWhatsNewFeed({
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const { data: config } = useQuery({
-    ...useGetWhatsNewQueryOptions(),
+    ...useGetFeatureCampaignConfigQueryOptions(),
     enabled: isAuthenticated,
   });
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });

@@ -1,9 +1,8 @@
-import { match } from 'ts-pattern';
-
 import {
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
   WHATS_NEW_CAMPAIGN_ID,
-} from '../constants/whats-new.constants';
+} from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
+import { match } from 'ts-pattern';
 
 const WHATS_NEW_CARD_IDS = ['friend_invite', 'voice_say', 'voice_plan', 'voice_facts'] as const;
 

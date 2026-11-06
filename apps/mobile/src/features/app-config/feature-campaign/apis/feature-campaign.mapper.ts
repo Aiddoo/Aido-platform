@@ -1,9 +1,11 @@
 import type { FeatureDiscoveryResponse } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 
-import type { WhatsNewConfig } from '../schemas/whats-new.schema';
+import type { FeatureCampaignConfig } from '../schemas/feature-campaign.schema';
 
-export const toWhatsNewConfig = (response: FeatureDiscoveryResponse): WhatsNewConfig => {
+export const toFeatureCampaignConfig = (
+  response: FeatureDiscoveryResponse,
+): FeatureCampaignConfig => {
   if (!response.enabled) {
     return { enabled: false };
   }

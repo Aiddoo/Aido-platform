@@ -1,5 +1,5 @@
-import { getCachedWhatsNewConfig } from '@src/features/app-config/whats-new/queries/whats-new-cache';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
+import { getCachedFeatureCampaignConfig } from '@src/features/app-config/feature-campaign/queries/feature-campaign-cache';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';
@@ -28,14 +28,14 @@ function getCurrentInstant() {
 
 function getContext(queryClient: QueryClient) {
   return {
-    config: getCachedWhatsNewConfig(queryClient),
+    config: getCachedFeatureCampaignConfig(queryClient),
     user: getCachedMe(queryClient),
   };
 }
 
 function updateProgressCache(
   queryClient: QueryClient,
-  config: WhatsNewConfig | undefined,
+  config: FeatureCampaignConfig | undefined,
   user: User | undefined,
   progress: ActivationProgress,
 ) {

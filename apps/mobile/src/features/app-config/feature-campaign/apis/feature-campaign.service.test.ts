@@ -2,13 +2,13 @@ import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 
-import { WhatsNewService } from './whats-new.service';
+import { FeatureCampaignService } from './feature-campaign.service';
 
 const createMockJsonFetcher = (): jest.Mocked<JsonFetcher> => ({
   get: jest.fn(),
 });
 
-describe('WhatsNewService', () => {
+describe('FeatureCampaignService', () => {
   it('원문 설정 응답을 검증하고 도메인 설정으로 반환한다', async () => {
     // Given
     const fetcher = createMockJsonFetcher();
@@ -19,7 +19,7 @@ describe('WhatsNewService', () => {
       launchedAt: '2026-08-01T00:00:00.000Z',
       autoOpen: true,
     });
-    const service = new WhatsNewService(fetcher);
+    const service = new FeatureCampaignService(fetcher);
 
     // When
     const result = await service.getConfig();
@@ -38,7 +38,7 @@ describe('WhatsNewService', () => {
     // Given
     const fetcher = createMockJsonFetcher();
     fetcher.get.mockResolvedValue({ data: { enabled: false } });
-    const service = new WhatsNewService(fetcher);
+    const service = new FeatureCampaignService(fetcher);
 
     // When & Then
     await expect(service.getConfig()).rejects.toThrow(ParseError);
@@ -48,7 +48,7 @@ describe('WhatsNewService', () => {
     // Given
     const fetcher = createMockJsonFetcher();
     fetcher.get.mockRejectedValue(new Error('offline'));
-    const service = new WhatsNewService(fetcher);
+    const service = new FeatureCampaignService(fetcher);
 
     // When & Then
     await expect(service.getConfig()).rejects.toThrow('offline');

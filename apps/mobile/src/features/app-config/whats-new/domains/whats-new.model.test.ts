@@ -1,10 +1,10 @@
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 
 import { RELEASES } from '../constants/releases';
 import type { ReleaseList } from '../schemas/release.schema';
-import type { WhatsNewConfig } from '../schemas/whats-new.schema';
 import { WhatsNewPolicy, isSemanticVersionAtLeast } from './whats-new.model';
 
 const createUser = (overrides: Partial<User> = {}): User => ({
@@ -31,8 +31,8 @@ const createUser = (overrides: Partial<User> = {}): User => ({
 });
 
 const createEnabledConfig = (
-  overrides: Partial<Extract<WhatsNewConfig, { enabled: true }>> = {},
-): Extract<WhatsNewConfig, { enabled: true }> => ({
+  overrides: Partial<Extract<FeatureCampaignConfig, { enabled: true }>> = {},
+): Extract<FeatureCampaignConfig, { enabled: true }> => ({
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',

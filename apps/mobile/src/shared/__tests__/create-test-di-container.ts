@@ -151,8 +151,8 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get inviteShareService() {
       return dependency('inviteShareService');
     },
-    get whatsNewService() {
-      return dependency('whatsNewService');
+    get featureCampaignService() {
+      return dependency('featureCampaignService');
     },
     get whatsNewStateService() {
       return dependency('whatsNewStateService');

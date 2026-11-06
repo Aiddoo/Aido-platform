@@ -1,4 +1,4 @@
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';
 import type { Instant } from '@src/shared/date/instant';
 
@@ -7,7 +7,7 @@ import type { ActivationProgress, ActivationUser } from '../schemas/activation.s
 import type { ActivationProgressRepository } from './activation-progress.repository';
 
 interface ActivationActionInput {
-  config: WhatsNewConfig | undefined;
+  config: FeatureCampaignConfig | undefined;
   user: ActivationUser | undefined;
   now: Instant;
 }
@@ -29,7 +29,7 @@ export class ActivationService {
   }
 
   getProgress = (
-    config: WhatsNewConfig | undefined,
+    config: FeatureCampaignConfig | undefined,
     user: ActivationUser | undefined,
   ): ActivationProgress => {
     const identity = ActivationPolicy.getActivationIdentity(config, user);

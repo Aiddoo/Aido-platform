@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import {
   createPushDeviceResponseDto,
   createPushNotificationGatewayStub,
@@ -18,7 +18,7 @@ import type { ActivationProgress, ActivationUser } from '../schemas/activation.s
 import { usePushPermissionAskMoment } from './use-push-permission-ask-moment';
 
 type ActivationState = {
-  config: WhatsNewConfig | undefined;
+  config: FeatureCampaignConfig | undefined;
   user: ActivationUser | undefined;
   progress: ActivationProgress;
   isReady: boolean;

@@ -1,4 +1,4 @@
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import { toInstant } from '@src/shared/date/instant';
 
 import type { ActivationProgress } from '../schemas/activation.schema';
@@ -7,8 +7,8 @@ import { ACTIVATION_CHECKLIST_WINDOW_MS, ActivationPolicy } from './activation.m
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');
 
 const createConfig = (
-  overrides?: Partial<Extract<WhatsNewConfig, { enabled: true }>>,
-): WhatsNewConfig => ({
+  overrides?: Partial<Extract<FeatureCampaignConfig, { enabled: true }>>,
+): FeatureCampaignConfig => ({
   enabled: true,
   campaignId: 'feature-discovery-2026-08',
   minAppVersion: '1.8.0',

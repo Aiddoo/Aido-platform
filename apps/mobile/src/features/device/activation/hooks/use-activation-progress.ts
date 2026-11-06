@@ -1,5 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useGetWhatsNewQueryOptions } from '@src/features/app-config/whats-new/queries/whats-new.queries';
+import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { toInstant } from '@src/shared/date/instant';
@@ -21,7 +21,7 @@ export function useActivationProgress() {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const configQuery = useQuery({
-    ...useGetWhatsNewQueryOptions(),
+    ...useGetFeatureCampaignConfigQueryOptions(),
     enabled: isAuthenticated,
   });
   const userQuery = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });

@@ -1,7 +1,8 @@
 import {
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
   WHATS_NEW_CAMPAIGN_ID,
-} from '../constants/whats-new.constants';
+} from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
+
 import { filterAvailableCampaign, getBundledWhatsNewCampaign } from './whats-new.registry';
 
 describe('getBundledWhatsNewCampaign', () => {

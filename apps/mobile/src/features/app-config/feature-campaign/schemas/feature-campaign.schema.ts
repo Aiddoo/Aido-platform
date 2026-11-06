@@ -2,9 +2,9 @@ import { featureDiscoveryMinAppVersionSchema } from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const whatsNewAppVersionSchema = featureDiscoveryMinAppVersionSchema;
+export const featureCampaignAppVersionSchema = featureDiscoveryMinAppVersionSchema;
 
-const whatsNewConfigSchema = z.discriminatedUnion('enabled', [
+const featureCampaignConfigSchema = z.discriminatedUnion('enabled', [
   z.object({ enabled: z.literal(false) }),
   z.object({
     enabled: z.literal(true),
@@ -14,4 +14,4 @@ const whatsNewConfigSchema = z.discriminatedUnion('enabled', [
     autoOpen: z.boolean(),
   }),
 ]);
-export type WhatsNewConfig = z.infer<typeof whatsNewConfigSchema>;
+export type FeatureCampaignConfig = z.infer<typeof featureCampaignConfigSchema>;

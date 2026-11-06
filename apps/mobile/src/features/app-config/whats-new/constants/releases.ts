@@ -1,5 +1,9 @@
+import {
+  PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
+  WHATS_NEW_CAMPAIGN_ID,
+} from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
+
 import { type Release, RELEASE_ID, releaseListSchema } from '../schemas/release.schema';
-import { PREVIOUS_WHATS_NEW_CAMPAIGN_ID, WHATS_NEW_CAMPAIGN_ID } from './whats-new.constants';
 
 export const RELEASE_1_15_0 = {
   id: RELEASE_ID.v1_15_0,

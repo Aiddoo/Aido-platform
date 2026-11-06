@@ -1,8 +1,8 @@
 import type { FeatureDiscoveryResponse } from '@aido/api';
 
-import { toWhatsNewConfig } from './whats-new.mapper';
+import { toFeatureCampaignConfig } from './feature-campaign.mapper';
 
-describe('toWhatsNewConfig', () => {
+describe('toFeatureCampaignConfig', () => {
   it('활성 응답의 출시 시각을 Instant로 옮긴다', () => {
     // Given
     const response: FeatureDiscoveryResponse = {
@@ -14,7 +14,7 @@ describe('toWhatsNewConfig', () => {
     };
 
     // When
-    const result = toWhatsNewConfig(response);
+    const result = toFeatureCampaignConfig(response);
 
     // Then
     expect(result.enabled).toBe(true);
@@ -25,7 +25,7 @@ describe('toWhatsNewConfig', () => {
 
   it('비활성 응답은 비활성 도메인 값으로 유지한다', () => {
     // When
-    const result = toWhatsNewConfig({ enabled: false });
+    const result = toFeatureCampaignConfig({ enabled: false });
 
     // Then
     expect(result).toEqual({ enabled: false });

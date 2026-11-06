@@ -1,4 +1,4 @@
-import { PREVIOUS_WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/whats-new/constants/whats-new.constants';
+import { PREVIOUS_WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 import { getBundledWhatsNewCampaign } from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { createSyncStorageStub } from '@src/shared/__tests__/create-sync-storage-stub';
 import '@src/shared/i18n/init';

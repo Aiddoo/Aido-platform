@@ -1,9 +1,12 @@
+import {
+  type FeatureCampaignConfig,
+  featureCampaignAppVersionSchema,
+} from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
 
 import { WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
 import type { Release, ReleaseList } from '../schemas/release.schema';
-import { type WhatsNewConfig, whatsNewAppVersionSchema } from '../schemas/whats-new.schema';
 
 interface ParsedSemanticVersion {
   core: readonly [number, number, number];
@@ -11,14 +14,14 @@ interface ParsedSemanticVersion {
 }
 
 interface AutoOpenInput {
-  config: WhatsNewConfig | undefined;
+  config: FeatureCampaignConfig | undefined;
   user: Pick<User, 'createdAt'> | undefined;
   appVersion: string | undefined;
   hasSeen: boolean;
 }
 
 function parseSemanticVersion(value: string | undefined): ParsedSemanticVersion | null {
-  if (!value || !whatsNewAppVersionSchema.safeParse(value).success) {
+  if (!value || !featureCampaignAppVersionSchema.safeParse(value).success) {
     return null;
   }
 

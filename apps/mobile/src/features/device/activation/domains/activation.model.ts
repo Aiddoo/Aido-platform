@@ -2,8 +2,8 @@ import {
   WHATS_NEW_CAMPAIGN_ID,
   LEGACY_WHATS_NEW_CAMPAIGN_ID,
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
-} from '@src/features/app-config/whats-new/constants/whats-new.constants';
-import type { WhatsNewConfig } from '@src/features/app-config/whats-new/schemas/whats-new.schema';
+} from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
@@ -26,7 +26,7 @@ const PUSH_REGISTRATION_DEFERRED_SINCE = '2026-08-01T00:00:00.000Z';
 export const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
 interface PushRegistrationInput {
-  config: WhatsNewConfig | undefined;
+  config: FeatureCampaignConfig | undefined;
   user: ActivationUser | undefined;
   progress: ActivationProgress;
 }
@@ -39,7 +39,7 @@ interface ChecklistVisibilityInput extends ChecklistEligibilityInput {
 }
 
 function resolveEnabledCampaign(
-  config: WhatsNewConfig,
+  config: FeatureCampaignConfig,
 ): { campaignId: string; launchedAt: Instant } | null {
   if (config.enabled && ACTIVATION_CAMPAIGN_IDS.has(config.campaignId)) {
     return {
@@ -51,7 +51,7 @@ function resolveEnabledCampaign(
 }
 
 function isNewUserCohort(
-  config: WhatsNewConfig | undefined,
+  config: FeatureCampaignConfig | undefined,
   user: ActivationUser | undefined,
 ): boolean {
   const campaign = config ? resolveEnabledCampaign(config) : null;
@@ -59,7 +59,7 @@ function isNewUserCohort(
 }
 
 function getActivationIdentity(
-  config: WhatsNewConfig | undefined,
+  config: FeatureCampaignConfig | undefined,
   user: ActivationUser | undefined,
 ): ActivationIdentity | null {
   const campaign = config ? resolveEnabledCampaign(config) : null;

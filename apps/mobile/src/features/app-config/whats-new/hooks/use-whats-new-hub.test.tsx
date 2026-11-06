@@ -1,9 +1,9 @@
+import { WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 import { getBundledWhatsNewCampaign } from '@src/features/app-config/whats-new/domains/whats-new.registry';
 import { act, fireEvent, render, renderHook } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { WHATS_NEW_CAMPAIGN_ID } from '../constants/whats-new.constants';
 import { useWhatsNewHub } from './use-whats-new-hub';
 
 const mockTrackEvent = jest.fn();
