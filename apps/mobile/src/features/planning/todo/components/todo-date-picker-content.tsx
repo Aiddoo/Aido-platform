@@ -5,7 +5,6 @@ import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -149,7 +148,7 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
         />
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
           {formatDateKeyLabel(
-            toDateKey(displayMonth, getDeviceTimezone()),
+            toDateKey(displayMonth, dateFormatContext.timeZone),
             'yearMonth',
             dateFormatContext,
           )}

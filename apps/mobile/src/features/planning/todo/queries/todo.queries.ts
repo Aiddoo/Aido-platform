@@ -1,24 +1,24 @@
 import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
-import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { unwrap } from '@src/shared/errors/result';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { queryOptions } from '@tanstack/react-query';
+import { type QueryState, queryOptions } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { type DailyCompletionSummary, TodoPolicy } from '../domains/todo.model';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
-export const shouldPersistTodosByDate = ({ date, todayKey }: { date: string; todayKey: string }) =>
-  date >= addDaysToDateKey(todayKey, -1) && date <= addDaysToDateKey(todayKey, 1);
+export function shouldPersistTodosByDate({ date, todayKey }: { date: string; todayKey: string }) {
+  return date >= addDaysToDateKey(todayKey, -1) && date <= addDaysToDateKey(todayKey, 1);
+}
 
-function getTodosByDateQueryOptions(
-  todoService: TodoService,
-  { date, todayKey }: { date: string; todayKey: string },
-) {
+export function useGetTodosByDateQueryOptions({ date }: { date: string }) {
+  const todoService = useTodoService();
+  const todayKey = useTodayKey();
+
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.listByDate({ date }),
     queryFn: async ({ signal }) =>
@@ -27,31 +27,10 @@ function getTodosByDateQueryOptions(
   });
 }
 
-export function useGetTodosByDateQueryOptions({ date }: { date: string }) {
-  return getTodosByDateQueryOptions(useTodoService(), { date, todayKey: useTodayKey() });
-}
-
 export type CompletionsByDate = Record<string, DailyCompletionSummary>;
 
-export const toCompletionsViewModel = (data: {
-  completions: DailyCompletionSummary[];
-}): CompletionsByDate => {
-  return keyBy(data.completions, (c) => c.date);
-};
-
-function getDailyCompletionsQueryOptions(
-  service: TodoService,
-  { startDate, endDate }: { startDate: string; endDate: string },
-) {
-  return queryOptions({
-    queryKey: TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }),
-    queryFn: async ({ signal }) => {
-      const result = await service.getDailyCompletions(startDate, endDate, signal);
-      return unwrap(result);
-    },
-    select: toCompletionsViewModel,
-    ...PERSISTED_QUERY_OPTIONS,
-  });
+function toCompletionsByDate(data: { completions: DailyCompletionSummary[] }): CompletionsByDate {
+  return keyBy(data.completions, (completion) => completion.date);
 }
 
 export function useGetDailyCompletionsQueryOptions({
@@ -61,33 +40,14 @@ export function useGetDailyCompletionsQueryOptions({
   startDate: string;
   endDate: string;
 }) {
-  return getDailyCompletionsQueryOptions(useTodoService(), { startDate, endDate });
-}
+  const todoService = useTodoService();
 
-function getFriendDailyCompletionsQueryOptions(
-  service: TodoService,
-  {
-    friendUserId,
-    startDate,
-    endDate,
-  }: { friendUserId: string; startDate: string; endDate: string },
-) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.friendCompletionsByRange({
-      userId: friendUserId,
-      startDate,
-      endDate,
-    }),
-    queryFn: async ({ signal }) => {
-      const result = await service.getFriendDailyCompletions(
-        friendUserId,
-        startDate,
-        endDate,
-        signal,
-      );
-      return unwrap(result);
-    },
-    select: toCompletionsViewModel,
+    queryKey: TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }),
+    queryFn: async ({ signal }) =>
+      unwrap(await todoService.getDailyCompletions(startDate, endDate, signal)),
+    select: toCompletionsByDate,
+    ...PERSISTED_QUERY_OPTIONS,
   });
 }
 
@@ -100,31 +60,17 @@ export function useGetFriendDailyCompletionsQueryOptions({
   startDate: string;
   endDate: string;
 }) {
-  return getFriendDailyCompletionsQueryOptions(useTodoService(), {
-    friendUserId,
-    startDate,
-    endDate,
-  });
-}
+  const todoService = useTodoService();
 
-function getFriendTodosQueryOptions(
-  todoService: TodoService,
-  { friendUserId, date }: { friendUserId: string; date: string },
-) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.friendListByDate({ userId: friendUserId, date }),
-    queryFn: async ({ signal }) => {
-      const result = await todoService.getFriendTodos(
-        friendUserId,
-        {
-          startDate: date,
-          endDate: date,
-          size: 200,
-        },
-        signal,
-      );
-      return unwrap(result);
-    },
+    queryKey: TODO_QUERY_KEYS.friendCompletionsByRange({
+      userId: friendUserId,
+      startDate,
+      endDate,
+    }),
+    queryFn: async ({ signal }) =>
+      unwrap(await todoService.getFriendDailyCompletions(friendUserId, startDate, endDate, signal)),
+    select: toCompletionsByDate,
   });
 }
 
@@ -135,7 +81,19 @@ export function useGetFriendTodosQueryOptions({
   friendUserId: string;
   date: string;
 }) {
-  return getFriendTodosQueryOptions(useTodoService(), { friendUserId, date });
+  const todoService = useTodoService();
+
+  return queryOptions({
+    queryKey: TODO_QUERY_KEYS.friendListByDate({ userId: friendUserId, date }),
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await todoService.getFriendTodos(
+          friendUserId,
+          { startDate: date, endDate: date, size: 200 },
+          signal,
+        ),
+      ),
+  });
 }
 
 /**
@@ -147,7 +105,8 @@ export function useGetHasUpcomingRepeatQueryOptions() {
   const todayKey = useTodayKey();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.upcomingRepeat(),
+    // 키에 날짜가 있어야 자정이 지나면 어제 기준으로 구한 값을 쓰지 않고 새로 묻는다
+    queryKey: TODO_QUERY_KEYS.upcomingRepeat({ date: todayKey }),
     queryFn: async ({ signal }) => {
       const { todos } = unwrap(
         await todoService.getTodos(
@@ -165,27 +124,22 @@ export function useGetHasUpcomingRepeatQueryOptions() {
   });
 }
 
-/** 상세 화면이 읽는 할 일 본문·권한·집계. 댓글 목록은 todo-comment feature가 따로 가져온다. */
-function getTodoDetailsQueryOptions(todoService: TodoService, { todoId }: { todoId: number }) {
+export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
+  const todoService = useTodoService();
+
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.details({ todoId }),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoDetails(todoId, signal)),
   });
 }
 
-export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
-  return getTodoDetailsQueryOptions(useTodoService(), { todoId });
-}
+export function useGetTodoExistenceQueryOptions() {
+  const todoService = useTodoService();
 
-function getTodoExistenceQueryOptions(todoService: TodoService) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.existence(),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoExistence(signal)),
   });
-}
-
-export function useGetTodoExistenceQueryOptions() {
-  return getTodoExistenceQueryOptions(useTodoService());
 }
 
 const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
@@ -206,34 +160,35 @@ interface TodoSummaryQueryParams {
   userId?: string | null;
 }
 
-export function getTodoSummaryQueryOptions(
-  service: TodoService,
-  { date, userId }: TodoSummaryQueryParams,
+type SummaryRefetchState = Pick<
+  QueryState<{ date: string }>,
+  'data' | 'status' | 'dataUpdateCount' | 'errorUpdateCount'
+>;
+
+/** 서버 요약이 요청한 날짜에 닿을 때까지 몇 ms 뒤에 다시 물을지. 따라잡았거나 시도를 다 썼으면 false */
+export function getTodoSummaryRefetchInterval(
+  { data, status, dataUpdateCount, errorUpdateCount }: SummaryRefetchState,
+  date: string,
 ) {
+  const isCaughtUp = status !== 'error' && (data == null || data.date === date);
+  if (isCaughtUp) {
+    return false;
+  }
+  const attempt = dataUpdateCount + errorUpdateCount - 1;
+
+  return attempt < DATE_CATCH_UP_MAX_ATTEMPTS ? DATE_CATCH_UP_BASE_DELAY_MS * 2 ** attempt : false;
+}
+
+export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryParams) {
+  const todoService = useTodoService();
+
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.widgetSummaryByDate({ date, userId }),
-    queryFn: async ({ signal }) => {
-      const result = await service.getTodoSummary(date, signal);
-      return unwrap(result);
-    },
+    queryFn: async ({ signal }) => unwrap(await todoService.getTodoSummary(date, signal)),
     staleTime: 60_000,
-    refetchInterval: (query) => {
-      const { data, status, dataUpdateCount, errorUpdateCount } = query.state;
-      const isCaughtUp = status !== 'error' && (data == null || data.date === date);
-      if (isCaughtUp) {
-        return false;
-      }
-      const attempt = dataUpdateCount + errorUpdateCount - 1;
-      return attempt < DATE_CATCH_UP_MAX_ATTEMPTS
-        ? DATE_CATCH_UP_BASE_DELAY_MS * 2 ** attempt
-        : false;
-    },
+    refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
     // AuthProvider(전 화면 상위)에서 도는 백그라운드 쿼리 — 실패가 절대 ErrorBoundary로
     // 전파되면 안 된다(콜드 스타트 fallback 재발 방지). 실패 시 위젯만 갱신되지 않는다.
     throwOnError: false,
   });
-}
-
-export function useGetTodoSummaryQueryOptions(params: TodoSummaryQueryParams) {
-  return getTodoSummaryQueryOptions(useTodoService(), params);
 }

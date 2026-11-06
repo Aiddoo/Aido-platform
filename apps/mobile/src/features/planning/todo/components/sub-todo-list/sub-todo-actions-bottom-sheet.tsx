@@ -1,3 +1,4 @@
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import {
   useSubTodoScreenParams,
@@ -28,10 +29,6 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { useDeleteSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import {
-  findSheetSubTodo,
-  findSheetTodo,
-} from '../../utils/view-models/todo-sheet-target.view-model';
 
 type SubTodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -69,8 +66,8 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
   const { subTodoId } = useSubTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
-  const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
   const isDeleting = deleteSubTodo.isPending;
 

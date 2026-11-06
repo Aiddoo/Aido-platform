@@ -1,8 +1,9 @@
+import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { findSheetTodo } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -36,7 +37,7 @@ TodoEditBottomSheet.Form = function Form() {
   const { todoId } = useTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
 
   useEffect(() => {
     if (todo == null) {
@@ -56,7 +57,7 @@ TodoEditBottomSheet.Form = function Form() {
   };
 
   // 규칙은 목록 응답에 실려 있다. 구 서버 응답처럼 규칙이 없는 회차만 따로 읽는다
-  return todo.repeat == null && todo.recurrenceGroupId != null ? (
+  return TodoRepeatPolicy.isMissingRepeatRule(todo) ? (
     <TodoEditBottomSheet.SeriesForm todo={todo} seriesId={todo.recurrenceGroupId} {...sheetProps} />
   ) : (
     <AddTodoBottomSheet mode="edit" todo={todo} {...sheetProps} />

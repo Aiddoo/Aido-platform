@@ -1,10 +1,5 @@
-import { createHttpClientStub } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { QueryObserver, type QueryClient } from '@tanstack/react-query';
-
-import { TodoService } from '../apis/todo.service';
-import { shouldPersistTodosByDate } from './todo.queries';
-import { getTodoSummaryQueryOptions } from './todo.queries';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { getTodoSummaryRefetchInterval, shouldPersistTodosByDate } from './todo.queries';
 
 describe('shouldPersistTodosByDate', () => {
   const todayKey = '2026-11-03';
@@ -26,57 +21,70 @@ describe('shouldPersistTodosByDate', () => {
   });
 });
 
-function createSummaryDto(date: string) {
-  return {
-    date,
-    totalTodos: 0,
-    completedTodos: 0,
-    completionRate: 0,
-    isComplete: false,
-    currentStreak: 0,
-    topTodos: [],
-  };
-}
+describe('getTodoSummaryRefetchInterval', () => {
+  const success = (responseDate: string, dataUpdateCount = 1) =>
+    ({
+      data: { date: responseDate },
+      status: 'success',
+      dataUpdateCount,
+      errorUpdateCount: 0,
+    }) as const;
 
-describe('getTodoSummaryQueryOptions refetchInterval', () => {
-  let queryClient: QueryClient;
-
-  beforeEach(() => {
-    queryClient = createTestQueryClient();
-  });
-
-  async function fetchSummary(params: { date: string }, responseDate: string) {
-    const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue({ ok: true, value: createSummaryDto(responseDate) });
-    const options = getTodoSummaryQueryOptions(new TodoService(httpClient), params);
-    await queryClient.fetchQuery(options);
-    const query = new QueryObserver(queryClient, options).getCurrentQuery();
-    const { refetchInterval } = options;
-    if (typeof refetchInterval !== 'function') {
-      throw new Error('refetchInterval이 함수가 아니다');
-    }
-    return { query, refetchInterval };
-  }
-
-  it('오늘 요청에 전날 요약이 오면 서버가 날짜를 따라잡을 때까지 짧게 다시 묻는다', async () => {
+  it('오늘 요청에 전날 요약이 오면 서버가 날짜를 따라잡을 때까지 짧게 다시 묻는다', () => {
     // Given
-    const { query, refetchInterval } = await fetchSummary({ date: '2026-07-13' }, '2026-07-12');
+    const state = success('2026-07-12');
 
     // When
-    const interval = refetchInterval(query);
+    const interval = getTodoSummaryRefetchInterval(state, '2026-07-13');
 
     // Then
     expect(interval).toBe(5_000);
   });
 
-  it('요청한 날짜의 요약이 오면 다시 묻지 않는다', async () => {
+  it('요청한 날짜의 요약이 오면 다시 묻지 않는다', () => {
     // Given
-    const { query, refetchInterval } = await fetchSummary({ date: '2026-07-13' }, '2026-07-13');
+    const state = success('2026-07-13');
 
     // When
-    const interval = refetchInterval(query);
+    const interval = getTodoSummaryRefetchInterval(state, '2026-07-13');
 
     // Then
     expect(interval).toBe(false);
+  });
+
+  it('따라잡지 못한 채 네 번 물었으면 더 묻지 않는다', () => {
+    // Given
+    const state = success('2026-07-12', 5);
+
+    // When
+    const interval = getTodoSummaryRefetchInterval(state, '2026-07-13');
+
+    // Then
+    expect(interval).toBe(false);
+  });
+});
+
+describe('반복 안내 쿼리 키', () => {
+  it('날짜가 바뀌면 다른 키라 자정 뒤 어제 값을 쓰지 않는다', () => {
+    // Given
+    const beforeMidnight = '2026-11-07';
+    const afterMidnight = '2026-11-08';
+
+    // When
+    const before = TODO_QUERY_KEYS.upcomingRepeat({ date: beforeMidnight });
+    const after = TODO_QUERY_KEYS.upcomingRepeat({ date: afterMidnight });
+
+    // Then
+    expect(before).not.toEqual(after);
+  });
+
+  it('완료 현황 키 아래에 있어 생성·토글·삭제 때 함께 무효화된다', () => {
+    // When
+    const key = TODO_QUERY_KEYS.upcomingRepeat({ date: '2026-11-07' });
+
+    // Then
+    expect(key.slice(0, TODO_QUERY_KEYS.completions().length)).toEqual(
+      TODO_QUERY_KEYS.completions(),
+    );
   });
 });

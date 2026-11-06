@@ -202,6 +202,13 @@ function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean
   return recurrenceGroupId != null && repeat != null;
 }
 
+/** 규칙이 목록 응답에 실려 있지 않은 반복 회차(구 서버 응답). 규칙을 따로 읽어야 고칠 수 있다 */
+function isMissingRepeatRule<T extends RepeatOccurrence>(
+  occurrence: T,
+): occurrence is T & { recurrenceGroupId: string } {
+  return occurrence.repeat == null && occurrence.recurrenceGroupId != null;
+}
+
 /** 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845) */
 function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
   return occurrence.recurrenceGroupId == null || hasRepeatRule(occurrence);
@@ -295,28 +302,14 @@ function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean 
   return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
 }
 
-/**
- * 3개월 안내를 보일지. 달력 아래 한 곳에서만 보인다. 월 보기는 그 달이 일부라도 넘어가면(점이 끊겨 보인다),
- * 주 보기는 고른 날이 넘어가면 보인다.
- */
-function shouldShowRepeatHorizonHint(
-  dateKey: string,
-  todayKey: string,
-  viewMode: 'week' | 'month',
-): boolean {
-  return viewMode === 'month'
-    ? isMonthBeyondRepeatHorizon(dateKey, todayKey)
-    : isBeyondRepeatHorizon(dateKey, todayKey);
-}
-
 export const TodoRepeatPolicy = {
   getRepeatKind,
   hasSameRepeat,
   isBeyondRepeatHorizon,
   isMonthBeyondRepeatHorizon,
-  shouldShowRepeatHorizonHint,
   getTodoEditScopeDecision,
   hasRepeatRule,
+  isMissingRepeatRule,
   canChangeRepeat,
   getDeleteScopes,
   withRepeatStartDate,

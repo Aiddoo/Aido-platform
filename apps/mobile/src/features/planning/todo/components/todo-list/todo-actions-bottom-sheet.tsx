@@ -10,7 +10,6 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowRightIcon,
   BottomSheet,
@@ -48,7 +47,6 @@ import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutatio
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
-import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 
 type TodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -86,7 +84,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   const { todoId } = useTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
@@ -120,8 +118,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
         todoId: todo.id,
         changedField: 'date',
         input: {
-          startDate: toDateKey(startDate, getDeviceTimezone()),
-          endDate: endDate == null ? null : toDateKey(endDate, getDeviceTimezone()),
+          startDate: toDateKey(startDate, dateFormatContext.timeZone),
+          endDate: endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone),
           scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
           isAllDay: todo.isAllDay,
         },

@@ -17,7 +17,6 @@ import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   type CalendarViewMode,
   calendarViewModeSchema,
@@ -342,13 +341,14 @@ interface WeekRowProps {
 }
 
 function WeekRow({ week, completions }: WeekRowProps) {
+  const { timeZone } = useDateFormatContext();
   const dates = getWeekDates(getWeekStart(week));
 
   return (
     <HStack px={8}>
       {dates.map((date) => (
         <CalendarDateCell key={date.toISOString()} date={date}>
-          <CompletionIndicator completion={completions[toDateKey(date, getDeviceTimezone())]} />
+          <CompletionIndicator completion={completions[toDateKey(date, timeZone)]} />
         </CalendarDateCell>
       ))}
     </HStack>
@@ -361,6 +361,7 @@ interface MonthGridProps {
 }
 
 function MonthGrid({ month, completions }: MonthGridProps) {
+  const { timeZone } = useDateFormatContext();
   const weeks = fillMonthGrid(getMonthWeeks(month));
 
   return (
@@ -374,7 +375,7 @@ function MonthGrid({ month, completions }: MonthGridProps) {
               date={date}
               className={isSameMonth(date, month) ? undefined : 'opacity-20'}
             >
-              <CompletionIndicator completion={completions[toDateKey(date, getDeviceTimezone())]} />
+              <CompletionIndicator completion={completions[toDateKey(date, timeZone)]} />
             </CalendarDateCell>
           ))}
         </HStack>

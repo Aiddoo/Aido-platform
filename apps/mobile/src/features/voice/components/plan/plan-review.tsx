@@ -10,6 +10,7 @@ import {
   TodoRow,
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import {
   formatDateKeyLabel,
@@ -407,7 +408,7 @@ PlanReview.TodoRow = function PlanTodoRow({
               {todo.title}
             </TodoLabel>
           }
-          isPrivate={todo.visibility === 'PRIVATE'}
+          isPrivate={TodoPolicy.isPrivate(todo)}
         />
       }
       middle={

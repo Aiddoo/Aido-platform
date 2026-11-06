@@ -49,7 +49,7 @@ interface ToggleTodoMutationParams {
   date: string;
 }
 
-export const useToggleTodoMutationOptions = () => {
+export function useToggleTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const activationService = useActivationService();
@@ -112,7 +112,7 @@ export const useToggleTodoMutationOptions = () => {
       settleTodoCompletionWrite(queryClient);
     },
   });
-};
+}
 
 interface ChangeTodoCategoryMutationParams {
   todoId: number;
@@ -120,7 +120,7 @@ interface ChangeTodoCategoryMutationParams {
   scope?: TodoUpdateScope;
 }
 
-export const useChangeTodoCategoryMutationOptions = () => {
+export function useChangeTodoCategoryMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
@@ -155,7 +155,7 @@ export const useChangeTodoCategoryMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.changeFailedRetry') });
     },
   });
-};
+}
 
 interface DeleteTodoMutationParams {
   todoId: number;
@@ -164,7 +164,7 @@ interface DeleteTodoMutationParams {
   scope?: TodoEditScope;
 }
 
-export const useDeleteTodoMutationOptions = () => {
+export function useDeleteTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
@@ -218,14 +218,14 @@ export const useDeleteTodoMutationOptions = () => {
       settleTodoCompletionWrite(queryClient);
     },
   });
-};
+}
 
 interface ReorderTodoParams {
   id: number;
   input: ReorderTodoInput;
 }
 
-export const useReorderTodoMutationOptions = () => {
+export function useReorderTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
@@ -252,7 +252,7 @@ export const useReorderTodoMutationOptions = () => {
       settleTodoListWrite(queryClient);
     },
   });
-};
+}
 
 export interface UpdateTodoScheduleMutationParams {
   todoId: number;
@@ -262,7 +262,7 @@ export interface UpdateTodoScheduleMutationParams {
   scope?: TodoUpdateScope;
 }
 
-export const useUpdateTodoScheduleMutationOptions = () => {
+export function useUpdateTodoScheduleMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
@@ -299,4 +299,4 @@ export const useUpdateTodoScheduleMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
     },
   });
-};
+}

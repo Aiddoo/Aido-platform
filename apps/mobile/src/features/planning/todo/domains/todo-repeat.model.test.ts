@@ -317,19 +317,6 @@ describe('isBeyondHorizon', () => {
     // Then
     expect(result).toBe(expected);
   });
-
-  test.each([
-    ['2027-02-01', 'month', true],
-    ['2027-01-15', 'month', false],
-    ['2027-02-01', 'week', false],
-    ['2027-02-04', 'week', true],
-  ] as const)('3개월 안내: %s %s 보기 → %s', (dateKey, viewMode, expected) => {
-    // When
-    const result = TodoRepeatPolicy.shouldShowRepeatHorizonHint(dateKey, TODAY, viewMode);
-
-    // Then
-    expect(result).toBe(expected);
-  });
 });
 
 describe('TodoRepeatPolicy 회차별 동작', () => {
@@ -386,5 +373,18 @@ describe('서버와 같은 회차 표', () => {
 
     // Then
     expect(occurrences).toEqual(expected);
+  });
+});
+
+describe('TodoRepeatPolicy.isMissingRepeatRule', () => {
+  it('규칙 없이 묶음 id만 있는 회차는 규칙을 따로 읽어야 한다', () => {
+    // When
+    const results = [
+      TodoRepeatPolicy.isMissingRepeatRule({ repeat: null, recurrenceGroupId: 'old-group' }),
+      TodoRepeatPolicy.isMissingRepeatRule({ repeat: null, recurrenceGroupId: null }),
+    ];
+
+    // Then
+    expect(results).toEqual([true, false]);
   });
 });

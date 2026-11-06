@@ -1,9 +1,10 @@
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { toDateKey } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   BottomSheet,
   INQUIRY_SHEET_EXIT,
@@ -21,7 +22,6 @@ import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-s
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { toTodoEditFormValues } from '../../utils/to-todo-edit-form-values';
-import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 import { TodoTimePickerContent } from '../todo-time-picker-content';
 
 type TodoTimeBottomSheetProps = Omit<
@@ -53,10 +53,11 @@ export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
 }
 
 TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
+  const { timeZone } = useDateFormatContext();
   const { todoId } = useTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;
@@ -101,10 +102,8 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
             changedField: 'time',
             ...(scope != null && { scope }),
             input: {
-              startDate: toDateKey(editValues.startDate, getDeviceTimezone()),
-              endDate: editValues.endDate
-                ? toDateKey(editValues.endDate, getDeviceTimezone())
-                : null,
+              startDate: toDateKey(editValues.startDate, timeZone),
+              endDate: editValues.endDate ? toDateKey(editValues.endDate, timeZone) : null,
               scheduledTime: isAllDay ? null : scheduledTime,
               isAllDay,
             },

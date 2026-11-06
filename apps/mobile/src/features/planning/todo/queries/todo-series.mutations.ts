@@ -14,7 +14,7 @@ interface StopTodoSeriesMutationParams {
   todoId: number;
 }
 
-export const useStopTodoSeriesMutationOptions = () => {
+export function useStopTodoSeriesMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
@@ -44,7 +44,7 @@ export const useStopTodoSeriesMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
     },
   });
-};
+}
 
 /** 반복 할 일 오류(TODO_0841~0846)를 다음 행동과 함께 알린다. 처리했으면 true. 입력값은 건드리지 않는다 */
 export function useTodoSeriesFailureHandler() {

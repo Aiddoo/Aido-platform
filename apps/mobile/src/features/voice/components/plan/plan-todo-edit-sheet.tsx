@@ -5,6 +5,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
 import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
 import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
 import { toDate, toDateKey } from '@src/shared/date/instant';
@@ -286,7 +287,7 @@ function VisibilityChip() {
   const { t } = useTranslation('todo');
   const form = useFormContext<PlanTodoEditFormValues>();
   const visibility = useWatch({ control: form.control, name: 'todo.visibility' });
-  const isPrivate = visibility === 'PRIVATE';
+  const isPrivate = TodoPolicy.isPrivate({ visibility });
 
   return (
     <ActionChip

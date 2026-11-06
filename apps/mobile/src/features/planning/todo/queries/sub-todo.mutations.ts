@@ -22,7 +22,7 @@ interface ToggleSubTodoParams {
   date: string;
 }
 
-export const useToggleSubTodoMutationOptions = () => {
+export function useToggleSubTodoMutationOptions() {
   const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
@@ -59,7 +59,7 @@ export const useToggleSubTodoMutationOptions = () => {
       settleTodoListWrite(queryClient);
     },
   });
-};
+}
 
 interface DeleteSubTodoParams {
   todoId: number;
@@ -68,7 +68,7 @@ interface DeleteSubTodoParams {
   date: string;
 }
 
-export const useDeleteSubTodoMutationOptions = () => {
+export function useDeleteSubTodoMutationOptions() {
   const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
@@ -108,7 +108,7 @@ export const useDeleteSubTodoMutationOptions = () => {
       settleTodoListWrite(queryClient);
     },
   });
-};
+}
 
 interface ReorderSubTodosParams {
   todoId: number;
@@ -117,7 +117,7 @@ interface ReorderSubTodosParams {
   date: string;
 }
 
-export const useReorderSubTodosMutationOptions = () => {
+export function useReorderSubTodosMutationOptions() {
   const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
@@ -156,4 +156,4 @@ export const useReorderSubTodosMutationOptions = () => {
       settleTodoListWrite(queryClient);
     },
   });
-};
+}

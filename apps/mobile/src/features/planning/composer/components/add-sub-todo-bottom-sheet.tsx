@@ -1,6 +1,7 @@
 import { createTodoItemSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { SubTodo } from '@src/features/planning/todo/domains/sub-todo.model';
+import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import {
@@ -9,10 +10,6 @@ import {
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import {
-  findSheetSubTodo,
-  findSheetTodo,
-} from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { DictationButton } from '@src/features/voice/components/dictation-button';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -90,7 +87,7 @@ AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
   const { todoId } = useTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
 
   useEffect(() => {
     if (todo == null) {
@@ -110,8 +107,8 @@ AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
   const { subTodoId } = useSubTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
-  const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
 
   useEffect(() => {
     if (todo == null || subTodo == null) {
@@ -179,6 +176,10 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const submitSubTodo = handleSubmit(async (values) => {
     const title = values.title.trim();
     if (!title || isBusy) {
+      return;
+    }
+    if (subTodo != null && !SubTodoPolicy.hasTitleChanged(subTodo, title)) {
+      onClose();
       return;
     }
 

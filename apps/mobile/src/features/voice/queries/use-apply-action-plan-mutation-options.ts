@@ -40,9 +40,9 @@ interface UseApplyActionPlanMutationOptionsParams {
  * 메모에서 만든 계획은 저장에 성공하면 서버가 원본 메모를 지운다. 메모 목록과 개수 한도를 다시 읽고,
  * 화면이 떠나는 중이라 상세 캐시는 건드리지 않는다(예전 메모 변환과 같다).
  */
-export const useApplyActionPlanMutationOptions = ({
+export function useApplyActionPlanMutationOptions({
   onSaved,
-}: UseApplyActionPlanMutationOptionsParams = {}) => {
+}: UseApplyActionPlanMutationOptionsParams = {}) {
   const haptics = useHaptics();
   const voiceService = useVoiceService();
   const activationService = useActivationService();
@@ -118,4 +118,4 @@ export const useApplyActionPlanMutationOptions = ({
       });
     },
   });
-};
+}

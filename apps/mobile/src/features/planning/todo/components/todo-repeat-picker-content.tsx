@@ -13,7 +13,6 @@ import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -339,6 +338,7 @@ interface RepeatCalendarSectionProps {
 TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
   picker,
 }: RepeatCalendarSectionProps) {
+  const { timeZone } = useDateFormatContext();
   const { control, getValues } = useFormContext<TodoRepeatFormValues>();
   const [startDate, endType, untilDate] = useWatch({
     control,
@@ -347,7 +347,7 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
   const repeat = useWatch({ control, compute: toTodoRepeat });
   const firstOccurrenceKey = useWatch({ control, compute: getTodoRepeatFormFirstOccurrenceKey });
   const today = useToday();
-  const startDateKey = toDateKey(startDate, getDeviceTimezone());
+  const startDateKey = toDateKey(startDate, timeZone);
   const firstWeekDate = picker.weeks.at(0)?.at(0);
   const lastWeekDate = picker.weeks.at(-1)?.at(-1);
   const occurrenceKeys =
@@ -355,8 +355,8 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
       ? null
       : new Set(
           TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, startDateKey, {
-            from: toDateKey(firstWeekDate, getDeviceTimezone()),
-            to: toDateKey(lastWeekDate, getDeviceTimezone()),
+            from: toDateKey(firstWeekDate, timeZone),
+            to: toDateKey(lastWeekDate, timeZone),
           }),
         );
   const lastOccurrenceKey =
@@ -373,7 +373,7 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
     firstOccurrenceKey != null &&
     (endType !== 'UNTIL' ||
       untilDate == null ||
-      firstOccurrenceKey <= toDateKey(untilDate, getDeviceTimezone()));
+      firstOccurrenceKey <= toDateKey(untilDate, timeZone));
   /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
   const displayStartDate = hasOccurrenceInPeriod ? toDate(firstOccurrenceKey) : startDate;
 
@@ -407,6 +407,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
 }: RepeatPeriodFooterProps) {
   const { t } = useTranslation(['todo', 'common']);
   const { control, setValue } = useFormContext<TodoRepeatFormValues>();
+  const dateFormatContext = useDateFormatContext();
   const [startDate, endType, untilDate, count] = useWatch({
     control,
     name: ['startDate', 'endType', 'untilDate', 'count'],
@@ -419,13 +420,12 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
         ? null
         : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
             repeat,
-            toDateKey(values.startDate, getDeviceTimezone()),
+            toDateKey(values.startDate, dateFormatContext.timeZone),
           );
     },
   });
-  const dateFormatContext = useDateFormatContext();
   const formatMonthDay = (date: Date) =>
-    formatDateKeyLabel(toDateKey(date, getDeviceTimezone()), 'monthDay', dateFormatContext);
+    formatDateKeyLabel(toDateKey(date, dateFormatContext.timeZone), 'monthDay', dateFormatContext);
   const isMonthDayClamped = useWatch({
     control,
     compute: (values) => {
@@ -536,7 +536,7 @@ const RepeatCalendar = ({
         />
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
           {formatDateKeyLabel(
-            toDateKey(displayMonth, getDeviceTimezone()),
+            toDateKey(displayMonth, dateFormatContext.timeZone),
             'yearMonth',
             dateFormatContext,
           )}
@@ -600,7 +600,7 @@ const RepeatCalendar = ({
                       isDimmed={
                         occurrenceKeys != null &&
                         isInRange &&
-                        !occurrenceKeys.has(toDateKey(date, getDeviceTimezone()))
+                        !occurrenceKeys.has(toDateKey(date, dateFormatContext.timeZone))
                       }
                       onPress={onDatePress}
                     />

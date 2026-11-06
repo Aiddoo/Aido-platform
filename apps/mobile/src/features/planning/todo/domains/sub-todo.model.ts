@@ -56,7 +56,7 @@ function withSubTodos<T extends SubTodoParent>(parent: T, subTodos: SubTodo[]): 
   return { ...parent, subTodos, subTodoStats: calculateSubTodoStats(subTodos) };
 }
 
-function completionProgress(stats: SubTodoStats): number {
+function getCompletionRatio(stats: SubTodoStats): number {
   if (stats.total === 0) {
     return 0;
   }
@@ -68,76 +68,97 @@ function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boolean {
 }
 
 function getSubTodoCompletionProgress(parentTodo: { subTodoStats: SubTodoStats }): number {
-  return completionProgress(parentTodo.subTodoStats);
+  return getCompletionRatio(parentTodo.subTodoStats);
+}
+
+function withSubTodoToggled<T extends SubTodoParent>(
+  parent: T,
+  subTodoId: number,
+  completed: boolean,
+): T {
+  return withSubTodos(parent, toggleSubTodo(parent.subTodos, subTodoId, completed));
+}
+
+/** 서버와 같은 규칙이다. 끝낸 일에 항목을 더하면 남은 일이 생겨 완료가 풀린다 */
+function withSubTodoAdded<T extends SubTodoParent & { completed: boolean }>(
+  parent: T,
+  subTodo: SubTodo,
+): T {
+  return { ...withSubTodos(parent, addSubTodo(parent.subTodos, subTodo)), completed: false };
+}
+
+function withSubTodoRemoved<T extends SubTodoParent>(parent: T, subTodoId: number): T {
+  return withSubTodos(parent, removeSubTodo(parent.subTodos, subTodoId));
+}
+
+function withSubTodoRenamed<T extends SubTodoParent>(
+  parent: T,
+  subTodoId: number,
+  title: string,
+): T {
+  return withSubTodos(
+    parent,
+    parent.subTodos.map((subTodo) => (subTodo.id === subTodoId ? { ...subTodo, title } : subTodo)),
+  );
+}
+
+function withSubTodoRestored<T extends SubTodoParent>(
+  parent: T,
+  subTodo: SubTodo,
+  index: number,
+): T {
+  if (parent.subTodos.some(({ id }) => id === subTodo.id)) {
+    return parent;
+  }
+  return withSubTodos(parent, [
+    ...parent.subTodos.slice(0, index),
+    subTodo,
+    ...parent.subTodos.slice(index),
+  ]);
+}
+
+/** 받은 순서대로 놓는다. 순서를 정할 때 없던 항목(그 사이 추가)은 뒤에 남긴다 */
+function withSubTodosOrdered<T extends SubTodoParent>(parent: T, subTodoIds: readonly number[]): T {
+  const listed = subTodoIds.flatMap((id) => parent.subTodos.filter((subTodo) => subTodo.id === id));
+  const rest = parent.subTodos.filter((subTodo) => !subTodoIds.includes(subTodo.id));
+  return withSubTodos(parent, [...listed, ...rest]);
+}
+
+/** 임시 항목을 응답에 새로 생긴 같은 제목의 항목으로 바꾼다. 다른 항목의 진행 중인 변경은 지킨다 */
+function withSubTodoConfirmed<T extends SubTodoParent>(
+  parent: T,
+  optimisticId: number,
+  saved: { subTodos: readonly SubTodo[] },
+): T {
+  const optimistic = parent.subTodos.find((subTodo) => subTodo.id === optimisticId);
+  const confirmed = saved.subTodos.find(
+    (subTodo) =>
+      subTodo.title === optimistic?.title && !parent.subTodos.some(({ id }) => id === subTodo.id),
+  );
+  if (confirmed == null) {
+    return parent;
+  }
+  return withSubTodos(
+    parent,
+    parent.subTodos.map((subTodo) => (subTodo.id === optimisticId ? confirmed : subTodo)),
+  );
+}
+
+/** 제목이 그대로면 요청을 보내지 않는다 */
+function hasTitleChanged(subTodo: Pick<SubTodo, 'title'>, title: string): boolean {
+  return subTodo.title !== title;
 }
 
 export const SubTodoPolicy = {
   canAddSubTodo,
   isOptimisticSubTodo,
-  completionProgress: getSubTodoCompletionProgress,
-
-  withSubTodoToggled<T extends SubTodoParent>(parent: T, subTodoId: number, completed: boolean): T {
-    return withSubTodos(parent, toggleSubTodo(parent.subTodos, subTodoId, completed));
-  },
-
-  /** 서버와 같은 규칙이다. 끝낸 일에 항목을 더하면 남은 일이 생겨 완료가 풀린다 */
-  withSubTodoAdded<T extends SubTodoParent & { completed: boolean }>(
-    parent: T,
-    subTodo: SubTodo,
-  ): T {
-    return { ...withSubTodos(parent, addSubTodo(parent.subTodos, subTodo)), completed: false };
-  },
-
-  withSubTodoRemoved<T extends SubTodoParent>(parent: T, subTodoId: number): T {
-    return withSubTodos(parent, removeSubTodo(parent.subTodos, subTodoId));
-  },
-
-  withSubTodoRenamed<T extends SubTodoParent>(parent: T, subTodoId: number, title: string): T {
-    return withSubTodos(
-      parent,
-      parent.subTodos.map((subTodo) =>
-        subTodo.id === subTodoId ? { ...subTodo, title } : subTodo,
-      ),
-    );
-  },
-
-  withSubTodoRestored<T extends SubTodoParent>(parent: T, subTodo: SubTodo, index: number): T {
-    if (parent.subTodos.some(({ id }) => id === subTodo.id)) {
-      return parent;
-    }
-    return withSubTodos(parent, [
-      ...parent.subTodos.slice(0, index),
-      subTodo,
-      ...parent.subTodos.slice(index),
-    ]);
-  },
-
-  /** 받은 순서대로 놓는다. 순서를 정할 때 없던 항목(그 사이 추가)은 뒤에 남긴다 */
-  withSubTodosOrdered<T extends SubTodoParent>(parent: T, subTodoIds: readonly number[]): T {
-    const listed = subTodoIds.flatMap((id) =>
-      parent.subTodos.filter((subTodo) => subTodo.id === id),
-    );
-    const rest = parent.subTodos.filter((subTodo) => !subTodoIds.includes(subTodo.id));
-    return withSubTodos(parent, [...listed, ...rest]);
-  },
-
-  /** 임시 항목을 응답에 새로 생긴 같은 제목의 항목으로 바꾼다. 다른 항목의 진행 중인 변경은 지킨다 */
-  withSubTodoConfirmed<T extends SubTodoParent>(
-    parent: T,
-    optimisticId: number,
-    saved: { subTodos: readonly SubTodo[] },
-  ): T {
-    const optimistic = parent.subTodos.find((subTodo) => subTodo.id === optimisticId);
-    const confirmed = saved.subTodos.find(
-      (subTodo) =>
-        subTodo.title === optimistic?.title && !parent.subTodos.some(({ id }) => id === subTodo.id),
-    );
-    if (confirmed == null) {
-      return parent;
-    }
-    return withSubTodos(
-      parent,
-      parent.subTodos.map((subTodo) => (subTodo.id === optimisticId ? confirmed : subTodo)),
-    );
-  },
+  getSubTodoCompletionProgress,
+  hasTitleChanged,
+  withSubTodoToggled,
+  withSubTodoAdded,
+  withSubTodoRemoved,
+  withSubTodoRenamed,
+  withSubTodoRestored,
+  withSubTodosOrdered,
+  withSubTodoConfirmed,
 } as const;

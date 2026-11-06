@@ -46,7 +46,7 @@ export interface CreateTodoParams {
   source: 'manual';
 }
 
-export const useCreateTodoMutationOptions = () => {
+export function useCreateTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const activationService = useActivationService();
@@ -55,6 +55,8 @@ export const useCreateTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ input }: CreateTodoParams) => {
       const result = await todoService.createTodo(input);
@@ -142,7 +144,7 @@ export const useCreateTodoMutationOptions = () => {
       settleTodoCompletionWrite(queryClient);
     },
   });
-};
+}
 
 interface AddSubTodoParams {
   todoId: number;
@@ -151,7 +153,7 @@ interface AddSubTodoParams {
   date: string;
 }
 
-export const useAddSubTodoMutationOptions = () => {
+export function useAddSubTodoMutationOptions() {
   const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
@@ -159,6 +161,8 @@ export const useAddSubTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, title }: AddSubTodoParams) => {
       const result = await subTodoService.addSubTodo(todoId, { title });
@@ -207,14 +211,14 @@ export const useAddSubTodoMutationOptions = () => {
       settleTodoCompletionWrite(queryClient);
     },
   });
-};
+}
 
 export interface CreateRecurringTodoParams {
   input: RepeatingTodoDraft;
   source: 'manual';
 }
 
-export const useCreateRecurringTodoMutationOptions = () => {
+export function useCreateRecurringTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const activationService = useActivationService();
@@ -224,6 +228,8 @@ export const useCreateRecurringTodoMutationOptions = () => {
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
     mutationFn: async ({ input }: CreateRecurringTodoParams) => {
       const result = await todoService.createRepeatingTodo(input);
       return unwrap(result);
@@ -267,7 +273,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
     },
   });
-};
+}
 
 interface UpdateSubTodoParams {
   todoId: number;
@@ -277,7 +283,7 @@ interface UpdateSubTodoParams {
   date: string;
 }
 
-export const useUpdateSubTodoMutationOptions = () => {
+export function useUpdateSubTodoMutationOptions() {
   const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
@@ -285,6 +291,8 @@ export const useUpdateSubTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId, title }: UpdateSubTodoParams) => {
       const result = await subTodoService.updateSubTodo(todoId, subTodoId, { title });
@@ -318,7 +326,7 @@ export const useUpdateSubTodoMutationOptions = () => {
       settleTodoListWrite(queryClient);
     },
   });
-};
+}
 
 interface UpdateTodoMutationParams {
   todoId: number;
@@ -326,7 +334,7 @@ interface UpdateTodoMutationParams {
   options?: TodoSeriesEditOptions;
 }
 
-export const useUpdateTodoMutationOptions = () => {
+export function useUpdateTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
@@ -335,6 +343,8 @@ export const useUpdateTodoMutationOptions = () => {
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
     mutationFn: async ({ todoId, input, options }: UpdateTodoMutationParams) => {
       const result = await todoService.updateTodo(todoId, input, options);
       return unwrap(result);
@@ -367,4 +377,4 @@ export const useUpdateTodoMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
     },
   });
-};
+}

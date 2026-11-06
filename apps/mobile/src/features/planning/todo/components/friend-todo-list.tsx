@@ -16,7 +16,6 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Box,
@@ -47,13 +46,14 @@ import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
 
 export function FriendTodoList() {
+  const { timeZone } = useDateFormatContext();
   const { friendId } = useFriendScreenParams();
   const [date] = useFeedDateParam();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [
       useGetFriendTodosQueryOptions({
         friendUserId: friendId,
-        date: toDateKey(date, getDeviceTimezone()),
+        date: toDateKey(date, timeZone),
       }),
       useGetPreferenceQueryOptions(),
     ],

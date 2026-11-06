@@ -33,7 +33,7 @@ describe('Todo 클라이언트 모델과 캐시', () => {
 
     expect(TodoPolicy.isRecurringTodo(todo)).toBe(true);
     expect(TodoPolicy.hasSubTodos(todo)).toBe(true);
-    expect(SubTodoPolicy.completionProgress(todo)).toBe(0.25);
+    expect(SubTodoPolicy.getSubTodoCompletionProgress(todo)).toBe(0.25);
     expect(todo).not.toHaveProperty('itemStats');
     expect(todo).not.toHaveProperty('items');
   });

@@ -93,6 +93,7 @@ async function renderEditSheet() {
 describe('AddSubTodoBottomSheet 수정 모드', () => {
   it('보내는 동안 전송과 삭제가 모두 잠긴다', async () => {
     const { httpClient, settleRequests } = await renderEditSheet();
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '바뀐 제목');
 
     fireEvent.press(submitButton()).catch(() => undefined);
 

@@ -130,13 +130,13 @@ describe('SubTodoPolicy', () => {
     });
   });
 
-  describe('completionProgress', () => {
+  describe('getSubTodoCompletionProgress', () => {
     test('서브투두가 없으면 0을 반환한다', () => {
       // Given
       const parentTodo = createParentTodo({ subTodoStats: { total: 0, completed: 0 } });
 
       // When
-      const result = SubTodoPolicy.completionProgress(parentTodo);
+      const result = SubTodoPolicy.getSubTodoCompletionProgress(parentTodo);
 
       // Then
       expect(result).toBe(0);
@@ -147,7 +147,7 @@ describe('SubTodoPolicy', () => {
       const parentTodo = createParentTodo({ subTodoStats: { total: 5, completed: 2 } });
 
       // When
-      const result = SubTodoPolicy.completionProgress(parentTodo);
+      const result = SubTodoPolicy.getSubTodoCompletionProgress(parentTodo);
 
       // Then
       expect(result).toBe(0.4);
@@ -158,7 +158,7 @@ describe('SubTodoPolicy', () => {
       const parentTodo = createParentTodo({ subTodoStats: { total: 3, completed: 3 } });
 
       // When
-      const result = SubTodoPolicy.completionProgress(parentTodo);
+      const result = SubTodoPolicy.getSubTodoCompletionProgress(parentTodo);
 
       // Then
       expect(result).toBe(1);
@@ -238,5 +238,17 @@ describe('SubTodoPolicy', () => {
       expect(SubTodoPolicy.isOptimisticSubTodo(createSubTodo({ id: -1 }))).toBe(true);
       expect(SubTodoPolicy.isOptimisticSubTodo(createSubTodo({ id: 1 }))).toBe(false);
     });
+  });
+});
+
+describe('SubTodoPolicy.hasTitleChanged', () => {
+  it('제목이 그대로면 바뀐 값이 없다', () => {
+    // When
+    const same = SubTodoPolicy.hasTitleChanged({ title: '장보기' }, '장보기');
+    const changed = SubTodoPolicy.hasTitleChanged({ title: '장보기' }, '장보기 끝');
+
+    // Then
+    expect(same).toBe(false);
+    expect(changed).toBe(true);
   });
 });

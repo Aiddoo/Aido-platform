@@ -22,9 +22,9 @@ interface UseCreateQuickPlanMutationOptionsParams {
   onSubscribe?: () => void;
 }
 
-export const useCreateQuickPlanMutationOptions = ({
+export function useCreateQuickPlanMutationOptions({
   onSubscribe,
-}: UseCreateQuickPlanMutationOptionsParams = {}) => {
+}: UseCreateQuickPlanMutationOptionsParams = {}) {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -54,4 +54,4 @@ export const useCreateQuickPlanMutationOptions = ({
       handleFailure(error, input.source === 'voice' ? 'quick-voice' : 'quick-text');
     },
   });
-};
+}

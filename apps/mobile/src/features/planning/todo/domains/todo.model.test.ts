@@ -264,3 +264,30 @@ describe('TodoPolicy.hasUpcomingTimedTodo', () => {
     expect(result).toBe(expected);
   });
 });
+
+describe('TodoPolicy 시트 대상과 공개 범위', () => {
+  it('비공개로 정한 할 일만 비공개다', () => {
+    // When
+    const results = [
+      TodoPolicy.isPrivate({ visibility: 'PRIVATE' }),
+      TodoPolicy.isPrivate({ visibility: 'PUBLIC' }),
+      TodoPolicy.isPrivate({ visibility: null }),
+    ];
+
+    // Then
+    expect(results).toEqual([true, false, false]);
+  });
+
+  it('목록에서 사라진 할 일은 찾지 못한다', () => {
+    // Given
+    const todos = [createParentTodo({ id: 1 }), createParentTodo({ id: 2 })];
+
+    // When
+    const found = TodoPolicy.findTodo(todos, 2);
+    const deleted = TodoPolicy.findTodo(todos, 9);
+
+    // Then
+    expect(found?.id).toBe(2);
+    expect(deleted).toBeNull();
+  });
+});

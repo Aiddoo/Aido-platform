@@ -1,4 +1,5 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -19,7 +20,6 @@ import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
 
 type TodoCategoryBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -54,7 +54,7 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
   const { todoId } = useTodoScreenParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;

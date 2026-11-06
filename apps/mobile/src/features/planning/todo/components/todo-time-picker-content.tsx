@@ -5,7 +5,6 @@ import { toHHmm } from '@src/shared/date/instant';
 import { getDateWithTime, getPickerLocale } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
@@ -126,7 +125,7 @@ export function TodoTimePickerContent({
                       onChange={(_event, date) => {
                         setShowAndroidPicker(false);
                         if (date) {
-                          setLocalTime(toHHmm(date, getDeviceTimezone()));
+                          setLocalTime(toHHmm(date, dateFormatContext.timeZone));
                         }
                       }}
                     />
@@ -147,7 +146,7 @@ export function TodoTimePickerContent({
                 locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
                 onChange={(_event, date) => {
                   if (date) {
-                    setLocalTime(toHHmm(date, getDeviceTimezone()));
+                    setLocalTime(toHHmm(date, dateFormatContext.timeZone));
                   }
                 }}
                 style={{ height: 216 }}

@@ -19,7 +19,7 @@ interface CreateVoiceNoteDigestVariables extends PreparedPlanRequest<VoiceNoteDi
   signal?: AbortSignal;
 }
 
-export const useCreateVoiceNoteDigestMutationOptions = () => {
+export function useCreateVoiceNoteDigestMutationOptions() {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -53,4 +53,4 @@ export const useCreateVoiceNoteDigestMutationOptions = () => {
       handleFailure(error, 'voice-note');
     },
   });
-};
+}

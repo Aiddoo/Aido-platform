@@ -11,7 +11,6 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   Box,
   ChatBubbleIcon,
@@ -59,11 +58,12 @@ import {
 } from '../todo-row';
 
 export function TodoList() {
+  const { timeZone } = useDateFormatContext();
   const [selectedDate] = useFeedDateParam();
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
-      useGetTodosByDateQueryOptions({ date: toDateKey(selectedDate, getDeviceTimezone()) }),
+      useGetTodosByDateQueryOptions({ date: toDateKey(selectedDate, timeZone) }),
       useGetPreferenceQueryOptions(),
     ],
   });
@@ -272,7 +272,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
               {todo.title}
             </TodoLabel>
           }
-          isPrivate={todo.visibility === 'PRIVATE'}
+          isPrivate={TodoPolicy.isPrivate(todo)}
         />
       }
       middle={

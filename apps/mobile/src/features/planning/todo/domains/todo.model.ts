@@ -4,7 +4,7 @@ import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key'
 import { orderBy, range, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
-import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
+import { type SubTodo, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
 import { todoRepeatSchema } from './todo-repeat.model';
 
 const dateSchema = z.iso.date();
@@ -104,6 +104,21 @@ const todoDetailsSchema = z.object({
   metrics: z.object({ viewCount: z.number(), commentCount: z.number() }),
 });
 export type TodoDetails = z.infer<typeof todoDetailsSchema>;
+
+/** 비공개 할 일은 친구에게 보이지 않는다 */
+/** 정하지 않은(null) 공개 범위는 서버 기본값인 공개로 본다 */
+function isPrivate(todo: { visibility: Todo['visibility'] | null }): boolean {
+  return todo.visibility === 'PRIVATE';
+}
+
+/** 시트 route의 대상 할 일. 목록에서 사라졌으면(삭제·다른 날짜) null */
+function findTodo(todos: readonly Todo[], todoId: number): Todo | null {
+  return todos.find((todo) => todo.id === todoId) ?? null;
+}
+
+function findSubTodo(todo: Pick<Todo, 'subTodos'> | null, subTodoId: number): SubTodo | null {
+  return todo?.subTodos.find((subTodo) => subTodo.id === subTodoId) ?? null;
+}
 
 function isRecurringTodo(todo: Todo): boolean {
   return todo.recurrenceGroupId != null;
@@ -246,6 +261,9 @@ function hasUpcomingTimedTodo(
 }
 
 export const TodoPolicy = {
+  isPrivate,
+  findTodo,
+  findSubTodo,
   isTodoOnDate,
   isRecurringTodo,
   isMultiDayTodo,
