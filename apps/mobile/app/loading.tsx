@@ -1,10 +1,10 @@
 import { Box } from '@src/shared/ui';
-import { ActivityIndicator } from 'react-native';
+import { Spinner } from 'heroui-native';
 
 export default function LoadingScreen() {
   return (
     <Box className="flex-1 items-center justify-center bg-white">
-      <ActivityIndicator size="large" />
+      <Spinner size="lg" />
     </Box>
   );
 }
