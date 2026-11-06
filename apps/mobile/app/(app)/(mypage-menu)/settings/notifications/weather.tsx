@@ -2,8 +2,8 @@ import {
   type Preference,
   PreferencePolicy,
 } from '@src/features/identity/preference/domains/preference.model';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,

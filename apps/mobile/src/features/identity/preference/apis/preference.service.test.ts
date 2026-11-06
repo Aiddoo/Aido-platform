@@ -4,7 +4,7 @@ import {
   createPreferenceApiError,
   createPreferenceDto,
   INVALID_DTO,
-} from '../__tests__/preference.factories';
+} from '../__tests__/preference.fixtures';
 import { PreferenceService } from './preference.service';
 
 describe('PreferenceService', () => {

@@ -1,6 +1,6 @@
 import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api';
 import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
   TodoCheckbox,
   TodoProgress,

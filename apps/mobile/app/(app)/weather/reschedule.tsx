@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/get-todos-by-date-query-options';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import { WeatherRescheduleSubmitButton } from '@src/features/weather/components/weather-reschedule/weather-reschedule-submit-button';

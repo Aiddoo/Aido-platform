@@ -1,5 +1,5 @@
 import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
   formatDateLabel,
   formatTimeDisplay,

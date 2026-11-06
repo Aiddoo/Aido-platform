@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { useMemoScreenParams } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';

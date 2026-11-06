@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatTimeDisplay } from '@src/shared/date/date-format';
 import { toHHmm } from '@src/shared/date/instant';
 import { getDateWithTime, getPickerLocale } from '@src/shared/date/time-of-day';

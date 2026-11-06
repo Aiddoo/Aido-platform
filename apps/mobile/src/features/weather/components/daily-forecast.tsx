@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/get-daily-completions-query-options';
 import {
   formatClockTime,

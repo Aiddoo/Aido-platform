@@ -4,7 +4,7 @@ import {
   usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
 import { unlockPushRegistrationForActivation } from '@src/features/device/activation/queries/activation-cache';
-import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { getErrorMessage } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 

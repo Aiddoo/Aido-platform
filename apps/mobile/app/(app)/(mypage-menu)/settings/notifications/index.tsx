@@ -1,6 +1,6 @@
 import { PreferencePolicy } from '@src/features/identity/preference/domains/preference.model';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/use-update-preference-mutation-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatTimeOfDay } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

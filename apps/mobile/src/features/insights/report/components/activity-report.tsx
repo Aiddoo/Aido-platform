@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import type { AiReport } from '@src/features/insights/report/domains/report.model';
 import { formatDateKeyRange, formatHourLabel, type TimeFormat } from '@src/shared/date/date-format';
 import { getDayOfWeekLabel } from '@src/shared/date/date-labels';

@@ -1,5 +1,5 @@
 import { useIdGenerator } from '@src/bootstrap/providers/di-context';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';
 import { SubTodoIndent } from '@src/features/planning/todo/components/sub-todo-indent';

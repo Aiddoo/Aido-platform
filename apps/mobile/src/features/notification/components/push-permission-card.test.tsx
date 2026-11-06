@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.factories';
+import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
