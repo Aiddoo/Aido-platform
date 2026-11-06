@@ -41,6 +41,7 @@ export {
   useConfirmDialog,
 } from './confirm-dialog';
 export { DashedDivider, type DashedDividerProps } from './dashed-divider';
+export { FeatureMedia, type FeatureMediaProps } from './feature-media';
 export { Flex } from './flex';
 export { FormStepLayout, type FormStepLayoutProps } from './form-step-layout';
 export { Grid, GridItem, useGridColumns } from './grid';
