@@ -1,7 +1,7 @@
 import type { CreateInquiryResponse } from '@aido/api';
 
-import type { InquiryResult } from '../domains/inquiry.model';
+import type { InquiryResult } from '../schemas/inquiry.schema';
 
-export const toInquiryResult = (dto: CreateInquiryResponse): InquiryResult => ({
-  message: dto.message,
-});
+export function toInquiryResult(dto: CreateInquiryResponse): InquiryResult {
+  return { message: dto.message };
+}

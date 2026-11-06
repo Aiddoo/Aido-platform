@@ -5,7 +5,7 @@ import {
   createInquiryApiError,
   createInquiryResponseDto,
   INVALID_DTO,
-} from '../__tests__/inquiry.factories';
+} from '../__tests__/inquiry.fixtures';
 import { InquiryService } from './inquiry.service';
 
 describe('InquiryService', () => {

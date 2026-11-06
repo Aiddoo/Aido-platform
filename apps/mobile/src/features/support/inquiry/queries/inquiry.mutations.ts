@@ -1,4 +1,3 @@
-import type { CreateInquiryInput } from '@aido/api';
 import { useHaptics, useInquiryService } from '@src/bootstrap/providers/di-context';
 import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -6,6 +5,8 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import { router } from 'expo-router';
+
+import type { InquiryRequestValues } from '../schemas/inquiry-form.schema';
 
 export const useCreateInquiryMutationOptions = () => {
   const haptics = useHaptics();
@@ -15,7 +16,7 @@ export const useCreateInquiryMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async (input: CreateInquiryInput) => {
+    mutationFn: async (input: InquiryRequestValues) => {
       const result = await inquiryService.createInquiry(input);
 
       return unwrap(result);

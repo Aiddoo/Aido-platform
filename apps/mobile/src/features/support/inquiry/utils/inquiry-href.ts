@@ -1,4 +1,4 @@
-import type { InquiryCategory } from '@aido/api';
+import type { InquiryCategory } from '@aido/api/vocabulary';
 
 interface InquiryHrefParams {
   category?: InquiryCategory;
@@ -7,7 +7,7 @@ interface InquiryHrefParams {
 }
 
 /** 문의 화면은 한 화면이고 고를 분류와 미리 채울 내용은 query param으로 넘긴다. */
-export function createInquiryHref({ category, content }: InquiryHrefParams = {}) {
+export function inquiryHref({ category, content }: InquiryHrefParams = {}) {
   return {
     pathname: '/settings/inquiry',
     params: { ...(category != null && { category }), ...(content != null && { content }) },

@@ -1,4 +1,4 @@
-import { createInquiryResponseDto } from '../__tests__/inquiry.factories';
+import { createInquiryResponseDto } from '../__tests__/inquiry.fixtures';
 import { toInquiryResult } from './inquiry.mapper';
 
 describe('toInquiryResult', () => {

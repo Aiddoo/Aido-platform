@@ -1,8 +1,8 @@
 import { type CreateInquiryInput, createInquirySchema, INQUIRY_CONTENT_LIMITS } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/support/inquiry/constants/inquiry-category-labels';
-import { useInquiryScreenParams } from '@src/features/support/inquiry/hooks/use-inquiry-screen-params';
-import { useCreateInquiryMutationOptions } from '@src/features/support/inquiry/queries/use-create-inquiry-mutation-options';
+import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/support/inquiry/constants/inquiry.constants';
+import { useInquiryParams } from '@src/features/support/inquiry/hooks/use-inquiry-params';
+import { useCreateInquiryMutationOptions } from '@src/features/support/inquiry/queries/inquiry.mutations';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -35,7 +35,7 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 function InquiryScreen() {
   const { showBoundary } = useErrorBoundary();
-  const initialValues = useInquiryScreenParams();
+  const initialValues = useInquiryParams();
 
   const { t } = useTranslation('inquiry');
   const { locale } = useDateFormatContext();

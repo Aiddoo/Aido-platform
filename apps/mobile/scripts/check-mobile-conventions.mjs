@@ -101,6 +101,10 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/notes/memo/hooks/',
   'apps/mobile/src/features/notes/memo/queries/',
   'apps/mobile/src/features/notes/memo/utils/',
+  'apps/mobile/src/features/support/inquiry/constants/',
+  'apps/mobile/src/features/support/inquiry/hooks/',
+  'apps/mobile/src/features/support/inquiry/queries/',
+  'apps/mobile/src/features/support/inquiry/utils/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -111,7 +115,10 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/voice/domains/',
 ];
 /** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
-const SCHEMA_FOLDER_FEATURE_PATHS = ['apps/mobile/src/features/notes/memo/'];
+const SCHEMA_FOLDER_FEATURE_PATHS = [
+  'apps/mobile/src/features/notes/memo/',
+  'apps/mobile/src/features/support/inquiry/',
+];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;
 

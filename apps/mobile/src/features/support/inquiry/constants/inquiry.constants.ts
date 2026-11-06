@@ -1,4 +1,4 @@
-import type { InquiryCategory } from '@aido/api';
+import type { InquiryCategory } from '@aido/api/vocabulary';
 
 export const INQUIRY_CATEGORY_LABEL_KEYS = {
   BUG_REPORT: 'inquiry:category.bugReport',

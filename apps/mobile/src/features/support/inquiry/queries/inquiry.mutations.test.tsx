@@ -8,9 +8,9 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createInquiryApiError } from '../__tests__/inquiry.factories';
+import { createInquiryApiError } from '../__tests__/inquiry.fixtures';
 import { InquiryService } from '../apis/inquiry.service';
-import { useCreateInquiryMutationOptions } from './use-create-inquiry-mutation-options';
+import { useCreateInquiryMutationOptions } from './inquiry.mutations';
 
 const mockToastError = jest.fn();
 
