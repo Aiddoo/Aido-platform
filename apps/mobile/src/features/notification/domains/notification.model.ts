@@ -1,5 +1,5 @@
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
-import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { match } from 'ts-pattern';
 
 import type {

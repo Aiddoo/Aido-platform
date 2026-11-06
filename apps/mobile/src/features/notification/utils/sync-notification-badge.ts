@@ -1,5 +1,5 @@
-import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import type { Logger } from '@src/core/ports/logger';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { getErrorMessage, isConnectivityError, toError } from '@src/shared/errors';
 
 import type { NotificationService } from '../apis/notification.service';

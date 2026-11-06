@@ -1,16 +1,6 @@
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { ResolvedAuthStatus } from '@src/core/session/auth-status';
 import { isKeychainLockedError } from '@src/shared/errors';
-
-/**
- * 부팅 판정이 내려진 뒤의 인증 상태.
- *
- * "판정 전"(로딩)은 여기 없다 — 그것은 판정의 *결과*가 아니라 결과의 *부재*이며,
- * `resolveInitialAuthStatus`는 결코 그 값을 반환할 수 없다. 상태 머신 쪽에서만 존재한다.
- *
- * `locked`는 "토큰이 없다"가 아니라 **"지금 읽을 수 없다"**이다(기기 잠금 중 콜드 스타트 등).
- * 둘을 합치면 잠긴 키체인이 곧 로그아웃이 된다.
- */
-export type ResolvedAuthStatus = 'authenticated' | 'unauthenticated' | 'locked';
 
 /**
  * 앱 부팅 시 초기 인증 상태를 결정한다.

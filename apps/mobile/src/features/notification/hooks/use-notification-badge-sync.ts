@@ -1,5 +1,5 @@
-import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useEffect } from 'react';
 

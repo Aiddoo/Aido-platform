@@ -1,6 +1,6 @@
-import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { getErrorMessage } from '@src/shared/errors';
 import { useNavigationContainerRef, usePathname } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';

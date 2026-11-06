@@ -16,6 +16,7 @@ import { useEffect, useEffectEvent } from 'react';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
 import { type DeviceTimezoneChange } from '../schemas/device-timezone.schema';
+import { getTimezoneOffsetBucket } from '../utils/analytics/timezone-offset-bucket';
 
 const UPCOMING_TODO_WINDOW_DAYS = 31;
 const UPCOMING_TODO_PAGE_SIZE = 200;
@@ -67,7 +68,7 @@ export function useTimezoneChangeNotice({
       toast(t('timezoneChanged.title'), { description: t('timezoneChanged.description') });
     }
     trackEvent('device_timezone_changed', {
-      offset_bucket: DeviceTimezonePolicy.getTimezoneOffsetBucket(change),
+      offset_bucket: getTimezoneOffsetBucket(change),
       notice_shown: isNoticeShown,
     });
   });

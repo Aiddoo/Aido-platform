@@ -1,5 +1,5 @@
-import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { usePushDeviceService } from '@src/bootstrap/providers/di-context';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { i18n } from '@src/shared/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { debounce, noop } from 'es-toolkit';

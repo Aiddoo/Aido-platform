@@ -1,7 +1,7 @@
-import type { AuthStatus } from '@src/bootstrap/providers/auth-provider';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { createTestDiContainer } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { router, Slot } from 'expo-router';
