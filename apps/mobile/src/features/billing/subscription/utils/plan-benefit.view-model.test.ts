@@ -3,9 +3,9 @@ import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import {
   createEntitlementSnapshot,
   createFeatureQuotaDto,
-} from '../../__tests__/entitlement.factories';
-import { toFeatureQuota } from '../../apis/entitlement.mapper';
-import { EntitlementPolicy } from '../../domains/entitlement.model';
+} from '../__tests__/entitlement.fixtures';
+import { toFeatureQuota } from '../apis/entitlement.mapper';
+import { EntitlementPolicy } from '../domains/entitlement.model';
 import { toPlanBenefitAmounts } from './plan-benefit.view-model';
 
 describe('toPlanBenefitAmounts', () => {

@@ -6,7 +6,7 @@ import * as Application from 'expo-application';
 import * as Linking from 'expo-linking';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
-import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/view-models/subscription-failure.view-model';
+import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
 import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 
 /** 스토어 구독 관리를 연다. 열지 못하면 문의로 잇는 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */

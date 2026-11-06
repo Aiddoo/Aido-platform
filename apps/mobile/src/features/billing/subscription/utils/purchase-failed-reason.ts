@@ -1,4 +1,4 @@
-import type { SubscriptionFailureCause } from '../../domains/subscription-failure.model';
+import type { SubscriptionFailureCause } from '../domains/subscription-failure.model';
 
 /** 문의로 안내한 결제 실패의 원인. 직접 취소·승인 대기는 실패가 아니라 null이다 */
 export type PurchaseFailedReason = 'network' | 'server' | 'store_unavailable' | 'store_error';

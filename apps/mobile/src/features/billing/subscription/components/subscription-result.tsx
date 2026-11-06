@@ -4,7 +4,7 @@ import { type ComponentProps, useEffect } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
-import type { SubscriptionSupportFailure } from '../utils/view-models/subscription-failure.view-model';
+import type { SubscriptionSupportFailure } from '../utils/subscription-failure.view-model';
 
 interface SubscriptionResultProps extends Omit<ComponentProps<typeof Result>, 'icon'> {
   /** 화면이 실패 안내로 바뀌면 스크린 리더에도 알린다 */

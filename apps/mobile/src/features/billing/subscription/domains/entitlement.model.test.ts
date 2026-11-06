@@ -3,7 +3,7 @@ import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import {
   createEntitlementSnapshot,
   createFeatureQuotaDto,
-} from '../__tests__/entitlement.factories';
+} from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from './entitlement.model';
 

@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';

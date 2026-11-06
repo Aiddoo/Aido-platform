@@ -4,7 +4,7 @@ import {
   type StoreUnavailable,
   type SubscriptionFailureCause,
   SubscriptionFailurePolicy,
-} from '../../domains/subscription-failure.model';
+} from '../domains/subscription-failure.model';
 
 /** 구독 화면에서 실패할 수 있는 곳. 앞의 둘은 불러오기, 뒤의 둘은 사용자가 누른 동작이다 */
 export type SubscriptionLoadTarget = 'receipt' | 'plans';

@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature, EntitlementPolicy } from '../domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
+import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
 export function useQuotaStatus(feature: EntitlementFeature) {
   const { t } = useTranslation('subscription');

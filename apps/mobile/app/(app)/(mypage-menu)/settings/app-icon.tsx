@@ -1,7 +1,7 @@
 import { useAppIconService } from '@src/bootstrap/providers/di-context';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
 import { AppIconPolicy } from '@src/features/device/app-icon/domains/app-icon.model';
 import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/app-icon.mutations';

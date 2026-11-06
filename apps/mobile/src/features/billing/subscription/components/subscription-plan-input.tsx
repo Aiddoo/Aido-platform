@@ -11,7 +11,7 @@ import {
   getMonthlyEquivalent,
   type SubscriptionPlan,
 } from '../domains/subscription.model';
-import { useGetOfferingsQueryOptions } from '../queries/get-offerings-query-options';
+import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 
 type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 

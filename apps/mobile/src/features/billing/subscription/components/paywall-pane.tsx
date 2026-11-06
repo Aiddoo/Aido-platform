@@ -22,12 +22,12 @@ import { match } from 'ts-pattern';
 
 import { getSelectedPlan, type SubscriptionOffering } from '../domains/subscription.model';
 import { useSubscriptionViewParam } from '../hooks/use-subscription-view-param';
-import { useGetOfferingsQueryOptions } from '../queries/get-offerings-query-options';
-import { usePurchaseMutationOptions } from '../queries/use-purchase-mutation-options';
+import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
+import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import {
   toSubscriptionLoadFailure,
   toSubscriptionStoreUnavailableFailure,
-} from '../utils/view-models/subscription-failure.view-model';
+} from '../utils/subscription-failure.view-model';
 import { Paywall } from './paywall';
 import { PremiumNotice } from './premium-notice';
 import { RestorePurchaseButton } from './restore-purchase-button';

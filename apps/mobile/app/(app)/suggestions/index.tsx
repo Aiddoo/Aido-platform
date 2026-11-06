@@ -1,7 +1,7 @@
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import { invalidateAiSuggestions } from '@src/features/assistant/suggestion/queries/suggestion-cache';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';

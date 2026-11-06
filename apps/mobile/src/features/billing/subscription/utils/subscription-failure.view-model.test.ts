@@ -1,6 +1,6 @@
 import { NetworkError, ServerError } from '@src/shared/errors';
 
-import { SubscriptionErrors } from '../../domains/subscription.error';
+import { SubscriptionErrors } from '../domains/subscription.error';
 import {
   toSubscriptionActionFailure,
   toSubscriptionLoadFailure,

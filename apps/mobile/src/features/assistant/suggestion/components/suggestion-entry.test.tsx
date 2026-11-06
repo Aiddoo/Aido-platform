@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
-import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { UserService } from '@src/features/identity/user/apis/user.service';

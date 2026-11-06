@@ -28,9 +28,9 @@ import { formatCount } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
-import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
+import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
+import { toPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
-import { toPlanBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
 
 export function Paywall() {
   const { t } = useTranslation('subscription');

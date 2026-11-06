@@ -1,7 +1,7 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
-import { toPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/view-models/plan-benefit.view-model';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { toPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';

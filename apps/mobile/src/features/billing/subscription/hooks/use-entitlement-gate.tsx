@@ -21,9 +21,9 @@ import {
   type EntitlementSnapshot,
 } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
-import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
-import { getPremiumGateAnalyticsFeature } from '../utils/analytics/premium-gate-feature';
-import { toPremiumBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
+import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
+import { toPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
+import { getPremiumGateAnalyticsFeature } from '../utils/premium-gate-feature';
 import { useRefillSentence } from './use-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';

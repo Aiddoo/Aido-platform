@@ -26,7 +26,7 @@ import { EntitlementService } from '../apis/entitlement.service';
 import { PurchasesSdkManager } from '../apis/purchases-sdk-manager';
 import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
-import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.factories';
+import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 const HOUR_MS = 60 * 60 * 1000;

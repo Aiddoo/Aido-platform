@@ -5,8 +5,8 @@ import { SubscriptionResult } from '@src/features/billing/subscription/component
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
 import { useSubscriptionViewParam } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
-import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/view-models/subscription-failure.view-model';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import {
   QueryErrorBoundary,

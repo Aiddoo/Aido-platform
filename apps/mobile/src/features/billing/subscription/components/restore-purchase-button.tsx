@@ -4,7 +4,7 @@ import { TextButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import { useRestoreMutationOptions } from '../queries/use-restore-mutation-options';
+import { useRestoreMutationOptions } from '../queries/subscription.mutations';
 
 type RestorePurchaseButtonProps = Omit<
   ComponentProps<typeof TextButton>,

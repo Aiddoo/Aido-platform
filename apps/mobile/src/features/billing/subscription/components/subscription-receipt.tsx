@@ -22,8 +22,8 @@ import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
-import { toPremiumBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
-import type { SubscriptionReceiptRow } from '../utils/view-models/subscription-receipt.view-model';
+import { toPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
+import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
 export function SubscriptionReceipt() {

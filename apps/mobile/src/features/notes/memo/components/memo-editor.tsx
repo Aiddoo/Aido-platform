@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/get-todo-categories-query-options';

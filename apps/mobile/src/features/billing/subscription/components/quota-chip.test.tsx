@@ -9,7 +9,7 @@ import { screen } from '@testing-library/react-native';
 import {
   createEntitlementSnapshot,
   createEntitlementSnapshotDto,
-} from '../__tests__/entitlement.factories';
+} from '../__tests__/entitlement.fixtures';
 import { EntitlementService } from '../apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import type { EntitlementFeature, EntitlementSnapshot } from '../domains/entitlement.model';

@@ -7,7 +7,7 @@ import {
   createFeatureQuotaDto,
   createLimitApiError,
   MONTHLY_RESETS_AT,
-} from '../__tests__/entitlement.factories';
+} from '../__tests__/entitlement.fixtures';
 import {
   findLimitedFeature,
   isNotChargedError,

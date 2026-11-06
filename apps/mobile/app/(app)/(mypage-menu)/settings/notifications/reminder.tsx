@@ -1,6 +1,6 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/get-entitlements-query-options';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import type { Preference } from '@src/features/identity/preference/schemas/preference.schema';
