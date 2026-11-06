@@ -1,4 +1,3 @@
-import { type ReplyToNudgeInput, type SendNudgeThanksInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import {
   useErrorReporter,
@@ -13,17 +12,19 @@ import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-que
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError, unwrap } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { isTodoNudgeError } from '../domains/todo-nudge.error';
 import { type SendRemindNudgeInput, type SendTodoNudgeInput } from '../domains/todo-nudge.model';
+import type { ReplyToNudgeInput, SendNudgeThanksInput } from '../schemas/nudge-request.schema';
 
 export function useReplyToNudgeMutationOptions() {
   const todoNudgeService = useTodoNudgeService();
   const errorReporter = useErrorReporter();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
+  const showFailure = useMutationFailure(t('todo:toast.retryLater'));
 
   return mutationOptions({
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
@@ -40,6 +41,7 @@ export function useReplyToNudgeMutationOptions() {
       if (!isApiError(error)) {
         errorReporter.captureException(toError(error), { feature: 'todo_nudge' });
       }
+      showFailure(error);
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
     },
   });
@@ -50,7 +52,7 @@ export function useSendNudgeThanksMutationOptions() {
   const errorReporter = useErrorReporter();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.retryLater'));
 
   return mutationOptions({
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
@@ -68,9 +70,7 @@ export function useSendNudgeThanksMutationOptions() {
       if (!isApiError(error)) {
         errorReporter.captureException(toError(error), { feature: 'todo_nudge' });
       }
-      toast.error(isApiError(error) ? error.message : undefined, {
-        fallback: t('todo:toast.retryLater'),
-      });
+      showFailure(error);
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
       if (isApiError(error) && error.hasCode(ErrorCode.NUDGE_1110)) {
         invalidateTodoDetails(queryClient, { todoId });
@@ -79,14 +79,17 @@ export function useSendNudgeThanksMutationOptions() {
   });
 }
 
-export const useSendRemindNudgeMutationOptions = () => {
+export function useSendRemindNudgeMutationOptions() {
   const haptics = useHaptics();
   const todoNudgeService = useTodoNudgeService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.retryLater'));
 
   return mutationOptions({
+    // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async (input: SendRemindNudgeInput) => {
       const result = await todoNudgeService.sendRemindNudge(input);
       return unwrap(result);
@@ -100,26 +103,22 @@ export const useSendRemindNudgeMutationOptions = () => {
       trackEvent('remind_nudge_sent');
     },
     onError: (error) => {
-      haptics.notify('error');
-
-      if (isApiError(error) || isTodoNudgeError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.retryLater') });
+      showFailure(error);
     },
   });
-};
+}
 
-export const useSendTodoNudgeMutationOptions = () => {
+export function useSendTodoNudgeMutationOptions() {
   const haptics = useHaptics();
   const todoNudgeService = useTodoNudgeService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
+  const showFailure = useMutationFailure(t('todo:toast.retryLater'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: SendTodoNudgeInput) => {
       const result = await todoNudgeService.sendNudge(input);
       return unwrap(result);
@@ -132,17 +131,12 @@ export const useSendTodoNudgeMutationOptions = () => {
       trackEvent('nudge_sent');
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (gate.handleError(error)) {
+        haptics.notify('error');
         return;
       }
 
-      if (isApiError(error) || isTodoNudgeError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.retryLater') });
+      showFailure(error);
     },
   });
-};
+}

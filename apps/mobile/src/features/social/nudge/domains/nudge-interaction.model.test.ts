@@ -151,3 +151,38 @@ describe('감사 요약 상태', () => {
     expect(summary).toEqual({ state: 'NONE', pendingRecipientCount: 0 });
   });
 });
+
+describe('getResponseStage', () => {
+  const nudge = {
+    receiverId: 'me',
+    isAvailable: true,
+    isTodoCompleted: false,
+    replyKind: null,
+    thankedAt: null,
+  };
+
+  test.each([
+    ['사라진 콕은 unavailable', { ...nudge, isAvailable: false }, 'me', 'unavailable'],
+    ['받은 사람이 끝나지 않은 할 일에는 reply', nudge, 'me', 'reply'],
+    ['보낸 사람은 답장 없이 status', nudge, 'sender', 'status'],
+    [
+      '완료된 할 일에 아직 고맙다고 안 했으면 thanksPrompt',
+      { ...nudge, isTodoCompleted: true },
+      'me',
+      'thanksPrompt',
+    ],
+    [
+      '고맙다고 했으면 thanked',
+      { ...nudge, isTodoCompleted: true, thankedAt: new Date('2026-03-01') },
+      'me',
+      'thanked',
+    ],
+  ] as const)('%s', (_title, input, userId, expected) => {
+    // Given
+    // When
+    const stage = NudgeInteractionPolicy.getResponseStage(input, userId);
+
+    // Then
+    expect(stage).toBe(expected);
+  });
+});

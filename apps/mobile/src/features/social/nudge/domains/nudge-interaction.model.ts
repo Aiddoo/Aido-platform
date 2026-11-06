@@ -105,26 +105,28 @@ function isThankableTodo(
   return isOwner && todo.completed && todo.visibility === 'PUBLIC';
 }
 
-function isReplyableNudge(
-  nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
-  currentUserId: string,
-): boolean {
-  return nudge.receiverId === currentUserId && nudge.isAvailable;
+function isReceivedBy(nudge: Pick<NudgeInteraction, 'receiverId'>, userId: string): boolean {
+  return nudge.receiverId === userId;
 }
 
-function isThankablePreview(
-  preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
+function isReplyable(
+  nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
+  userId: string,
 ): boolean {
+  return isReceivedBy(nudge, userId) && nudge.isAvailable;
+}
+
+function isThankable(preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>): boolean {
   return preview.throughNudgeId != null && preview.recipients.length > 0;
 }
 
-function getNudgeThanksSummary(
+function getThanksSummary(
   preview: Pick<
     NudgeThanksPreview,
     'throughNudgeId' | 'recipients' | 'totalRecipients' | 'thankedRecipientCount'
   >,
 ): NudgeThanksSummary {
-  const pendingRecipientCount = isThankablePreview(preview) ? preview.totalRecipients : 0;
+  const pendingRecipientCount = isThankable(preview) ? preview.totalRecipients : 0;
   const state = match({
     hasPending: pendingRecipientCount > 0,
     hasThanked: preview.thankedRecipientCount > 0,
@@ -138,10 +140,40 @@ function getNudgeThanksSummary(
   return { state, pendingRecipientCount };
 }
 
+export type NudgeResponseStage = 'unavailable' | 'reply' | 'thanksPrompt' | 'thanked' | 'status';
+
+/**
+ * 상세 화면이 응답 자리에 보일 단계. 받은 사람이 아직 끝나지 않은 할 일에 답할 수 있으면 답장이 먼저고,
+ * 완료된 뒤에는 고맙다고 했는지로 가른다
+ */
+function getResponseStage(
+  nudge: Pick<
+    NudgeInteraction,
+    'receiverId' | 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'
+  >,
+  userId: string,
+): NudgeResponseStage {
+  const status = getNudgeInteractionStatus(nudge);
+  if (status === 'UNAVAILABLE') {
+    return 'unavailable';
+  }
+  const isReceived = isReceivedBy(nudge, userId);
+  if (isReceived && !nudge.isTodoCompleted && isReplyable(nudge, userId)) {
+    return 'reply';
+  }
+  if (isReceived && nudge.isTodoCompleted) {
+    return status === 'THANKED' ? 'thanked' : 'thanksPrompt';
+  }
+
+  return status === 'THANKED' ? 'thanked' : 'status';
+}
+
 export const NudgeInteractionPolicy = {
   getNudgeInteractionStatus,
+  getResponseStage,
+  isReceivedBy,
   isThankableTodo,
-  isReplyable: isReplyableNudge,
-  isThankable: isThankablePreview,
-  getThanksSummary: getNudgeThanksSummary,
+  isReplyable,
+  isThankable,
+  getThanksSummary,
 } as const;

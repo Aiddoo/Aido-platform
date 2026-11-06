@@ -13,7 +13,7 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/nudge.queries';
@@ -21,8 +21,7 @@ import { useGetTodoNudgeLimitQueryOptions } from '../queries/nudge.queries';
 export function PokeBanner() {
   const { t } = useTranslation('todo');
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
-  const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
-  const isLimitReached = bannerState.type === 'limitReached';
+  const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
 
@@ -36,8 +35,23 @@ export function PokeBanner() {
     </>
   );
 
-  const bannerText = match(bannerState)
-    .with({ type: 'limitReached' }, () => ({
+  const hint = {
+    title: defaultTitle,
+    description: (
+      <HStack gap={2} align="center" className="flex-wrap">
+        <Text size="e1" shade={6}>
+          {t('nudge.hintPrefix')}
+        </Text>
+        <PawIcon width={14} height={14} colorClassName="text-main" />
+        <Text size="e1" shade={6}>
+          {t('nudge.hintSuffix')}
+        </Text>
+      </HStack>
+    ),
+  };
+
+  const bannerText = match({ ...limitInfo, isLimitReached })
+    .with({ isLimitReached: true }, () => ({
       title: t('nudge.limitSpentTitle'),
       description: (
         <Text size="e1" shade={6}>
@@ -45,21 +59,8 @@ export function PokeBanner() {
         </Text>
       ),
     }))
-    .with({ type: 'available' }, () => ({
-      title: defaultTitle,
-      description: (
-        <HStack gap={2} align="center" className="flex-wrap">
-          <Text size="e1" shade={6}>
-            {t('nudge.hintPrefix')}
-          </Text>
-          <PawIcon width={14} height={14} colorClassName="text-main" />
-          <Text size="e1" shade={6}>
-            {t('nudge.hintSuffix')}
-          </Text>
-        </HStack>
-      ),
-    }))
-    .with({ type: 'remaining' }, ({ remainingToday }) => ({
+    .with({ isUnlimited: true }, { usedToday: 0 }, () => hint)
+    .with({ remainingToday: P.number }, ({ remainingToday }) => ({
       title: defaultTitle,
       description: (
         <Text size="e1" shade={6}>
@@ -67,13 +68,13 @@ export function PokeBanner() {
         </Text>
       ),
     }))
-    .exhaustive();
+    .otherwise(() => hint);
 
   return (
     <PressableFeedback
       onPress={() => gate.guard()}
       isDisabled={!isLimitReached}
-      className="mx-4 rounded-xl"
+      className="rounded-xl"
     >
       <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
         <Image
@@ -93,13 +94,13 @@ export function PokeBanner() {
 }
 
 PokeBanner.Loading = function Loading() {
-  return <Skeleton className="mx-4 h-[72px] rounded-xl" />;
+  return <Skeleton className="h-[72px] rounded-xl" />;
 };
 
 PokeBanner.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <HStack mx={16} p={12} gap={8} align="center" className="rounded-xl bg-gray-1">
+    <HStack p={12} gap={8} align="center" className="rounded-xl bg-gray-1">
       <Text size="b4" shade={6} className="flex-1">
         {t('todo:nudge.statusUnavailable')}
       </Text>

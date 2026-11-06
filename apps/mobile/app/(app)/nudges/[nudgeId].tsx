@@ -1,316 +1,20 @@
-import type { NudgeReplyKind } from '@aido/api';
-import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
-import {
-  type NudgeInteraction,
-  NudgeInteractionPolicy,
-} from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { useNudgeScreenParams } from '@src/features/social/nudge/hooks/use-nudge-screen-params';
-import { useReplyToNudgeMutationOptions } from '@src/features/social/nudge/queries/nudge.mutations';
-import { useGetNudgeInteractionQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
+import { NudgeDetail } from '@src/features/social/nudge/components/nudge-detail/nudge-detail';
+import { NudgeModerationToolbar } from '@src/features/social/nudge/components/nudge-detail/nudge-moderation-toolbar';
+import { NudgeResponse } from '@src/features/social/nudge/components/nudge-detail/nudge-response';
+import { NudgeSummary } from '@src/features/social/nudge/components/nudge-detail/nudge-summary';
+import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-detail/nudge-todo-button';
 import { nudgeScreenParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
-import { getNudgeReplyLabelKey } from '@src/features/social/nudge/utils/nudge-reply-label';
-import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import { isApiError } from '@src/shared/errors';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  STACK_MENU_ICON,
-  ArrowRightIcon,
-  Button,
-  CheckIcon,
-  ClockIcon,
-  HeartFilledIcon,
-  HStack,
-  PawIcon,
   QueryErrorBoundary,
   ReadableContent,
-  STACK_MORE_ICON,
   Result,
+  Spacing,
   StyledSafeAreaView,
-  Text,
-  TextSkeleton,
-  VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Skeleton } from 'heroui-native';
-import { Suspense, type ComponentProps } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-import { match, P } from 'ts-pattern';
-
-function NudgeDetailScreen() {
-  const { nudgeId } = useNudgeScreenParams();
-  const [{ data: nudge }, { data: me }] = useSuspenseQueries({
-    queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
-  });
-  const { t } = useTranslation('todo');
-  const dateFormatContext = useDateFormatContext();
-  const isReceived = nudge.receiverId === me.id;
-  const friendName = isReceived ? nudge.senderName : nudge.receiverName;
-  const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
-  const status = NudgeInteractionPolicy.getNudgeInteractionStatus(nudge);
-  const handleOpenThanksSheet = useSingleTap(() =>
-    router.push({ pathname: '/todo/[todoId]/thanks', params: { todoId: nudge.todoId } }),
-  );
-  const handleOpenTodo = useSingleTap(() =>
-    router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
-  );
-
-  return (
-    <>
-      {isReceived && <NudgeModerationToolbar nudge={nudge} />}
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <StyledSafeAreaView edges={['left', 'right']} className="p-6">
-          <VStack gap={24} testID="nudge-detail">
-            <HStack gap={12} align="center">
-              <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
-              <VStack flex={1} gap={4}>
-                <Text size="b3" weight="semibold">
-                  {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
-                </Text>
-                <Text size="e1" shade={5}>
-                  {formatRelativeTimeLabel(nudge.createdAt, new Date(), dateFormatContext)}
-                </Text>
-              </VStack>
-            </HStack>
-
-            <VStack gap={8}>
-              <Text size="t3" weight="bold">
-                {t('interaction.encouragementTitle')}
-              </Text>
-              {nudge.message != null && (
-                <Text size="b3" shade={6}>
-                  {nudge.message}
-                </Text>
-              )}
-            </VStack>
-
-            <Button
-              variant="weak"
-              color="dark"
-              isDisabled={nudge.todoTitle == null}
-              className="p-4"
-              onPress={handleOpenTodo}
-            >
-              <HStack align="center" gap={12} className="w-full">
-                <PawIcon width={28} height={28} colorClassName="text-main" />
-                <VStack flex={1} gap={4}>
-                  <Text size="b3" weight="semibold" maxLines={3}>
-                    {nudge.todoTitle ?? t('interaction.unavailableTodo')}
-                  </Text>
-                  <Text size="e1" shade={5}>
-                    {t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.openTodo')}
-                  </Text>
-                </VStack>
-                <ArrowRightIcon width={18} height={18} colorClassName="text-gray-5" />
-              </HStack>
-            </Button>
-
-            {match({
-              status,
-              isReceived,
-              isTodoCompleted: nudge.isTodoCompleted,
-              canReply: NudgeInteractionPolicy.isReplyable(nudge, me.id),
-            })
-              .with({ status: 'UNAVAILABLE' }, () => (
-                <Result
-                  title={t('interaction.unavailable')}
-                  description={t('interaction.unavailableDescription')}
-                />
-              ))
-              .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
-                <NudgeDetailScreen.ReplyPanel nudge={nudge} />
-              ))
-              .with({ isReceived: true, isTodoCompleted: true }, () => (
-                <VStack gap={12}>
-                  {status === 'THANKED' ? (
-                    <NudgeDetailScreen.ThanksStatus />
-                  ) : (
-                    <Text size="b3" shade={6}>
-                      {t('interaction.completedThanksHint')}
-                    </Text>
-                  )}
-                  {status !== 'THANKED' && (
-                    <QueryErrorBoundary
-                      resetKeys={[nudge.todoId]}
-                      fallback={ThanksSummaryRow.Error}
-                    >
-                      <Suspense fallback={null}>
-                        <ThanksSummaryRow
-                          todoId={nudge.todoId}
-                          onThanksPress={handleOpenThanksSheet}
-                        />
-                      </Suspense>
-                    </QueryErrorBoundary>
-                  )}
-                </VStack>
-              ))
-              .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
-              .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
-                <Text size="b3" shade={6}>
-                  {match(nudge)
-                    .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
-                      t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
-                    )
-                    .with({ isTodoCompleted: true }, () => t('interaction.completed'))
-                    .otherwise(() => t('interaction.waiting'))}
-                </Text>
-              ))
-              .exhaustive()}
-          </VStack>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </>
-  );
-}
-
-NudgeDetailScreen.ReplyPanel = function ReplyPanel({ nudge }: { nudge: NudgeInteraction }) {
-  const { t } = useTranslation('todo');
-  const { nudgeId } = useNudgeScreenParams();
-  const replyMutation = useMutation(useReplyToNudgeMutationOptions());
-
-  const handleReply = (replyKind: NudgeReplyKind) =>
-    replyMutation.mutate({ nudgeId, input: { replyKind } });
-
-  return (
-    <VStack gap={12}>
-      <Text size="b2" weight="bold">
-        {t('interaction.replyTitle')}
-      </Text>
-      <Text size="b4" shade={5}>
-        {t('interaction.replyHint')}
-      </Text>
-      <NudgeDetailScreen.ReplyButton
-        value="STARTING"
-        isSelected={nudge.replyKind === 'STARTING'}
-        isDisabled={replyMutation.isPending}
-        onPress={() => handleReply('STARTING')}
-      />
-      <NudgeDetailScreen.ReplyButton
-        value="THANKFUL"
-        isSelected={nudge.replyKind === 'THANKFUL'}
-        isDisabled={replyMutation.isPending}
-        onPress={() => handleReply('THANKFUL')}
-      />
-      <NudgeDetailScreen.ReplyButton
-        value="LATER"
-        isSelected={nudge.replyKind === 'LATER'}
-        isDisabled={replyMutation.isPending}
-        onPress={() => handleReply('LATER')}
-      />
-      {replyMutation.isError && (
-        <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
-          {isApiError(replyMutation.error) ? replyMutation.error.message : t('toast.retryLater')}
-        </Text>
-      )}
-      {replyMutation.isSuccess && (
-        <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
-          {t('interaction.replySent')}
-        </Text>
-      )}
-      <Text size="e1" shade={5}>
-        {t('interaction.replyChangedHint')}
-      </Text>
-      <Text size="e1" shade={5}>
-        {t('interaction.replyCompletionHint')}
-      </Text>
-    </VStack>
-  );
-};
-
-NudgeDetailScreen.ThanksStatus = function ThanksStatus() {
-  const { t } = useTranslation('todo');
-  return (
-    <HStack align="center" gap={8}>
-      <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
-      <Text size="b3" tone="brand" className="shrink">
-        {t('interaction.thanked')}
-      </Text>
-    </HStack>
-  );
-};
-
-NudgeDetailScreen.ReplyButton = function ReplyButton({
-  value,
-  isSelected,
-  ...props
-}: Omit<ComponentProps<typeof Button>, 'children'> & {
-  value: NudgeReplyKind;
-  isSelected: boolean;
-}) {
-  const { t } = useTranslation('todo');
-  const Icon = match(value)
-    .with('STARTING', () => PawIcon)
-    .with('THANKFUL', () => HeartFilledIcon)
-    .with('LATER', () => ClockIcon)
-    .exhaustive();
-  return (
-    <Button
-      {...props}
-      color={isSelected ? 'primary' : 'dark'}
-      variant="weak"
-      size="large"
-      className={cn('border', isSelected ? 'border-main' : 'border-gray-2 bg-white')}
-      accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
-    >
-      <HStack gap={12} align="center" className={cn('w-full', props.isDisabled && 'opacity-40')}>
-        <Icon width={20} height={20} colorClassName="text-main" />
-        <Text
-          size="b3"
-          weight="medium"
-          className={isSelected ? 'text-main flex-1' : 'text-gray-9 flex-1'}
-        >
-          {t(getNudgeReplyLabelKey(value))}
-        </Text>
-        {isSelected && <CheckIcon width={20} height={20} colorClassName="text-main" />}
-      </HStack>
-    </Button>
-  );
-};
-
-NudgeDetailScreen.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['todo', 'common']);
-  const isUnavailable = isApiError(error) && error.status === 404;
-  return (
-    <VStack flex={1} p={24}>
-      <Result
-        title={t(isUnavailable ? 'todo:interaction.unavailable' : 'todo:interaction.loadError')}
-        description={isUnavailable ? t('todo:interaction.unavailableDescription') : undefined}
-        button={
-          <Result.Button onPress={isUnavailable ? () => router.replace('/notifications') : reset}>
-            {t(isUnavailable ? 'common:actions.goBack' : 'common:actions.retry')}
-          </Result.Button>
-        }
-      />
-    </VStack>
-  );
-};
-
-NudgeDetailScreen.Loading = function Loading() {
-  return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-      <StyledSafeAreaView edges={['left', 'right']} className="p-6">
-        <VStack gap={24}>
-          <HStack gap={12} align="center">
-            <Skeleton className="size-12 rounded-full" />
-            <VStack flex={1} gap={4}>
-              <TextSkeleton size="b3" className="w-40" />
-              <TextSkeleton size="e1" className="w-16" />
-            </VStack>
-          </HStack>
-          <TextSkeleton size="t3" className="w-3/4" />
-          <Skeleton className="h-14 w-full rounded-xl" />
-        </VStack>
-      </StyledSafeAreaView>
-    </ScrollView>
-  );
-};
 
 export default function NudgeDetailRoute() {
   const params = nudgeScreenParamsSchema.safeParse(useLocalSearchParams());
@@ -320,9 +24,23 @@ export default function NudgeDetailRoute() {
     <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-white">
       <ReadableContent flex={1}>
         {params.success ? (
-          <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
-            <Suspense fallback={<NudgeDetailScreen.Loading />}>
-              <NudgeDetailScreen />
+          <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetail.Error}>
+            <Suspense fallback={<NudgeDetail.Loading />}>
+              <NudgeModerationToolbar nudgeId={params.data.nudgeId} />
+
+              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <StyledSafeAreaView edges={['left', 'right']} className="p-6" testID="nudge-detail">
+                  <NudgeSummary nudgeId={params.data.nudgeId} />
+
+                  <Spacing size={24} />
+
+                  <NudgeTodoButton nudgeId={params.data.nudgeId} />
+
+                  <Spacing size={24} />
+
+                  <NudgeResponse nudgeId={params.data.nudgeId} />
+                </StyledSafeAreaView>
+              </ScrollView>
             </Suspense>
           </QueryErrorBoundary>
         ) : (
@@ -332,50 +50,5 @@ export default function NudgeDetailRoute() {
         )}
       </ReadableContent>
     </StyledSafeAreaView>
-  );
-}
-
-/** 받은 콕 찌르기의 ⋯ 메뉴. 보낸 사람의 메시지를 신고하거나 보낸 사람을 차단한다 */
-function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
-  const { t } = useTranslation('moderation');
-  const push = useSingleTap(router.push);
-
-  return (
-    <Stack.Toolbar placement="right">
-      <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('menu.more')}>
-        <Stack.Toolbar.MenuAction
-          icon={STACK_MENU_ICON.report}
-          onPress={() => {
-            const target = UserReportPolicy.createNudgeMessageReportTarget({
-              nudgeId: nudge.id,
-              senderId: nudge.senderId,
-            });
-            push({
-              pathname: '/users/[userId]/report',
-              params: {
-                userId: target.targetUserId,
-                name: nudge.senderName,
-                targetType: target.targetType,
-                targetId: target.targetId,
-              },
-            });
-          }}
-        >
-          {t('menu.report')}
-        </Stack.Toolbar.MenuAction>
-        <Stack.Toolbar.MenuAction
-          icon={STACK_MENU_ICON.block}
-          destructive
-          onPress={() =>
-            push({
-              pathname: '/users/[userId]/block',
-              params: { userId: nudge.senderId, name: nudge.senderName },
-            })
-          }
-        >
-          {t('block.action')}
-        </Stack.Toolbar.MenuAction>
-      </Stack.Toolbar.Menu>
-    </Stack.Toolbar>
   );
 }

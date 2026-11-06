@@ -1,4 +1,4 @@
-import type { NudgeReplyKind } from '@aido/api';
+import type { NudgeReplyKind } from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
 
 export const getNudgeReplyLabelKey = (kind: NudgeReplyKind) =>

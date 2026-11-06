@@ -15,6 +15,7 @@ import {
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
+import { BusinessError } from '@src/shared/errors/business-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 
@@ -23,7 +24,7 @@ import type {
   NudgeInteractionPage,
   NudgeThanksPreview,
 } from '../domains/nudge-interaction.model';
-import { type TodoNudgeError, TodoNudgeErrors } from '../domains/todo-nudge.error';
+import { TODO_NUDGE_ERROR_CODE, type TodoNudgeErrorCode } from '../domains/todo-nudge.error';
 import type {
   NudgeCooldownInfo,
   NudgeLimitInfo,
@@ -44,7 +45,7 @@ import {
   toSendRemindNudgeResult,
 } from './todo-nudge.mapper';
 
-export type TodoNudgeServiceError = ApiError | TodoNudgeError;
+export type TodoNudgeServiceError = ApiError | BusinessError<TodoNudgeErrorCode>;
 
 export class TodoNudgeService {
   readonly #httpClient: HttpClient;
@@ -59,7 +60,7 @@ export class TodoNudgeService {
     const normalizedMessage = TodoNudgePolicy.normalizeMessage(input.message);
 
     if (TodoNudgePolicy.isMessageTooLong(normalizedMessage)) {
-      return err(TodoNudgeErrors.messageTooLong(TodoNudgePolicy.maxMessageLength));
+      return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
 
     const result = await this.#httpClient.post('v1/nudges', {
@@ -105,7 +106,7 @@ export class TodoNudgeService {
     const normalizedMessage = TodoNudgePolicy.normalizeMessage(input.message);
 
     if (TodoNudgePolicy.isMessageTooLong(normalizedMessage)) {
-      return err(TodoNudgeErrors.messageTooLong(TodoNudgePolicy.maxMessageLength));
+      return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
 
     const result = await this.#httpClient.post('v1/nudges/remind', {

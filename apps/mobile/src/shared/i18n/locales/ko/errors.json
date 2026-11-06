@@ -185,5 +185,6 @@
   "REPORT_2255": "신고를 찾을 수 없어요",
   "FRIEND_INVALID_TAG": "올바른 해시태그 형식이 아니에요",
   "FRIEND_EMPTY_TAG": "해시태그를 입력해주세요",
-  "FRIEND_SEARCH_QUERY_TOO_SHORT": "두 글자 이상 입력해주세요"
+  "FRIEND_SEARCH_QUERY_TOO_SHORT": "두 글자 이상 입력해주세요",
+  "TODO_NUDGE_MESSAGE_TOO_LONG": "메시지는 200자 이내로 입력할 수 있어요"
 }

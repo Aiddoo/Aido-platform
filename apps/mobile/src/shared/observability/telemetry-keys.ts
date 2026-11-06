@@ -1,4 +1,4 @@
-import type { InviteFriendship, RedeemOutcome, ReplyToNudgeInput } from '@aido/api';
+import type { InviteFriendship, RedeemOutcome } from '@aido/api';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
@@ -185,13 +185,6 @@ interface TodoCommentEventMap {
   todo_comment_replies_expanded: { todo_id: number; loaded_count: number };
   todo_comment_reply_started: { todo_id: number; target: 'comment' | 'reply' };
   todo_comment_hint_dismissed: { kind: 'double_tap'; reason: 'close' | 'used' };
-}
-
-interface NudgeEventMap {
-  nudge_sent: undefined;
-  nudge_replied: { reply_kind: ReplyToNudgeInput['replyKind'] };
-  nudge_thanks_sent: { recipient_count: number };
-  remind_nudge_sent: undefined;
 }
 
 export const FEATURE_KEYS = [
@@ -456,7 +449,6 @@ export type LegacyEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
   InviteEventMap &
-  NudgeEventMap &
   GrowthEventMap &
   LifecycleEventMap &
   SubscriptionEventMap &

@@ -1,32 +1,5 @@
-import type { CodedError } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-
-export const TodoNudgeErrorCode = {
+export const TODO_NUDGE_ERROR_CODE = {
   MESSAGE_TOO_LONG: 'TODO_NUDGE_MESSAGE_TOO_LONG',
 } as const;
 
-export type TodoNudgeErrorCode = (typeof TodoNudgeErrorCode)[keyof typeof TodoNudgeErrorCode];
-
-export class TodoNudgeError extends Error implements CodedError {
-  override readonly name = 'TodoNudgeError';
-
-  constructor(
-    public readonly code: TodoNudgeErrorCode,
-    message: string,
-    public readonly details?: Record<string, unknown>,
-  ) {
-    super(message);
-  }
-}
-
-export const TodoNudgeErrors = {
-  messageTooLong: (maxLength: number) =>
-    new TodoNudgeError(
-      TodoNudgeErrorCode.MESSAGE_TOO_LONG,
-      t('todo:errors.nudgeMessageTooLong', { count: maxLength }),
-      { maxLength },
-    ),
-} as const;
-
-export const isTodoNudgeError = (error: unknown): error is TodoNudgeError =>
-  error instanceof TodoNudgeError;
+export type TodoNudgeErrorCode = (typeof TODO_NUDGE_ERROR_CODE)[keyof typeof TODO_NUDGE_ERROR_CODE];

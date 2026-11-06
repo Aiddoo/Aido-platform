@@ -268,11 +268,13 @@ function FriendFeedTodos() {
 
           <Spacing size={8} />
 
-          <QueryErrorBoundary fallback={PokeBanner.Error}>
-            <Suspense fallback={<PokeBanner.Loading />}>
-              <PokeBanner />
-            </Suspense>
-          </QueryErrorBoundary>
+          <Box px={16}>
+            <QueryErrorBoundary fallback={PokeBanner.Error}>
+              <Suspense fallback={<PokeBanner.Loading />}>
+                <PokeBanner />
+              </Suspense>
+            </QueryErrorBoundary>
+          </Box>
 
           <Spacing size={16} />
 
@@ -302,7 +304,9 @@ FriendFeedTodos.Loading = function Loading() {
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
         <Spacing size={8} />
-        <PokeBanner.Loading />
+        <Box px={16}>
+          <PokeBanner.Loading />
+        </Box>
         <Spacing size={16} />
         <Box px={16}>
           <FriendTodoList.Loading />

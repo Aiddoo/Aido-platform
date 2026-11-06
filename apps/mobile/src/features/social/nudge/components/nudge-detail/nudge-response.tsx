@@ -1,0 +1,174 @@
+import type { NudgeReplyKind } from '@aido/api/vocabulary';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTranslation } from '@src/shared/i18n';
+import {
+  Button,
+  CheckIcon,
+  ClockIcon,
+  HeartFilledIcon,
+  HStack,
+  PawIcon,
+  QueryErrorBoundary,
+  Result,
+  Text,
+  VStack,
+} from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
+import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import type { ComponentProps } from 'react';
+import { Suspense } from 'react';
+import { match, P } from 'ts-pattern';
+
+import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import { useReplyToNudgeMutationOptions } from '../../queries/nudge.mutations';
+import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
+import { getNudgeReplyLabelKey } from '../../utils/nudge-reply-label';
+import { ThanksSummaryRow } from '../nudge-interactions/thanks-summary-row';
+
+export function NudgeResponse({ nudgeId }: { nudgeId: number }) {
+  const { t } = useTranslation('todo');
+  const [{ data: nudge }, { data: me }] = useSuspenseQueries({
+    queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
+  });
+  const openThanksSheet = useSingleTap(() =>
+    router.push({ pathname: '/todo/[todoId]/thanks', params: { todoId: nudge.todoId } }),
+  );
+
+  return match(NudgeInteractionPolicy.getResponseStage(nudge, me.id))
+    .with('unavailable', () => (
+      <Result
+        title={t('interaction.unavailable')}
+        description={t('interaction.unavailableDescription')}
+      />
+    ))
+    .with('reply', () => <ReplyPanel nudgeId={nudgeId} selectedKind={nudge.replyKind} />)
+    .with('thanksPrompt', () => (
+      <VStack gap={12}>
+        <Text size="b3" shade={6}>
+          {t('interaction.completedThanksHint')}
+        </Text>
+        <QueryErrorBoundary resetKeys={[nudge.todoId]} fallback={ThanksSummaryRow.Error}>
+          <Suspense fallback={null}>
+            <ThanksSummaryRow todoId={nudge.todoId} onThanksPress={openThanksSheet} />
+          </Suspense>
+        </QueryErrorBoundary>
+      </VStack>
+    ))
+    .with('thanked', () => <ThanksStatus />)
+    .with('status', () => (
+      <Text size="b3" shade={6}>
+        {match(nudge)
+          .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
+            t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+          )
+          .with({ isTodoCompleted: true }, () => t('interaction.completed'))
+          .otherwise(() => t('interaction.waiting'))}
+      </Text>
+    ))
+    .exhaustive();
+}
+
+function ReplyPanel({
+  nudgeId,
+  selectedKind,
+}: {
+  nudgeId: number;
+  selectedKind: NudgeReplyKind | null;
+}) {
+  const { t } = useTranslation('todo');
+  const reply = useMutation(useReplyToNudgeMutationOptions());
+
+  const sendReply = (replyKind: NudgeReplyKind) => reply.mutate({ nudgeId, input: { replyKind } });
+
+  return (
+    <VStack gap={12}>
+      <Text size="b2" weight="bold">
+        {t('interaction.replyTitle')}
+      </Text>
+      <Text size="b4" shade={5}>
+        {t('interaction.replyHint')}
+      </Text>
+      <ReplyButton
+        value="STARTING"
+        isSelected={selectedKind === 'STARTING'}
+        isDisabled={reply.isPending}
+        onPress={() => sendReply('STARTING')}
+      />
+      <ReplyButton
+        value="THANKFUL"
+        isSelected={selectedKind === 'THANKFUL'}
+        isDisabled={reply.isPending}
+        onPress={() => sendReply('THANKFUL')}
+      />
+      <ReplyButton
+        value="LATER"
+        isSelected={selectedKind === 'LATER'}
+        isDisabled={reply.isPending}
+        onPress={() => sendReply('LATER')}
+      />
+      {reply.isSuccess && (
+        <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
+          {t('interaction.replySent')}
+        </Text>
+      )}
+      <Text size="e1" shade={5}>
+        {t('interaction.replyChangedHint')}
+      </Text>
+      <Text size="e1" shade={5}>
+        {t('interaction.replyCompletionHint')}
+      </Text>
+    </VStack>
+  );
+}
+
+function ThanksStatus() {
+  const { t } = useTranslation('todo');
+
+  return (
+    <HStack align="center" gap={8}>
+      <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
+      <Text size="b3" tone="brand" className="shrink">
+        {t('interaction.thanked')}
+      </Text>
+    </HStack>
+  );
+}
+
+type ReplyButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
+  value: NudgeReplyKind;
+  isSelected: boolean;
+};
+
+function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
+  const { t } = useTranslation('todo');
+  const Icon = match(value)
+    .with('STARTING', () => PawIcon)
+    .with('THANKFUL', () => HeartFilledIcon)
+    .with('LATER', () => ClockIcon)
+    .exhaustive();
+
+  return (
+    <Button
+      {...props}
+      color={isSelected ? 'primary' : 'dark'}
+      variant="weak"
+      size="large"
+      className={cn('border', isSelected ? 'border-main' : 'border-gray-2 bg-white')}
+      accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
+    >
+      <HStack gap={12} align="center" className={cn('w-full', props.isDisabled && 'opacity-40')}>
+        <Icon width={20} height={20} colorClassName="text-main" />
+        <Text
+          size="b3"
+          weight="medium"
+          className={isSelected ? 'text-main flex-1' : 'text-gray-9 flex-1'}
+        >
+          {t(getNudgeReplyLabelKey(value))}
+        </Text>
+        {isSelected && <CheckIcon width={20} height={20} colorClassName="text-main" />}
+      </HStack>
+    </Button>
+  );
+}

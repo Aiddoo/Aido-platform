@@ -14,6 +14,7 @@ let mockQueryClient: QueryClient;
 jest.mock('@src/bootstrap/providers/di-context', () => ({
   useTodoNudgeService: () => ({ replyToNudge: jest.fn(), sendThanks: jest.fn() }),
   useErrorReporter: () => ({ captureException: mockCaptureException }),
+  useHaptics: () => ({ notify: jest.fn() }),
 }));
 
 jest.mock('@src/shared/analytics', () => ({

@@ -6,7 +6,6 @@ import {
   createSendNudgeResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo-nudge.fixtures';
-import { isTodoNudgeError } from '../domains/todo-nudge.error';
 import { TodoNudgeService } from './todo-nudge.service';
 
 describe('TodoNudgeService', () => {
@@ -35,7 +34,6 @@ describe('TodoNudgeService', () => {
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isTodoNudgeError(result.error)).toBe(true);
         expect(result.error.code).toBe('TODO_NUDGE_MESSAGE_TOO_LONG');
       }
       expect(httpClient.post).not.toHaveBeenCalled();
