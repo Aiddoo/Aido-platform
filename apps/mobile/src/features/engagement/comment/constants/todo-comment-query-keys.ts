@@ -1,4 +1,4 @@
-import type { TodoCommentSort } from '@aido/api';
+import type { TodoCommentSort } from '@aido/api/vocabulary';
 
 export const TODO_COMMENT_QUERY_KEYS = {
   all: ['todo-comment'] as const,

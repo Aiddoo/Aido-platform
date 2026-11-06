@@ -1,4 +1,4 @@
-import { TODO_COMMENT_LIMITS } from '@aido/api';
+import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 
 export const TODO_COMMENT_PAGE_SIZE = {
   THREADS: TODO_COMMENT_LIMITS.DEFAULT_PAGE_SIZE,

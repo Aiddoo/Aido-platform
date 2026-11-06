@@ -5,7 +5,12 @@ import {
   todoCommentV2Schema,
 } from '@aido/api';
 
-import { toTodoCommentFromV1, toTodoCommentThreadPage } from './todo-comment.mapper';
+import {
+  toRepliesQuery,
+  toThreadsQuery,
+  toTodoCommentFromV1,
+  toTodoCommentThreadPage,
+} from './todo-comment.mapper';
 
 const HEAD_ID = 'cm12345678901234567890123';
 const REPLY_ID = 'cm22345678901234567890123';
@@ -74,8 +79,8 @@ describe('todo comment mapper', () => {
     const page = toTodoCommentThreadPage(dto);
 
     // Then
-    expect(page.items[0]?.comment.createdAt).toEqual(new Date('2026-08-26T00:00:00.000Z'));
-    expect(page.items[0]?.previewReply?.editedAt).toEqual(new Date('2026-08-26T00:02:00.000Z'));
+    expect(page.items[0]?.comment.createdAt).toBe('2026-08-26T00:00:00.000Z');
+    expect(page.items[0]?.previewReply?.editedAt).toBe('2026-08-26T00:02:00.000Z');
     expect(page.items[0]?.replySummary).toEqual(dto.items[0]?.replySummary);
     expect(page.anchor).toEqual(dto.anchor);
   });
@@ -115,5 +120,27 @@ describe('todo comment mapper', () => {
       author: { userTag: null },
       viewer: { canReport: false, canBlock: false },
     });
+  });
+});
+
+describe('todo-comment 요청 값', () => {
+  it('첫 페이지만 anchor로 위치를 찾고 이어지는 페이지는 cursor만 보낸다', () => {
+    // When
+    const first = toThreadsQuery(null, { sort: 'LATEST', anchorCommentId: HEAD_ID });
+    const next = toThreadsQuery('cursor-1', { sort: 'LATEST', anchorCommentId: HEAD_ID });
+
+    // Then
+    expect(first).toEqual({ sort: 'LATEST', size: 30, anchorCommentId: HEAD_ID });
+    expect(next).toEqual({ sort: 'LATEST', size: 30, cursor: 'cursor-1' });
+  });
+
+  it('답글은 10개씩 받고 알림으로 연 답글이 든 페이지부터 받는다', () => {
+    // When
+    const around = toRepliesQuery(null, { aroundReplyId: HEAD_ID });
+    const plain = toRepliesQuery(null, { aroundReplyId: null });
+
+    // Then
+    expect(around).toEqual({ size: 10, aroundReplyId: HEAD_ID });
+    expect(plain).toEqual({ size: 10 });
   });
 });

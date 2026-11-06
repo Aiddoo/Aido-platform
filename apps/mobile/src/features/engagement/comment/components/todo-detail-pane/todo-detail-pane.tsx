@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api';
+import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { TodoDetailCard } from '@src/features/planning/todo/components/todo-detail-card';
@@ -28,14 +28,14 @@ import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 
 import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events';
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
-import {
-  todoCommentComposerFormSchema,
-  TodoCommentComposer,
-} from '../../domains/todo-comment-composer.model';
 import { useAndroidTodoCommentBackHandler } from '../../hooks/use-android-todo-comment-back-handler';
 import { useCommentParams } from '../../hooks/use-comment-params';
 import { useTodoCommentBack } from '../../hooks/use-todo-comment-back';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../../queries/todo-comment.queries';
+import {
+  todoCommentFormSchema,
+  NEW_TODO_COMMENT_FORM_VALUES,
+} from '../../schemas/todo-comment-form.schema';
 import { TodoCommentComposerBar } from '../todo-comment-composer/todo-comment-composer-bar';
 import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
 import { TodoCommentKeyboardScrollView } from '../todo-comment-keyboard-scroll-view';
@@ -64,8 +64,8 @@ interface TodoDetailPaneProps {
  */
 export function TodoDetailPane({ presentation }: TodoDetailPaneProps) {
   const composer = useForm({
-    resolver: zodResolver(todoCommentComposerFormSchema),
-    defaultValues: TodoCommentComposer.new(),
+    resolver: zodResolver(todoCommentFormSchema),
+    defaultValues: NEW_TODO_COMMENT_FORM_VALUES,
     mode: 'onChange',
   });
 

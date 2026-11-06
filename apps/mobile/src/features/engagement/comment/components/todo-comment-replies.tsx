@@ -9,13 +9,13 @@ import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import {
-  type TodoComment,
-  TodoCommentPolicy,
-  type TodoCommentThread,
-  type TodoCommentThreadAnchor,
-} from '../domains/todo-comment.model';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useGetTodoCommentRepliesInfiniteQueryOptions } from '../queries/todo-comment.queries';
+import type {
+  TodoComment,
+  TodoCommentThread,
+  TodoCommentThreadAnchor,
+} from '../schemas/todo-comment.schema';
 import { useThreadExpansion } from './todo-comment-expansion';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentRailRow } from './todo-comment-thread-rail';

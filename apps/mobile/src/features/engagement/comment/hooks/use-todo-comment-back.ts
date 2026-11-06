@@ -6,17 +6,17 @@ import { KeyboardController } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import {
-  type TodoCommentComposerForm,
-  TodoCommentComposer,
-} from '../domains/todo-comment-composer.model';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import {
+  type TodoCommentFormValues,
+  NEW_TODO_COMMENT_FORM_VALUES,
+} from '../schemas/todo-comment-form.schema';
 import { useIsTodoCommentSubmitting } from './use-is-todo-comment-submitting';
 
 /** Header back과 Android back이 같은 순서로 동작한다. 작성기를 닫았으면 true를 돌려준다 */
 export function useTodoCommentBack() {
   const logger = useLogger();
-  const { control, reset } = useFormContext<TodoCommentComposerForm>();
+  const { control, reset } = useFormContext<TodoCommentFormValues>();
   const mode = useWatch({ control, name: 'mode' });
   const isSubmitting = useIsTodoCommentSubmitting();
   const result = TodoCommentPolicy.getBackAction({ mode, isSubmitting });
@@ -32,7 +32,7 @@ export function useTodoCommentBack() {
               error: getErrorMessage(error),
             }),
           );
-          reset(TodoCommentComposer.new());
+          reset(NEW_TODO_COMMENT_FORM_VALUES);
           return true;
         })
         .exhaustive(),

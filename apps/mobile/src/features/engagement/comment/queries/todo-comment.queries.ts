@@ -1,8 +1,9 @@
-import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api';
+import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
+import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
 import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
@@ -14,8 +15,6 @@ import {
   INITIAL_TODO_COMMENT_PAGE_PARAM,
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
-  toRepliesQuery,
-  toThreadsQuery,
 } from '../utils/todo-comment-page-params';
 
 interface TodoCommentThreadsParams {

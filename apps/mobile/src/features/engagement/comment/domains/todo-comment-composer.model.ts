@@ -1,49 +1,19 @@
-import {
-  TODO_COMMENT_LIMITS,
-  type CreateTodoCommentChainInput,
-  todoCommentContentSchema,
-} from '@aido/api';
+import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-import { type TodoComment, todoCommentSchema } from './todo-comment.model';
-
-const todoCommentComposerModeSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('new') }),
-  z.object({ type: z.literal('reply'), target: todoCommentSchema }),
-  z.object({ type: z.literal('edit'), target: todoCommentSchema }),
-]);
-export type TodoCommentComposerMode = z.infer<typeof todoCommentComposerModeSchema>;
-
-export const todoCommentComposerFormSchema = z.object({
-  mode: todoCommentComposerModeSchema,
-  items: z
-    .array(z.object({ content: todoCommentContentSchema }))
-    .min(1)
-    .max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
-});
-export type TodoCommentComposerForm = z.infer<typeof todoCommentComposerFormSchema>;
-
-const EMPTY_ITEMS: TodoCommentComposerForm['items'] = [{ content: '' }];
-
-function newComposer(): TodoCommentComposerForm {
-  return { mode: { type: 'new' }, items: EMPTY_ITEMS };
-}
-
-function replyComposer(target: TodoComment): TodoCommentComposerForm {
-  return { mode: { type: 'reply', target }, items: EMPTY_ITEMS };
-}
-
-function editComposer(target: TodoComment): TodoCommentComposerForm {
-  return { mode: { type: 'edit', target }, items: [{ content: target.content ?? '' }] };
-}
+import type {
+  TodoCommentChainInput,
+  TodoCommentComposerMode,
+  TodoCommentFormValues,
+} from '../schemas/todo-comment-form.schema';
+import type { TodoComment } from '../schemas/todo-comment.schema';
 
 /** 답글·수정을 쓰지 않은 채 키보드를 내리면(바깥 탭·뒤로가기) 작성기도 함께 닫는다. 쓴 글이 있으면 남긴다 */
-function shouldCloseOnKeyboardHide({ mode, items }: TodoCommentComposerForm) {
+function shouldCloseOnKeyboardHide({ mode, items }: TodoCommentFormValues) {
   return mode.type !== 'new' && items.every((item) => item.content.trim().length === 0);
 }
 
-function canChainComposer(mode: TodoCommentComposerMode, itemCount: number) {
+function canChain(mode: TodoCommentComposerMode, itemCount: number) {
   return mode.type !== 'edit' && itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE;
 }
 
@@ -61,24 +31,9 @@ function getReplyParentId(mode: TodoCommentComposerMode): string | null {
     .otherwise(() => null);
 }
 
-/** 초안은 새 댓글·답글은 할 일마다, 수정은 수정하는 글마다 나눈다 */
-function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
-  return match(mode)
-    .with({ type: 'edit' }, ({ target }) => [todoId, 'edit', target.id] as const)
-    .with({ type: 'reply' }, () => [todoId, 'reply'] as const)
-    .with({ type: 'new' }, () => [todoId, 'new'] as const)
-    .exhaustive();
-}
-
-function getDraftSourceUpdatedAt(mode: TodoCommentComposerMode) {
-  return match(mode)
-    .with({ type: 'edit' }, ({ target }) => (target.editedAt ?? target.createdAt).getTime())
-    .otherwise(() => undefined);
-}
-
 export interface PreparedTodoCommentSubmission {
   fingerprint: string;
-  input: CreateTodoCommentChainInput;
+  input: TodoCommentChainInput;
 }
 
 interface PrepareSubmissionParams {
@@ -112,21 +67,16 @@ function prepareSubmission({
   };
 }
 
-function getTrimmedContents(items: TodoCommentComposerForm['items']): [string, ...string[]] | null {
+function getTrimmedContents(items: TodoCommentFormValues['items']): [string, ...string[]] | null {
   const [first, ...rest] = items.map((item) => item.content.trim());
   return first == null ? null : [first, ...rest];
 }
 
-export const TodoCommentComposer = {
-  new: newComposer,
-  reply: replyComposer,
-  edit: editComposer,
-  canChain: canChainComposer,
+export const TodoCommentComposerPolicy = {
+  canChain,
   shouldCloseOnKeyboardHide,
   getComposerTarget,
   getReplyParentId,
-  getDraftTarget,
-  getDraftSourceUpdatedAt,
   prepareSubmission,
   getTrimmedContents,
 } as const;

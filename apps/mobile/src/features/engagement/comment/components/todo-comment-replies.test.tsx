@@ -26,8 +26,8 @@ import {
 } from '../__tests__/todo-comment.fixtures';
 import { TodoCommentService } from '../apis/todo-comment.service';
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
-import { TodoCommentComposer } from '../domains/todo-comment-composer.model';
-import type { TodoCommentThread } from '../domains/todo-comment.model';
+import { NEW_TODO_COMMENT_FORM_VALUES } from '../schemas/todo-comment-form.schema';
+import type { TodoCommentThread } from '../schemas/todo-comment.schema';
 import { INITIAL_TODO_COMMENT_PAGE_PARAM } from '../utils/todo-comment-page-params';
 import { TodoCommentExpansionProvider, useExpandThread } from './todo-comment-expansion';
 import { TodoCommentReplies } from './todo-comment-replies';
@@ -50,7 +50,7 @@ function PostReplyButton({ threadCommentId }: { threadCommentId: string }) {
 
 /** 할 일 상세 화면(`TodoDetailPane`)이 답글 묶음 위에 두는 Provider를 그대로 둔다 */
 function PostedReplyThread({ thread }: { thread: TodoCommentThread }) {
-  const composer = useForm({ defaultValues: TodoCommentComposer.new() });
+  const composer = useForm({ defaultValues: NEW_TODO_COMMENT_FORM_VALUES });
 
   return (
     <FormProvider {...composer}>

@@ -183,7 +183,12 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/social/nudge/utils/',
   'apps/mobile/src/features/billing/subscription/domains/customer-info.model.ts',
   'apps/mobile/src/features/billing/subscription/domains/entitlement.model.ts',
-  'apps/mobile/src/features/engagement/comment/domains/todo-comment.model.ts',
+  'apps/mobile/src/features/engagement/comment/components/',
+  'apps/mobile/src/features/engagement/comment/constants/',
+  'apps/mobile/src/features/engagement/comment/domains/',
+  'apps/mobile/src/features/engagement/comment/hooks/',
+  'apps/mobile/src/features/engagement/comment/queries/',
+  'apps/mobile/src/features/engagement/comment/utils/',
   'apps/mobile/src/features/planning/todo/domains/todo-repeat.model.ts',
   'apps/mobile/src/features/voice/domains/',
   'apps/mobile/src/features/planning/category/components/',
@@ -252,6 +257,13 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/notification/domains/',
   'apps/mobile/src/features/notification/queries/',
   'apps/mobile/src/features/notification/utils/',
+  // hooks는 공용 route 훅으로 옮겨질 use-comment-params가 zod 타입을 아직 읽어 뺀다
+  'apps/mobile/src/features/engagement/comment/apis/',
+  'apps/mobile/src/features/engagement/comment/components/',
+  'apps/mobile/src/features/engagement/comment/constants/',
+  'apps/mobile/src/features/engagement/comment/domains/',
+  'apps/mobile/src/features/engagement/comment/queries/',
+  'apps/mobile/src/features/engagement/comment/utils/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

@@ -1,4 +1,3 @@
-import type { CreateTodoCommentChainInput, UpdateTodoCommentInput } from '@aido/api';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
@@ -7,8 +6,13 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
 import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-keys';
-import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
+import type {
+  TodoCommentChainInput,
+  TodoCommentUpdateInput,
+} from '../schemas/todo-comment-form.schema';
+import type { TodoComment } from '../schemas/todo-comment.schema';
 import {
   addTodoCommentRepliesToCaches,
   cancelTodoCommentQueries,
@@ -26,14 +30,14 @@ const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 1_000;
 
 interface CreateTodoCommentChainMutationParams {
-  input: CreateTodoCommentChainInput;
+  input: TodoCommentChainInput;
   /** 답글을 달 때 그 대상. 이미 지워졌으면 행을 캐시에서 뺀다 */
   target: TodoComment | null;
 }
 
 interface UpdateTodoCommentMutationParams {
   target: TodoComment;
-  input: UpdateTodoCommentInput;
+  input: TodoCommentUpdateInput;
 }
 
 interface DeleteTodoCommentMutationParams {

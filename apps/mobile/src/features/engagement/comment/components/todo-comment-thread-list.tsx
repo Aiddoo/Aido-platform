@@ -35,14 +35,11 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import {
-  TodoCommentPolicy,
-  type TodoCommentThread,
-  type TodoCommentThreadAnchor,
-} from '../domains/todo-comment.model';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useCommentParams } from '../hooks/use-comment-params';
 import { refreshTodoComments } from '../queries/todo-comment-cache';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
+import type { TodoCommentThread, TodoCommentThreadAnchor } from '../schemas/todo-comment.schema';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-view';
 import { TodoCommentReplies } from './todo-comment-replies';

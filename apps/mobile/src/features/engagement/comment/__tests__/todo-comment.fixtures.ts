@@ -1,6 +1,8 @@
-import type { TodoComment, TodoCommentThread } from '../domains/todo-comment.model';
+import { toInstant } from '@src/shared/date/instant';
 
-const CREATED_AT = new Date('2026-08-15T09:00:00.000Z');
+import type { TodoComment, TodoCommentThread } from '../schemas/todo-comment.schema';
+
+const CREATED_AT = toInstant('2026-08-15T09:00:00.000Z');
 export const TODO_ID = 42;
 
 export function createTodoComment(overrides?: Partial<TodoComment>): TodoComment {

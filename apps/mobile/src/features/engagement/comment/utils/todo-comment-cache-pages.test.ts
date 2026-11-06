@@ -3,7 +3,7 @@ import {
   createTodoCommentReply,
   createTodoCommentThread,
 } from '../__tests__/todo-comment.fixtures';
-import type { TodoComment, TodoCommentThread } from '../domains/todo-comment.model';
+import type { TodoComment, TodoCommentThread } from '../schemas/todo-comment.schema';
 import {
   addRepliesToThreadPages,
   appendRepliesToReplyPages,

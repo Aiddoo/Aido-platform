@@ -11,17 +11,8 @@ import {
   todoCommentThreadsResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { type Result, ok } from '@src/shared/errors/result';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type {
-  TodoComment,
-  TodoCommentChain,
-  TodoCommentLikeResult,
-  TodoCommentReplyPage,
-  TodoCommentThreadPage,
-} from '../domains/todo-comment.model';
 import {
   toDeletedCommentId,
   toMutatedComment,
@@ -39,125 +30,62 @@ export class TodoCommentService {
     this.#httpClient = httpClient;
   }
 
-  getThreads = async (
-    todoId: number,
-    query: GetTodoCommentThreadsQuery,
-    signal?: AbortSignal,
-  ): Promise<Result<TodoCommentThreadPage, ApiError>> => {
-    const response = await this.#httpClient.get(`v2/todos/${todoId}/comments`, {
-      params: query,
-      signal,
-    });
-
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = todoCommentThreadsResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid threads: ${parsed.error.message}`);
-    }
-
-    return ok(toTodoCommentThreadPage(parsed.data));
-  };
+  getThreads = async (todoId: number, query: GetTodoCommentThreadsQuery, signal?: AbortSignal) =>
+    parseApiResponse(
+      await this.#httpClient.get(`v2/todos/${todoId}/comments`, { params: query, signal }),
+      todoCommentThreadsResponseSchema,
+      toTodoCommentThreadPage,
+      '[TodoCommentService] Invalid threads',
+    );
 
   getReplies = async (
     todoId: number,
     commentId: string,
     query: GetTodoCommentRepliesQuery,
     signal?: AbortSignal,
-  ): Promise<Result<TodoCommentReplyPage, ApiError>> => {
-    const response = await this.#httpClient.get(
-      `v2/todos/${todoId}/comments/${commentId}/replies`,
-      { params: query, signal },
+  ) =>
+    parseApiResponse(
+      await this.#httpClient.get(`v2/todos/${todoId}/comments/${commentId}/replies`, {
+        params: query,
+        signal,
+      }),
+      todoCommentRepliesResponseSchema,
+      toTodoCommentReplyPage,
+      '[TodoCommentService] Invalid replies',
     );
 
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = todoCommentRepliesResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid replies: ${parsed.error.message}`);
-    }
-
-    return ok(toTodoCommentReplyPage(parsed.data));
-  };
-
-  createCommentChain = async (
-    todoId: number,
-    input: CreateTodoCommentChainInput,
-  ): Promise<Result<TodoCommentChain, ApiError>> => {
-    const response = await this.#httpClient.post(`v1/todos/${todoId}/comments`, input);
-
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = todoCommentChainResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid comment chain: ${parsed.error.message}`);
-    }
-
-    return ok(toTodoCommentChain(todoId, parsed.data));
-  };
-
-  updateComment = async (
-    todoId: number,
-    commentId: string,
-    input: UpdateTodoCommentInput,
-  ): Promise<Result<TodoComment, ApiError>> => {
-    const response = await this.#httpClient.patch(
-      `v1/todos/${todoId}/comments/${commentId}`,
-      input,
+  createCommentChain = async (todoId: number, input: CreateTodoCommentChainInput) =>
+    parseApiResponse(
+      await this.#httpClient.post(`v1/todos/${todoId}/comments`, input),
+      todoCommentChainResponseSchema,
+      (dto) => toTodoCommentChain(todoId, dto),
+      '[TodoCommentService] Invalid comment chain',
     );
 
-    if (!response.ok) {
-      return response;
-    }
+  updateComment = async (todoId: number, commentId: string, input: UpdateTodoCommentInput) =>
+    parseApiResponse(
+      await this.#httpClient.patch(`v1/todos/${todoId}/comments/${commentId}`, input),
+      todoCommentMutationResponseSchema,
+      (dto) => toMutatedComment(todoId, dto),
+      '[TodoCommentService] Invalid updated comment',
+    );
 
-    const parsed = todoCommentMutationResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid updated comment: ${parsed.error.message}`);
-    }
+  deleteComment = async (todoId: number, commentId: string) =>
+    parseApiResponse(
+      await this.#httpClient.delete(`v1/todos/${todoId}/comments/${commentId}`),
+      deleteTodoCommentResponseSchema,
+      toDeletedCommentId,
+      '[TodoCommentService] Invalid deleted comment',
+    );
 
-    return ok(toMutatedComment(todoId, parsed.data));
-  };
-
-  deleteComment = async (todoId: number, commentId: string): Promise<Result<string, ApiError>> => {
-    const response = await this.#httpClient.delete(`v1/todos/${todoId}/comments/${commentId}`);
-
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = deleteTodoCommentResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid deleted comment: ${parsed.error.message}`);
-    }
-
-    return ok(toDeletedCommentId(parsed.data));
-  };
-
-  setCommentLike = async (
-    todoId: number,
-    commentId: string,
-    isLiked: boolean,
-  ): Promise<Result<TodoCommentLikeResult, ApiError>> => {
+  setCommentLike = async (todoId: number, commentId: string, isLiked: boolean) => {
     const path = `v1/todos/${todoId}/comments/${commentId}/likes`;
-    const response = isLiked
-      ? await this.#httpClient.put(path)
-      : await this.#httpClient.delete(path);
 
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = todoCommentLikeResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid comment like: ${parsed.error.message}`);
-    }
-
-    return ok(toTodoCommentLikeResult(parsed.data));
+    return parseApiResponse(
+      isLiked ? await this.#httpClient.put(path) : await this.#httpClient.delete(path),
+      todoCommentLikeResponseSchema,
+      toTodoCommentLikeResult,
+      '[TodoCommentService] Invalid comment like',
+    );
   };
 }

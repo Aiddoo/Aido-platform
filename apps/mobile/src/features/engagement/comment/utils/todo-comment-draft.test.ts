@@ -1,5 +1,10 @@
+import { toEpochMs, toInstant } from '@src/shared/date/instant';
+
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
-import { createTodoCommentDraftKey } from './todo-comment-draft';
+import {
+  createTodoCommentDraftKey,
+  getTodoCommentDraftSourceUpdatedAt,
+} from './todo-comment-draft';
 
 describe('createTodoCommentDraftKey', () => {
   const target = createTodoComment({ id: 'comment-9' });
@@ -36,5 +41,20 @@ describe('createTodoCommentDraftKey', () => {
 
     // Then
     expect(switched.id).toBe(first.id);
+  });
+
+  it('수정 초안은 서버 수정 시각보다 오래되면 버릴 수 있게 원본 시각을 준다', () => {
+    // Given
+    const editedAt = toInstant('2026-09-01T00:00:00.000Z');
+    const edited = createTodoComment({ editedAt });
+
+    // When
+    const sourceUpdatedAt = [
+      getTodoCommentDraftSourceUpdatedAt({ type: 'edit', target: edited }),
+      getTodoCommentDraftSourceUpdatedAt({ type: 'reply', target: edited }),
+    ];
+
+    // Then
+    expect(sourceUpdatedAt).toEqual([toEpochMs(editedAt), undefined]);
   });
 });

@@ -1,97 +1,20 @@
 import { uniqBy } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
-import { z } from 'zod';
 
-import type { TodoCommentComposerMode } from './todo-comment-composer.model';
-
-const todoCommentAuthorSchema = z.object({
-  id: z.string(),
-  name: z.string().nullable(),
-  userTag: z.string().nullable(),
-  profileImage: z.string().nullable(),
-  isTodoOwner: z.boolean(),
-});
-export type TodoCommentAuthor = z.infer<typeof todoCommentAuthorSchema>;
-
-export const todoCommentSchema = z.object({
-  id: z.string(),
-  todoId: z.int().positive(),
-  threadCommentId: z.string().nullable(),
-  replyTo: z.object({ commentId: z.string(), authorName: z.string().nullable() }).nullable(),
-  author: todoCommentAuthorSchema.nullable(),
-  content: z.string().nullable(),
-  likeCount: z.int().nonnegative(),
-  replyCount: z.int().nonnegative(),
-  isDeleted: z.boolean(),
-  isAuthorBlocked: z.boolean(),
-  isEdited: z.boolean(),
-  viewer: z.object({
-    isLiked: z.boolean(),
-    canEdit: z.boolean(),
-    canDelete: z.boolean(),
-    canReply: z.boolean(),
-    canReport: z.boolean(),
-    canBlock: z.boolean(),
-  }),
-  createdAt: z.date(),
-  editedAt: z.date().nullable(),
-});
-export type TodoComment = z.infer<typeof todoCommentSchema>;
-
-const todoCommentThreadSchema = z.object({
-  comment: todoCommentSchema,
-  previewReply: todoCommentSchema.nullable(),
-  replySummary: z.object({
-    totalCount: z.int().nonnegative(),
-    hiddenCount: z.int().nonnegative(),
-    participantAuthors: z.array(todoCommentAuthorSchema),
-  }),
-});
-export type TodoCommentThread = z.infer<typeof todoCommentThreadSchema>;
-
-const todoCommentThreadAnchorSchema = z.object({
-  threadCommentId: z.string(),
-  replyId: z.string().nullable(),
-});
-export type TodoCommentThreadAnchor = z.infer<typeof todoCommentThreadAnchorSchema>;
-
-const todoCommentPaginationSchema = z.object({
-  previousCursor: z.string().nullable(),
-  nextCursor: z.string().nullable(),
-  hasPrevious: z.boolean(),
-  hasNext: z.boolean(),
-  size: z.int().positive(),
-});
-
-const todoCommentThreadPageSchema = z.object({
-  items: z.array(todoCommentThreadSchema),
-  pagination: todoCommentPaginationSchema,
-  anchor: todoCommentThreadAnchorSchema.nullable(),
-});
-export type TodoCommentThreadPage = z.infer<typeof todoCommentThreadPageSchema>;
-
-const todoCommentReplyPageSchema = z.object({
-  items: z.array(todoCommentSchema),
-  pagination: todoCommentPaginationSchema,
-});
-export type TodoCommentReplyPage = z.infer<typeof todoCommentReplyPageSchema>;
-
-const todoCommentChainSchema = z.object({ comments: z.array(todoCommentSchema) });
-export type TodoCommentChain = z.infer<typeof todoCommentChainSchema>;
-
-const todoCommentLikeResultSchema = z.object({
-  commentId: z.string(),
-  isLiked: z.boolean(),
-  likeCount: z.int().nonnegative(),
-});
-export type TodoCommentLikeResult = z.infer<typeof todoCommentLikeResultSchema>;
+import type { TodoCommentComposerMode } from '../schemas/todo-comment-form.schema';
+import type {
+  TodoComment,
+  TodoCommentLikeResult,
+  TodoCommentReplyPage,
+  TodoCommentThread,
+  TodoCommentThreadPage,
+} from '../schemas/todo-comment.schema';
 
 /** 사용자가 직접 펼쳤는지(user), 답글을 올려 앱이 펼쳤는지(auto) */
-const threadExpansionSchema = z.object({
-  isExpanded: z.boolean(),
-  source: z.enum(['user', 'auto']),
-});
-export type ThreadExpansion = z.infer<typeof threadExpansionSchema>;
+export interface ThreadExpansion {
+  isExpanded: boolean;
+  source: 'user' | 'auto';
+}
 
 type ReplyFooter = 'viewMore' | 'hide' | 'none';
 

@@ -1,5 +1,7 @@
 import type {
   DeleteTodoCommentResponse,
+  GetTodoCommentRepliesQuery,
+  GetTodoCommentThreadsQuery,
   TodoComment as TodoCommentV1DTO,
   TodoCommentChainResponse,
   TodoCommentLikeResponse,
@@ -9,7 +11,10 @@ import type {
   TodoCommentThreadsResponse,
   TodoCommentV2,
 } from '@aido/api';
+import type { TodoCommentSort } from '@aido/api/vocabulary';
+import { toInstant } from '@src/shared/date/instant';
 
+import { TODO_COMMENT_PAGE_SIZE } from '../constants/todo-comment.constants';
 import type {
   TodoComment,
   TodoCommentChain,
@@ -17,13 +22,14 @@ import type {
   TodoCommentReplyPage,
   TodoCommentThread,
   TodoCommentThreadPage,
-} from '../domains/todo-comment.model';
+} from '../schemas/todo-comment.schema';
+import type { TodoCommentPageParam } from '../utils/todo-comment-cache-pages';
 
 function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {
     ...dto,
-    createdAt: new Date(dto.createdAt),
-    editedAt: dto.editedAt == null ? null : new Date(dto.editedAt),
+    createdAt: toInstant(dto.createdAt),
+    editedAt: dto.editedAt == null ? null : toInstant(dto.editedAt),
   };
 }
 
@@ -46,8 +52,8 @@ export function toTodoCommentFromV1(todoId: number, dto: TodoCommentV1DTO): Todo
       canReport: dto.viewer.canReport ?? false,
       canBlock: dto.viewer.canBlock ?? false,
     },
-    createdAt: new Date(dto.createdAt),
-    editedAt: dto.editedAt == null ? null : new Date(dto.editedAt),
+    createdAt: toInstant(dto.createdAt),
+    editedAt: dto.editedAt == null ? null : toInstant(dto.editedAt),
   };
 }
 
@@ -88,4 +94,31 @@ export function toTodoCommentLikeResult(dto: TodoCommentLikeResponse): TodoComme
 
 export function toDeletedCommentId(dto: DeleteTodoCommentResponse): string {
   return dto.commentId;
+}
+
+/** 첫 페이지만 anchor로 위치를 찾고, 이어지는 페이지는 서버가 준 cursor를 그대로 보낸다 */
+export function toThreadsQuery(
+  pageParam: TodoCommentPageParam,
+  { sort, anchorCommentId }: { sort: TodoCommentSort; anchorCommentId: string | null },
+): GetTodoCommentThreadsQuery {
+  const common = { sort, size: TODO_COMMENT_PAGE_SIZE.THREADS };
+
+  if (pageParam != null) {
+    return { ...common, cursor: pageParam };
+  }
+
+  return anchorCommentId == null ? common : { ...common, anchorCommentId };
+}
+
+export function toRepliesQuery(
+  pageParam: TodoCommentPageParam,
+  { aroundReplyId }: { aroundReplyId: string | null },
+): GetTodoCommentRepliesQuery {
+  const common = { size: TODO_COMMENT_PAGE_SIZE.REPLIES };
+
+  if (pageParam != null) {
+    return { ...common, cursor: pageParam };
+  }
+
+  return aroundReplyId == null ? common : { ...common, aroundReplyId };
 }

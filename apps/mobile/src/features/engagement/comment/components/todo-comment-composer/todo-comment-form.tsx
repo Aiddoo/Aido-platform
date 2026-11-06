@@ -31,19 +31,27 @@ import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events'
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
 import {
   type PreparedTodoCommentSubmission,
-  type TodoCommentComposerForm,
-  type TodoCommentComposerMode,
-  TodoCommentComposer,
+  TodoCommentComposerPolicy,
 } from '../../domains/todo-comment-composer.model';
-import type { TodoCommentAuthor } from '../../domains/todo-comment.model';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
 import {
   useCreateTodoCommentChainMutationOptions,
   useUpdateTodoCommentMutationOptions,
 } from '../../queries/todo-comment.mutations';
+import {
+  type TodoCommentFormValues,
+  type TodoCommentComposerMode,
+  NEW_TODO_COMMENT_FORM_VALUES,
+  toReplyFormValues,
+  toEditFormValues,
+} from '../../schemas/todo-comment-form.schema';
+import type { TodoCommentAuthor } from '../../schemas/todo-comment.schema';
 import { getFocusedCommentFieldIndexAfterRemoval } from '../../utils/comment-form-fields';
 import { getCommentFormMaxHeight } from '../../utils/comment-form-layout';
-import { createTodoCommentDraftKey } from '../../utils/todo-comment-draft';
+import {
+  createTodoCommentDraftKey,
+  getTodoCommentDraftSourceUpdatedAt,
+} from '../../utils/todo-comment-draft';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { useExpandThread } from '../todo-comment-expansion';
 
@@ -75,14 +83,14 @@ export function TodoCommentForm({
 }: TodoCommentFormProps) {
   const { todoId } = useTodoScreenParams();
   const { height: viewportHeight } = useWindowDimensions();
-  const { control, setFocus, getValues, reset } = useFormContext<TodoCommentComposerForm>();
+  const { control, setFocus, getValues, reset } = useFormContext<TodoCommentFormValues>();
   const mode = useWatch({ control, name: 'mode' });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const isSubmitting = useIsTodoCommentSubmitting();
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
   const submit = useTodoCommentSubmit({ userId });
-  const targetId = TodoCommentComposer.getComposerTarget(mode)?.id;
+  const targetId = TodoCommentComposerPolicy.getComposerTarget(mode)?.id;
 
   const focusFieldAfterLayout = (index: number) => {
     if (pendingFocusFrameRef.current != null) {
@@ -106,8 +114,8 @@ export function TodoCommentForm({
 
   useEffect(() => {
     const subscription = KeyboardEvents.addListener('keyboardDidHide', () => {
-      if (TodoCommentComposer.shouldCloseOnKeyboardHide(getValues())) {
-        reset(TodoCommentComposer.new());
+      if (TodoCommentComposerPolicy.shouldCloseOnKeyboardHide(getValues())) {
+        reset(NEW_TODO_COMMENT_FORM_VALUES);
       }
     });
     return () => subscription.remove();
@@ -169,7 +177,7 @@ export function TodoCommentForm({
                 )}
               </HStack>
             ))}
-            {TodoCommentComposer.canChain(mode, fields.length) && (
+            {TodoCommentComposerPolicy.canChain(mode, fields.length) && (
               <AppendButton
                 isSubmitting={isSubmitting}
                 onPress={() => {
@@ -191,14 +199,14 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   const logger = useLogger();
   const draftService = useDraftService();
   const expandThread = useExpandThread();
-  const { handleSubmit, reset } = useFormContext<TodoCommentComposerForm>();
+  const { handleSubmit, reset } = useFormContext<TodoCommentFormValues>();
   const createCommentChain = useMutation(useCreateTodoCommentChainMutationOptions({ todoId }));
   const updateComment = useMutation(useUpdateTodoCommentMutationOptions({ todoId }));
   const preparedSubmissionRef = useRef<PreparedTodoCommentSubmission | null>(null);
 
   const finish = (mode: TodoCommentComposerMode) => {
     draftService.remove(createTodoCommentDraftKey({ userId, todoId, mode }));
-    reset(TodoCommentComposer.new());
+    reset(NEW_TODO_COMMENT_FORM_VALUES);
     KeyboardController.dismiss().catch((error) =>
       logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
         error: getErrorMessage(error),
@@ -207,7 +215,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   };
 
   return handleSubmit(async ({ mode, items }) => {
-    const contents = TodoCommentComposer.getTrimmedContents(items);
+    const contents = TodoCommentComposerPolicy.getTrimmedContents(items);
     if (contents == null) {
       return;
     }
@@ -218,17 +226,17 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
           await updateComment.mutateAsync({ target, input: { content: contents[0] } });
         })
         .with({ type: 'new' }, { type: 'reply' }, async (writeMode) => {
-          const submission = TodoCommentComposer.prepareSubmission({
+          const submission = TodoCommentComposerPolicy.prepareSubmission({
             previousSubmission: preparedSubmissionRef.current,
             todoId,
-            parentId: TodoCommentComposer.getReplyParentId(writeMode),
+            parentId: TodoCommentComposerPolicy.getReplyParentId(writeMode),
             contents,
             createClientRequestId: Crypto.randomUUID,
           });
           preparedSubmissionRef.current = submission;
           const chain = await createCommentChain.mutateAsync({
             input: submission.input,
-            target: TodoCommentComposer.getComposerTarget(writeMode),
+            target: TodoCommentComposerPolicy.getComposerTarget(writeMode),
           });
           preparedSubmissionRef.current = null;
           const threadCommentId = chain.comments[0]?.threadCommentId;
@@ -259,17 +267,17 @@ function ComposerDraft({ userId, mode }: { userId: string; mode: TodoCommentComp
   const { todoId } = useTodoScreenParams();
   const { t } = useTranslation('todoComment');
   const toast = useAppToast();
-  const { subscribe, setValue } = useFormContext<TodoCommentComposerForm>();
+  const { subscribe, setValue } = useFormContext<TodoCommentFormValues>();
   const draftKey = createTodoCommentDraftKey({ userId, todoId, mode });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(draftKey, {
-    sourceUpdatedAt: TodoCommentComposer.getDraftSourceUpdatedAt(mode),
+    sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(mode),
     onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
   });
   const [initialValues] = useState(() =>
     match(mode)
-      .with({ type: 'new' }, () => TodoCommentComposer.new())
-      .with({ type: 'reply' }, ({ target }) => TodoCommentComposer.reply(target))
-      .with({ type: 'edit' }, ({ target }) => TodoCommentComposer.edit(target))
+      .with({ type: 'new' }, () => NEW_TODO_COMMENT_FORM_VALUES)
+      .with({ type: 'reply' }, ({ target }) => toReplyFormValues(target))
+      .with({ type: 'edit' }, ({ target }) => toEditFormValues(target))
       .exhaustive(),
   );
 
@@ -302,7 +310,7 @@ function TargetBanner({
   isSubmitting: boolean;
 }) {
   const { t } = useTranslation('todoComment');
-  const { reset } = useFormContext<TodoCommentComposerForm>();
+  const { reset } = useFormContext<TodoCommentFormValues>();
 
   if (mode.type === 'new') {
     return null;
@@ -333,7 +341,7 @@ function TargetBanner({
         isDisabled={isSubmitting}
         accessibilityLabel={t('actions.closeComposer')}
         onPress={() => {
-          reset(TodoCommentComposer.new());
+          reset(NEW_TODO_COMMENT_FORM_VALUES);
           KeyboardController.dismiss().catch(() => undefined);
         }}
       >
@@ -361,7 +369,7 @@ function CommentField({
   onFocus: () => void;
 }) {
   const { t } = useTranslation('todoComment');
-  const { control } = useFormContext<TodoCommentComposerForm>();
+  const { control } = useFormContext<TodoCommentFormValues>();
 
   return (
     <FormField control={control} name={name}>
@@ -424,7 +432,7 @@ function RemoveFieldButton({
 /** 쓴 글이 있을 때만 이어 쓰기를 보여 작성 바가 평소에는 한 줄로 남는다 */
 function AppendButton({ isSubmitting, onPress }: { isSubmitting: boolean; onPress: () => void }) {
   const { t } = useTranslation('todoComment');
-  const { control } = useFormContext<TodoCommentComposerForm>();
+  const { control } = useFormContext<TodoCommentFormValues>();
   const { isValid } = useFormState({ control, name: 'items' });
   const hasContent = useWatch({ control, name: 'items', compute: hasEveryContent });
 
@@ -445,7 +453,7 @@ function AppendButton({ isSubmitting, onPress }: { isSubmitting: boolean; onPres
   );
 }
 
-function hasEveryContent(items: TodoCommentComposerForm['items']) {
+function hasEveryContent(items: TodoCommentFormValues['items']) {
   return items.every((item) => item.content.trim().length > 0);
 }
 
@@ -459,7 +467,7 @@ function SubmitButton({
   onSubmit: () => Promise<void>;
 }) {
   const { t } = useTranslation('todoComment');
-  const { control } = useFormContext<TodoCommentComposerForm>();
+  const { control } = useFormContext<TodoCommentFormValues>();
   const hasContent = useWatch({
     control,
     name: 'items',

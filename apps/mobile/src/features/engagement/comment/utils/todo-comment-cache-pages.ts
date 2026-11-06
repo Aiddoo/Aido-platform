@@ -1,13 +1,13 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 
-import {
-  type TodoComment,
-  TodoCommentPolicy,
-  type TodoCommentReplyPage,
-  type TodoCommentThread,
-  type TodoCommentThreadPage,
-} from '../domains/todo-comment.model';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import type {
+  TodoComment,
+  TodoCommentReplyPage,
+  TodoCommentThread,
+  TodoCommentThreadPage,
+} from '../schemas/todo-comment.schema';
 
 /** null은 첫 페이지(또는 anchor 페이지), 문자열은 서버가 방향을 담아 준 cursor다 */
 export type TodoCommentPageParam = string | null;

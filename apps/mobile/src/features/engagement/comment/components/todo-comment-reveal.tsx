@@ -13,7 +13,7 @@ import {
 import type { View } from 'react-native';
 import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 
-import type { TodoCommentThread } from '../domains/todo-comment.model';
+import type { TodoCommentThread } from '../schemas/todo-comment.schema';
 
 const REVEAL_MARGIN = 16;
 

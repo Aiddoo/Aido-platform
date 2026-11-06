@@ -1,5 +1,10 @@
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
-import { TodoCommentComposer } from './todo-comment-composer.model';
+import {
+  NEW_TODO_COMMENT_FORM_VALUES,
+  toReplyFormValues,
+  toEditFormValues,
+} from './../schemas/todo-comment-form.schema';
+import { TodoCommentComposerPolicy } from './todo-comment-composer.model';
 
 describe('TodoCommentComposer', () => {
   it('답글은 빈 입력으로, 수정은 원래 글로 시작한다', () => {
@@ -7,8 +12,8 @@ describe('TodoCommentComposer', () => {
     const target = createTodoComment({ content: '원래 글' });
 
     // When
-    const reply = TodoCommentComposer.reply(target);
-    const edit = TodoCommentComposer.edit(target);
+    const reply = toReplyFormValues(target);
+    const edit = toEditFormValues(target);
 
     // Then
     expect(reply.items).toEqual([{ content: '' }]);
@@ -21,9 +26,9 @@ describe('TodoCommentComposer', () => {
 
     // When
     const result = [
-      TodoCommentComposer.canChain({ type: 'edit', target }, 1),
-      TodoCommentComposer.canChain({ type: 'reply', target }, 4),
-      TodoCommentComposer.canChain({ type: 'new' }, 5),
+      TodoCommentComposerPolicy.canChain({ type: 'edit', target }, 1),
+      TodoCommentComposerPolicy.canChain({ type: 'reply', target }, 4),
+      TodoCommentComposerPolicy.canChain({ type: 'new' }, 5),
     ];
 
     // Then
@@ -36,9 +41,9 @@ describe('TodoCommentComposer', () => {
 
     // When
     const parentIds = [
-      TodoCommentComposer.getReplyParentId({ type: 'reply', target }),
-      TodoCommentComposer.getReplyParentId({ type: 'new' }),
-      TodoCommentComposer.getReplyParentId({ type: 'edit', target }),
+      TodoCommentComposerPolicy.getReplyParentId({ type: 'reply', target }),
+      TodoCommentComposerPolicy.getReplyParentId({ type: 'new' }),
+      TodoCommentComposerPolicy.getReplyParentId({ type: 'edit', target }),
     ];
 
     // Then
@@ -48,7 +53,7 @@ describe('TodoCommentComposer', () => {
   it('같은 글을 다시 보내면 처음 발급한 멱등 키를 다시 쓴다', () => {
     // Given
     const createId = jest.fn().mockReturnValueOnce('id-1').mockReturnValueOnce('id-2');
-    const first = TodoCommentComposer.prepareSubmission({
+    const first = TodoCommentComposerPolicy.prepareSubmission({
       previousSubmission: null,
       todoId: 1,
       parentId: null,
@@ -57,14 +62,14 @@ describe('TodoCommentComposer', () => {
     });
 
     // When
-    const retried = TodoCommentComposer.prepareSubmission({
+    const retried = TodoCommentComposerPolicy.prepareSubmission({
       previousSubmission: first,
       todoId: 1,
       parentId: null,
       contents: ['안녕'],
       createClientRequestId: createId,
     });
-    const changed = TodoCommentComposer.prepareSubmission({
+    const changed = TodoCommentComposerPolicy.prepareSubmission({
       previousSubmission: first,
       todoId: 1,
       parentId: null,
@@ -79,7 +84,7 @@ describe('TodoCommentComposer', () => {
 
   it('보낼 글은 앞뒤 공백을 지운다', () => {
     // When
-    const contents = TodoCommentComposer.getTrimmedContents([
+    const contents = TodoCommentComposerPolicy.getTrimmedContents([
       { content: '  하나 ' },
       { content: '둘\n' },
     ]);
@@ -88,33 +93,18 @@ describe('TodoCommentComposer', () => {
     expect(contents).toEqual(['하나', '둘']);
   });
 
-  it('수정 초안은 서버 수정 시각보다 오래되면 버릴 수 있게 원본 시각을 준다', () => {
-    // Given
-    const editedAt = new Date('2026-09-01T00:00:00.000Z');
-    const target = createTodoComment({ editedAt });
-
-    // When
-    const sourceUpdatedAt = [
-      TodoCommentComposer.getDraftSourceUpdatedAt({ type: 'edit', target }),
-      TodoCommentComposer.getDraftSourceUpdatedAt({ type: 'reply', target }),
-    ];
-
-    // Then
-    expect(sourceUpdatedAt).toEqual([editedAt.getTime(), undefined]);
-  });
-
   it('답글·수정을 비운 채 키보드를 내리면 작성기를 닫고 쓴 글이 있으면 남긴다', () => {
     // Given
     const target = createTodoComment();
 
     // When
     const result = [
-      TodoCommentComposer.shouldCloseOnKeyboardHide(TodoCommentComposer.reply(target)),
-      TodoCommentComposer.shouldCloseOnKeyboardHide({
+      TodoCommentComposerPolicy.shouldCloseOnKeyboardHide(toReplyFormValues(target)),
+      TodoCommentComposerPolicy.shouldCloseOnKeyboardHide({
         mode: { type: 'reply', target },
         items: [{ content: '쓰던 글' }],
       }),
-      TodoCommentComposer.shouldCloseOnKeyboardHide(TodoCommentComposer.new()),
+      TodoCommentComposerPolicy.shouldCloseOnKeyboardHide(NEW_TODO_COMMENT_FORM_VALUES),
     ];
 
     // Then

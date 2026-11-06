@@ -4,6 +4,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
+import { toDate } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -47,16 +48,18 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import {
-  type TodoCommentComposerForm,
-  TodoCommentComposer,
-} from '../domains/todo-comment-composer.model';
-import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useCommentDoubleTap } from '../hooks/use-comment-double-tap';
 import {
   useDeleteTodoCommentMutationOptions,
   useSetTodoCommentLikeMutationOptions,
 } from '../queries/todo-comment.mutations';
+import {
+  type TodoCommentFormValues,
+  toReplyFormValues,
+  toEditFormValues,
+} from '../schemas/todo-comment-form.schema';
+import type { TodoComment } from '../schemas/todo-comment.schema';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {
   popTodoCommentLikeButton,
@@ -145,7 +148,7 @@ function useCommentTimeLabel(comment: TodoComment) {
   const dateFormatContext = useDateFormatContext();
 
   return compact([
-    formatRelativeTimeLabel(comment.createdAt, now, dateFormatContext),
+    formatRelativeTimeLabel(toDate(comment.createdAt), now, dateFormatContext),
     comment.isEdited ? t('list.edited') : null,
   ]).join(' · ');
 }
@@ -338,7 +341,7 @@ function ReplyButton({
   const { t } = useTranslation('todoComment');
   const { todoId } = useTodoScreenParams();
   const { trackEvent } = useTrack();
-  const { reset } = useFormContext<TodoCommentComposerForm>();
+  const { reset } = useFormContext<TodoCommentFormValues>();
   const { reveal } = useTodoCommentReveal();
 
   if (!TodoCommentPolicy.canReplyToComment(comment)) {
@@ -354,7 +357,7 @@ function ReplyButton({
       })}
       testID={`todo-comment-reply-${comment.id}`}
       onPress={() => {
-        reset(TodoCommentComposer.reply(comment));
+        reset(toReplyFormValues(comment));
         trackEvent('todo_comment_reply_started', {
           todo_id: todoId,
           target: TodoCommentPolicy.isReply(comment) ? 'reply' : 'comment',
@@ -385,7 +388,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const logger = useLogger();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
-  const { reset } = useFormContext<TodoCommentComposerForm>();
+  const { reset } = useFormContext<TodoCommentFormValues>();
   const { reveal } = useTodoCommentReveal();
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const author = comment.author;
@@ -463,7 +466,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
               title={t('actions.edit')}
               testID="todo-comment-edit"
               onPress={() => {
-                reset(TodoCommentComposer.edit(comment));
+                reset(toEditFormValues(comment));
                 reveal(rowRef);
               }}
             />

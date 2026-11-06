@@ -2,7 +2,7 @@ import { invalidateTodoSummaries } from '@src/features/planning/todo/queries/tod
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
-import type { TodoComment } from '../domains/todo-comment.model';
+import type { TodoComment } from '../schemas/todo-comment.schema';
 import {
   addRepliesToThreadPages,
   appendRepliesToReplyPages,

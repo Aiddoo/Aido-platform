@@ -76,9 +76,7 @@ describe('TodoCommentService', () => {
 
     // Then
     expect(httpClient.get).toHaveBeenCalledWith('v2/todos/42/comments', { params: query, signal });
-    expect(result.ok && result.value.items[0]?.comment.createdAt).toEqual(
-      new Date('2026-08-26T00:00:00.000Z'),
-    );
+    expect(result.ok && result.value.items[0]?.comment.createdAt).toBe('2026-08-26T00:00:00.000Z');
   });
 
   test('답글은 묶음 머리의 replies endpoint에서 cursor를 그대로 보낸다', async () => {

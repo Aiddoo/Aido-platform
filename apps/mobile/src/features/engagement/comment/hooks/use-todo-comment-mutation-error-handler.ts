@@ -7,8 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
-import type { TodoComment } from '../domains/todo-comment.model';
 import { removeTodoCommentFromCaches } from '../queries/todo-comment-cache';
+import type { TodoComment } from '../schemas/todo-comment.schema';
 
 type TodoCommentMutationOperation = 'create' | 'update' | 'delete' | 'like';
 

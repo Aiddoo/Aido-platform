@@ -1,24 +1,23 @@
-import { TODO_COMMENT_LIMITS } from '@aido/api';
+import { toEpochMs } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
-import { z } from 'zod';
+import { match } from 'ts-pattern';
 
-import {
-  type TodoCommentComposerMode,
-  TodoCommentComposer,
-} from '../domains/todo-comment-composer.model';
-
-// 길이 제한은 제출 시 작성기 스키마가 검사한다. 초안은 쓰던 글을 그대로 돌려준다.
-const todoCommentDraftSchema = z.object({
-  items: z
-    .array(z.object({ content: z.string() }))
-    .min(1)
-    .max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
-});
+import { todoCommentDraftSchema } from '../schemas/todo-comment-draft.schema';
+import type { TodoCommentComposerMode } from '../schemas/todo-comment-form.schema';
 
 interface CreateTodoCommentDraftKeyInput {
   userId: string;
   todoId: number;
   mode: TodoCommentComposerMode;
+}
+
+/** 초안은 새 댓글·답글은 할 일마다, 수정은 수정하는 글마다 나눈다 */
+function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
+  return match(mode)
+    .with({ type: 'edit' }, ({ target }) => [todoId, 'edit', target.id] as const)
+    .with({ type: 'reply' }, () => [todoId, 'reply'] as const)
+    .with({ type: 'new' }, () => [todoId, 'new'] as const)
+    .exhaustive();
 }
 
 /** 답글은 대상을 바꿔도 같은 글을 이어 쓰므로 대상 글을 키에 넣지 않는다 */
@@ -30,7 +29,13 @@ export function createTodoCommentDraftKey({
   return createDraftKey({
     ownerId: userId,
     scope: 'todo-comment',
-    target: TodoCommentComposer.getDraftTarget(todoId, mode),
+    target: getDraftTarget(todoId, mode),
     schema: todoCommentDraftSchema,
   });
+}
+
+export function getTodoCommentDraftSourceUpdatedAt(mode: TodoCommentComposerMode) {
+  return match(mode)
+    .with({ type: 'edit' }, ({ target }) => toEpochMs(target.editedAt ?? target.createdAt))
+    .otherwise(() => undefined);
 }
