@@ -11,7 +11,7 @@ const WHATS_NEW_CARD_IDS = ['friend_invite', 'voice_say', 'voice_plan', 'voice_f
 
 export type WhatsNewCardId = (typeof WHATS_NEW_CARD_IDS)[number];
 
-export type WhatsNewRoute = '/friends/invite' | '/todo/new?voiceHint=1';
+type WhatsNewRoute = '/friends/invite' | '/todo/new?voiceHint=1';
 
 export interface WhatsNewCard {
   id: WhatsNewCardId;

@@ -72,7 +72,7 @@ function hasReachedWindowLimit(state: Pick<StoreReviewState, 'requestedAt'>, now
 }
 
 /** 지금 OS 리뷰 창을 요청해도 되는지. 끝낸 날, 365일 한도, 120일 쿨다운 순으로 막는다 */
-export function evaluate(state: StoreReviewState, now: Instant): StoreReviewEligibility {
+function evaluate(state: StoreReviewState, now: Instant): StoreReviewEligibility {
   if (!hasEnoughActiveDays(state)) {
     return 'not_engaged';
   }
@@ -86,7 +86,7 @@ export function evaluate(state: StoreReviewState, now: Instant): StoreReviewElig
 }
 
 /** 축하 화면의 애니메이션이 끝난 뒤 시스템 창이 뜨도록 순간마다 기다릴 시간 */
-export function getSettleDelayMs(moment: StoreReviewMoment) {
+function getSettleDelayMs(moment: StoreReviewMoment) {
   return match(moment)
     .with('all_todos_done', () => 1_200)
     .with('paw_print_celebration', () => 1_500)

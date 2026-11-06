@@ -5,5 +5,4 @@ import { z } from 'zod';
 export const inquiryFormSchema = createInquirySchema.extend({
   content: z.string().trim().pipe(createInquirySchema.shape.content),
 });
-export type InquiryFormValues = z.input<typeof inquiryFormSchema>;
 export type InquiryRequestValues = z.output<typeof inquiryFormSchema>;

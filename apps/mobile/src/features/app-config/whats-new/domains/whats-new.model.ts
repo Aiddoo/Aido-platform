@@ -2,7 +2,7 @@ import { featureDiscoveryMinAppVersionSchema } from '@aido/api';
 import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { z } from 'zod';
 
-export const whatsNewConfigSchema = z.discriminatedUnion('enabled', [
+const whatsNewConfigSchema = z.discriminatedUnion('enabled', [
   z.object({ enabled: z.literal(false) }),
   z.object({
     enabled: z.literal(true),

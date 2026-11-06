@@ -7,15 +7,14 @@ import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 /** 서버 계약에서 앱이 쓰는 칸을 그대로 두고 시각만 Date로 바꾸지 않고 Instant로 둔다 */
-export const weeklyAchievementSchema = weeklyAchievementContractSchema.extend({
+const weeklyAchievementSchema = weeklyAchievementContractSchema.extend({
   achievedAt: instantSchema,
 });
 export type WeeklyAchievement = z.infer<typeof weeklyAchievementSchema>;
 
-export const achievementSummarySchema = weeklyAchievementSummarySchema;
-export type AchievementSummary = z.infer<typeof achievementSummarySchema>;
+const achievementSummarySchema = weeklyAchievementSummarySchema;
 
-export const weeklyAchievementsResultSchema = weeklyAchievementListResponseSchema.shape.pagination
+const weeklyAchievementsResultSchema = weeklyAchievementListResponseSchema.shape.pagination
   .pick({ nextCursor: true, hasNext: true })
   .extend({
     items: z.array(weeklyAchievementSchema),

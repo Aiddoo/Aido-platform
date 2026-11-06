@@ -14,7 +14,7 @@ export interface SessionQueryCache {
   clearQueries(): void;
 }
 
-export interface SessionPersistedQueryCache {
+interface SessionPersistedQueryCache {
   clear(): void;
 }
 

@@ -90,7 +90,7 @@ function isSameWidgetNavigationCommand(
   );
 }
 
-export function getWidgetRoute(uri: string | null): Href | null {
+function getWidgetRoute(uri: string | null): Href | null {
   const destination = parseWidgetNavigationUri(uri);
   if (!destination) {
     return null;
@@ -108,7 +108,7 @@ export function getWidgetRoute(uri: string | null): Href | null {
 }
 
 /** Linking이 이미 표시한 목적지는 bootstrap에서 다시 이동하지 않는다. */
-export function isWidgetRouteCurrent(
+function isWidgetRouteCurrent(
   uri: string,
   pathname: string,
   { date, action, friendId }: { date?: string; action?: string; friendId?: string },

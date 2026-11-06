@@ -340,11 +340,11 @@ function findCommentInThread(thread: TodoCommentThread, commentId: string) {
   return [thread.comment, thread.previewReply].find((comment) => comment?.id === commentId) ?? null;
 }
 
-export type TodoCommentBackAction = 'blocked' | 'closeComposer' | 'native';
-export type TodoCommentHardwareBackAction = 'consume' | 'exit' | 'native';
+type TodoCommentBackAction = 'blocked' | 'closeComposer' | 'native';
+type TodoCommentHardwareBackAction = 'consume' | 'exit' | 'native';
 
 /** 작성기가 열려 있으면 먼저 닫고, 아니면 화면을 닫는다. 보내는 중에는 초안을 지키려고 막는다 */
-export function getBackAction({
+function getBackAction({
   mode,
   isSubmitting,
 }: {
@@ -359,7 +359,7 @@ export function getBackAction({
 }
 
 /** 화면이 처리하지 않은 뒤로가기는 pane이면 선택만 풀고, 화면이면 기본 뒤로가기에 맡긴다 */
-export function getHardwareBackAction({
+function getHardwareBackAction({
   isHandledByComment,
   canExit,
 }: {

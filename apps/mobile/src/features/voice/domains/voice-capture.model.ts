@@ -144,7 +144,7 @@ const RECOGNIZER_FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
   'unknown',
 ]);
 
-export function isRecognizerFailure(
+function isRecognizerFailure(
   state: VoiceCaptureState,
   code: SpeechErrorCode,
   isStopRequested: boolean,
@@ -363,7 +363,7 @@ function getQuickEndCount(
   return now - lastStartedAt < VOICE_RESTART_LOOP.windowMs ? quickEndCount + 1 : 0;
 }
 
-export function isRestartLooping(
+function isRestartLooping(
   link: Pick<VoiceRecognizerLink, 'lastStartedAt' | 'quickEndCount'>,
   now: number,
 ): boolean {
@@ -492,16 +492,12 @@ function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
 }
 
 /** 듣기를 끝낸 뒤의 상태로 결과를 나눈다. 글자가 있으면 정리로 가고 없으면 처음으로 돌아간다 */
-export function getCaptureOutcome(state: Pick<VoiceCaptureState, 'status'>): 'completed' | 'empty' {
+function getCaptureOutcome(state: Pick<VoiceCaptureState, 'status'>): 'completed' | 'empty' {
   return state.status === 'planning' ? 'completed' : 'empty';
 }
 
 /** 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다 */
-export function getRemainingCaptureMs(
-  state: VoiceCaptureState,
-  maxSeconds: number,
-  now: number,
-): number {
+function getRemainingCaptureMs(state: VoiceCaptureState, maxSeconds: number, now: number): number {
   return Math.max(0, maxSeconds * 1_000 - getElapsedMs(state, now));
 }
 

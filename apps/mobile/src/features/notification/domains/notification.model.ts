@@ -112,7 +112,7 @@ function findReceivedCheer(
   return { cheerId, senderId, senderName: notification.routing?.senderName ?? null };
 }
 
-export type NotificationResponseAction =
+type NotificationResponseAction =
   | { status: 'process' }
   | {
       status: 'defer';
@@ -120,7 +120,7 @@ export type NotificationResponseAction =
     };
 
 /** 푸시를 눌렀을 때 지금 처리할지 기다릴지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
-export function getResponseAction({
+function getResponseAction({
   authStatus,
   actionIdentifier,
   isNavigationReady = true,

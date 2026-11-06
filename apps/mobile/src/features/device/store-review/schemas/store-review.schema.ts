@@ -8,7 +8,7 @@ import {
   STORE_REVIEW_MOMENTS,
 } from '../constants/store-review.constants';
 
-export const storeReviewMomentSchema = z.enum(STORE_REVIEW_MOMENTS);
+const storeReviewMomentSchema = z.enum(STORE_REVIEW_MOMENTS);
 export type StoreReviewMoment = z.infer<typeof storeReviewMomentSchema>;
 
 /** 앱이 쓰는 모양. 요청 시각은 Date가 아니라 Instant 그대로 둔다 */
@@ -22,7 +22,6 @@ export type StoreReviewState = z.infer<typeof storeReviewStateSchema>;
 export const persistedStoreReviewStateSchema = storeReviewStateSchema.extend({
   version: z.literal(2),
 });
-export type PersistedStoreReviewState = z.infer<typeof persistedStoreReviewStateSchema>;
 
 /** 앱 안 확인 창을 쓰던 이전 저장 모양. 읽는 즉시 새 모양으로 옮겨 쓴다 */
 export const legacyStoreReviewStateSchema = z.object({

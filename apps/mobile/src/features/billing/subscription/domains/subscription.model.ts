@@ -53,7 +53,7 @@ interface SubscriptionManagementTarget {
  * 스토어의 구독 관리 주소. Android는 상품 id를 알면 그 구독 페이지를, 모르면 구독 목록을 연다.
  * 스토어가 없는 플랫폼은 null이다.
  */
-export function getManagementUrl(
+function getManagementUrl(
   platform: PlatformOSType,
   { productId, applicationId }: SubscriptionManagementTarget,
 ): string | null {
