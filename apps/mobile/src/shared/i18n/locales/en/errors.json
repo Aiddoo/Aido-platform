@@ -186,5 +186,6 @@
   "FRIEND_INVALID_TAG": "Invalid hashtag format",
   "FRIEND_EMPTY_TAG": "Please enter a hashtag",
   "FRIEND_SEARCH_QUERY_TOO_SHORT": "Please enter at least 2 characters",
-  "TODO_NUDGE_MESSAGE_TOO_LONG": "Your message can be up to 200 characters"
+  "TODO_NUDGE_MESSAGE_TOO_LONG": "Your message can be up to 200 characters",
+  "INVITE_INVALID_CODE": "Invite codes are 6 characters (letters and numbers)"
 }

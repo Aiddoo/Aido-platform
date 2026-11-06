@@ -3,7 +3,6 @@ import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
-import { InvitePreviewPolicy } from '@src/features/social/invite/domains/invite-preview.model';
 import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import type { InviteCode } from '@src/features/social/invite/domains/invite.model';
@@ -96,7 +95,7 @@ function InviteBenefitReceipt() {
 function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));
-  const inviterName = InvitePreviewPolicy.inviterName(preview, t('card.unnamedInviter'));
+  const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
 
   return (
     <ScallopedContainer>
@@ -106,7 +105,7 @@ function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }
 
           <VStack gap={2} className="flex-1">
             <Text size="t3" weight="bold" tone="brand">
-              {t('card.receipt.title', { count: InviteRewardPolicy.welcomePremiumDays() })}
+              {t('card.receipt.title', { count: InviteRewardPolicy.getWelcomePremiumDays() })}
             </Text>
 
             <Text size="b4" shade={7}>
@@ -134,8 +133,8 @@ function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }
         >
           {t('card.receipt.inviterReward', {
             name: inviterName,
-            activeDays: InvitedFriendPolicy.requiredActiveDays(),
-            days: InviteRewardPolicy.inviterPremiumDays(),
+            activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+            days: InviteRewardPolicy.getInviterPremiumDays(),
           })}
         </Text>
 
@@ -250,7 +249,7 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
     queries: [useGetInvitePreviewQueryOptions({ inviteCode }), useGetMeQueryOptions()],
   });
   const redeem = useMutation(useRedeemInviteMutationOptions());
-  const inviterName = InvitePreviewPolicy.inviterName(preview, t('card.unnamedInviter'));
+  const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
   const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, new Date());
 
   // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다.
@@ -279,7 +278,7 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
           isDisabled={redeem.isPending}
         >
           {isRewardExpected
-            ? t('card.redeemWithReward', { count: InviteRewardPolicy.welcomePremiumDays() })
+            ? t('card.redeemWithReward', { count: InviteRewardPolicy.getWelcomePremiumDays() })
             : t('card.connect', { name: inviterName })}
         </Button>
       </ReadableContent>

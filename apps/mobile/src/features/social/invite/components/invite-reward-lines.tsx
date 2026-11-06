@@ -14,14 +14,14 @@ export function InviteRewardLines({ className, ...props }: ComponentProps<typeof
     {
       key: 'invitee',
       label: t('myInvite.rewardInviteeLabel'),
-      value: t('myInvite.rewardInvitee', { days: InviteRewardPolicy.welcomePremiumDays() }),
+      value: t('myInvite.rewardInvitee', { days: InviteRewardPolicy.getWelcomePremiumDays() }),
     },
     {
       key: 'inviter',
       label: t('myInvite.rewardInviterLabel'),
       value: t('myInvite.rewardInviter', {
-        activeDays: InvitedFriendPolicy.requiredActiveDays(),
-        days: InviteRewardPolicy.inviterPremiumDays(),
+        activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+        days: InviteRewardPolicy.getInviterPremiumDays(),
       }),
     },
   ];

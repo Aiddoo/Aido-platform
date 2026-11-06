@@ -18,7 +18,6 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { createInviteShareContent } from '../domains/invite-share.model';
-import { InvitePolicy } from '../domains/invite.model';
 import { useRotateInviteCodeMutationOptions } from '../queries/invite.mutations';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
@@ -47,7 +46,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
   };
 
   return (
-    <InviteLinkCardFrame className={className} {...props}>
+    <InviteLinkCardSurface className={className} {...props}>
       <Text size="b4" weight="semibold" shade={6}>
         {t('myInvite.codeLabel')}
       </Text>
@@ -93,7 +92,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
 
       <HStack align="center" justify="between" gap={8}>
         <Text size="b3" shade={7} maxLines={1} className="flex-1" selectable>
-          {InvitePolicy.displayLink(myInvite)}
+          {myInvite.link.replace(/^https?:\/\//, '')}
         </Text>
 
         <TextButton
@@ -105,20 +104,20 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
           {t('myInvite.rotate.button')}
         </TextButton>
       </HStack>
-    </InviteLinkCardFrame>
+    </InviteLinkCardSurface>
   );
 }
 
 InviteLinkCard.Loading = function Loading() {
   return (
-    <InviteLinkCardFrame accessibilityState={{ busy: true }}>
+    <InviteLinkCardSurface accessibilityState={{ busy: true }}>
       <TextSkeleton size="b4" className="w-20" />
       <HStack align="center" justify="between">
         <TextSkeleton size="h1" className="w-44" />
         <Skeleton className="h-10 w-[72px] rounded-lg dark:bg-gray-2" />
       </HStack>
       <TextSkeleton size="b3" className="w-36" />
-    </InviteLinkCardFrame>
+    </InviteLinkCardSurface>
   );
 };
 
@@ -127,17 +126,17 @@ InviteLinkCard.Unavailable = function Unavailable() {
   const { t } = useTranslation('invite');
 
   return (
-    <InviteLinkCardFrame className="min-h-[136px] justify-center">
+    <InviteLinkCardSurface className="min-h-[136px] justify-center">
       <Result
         icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
         title={t('myInvite.unavailable.title')}
         description={t('myInvite.unavailable.description')}
       />
-    </InviteLinkCardFrame>
+    </InviteLinkCardSurface>
   );
 };
 
-function InviteLinkCardFrame({ className, ...props }: ComponentProps<typeof VStack>) {
+function InviteLinkCardSurface({ className, ...props }: ComponentProps<typeof VStack>) {
   return (
     <VStack
       gap={10}

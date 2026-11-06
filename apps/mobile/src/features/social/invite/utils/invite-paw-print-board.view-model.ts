@@ -173,7 +173,7 @@ export function createPawPrintBoard(
   const counts: PawPrintCountInput = {
     pawPrintedCount: invite.qualifiedCount,
     waitingCount: invite.waitingCount,
-    milestoneCounts: InvitePolicy.milestoneQualifiedCounts(),
+    milestoneCounts: InvitePolicy.getMilestoneQualifiedCounts(),
   };
   const isPawPrinted = (index: number) => index < counts.pawPrintedCount;
   const boardIndex = calculateBoardIndex(counts.pawPrintedCount, celebratedCount);

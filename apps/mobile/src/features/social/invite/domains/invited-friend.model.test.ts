@@ -1,9 +1,8 @@
-import { orderBy, range } from 'es-toolkit';
+import { orderBy } from 'es-toolkit';
 
 import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.fixtures';
 import {
   calculateActiveDaysLeft,
-  calculateHiddenCount,
   InvitedFriendPolicy,
   InvitedFriendSchema,
   orderByJoinedAtDesc,
@@ -55,7 +54,7 @@ describe('InvitedFriendPolicy', () => {
       const friend = createInvitedFriend({ activeDayCount: 0 });
 
       // When
-      const result = InvitedFriendPolicy.activeDaysLeft(friend);
+      const result = InvitedFriendPolicy.getActiveDaysLeft(friend);
 
       // Then MIN_ACTIVE_DAYS 2 - 0 = 2
       expect(result).toBe(2);
@@ -74,7 +73,7 @@ describe('InvitedFriendPolicy', () => {
       const friend = createInvitedFriend({ status });
 
       // When
-      const result = InvitedFriendPolicy.pawPrintState(friend);
+      const result = InvitedFriendPolicy.getPawPrintState(friend);
 
       // Then
       expect(result).toBe(expected);
@@ -114,55 +113,6 @@ describe('orderByWaitingFirst', () => {
       'waiting-earlier',
       'rewarded-later',
     ]);
-  });
-});
-
-describe('calculateHiddenCount', () => {
-  it.each([
-    [0, 5, 0],
-    [5, 5, 0],
-    [6, 5, 1],
-    [100, 5, 95],
-  ])('전체 %i명 중 %i명을 보여 주면 숨은 %i명을 반환한다', (totalCount, limit, expected) => {
-    // When
-    const result = calculateHiddenCount(totalCount, limit);
-
-    // Then max(전체 - 보이는 수, 0)
-    expect(result).toBe(expected);
-  });
-});
-
-describe('InvitedFriendPolicy.summaryFriends', () => {
-  it.each([
-    [0, 0],
-    [5, 5],
-    [6, 5],
-    [100, 5],
-  ])('친구 %i명이면 앞에서 %i명을 반환한다', (count, expected) => {
-    // Given
-    const friends = range(count).map((index) => createInvitedFriend({ userId: `friend-${index}` }));
-
-    // When
-    const result = InvitedFriendPolicy.summaryFriends(friends);
-
-    // Then min(친구 수, 5)
-    expect(result).toHaveLength(expected);
-    expect(result[0]?.userId).toBe(count > 0 ? 'friend-0' : undefined);
-  });
-});
-
-describe('InvitedFriendPolicy.hasMoreThanSummary', () => {
-  it.each([
-    [0, false],
-    [5, false],
-    [6, true],
-    [100, true],
-  ])('전체 %i명이면 %s를 반환한다', (totalCount, expected) => {
-    // When
-    const result = InvitedFriendPolicy.hasMoreThanSummary(totalCount);
-
-    // Then 전체 - 5 > 0
-    expect(result).toBe(expected);
   });
 });
 

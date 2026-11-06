@@ -24,7 +24,6 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
 
-import { InvitePreviewPolicy } from '../domains/invite-preview.model';
 import type { InviteCode } from '../domains/invite.model';
 import { useInviteRouteParams } from '../hooks/use-invite-route-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
@@ -43,7 +42,7 @@ export function InvitePreviewCard() {
 InvitePreviewCard.Contents = function Contents({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));
-  const inviterName = InvitePreviewPolicy.inviterName(preview, t('card.unnamedInviter'));
+  const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
 
   return (
     <VStack align="center">

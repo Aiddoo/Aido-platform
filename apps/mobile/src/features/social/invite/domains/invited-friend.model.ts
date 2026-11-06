@@ -7,8 +7,6 @@ import {
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { toDisplayName } from './invite-preview.model';
-
 // 모르는 새 상태·사유는 @aido/api 스키마가 UNKNOWN·null로 읽는다
 export const InvitedFriendSchema = invitedFriendResponseSchema.extend({
   joinedAt: z.coerce.date(),
@@ -30,48 +28,33 @@ export function calculateActiveDaysLeft(activeDays: number, requiredDays: number
   return Math.max(requiredDays - activeDays, 0);
 }
 
-export function calculateHiddenCount(totalCount: number, visibleLimit: number) {
-  return Math.max(totalCount - visibleLimit, 0);
+/** 발자국이 찍히려면 할 일을 해내야 하는 서로 다른 날 수 */
+export function getRequiredActiveDays() {
+  return INVITE_QUALIFICATION.MIN_ACTIVE_DAYS;
 }
 
-const SUMMARY_LIMIT = 5;
+/** 가입한 뒤 발자국을 남길 수 있는 기간(일) */
+export function getQualificationWindowDays() {
+  return INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS;
+}
+
+export function getActiveDaysLeft(friend: Pick<InvitedFriend, 'activeDayCount'>) {
+  return calculateActiveDaysLeft(friend.activeDayCount, getRequiredActiveDays());
+}
+
+/** 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지 */
+export function getPawPrintState(friend: Pick<InvitedFriend, 'status'>) {
+  return match(friend.status)
+    .with(REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REWARDED, () => 'stamped' as const)
+    .with(REDEMPTION_STATUS.JOINED, () => 'waiting' as const)
+    .with(REDEMPTION_STATUS.REJECTED, () => 'excluded' as const)
+    .with(REDEMPTION_STATUS_UNKNOWN, () => 'unknown' as const)
+    .exhaustive();
+}
 
 export const InvitedFriendPolicy = {
-  displayName(friend: InvitedFriend) {
-    return toDisplayName(friend);
-  },
-
-  /** 발자국이 찍히려면 할 일을 해내야 하는 서로 다른 날 수 */
-  requiredActiveDays() {
-    return INVITE_QUALIFICATION.MIN_ACTIVE_DAYS;
-  },
-
-  /** 가입한 뒤 발자국을 남길 수 있는 기간(일) */
-  qualificationWindowDays() {
-    return INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS;
-  },
-
-  activeDaysLeft(friend: InvitedFriend) {
-    return calculateActiveDaysLeft(friend.activeDayCount, this.requiredActiveDays());
-  },
-
-  /** 내 초대 화면 요약에 보여 줄 친구. 정렬된 목록을 받는다 */
-  summaryFriends(friends: readonly InvitedFriend[]) {
-    return friends.slice(0, SUMMARY_LIMIT);
-  },
-
-  /** 요약 밖에 친구가 더 있어 전체 보기를 열지 */
-  hasMoreThanSummary(totalCount: number) {
-    return calculateHiddenCount(totalCount, SUMMARY_LIMIT) > 0;
-  },
-
-  /** 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지 */
-  pawPrintState(friend: InvitedFriend) {
-    return match(friend.status)
-      .with(REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REWARDED, () => 'stamped' as const)
-      .with(REDEMPTION_STATUS.JOINED, () => 'waiting' as const)
-      .with(REDEMPTION_STATUS.REJECTED, () => 'excluded' as const)
-      .with(REDEMPTION_STATUS_UNKNOWN, () => 'unknown' as const)
-      .exhaustive();
-  },
-};
+  getRequiredActiveDays,
+  getQualificationWindowDays,
+  getActiveDaysLeft,
+  getPawPrintState,
+} as const;

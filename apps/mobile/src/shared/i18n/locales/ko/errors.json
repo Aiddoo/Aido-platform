@@ -186,5 +186,6 @@
   "FRIEND_INVALID_TAG": "올바른 해시태그 형식이 아니에요",
   "FRIEND_EMPTY_TAG": "해시태그를 입력해주세요",
   "FRIEND_SEARCH_QUERY_TOO_SHORT": "두 글자 이상 입력해주세요",
-  "TODO_NUDGE_MESSAGE_TOO_LONG": "메시지는 200자 이내로 입력할 수 있어요"
+  "TODO_NUDGE_MESSAGE_TOO_LONG": "메시지는 200자 이내로 입력할 수 있어요",
+  "INVITE_INVALID_CODE": "초대 코드는 영문과 숫자 6자리예요"
 }

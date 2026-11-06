@@ -90,7 +90,7 @@ describe('InviteRedemptionPolicy', () => {
       ['이미 친구였으면', { outcome: 'ALREADY_FRIENDS' as const, inviter }, 'already-friends'],
     ])('%s %s를 반환한다', (_case, result, expected) => {
       // When
-      const variant = InviteRedemptionPolicy.welcomeVariant(result);
+      const variant = InviteRedemptionPolicy.getWelcomeVariant(result);
 
       // Then
       expect(variant).toBe(expected);
@@ -123,7 +123,7 @@ describe('InviteRedemptionPolicy', () => {
       });
 
       // When
-      const days = InviteRedemptionPolicy.grantedPremiumDays(result);
+      const days = InviteRedemptionPolicy.getGrantedPremiumDays(result);
 
       // Then
       expect(days).toBe(7);
@@ -131,7 +131,7 @@ describe('InviteRedemptionPolicy', () => {
 
     it('보상이 없는 결과는 0을 반환한다', () => {
       // When
-      const days = InviteRedemptionPolicy.grantedPremiumDays({
+      const days = InviteRedemptionPolicy.getGrantedPremiumDays({
         outcome: 'CONNECTED',
         inviter,
         friendship: 'FRIENDS',
@@ -158,7 +158,7 @@ describe('InviteRedemptionPolicy', () => {
       ['이미 친구였으면', { outcome: 'ALREADY_FRIENDS' as const, inviter }, null],
     ])('%s %s를 반환한다', (_case, result, expected) => {
       // When
-      const reason = InviteRedemptionPolicy.missingRewardReason(result);
+      const reason = InviteRedemptionPolicy.getMissingRewardReason(result);
 
       // Then
       expect(reason).toBe(expected);
@@ -190,7 +190,7 @@ describe('InviteRedemptionPolicy', () => {
   });
 });
 
-describe('InviteRedemptionPolicy.rewardStart', () => {
+describe('InviteRedemptionPolicy.getRewardStart', () => {
   it.each([
     ['D. 무료였다가 보상을 받았으면 바로', PREMIUM_ME_EXAMPLES.newRewardAfterEnded, 'now'],
     [
@@ -213,7 +213,7 @@ describe('InviteRedemptionPolicy.rewardStart', () => {
     const { premiumAccess } = toUser(me);
 
     // When
-    const result = InviteRedemptionPolicy.rewardStart(premiumAccess);
+    const result = InviteRedemptionPolicy.getRewardStart(premiumAccess);
 
     // Then
     expect(result).toBe(expected);

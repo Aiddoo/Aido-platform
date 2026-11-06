@@ -9,7 +9,7 @@ import {
   createPendingRedemption,
   INVALID_DTO,
 } from '../__tests__/invite.fixtures';
-import { isInviteError } from '../domains/invite.error';
+import { INVITE_ERROR_CODE } from '../domains/invite.error';
 import { createAllDoneBannerRepository } from './all-done-banner.repository';
 import { createInstallReferrerRepository } from './install-referrer.repository';
 import { InviteService } from './invite.service';
@@ -70,7 +70,7 @@ describe('InviteService', () => {
       });
     });
 
-    it('형식이 틀린 코드면 요청하지 않고 InviteError를 반환한다', async () => {
+    it('형식이 틀린 코드면 요청하지 않고 INVALID_CODE 오류를 반환한다', async () => {
       // Given
       const { service, publicHttpClient } = createService();
 
@@ -80,7 +80,7 @@ describe('InviteService', () => {
       // Then
       expect(publicHttpClient.get).not.toHaveBeenCalled();
       expect(result.ok).toBe(false);
-      expect(!result.ok && isInviteError(result.error)).toBe(true);
+      expect(!result.ok && result.error.code === INVITE_ERROR_CODE.INVALID_CODE).toBe(true);
     });
 
     it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {

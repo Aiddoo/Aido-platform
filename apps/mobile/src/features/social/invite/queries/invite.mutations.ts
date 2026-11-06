@@ -8,8 +8,9 @@ import {
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
+import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTranslation, t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -18,11 +19,7 @@ import { match } from 'ts-pattern';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { type InviteShareChannel, type InviteShareContent } from '../domains/invite-share.model';
-import {
-  isInviteError,
-  isTerminalRedeemFailure,
-  toRedeemFailureReason,
-} from '../domains/invite.error';
+import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
 import { type InviteCode } from '../domains/invite.model';
 import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
 
@@ -31,7 +28,8 @@ export function useRedeemInviteMutationOptions() {
   const inviteService = useInviteService();
   const logger = useLogger();
   const queryClient = useQueryClient();
-  const { toast, error: showError } = useAppToast();
+  const { toast } = useAppToast();
+  const showFailure = useMutationFailure();
   const { t } = useTranslation('invite');
   const { trackEvent } = useTrack();
 
@@ -42,7 +40,7 @@ export function useRedeemInviteMutationOptions() {
       inviteService.clearPendingRedemption();
       trackEvent('invite_redeemed', {
         outcome: result.outcome,
-        friendship: InviteRedemptionPolicy.friendship(result) ?? 'NONE',
+        friendship: InviteRedemptionPolicy.getFriendship(result) ?? 'NONE',
       });
       storeRedemptionResult(queryClient, result);
       await invalidateAfterRedeem(queryClient, { inviteCode }).catch((error) =>
@@ -56,7 +54,7 @@ export function useRedeemInviteMutationOptions() {
         router.replace({
           pathname: '/feed',
           params:
-            InviteRedemptionPolicy.friendship(result) === INVITE_FRIENDSHIP.FRIENDS
+            InviteRedemptionPolicy.getFriendship(result) === INVITE_FRIENDSHIP.FRIENDS
               ? { friendId: result.inviter.userId }
               : {},
         });
@@ -64,7 +62,7 @@ export function useRedeemInviteMutationOptions() {
       }
 
       // 이미 친구면 축하할 것이 없어 바로 친구 할 일로 간다
-      match(InviteRedemptionPolicy.welcomeVariant(result))
+      match(InviteRedemptionPolicy.getWelcomeVariant(result))
         .with('already-friends', () =>
           router.replace({ pathname: '/feed', params: { friendId: result.inviter.userId } }),
         )
@@ -89,8 +87,7 @@ export function useRedeemInviteMutationOptions() {
 
       const reason = toRedeemFailureReason(redeemError);
       trackEvent('invite_redeem_failed', { reason });
-      haptics.notify('error');
-      showError(redeemError.message);
+      showFailure(redeemError);
 
       if (isTerminalRedeemFailure(reason)) {
         inviteService.clearPendingRedemption();
@@ -118,7 +115,7 @@ export function useRedeemInviteMutationOptions() {
 }
 
 function isBusinessRedeemError(error: unknown) {
-  return isApiError(error) || isInviteError(error);
+  return isBusinessError(error);
 }
 
 export function useRotateInviteCodeMutationOptions() {

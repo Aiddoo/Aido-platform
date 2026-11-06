@@ -220,7 +220,7 @@ describe('InvitePolicy', () => {
       const myInvite = createInvite({ nextMilestone: null });
 
       // When
-      const result = InvitePolicy.remainingToNextMilestone(myInvite);
+      const result = InvitePolicy.getRemainingToNextMilestone(myInvite);
 
       // Then
       expect(result).toBeNull();
@@ -234,7 +234,7 @@ describe('InvitePolicy', () => {
       });
 
       // When
-      const result = InvitePolicy.remainingToNextMilestone(myInvite);
+      const result = InvitePolicy.getRemainingToNextMilestone(myInvite);
 
       // Then 3 - 2 = 1
       expect(result).toBe(1);
@@ -247,7 +247,7 @@ describe('InvitePolicy', () => {
       const myInvite = createInvite();
 
       // When
-      const result = InvitePolicy.nextPremiumDays(myInvite);
+      const result = InvitePolicy.getNextPremiumDays(myInvite);
 
       // Then
       expect(result).toBe(7);
@@ -258,7 +258,7 @@ describe('InvitePolicy', () => {
       const myInvite = createInvite({ nextMilestone: null });
 
       // When
-      const result = InvitePolicy.nextPremiumDays(myInvite);
+      const result = InvitePolicy.getNextPremiumDays(myInvite);
 
       // Then
       expect(result).toBe(0);
@@ -271,7 +271,7 @@ describe('InvitePolicy', () => {
       const myInvite = createInvite({ qualifiedCount: 0, waitingCount: 1 });
 
       // When
-      const result = InvitePolicy.progress(myInvite);
+      const result = InvitePolicy.getProgress(myInvite);
 
       // Then
       expect(result).toBe('not-started');
@@ -282,7 +282,7 @@ describe('InvitePolicy', () => {
       const myInvite = createInvite({ qualifiedCount: 1, premiumDaysInWindow: 7 });
 
       // When
-      const result = InvitePolicy.progress(myInvite);
+      const result = InvitePolicy.getProgress(myInvite);
 
       // Then
       expect(result).toBe('in-progress');
@@ -298,7 +298,7 @@ describe('InvitePolicy', () => {
         const myInvite = createInvite({ qualifiedCount: 5, waitingCount: 2, premiumCapState });
 
         // When
-        const result = InvitePolicy.progress(myInvite);
+        const result = InvitePolicy.getProgress(myInvite);
 
         // Then
         expect(result).toBe(expected);
@@ -314,7 +314,7 @@ describe('InvitePolicy', () => {
       });
 
       // When
-      const result = InvitePolicy.progress(myInvite);
+      const result = InvitePolicy.getProgress(myInvite);
 
       // Then
       expect(result).toBe('in-progress');

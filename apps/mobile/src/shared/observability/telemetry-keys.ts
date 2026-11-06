@@ -1,4 +1,3 @@
-import type { InviteFriendship, RedeemOutcome } from '@aido/api';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
@@ -7,9 +6,6 @@ import type { PurchaseFailedReason } from '@src/features/billing/subscription/ut
 import type { OAuthProviderSlug } from '@src/features/identity/auth/schemas/oauth.schema';
 import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
 import type { TimezoneOffsetBucket } from '@src/features/notification/domains/device-timezone.model';
-import type { InviteLinkSource } from '@src/features/social/invite/domains/invite-redemption.model';
-import type { InviteShareChannel } from '@src/features/social/invite/domains/invite-share.model';
-import type { RedeemFailureReason } from '@src/features/social/invite/domains/invite.error';
 import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '@src/features/voice/domains/voice.error';
 
@@ -250,18 +246,6 @@ export interface GrowthEventMap {
   };
 }
 
-/**
- * 친구 초대 퍼널. 사용자 id·초대 코드는 넣지 않는다.
- * 사용 시작과 보상 지급은 서버 로그가 원천이다.
- */
-interface InviteEventMap {
-  invite_link_shared: { channel: InviteShareChannel };
-  invite_entry_tapped: { entry: InviteEntrySource };
-  invite_link_opened: { source: InviteLinkSource };
-  invite_redeemed: { outcome: RedeemOutcome; friendship: InviteFriendship | 'NONE' };
-  invite_redeem_failed: { reason: RedeemFailureReason };
-}
-
 export type LocalDateChangeTrigger = 'midnight_timer' | 'foreground' | 'calendar_change';
 
 /** 앱 생명주기 기반 제품 지표. 진단용 날짜 값은 Sentry breadcrumb에만 남긴다. */
@@ -448,7 +432,6 @@ interface ConnectivityEventMap {
 export type LegacyEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
-  InviteEventMap &
   GrowthEventMap &
   LifecycleEventMap &
   SubscriptionEventMap &

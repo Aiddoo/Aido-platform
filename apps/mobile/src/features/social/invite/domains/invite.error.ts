@@ -1,30 +1,13 @@
 import { ErrorCode } from '@aido/api/errors';
-import { type CodedError, isApiError } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
+import { isApiError } from '@src/shared/errors';
+import { isBusinessError } from '@src/shared/errors/result';
 import { match } from 'ts-pattern';
 
-export const InviteErrorCode = {
+export const INVITE_ERROR_CODE = {
   INVALID_CODE: 'INVITE_INVALID_CODE',
 } as const;
 
-export type InviteErrorCode = (typeof InviteErrorCode)[keyof typeof InviteErrorCode];
-
-export class InviteError extends Error implements CodedError {
-  override readonly name = 'InviteError';
-
-  constructor(
-    public readonly code: InviteErrorCode,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-
-export const InviteErrors = {
-  invalidCode: () => new InviteError(InviteErrorCode.INVALID_CODE, t('invite:errors.invalidCode')),
-} as const;
-
-export const isInviteError = (error: unknown): error is InviteError => error instanceof InviteError;
+export type InviteErrorCode = (typeof INVITE_ERROR_CODE)[keyof typeof INVITE_ERROR_CODE];
 
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
 export const isInviteDisabledError = (error: unknown) =>
@@ -43,10 +26,8 @@ export type RedeemFailureReason =
   | 'unknown';
 
 export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
-  if (isInviteError(error)) {
-    return match(error.code)
-      .with(InviteErrorCode.INVALID_CODE, () => 'invalid_code' as const)
-      .exhaustive();
+  if (isBusinessError(error, INVITE_ERROR_CODE.INVALID_CODE)) {
+    return 'invalid_code';
   }
   if (!isApiError(error)) {
     return 'unknown';

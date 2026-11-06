@@ -7,6 +7,7 @@ import type { HttpClient } from '@src/core/ports/http';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id';
 import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
+import { BusinessError } from '@src/shared/errors/business-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import { getErrorMessage } from '@src/shared/errors/to-error';
@@ -21,8 +22,8 @@ import {
   InviteRedemptionPolicy,
 } from '../domains/invite-redemption.model';
 import {
-  type InviteError,
-  InviteErrors,
+  INVITE_ERROR_CODE,
+  type InviteErrorCode,
   isTerminalRedeemFailure,
   toRedeemFailureReason,
 } from '../domains/invite.error';
@@ -36,7 +37,7 @@ import { InvitedFriendsPageSchema, toInvitedFriendsPage, toInvitePreview } from 
 import type { PawPrintCelebrationRepository } from './paw-print-celebration.repository';
 import type { PendingRedemptionRepository } from './pending-redemption.repository';
 
-type InviteServiceError = ApiError | InviteError;
+type InviteServiceError = ApiError | BusinessError<InviteErrorCode>;
 
 interface InviteServiceDependencies {
   /** 미리보기·사용 가능 여부는 로그인 전에도 부른다 */
@@ -107,7 +108,7 @@ export class InviteService {
   ): Promise<Result<InvitePreview, InviteServiceError>> => {
     const inviteCode = parseInviteCode(rawCode);
     if (inviteCode == null) {
-      return err(InviteErrors.invalidCode());
+      return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
 
     const result = await this.#publicHttpClient.get(`v1/invites/${inviteCode}`, { signal });
@@ -134,7 +135,7 @@ export class InviteService {
   redeem = async (rawCode: string): Promise<Result<RedemptionResult, InviteServiceError>> => {
     const inviteCode = parseInviteCode(rawCode);
     if (inviteCode == null) {
-      return err(InviteErrors.invalidCode());
+      return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
 
     const installationId = await this.#installationIdGateway.get().catch((error: unknown) => {

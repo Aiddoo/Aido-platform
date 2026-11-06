@@ -326,7 +326,7 @@ FriendList.Empty = function Empty() {
         }
         title={t('invite:entry.friendsEmptyTitle')}
         description={t('invite:entry.friendsEmptyDescription', {
-          days: InviteRewardPolicy.welcomePremiumDays(),
+          days: InviteRewardPolicy.getWelcomePremiumDays(),
         })}
         button={
           <VStack align="center" gap={4}>

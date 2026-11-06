@@ -16,12 +16,12 @@ import { orderBy as orderByFn } from 'es-toolkit';
 import { type InviteService } from '../apis/invite.service';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
+import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
 import { type RedemptionResult } from '../domains/invite-redemption.model';
 import { isInviteDisabledError } from '../domains/invite.error';
 import { type InviteCode } from '../domains/invite.model';
 import {
   type InvitedFriend,
-  InvitedFriendPolicy,
   orderByJoinedAtDesc,
   orderByWaitingFirst,
 } from '../domains/invited-friend.model';
@@ -164,9 +164,9 @@ function selectInvitedFriendSummary(
   );
 
   return {
-    invitedFriends: InvitedFriendPolicy.summaryFriends(invitedFriends),
+    invitedFriends: invitedFriends.slice(0, INVITED_FRIEND_SUMMARY_LIMIT),
     totalCount,
-    hasMore: InvitedFriendPolicy.hasMoreThanSummary(totalCount),
+    hasMore: totalCount > INVITED_FRIEND_SUMMARY_LIMIT,
   };
 }
 

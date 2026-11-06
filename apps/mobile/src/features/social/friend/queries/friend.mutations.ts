@@ -225,7 +225,7 @@ export function useSendRequestByTagMutationOptions() {
             .with({ type: 'invite' }, ({ limit }) => ({
               description: t('invite:entry.friendLimitDescription', {
                 limit,
-                activeDays: InvitedFriendPolicy.requiredActiveDays(),
+                activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
               }),
               alternativeAction: {
                 label: t('invite:entry.growFriendLimit'),

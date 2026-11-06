@@ -1,7 +1,8 @@
 import { ApiError } from '@src/shared/errors/api-error';
+import { BusinessError } from '@src/shared/errors/business-error';
 import { ServerError } from '@src/shared/errors/infra-error';
 
-import { InviteErrors, isTerminalRedeemFailure, toRedeemFailureReason } from './invite.error';
+import { INVITE_ERROR_CODE, isTerminalRedeemFailure, toRedeemFailureReason } from './invite.error';
 
 describe('toRedeemFailureReason', () => {
   it.each([
@@ -23,7 +24,7 @@ describe('toRedeemFailureReason', () => {
 
   it('형식이 틀린 코드면 invalid_code를 반환한다', () => {
     // When
-    const result = toRedeemFailureReason(InviteErrors.invalidCode());
+    const result = toRedeemFailureReason(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
 
     // Then
     expect(result).toBe('invalid_code');

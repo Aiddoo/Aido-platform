@@ -122,8 +122,8 @@ InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContent
   const { t } = useTranslation('invite');
   // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const name = InviteRedemptionPolicy.inviterName(result, t('card.unnamedInviter'));
-  const premiumDays = InviteRedemptionPolicy.grantedPremiumDays(result);
+  const name = result.inviter.name ?? t('card.unnamedInviter');
+  const premiumDays = InviteRedemptionPolicy.getGrantedPremiumDays(result);
   const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
 
   return (
@@ -146,7 +146,7 @@ InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContent
         textBreakStrategy="highQuality"
       >
         {/* 친구 요청 상태면 "친구를 맺었다"는 문구를 쓰지 않는다 */}
-        {match({ reason: InviteRedemptionPolicy.missingRewardReason(result), isRequested })
+        {match({ reason: InviteRedemptionPolicy.getMissingRewardReason(result), isRequested })
           .with({ reason: 'already-claimed', isRequested: true }, () =>
             t('welcome.requestedAlreadyClaimedDescription', { name }),
           )
@@ -179,7 +179,7 @@ InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContent
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
             >
-              {match(InviteRedemptionPolicy.rewardStart(me.premiumAccess))
+              {match(InviteRedemptionPolicy.getRewardStart(me.premiumAccess))
                 .with('now', () => t('welcome.rewardDescription', { count: premiumDays }))
                 .with('after-subscription', () =>
                   t('welcome.rewardAfterSubscription', { count: premiumDays }),
@@ -212,7 +212,7 @@ InviteWelcomeBottomSheet.Actions = function Actions({
   onDismiss,
 }: WelcomeActionsProps) {
   const { t } = useTranslation('invite');
-  const name = InviteRedemptionPolicy.inviterName(result, t('card.unnamedInviter'));
+  const name = result.inviter.name ?? t('card.unnamedInviter');
   const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
 
   return (

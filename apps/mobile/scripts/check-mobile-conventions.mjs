@@ -239,6 +239,9 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/social/nudge/constants/',
   'apps/mobile/src/features/social/nudge/queries/',
   'apps/mobile/src/features/social/nudge/utils/',
+  'apps/mobile/src/features/social/invite/constants/',
+  'apps/mobile/src/features/social/invite/queries/',
+  'apps/mobile/src/features/social/invite/utils/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

@@ -62,7 +62,7 @@ export class InviteShareService {
       await this.#socialShare.shareFeed({
         title: t('invite:share.kakaoTitle', { name: content.inviterName }),
         description: t('invite:share.kakaoDescription', {
-          days: InviteRewardPolicy.welcomePremiumDays(),
+          days: InviteRewardPolicy.getWelcomePremiumDays(),
         }),
         imageUrl: INVITE_SHARE_IMAGE.url,
         imageWidth: INVITE_SHARE_IMAGE.width,
@@ -87,7 +87,7 @@ export class InviteShareService {
   async #shareToSystem(content: InviteShareContent): Promise<InviteShareResult> {
     try {
       const isShared = await this.#systemShare.share({
-        message: t('invite:share.message', { count: InviteRewardPolicy.welcomePremiumDays() }),
+        message: t('invite:share.message', { count: InviteRewardPolicy.getWelcomePremiumDays() }),
         url: content.link,
         dialogTitle: t('invite:share.dialogTitle'),
       });

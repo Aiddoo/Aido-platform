@@ -33,7 +33,7 @@ interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' |
 export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
-  const displayName = InvitedFriendPolicy.displayName(friend);
+  const displayName = friend.name ?? friend.userTag;
 
   return (
     <ListRow
@@ -57,7 +57,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             lineBreakStrategyIOS="hangul-word"
             textBreakStrategy="highQuality"
           >
-            {match(InvitedFriendPolicy.pawPrintState(friend))
+            {match(InvitedFriendPolicy.getPawPrintState(friend))
               .with('stamped', () =>
                 t('friendList.stamped', {
                   date: formatDateLabel(
@@ -70,15 +70,17 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
               .with('waiting', () =>
                 friend.activeDayCount === 0
                   ? t('friendList.waitingNotStarted', {
-                      count: InvitedFriendPolicy.requiredActiveDays(),
+                      count: InvitedFriendPolicy.getRequiredActiveDays(),
                     })
-                  : t('friendList.waiting', { count: InvitedFriendPolicy.activeDaysLeft(friend) }),
+                  : t('friendList.waiting', {
+                      count: InvitedFriendPolicy.getActiveDaysLeft(friend),
+                    }),
               )
               .with('excluded', () =>
                 match(friend.rejectionReason)
                   .with(REDEMPTION_REJECTION_REASON.EXPIRED, () =>
                     t('friendList.excludedExpired', {
-                      days: InvitedFriendPolicy.qualificationWindowDays(),
+                      days: InvitedFriendPolicy.getQualificationWindowDays(),
                     }),
                   )
                   .with(REDEMPTION_REJECTION_REASON.INVITER_MONTHLY_CAP, () =>
@@ -99,7 +101,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
       right={
         // 행마다 끝에는 하나만 둔다. 폭을 같게 잡아 칩·버튼이 바뀌어도 설명 줄바꿈과 행 높이가 그대로다
         <Box className="min-w-[84px] items-end">
-          {InvitedFriendPolicy.pawPrintState(friend) === 'waiting' ? (
+          {InvitedFriendPolicy.getPawPrintState(friend) === 'waiting' ? (
             <InvitedFriendWaitingAction friend={friend} />
           ) : (
             <InvitedFriendPawPrintChip friend={friend} />
@@ -126,7 +128,7 @@ InvitedFriendRow.Loading = function Loading() {
 function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
 
-  return match(InvitedFriendPolicy.pawPrintState(friend))
+  return match(InvitedFriendPolicy.getPawPrintState(friend))
     .with('stamped', () => (
       <Box
         className={invitedFriendChipVariants({ state: 'stamped' })}
@@ -144,12 +146,12 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
       <Box
         className={invitedFriendChipVariants({ state: 'waiting' })}
         accessibilityLabel={t('friendList.chipWaitingLabel', {
-          count: InvitedFriendPolicy.activeDaysLeft(friend),
+          count: InvitedFriendPolicy.getActiveDaysLeft(friend),
         })}
       >
         <FishIcon width={16} height={10} colorClassName="text-main" />
         <Text size="e1" weight="bold" tone="brand" maxLines={1} className="tabular-nums">
-          {t('friendList.chipWaiting', { count: InvitedFriendPolicy.activeDaysLeft(friend) })}
+          {t('friendList.chipWaiting', { count: InvitedFriendPolicy.getActiveDaysLeft(friend) })}
         </Text>
       </Box>
     ))
@@ -181,13 +183,13 @@ function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
 function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
   const push = useSingleTap(router.push);
-  const displayName = InvitedFriendPolicy.displayName(friend);
+  const displayName = friend.name ?? friend.userTag;
 
   return (
     <NudgePawButton
       accessibilityLabel={t('friendList.nudgeLabel', {
         name: displayName,
-        count: InvitedFriendPolicy.activeDaysLeft(friend),
+        count: InvitedFriendPolicy.getActiveDaysLeft(friend),
       })}
       onPress={() =>
         push({

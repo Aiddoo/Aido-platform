@@ -97,14 +97,9 @@ export function summarizeInvalidCharacters(
 }
 
 export const InviteCodePolicy = {
-  isFilled: isFilledInviteCode,
-
-  invalidCharacters: findInvalidCharacters,
-
-  invalidCharacterSummary(raw: string) {
-    return summarizeInvalidCharacters(findInvalidCharacters(raw));
-  },
-};
+  isFilledInviteCode,
+  findInvalidCharacters,
+} as const;
 
 const InviteMilestoneSchema = inviteMilestoneSchema.extend({
   rewards: z.array(InviteRewardSchema),
@@ -133,92 +128,90 @@ function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
   return qualifiedCount + waitingCount;
 }
 
-function toDisplayLink(link: string) {
-  return link.replace(/^https?:\/\//, '');
+export function getRemainingToNextMilestone(
+  invite: Pick<Invite, 'qualifiedCount' | 'nextMilestone'>,
+) {
+  return invite.nextMilestone == null
+    ? null
+    : calculateRemainingInvites(invite.qualifiedCount, invite.nextMilestone.qualifiedCount);
+}
+
+/** 다음 발자국에서 받는 프리미엄 일수(없으면 0) */
+export function getNextPremiumDays(invite: Pick<Invite, 'nextMilestone'>) {
+  return InviteRewardPolicy.getPremiumDays(invite.nextMilestone?.rewards ?? []);
+}
+
+export function getNextFriendSlots(invite: Pick<Invite, 'nextMilestone'>) {
+  return InviteRewardPolicy.getFriendSlots(invite.nextMilestone?.rewards ?? []);
+}
+
+export function getEarnedPremiumDays(invite: Pick<Invite, 'rewardsEarned'>) {
+  return InviteRewardPolicy.getPremiumDays(invite.rewardsEarned);
+}
+
+export function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
+  return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
+}
+
+/** 최근 premiumCapWindowDays일 동안 초대로 받을 수 있는 프리미엄 일수 */
+export function getMonthlyPremiumCapDays() {
+  return INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS;
+}
+
+/** getMonthlyPremiumCapDays를 세는 기간(일) */
+export function getPremiumCapWindowDays() {
+  return INVITE_REWARD_CAPS.WINDOW_DAYS;
+}
+
+/** 지금까지 초대로 받을 수 있는 프리미엄 일수 */
+export function getTotalPremiumCapDays() {
+  return INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL;
+}
+
+export function getMilestoneQualifiedCounts() {
+  return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
+}
+
+/** 가입까지 마친 초대 친구가 한 명이라도 있는지(시작 체크리스트 완료 기준) */
+export function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitingCount'>) {
+  return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
+}
+
+/**
+ * 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다).
+ * 프리미엄 상한은 서버가 정한 premiumCapState를 그대로 따른다
+ */
+export function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedCount'>) {
+  return match({
+    premiumCapState: invite.premiumCapState,
+    hasPawPrint: invite.qualifiedCount > 0,
+  })
+    .with({ premiumCapState: PREMIUM_CAP_STATE.TOTAL_REACHED }, () => 'total-cap-reached' as const)
+    .with(
+      { premiumCapState: PREMIUM_CAP_STATE.WINDOW_REACHED },
+      () => 'monthly-cap-reached' as const,
+    )
+    .with({ hasPawPrint: false }, () => 'not-started' as const)
+    .with({ hasPawPrint: true }, () => 'in-progress' as const)
+    .exhaustive();
+}
+
+/** 상한에 닿아 초대로는 프리미엄을 더 받지 못한다 */
+export function isPremiumCapReached(invite: Pick<Invite, 'premiumCapState'>) {
+  return invite.premiumCapState !== PREMIUM_CAP_STATE.AVAILABLE;
 }
 
 export const InvitePolicy = {
-  nextMilestone(myInvite: Invite) {
-    return myInvite.nextMilestone;
-  },
-
-  remainingToNextMilestone(myInvite: Invite) {
-    const next = this.nextMilestone(myInvite);
-    return next == null
-      ? null
-      : calculateRemainingInvites(myInvite.qualifiedCount, next.qualifiedCount);
-  },
-
-  /** 다음 발자국에서 받는 프리미엄 일수(없으면 0) */
-  nextPremiumDays(myInvite: Invite) {
-    return InviteRewardPolicy.premiumDays(this.nextMilestone(myInvite)?.rewards ?? []);
-  },
-
-  nextFriendSlots(myInvite: Invite) {
-    return InviteRewardPolicy.friendSlots(this.nextMilestone(myInvite)?.rewards ?? []);
-  },
-
-  earnedPremiumDays(myInvite: Invite) {
-    return InviteRewardPolicy.premiumDays(myInvite.rewardsEarned);
-  },
-
-  earnedFriendSlots(myInvite: Invite) {
-    return InviteRewardPolicy.friendSlots(myInvite.rewardsEarned);
-  },
-
-  /** 최근 premiumCapWindowDays일 동안 초대로 받을 수 있는 프리미엄 일수 */
-  monthlyPremiumCapDays() {
-    return INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS;
-  },
-
-  /** monthlyPremiumCapDays를 세는 기간(일) */
-  premiumCapWindowDays() {
-    return INVITE_REWARD_CAPS.WINDOW_DAYS;
-  },
-
-  /** 지금까지 초대로 받을 수 있는 프리미엄 일수 */
-  totalPremiumCapDays() {
-    return INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL;
-  },
-
-  milestoneQualifiedCounts() {
-    return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
-  },
-
-  /** 가입까지 마친 초대 친구가 한 명이라도 있는지(시작 체크리스트 완료 기준) */
-  hasInvitedAnyone(invite: Invite) {
-    return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
-  },
-
-  /**
-   * 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다).
-   * 프리미엄 상한은 서버가 정한 premiumCapState를 그대로 따른다
-   */
-  progress(myInvite: Invite) {
-    return match({
-      premiumCapState: myInvite.premiumCapState,
-      hasPawPrint: myInvite.qualifiedCount > 0,
-    })
-      .with(
-        { premiumCapState: PREMIUM_CAP_STATE.TOTAL_REACHED },
-        () => 'total-cap-reached' as const,
-      )
-      .with(
-        { premiumCapState: PREMIUM_CAP_STATE.WINDOW_REACHED },
-        () => 'monthly-cap-reached' as const,
-      )
-      .with({ hasPawPrint: false }, () => 'not-started' as const)
-      .with({ hasPawPrint: true }, () => 'in-progress' as const)
-      .exhaustive();
-  },
-
-  /** 상한에 닿아 초대로는 프리미엄을 더 받지 못한다 */
-  isPremiumCapReached(myInvite: Invite) {
-    return myInvite.premiumCapState !== PREMIUM_CAP_STATE.AVAILABLE;
-  },
-
-  /** 화면에 보여 줄 링크. 스킴을 빼서 짧게 읽힌다(복사·공유는 전체 링크를 쓴다) */
-  displayLink(myInvite: Invite) {
-    return toDisplayLink(myInvite.link);
-  },
-};
+  getRemainingToNextMilestone,
+  getNextPremiumDays,
+  getNextFriendSlots,
+  getEarnedPremiumDays,
+  getEarnedFriendSlots,
+  getMonthlyPremiumCapDays,
+  getPremiumCapWindowDays,
+  getTotalPremiumCapDays,
+  getMilestoneQualifiedCounts,
+  hasInvitedAnyone,
+  getProgress,
+  isPremiumCapReached,
+} as const;

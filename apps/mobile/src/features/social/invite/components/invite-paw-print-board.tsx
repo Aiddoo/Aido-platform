@@ -138,10 +138,10 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
 
       <Text size="b3" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {t('pawPrintBoard.rewardRule', {
-          activeDays: InvitedFriendPolicy.requiredActiveDays(),
-          days: InvitePolicy.nextPremiumDays(myInvite),
-          slots: InvitePolicy.nextFriendSlots(myInvite),
-          count: InvitePolicy.nextFriendSlots(myInvite),
+          activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+          days: InvitePolicy.getNextPremiumDays(myInvite),
+          slots: InvitePolicy.getNextFriendSlots(myInvite),
+          count: InvitePolicy.getNextFriendSlots(myInvite),
         })}
       </Text>
 
@@ -219,7 +219,7 @@ InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard
           t('pawPrintBoard.waitingOverflow', { count: waitingOverflowCount }),
         )
         .with({ totalPawPrints: 0 }, () =>
-          t('pawPrintBoard.firstHint', { activeDays: InvitedFriendPolicy.requiredActiveDays() }),
+          t('pawPrintBoard.firstHint', { activeDays: InvitedFriendPolicy.getRequiredActiveDays() }),
         )
         .with({ isComplete: false }, () => null)
         .exhaustive()}
@@ -504,9 +504,9 @@ function InviteProgressMessage() {
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
   });
-  const remaining = InvitePolicy.remainingToNextMilestone(myInvite);
+  const remaining = InvitePolicy.getRemainingToNextMilestone(myInvite);
 
-  return match(InvitePolicy.progress(myInvite))
+  return match(InvitePolicy.getProgress(myInvite))
     .with('not-started', () => (
       <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {t('pawPrintBoard.progress.notStarted')}
@@ -521,8 +521,8 @@ function InviteProgressMessage() {
           textBreakStrategy="highQuality"
         >
           {t('pawPrintBoard.progress.monthlyCapReached', {
-            windowDays: InvitePolicy.premiumCapWindowDays(),
-            days: InvitePolicy.monthlyPremiumCapDays(),
+            windowDays: InvitePolicy.getPremiumCapWindowDays(),
+            days: InvitePolicy.getMonthlyPremiumCapDays(),
           })}
         </Text>
         <KeepPremiumButton premiumAccess={me.premiumAccess} />
@@ -537,7 +537,7 @@ function InviteProgressMessage() {
           textBreakStrategy="highQuality"
         >
           {t('pawPrintBoard.progress.totalCapReached', {
-            days: InvitePolicy.totalPremiumCapDays(),
+            days: InvitePolicy.getTotalPremiumCapDays(),
           })}
         </Text>
         <KeepPremiumButton premiumAccess={me.premiumAccess} />
@@ -547,8 +547,8 @@ function InviteProgressMessage() {
       <VStack gap={2}>
         <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
           {t('pawPrintBoard.rewardsSummary', {
-            count: InvitePolicy.earnedPremiumDays(myInvite),
-            slots: InvitePolicy.earnedFriendSlots(myInvite),
+            count: InvitePolicy.getEarnedPremiumDays(myInvite),
+            slots: InvitePolicy.getEarnedFriendSlots(myInvite),
           })}
         </Text>
         {remaining != null && (

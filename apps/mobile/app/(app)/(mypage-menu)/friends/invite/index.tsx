@@ -76,11 +76,11 @@ export default function MyInviteScreen() {
                   <InviteShareActions />
                 </Suspense>
 
-                <PawPrintBoardSection>
+                <PawPrintBoardCard>
                   <Suspense fallback={<InvitePawPrintBoard.Loading />}>
                     <InvitePawPrintBoard />
                   </Suspense>
-                </PawPrintBoardSection>
+                </PawPrintBoardCard>
 
                 <Box className="-mx-4">
                   <Suspense fallback={<InvitedFriendSummary.Loading />}>
@@ -136,9 +136,9 @@ function InviteContentsError({ error, reset }: QueryErrorFallbackProps) {
       <>
         <InviteLinkCard.Unavailable />
         <InviteShareActions.Unavailable />
-        <PawPrintBoardSection>
+        <PawPrintBoardCard>
           <InvitePawPrintBoard.Unavailable />
-        </PawPrintBoardSection>
+        </PawPrintBoardCard>
         <Box className="-mx-4">
           <InvitedFriendSummary.Unavailable />
         </Box>
@@ -153,7 +153,7 @@ function InviteContentsError({ error, reset }: QueryErrorFallbackProps) {
   );
 }
 
-function PawPrintBoardSection({ children }: { children: ReactNode }) {
+function PawPrintBoardCard({ children }: { children: ReactNode }) {
   const { t } = useTranslation('invite');
 
   return (
@@ -197,15 +197,15 @@ function InviteRewardNotice() {
       <VStack gap={4} accessibilityRole="list">
         <NoticeRow>
           {t('myInvite.notice.qualification', {
-            count: InvitedFriendPolicy.requiredActiveDays(),
-            days: InvitedFriendPolicy.qualificationWindowDays(),
+            count: InvitedFriendPolicy.getRequiredActiveDays(),
+            days: InvitedFriendPolicy.getQualificationWindowDays(),
           })}
         </NoticeRow>
         <NoticeRow>
           {t('myInvite.notice.cap', {
-            windowDays: InvitePolicy.premiumCapWindowDays(),
-            monthly: InvitePolicy.monthlyPremiumCapDays(),
-            total: InvitePolicy.totalPremiumCapDays(),
+            windowDays: InvitePolicy.getPremiumCapWindowDays(),
+            monthly: InvitePolicy.getMonthlyPremiumCapDays(),
+            total: InvitePolicy.getTotalPremiumCapDays(),
           })}
         </NoticeRow>
         <NoticeRow>{t('myInvite.notice.subscription')}</NoticeRow>

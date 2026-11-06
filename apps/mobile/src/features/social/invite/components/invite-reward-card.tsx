@@ -36,7 +36,7 @@ export function InviteRewardCard({ className, ...props }: InviteRewardCardProps)
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
   const { navigate, isSelected } = useMyPageMenuNavigation();
-  const remaining = InvitePolicy.remainingToNextMilestone(invite);
+  const remaining = InvitePolicy.getRemainingToNextMilestone(invite);
   const [firstRow] = createPawPrintBoard(invite, {
     columns: PREVIEW_COLUMNS,
     celebratedCount: invite.qualifiedCount,
@@ -66,7 +66,7 @@ export function InviteRewardCard({ className, ...props }: InviteRewardCardProps)
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
             >
-              {match({ progress: InvitePolicy.progress(invite), remaining })
+              {match({ progress: InvitePolicy.getProgress(invite), remaining })
                 .with({ progress: 'not-started' }, () => t('entry.mypageStart'))
                 .with({ remaining: P.number }, ({ remaining: count }) =>
                   t('entry.mypageNext', { count }),

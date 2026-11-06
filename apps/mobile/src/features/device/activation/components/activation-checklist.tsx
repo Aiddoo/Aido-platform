@@ -138,7 +138,7 @@ function ActivationInviteStep({ isCompleted, onPress }: ActivationInviteStepProp
   const { t } = useTranslation(['todo', 'invite']);
   const label = t('invite:entry.checklistStep');
   const reward = t('invite:entry.checklistReward', {
-    days: InviteRewardPolicy.welcomePremiumDays(),
+    days: InviteRewardPolicy.getWelcomePremiumDays(),
   });
   const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
 
