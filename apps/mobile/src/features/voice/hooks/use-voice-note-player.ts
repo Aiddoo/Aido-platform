@@ -9,7 +9,7 @@ import {
   setPlaybackAudioMode,
   useAudioPartPlaylist,
 } from '@src/shared/infra/audio/use-audio-part-playlist';
-import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
@@ -174,10 +174,8 @@ export function useVoiceNotePlayer({
     uris: parts.map(({ uri }) => uri),
     updateIntervalMs: VOICE_NOTE_POSITION_INTERVAL_MS,
   });
-  const player = useMemo(
-    () => createVoiceNotePlayer({ playlist, parts, durationMs, logger }),
-    [playlist, parts, durationMs, logger],
-  );
+  // 끝까지 들었다는 기억과 잡아 둔 세션을 들고 있어 useMemo 캐시에 맡기지 않는다
+  const [player] = useState(() => createVoiceNotePlayer({ playlist, parts, durationMs, logger }));
 
   useEffect(() => player.attach(), [player]);
 
