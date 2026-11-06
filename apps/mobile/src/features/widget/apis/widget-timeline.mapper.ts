@@ -1,5 +1,5 @@
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getNextLocalMidnight } from '@src/shared/utils/local-date-clock';
+import { toDateKey } from '@src/shared/date/instant';
+import { getNextLocalMidnight } from '@src/shared/date/local-date-clock';
 import type { WidgetTimelineEntry } from 'expo-widgets';
 
 import type { WidgetProps } from '../domains/widget-props.model';
@@ -23,7 +23,7 @@ export function toWidgetTimelineEntries(
   snapshot: WidgetSnapshot,
   { now, timeZone, appScheme }: WidgetTimelineContext,
 ): WidgetTimelineEntry<WidgetProps>[] {
-  const current = WidgetSnapshotPolicy.selectDay(snapshot, formatDateKey(now, timeZone));
+  const current = WidgetSnapshotPolicy.selectDay(snapshot, toDateKey(now, timeZone));
   const entries: WidgetTimelineEntry<WidgetProps>[] = [
     { date: now, props: toWidgetProps(current.day, current.renderState, appScheme) },
   ];
@@ -33,7 +33,7 @@ export function toWidgetTimelineEntries(
 
   let lastDay = current.day;
   let boundary = getNextLocalMidnight(now, timeZone);
-  const nextDay = snapshot.days.find((day) => day.date === formatDateKey(boundary, timeZone));
+  const nextDay = snapshot.days.find((day) => day.date === toDateKey(boundary, timeZone));
   if (nextDay != null) {
     entries.push({ date: boundary, props: toWidgetProps(nextDay, nextDay.state, appScheme) });
     lastDay = nextDay;

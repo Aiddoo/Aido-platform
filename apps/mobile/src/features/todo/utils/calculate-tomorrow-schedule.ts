@@ -1,4 +1,4 @@
-import { getNextDay, isBeforeDay, startOfDay } from '@src/shared/utils/date';
+import { getNextDay, isBeforeDay, startOfDay } from '@src/features/todo/utils/calendar-date';
 
 interface TomorrowSchedule {
   startDate: Date;

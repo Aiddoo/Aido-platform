@@ -1,6 +1,16 @@
+import {
+  getNextDay,
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+} from '@src/features/todo/utils/calendar-date';
+import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { getWeekdayLabels } from '@src/shared/date/date-labels';
+import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -12,15 +22,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import {
-  getWeekdayLabels,
-  getNextDay,
-  isSameDay,
-  isSameMonth,
-  startOfDay,
-} from '@src/shared/utils/date';
-import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
@@ -146,7 +147,7 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
           {formatDateKeyLabel(
-            formatDateKey(displayMonth, getDeviceTimezone()),
+            toDateKey(displayMonth, getDeviceTimezone()),
             'yearMonth',
             dateFormatContext,
           )}

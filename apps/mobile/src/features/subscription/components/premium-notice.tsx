@@ -1,8 +1,8 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Spacing, Text } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 

@@ -1,4 +1,4 @@
-import { isBeforeDay, startOfDay } from '@src/shared/utils/date';
+import { isBeforeDay, startOfDay } from '@src/features/todo/utils/calendar-date';
 
 interface TodaySchedule {
   startDate: Date;

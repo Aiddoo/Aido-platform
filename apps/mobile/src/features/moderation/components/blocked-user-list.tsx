@@ -1,9 +1,9 @@
 import { UserList } from '@src/features/friend/components/user-list';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, Text, useConfirmDialog } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 

@@ -8,11 +8,14 @@ import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queri
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
+import { isSameDay } from '@src/features/todo/utils/calendar-date';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Box,
@@ -29,9 +32,6 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { isSameDay } from '@src/shared/utils/date';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { useMemo, useState } from 'react';
@@ -53,7 +53,7 @@ export function FriendTodoList() {
     queries: [
       useGetFriendTodosQueryOptions({
         friendUserId: friendId,
-        date: formatDateKey(date, getDeviceTimezone()),
+        date: toDateKey(date, getDeviceTimezone()),
       }),
       useGetPreferenceQueryOptions(),
     ],

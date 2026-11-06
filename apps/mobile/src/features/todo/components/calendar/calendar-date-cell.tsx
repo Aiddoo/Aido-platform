@@ -1,8 +1,8 @@
 import { useFeedDate } from '@src/features/todo/hooks/use-feed-date';
+import { isSameDay } from '@src/features/todo/utils/calendar-date';
 import { useToday } from '@src/shared/hooks/use-today';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { isSameDay } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
 import { memo, type ReactNode } from 'react';
 

@@ -14,7 +14,7 @@ import {
 import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/todo/apis/todo-series.mapper';
 import type { TodoRepeat } from '@src/features/todo/domains/todo-repeat.model';
-import { diffDateKeysInDays } from '@src/shared/utils/date-key';
+import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

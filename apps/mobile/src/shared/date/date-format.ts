@@ -3,6 +3,10 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
+import { getZonedHour, toDateKey } from './instant';
+import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
+import { isValidHHmm, parseHour, parseMinute } from './time-of-day';
+
 /** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
   locale: 'ko-KR' | 'en-US';
@@ -43,53 +47,6 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   month: { month: 'short' },
   weekday: { weekday: 'short' },
 };
-
-const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-};
-const ZONED_HOUR_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', hourCycle: 'h23' };
-const ZONED_TIME_OPTIONS: Intl.DateTimeFormatOptions = { ...ZONED_HOUR_OPTIONS, minute: '2-digit' };
-const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
-  ...DATE_KEY_OPTIONS,
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-};
-const PARTS_LOCALE: DateFormatContext['locale'] = 'en-US';
-
-const formatterCache = new Map<string, Intl.DateTimeFormat>();
-const MAX_FORMATTERS = 32;
-
-function getFormatter(
-  context: DateFormatContext,
-  options: Intl.DateTimeFormatOptions,
-): Intl.DateTimeFormat {
-  const key = JSON.stringify([context.locale, context.timeZone, options]);
-  const cached = formatterCache.get(key);
-  if (cached) {
-    return cached;
-  }
-
-  if (formatterCache.size >= MAX_FORMATTERS) {
-    formatterCache.clear();
-  }
-  const formatter = new Intl.DateTimeFormat(context.locale, {
-    ...options,
-    timeZone: context.timeZone,
-  });
-  formatterCache.set(key, formatter);
-  return formatter;
-}
-
-function isValidDate(date: Date): boolean {
-  return Number.isFinite(date.getTime());
-}
-
-function findPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
-  return parts.find((part) => part.type === type)?.value ?? '';
-}
 
 // Hermes(iOS)는 ko-KR day 파트에 "일"까지 붙여 주므로 숫자만 필요한 곳은 en-US 파트에서 읽는다
 function formatNumericDay(date: Date, context: DateFormatContext): string {
@@ -255,52 +212,18 @@ export function formatRelativeTime(
     return labels.daysAgo(Math.floor(elapsedMs / DAY_MS));
   }
   const isSameYear =
-    formatDateKey(date, context.timeZone).slice(0, 4) ===
-    formatDateKey(now, context.timeZone).slice(0, 4);
+    toDateKey(date, context.timeZone).slice(0, 4) === toDateKey(now, context.timeZone).slice(0, 4);
   return formatDateLabel(date, isSameYear ? 'monthDay' : 'numericDate', context);
 }
 
-export function formatDateKey(date: Date, timeZone: string): string {
-  if (!isValidDate(date)) {
-    return '';
+/** "HH:mm" 문자열을 사용자 시간 형식에 맞춰 표시한다 */
+export function formatTimeDisplay(
+  time: string,
+  timeFormat: TimeFormat,
+  context: DateFormatContext,
+): string {
+  if (!isValidHHmm(time)) {
+    return time;
   }
-  const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, DATE_KEY_OPTIONS).formatToParts(
-    date,
-  );
-  const year = findPart(parts, 'year');
-  const month = findPart(parts, 'month');
-  const day = findPart(parts, 'day');
-  return year && month && day ? `${year}-${month}-${day}` : '';
-}
-
-export function getZonedHour(date: Date, timeZone: string): number {
-  if (!isValidDate(date)) {
-    return Number.NaN;
-  }
-  return Number(
-    findPart(
-      getFormatter({ locale: PARTS_LOCALE, timeZone }, ZONED_HOUR_OPTIONS).formatToParts(date),
-      'hour',
-    ),
-  );
-}
-
-export function formatZonedHHmm(date: Date, timeZone: string): string {
-  if (!isValidDate(date)) {
-    return '';
-  }
-  const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, ZONED_TIME_OPTIONS).formatToParts(
-    date,
-  );
-  return `${findPart(parts, 'hour')}:${findPart(parts, 'minute')}`;
-}
-
-/** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */
-export function hasSameWallClock(date: Date, timeZone: string, otherTimeZone: string): boolean {
-  if (!isValidDate(date)) {
-    return true;
-  }
-  const read = (zone: string) =>
-    getFormatter({ locale: PARTS_LOCALE, timeZone: zone }, WALL_CLOCK_OPTIONS).format(date);
-  return read(timeZone) === read(otherTimeZone);
+  return formatTimeOfDay({ hour: parseHour(time), minute: parseMinute(time) }, timeFormat, context);
 }

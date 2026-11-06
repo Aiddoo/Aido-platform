@@ -2,11 +2,10 @@ import { useWidgetSyncService } from '@src/bootstrap/providers/di-context';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/todo/queries/get-daily-completions-query-options';
 import { useGetTodoSummaryQueryOptions } from '@src/features/todo/queries/get-todo-summary-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { getCalendarWeekOfDateKey } from '@src/shared/utils/calendar-week';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
@@ -76,7 +75,7 @@ function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSn
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
   const { currentLocalDateKey: date, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
-  const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeekOfDateKey(date);
+  const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeek(date);
   const { data: user } = useQuery({
     ...useGetMeQueryOptions(),
     enabled: authState === 'authenticated',

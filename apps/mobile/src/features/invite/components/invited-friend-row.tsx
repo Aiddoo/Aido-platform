@@ -4,6 +4,7 @@ import { NudgePawButton } from '@src/features/nudge/components/nudge-paw-button'
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queries/get-remind-nudge-cooldown-query-options';
 import { remindNudgeSheetHref } from '@src/features/nudge/utils/navigation/nudge-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -17,7 +18,6 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';

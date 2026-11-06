@@ -1,7 +1,9 @@
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/todo/hooks/use-todo-sheet-params';
+import { toDateKey } from '@src/shared/date/instant';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   BottomSheet,
   INQUIRY_SHEET_EXIT,
@@ -11,8 +13,6 @@ import {
   Result,
   useSheetRoute,
 } from '@src/shared/ui';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
@@ -102,9 +102,9 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
             changedField: 'time',
             ...(scope != null && { scope }),
             input: {
-              startDate: formatDateKey(editValues.startDate, getDeviceTimezone()),
+              startDate: toDateKey(editValues.startDate, getDeviceTimezone()),
               endDate: editValues.endDate
-                ? formatDateKey(editValues.endDate, getDeviceTimezone())
+                ? toDateKey(editValues.endDate, getDeviceTimezone())
                 : null,
               scheduledTime: isAllDay ? null : scheduledTime,
               isAllDay,

@@ -1,6 +1,6 @@
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { formatCount } from '@src/shared/utils/format';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';

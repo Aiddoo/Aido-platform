@@ -1,5 +1,5 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
-import { formatDateKey } from '@src/shared/utils/date-format';
+import { toDateKey } from '@src/shared/date/instant';
 import { clamp, round, sumBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -99,10 +99,9 @@ function getSunscreenWindow(
   now: Date,
   timeZone: string,
 ): TimeWindow | null {
-  const todayKey = formatDateKey(now, timeZone);
+  const todayKey = toDateKey(now, timeZone);
   const strongHours = selectUpcomingHours(hourly, now).filter(
-    (hour) =>
-      formatDateKey(hour.startsAt, timeZone) === todayKey && hour.uvIndex >= SUNSCREEN_UV_INDEX,
+    (hour) => toDateKey(hour.startsAt, timeZone) === todayKey && hour.uvIndex >= SUNSCREEN_UV_INDEX,
   );
   const first = strongHours[0];
   const last = strongHours.at(-1);

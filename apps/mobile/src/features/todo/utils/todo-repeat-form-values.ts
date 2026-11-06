@@ -1,22 +1,19 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
-import { isAfterDay, isBeforeDay, isSameDay, toDate } from '@src/shared/utils/date';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
+import { isAfterDay, isBeforeDay, isSameDay } from '@src/features/todo/utils/calendar-date';
+import { toDate, toDateKey } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { without, xor } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../domains/todo-repeat-form.schema';
-import {
-  getWeekdayOfDateKey,
-  type TodoRepeat,
-  TodoRepeatPolicy,
-} from '../domains/todo-repeat.model';
+import { getWeekday, type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 
 export function toTodoRepeatFormValues(
   startDate: Date,
   repeat: TodoRepeat | null,
 ): TodoRepeatFormValues {
-  const startWeekday = [getWeekdayOfDateKey(toDeviceDateKey(startDate))];
+  const startWeekday = [getWeekday(toDateKey(startDate, getDeviceTimezone()))];
   const base = {
     startDate,
     weekdays: startWeekday,
@@ -63,8 +60,8 @@ export function withTodoRepeatFormStartDate(
 
   const adjusted = TodoRepeatPolicy.withRepeatStartDate(
     repeat,
-    toDeviceDateKey(values.startDate),
-    toDeviceDateKey(nextStartDate),
+    toDateKey(values.startDate, getDeviceTimezone()),
+    toDateKey(nextStartDate, getDeviceTimezone()),
   );
 
   return {
@@ -129,7 +126,10 @@ export function getTodoRepeatFormFirstOccurrenceKey(values: TodoRepeatFormValues
   const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
   return repeat == null
     ? null
-    : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
+    : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
+        repeat,
+        toDateKey(values.startDate, getDeviceTimezone()),
+      );
 }
 
 export function withTodoRepeatFormCalendarDate(
@@ -142,7 +142,7 @@ export function withTodoRepeatFormCalendarDate(
   }
 
   const isFirstOccurrence =
-    toDeviceDateKey(date) === getTodoRepeatFormFirstOccurrenceKey(values) &&
+    toDateKey(date, getDeviceTimezone()) === getTodoRepeatFormFirstOccurrenceKey(values) &&
     !isSameDay(date, values.startDate);
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 

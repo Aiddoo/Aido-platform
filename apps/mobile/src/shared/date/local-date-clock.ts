@@ -1,6 +1,7 @@
-import { formatDateKey } from './date-format';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+
 import { addDaysToDateKey } from './date-key';
-import { getDeviceTimezone } from './timezone';
+import { toDateKey } from './instant';
 
 export type LocalDateState = {
   currentLocalDate: Date;
@@ -28,7 +29,7 @@ export function createLocalDateState(
 ): LocalDateState {
   return {
     currentLocalDate: new Date(now),
-    currentLocalDateKey: formatDateKey(now, timeZone),
+    currentLocalDateKey: toDateKey(now, timeZone),
     currentTimeZone: timeZone,
     currentUtcOffsetMinutes: utcOffsetMinutes,
   };
@@ -72,12 +73,12 @@ function getTimeZoneOffsetMs(instantMs: number, timeZone: string): number {
  * 오프셋 후보 두 개 중 다음 날짜 key에 실제로 속하는 가장 이른 시각을 고른다.
  */
 export function getNextLocalMidnight(now: Date, timeZone: string): Date {
-  const nextDateKey = addDaysToDateKey(formatDateKey(now, timeZone), 1);
+  const nextDateKey = addDaysToDateKey(toDateKey(now, timeZone), 1);
   const wallMidnightMs = Date.parse(`${nextDateKey}T00:00:00Z`);
   const firstGuessMs = wallMidnightMs - getTimeZoneOffsetMs(wallMidnightMs, timeZone);
   const secondGuessMs = wallMidnightMs - getTimeZoneOffsetMs(firstGuessMs, timeZone);
   const startsNextDate = (instantMs: number) =>
-    instantMs > now.getTime() && formatDateKey(new Date(instantMs), timeZone) === nextDateKey;
+    instantMs > now.getTime() && toDateKey(new Date(instantMs), timeZone) === nextDateKey;
   const candidates = [firstGuessMs, secondGuessMs].filter(startsNextDate).sort((a, b) => a - b);
   return new Date(candidates[0] ?? Math.max(firstGuessMs, secondGuessMs));
 }

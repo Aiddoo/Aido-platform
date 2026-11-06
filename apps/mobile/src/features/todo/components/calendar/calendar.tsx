@@ -1,20 +1,10 @@
 import { useCalendarViewMode } from '@src/features/todo/hooks/use-calendar-view-mode';
 import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
-import { useTranslation } from '@src/shared/i18n';
-import {
-  type CalendarViewMode,
-  calendarViewModeSchema,
-} from '@src/shared/preferences/calendar-view-mode.preference';
-import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import {
   addMonths,
   addWeeks,
   diffMonths,
   diffWeeks,
-  formatWeekOfMonthLabel,
   getMonthStart,
   getMonthWeeks,
   getNextDay,
@@ -23,9 +13,20 @@ import {
   isSameMonth,
   withDayOfMonth,
   withDayOfWeek,
-} from '@src/shared/utils/date';
-import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
+} from '@src/features/todo/utils/calendar-date';
+import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
+import { toDateKey } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
+import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+import {
+  type CalendarViewMode,
+  calendarViewModeSchema,
+} from '@src/shared/preferences/calendar-view-mode.preference';
+import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -343,7 +344,7 @@ function WeekRow({ week, completions }: WeekRowProps) {
     <HStack px={8}>
       {dates.map((date) => (
         <CalendarDateCell key={date.toISOString()} date={date}>
-          <CompletionIndicator completion={completions[formatDateKey(date, getDeviceTimezone())]} />
+          <CompletionIndicator completion={completions[toDateKey(date, getDeviceTimezone())]} />
         </CalendarDateCell>
       ))}
     </HStack>
@@ -369,9 +370,7 @@ function MonthGrid({ month, completions }: MonthGridProps) {
               date={date}
               className={isSameMonth(date, month) ? undefined : 'opacity-20'}
             >
-              <CompletionIndicator
-                completion={completions[formatDateKey(date, getDeviceTimezone())]}
-              />
+              <CompletionIndicator completion={completions[toDateKey(date, getDeviceTimezone())]} />
             </CalendarDateCell>
           ))}
         </HStack>

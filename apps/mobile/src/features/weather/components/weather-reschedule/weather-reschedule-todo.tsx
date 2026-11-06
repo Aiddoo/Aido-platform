@@ -1,9 +1,9 @@
 import type { WeatherRescheduleReason } from '@aido/api';
+import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { formatClockTime, type TimeFormat } from '@src/shared/utils/date-format';
 import { useFormContext } from 'react-hook-form';
 
 import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';

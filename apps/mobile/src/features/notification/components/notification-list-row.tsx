@@ -1,8 +1,9 @@
+import type { DateSectionKey } from '@src/features/notification/utils/date-section';
+import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { type DateSectionKey, formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';

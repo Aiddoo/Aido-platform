@@ -9,6 +9,7 @@ import {
 import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/queries/get-weekly-achievement-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
@@ -26,7 +27,6 @@ import {
   type QueryErrorFallbackProps,
   Box,
 } from '@src/shared/ui';
-import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Redirect, useLocalSearchParams } from 'expo-router';

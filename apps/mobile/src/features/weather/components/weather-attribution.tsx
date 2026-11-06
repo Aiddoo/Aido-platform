@@ -1,10 +1,10 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { formatClockTime } from '@src/shared/date/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatClockTime } from '@src/shared/utils/date-format';
 import { tv } from '@src/shared/utils/tv';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Image, type ImageLoadEventData } from 'expo-image';

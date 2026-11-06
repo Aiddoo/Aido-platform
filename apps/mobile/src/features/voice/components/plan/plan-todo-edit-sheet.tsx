@@ -6,9 +6,12 @@ import { TodoRepeatPickerContent } from '@src/features/todo/components/todo-repe
 import { TodoTimePickerContent } from '@src/features/todo/components/todo-time-picker-content';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { formatRepeatSummary } from '@src/features/todo/utils/format-repeat-summary';
+import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
+import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ActionChip,
   BottomSheetInput,
@@ -28,9 +31,6 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { toDate } from '@src/shared/utils/date';
-import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-format';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import {
@@ -156,7 +156,7 @@ function DateChip() {
           value={toDate(startDate)}
           onChange={(nextStartDate) => {
             updateTodo(form, (current) =>
-              VoicePlanPolicy.withStartDate(current, toDeviceDateKey(nextStartDate)),
+              VoicePlanPolicy.withStartDate(current, toDateKey(nextStartDate, getDeviceTimezone())),
             );
             close();
           }}
@@ -255,7 +255,7 @@ function RepeatChip() {
           onChange={(next) => {
             updateTodo(form, (current) =>
               VoicePlanPolicy.withRepeat(
-                { ...current, startDate: toDeviceDateKey(next.startDate) },
+                { ...current, startDate: toDateKey(next.startDate, getDeviceTimezone()) },
                 next.repeat,
               ),
             );

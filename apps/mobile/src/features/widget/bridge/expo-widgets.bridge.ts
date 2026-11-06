@@ -1,4 +1,4 @@
-import { readDeviceLocalDateState } from '@src/shared/utils/local-date-clock';
+import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import Constants from 'expo-constants';
 
 import { toWidgetTimelineEntries } from '../apis/widget-timeline.mapper';

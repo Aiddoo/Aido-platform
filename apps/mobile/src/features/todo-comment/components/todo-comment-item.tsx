@@ -7,6 +7,7 @@ import {
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -36,7 +37,6 @@ import {
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
-import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { router } from 'expo-router';

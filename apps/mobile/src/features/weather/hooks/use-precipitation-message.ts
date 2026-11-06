@@ -1,6 +1,6 @@
 import type { WeatherPrecipitationType } from '@aido/api';
+import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import { useTranslation } from '@src/shared/i18n';
-import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/utils/date-format';
 import { match } from 'ts-pattern';
 
 import { PRECIPITATION_SUBJECT_LABEL_KEYS } from '../constants/weather-labels';

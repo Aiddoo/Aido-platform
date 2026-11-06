@@ -3,6 +3,8 @@ import DateTimePicker, {
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
 import { PickerHeader } from '@src/features/todo/components/picker-header';
+import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/date-format';
+import { getPickerLocale, timeToDate } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -16,8 +18,6 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatTimeOfDay } from '@src/shared/utils/date-format';
-import { getPickerLocale, timeToDate, type TimeFormat } from '@src/shared/utils/time';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 import { Platform } from 'react-native';

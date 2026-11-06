@@ -1,5 +1,5 @@
 import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/utils/date-key';
+import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { range, sortBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -205,7 +205,7 @@ export function withMultiDayTodoSpans(
   return withCompletions(result, [...byDate.values()]);
 }
 
-function isTodoOnDate(todo: Todo, date: string): boolean {
+export function isTodoOnDate(todo: Pick<Todo, 'startDate' | 'endDate'>, date: string): boolean {
   return todo.startDate <= date && (todo.endDate ?? todo.startDate) >= date;
 }
 
@@ -250,6 +250,7 @@ export function hasUpcomingTimedTodo(
 }
 
 export const TodoPolicy = {
+  isTodoOnDate,
   isRecurringTodo,
   isMultiDayTodo,
   getShiftedEndDate,

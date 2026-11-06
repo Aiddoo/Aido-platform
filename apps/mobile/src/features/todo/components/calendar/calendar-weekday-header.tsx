@@ -1,6 +1,6 @@
+import { getWeekdayLabels } from '@src/shared/date/date-labels';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, type TextShade, type TextTone } from '@src/shared/ui';
-import { getWeekdayLabels } from '@src/shared/utils/date';
 import { match } from 'ts-pattern';
 
 type WeekdayStyle = { tone: TextTone; shade: TextShade | undefined };

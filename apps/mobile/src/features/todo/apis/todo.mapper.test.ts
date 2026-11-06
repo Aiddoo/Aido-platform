@@ -1,4 +1,5 @@
-import { toHHmm } from '@src/shared/utils/time';
+import { toHHmm } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
 import {
   createDailyCompletionsDto,
@@ -36,7 +37,7 @@ describe('toTodo', () => {
     const result = toTodo(dto);
 
     // Then
-    expect(result.localTime).toBe(toHHmm(new Date(instant)));
+    expect(result.localTime).toBe(toHHmm(new Date(instant), getDeviceTimezone()));
   });
 
   test('칸이 비어 있어도(재배포 전 옛 서버가 쓴 행) 순간을 기기 시간대로 읽는다', () => {
@@ -48,7 +49,7 @@ describe('toTodo', () => {
     const result = toTodo(dto);
 
     // Then
-    expect(result.localTime).toBe(toHHmm(new Date(instant)));
+    expect(result.localTime).toBe(toHHmm(new Date(instant), getDeviceTimezone()));
   });
 
   test('시간 없는 할 일은 낡은 칸이 있어도 null이다', () => {

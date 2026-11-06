@@ -1,4 +1,5 @@
-import { toDate, toNullableDate } from '@src/shared/utils/date';
+import { toNullableDate } from '@src/features/todo/utils/calendar-date';
+import { toDate } from '@src/shared/date/instant';
 
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 import type { TodoRepeat } from '../domains/todo-repeat.model';

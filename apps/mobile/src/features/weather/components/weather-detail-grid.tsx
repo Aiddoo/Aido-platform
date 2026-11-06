@@ -1,8 +1,8 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { formatInstantHour } from '@src/shared/date/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Grid, GridItem } from '@src/shared/ui';
-import { formatInstantHour } from '@src/shared/utils/date-format';
 import { formatDecimal } from '@src/shared/utils/format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';

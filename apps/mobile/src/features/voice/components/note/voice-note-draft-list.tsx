@@ -1,5 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -13,7 +14,6 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';

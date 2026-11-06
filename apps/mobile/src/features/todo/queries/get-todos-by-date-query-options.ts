@@ -1,9 +1,9 @@
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { unwrap } from '@src/shared/errors/result';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { queryOptions } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';

@@ -1,5 +1,6 @@
 import { FlashList, type FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
+import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -18,7 +19,6 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';

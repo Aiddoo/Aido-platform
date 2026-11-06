@@ -1,5 +1,6 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
+import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,7 +17,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';

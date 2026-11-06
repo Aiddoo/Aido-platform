@@ -179,7 +179,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/shared/providers/local-date-provider.tsx', ['expo-localization']],
   ['apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx', ['expo-application']],
   ['apps/mobile/src/shared/utils/device-headers.ts', ['expo-device']],
-  ['apps/mobile/src/shared/utils/timezone.ts', ['expo-localization']],
 ]);
 
 function getSdkModule(moduleName) {

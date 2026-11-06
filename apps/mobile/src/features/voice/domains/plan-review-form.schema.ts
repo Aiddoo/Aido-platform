@@ -1,6 +1,6 @@
+import { toDateKey } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { z } from 'zod';
 
 import {
@@ -65,7 +65,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  */
 export function restoreDraftDateKey(value: unknown, timeZone: string) {
   const instant = z.iso.datetime().safeParse(value);
-  return instant.success ? formatDateKey(new Date(instant.data), timeZone) : value;
+  return instant.success ? toDateKey(new Date(instant.data), timeZone) : value;
 }
 
 function restoreActionDates(action: unknown) {

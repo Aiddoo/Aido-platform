@@ -1,5 +1,5 @@
 import { useFeedDate } from '@src/features/todo/hooks/use-feed-date';
-import { getCalendarRange, getWeekRange } from '@src/shared/utils/date';
+import { getCalendarRange, getWeekRange } from '@src/features/todo/utils/calendar-date';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 

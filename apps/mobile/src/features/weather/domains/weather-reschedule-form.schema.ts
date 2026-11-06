@@ -1,4 +1,5 @@
-import { toHHmm } from '@src/shared/utils/time';
+import { toHHmm } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { z } from 'zod';
 
 export const weatherRescheduleFormSchema = z.object({
@@ -46,7 +47,7 @@ export function toMovedScheduleInput(
   return {
     startDate: todo.startDate,
     endDate: todo.endDate,
-    scheduledTime: toHHmm(startsAt),
+    scheduledTime: toHHmm(startsAt, getDeviceTimezone()),
     isAllDay: false,
   };
 }

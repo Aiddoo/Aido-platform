@@ -9,9 +9,9 @@ import { recordTodoCompletionForActivation } from '@src/features/activation/quer
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { useStoreReviewMoment } from '@src/features/store-review/hooks/use-store-review-moment';
 import { useTrack } from '@src/shared/analytics';
+import { toDate } from '@src/shared/date/instant';
 import { unwrap } from '@src/shared/errors/result';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { toDate } from '@src/shared/utils/date';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';

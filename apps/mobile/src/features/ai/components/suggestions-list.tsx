@@ -1,6 +1,13 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
+import {
+  formatDateLabel,
+  formatTimeDisplay,
+  type DateFormatContext,
+  type TimeFormat,
+} from '@src/shared/date/date-format';
+import { formatDaysOfWeek } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -19,9 +26,6 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { formatDaysOfWeek } from '@src/shared/utils/date';
-import { type DateFormatContext, formatDateLabel } from '@src/shared/utils/date-format';
-import { formatTimeDisplay, type TimeFormat } from '@src/shared/utils/time';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';

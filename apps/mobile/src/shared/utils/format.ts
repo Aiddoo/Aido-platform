@@ -1,8 +1,7 @@
+import type { DateFormatContext } from '@src/shared/date/date-format';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
-
-import type { DateFormatContext } from './date-format';
 
 const ZERO_DECIMAL_CURRENCIES = new Set(['KRW', 'JPY']);
 

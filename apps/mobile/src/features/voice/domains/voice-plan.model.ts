@@ -5,7 +5,7 @@ import {
   TodoRepeatPolicy,
   todoRepeatSchema,
 } from '@src/features/todo/domains/todo-repeat.model';
-import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/utils/date-key';
+import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 

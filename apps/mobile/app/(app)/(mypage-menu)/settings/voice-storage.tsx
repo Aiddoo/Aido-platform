@@ -4,6 +4,7 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import { useTrack } from '@src/shared/analytics';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -24,7 +25,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { formatFileSize } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';

@@ -1,15 +1,15 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import {
+  formatClockTime,
+  formatInstantHour,
+  type DateFormatContext,
+  type TimeFormat,
+} from '@src/shared/date/date-format';
 import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import {
-  type DateFormatContext,
-  formatClockTime,
-  formatInstantHour,
-  type TimeFormat,
-} from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { memo, type ReactNode } from 'react';

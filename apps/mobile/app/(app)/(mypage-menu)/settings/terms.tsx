@@ -2,6 +2,7 @@ import { ConsentPolicy } from '@src/features/auth/domains/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/auth/queries/use-update-ai-data-sharing-consent-mutation-options';
 import { legalUrl } from '@src/shared/constants/legal-urls';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
@@ -15,7 +16,6 @@ import {
   TextButton,
   useConfirmDialog,
 } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { match, P } from 'ts-pattern';

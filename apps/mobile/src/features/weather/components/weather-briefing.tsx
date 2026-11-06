@@ -8,12 +8,15 @@ import {
   todoCreateSheetHref,
 } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { useTrack } from '@src/shared/analytics';
+import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
+import { toHHmm } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowRightIcon,
   Button,
@@ -27,9 +30,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/utils/date-format';
-import { toHHmm } from '@src/shared/utils/time';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';
@@ -391,7 +391,8 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
       todoCreateSheetHref({
         date: todayKey,
         title: translate(action.title),
-        time: action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt),
+        time:
+          action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt, getDeviceTimezone()),
       }),
     );
   };

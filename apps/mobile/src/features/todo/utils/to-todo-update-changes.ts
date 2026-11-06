@@ -1,12 +1,18 @@
 import type { UpdateTodoInput } from '@aido/api';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
+import { toDateKey } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 import { TodoRepeatPolicy, type TodoRepeat } from '../domains/todo-repeat.model';
 
-const toDateKey = (date: Date) => formatDateKey(date, getDeviceTimezone());
-const toNullableDateKey = (date: Date | null) => (date == null ? null : toDateKey(date));
+function toFormDateKey(date: Date) {
+  return toDateKey(date, getDeviceTimezone());
+}
+
+function toNullableDateKey(date: Date | null) {
+  return date == null ? null : toFormDateKey(date);
+}
+
 const toScheduledTime = ({ isAllDay, scheduledTime }: AddTodoFormValues) =>
   isAllDay ? null : scheduledTime;
 
@@ -21,7 +27,7 @@ export function toTodoUpdateChanges(
   values: AddTodoFormValues,
   defaults: AddTodoFormValues,
 ): TodoUpdateChanges {
-  const startDate = toDateKey(values.startDate);
+  const startDate = toFormDateKey(values.startDate);
   const endDate = toNullableDateKey(values.endDate);
   const scheduledTime = toScheduledTime(values);
   const isScheduleChanged =
@@ -31,7 +37,7 @@ export function toTodoUpdateChanges(
     input: {
       ...(values.title !== defaults.title && { title: values.title }),
       ...(values.categoryId !== defaults.categoryId && { categoryId: values.categoryId }),
-      ...(startDate !== toDateKey(defaults.startDate) && { startDate }),
+      ...(startDate !== toFormDateKey(defaults.startDate) && { startDate }),
       ...(endDate !== toNullableDateKey(defaults.endDate) && { endDate }),
       ...(isScheduleChanged && { scheduledTime, isAllDay: values.isAllDay }),
       ...(values.visibility !== defaults.visibility && { visibility: values.visibility }),

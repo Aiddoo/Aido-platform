@@ -19,6 +19,7 @@ import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-lab
 import { todoThanksSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { isApiError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -43,7 +44,6 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Skeleton } from 'heroui-native';

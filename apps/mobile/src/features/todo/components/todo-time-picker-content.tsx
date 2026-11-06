@@ -1,7 +1,11 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { formatTimeDisplay } from '@src/shared/date/date-format';
+import { toHHmm } from '@src/shared/date/instant';
+import { getDateWithTime, getPickerLocale } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
@@ -13,12 +17,6 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import {
-  formatTimeDisplay,
-  getDateWithTime,
-  getPickerLocale,
-  toHHmm,
-} from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton, Switch } from 'heroui-native';
 import { useState } from 'react';
@@ -129,7 +127,7 @@ export function TodoTimePickerContent({
                       onChange={(_event, date) => {
                         setShowAndroidPicker(false);
                         if (date) {
-                          setLocalTime(toHHmm(date));
+                          setLocalTime(toHHmm(date, getDeviceTimezone()));
                         }
                       }}
                     />
@@ -150,7 +148,7 @@ export function TodoTimePickerContent({
                 locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
                 onChange={(_event, date) => {
                   if (date) {
-                    setLocalTime(toHHmm(date));
+                    setLocalTime(toHHmm(date, getDeviceTimezone()));
                   }
                 }}
                 style={{ height: 216 }}

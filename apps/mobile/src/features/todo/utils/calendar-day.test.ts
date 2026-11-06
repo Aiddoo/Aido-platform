@@ -1,3 +1,5 @@
+import { isDateToday, isSaturday, isSunday } from '@src/features/todo/utils/calendar-date';
+
 import {
   getDatePickerDayStyle,
   getMonthViewDayStyle,
@@ -5,13 +7,11 @@ import {
   isTodayHighlighted,
 } from './calendar-day';
 
-jest.mock('@src/shared/utils/date', () => ({
+jest.mock('./calendar-date', () => ({
   isDateToday: jest.fn(),
   isSunday: jest.fn(),
   isSaturday: jest.fn(),
 }));
-
-import { isDateToday, isSaturday, isSunday } from '@src/shared/utils/date';
 
 const mockIsDateToday = jest.mocked(isDateToday);
 const mockIsSunday = jest.mocked(isSunday);

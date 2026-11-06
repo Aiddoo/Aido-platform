@@ -3,6 +3,7 @@ import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-butto
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
+import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -16,7 +17,6 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';

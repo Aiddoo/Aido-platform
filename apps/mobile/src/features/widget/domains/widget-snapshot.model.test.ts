@@ -1,4 +1,4 @@
-import { formatDateKey } from '@src/shared/utils/date-format';
+import { toDateKey } from '@src/shared/date/instant';
 
 import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.factory';
 import { storedWidgetSnapshotSchema, WidgetSnapshotPolicy } from './widget-snapshot.model';
@@ -19,8 +19,8 @@ describe('WidgetSnapshotPolicy.selectDay', () => {
   it('서울 23:59:59에는 오늘, 00:00:00에는 저장해 둔 내일 day를 고른다', () => {
     // Given
     const snapshot = buildWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
-    const beforeMidnight = formatDateKey(new Date('2026-07-12T14:59:59.000Z'), 'Asia/Seoul');
-    const atMidnight = formatDateKey(new Date('2026-07-12T15:00:00.000Z'), 'Asia/Seoul');
+    const beforeMidnight = toDateKey(new Date('2026-07-12T14:59:59.000Z'), 'Asia/Seoul');
+    const atMidnight = toDateKey(new Date('2026-07-12T15:00:00.000Z'), 'Asia/Seoul');
 
     // When
     const before = WidgetSnapshotPolicy.selectDay(snapshot, beforeMidnight);

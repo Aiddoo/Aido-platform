@@ -1,11 +1,11 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, Box, HStack, Text, VStack } from '@src/shared/ui';
-import { formatClockTime, type TimeFormat } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 

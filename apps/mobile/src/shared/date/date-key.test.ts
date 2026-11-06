@@ -1,31 +1,38 @@
 import { i18n } from '@src/shared/i18n';
 
-import { getCalendarWeek, getCalendarWeekOfDateKey } from './calendar-week';
-import { formatDateKey } from './date-format';
+import { diffDateKeysInDays, getCalendarWeek, getDayOfWeek } from './date-key';
+import { toDateKey } from './instant';
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
 });
 
-describe('일요일을 기준으로 한 달력 주', () => {
-  test.each([
-    [new Date(2026, 9, 3), new Date(2026, 8, 27), 4],
-    [new Date(2026, 9, 4), new Date(2026, 9, 4), 1],
-    [new Date(2027, 0, 1), new Date(2026, 11, 27), 4],
-    [new Date(2028, 1, 29), new Date(2028, 1, 27), 4],
-  ])('날짜 %s의 주는 %s부터 시작하는 %s주차다', (date, expectedStart, expectedWeek) => {
-    // Given
-    const originalTimestamp = date.getTime();
-
+describe('diffDateKeysInDays — 두 날짜 key 사이의 달력 일수', () => {
+  it.each([
+    ['2028-02-28', '2028-03-01', 2],
+    ['2026-03-07', '2026-03-09', 2],
+    ['2026-12-31', '2027-01-01', 1],
+    ['2026-10-05', '2026-10-01', -4],
+  ])('%s부터 %s까지는 %s일이다', (from, to, expected) => {
     // When
-    const week = getCalendarWeek(date);
+    const days = diffDateKeysInDays(from, to);
 
     // Then
-    expect(week.start).toEqual(expectedStart);
-    expect(week.weekOfMonth).toBe(expectedWeek);
-    expect(week.end.getDay()).toBe(6);
-    expect(week.end.getHours()).toBe(23);
-    expect(date.getTime()).toBe(originalTimestamp);
+    expect(days).toBe(expected);
+  });
+});
+
+describe('getDayOfWeek — 날짜 key의 요일', () => {
+  it.each([
+    ['2028-02-29', 2],
+    ['2026-11-01', 0],
+    ['2026-10-31', 6],
+  ])('%s의 요일 인덱스는 %s다', (dateKey, expected) => {
+    // When
+    const weekday = getDayOfWeek(dateKey);
+
+    // Then
+    expect(weekday).toBe(expected);
   });
 });
 
@@ -41,7 +48,7 @@ describe('날짜 key 기준 달력 주', () => {
     // Given: DST 전환일, 윤일, ISO 53주(12-28~01-03)에 걸친 날짜
 
     // When
-    const week = getCalendarWeekOfDateKey(dateKey);
+    const week = getCalendarWeek(dateKey);
 
     // Then
     expect(week).toEqual({ startDateKey, endDateKey, weekOfMonth });
@@ -55,8 +62,8 @@ describe('날짜 key 기준 달력 주', () => {
     const instant = new Date('2026-10-31T15:00:00Z');
     const readWeeks = () =>
       ['Asia/Seoul', 'America/Los_Angeles'].map((timeZone) => {
-        const todayDateKey = formatDateKey(instant, timeZone);
-        return { todayDateKey, ...getCalendarWeekOfDateKey(todayDateKey) };
+        const todayDateKey = toDateKey(instant, timeZone);
+        return { todayDateKey, ...getCalendarWeek(todayDateKey) };
       });
     await i18n.changeLanguage(from);
     const before = readWeeks();
@@ -88,13 +95,13 @@ describe('날짜 key 기준 달력 주', () => {
     const fallBack = new Date('2026-11-01T07:30:00Z');
 
     // When
-    const springDateKey = formatDateKey(springForward, 'America/Los_Angeles');
-    const fallDateKey = formatDateKey(fallBack, 'America/Los_Angeles');
+    const springDateKey = toDateKey(springForward, 'America/Los_Angeles');
+    const fallDateKey = toDateKey(fallBack, 'America/Los_Angeles');
 
     // Then
     expect(springDateKey).toBe('2026-03-08');
-    expect(getCalendarWeekOfDateKey(springDateKey).startDateKey).toBe('2026-03-08');
+    expect(getCalendarWeek(springDateKey).startDateKey).toBe('2026-03-08');
     expect(fallDateKey).toBe('2026-11-01');
-    expect(getCalendarWeekOfDateKey(fallDateKey).startDateKey).toBe('2026-11-01');
+    expect(getCalendarWeek(fallDateKey).startDateKey).toBe('2026-11-01');
   });
 });

@@ -1,11 +1,12 @@
 import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES, type DayOfWeek } from '@aido/api/vocabulary';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
+import { toDateKey } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import {
-  getMonthDayOfDateKey,
+  getMonthDay,
   type TodoRepeat,
   type TodoRepeatEnd,
   TodoRepeatPolicy,
@@ -31,7 +32,7 @@ export function getTodoRepeatFormMonthDay({
   monthDay,
   startDate,
 }: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>): number {
-  return monthDay ?? getMonthDayOfDateKey(toDeviceDateKey(startDate));
+  return monthDay ?? getMonthDay(toDateKey(startDate, getDeviceTimezone()));
 }
 
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
@@ -43,7 +44,9 @@ function toTodoRepeatEnd(values: TodoRepeatFormValues): TodoRepeatEnd | null {
     .returnType<TodoRepeatEnd | null>()
     .with('NEVER', () => ({ type: 'NEVER' }))
     .with('UNTIL', () =>
-      values.untilDate == null ? null : { type: 'UNTIL', date: toDeviceDateKey(values.untilDate) },
+      values.untilDate == null
+        ? null
+        : { type: 'UNTIL', date: toDateKey(values.untilDate, getDeviceTimezone()) },
     )
     .with('COUNT', () => ({ type: 'COUNT', count: values.count }))
     .exhaustive();
@@ -91,7 +94,7 @@ export function getTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeat
   }
   return TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
     repeat,
-    toDeviceDateKey(values.startDate),
+    toDateKey(values.startDate, getDeviceTimezone()),
   ) == null
     ? 'no-occurrence'
     : null;

@@ -1,5 +1,4 @@
 import {
-  formatTimeDisplay,
   getDateWithTime,
   isTwelveHour,
   isValidHHmm,
@@ -7,9 +6,8 @@ import {
   parseMinute,
   resolveTimeOrFallback,
   timeToDate,
-  toHHmm,
   withTime,
-} from './time';
+} from './time-of-day';
 
 const FALLBACK_TIME = '09:00';
 
@@ -80,14 +78,6 @@ describe('time utils', () => {
     });
   });
 
-  describe('toHHmm', () => {
-    it('Date 객체를 HH:mm 형식 문자열로 변환해야 한다', () => {
-      const date = new Date(2026, 0, 15, 9, 5, 33, 999);
-
-      expect(toHHmm(date)).toBe('09:05');
-    });
-  });
-
   describe('getDateWithTime', () => {
     it('유효한 시간 문자열이면 해당 시간을 날짜에 반영해야 한다', () => {
       const baseDate = new Date(2026, 0, 15, 1, 2, 3, 4);
@@ -151,19 +141,6 @@ describe('time utils', () => {
       const result = timeToDate(23, 30);
       expect(result.getHours()).toBe(23);
       expect(result.getMinutes()).toBe(30);
-    });
-  });
-
-  describe('formatTimeDisplay', () => {
-    const koSeoul = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
-
-    it('HH:mm 시각을 사용자 시간 형식과 표시 언어로 바꾼다', () => {
-      expect(formatTimeDisplay('14:30', 'TWENTY_FOUR_HOUR', koSeoul)).toBe('14:30');
-      expect(formatTimeDisplay('14:30', 'TWELVE_HOUR', koSeoul)).toBe('오후 2:30');
-    });
-
-    it('유효하지 않은 시간 문자열이면 원본을 반환해야 한다', () => {
-      expect(formatTimeDisplay('invalid', 'TWELVE_HOUR', koSeoul)).toBe('invalid');
     });
   });
 });

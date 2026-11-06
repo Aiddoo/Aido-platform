@@ -1,4 +1,5 @@
 import { InvitePawPrintBoard } from '@src/features/invite/components/invite-paw-print-board';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -15,7 +16,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { formatCount } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';

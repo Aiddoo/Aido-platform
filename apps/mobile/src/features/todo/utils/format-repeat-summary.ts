@@ -1,6 +1,6 @@
+import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/date-format';
+import { formatDaysOfWeek } from '@src/shared/date/date-labels';
 import { t } from '@src/shared/i18n';
-import { formatDaysOfWeek } from '@src/shared/utils/date';
-import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { match } from 'ts-pattern';
 
 import {

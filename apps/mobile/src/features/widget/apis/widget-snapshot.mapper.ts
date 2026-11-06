@@ -1,11 +1,10 @@
-import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
-import { getCalendarWeekOfDateKey } from '@src/shared/utils/calendar-week';
 import {
-  type DateFormatContext,
   formatDateKeyLabel,
   toDateFormatLocale,
-} from '@src/shared/utils/date-format';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
+  type DateFormatContext,
+} from '@src/shared/date/date-format';
+import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
 
 import type {
@@ -151,7 +150,7 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
     locale: toDateFormatLocale(context.locale),
     timeZone: 'UTC',
   };
-  const week = getCalendarWeekOfDateKey(summary.date);
+  const week = getCalendarWeek(summary.date);
   const days = range(7).map((dayOffset) => {
     const date = addDaysToDateKey(week.startDateKey, dayOffset);
     const completion = completions[date];

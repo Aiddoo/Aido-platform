@@ -1,8 +1,8 @@
 import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { unwrap } from '@src/shared/errors/result';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { queryOptions } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';

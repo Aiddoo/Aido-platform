@@ -1,6 +1,6 @@
-import { addWeeks, withDayOfWeek } from '@src/shared/utils/date';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
+import { addWeeks, withDayOfWeek } from '@src/features/todo/utils/calendar-date';
+import { toDateKey } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
 import {
   clampCalendarPage,
@@ -57,6 +57,6 @@ describe('getCalendarPageAtOffset', () => {
     // Then: 2026-10-25 주에서 시작한 페이저라면 사용자가 본 2031년 날짜가 선택된다
     expect(page).toBe(TOTAL_PAGES - 1);
     const monday = withDayOfWeek(addWeeks(new Date(2026, 9, 25), page - CENTER_PAGE), 1);
-    expect(formatDateKey(monday, getDeviceTimezone())).toBe('2031-10-20');
+    expect(toDateKey(monday, getDeviceTimezone())).toBe('2031-10-20');
   });
 });

@@ -1,11 +1,11 @@
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
+import { formatTimeOfDay } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout, Text } from '@src/shared/ui';
-import { formatTimeOfDay } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense } from 'react';

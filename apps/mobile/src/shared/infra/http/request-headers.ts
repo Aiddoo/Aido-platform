@@ -1,6 +1,6 @@
 import { i18n } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { getDeviceHeaders } from '@src/shared/utils/device-headers';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import * as Crypto from 'expo-crypto';
 import type { BeforeRequestHook } from 'ky';
 

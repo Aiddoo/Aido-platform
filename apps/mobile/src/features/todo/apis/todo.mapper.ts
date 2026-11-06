@@ -15,7 +15,8 @@ import {
   type TodoSummaryResponse,
   updateTodoResponseSchema,
 } from '@aido/api';
-import { toHHmm } from '@src/shared/utils/time';
+import { toHHmm } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { z } from 'zod';
 
 import {
@@ -61,7 +62,7 @@ const toLocalTime = ({ scheduledTime, scheduledLocalTime }: TodoDto): string | n
   if (scheduledTime == null) {
     return null;
   }
-  return scheduledLocalTime ?? toHHmm(new Date(scheduledTime));
+  return scheduledLocalTime ?? toHHmm(new Date(scheduledTime), getDeviceTimezone());
 };
 
 export const toTodo = (dto: TodoDto): Todo => ({

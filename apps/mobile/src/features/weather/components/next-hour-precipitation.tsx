@@ -1,11 +1,11 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherRainIcon } from '@src/shared/ui/icon';
-import { formatInstantHour, type TimeFormat } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { useEffect } from 'react';

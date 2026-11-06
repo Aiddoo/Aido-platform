@@ -2,11 +2,15 @@ import { ThanksSummaryRow } from '@src/features/nudge/components/nudge-interacti
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/todo/hooks/use-todo-sheet-params';
+import { isDateToday } from '@src/features/todo/utils/calendar-date';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
+import { formatDateKeyCompactRange } from '@src/shared/date/date-format';
+import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowRightIcon,
   BottomSheet,
@@ -30,9 +34,6 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { isDateToday } from '@src/shared/utils/date';
-import { formatDateKey, formatDateKeyCompactRange } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -126,8 +127,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
         todoId: todo.id,
         changedField: 'date',
         input: {
-          startDate: formatDateKey(startDate, getDeviceTimezone()),
-          endDate: endDate == null ? null : formatDateKey(endDate, getDeviceTimezone()),
+          startDate: toDateKey(startDate, getDeviceTimezone()),
+          endDate: endDate == null ? null : toDateKey(endDate, getDeviceTimezone()),
           scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
           isAllDay: todo.isAllDay,
         },

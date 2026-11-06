@@ -21,6 +21,7 @@ import { rescheduleTodoIdsParamSchema } from '@src/features/weather/utils/naviga
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   BottomSheet,
@@ -36,7 +37,6 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';

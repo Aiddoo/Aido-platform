@@ -1,5 +1,6 @@
 import { type CreateNudgeInput, type CreateRemindNudgeInput, NUDGE_LIMITS } from '@aido/api';
-import { isSameDay, todoOverlapsDate } from '@src/shared/utils/date';
+import { TodoPolicy } from '@src/features/todo/domains/todo.model';
+import { isSameDay } from '@src/features/todo/utils/calendar-date';
 import { z } from 'zod';
 
 export const nudgeLimitInfoSchema = z.object({
@@ -97,11 +98,7 @@ const canNudgeTodoInRange = (
   },
   targetDate: string,
 ): boolean => {
-  return (
-    input.canNudge &&
-    !input.isCompleted &&
-    todoOverlapsDate(input.startDate, input.endDate, targetDate)
-  );
+  return input.canNudge && !input.isCompleted && TodoPolicy.isTodoOnDate(input, targetDate);
 };
 
 export const TodoNudgePolicy = {

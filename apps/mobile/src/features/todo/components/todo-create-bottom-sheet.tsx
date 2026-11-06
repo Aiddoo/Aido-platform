@@ -4,6 +4,7 @@ import {
   useTodoCreateVoiceHintParam,
   useTodoSheetDateParam,
 } from '@src/features/todo/hooks/use-todo-sheet-params';
+import { toDate } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
@@ -14,7 +15,6 @@ import {
   Result,
   useSheetRoute,
 } from '@src/shared/ui';
-import { toDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense, useEffect } from 'react';
 

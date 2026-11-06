@@ -1,6 +1,7 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -19,7 +20,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';

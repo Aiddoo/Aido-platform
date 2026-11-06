@@ -6,12 +6,13 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { track } from '@src/shared/analytics';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { toHHmm } from '@src/shared/date/instant';
+import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
-import { readDeviceLocalDateState } from '@src/shared/utils/local-date-clock';
-import { toHHmm } from '@src/shared/utils/time';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { useEffect, useEffectEvent } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -49,7 +50,7 @@ export function useTimezoneChangeNotice({
       result.ok &&
       TodoPolicy.hasUpcomingTimedTodo(result.value.todos, {
         dateKey: currentLocalDateKey,
-        time: toHHmm(currentLocalDate),
+        time: toHHmm(currentLocalDate, getDeviceTimezone()),
       })
     );
   };

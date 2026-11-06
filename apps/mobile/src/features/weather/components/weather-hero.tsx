@@ -1,5 +1,6 @@
 import catAnchorImage from '@assets/images/cat_weather_anchor.png';
 import { useTrack } from '@src/shared/analytics';
+import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -12,7 +13,6 @@ import {
   type QueryErrorFallbackProps,
   VStack,
 } from '@src/shared/ui';
-import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { useLocales } from 'expo-localization';

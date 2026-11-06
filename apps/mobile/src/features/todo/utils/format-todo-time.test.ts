@@ -1,4 +1,4 @@
-import type { DateFormatContext } from '@src/shared/utils/date-format';
+import type { DateFormatContext } from '@src/shared/date/date-format';
 
 import { createParentTodo } from '../__tests__/sub-todo.factories';
 import { formatTodoTime } from './format-todo-time';

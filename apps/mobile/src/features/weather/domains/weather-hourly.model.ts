@@ -1,6 +1,6 @@
 import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
-import { formatDateKey } from '@src/shared/utils/date-format';
+import { toDateKey } from '@src/shared/date/instant';
 import { countBy, maxBy, minBy, sortBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -154,8 +154,8 @@ function summarizeHourly(
   if (first == null) {
     return null;
   }
-  const todayKey = formatDateKey(now, report.location.timezone);
-  const isLaterDay = (date: Date) => formatDateKey(date, report.location.timezone) !== todayKey;
+  const todayKey = toDateKey(now, report.location.timezone);
+  const isLaterDay = (date: Date) => toDateKey(date, report.location.timezone) !== todayKey;
 
   // 지금 관측된 강수가 있으면 시간별 확률이 낮아도 '내리는 중'으로 말한다.
   const currentPrecipitation =

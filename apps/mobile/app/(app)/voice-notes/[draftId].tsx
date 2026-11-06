@@ -37,6 +37,7 @@ import {
   getFlagBarIndexes,
 } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { useTrack } from '@src/shared/analytics';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -55,7 +56,6 @@ import {
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { noop } from 'es-toolkit';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';

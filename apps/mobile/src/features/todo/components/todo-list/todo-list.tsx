@@ -2,11 +2,13 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo.model';
 import { type Todo, TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   Box,
   ChatBubbleIcon,
@@ -20,8 +22,6 @@ import {
   type QueryErrorFallbackProps,
   Result,
 } from '@src/shared/ui';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
@@ -69,7 +69,7 @@ export function TodoList() {
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
-      useGetTodosByDateQueryOptions({ date: formatDateKey(selectedDate, getDeviceTimezone()) }),
+      useGetTodosByDateQueryOptions({ date: toDateKey(selectedDate, getDeviceTimezone()) }),
       useGetPreferenceQueryOptions(),
     ],
   });

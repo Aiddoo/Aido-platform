@@ -14,7 +14,7 @@ import {
   type WeatherPrecipitationType,
 } from '@aido/api';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
-import { formatDateKey, hasSameWallClock } from '@src/shared/utils/date-format';
+import { hasSameWallClock, toDateKey } from '@src/shared/date/instant';
 import { clamp, maxBy, minBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -149,7 +149,7 @@ function findFirstDryHourStart(hourly: readonly HourlyForecastEntry[], after: nu
 }
 
 function isLaterDay(endsAt: Date | null, now: Date, timeZone: string): boolean {
-  return endsAt != null && formatDateKey(endsAt, timeZone) !== formatDateKey(now, timeZone);
+  return endsAt != null && toDateKey(endsAt, timeZone) !== toDateKey(now, timeZone);
 }
 
 function toWindow(
@@ -230,7 +230,7 @@ export function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: 
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
 function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Date): string {
-  return formatDateKey(now, report.location.timezone);
+  return toDateKey(now, report.location.timezone);
 }
 
 function findTodayForecast(

@@ -1,9 +1,9 @@
+import { toDateKey } from '@src/shared/date/instant';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 
 import {
   type HourlyForecastEntry,
@@ -19,7 +19,7 @@ export function WeatherRescheduleTimeline({ hours }: { hours: HourlyForecastEntr
   const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
   const todayHours = hours.filter(
-    (hour) => formatDateKey(hour.startsAt, getDeviceTimezone()) === todayKey,
+    (hour) => toDateKey(hour.startsAt, getDeviceTimezone()) === todayKey,
   );
 
   if (todayHours.length === 0) {

@@ -1,5 +1,13 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/todo/queries/get-daily-completions-query-options';
+import {
+  formatClockTime,
+  formatDateKeyLabel,
+  formatHourLabel,
+  type DateFormatContext,
+  type TimeFormat,
+} from '@src/shared/date/date-format';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -7,14 +15,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui/icon';
 import { cn } from '@src/shared/utils/cn';
-import {
-  type DateFormatContext,
-  formatClockTime,
-  formatDateKeyLabel,
-  formatHourLabel,
-  type TimeFormat,
-} from '@src/shared/utils/date-format';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { compact, round, zip } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';

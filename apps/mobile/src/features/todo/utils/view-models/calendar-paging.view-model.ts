@@ -1,4 +1,9 @@
-import { addMonths, addWeeks, getMonthStart, getWeekStart } from '@src/shared/utils/date';
+import {
+  addMonths,
+  addWeeks,
+  getMonthStart,
+  getWeekStart,
+} from '@src/features/todo/utils/calendar-date';
 import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 

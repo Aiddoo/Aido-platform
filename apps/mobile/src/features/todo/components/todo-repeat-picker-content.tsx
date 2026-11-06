@@ -1,9 +1,19 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
+import {
+  isAfterDay,
+  isBeforeDay,
+  isSameDay,
+  isSameMonth,
+} from '@src/features/todo/utils/calendar-date';
+import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
+import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -15,18 +25,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import {
-  formatDaysOfWeek,
-  getDayOfWeekLabel,
-  isAfterDay,
-  isBeforeDay,
-  isSameDay,
-  isSameMonth,
-  toDate,
-} from '@src/shared/utils/date';
-import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
@@ -348,7 +346,7 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
   const repeat = useWatch({ control, compute: toTodoRepeat });
   const firstOccurrenceKey = useWatch({ control, compute: getTodoRepeatFormFirstOccurrenceKey });
   const today = useToday();
-  const startDateKey = toDeviceDateKey(startDate);
+  const startDateKey = toDateKey(startDate, getDeviceTimezone());
   const firstWeekDate = picker.weeks.at(0)?.at(0);
   const lastWeekDate = picker.weeks.at(-1)?.at(-1);
   const occurrenceKeys =
@@ -356,8 +354,8 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
       ? null
       : new Set(
           TodoRepeatPolicy.getRepeatOccurrenceDateKeys(repeat, startDateKey, {
-            from: toDeviceDateKey(firstWeekDate),
-            to: toDeviceDateKey(lastWeekDate),
+            from: toDateKey(firstWeekDate, getDeviceTimezone()),
+            to: toDateKey(lastWeekDate, getDeviceTimezone()),
           }),
         );
   const lastOccurrenceKey =
@@ -372,7 +370,9 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
   // 고른 기간 안에 회차가 없으면 첫 회차가 종료일보다 뒤다. 띠가 뒤집히지 않게 고른 기간을 그대로 그린다
   const hasOccurrenceInPeriod =
     firstOccurrenceKey != null &&
-    (endType !== 'UNTIL' || untilDate == null || firstOccurrenceKey <= toDeviceDateKey(untilDate));
+    (endType !== 'UNTIL' ||
+      untilDate == null ||
+      firstOccurrenceKey <= toDateKey(untilDate, getDeviceTimezone()));
   /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
   const displayStartDate = hasOccurrenceInPeriod ? toDate(firstOccurrenceKey) : startDate;
 
@@ -418,13 +418,13 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
         ? null
         : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
             repeat,
-            toDeviceDateKey(values.startDate),
+            toDateKey(values.startDate, getDeviceTimezone()),
           );
     },
   });
   const dateFormatContext = useDateFormatContext();
   const formatMonthDay = (date: Date) =>
-    formatDateKeyLabel(toDeviceDateKey(date), 'monthDay', dateFormatContext);
+    formatDateKeyLabel(toDateKey(date, getDeviceTimezone()), 'monthDay', dateFormatContext);
   const isMonthDayClamped = useWatch({
     control,
     compute: (values) => {
@@ -530,7 +530,7 @@ const RepeatCalendar = ({
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
           {formatDateKeyLabel(
-            formatDateKey(displayMonth, getDeviceTimezone()),
+            toDateKey(displayMonth, getDeviceTimezone()),
             'yearMonth',
             dateFormatContext,
           )}
@@ -590,7 +590,7 @@ const RepeatCalendar = ({
                       isDimmed={
                         occurrenceKeys != null &&
                         isInRange &&
-                        !occurrenceKeys.has(toDeviceDateKey(date))
+                        !occurrenceKeys.has(toDateKey(date, getDeviceTimezone()))
                       }
                       onPress={onDatePress}
                     />

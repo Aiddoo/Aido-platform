@@ -1,3 +1,4 @@
+import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -11,7 +12,6 @@ import {
   TrashIcon,
   VStack,
 } from '@src/shared/ui';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 

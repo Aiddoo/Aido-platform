@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
+import '@src/shared/i18n/init';
 import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
@@ -12,9 +12,9 @@ import {
   createMockHttpClient,
 } from '@src/shared/__tests__';
 import { createTestQueryClient, renderUi } from '@src/shared/__tests__/render-ui';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { ok, unwrap } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
 

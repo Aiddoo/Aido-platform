@@ -5,11 +5,14 @@ import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/memo.mutations';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
+import { toNullableDate } from '@src/features/todo/utils/calendar-date';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
+import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
+import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
@@ -17,6 +20,7 @@ import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpecte
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ActionChip,
   useConfirmDialog,
@@ -39,14 +43,6 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { toNullableDate } from '@src/shared/utils/date';
-import {
-  formatDateKey,
-  formatDateKeyCompactRange,
-  formatDateKeyLabel,
-} from '@src/shared/utils/date-format';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -281,7 +277,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               {
                 input: {
                   title: values.title,
-                  startDate: formatDateKey(values.startDate, getDeviceTimezone()),
+                  startDate: toDateKey(values.startDate, getDeviceTimezone()),
                   scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
                   isAllDay: values.isAllDay,
                   visibility: values.visibility,
@@ -297,11 +293,11 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               {
                 input: {
                   title: values.title,
-                  startDate: formatDateKey(values.startDate, getDeviceTimezone()),
+                  startDate: toDateKey(values.startDate, getDeviceTimezone()),
                   endDate:
                     values.endDate == null
                       ? undefined
-                      : formatDateKey(values.endDate, getDeviceTimezone()),
+                      : toDateKey(values.endDate, getDeviceTimezone()),
                   scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
                   isAllDay: values.isAllDay,
                   visibility: values.visibility,
@@ -578,8 +574,8 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
   const dateFormatContext = useDateFormatContext();
   const { control, getValues, setFocus, setValue } = useFormContext<AddTodoFormValues>();
   const [startDate, endDate] = useWatch({ control, name: ['startDate', 'endDate'] });
-  const startDateKey = formatDateKey(startDate, getDeviceTimezone());
-  const endDateKey = endDate == null ? null : formatDateKey(endDate, getDeviceTimezone());
+  const startDateKey = toDateKey(startDate, getDeviceTimezone());
+  const endDateKey = endDate == null ? null : toDateKey(endDate, getDeviceTimezone());
   const singleDayLabel =
     startDateKey === todayDateKey
       ? t('dateSections.today')
@@ -593,18 +589,18 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
         'repeat',
         TodoRepeatPolicy.withRepeatStartDate(
           repeat,
-          toDeviceDateKey(startDate),
-          toDeviceDateKey(nextStartDate),
+          toDateKey(startDate, getDeviceTimezone()),
+          toDateKey(nextStartDate, getDeviceTimezone()),
         ),
       );
     }
     // 여러 날 할 일은 기간을 유지한 채 옮긴다. 날짜 변경 시트와 같은 규칙이고, 끝 날짜보다 뒤를 골라도 시작이 끝을 넘지 않는다
     const nextEndDate = TodoPolicy.getShiftedEndDate(
       {
-        startDate: toDeviceDateKey(startDate),
-        endDate: endDate == null ? null : toDeviceDateKey(endDate),
+        startDate: toDateKey(startDate, getDeviceTimezone()),
+        endDate: endDate == null ? null : toDateKey(endDate, getDeviceTimezone()),
       },
-      toDeviceDateKey(nextStartDate),
+      toDateKey(nextStartDate, getDeviceTimezone()),
     );
     setValue('startDate', nextStartDate);
     setValue('endDate', toNullableDate(nextEndDate));

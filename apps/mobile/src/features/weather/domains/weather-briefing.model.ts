@@ -4,10 +4,9 @@ import {
   type WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
-import { toDate } from '@src/shared/utils/date';
-import { formatDateKey, getZonedHour } from '@src/shared/utils/date-format';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
-import { getDateWithTime } from '@src/shared/utils/time';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { getZonedHour, toDate, toDateKey } from '@src/shared/date/instant';
+import { getDateWithTime } from '@src/shared/date/time-of-day';
 import { maxBy, orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -299,8 +298,8 @@ function toRainLaterBriefing(
   if (wetHour == null) {
     return null;
   }
-  const todayKey = formatDateKey(now, timeZone);
-  const wetDateKey = formatDateKey(wetHour.startsAt, timeZone);
+  const todayKey = toDateKey(now, timeZone);
+  const wetDateKey = toDateKey(wetHour.startsAt, timeZone);
   const day = match(wetDateKey)
     .with(todayKey, () => 'today' as const)
     .with(addDaysToDateKey(todayKey, 1), () => 'tomorrow' as const)
@@ -325,12 +324,12 @@ function toClearBriefing(
   todos: ForecastTodo[],
   { now, timeZone }: BriefingClock,
 ): BriefingResult | null {
-  const todayKey = formatDateKey(now, timeZone);
+  const todayKey = toDateKey(now, timeZone);
   const daylightHours = hourly.filter(
     (hour) =>
       hour.startsAt.getTime() + HOUR_MS > now.getTime() &&
       hour.isDaylight &&
-      formatDateKey(hour.startsAt, timeZone) === todayKey,
+      toDateKey(hour.startsAt, timeZone) === todayKey,
   );
   if (daylightHours.length === 0 || daylightHours.some(isWetHour)) {
     return null;
@@ -362,7 +361,7 @@ function toTomorrowMorningBriefing(
   if (getZonedHour(now, timezone) < EVENING_HOUR) {
     return null;
   }
-  const tomorrowKey = addDaysToDateKey(formatDateKey(now, timezone), 1);
+  const tomorrowKey = addDaysToDateKey(toDateKey(now, timezone), 1);
   const tomorrow = report.daily.find((day) => day.date === tomorrowKey);
   if (tomorrow == null) {
     return null;
@@ -418,13 +417,12 @@ function getRescheduleOptions(
     reason = 'rain',
   }: { now: Date; timeZone: string; reason?: WeatherRescheduleReason },
 ): RescheduleOption[] {
-  const todoDateKey = formatDateKey(todo.scheduledAt, timeZone);
+  const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
   const distance = (hour: HourlyForecastEntry) =>
     Math.abs(hour.startsAt.getTime() - todo.scheduledAt.getTime());
   const sameDayHours = hourly.filter(
     (hour) =>
-      hour.startsAt.getTime() > now.getTime() &&
-      formatDateKey(hour.startsAt, timeZone) === todoDateKey,
+      hour.startsAt.getTime() > now.getTime() && toDateKey(hour.startsAt, timeZone) === todoDateKey,
   );
   const ordered = match(reason)
     .with('rain', () =>

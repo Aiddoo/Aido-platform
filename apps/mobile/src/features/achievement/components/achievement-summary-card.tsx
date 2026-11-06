@@ -1,5 +1,6 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
@@ -20,7 +21,6 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import {
   usePrefetchQuery,
   useSuspenseInfiniteQuery,

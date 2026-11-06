@@ -1,5 +1,8 @@
-import { getDateSectionKey, type DateSectionKey } from '@src/shared/utils/date';
-import { formatDateKey } from '@src/shared/utils/date-format';
+import {
+  getDateSectionKey,
+  type DateSectionKey,
+} from '@src/features/notification/utils/date-section';
+import { toDateKey } from '@src/shared/date/instant';
 import { groupBy } from 'es-toolkit';
 
 export type DateSectionedListItem<TEntry> =
@@ -12,7 +15,7 @@ export function toDateSectionedListItems<TEntry extends { createdAt: Date }>(
   timeZone: string,
 ): DateSectionedListItem<TEntry>[] {
   const getSection = (entry: TEntry) =>
-    getDateSectionKey(formatDateKey(entry.createdAt, timeZone), todayDateKey);
+    getDateSectionKey(toDateKey(entry.createdAt, timeZone), todayDateKey);
   const sections = groupBy(entries, getSection);
   return Object.values(sections).flatMap((sectionEntries): DateSectionedListItem<TEntry>[] => {
     const first = sectionEntries[0];

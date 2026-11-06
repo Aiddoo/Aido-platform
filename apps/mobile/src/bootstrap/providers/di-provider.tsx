@@ -69,6 +69,7 @@ import { expoApplicationMetadataGateway } from '@src/shared/infra/application/ex
 import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer.gateway';
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { expoLocalFileSystemGateway } from '@src/shared/infra/file-system/expo-local-file-system.gateway';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics.gateway';
@@ -101,7 +102,6 @@ import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
