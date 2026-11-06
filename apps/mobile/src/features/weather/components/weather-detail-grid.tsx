@@ -28,7 +28,8 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
-import { toCompassDial, toPressureGauge } from '../utils/view-models/weather-dial.view-model';
+import { toUvMeterPosition } from '../utils/weather-bar.geometry';
+import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
 import {
   TILE_GRID_GAP,
   useTileLayout,
@@ -107,7 +108,7 @@ export function WeatherDetailGrid() {
             <Box className="mt-3">
               <WeatherMeter
                 colors={UV_METER_COLORS}
-                position={WeatherDetailPolicy.uvMeterPosition(current.uvIndex)}
+                position={toUvMeterPosition(current.uvIndex)}
               />
             </Box>
           </WeatherTextTile>

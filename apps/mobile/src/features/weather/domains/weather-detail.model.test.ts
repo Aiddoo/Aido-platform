@@ -8,27 +8,6 @@ const SUNRISE = new Date('2026-11-01T21:51:00.000Z');
 const SUNSET = new Date('2026-11-02T08:28:00.000Z');
 const DAY = { sunrise: SUNRISE, sunset: SUNSET };
 
-describe('WeatherDetailPolicy 막대 위치', () => {
-  it.each([
-    [0, 0.03],
-    [4, 4 / 11],
-    [15, 0.97],
-  ])('자외선 %d은 막대의 %f 위치다', (uvIndex, expected) => {
-    // Given 자외선 지수 When 막대 위치를 구하면 Then 3%~97% 안에서 11 기준 비율이다
-    expect(WeatherDetailPolicy.uvMeterPosition(uvIndex)).toBeCloseTo(expected);
-  });
-
-  it.each([
-    ['pm10', 15, 0.125],
-    ['pm10', 80, 0.5],
-    ['pm25', 25, 0.375],
-    ['pm25', 500, 0.97],
-  ] as const)('%s %d은 막대의 %f 위치다', (pollutant, value, expected) => {
-    // Given 오염물질 농도 When 막대 위치를 구하면 Then 등급 칸 안에서 비례한 위치다
-    expect(WeatherDetailPolicy.airMeterPosition(value, pollutant)).toBeCloseTo(expected);
-  });
-});
-
 describe('WeatherDetailPolicy 단계 분류', () => {
   it.each([
     [16000, 16, 'clear'],

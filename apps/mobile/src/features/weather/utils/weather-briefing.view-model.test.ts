@@ -1,5 +1,5 @@
-import { createHourlySeries, createWeatherReport } from '../../__tests__/weather-report.factories';
-import { type BriefingTodo, WeatherBriefingPolicy } from '../../domains/weather-briefing.model';
+import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.factories';
+import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import {
   type BriefingViewDeps,
   toBriefingState,

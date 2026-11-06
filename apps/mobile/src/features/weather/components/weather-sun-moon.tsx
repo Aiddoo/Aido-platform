@@ -15,11 +15,7 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
-import {
-  getSunArcPosition,
-  isSunBelowHorizon,
-  SUN_ARC_VIEWBOX,
-} from '../utils/view-models/sun-arc.view-model';
+import { getSunArcPosition, isSunBelowHorizon, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMoonIcon } from './weather-moon-icon';

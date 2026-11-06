@@ -1,6 +1,6 @@
 import { range } from 'es-toolkit';
 
-import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from './next-hour-chart.view-model';
+import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from './next-hour-chart.geometry';
 
 const START = Date.parse('2026-11-02T06:26:00.000Z');
 

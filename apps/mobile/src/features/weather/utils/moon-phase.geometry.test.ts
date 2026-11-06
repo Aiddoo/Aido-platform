@@ -1,4 +1,4 @@
-import { toMoonGeometry } from './moon-phase.view-model';
+import { toMoonGeometry } from './moon-phase.geometry';
 
 describe('toMoonGeometry', () => {
   it.each([

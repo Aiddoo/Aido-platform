@@ -15,7 +15,6 @@ import {
 } from '@aido/api';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { hasSameWallClock, toDateKey } from '@src/shared/date/instant';
-import { clamp, maxBy, minBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -79,11 +78,6 @@ const STALE_AFTER_MS = 30 * MINUTE_MS;
 const NOWCAST_EXPIRES_AFTER_MS = 6 * HOUR_MS;
 /** 시간별 예보에서 이 확률 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림과 같은 기준이다. */
 const WET_HOUR_CHANCE = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
-
-/** 0~1 막대·궤적 위 자리. 범위를 벗어나면 양 끝에 두고, 폭이 1보다 좁으면 1로 본다. */
-export function toUnitPosition(value: number, min: number, max: number): number {
-  return clamp((value - min) / Math.max(max - min, 1), 0, 1);
-}
 
 export function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
   return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === type);
@@ -253,6 +247,8 @@ function isAlertInEffect(alert: WeatherAlert, now: Date): boolean {
   return alert.effectiveAt.getTime() <= now.getTime();
 }
 
+export type AirPollutant = 'pm10' | 'pm25';
+
 export type AirQualityGrade = 'good' | 'moderate' | 'bad' | 'veryBad';
 
 const AIR_QUALITY_GRADES = [
@@ -334,24 +330,6 @@ function toSceneInput(
     observedAt: report.fetchedAt,
     latitude: report.location.latitude,
   };
-}
-
-export interface TemperatureBar {
-  start: number;
-  end: number;
-}
-
-/** 예보 기간 전체의 최저~최고를 0~1로 두고 하루의 최저·최고가 놓일 위치를 구한다. */
-function toTemperatureBars(daily: readonly DailyForecastEntry[]): TemperatureBar[] {
-  const lowest = minBy(daily, (day) => day.temperatureMin)?.temperatureMin;
-  const highest = maxBy(daily, (day) => day.temperatureMax)?.temperatureMax;
-  if (lowest == null || highest == null) {
-    return [];
-  }
-  return daily.map((day) => ({
-    start: toUnitPosition(day.temperatureMin, lowest, highest),
-    end: toUnitPosition(day.temperatureMax, lowest, highest),
-  }));
 }
 
 type SunEvents =
@@ -452,7 +430,6 @@ export const WeatherReportPolicy = {
   todayForecast: findTodayForecast,
   activeAlerts: selectActiveAlerts,
   isAlertInEffect,
-  temperatureBars: toTemperatureBars,
   sunEvents: getSunEvents,
   compassDirection: toCompassDirection,
   feelsLike: compareFeelsLike,

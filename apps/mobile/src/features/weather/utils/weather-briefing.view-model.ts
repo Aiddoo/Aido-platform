@@ -3,15 +3,15 @@ import type { WeatherCondition } from '@aido/api';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
-import type { BriefingRowTone } from '../../constants/weather-colors';
-import { WEATHER_CONDITION_LABEL_KEYS } from '../../constants/weather-labels';
+import type { BriefingRowTone } from '../constants/weather-colors';
+import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
   type BriefingResult,
   type ForecastTodo,
   type HourRange,
   WeatherBriefingPolicy,
-} from '../../domains/weather-briefing.model';
-import { type HourlyForecastEntry, WeatherReportPolicy } from '../../domains/weather-report.model';
+} from '../domains/weather-briefing.model';
+import { type HourlyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
 
 /** 화면 문구 한 줄. 컴포넌트가 번역하며, 값에 다른 문구를 넣으면 그 문구도 번역해 넣는다. */
 export interface BriefingCopy {

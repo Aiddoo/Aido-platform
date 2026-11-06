@@ -28,7 +28,7 @@ import type {
   WeatherOpenedEntry,
   WeatherReportFailedCause,
 } from '@src/features/weather/utils/analytics/weather-analytics';
-import type { TodoSuggestionReason } from '@src/features/weather/utils/view-models/weather-briefing.view-model';
+import type { TodoSuggestionReason } from '@src/features/weather/utils/weather-briefing.view-model';
 
 // 관측 키의 단일 원본. Analytics 이벤트·Sentry feature/tag·breadcrumb 카테고리를 여기서만 정의한다.
 // 포트(core/ports)는 이 파일의 타입만 import한다.

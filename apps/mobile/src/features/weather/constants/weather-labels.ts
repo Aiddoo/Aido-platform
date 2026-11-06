@@ -21,7 +21,7 @@ import type {
   FeelsLikeComparison,
   UvLevel,
 } from '../domains/weather-report.model';
-import type { PrecipitationLevel } from '../utils/view-models/next-hour-chart.view-model';
+import type { PrecipitationLevel } from '../utils/next-hour-chart.geometry';
 
 export const WEATHER_CONDITION_LABEL_KEYS = {
   CLEAR: 'condition.clear',

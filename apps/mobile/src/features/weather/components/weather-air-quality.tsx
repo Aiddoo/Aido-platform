@@ -5,12 +5,13 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { AIR_METER_COLORS } from '../constants/weather-colors';
 import { AIR_GRADE_LABEL_KEYS, AIR_QUALITY_SOURCE_LABEL_KEYS } from '../constants/weather-labels';
-import { type AirPollutant, WeatherDetailPolicy } from '../domains/weather-detail.model';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherDetailPolicy } from '../domains/weather-detail.model';
+import { type AirPollutant, WeatherReportPolicy } from '../domains/weather-report.model';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import { toAirMeterPosition } from '../utils/weather-bar.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMeter } from './weather-meter';
@@ -83,9 +84,7 @@ export function WeatherAirQuality() {
               <Box className="mt-3">
                 <WeatherMeter
                   colors={AIR_METER_COLORS}
-                  position={
-                    value == null ? null : WeatherDetailPolicy.airMeterPosition(value, pollutant)
-                  }
+                  position={value == null ? null : toAirMeterPosition(value, pollutant)}
                 />
               </Box>
             </VStack>

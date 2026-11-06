@@ -1,8 +1,9 @@
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { round } from 'es-toolkit';
 
-import { type DailyForecastEntry, toUnitPosition } from '../../domains/weather-report.model';
-import type { DialPoint } from './weather-dial.view-model';
+import type { DailyForecastEntry } from '../domains/weather-report.model';
+import { toUnitPosition } from './weather-bar.geometry';
+import type { DialPoint } from './weather-dial.geometry';
 
 export const SUN_ARC_VIEWBOX = { width: 326, height: 96 } as const;
 

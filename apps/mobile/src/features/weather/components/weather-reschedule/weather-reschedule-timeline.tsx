@@ -5,11 +5,8 @@ import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 
-import {
-  type HourlyForecastEntry,
-  toUnitPosition,
-  WeatherReportPolicy,
-} from '../../domains/weather-report.model';
+import { type HourlyForecastEntry, WeatherReportPolicy } from '../../domains/weather-report.model';
+import { toUnitPosition } from '../../utils/weather-bar.geometry';
 
 const CHART_HEIGHT = 40;
 const MIN_BAR_HEIGHT = 2;

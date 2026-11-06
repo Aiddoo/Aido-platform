@@ -1,6 +1,6 @@
 import { range, round } from 'es-toolkit';
 
-import { toUnitPosition } from '../../domains/weather-report.model';
+import { toUnitPosition } from './weather-bar.geometry';
 
 export interface DialPoint {
   x: number;

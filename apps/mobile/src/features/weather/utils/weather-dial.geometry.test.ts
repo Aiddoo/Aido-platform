@@ -1,4 +1,4 @@
-import { toCompassDial, toPressureGauge } from './weather-dial.view-model';
+import { toCompassDial, toPressureGauge } from './weather-dial.geometry';
 
 describe('toCompassDial', () => {
   it('북서풍이면 꼬리는 북서쪽, 화살촉은 남동쪽을 가리킨다', () => {

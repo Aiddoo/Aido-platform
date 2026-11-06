@@ -34,10 +34,7 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
-import {
-  NEXT_HOUR_CHART_SIZE,
-  toNextHourChart,
-} from '../utils/view-models/next-hour-chart.view-model';
+import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 

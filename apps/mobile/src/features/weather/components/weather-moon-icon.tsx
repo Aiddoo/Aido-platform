@@ -17,7 +17,7 @@ import {
   MOON_RADIUS,
   MOON_VIEWBOX,
   toMoonGeometry,
-} from '../utils/view-models/moon-phase.view-model';
+} from '../utils/moon-phase.geometry';
 
 const MOON_ICON_SIZE = 46;
 /**

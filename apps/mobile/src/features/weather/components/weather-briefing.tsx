@@ -54,7 +54,7 @@ import {
   type BriefingRow,
   toBriefingState,
   toBriefingView,
-} from '../utils/view-models/weather-briefing.view-model';
+} from '../utils/weather-briefing.view-model';
 import { WeatherBriefingChip } from './weather-briefing-chip';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';

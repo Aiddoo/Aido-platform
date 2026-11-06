@@ -1,45 +1,15 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { toDateKey } from '@src/shared/date/instant';
-import { clamp, round, sumBy } from 'es-toolkit';
+import { round, sumBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import {
+  type AirPollutant,
   type AirQuality,
   type DailyForecastEntry,
   type HourlyForecastEntry,
-  PM10_UPPER_BOUNDS,
-  PM25_UPPER_BOUNDS,
   selectUpcomingHours,
 } from './weather-report.model';
-
-/** 막대 끝에 점이 반쯤 잘리지 않도록 3%~97% 안에 둔다. */
-const METER_MIN = 0.03;
-const METER_MAX = 0.97;
-/** 자외선 막대는 0~11+(위험)까지를 한 줄로 그린다. */
-const UV_METER_MAX = 11;
-
-function toUvMeterPosition(uvIndex: number): number {
-  return clamp(uvIndex / UV_METER_MAX, METER_MIN, METER_MAX);
-}
-
-export type AirPollutant = 'pm10' | 'pm25';
-
-/** 막대를 등급 4칸으로 똑같이 나누고, 매우 나쁨 칸은 마지막 기준의 두 배까지 펼친다. */
-const AIR_METER_BOUNDS = {
-  pm10: [0, ...PM10_UPPER_BOUNDS, PM10_UPPER_BOUNDS[2] * 2],
-  pm25: [0, ...PM25_UPPER_BOUNDS, PM25_UPPER_BOUNDS[2] * 2],
-} as const satisfies Record<AirPollutant, readonly number[]>;
-
-function toAirMeterPosition(value: number, pollutant: AirPollutant): number {
-  const bounds = AIR_METER_BOUNDS[pollutant];
-  const segmentCount = bounds.length - 1;
-  const upperIndex = bounds.findIndex((bound, position) => position > 0 && value <= bound);
-  const index = upperIndex === -1 ? segmentCount - 1 : upperIndex - 1;
-  const lower = bounds[index] ?? 0;
-  const upper = bounds[index + 1] ?? lower;
-  const withinSegment = value > upper ? 1 : (value - lower) / Math.max(upper - lower, 1);
-  return clamp((index + withinSegment) / segmentCount, METER_MIN, METER_MAX);
-}
 
 function pickPollutant(
   airQuality: Pick<AirQuality, 'pm10' | 'pm25'>,
@@ -201,8 +171,6 @@ function getCloudCoverNote(cloudCover: number, isDaylight: boolean): CloudCoverN
 }
 
 export const WeatherDetailPolicy = {
-  uvMeterPosition: toUvMeterPosition,
-  airMeterPosition: toAirMeterPosition,
   pickPollutant,
   visibilityKilometers: toVisibilityKilometers,
   visibilityLevel: getVisibilityLevel,

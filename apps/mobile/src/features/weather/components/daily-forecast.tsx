@@ -25,12 +25,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { PRECIPITATION_CHANCE_TEXT_CLASS, TODO_DOT_COLOR } from '../constants/weather-colors';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { getTemperatureColor } from '../constants/weather-temperature-colors';
-import { WeatherDailyPolicy } from '../domains/weather-daily.model';
-import {
-  type DailyForecastEntry,
-  type TemperatureBar,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
+import { type DailyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
@@ -38,6 +33,11 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
+import {
+  type TemperatureBar,
+  toTemperatureBars,
+  toTemperaturePosition,
+} from '../utils/weather-bar.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -90,8 +90,8 @@ export function DailyForecast() {
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
   const forecastTodayKey = WeatherReportPolicy.todayKey(data, now);
-  const bars = WeatherReportPolicy.temperatureBars(data.daily);
-  const nowPosition = WeatherDailyPolicy.temperaturePosition(data.daily, data.current.temperature);
+  const bars = toTemperatureBars(data.daily);
+  const nowPosition = toTemperaturePosition(data.daily, data.current.temperature);
   const format = useMemo<RowFormat>(
     () => ({
       dateFormat: { locale: dateFormat.locale, timeZone: dateFormat.timeZone },

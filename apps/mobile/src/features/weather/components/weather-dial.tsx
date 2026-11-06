@@ -8,7 +8,7 @@ import {
   type DialTicks,
   PRESSURE_GAUGE_LABELS,
   type PressureGauge,
-} from '../utils/view-models/weather-dial.view-model';
+} from '../utils/weather-dial.geometry';
 
 const DIAL_FONT = { regular: 'WantedSans-Medium', label: 'WantedSans-SemiBold' } as const;
 const DIAL_VIEWBOX = '0 0 120 120';

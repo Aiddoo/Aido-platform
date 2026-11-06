@@ -13,8 +13,8 @@ import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { SUN_COLORS } from '../constants/weather-colors';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { useWeatherSceneClock } from '../hooks/use-weather-scene-clock';
-import { SUN_ARC_VIEWBOX } from '../utils/view-models/sun-arc.view-model';
-import type { DialPoint } from '../utils/view-models/weather-dial.view-model';
+import { SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
+import type { DialPoint } from '../utils/weather-dial.geometry';
 
 /** 시안의 해 궤적 path. 낮 구간은 밝게, 밤 구간은 흐리게 긋는다. */
 const SUN_ARC_PATHS = {

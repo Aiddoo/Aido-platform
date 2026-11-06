@@ -1,4 +1,4 @@
-import { getSunArcPosition, isSunBelowHorizon } from './sun-arc.view-model';
+import { getSunArcPosition, isSunBelowHorizon } from './sun-arc.geometry';
 
 const SUNRISE = new Date('2026-11-01T21:51:00.000Z');
 const SUNSET = new Date('2026-11-02T08:28:00.000Z');
