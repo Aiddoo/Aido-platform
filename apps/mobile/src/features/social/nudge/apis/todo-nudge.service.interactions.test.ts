@@ -1,7 +1,7 @@
 import { createHttpClientStub } from '@src/shared/__tests__';
 import { ApiError, ParseError, unwrap } from '@src/shared/errors';
 
-import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.factories';
+import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
 import { TodoNudgeService } from './todo-nudge.service';
 
 describe('TodoNudgeService의 콕 주고받기 계약', () => {

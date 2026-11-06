@@ -21,8 +21,8 @@ import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
-import { useSendRemindNudgeMutationOptions } from '../queries/use-send-remind-nudge-mutation-options';
-import { useSendTodoNudgeMutationOptions } from '../queries/use-send-todo-nudge-mutation-options';
+import { useSendRemindNudgeMutationOptions } from '../queries/nudge.mutations';
+import { useSendTodoNudgeMutationOptions } from '../queries/nudge.mutations';
 
 export interface NudgeReceiver {
   id: string;

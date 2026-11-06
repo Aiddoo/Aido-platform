@@ -10,7 +10,7 @@ import type { FriendUser } from '@src/features/social/friend/schemas/friend.sche
 import { RemindNudgeBottomSheet } from '@src/features/social/nudge/components/nudge-bottom-sheet';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
-import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/get-remind-nudge-cooldown-query-options';
+import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

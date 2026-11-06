@@ -2,10 +2,10 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import type { QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
 
-import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.factories';
+import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
 import { toNudgeInteraction } from '../apis/nudge-interaction.mapper';
-import { useReplyToNudgeMutationOptions } from './use-reply-to-nudge-mutation-options';
-import { useSendNudgeThanksMutationOptions } from './use-send-nudge-thanks-mutation-options';
+import { useReplyToNudgeMutationOptions } from './nudge.mutations';
+import { useSendNudgeThanksMutationOptions } from './nudge.mutations';
 
 const mockTrackEvent = jest.fn();
 const mockCaptureException = jest.fn();

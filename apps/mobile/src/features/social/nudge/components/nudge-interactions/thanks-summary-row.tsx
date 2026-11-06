@@ -31,8 +31,8 @@ import {
   NudgeInteractionPolicy,
   type NudgeThanksPreview,
 } from '../../domains/nudge-interaction.model';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '../../queries/get-nudge-interaction-availability-query-options';
-import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/get-nudge-thanks-preview-infinite-query-options';
+import { useGetNudgeInteractionAvailabilityQueryOptions } from '../../queries/nudge.queries';
+import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
 
 const VISIBLE_AVATAR_COUNT = 2;
 const BUTTON_HIT_SLOP = 4;

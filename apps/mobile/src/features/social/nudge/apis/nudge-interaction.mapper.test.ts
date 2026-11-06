@@ -1,4 +1,4 @@
-import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.factories';
+import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
 import { toNudgeInteraction, toNudgeThanksPreview } from './nudge-interaction.mapper';
 
 describe('콕 응답을 클라이언트 모델로 변환', () => {

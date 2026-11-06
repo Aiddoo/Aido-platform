@@ -12,7 +12,7 @@ import {
   nudgeDirectionSchema,
   type NudgeDirection,
 } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/get-nudge-interaction-availability-query-options';
+import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

@@ -4,7 +4,7 @@ import {
   NudgeInteractionPolicy,
   type NudgeInteraction,
 } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/get-nudge-interactions-infinite-query-options';
+import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import { getNudgeReplyLabelKey } from '@src/features/social/nudge/utils/nudge-reply-label';
 import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';

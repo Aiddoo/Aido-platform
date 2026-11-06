@@ -16,7 +16,7 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/nudge.queries';
 
 export function PokeBanner() {
   const { t } = useTranslation('todo');

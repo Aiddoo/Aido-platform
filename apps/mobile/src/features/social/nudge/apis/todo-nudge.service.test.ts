@@ -5,7 +5,7 @@ import {
   createNudgeLimitInfoDto,
   createSendNudgeResponseDto,
   INVALID_DTO,
-} from '../__tests__/todo-nudge.factories';
+} from '../__tests__/todo-nudge.fixtures';
 import { isTodoNudgeError } from '../domains/todo-nudge.error';
 import { TodoNudgeService } from './todo-nudge.service';
 

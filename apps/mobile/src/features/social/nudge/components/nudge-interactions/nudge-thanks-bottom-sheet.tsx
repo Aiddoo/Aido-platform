@@ -29,8 +29,8 @@ import {
   NudgeInteractionPolicy,
   type NudgeThanksPreview,
 } from '../../domains/nudge-interaction.model';
-import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/get-nudge-thanks-preview-infinite-query-options';
-import { useSendNudgeThanksMutationOptions } from '../../queries/use-send-nudge-thanks-mutation-options';
+import { useSendNudgeThanksMutationOptions } from '../../queries/nudge.mutations';
+import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
 
 const RECIPIENT_ROW_HEIGHT = 64;
 const LIST_MIN_HEIGHT = 72;

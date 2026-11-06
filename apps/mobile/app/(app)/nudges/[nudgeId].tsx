@@ -8,8 +8,8 @@ import {
   NudgeInteractionPolicy,
 } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { useNudgeScreenParams } from '@src/features/social/nudge/hooks/use-nudge-screen-params';
-import { useGetNudgeInteractionQueryOptions } from '@src/features/social/nudge/queries/get-nudge-interaction-query-options';
-import { useReplyToNudgeMutationOptions } from '@src/features/social/nudge/queries/use-reply-to-nudge-mutation-options';
+import { useReplyToNudgeMutationOptions } from '@src/features/social/nudge/queries/nudge.mutations';
+import { useGetNudgeInteractionQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import { nudgeScreenParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { getNudgeReplyLabelKey } from '@src/features/social/nudge/utils/nudge-reply-label';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';

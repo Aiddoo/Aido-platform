@@ -1,6 +1,6 @@
 import type { NudgeInteractionResponse } from '@aido/api';
 
-import { createSendNudgeResponseDto } from './todo-nudge.factories';
+import { createSendNudgeResponseDto } from './todo-nudge.fixtures';
 
 export const createNudgeInteractionDto = (
   overrides: Partial<NudgeInteractionResponse> = {},
