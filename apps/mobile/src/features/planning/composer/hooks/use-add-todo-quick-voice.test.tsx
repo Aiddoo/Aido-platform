@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
+import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.factories';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
@@ -17,12 +17,13 @@ import {
   createErrorReporterStub,
   createHapticsStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
-  createMockStorage,
+  createAnalyticsStub,
+  createHttpClientStub,
+  createStorageStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors';
@@ -43,7 +44,7 @@ jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn()
 
 const ACCOUNT_ID = 'user-1';
 const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+const logger = createLoggerStub();
 
 const createQuickPlanDto = (actions: unknown[], charged = true) => ({
   plan: { actions, omittedTodoCount: 0 },
@@ -128,12 +129,12 @@ async function renderQuickVoice({
   isCoachmarkSeen = true,
   aiParseUsed,
 }: { consent?: Partial<Consent>; isCoachmarkSeen?: boolean; aiParseUsed?: number } = {}) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
   const voiceNoteStorage = createVoiceNoteStorageServiceFake();
   const onExit = jest.fn();
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   if (consent != null) {
@@ -171,7 +172,7 @@ async function renderQuickVoice({
         analytics,
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
-        storage: createMockStorage(),
+        storage: createStorageStub(),
         logger,
       },
     },
@@ -191,7 +192,7 @@ async function speak(speechRecognizer: ReturnType<typeof createSpeechRecognizerS
 }
 
 const getIdempotencyKey = (
-  httpClient: ReturnType<typeof createMockHttpClient>,
+  httpClient: ReturnType<typeof createHttpClientStub>,
   callIndex: number,
 ) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 

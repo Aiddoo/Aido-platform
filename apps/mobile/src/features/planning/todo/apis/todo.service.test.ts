@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { ApiError } from '@src/shared/errors/api-error';
 
 import {
@@ -12,11 +12,11 @@ import type { RepeatingTodoDraft } from './todo-series.mapper';
 import { TodoService } from './todo.service';
 
 describe('TodoService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: TodoService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new TodoService(httpClient);
   });
 

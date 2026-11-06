@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockDIContainer } from '@src/shared/__tests__';
+import { createTestDiContainer } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -12,7 +12,7 @@ async function setup(lastResponse: typeof response | null) {
   const gateway = createPushNotificationGatewayStub();
   gateway.setLastResponse(lastResponse);
   const processResponse = jest.fn();
-  const container = createMockDIContainer({ pushNotificationGateway: gateway });
+  const container = createTestDiContainer({ pushNotificationGateway: gateway });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>{children}</StaticDIProvider>
   );

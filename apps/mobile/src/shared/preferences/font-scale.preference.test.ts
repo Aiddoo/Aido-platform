@@ -1,4 +1,4 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { createSyncStorageStub } from '@src/shared/__tests__';
 
 import { isFontScale, readFontScale, writeFontScale } from './font-scale.preference';
 
@@ -21,7 +21,7 @@ describe('isFontScale', () => {
 describe('readFontScale', () => {
   it('저장된 값이 없으면 medium을 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue(undefined);
 
     // When
@@ -35,7 +35,7 @@ describe('readFontScale', () => {
     '%s가 저장되어 있으면 %s를 반환한다',
     (value) => {
       // Given
-      const storage = createMockSyncStorage();
+      const storage = createSyncStorageStub();
       storage.get.mockReturnValue(value);
 
       // When
@@ -48,7 +48,7 @@ describe('readFontScale', () => {
 
   it('유효하지 않은 값이 저장되어 있으면 medium을 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('invalid');
 
     // When
@@ -62,7 +62,7 @@ describe('readFontScale', () => {
 describe('writeFontScale', () => {
   it('올바른 key와 value로 storage.set을 호출한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
 
     // When
     writeFontScale(storage, 'xlarge');

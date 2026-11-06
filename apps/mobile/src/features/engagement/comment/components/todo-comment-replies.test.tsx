@@ -4,10 +4,11 @@ import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
   createPendingResponse,
 } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -68,7 +69,7 @@ async function renderThreadWithReplies() {
   const first = createTodoCommentReply(head, { id: 'reply-1' });
   const second = createTodoCommentReply(head, { id: 'reply-2', content: '방금 쓴 답글' });
   const thread = createTodoCommentThread({ comment: head, previewReply: first });
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(createPendingResponse(ok(undefined)).response);
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
@@ -81,13 +82,13 @@ async function renderThreadWithReplies() {
     {
       di: {
         todoCommentService: new TodoCommentService(httpClient),
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         userService: new UserService(httpClient),
         coachmarkService: new CoachmarkService(
           createCoachmarkRepository(createMemorySyncStorage()),
         ),
         clipboard: { hasContent: jest.fn(), paste: jest.fn(), copy: jest.fn() },
-        logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        logger: createLoggerStub(),
         errorReporter: {
           captureException: jest.fn(),
           captureMessage: jest.fn(),

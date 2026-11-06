@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createMarkReadResponseDto,
@@ -11,11 +11,11 @@ import {
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: NotificationService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new NotificationService(httpClient, createPushNotificationGatewayStub());
   });
 

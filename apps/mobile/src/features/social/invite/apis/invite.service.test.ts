@@ -1,4 +1,4 @@
-import { createMemorySyncStorage, createMockHttpClient } from '@src/shared/__tests__';
+import { createMemorySyncStorage, createHttpClientStub } from '@src/shared/__tests__';
 import { ParseError } from '@src/shared/errors/infra-error';
 
 import {
@@ -23,8 +23,8 @@ function createService({
   referrer?: string | null;
   readInstallationId?: () => Promise<string | null>;
 } = {}) {
-  const publicHttpClient = createMockHttpClient();
-  const authHttpClient = createMockHttpClient();
+  const publicHttpClient = createHttpClientStub();
+  const authHttpClient = createHttpClientStub();
   const storage = createMemorySyncStorage();
   const readReferrer = jest.fn().mockResolvedValue(referrer);
   const pendingRedemptionRepository = createPendingRedemptionRepository(storage);

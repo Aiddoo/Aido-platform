@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockAnalytics, createMockDIContainer } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -8,9 +8,9 @@ import { useFriendSearchTracking } from './use-friend-search-tracking';
 describe('useFriendSearchTracking', () => {
   it('유효한 실제 화면 검색을 원문 없이 버킷으로 한 번씩 기록한다', async () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createMockDIContainer({ analytics })}>
+      <StaticDIProvider container={createTestDiContainer({ analytics })}>
         {children}
       </StaticDIProvider>
     );

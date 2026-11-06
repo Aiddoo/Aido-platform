@@ -1,11 +1,11 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { createSyncStorageStub } from '@src/shared/__tests__';
 
 import { readThemeMode, writeThemeMode } from './theme-mode.preference';
 
 describe('readThemeMode', () => {
   it('저장된 값이 없으면 system을 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue(undefined);
 
     // When
@@ -17,7 +17,7 @@ describe('readThemeMode', () => {
 
   it('light가 저장되어 있으면 light를 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('light');
 
     // When
@@ -29,7 +29,7 @@ describe('readThemeMode', () => {
 
   it('dark가 저장되어 있으면 dark를 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('dark');
 
     // When
@@ -41,7 +41,7 @@ describe('readThemeMode', () => {
 
   it('system이 저장되어 있으면 system을 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('system');
 
     // When
@@ -53,7 +53,7 @@ describe('readThemeMode', () => {
 
   it('유효하지 않은 값이 저장되어 있으면 system을 반환한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('invalid');
 
     // When
@@ -67,7 +67,7 @@ describe('readThemeMode', () => {
 describe('writeThemeMode', () => {
   it('올바른 key와 value로 storage.set을 호출한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
 
     // When
     writeThemeMode(storage, 'dark');

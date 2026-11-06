@@ -8,8 +8,8 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient, renderUi } from '@src/shared/__tests__/render-ui';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
@@ -40,7 +40,7 @@ async function renderHint({
   hasRepeat?: boolean;
   isSeen?: boolean;
 }) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(
     ok(
       createTodoListResponseDto({
@@ -48,7 +48,7 @@ async function renderHint({
       }),
     ),
   );
-  const userHttpClient = createMockHttpClient();
+  const userHttpClient = createHttpClientStub();
   userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
   const userService = new UserService(userHttpClient);
   // 내 정보가 오면 CoachmarkPopover가 대상을 Popover 안으로 옮겨 다시 마운트한다.
@@ -61,7 +61,7 @@ async function renderHint({
   if (isSeen) {
     coachmarkService.complete({ accountId, kind: 'repeat-horizon' });
   }
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
 
   const hint = (date: string) => (
     <LocalDateProvider>

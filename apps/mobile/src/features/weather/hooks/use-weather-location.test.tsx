@@ -8,9 +8,9 @@ import {
 } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import {
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -42,7 +42,7 @@ function createGateway(overrides: Partial<jest.Mocked<LocationGateway>> = {}) {
 }
 
 function setup(gateway: jest.Mocked<LocationGateway>) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.put.mockImplementation(async (_url, input) => ({
     ok: true,
     value: { ...updateWeatherLocationSchema.parse(input), timezone: 'Asia/Seoul' },
@@ -60,9 +60,9 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
     addBreadcrumb: jest.fn(),
     setUserId: jest.fn(),
   };
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
-  const container = createMockDIContainer({
+  const container = createTestDiContainer({
     locationGateway: gateway,
     weatherService: new WeatherService(httpClient),
     logger,

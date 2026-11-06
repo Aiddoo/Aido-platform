@@ -16,9 +16,9 @@ import {
   createErrorReporterStub,
   createHapticsStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
-  createMockStorage,
+  createAnalyticsStub,
+  createHttpClientStub,
+  createStorageStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -86,7 +86,7 @@ const createDigestDto = () => ({
 
 async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], tab?: string) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ draftId: DRAFT_ID, tab });
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const storage = createVoiceNoteStorageServiceFake();
   storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID, ...note }));
@@ -119,9 +119,9 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
         preferenceService: new PreferenceService(httpClient),
         consentService: new ConsentService(httpClient),
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
-        storage: createMockStorage(),
+        storage: createStorageStub(),
         voiceNoteStorageService: storage,
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
         logger,

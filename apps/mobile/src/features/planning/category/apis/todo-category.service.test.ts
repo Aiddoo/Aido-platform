@@ -2,7 +2,7 @@ import {
   createTodoDto,
   INVALID_DTO as INVALID_TODO_DTO,
 } from '@src/features/planning/todo/__tests__/todo.factories';
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createTodoCategoryApiError,
@@ -13,11 +13,11 @@ import {
 import { TodoCategoryService } from './todo-category.service';
 
 describe('TodoCategoryService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: TodoCategoryService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new TodoCategoryService(httpClient);
   });
 

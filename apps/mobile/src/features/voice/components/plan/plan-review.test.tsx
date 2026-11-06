@@ -9,8 +9,8 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/consta
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -102,7 +102,7 @@ async function renderPlan(
   plan?: VoicePlan,
   isCharged?: boolean,
   onValues?: (values: PlanReviewFormValues) => void,
-  httpClient: ReturnType<typeof createMockHttpClient> = createMockHttpClient(),
+  httpClient: ReturnType<typeof createHttpClientStub> = createHttpClientStub(),
 ) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -125,11 +125,11 @@ async function renderPlan(
     </LocalDateProvider>,
     {
       di: {
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         voiceService: new VoiceService(httpClient, silentLogger),
-        todoCategoryService: new TodoCategoryService(createMockHttpClient()),
-        preferenceService: new PreferenceService(createMockHttpClient()),
+        todoCategoryService: new TodoCategoryService(createHttpClientStub()),
+        preferenceService: new PreferenceService(createHttpClientStub()),
         activationService: new ActivationService(
           createActivationProgressRepository(createMemorySyncStorage()),
         ),
@@ -223,7 +223,7 @@ describe('PlanReview', () => {
 
     test('저장은 묶어 보인 순서대로 보낸다', async () => {
       // Given
-      const httpClient = createMockHttpClient();
+      const httpClient = createHttpClientStub();
       await renderPlan(SPLIT_PLAN, true, undefined, httpClient);
       await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
 

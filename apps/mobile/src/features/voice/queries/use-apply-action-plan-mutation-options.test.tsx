@@ -4,8 +4,8 @@ import { ActivationService } from '@src/features/device/activation/apis/activati
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -56,8 +56,8 @@ function ApplyProbe({ sourceMemoId }: { sourceMemoId: number | null }) {
 }
 
 async function renderApply(sourceMemoId: number | null) {
-  const analytics = createMockAnalytics();
-  const httpClient = createMockHttpClient();
+  const analytics = createAnalyticsStub();
+  const httpClient = createHttpClientStub();
   httpClient.post.mockResolvedValue(ok({ todos: [], memo: null }));
   const queryClient = createTestQueryClient();
   const invalidate = jest.spyOn(queryClient, 'invalidateQueries');

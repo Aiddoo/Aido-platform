@@ -3,9 +3,9 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { useUpdateTodoMutationOptions } from '@src/features/planning/composer/queries/use-update-todo-mutation-options';
 import {
   createHapticsStub,
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -25,11 +25,11 @@ jest.mock('@src/shared/hooks/use-app-toast', () => ({
 async function updateFollowing(error: ApiError) {
   const client = createTestQueryClient();
   const invalidateQueries = jest.spyOn(client, 'invalidateQueries');
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.patch.mockResolvedValue({ ok: false, error });
-  const container = createMockDIContainer({
+  const container = createTestDiContainer({
     todoService: new TodoService(httpClient),
-    analytics: createMockAnalytics(),
+    analytics: createAnalyticsStub(),
     haptics: createHapticsStub(),
   });
   const { result } = await renderHook(() => useUpdateTodoMutationOptions(), {

@@ -7,9 +7,9 @@ import {
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
@@ -47,15 +47,15 @@ function setDeviceTimeZone(timeZone: string) {
 }
 
 function setup(todos: ReturnType<typeof createTodoDto>[]) {
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const repository = createDeviceTimezoneRepository(createMemorySyncStorage());
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue({
     ok: true,
     value: createTodoListResponseDto({ items: todos }),
   });
   const getTodos = httpClient.get;
-  const container = createMockDIContainer({
+  const container = createTestDiContainer({
     analytics,
     logger: silentLogger,
     deviceTimezoneService: new DeviceTimezoneService(repository),

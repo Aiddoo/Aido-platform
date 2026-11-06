@@ -1,6 +1,6 @@
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
-import { createMockAnalytics } from '@src/shared/__tests__';
+import { createAnalyticsStub } from '@src/shared/__tests__';
 import { onlineManager } from '@tanstack/react-query';
 
 import { connectOnlineManager } from './online-manager';
@@ -37,7 +37,7 @@ describe('connectOnlineManager', () => {
     disconnect = connectOnlineManager({
       networkStatus: network.gateway,
       errorReporter: recorder,
-      analytics: createMockAnalytics(),
+      analytics: createAnalyticsStub(),
     });
 
     // When
@@ -57,7 +57,7 @@ describe('connectOnlineManager', () => {
     disconnect = connectOnlineManager({
       networkStatus: network.gateway,
       errorReporter: recorder,
-      analytics: createMockAnalytics(),
+      analytics: createAnalyticsStub(),
     });
 
     // When
@@ -76,7 +76,7 @@ describe('connectOnlineManager', () => {
   it('오프라인 구간마다 오프라인 배너 노출을 한 번만 센다', () => {
     // Given 연결된 기기
     const network = createStubNetworkStatus();
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     disconnect = connectOnlineManager({
       networkStatus: network.gateway,
       errorReporter: createBreadcrumbRecorder(),
@@ -102,7 +102,7 @@ describe('connectOnlineManager', () => {
     const disconnectNow = connectOnlineManager({
       networkStatus: network.gateway,
       errorReporter: recorder,
-      analytics: createMockAnalytics(),
+      analytics: createAnalyticsStub(),
     });
     network.emit(false);
 

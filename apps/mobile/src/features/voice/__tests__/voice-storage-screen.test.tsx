@@ -6,8 +6,8 @@ import {
   createHapticsStub,
   createLocalFileSystemFake,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -61,9 +61,9 @@ async function renderScreen({
     {
       queryClient,
       di: {
-        userService: new UserService(createMockHttpClient()),
+        userService: new UserService(createHttpClientStub()),
         voiceNoteStorageService: storage,
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
       },

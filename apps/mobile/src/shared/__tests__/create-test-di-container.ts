@@ -14,10 +14,10 @@ import { createVoiceNoteStorageServiceFake } from './create-voice-note-storage-s
  *
  * StaticDIProvider와 함께 사용한다:
  * ```tsx
- * <StaticDIProvider container={createMockDIContainer({ analytics })}>
+ * <StaticDIProvider container={createTestDiContainer({ analytics })}>
  * ```
  */
-export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIContainer {
+export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIContainer {
   const defaults: Partial<DIContainer> = {
     // useTrack은 모든 화면에서 귀속 저장소를 함께 주입받는다. 관심 없는 테스트에서는
     // no-op을 제공하고, 귀속 동작을 검증하는 테스트만 명시적으로 override한다.

@@ -1,5 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
-import { createMockAnalytics, createPurchasesGatewayStub } from '@src/shared/__tests__';
+import { createAnalyticsStub, createPurchasesGatewayStub } from '@src/shared/__tests__';
 
 import { SubscriptionErrorCode } from '../domains/subscription.error';
 import { PurchasesSdkManager } from './purchases-sdk-manager';
@@ -18,7 +18,7 @@ function createConfiguredService() {
   const sdkManager = new PurchasesSdkManager({
     purchases,
     logger,
-    analytics: createMockAnalytics(),
+    analytics: createAnalyticsStub(),
     subscriberAttributes: { appVersion: null, deviceModel: null },
     isDebugLogEnabled: false,
   });

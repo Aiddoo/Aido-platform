@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createMockDIContainer } from '@src/shared/__tests__';
+import { createTestDiContainer } from '@src/shared/__tests__';
 import { ApiError, ServerError } from '@src/shared/errors';
 import { fireEvent, render } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -82,7 +82,7 @@ describe('QueryErrorBoundary 관측', () => {
 
   const renderWithBoundary = (error: Error) =>
     render(
-      <StaticDIProvider container={createMockDIContainer({ errorReporter })}>
+      <StaticDIProvider container={createTestDiContainer({ errorReporter })}>
         <QueryErrorBoundary>
           <Thrower error={error} />
         </QueryErrorBoundary>
@@ -149,7 +149,7 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
-    const container = createMockDIContainer({ errorReporter });
+    const container = createTestDiContainer({ errorReporter });
     const screen = await render(
       <StaticDIProvider container={container}>
         <QueryErrorBoundary resetKeys={['2026-07-14']}>
@@ -173,7 +173,7 @@ describe('QueryErrorBoundary 관측', () => {
   it('화면의 useErrorBoundary에 context를 제공하고 제출 오류를 기존 fallback에서 처리한다', async () => {
     const error = new ServerError(503);
     const screen = await render(
-      <StaticDIProvider container={createMockDIContainer({ errorReporter })}>
+      <StaticDIProvider container={createTestDiContainer({ errorReporter })}>
         <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
           <AsyncErrorScreen error={error} />
         </QueryErrorBoundary>
@@ -192,7 +192,7 @@ describe('QueryErrorBoundary 관측', () => {
   it('OverlayProvider가 별도로 마운트한 overlay에도 오류 context를 전달한다', async () => {
     const error = new ServerError(503);
     const screen = await render(
-      <StaticDIProvider container={createMockDIContainer({ errorReporter })}>
+      <StaticDIProvider container={createTestDiContainer({ errorReporter })}>
         <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
           <OverlayProvider>
             <OverlayErrorScreen error={error} />

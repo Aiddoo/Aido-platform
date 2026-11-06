@@ -4,7 +4,7 @@ import {
   createHapticsStub,
   createLocalFileSystemFake,
   createMemorySyncStorage,
-  createMockAnalytics,
+  createAnalyticsStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -77,7 +77,7 @@ async function renderRecording({
     canContinue: true,
   });
   const storage = createVoiceNoteStorageServiceFake(files);
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const handlers = {
     onLimitReached: jest.fn(),
     onFinished: jest.fn(),
@@ -333,7 +333,7 @@ describe('useVoiceNoteRecording', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageServiceFake();
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const seed = createVoiceNoteFixture({
       draftId: 'seed-1',
       durationMs: 90_000,
@@ -523,7 +523,7 @@ describe('useVoiceNoteRecording', () => {
         di: {
           speechRecognizer,
           voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
           logger,
@@ -664,7 +664,7 @@ describe('useVoiceNoteRecording', () => {
         di: {
           speechRecognizer,
           voiceNoteStorageService: storage,
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
           logger,

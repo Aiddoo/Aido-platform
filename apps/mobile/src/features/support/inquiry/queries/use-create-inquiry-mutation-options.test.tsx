@@ -1,6 +1,6 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
+import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { NetworkError } from '@src/shared/errors';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -26,12 +26,12 @@ const input = {
 
 describe('문의 접수 실패 안내', () => {
   let client: QueryClient;
-  let http: ReturnType<typeof createMockHttpClient>;
+  let http: ReturnType<typeof createHttpClientStub>;
   let unmount: (() => Promise<void>) | undefined;
 
   beforeEach(() => {
     client = createTestQueryClient();
-    http = createMockHttpClient();
+    http = createHttpClientStub();
     unmount = undefined;
   });
 
@@ -40,7 +40,7 @@ describe('문의 접수 실패 안내', () => {
   });
 
   const submitInquiry = async () => {
-    const container = createMockDIContainer({ inquiryService: new InquiryService(http) });
+    const container = createTestDiContainer({ inquiryService: new InquiryService(http) });
     const rendered = await renderHook(() => useCreateInquiryMutationOptions(), {
       wrapper: ({ children }: PropsWithChildren) => (
         <StaticDIProvider container={container}>

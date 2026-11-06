@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createMockAnalytics } from '@src/shared/__tests__';
+import { createErrorReporterStub, createAnalyticsStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { Text } from '@src/shared/ui';
@@ -32,7 +32,7 @@ async function renderSheet() {
     <LocalDateProvider>
       <SheetProbe onSettled={onSettled} />
     </LocalDateProvider>,
-    { di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub() } },
+    { di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() } },
   );
   await fireEvent.changeText(screen.getByTestId('title'), '장보기');
   // 범위를 고를 때까지 끝나지 않는 핸들러라 기다리지 않는다

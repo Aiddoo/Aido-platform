@@ -9,9 +9,9 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createErrorReporterStub,
   createHapticsStub,
-  createMockAnalytics,
-  createMockHttpClient,
-  createMockStorage,
+  createAnalyticsStub,
+  createHttpClientStub,
+  createStorageStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -61,7 +61,7 @@ function DigestProbe() {
 }
 
 async function renderDigest() {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const storage = createVoiceNoteStorageServiceFake();
   storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID }));
@@ -84,9 +84,9 @@ async function renderDigest() {
         userService: new UserService(httpClient),
         consentService: new ConsentService(httpClient),
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
-        storage: createMockStorage(),
+        storage: createStorageStub(),
         voiceNoteStorageService: storage,
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
         logger,
@@ -104,7 +104,7 @@ const AGREED_CONSENT_DTO = {
 };
 
 const getIdempotencyKey = (
-  httpClient: ReturnType<typeof createMockHttpClient>,
+  httpClient: ReturnType<typeof createHttpClientStub>,
   callIndex: number,
 ) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
@@ -268,8 +268,8 @@ describe('VoiceNoteDigestButton', () => {
     await renderUi(<VoiceNoteDigestButton label="정리하기" />, {
       queryClient,
       di: {
-        entitlementService: new EntitlementService(createMockHttpClient(), logger),
-        analytics: createMockAnalytics(),
+        entitlementService: new EntitlementService(createHttpClientStub(), logger),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         logger,
       },

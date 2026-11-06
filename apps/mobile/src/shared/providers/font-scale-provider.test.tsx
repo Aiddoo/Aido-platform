@@ -1,11 +1,11 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { createSyncStorageStub } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { FontScaleProvider, useFontScale } from './font-scale-provider';
 
 const createWrapper =
-  (syncStorage = createMockSyncStorage()) =>
+  (syncStorage = createSyncStorageStub()) =>
   ({ children }: PropsWithChildren) => (
     <FontScaleProvider syncStorage={syncStorage}>{children}</FontScaleProvider>
   );
@@ -19,7 +19,7 @@ describe('useFontScale', () => {
   });
 
   it('저장된 값이 없으면 medium으로 초기화된다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue(undefined);
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -28,7 +28,7 @@ describe('useFontScale', () => {
   });
 
   it('저장된 값으로 초기화된다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('large');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -37,7 +37,7 @@ describe('useFontScale', () => {
   });
 
   it('setFontScale 호출 시 상태와 스토리지를 업데이트한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue(undefined);
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -53,7 +53,7 @@ describe('useFontScale', () => {
 
 describe('resolveSize', () => {
   it('medium이면 원래 사이즈를 그대로 반환한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('medium');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -64,7 +64,7 @@ describe('resolveSize', () => {
   });
 
   it('large이면 한 단계 위로 리매핑한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('large');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -75,7 +75,7 @@ describe('resolveSize', () => {
   });
 
   it('small이면 한 단계 아래로 리매핑한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('small');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -86,7 +86,7 @@ describe('resolveSize', () => {
   });
 
   it('t2↔t1 간 6px 점프를 방지한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('large');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -96,7 +96,7 @@ describe('resolveSize', () => {
   });
 
   it('xlarge이면 두 단계 위로 리매핑한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('xlarge');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
@@ -107,7 +107,7 @@ describe('resolveSize', () => {
   });
 
   it('xsmall이면 두 단계 아래로 리매핑한다', async () => {
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('xsmall');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });

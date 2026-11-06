@@ -5,7 +5,7 @@ import { TodoCategoryService } from '@src/features/planning/category/apis/todo-c
 import {
   createHapticsStub,
   createMemorySyncStorage,
-  createMockHttpClient,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -20,7 +20,7 @@ import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 const MEMO = { id: 5, content: '장보기' };
 
 async function renderSheet() {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok({ categories: [] }));
   const onClose = jest.fn();
   const onConverted = jest.fn();

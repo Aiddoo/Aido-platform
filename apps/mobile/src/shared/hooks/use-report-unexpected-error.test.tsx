@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createErrorReporterStub, createMockDIContainer } from '@src/shared/__tests__';
+import { createErrorReporterStub, createTestDiContainer } from '@src/shared/__tests__';
 import { NetworkError, ServerError } from '@src/shared/errors';
 import { ApiError } from '@src/shared/errors/api-error';
 import { renderHook } from '@testing-library/react-native';
@@ -9,7 +9,7 @@ import { useReportUnexpectedError } from './use-report-unexpected-error';
 
 async function setup() {
   const errorReporter = createErrorReporterStub();
-  const container = createMockDIContainer({ errorReporter });
+  const container = createTestDiContainer({ errorReporter });
   const { result } = await renderHook(() => useReportUnexpectedError('memo'), {
     wrapper: ({ children }: PropsWithChildren) => (
       <StaticDIProvider container={container}>{children}</StaticDIProvider>

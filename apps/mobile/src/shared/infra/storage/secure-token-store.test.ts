@@ -1,13 +1,13 @@
-import { createMockStorage } from '@src/shared/__tests__';
+import { createStorageStub } from '@src/shared/__tests__';
 import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
 
 import { createSecureTokenStore } from './secure-token-store';
 
 describe('createSecureTokenStore', () => {
-  let storage: ReturnType<typeof createMockStorage>;
+  let storage: ReturnType<typeof createStorageStub>;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    storage = createStorageStub();
   });
 
   it('액세스 토큰과 리프레시 토큰을 각자의 키에서 읽는다', async () => {

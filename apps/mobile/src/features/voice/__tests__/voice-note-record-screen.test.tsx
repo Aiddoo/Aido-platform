@@ -12,9 +12,9 @@ import {
   createErrorReporterStub,
   createHapticsStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
-  createMockStorage,
+  createAnalyticsStub,
+  createHttpClientStub,
+  createStorageStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -32,7 +32,7 @@ const ACCOUNT_ID = 'user-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
   const storage = createVoiceNoteStorageServiceFake();
@@ -59,10 +59,10 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
-        storage: createMockStorage(),
+        storage: createStorageStub(),
         speechRecognizer,
         voiceNoteStorageService: storage,
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
         logger,

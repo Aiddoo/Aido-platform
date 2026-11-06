@@ -1,14 +1,14 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import { createTodoApiError, createTodoDto, INVALID_DTO } from '../__tests__/todo.factories';
 import { SubTodoService } from './sub-todo.service';
 
 describe('SubTodoService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: SubTodoService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new SubTodoService(httpClient);
   });
 

@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockAnalytics, createMockDIContainer } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, renderHook } from '@testing-library/react-native';
 import { type PropsWithChildren, useState } from 'react';
@@ -29,8 +29,8 @@ describe('피드 날짜 선택', () => {
 
   async function setup(initialDate?: string) {
     const onDateChange = jest.fn();
-    const container = createMockDIContainer({
-      analytics: createMockAnalytics(),
+    const container = createTestDiContainer({
+      analytics: createAnalyticsStub(),
       errorReporter: {
         captureException: jest.fn(),
         captureMessage: jest.fn(),

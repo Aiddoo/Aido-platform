@@ -8,8 +8,8 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createErrorReporterStub,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
   createPurchasesGatewayStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -74,7 +74,7 @@ async function renderSubscriptionScreen(
 ) {
   const purchases = createPurchasesGatewayStub();
   purchases.getOffering.mockImplementation(getOffering);
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const sdkManager = new PurchasesSdkManager({
     purchases,
     logger: silentLogger,
@@ -83,7 +83,7 @@ async function renderSubscriptionScreen(
     isDebugLogEnabled: false,
   });
   sdkManager.configure('api-key');
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },

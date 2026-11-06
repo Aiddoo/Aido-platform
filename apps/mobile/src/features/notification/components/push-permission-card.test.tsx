@@ -9,8 +9,8 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -34,7 +34,7 @@ async function renderCard(
   permission: PushPermission,
   { pushEnabled = true }: { pushEnabled?: boolean } = {},
 ) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const gateway = createPushNotificationGatewayStub({
     requestPermission: jest.fn(async () => createPushPermissionResponse({ status: 'granted' })),
@@ -65,7 +65,7 @@ async function renderCard(
       ),
       preferenceService: new PreferenceService(httpClient),
       userService: new UserService(httpClient),
-      analytics: createMockAnalytics(),
+      analytics: createAnalyticsStub(),
       logger: silentLogger,
     },
     queryClient,

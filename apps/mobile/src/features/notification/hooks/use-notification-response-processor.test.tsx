@@ -1,7 +1,8 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
-import { createMockDIContainer } from '@src/shared/__tests__';
+import { createTestDiContainer } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { router, Slot } from 'expo-router';
 import { act, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { useState } from 'react';
@@ -13,7 +14,7 @@ import { useNotificationResponseProcessor } from './use-notification-response-pr
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
 
-const logger: Logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+const logger: Logger = createLoggerStub();
 
 const createResponse = (
   overrides: Partial<PushNotificationResponse> = {},
@@ -46,7 +47,7 @@ async function setup({ initialUrl = '/feed' }: { initialUrl?: string } = {}) {
     return <Slot />;
   }
 
-  const container = createMockDIContainer({ logger, pushNotificationGateway: gateway });
+  const container = createTestDiContainer({ logger, pushNotificationGateway: gateway });
   await renderRouter(
     { _layout: Harness, loading: () => null, feed: () => null },
     {

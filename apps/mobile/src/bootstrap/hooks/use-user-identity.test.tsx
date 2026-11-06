@@ -8,9 +8,9 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -49,12 +49,12 @@ describe('useUserIdentity', () => {
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     queryClient = createTestQueryClient();
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const container = createMockDIContainer({
+    const container = createTestDiContainer({
       draftService,
       queryCacheStorage,
-      analytics: createMockAnalytics(),
+      analytics: createAnalyticsStub(),
       errorReporter: {
         captureException: jest.fn(),
         captureMessage: jest.fn(),

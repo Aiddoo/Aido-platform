@@ -1,5 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
-import { createMockAnalytics, createPurchasesGatewayStub } from '@src/shared/__tests__';
+import { createAnalyticsStub, createPurchasesGatewayStub } from '@src/shared/__tests__';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { PurchasesSdkManager } from './purchases-sdk-manager';
@@ -16,7 +16,7 @@ const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 function createManager({
   purchases = createPurchasesGatewayStub(),
   logger = createLogger(),
-  analytics = createMockAnalytics(),
+  analytics = createAnalyticsStub(),
 } = {}) {
   const manager = new PurchasesSdkManager({
     purchases,
@@ -67,7 +67,7 @@ describe('RevenueCat 구독자 속성', () => {
 describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
   test('SDK 초기화 후 Firebase 앱 인스턴스 ID를 RevenueCat에 설정한다', async () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     analytics.getAnalyticsId.mockResolvedValue('instance-1');
     const { manager, purchases } = createManager({ analytics });
 
@@ -81,7 +81,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
 
   test('로그인 후 바뀐 사용자에게도 앱 인스턴스 ID를 다시 설정한다', async () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     analytics.getAnalyticsId.mockResolvedValue('instance-1');
     const { manager, purchases } = createManager({ analytics });
     manager.configure('api-key');
@@ -109,7 +109,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
 
   test('앱 인스턴스 ID 설정이 실패해도 예외 없이 경고만 남긴다', async () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     analytics.getAnalyticsId.mockRejectedValue(new Error('analytics disabled'));
     const { manager, purchases, logger } = createManager({ analytics });
     manager.configure('api-key');

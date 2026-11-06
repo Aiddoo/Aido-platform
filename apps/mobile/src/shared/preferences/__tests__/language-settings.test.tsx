@@ -1,8 +1,8 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockSyncStorage,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createSyncStorageStub,
 } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -102,11 +102,11 @@ afterEach(async () => {
 });
 
 const renderScreen = async ({
-  storage = createMockSyncStorage(),
-  analytics = createMockAnalytics(),
+  storage = createSyncStorageStub(),
+  analytics = createAnalyticsStub(),
 } = {}) => {
   await render(
-    <StaticDIProvider container={createMockDIContainer({ analytics })}>
+    <StaticDIProvider container={createTestDiContainer({ analytics })}>
       <LanguageProvider syncStorage={storage} useDeviceLanguage={() => 'ko'}>
         <LanguageSettingsScreen />
       </LanguageProvider>
@@ -128,7 +128,7 @@ describe('LanguageSettingsScreen', () => {
 
   it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', async () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue(undefined);
     const { analytics } = await renderScreen({ storage });
 
@@ -146,7 +146,7 @@ describe('LanguageSettingsScreen', () => {
 
   it('시스템 설정 선택 시 기기 언어 기준으로 i18n 언어가 해석된다', async () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('en');
     await renderScreen({ storage });
 
@@ -161,7 +161,7 @@ describe('LanguageSettingsScreen', () => {
   it('en으로 저장된 상태에서 화면 라벨이 영어로 렌더링된다', async () => {
     // Given
     await i18n.changeLanguage('en');
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('en');
 
     // When

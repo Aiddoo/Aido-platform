@@ -7,9 +7,9 @@ import { createDeviceTimezoneRepository } from '@src/features/notification/apis/
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
   createMockTokenStore,
   createMemorySyncStorage,
 } from '@src/shared/__tests__';
@@ -58,7 +58,7 @@ const LogoutProbe = () => {
 describe('AuthProvider', () => {
   let tokenStore: ReturnType<typeof createMockTokenStore>;
   let errorReporter: jest.Mocked<ErrorReporter>;
-  let analytics: ReturnType<typeof createMockAnalytics>;
+  let analytics: ReturnType<typeof createAnalyticsStub>;
   let queryClient: QueryClient;
   let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
@@ -70,7 +70,7 @@ describe('AuthProvider', () => {
     jest.useFakeTimers();
     tokenStore = createMockTokenStore();
     errorReporter = createMockErrorReporter();
-    analytics = createMockAnalytics();
+    analytics = createAnalyticsStub();
     queryClient = createTestQueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
@@ -96,8 +96,8 @@ describe('AuthProvider', () => {
 
   const renderProvider = async () => {
     // AuthProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
-    const todoService = new TodoService(createMockHttpClient());
-    const userHttpClient = createMockHttpClient();
+    const todoService = new TodoService(createHttpClientStub());
+    const userHttpClient = createHttpClientStub();
     userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const userService = new UserService(userHttpClient);
     const widgetSyncService = new WidgetSyncService(
@@ -107,7 +107,7 @@ describe('AuthProvider', () => {
 
     const mountedProvider = await render(
       <StaticDIProvider
-        container={createMockDIContainer({
+        container={createTestDiContainer({
           tokenStore,
           errorReporter,
           analytics,

@@ -8,13 +8,14 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
-  createMockAnalytics,
+  createAnalyticsStub,
 } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 
 import { MemoService } from '../apis/memo.service';
 
 export function createMemoTestDi(httpClient: HttpClient): Partial<DIContainer> {
-  const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+  const logger = createLoggerStub();
 
   return {
     memoService: new MemoService(httpClient, logger),
@@ -22,7 +23,7 @@ export function createMemoTestDi(httpClient: HttpClient): Partial<DIContainer> {
     entitlementService: new EntitlementService(httpClient, logger),
     consentService: new ConsentService(httpClient),
     coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
-    analytics: createMockAnalytics(),
+    analytics: createAnalyticsStub(),
     errorReporter: createErrorReporterStub(),
     logger,
   };

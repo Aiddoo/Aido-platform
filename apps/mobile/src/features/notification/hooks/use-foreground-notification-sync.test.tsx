@@ -1,5 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
+import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
@@ -12,15 +13,15 @@ import { useForegroundNotificationSync } from './use-foreground-notification-syn
 
 async function setup(isAuthenticated: boolean) {
   const notificationService = new NotificationService(
-    createMockHttpClient(),
+    createHttpClientStub(),
     createPushNotificationGatewayStub(),
   );
   const syncBadgeCount = jest.spyOn(notificationService, 'syncBadgeCount').mockResolvedValue();
   const queryClient = createTestQueryClient();
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
-  const container = createMockDIContainer({
+  const container = createTestDiContainer({
     notificationService,
-    logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    logger: createLoggerStub(),
   });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>

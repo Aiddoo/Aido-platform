@@ -1,6 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 
-export const createMockAnalytics = (): jest.Mocked<Analytics> => ({
+export const createAnalyticsStub = (): jest.Mocked<Analytics> => ({
   trackEvent: jest.fn(),
   trackScreenView: jest.fn(),
   setUserId: jest.fn(),

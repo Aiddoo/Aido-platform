@@ -4,8 +4,8 @@ import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import {
   createErrorReporterStub,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -41,8 +41,8 @@ function AiParseGate({ error }: { error?: unknown }) {
 }
 
 async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: unknown } = {}) {
-  const analytics = createMockAnalytics();
-  const httpClient = createMockHttpClient();
+  const analytics = createAnalyticsStub();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto()));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },

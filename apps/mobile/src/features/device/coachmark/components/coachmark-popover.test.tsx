@@ -5,8 +5,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
@@ -20,7 +20,7 @@ import { Keyboard, type KeyboardEvent, View } from 'react-native';
 import { CoachmarkPopover } from './coachmark-popover';
 
 async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
   const coachmarkService = new CoachmarkService(
     createCoachmarkRepository(createMemorySyncStorage()),
@@ -31,7 +31,7 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
       kind: 'voice-quick-start',
     });
   }
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
 
   await renderUi(
     <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명">
@@ -56,12 +56,12 @@ const POPOVER_WAIT = { timeout: 2_000 };
 
 async function renderCoachmarkOnHiddenTab() {
   jest.mocked(useIsFocused).mockReturnValue(false);
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
   const coachmarkService = new CoachmarkService(
     createCoachmarkRepository(createMemorySyncStorage()),
   );
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const coachmark = () => (
     <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
       <PressableFeedback testID="target" />
@@ -88,7 +88,7 @@ async function renderCoachmarkOnHiddenTab() {
 describe('CoachmarkPopover', () => {
   it('내 정보를 읽은 뒤에도 대상을 다시 마운트하지 않아 누르던 탭을 잃지 않는다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     let resolveMe: (value: ReturnType<typeof ok>) => void = jest.fn();
     httpClient.get.mockReturnValue(
       new Promise((resolve) => {
@@ -114,7 +114,7 @@ describe('CoachmarkPopover', () => {
           coachmarkService: new CoachmarkService(
             createCoachmarkRepository(createMemorySyncStorage()),
           ),
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           userService: new UserService(httpClient),
         },
       },
@@ -131,9 +131,9 @@ describe('CoachmarkPopover', () => {
 
   it('내 정보를 읽기 전에는 기능 소개에서 왔어도 열지 않는다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockReturnValue(new Promise(() => undefined));
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
 
     // When
     await renderUi(
@@ -269,7 +269,7 @@ describe('CoachmarkPopover', () => {
 
   it('이미 본 안내도 기능 소개에서 왔으면 다시 열고 노출을 남긴다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const coachmarkService = new CoachmarkService(
       createCoachmarkRepository(createMemorySyncStorage()),
@@ -278,7 +278,7 @@ describe('CoachmarkPopover', () => {
       accountId: createCurrentUserDto().userId,
       kind: 'voice-quick-start',
     });
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
 
     // When
     await renderUi(
@@ -310,12 +310,12 @@ describe('CoachmarkPopover', () => {
 
   it('사용자가 다른 일을 시작하면(isDismissed) 안내를 끝내 다시 열지 않는다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const coachmarkService = new CoachmarkService(
       createCoachmarkRepository(createMemorySyncStorage()),
     );
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const accountId = createCurrentUserDto().userId;
     const renderHint = (isDismissed: boolean) => (
       <CoachmarkPopover
@@ -353,12 +353,12 @@ describe('CoachmarkPopover', () => {
     const OPENED_AT = 1_000_000;
 
     async function renderMovableCoachmark() {
-      const httpClient = createMockHttpClient();
+      const httpClient = createHttpClientStub();
       httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
       const coachmarkService = new CoachmarkService(
         createCoachmarkRepository(createMemorySyncStorage()),
       );
-      const analytics = createMockAnalytics();
+      const analytics = createAnalyticsStub();
       const coachmark = (dismissKey: string) => (
         <CoachmarkPopover
           kind="repeat-horizon"

@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__/create-mock-http-client';
+import { createHttpClientStub } from '@src/shared/__tests__/create-http-client-stub';
 import { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err } from '@src/shared/errors/result';
@@ -52,7 +52,7 @@ const PAGINATION = {
 describe('TodoCommentService', () => {
   test('묶음 목록은 v2 endpoint에서 anchor와 함께 읽고 signal을 넘긴다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
     const signal = new AbortController().signal;
     httpClient.get.mockResolvedValue({
@@ -83,7 +83,7 @@ describe('TodoCommentService', () => {
 
   test('답글은 묶음 머리의 replies endpoint에서 cursor를 그대로 보낸다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
     httpClient.get.mockResolvedValue({
       ok: true,
@@ -106,7 +106,7 @@ describe('TodoCommentService', () => {
 
   test('계약과 다른 응답은 ParseError로 던져 QueryErrorBoundary가 받게 한다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
     httpClient.get.mockResolvedValue({
       ok: true,
@@ -122,7 +122,7 @@ describe('TodoCommentService', () => {
 
   test('이미 지운 글처럼 예측한 4xx는 Result 오류로 그대로 넘긴다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
     const apiError = new ApiError('TODO_0833', '삭제된 댓글', 409);
     httpClient.put.mockResolvedValue(err(apiError));
@@ -137,7 +137,7 @@ describe('TodoCommentService', () => {
 
   test('답글 쓰기는 v1 POST에 답할 글 id를 parentId로 보낸다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
     const input = {
       parentId: REPLY_ID,

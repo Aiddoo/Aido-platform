@@ -1,5 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createInquiryApiError,
@@ -9,11 +9,11 @@ import {
 import { InquiryService } from './inquiry.service';
 
 describe('InquiryService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: InquiryService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new InquiryService(httpClient);
   });
 

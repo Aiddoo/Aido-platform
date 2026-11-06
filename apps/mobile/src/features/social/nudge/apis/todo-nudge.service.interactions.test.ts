@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { ApiError, ParseError, unwrap } from '@src/shared/errors';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.factories';
@@ -6,7 +6,7 @@ import { TodoNudgeService } from './todo-nudge.service';
 
 describe('TodoNudgeService의 콕 주고받기 계약', () => {
   const setup = () => {
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     return { httpClient, service: new TodoNudgeService(httpClient) };
   };
 

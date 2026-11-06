@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { isBusinessError } from '@src/shared/errors/result';
 
 import {
@@ -16,11 +16,11 @@ import { FRIEND_ERROR_CODE } from '../domains/friend.error';
 import { FriendService } from './friend.service';
 
 describe('FriendService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: FriendService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new FriendService(httpClient);
   });
 

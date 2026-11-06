@@ -9,8 +9,8 @@ import { TodoCategoryService } from '@src/features/planning/category/apis/todo-c
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createErrorReporterStub,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
   createMemorySyncStorage,
   createPendingResponse,
 } from '@src/shared/__tests__';
@@ -35,7 +35,7 @@ import { TodoList } from './todo-list';
 const DATE = '2026-03-08';
 
 async function renderTodoList(todo: Todo) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -62,7 +62,7 @@ async function renderTodoList(todo: Todo) {
     {
       queryClient,
       di: {
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
         preferenceService: new PreferenceService(httpClient),

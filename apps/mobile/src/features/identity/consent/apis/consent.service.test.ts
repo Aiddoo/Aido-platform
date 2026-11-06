@@ -2,17 +2,17 @@ import {
   createAuthApiError,
   INVALID_DTO,
 } from '@src/features/identity/auth/__tests__/auth.factories';
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.factories';
 import { ConsentService } from './consent.service';
 
 describe('ConsentService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: ConsentService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new ConsentService(httpClient);
   });
 

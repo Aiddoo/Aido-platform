@@ -15,8 +15,8 @@ import { createRecognitionLanguageRepository } from '@src/features/voice/apis/re
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -59,10 +59,10 @@ async function renderStart({
   voiceNoteUsed?: number;
   seenCoachmarks?: readonly 'ai-consent-renewal'[];
 }) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const coachmarkRepository = createCoachmarkRepository(createMemorySyncStorage());
   seenCoachmarks.forEach((kind) => coachmarkRepository.markSeen({ accountId: ACCOUNT_ID, kind }));
   const queryClient = createTestQueryClient();

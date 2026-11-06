@@ -2,8 +2,8 @@ import '@src/shared/i18n/init';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -24,8 +24,8 @@ const CODE = parseInviteCode('K7M2QX') ?? '';
 function createInviteService() {
   const storage = createMemorySyncStorage();
   const inviteService = new InviteService({
-    publicHttpClient: createMockHttpClient(),
-    authHttpClient: createMockHttpClient(),
+    publicHttpClient: createHttpClientStub(),
+    authHttpClient: createHttpClientStub(),
     pendingRedemptionRepository: createPendingRedemptionRepository(storage),
     installReferrerRepository: createInstallReferrerRepository(storage, {
       read: () => Promise.resolve(null),
@@ -50,7 +50,7 @@ describe('초대 코드 입력 화면', () => {
     onlineManager.setOnline(false);
     await renderUi(<InviteCodeEntryRoute />, {
       di: {
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         clipboard: {
           hasContent: () => Promise.resolve(true),

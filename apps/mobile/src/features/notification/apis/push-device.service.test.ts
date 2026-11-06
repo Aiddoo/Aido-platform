@@ -1,5 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createNotificationApiError,
@@ -13,7 +13,7 @@ import { PushDeviceService } from './push-device.service';
 const DEVICE_ID = 'ios_device-123';
 
 function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () => 'Asia/Seoul') {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const logger: jest.Mocked<Logger> = {
     debug: jest.fn(),

@@ -1,6 +1,6 @@
 import type { HttpClient } from '@src/core/ports/http';
 
-export const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
+export const createHttpClientStub = (): jest.Mocked<HttpClient> => ({
   get: jest.fn(),
   post: jest.fn(),
   put: jest.fn(),

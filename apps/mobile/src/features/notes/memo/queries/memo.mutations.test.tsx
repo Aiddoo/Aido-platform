@@ -4,9 +4,10 @@ import { ActivationService } from '@src/features/device/activation/apis/activati
 import {
   createHapticsStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -45,12 +46,8 @@ const updatedMemo: MemoDto = {
   updatedAt: '2026-10-02T00:01:00.000Z',
 };
 
-function createLoggerStub() {
-  return { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-}
-
 async function updateMemo(client: QueryClient) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: updatedMemo }));
   let options: ReturnType<typeof useUpdateMemoMutationOptions> | undefined;
   function CaptureOptions() {
@@ -62,7 +59,7 @@ async function updateMemo(client: QueryClient) {
     di: {
       memoService: new MemoService(httpClient, createLoggerStub()),
       haptics: createHapticsStub(),
-      analytics: createMockAnalytics(),
+      analytics: createAnalyticsStub(),
     },
   });
   if (options == null) {
@@ -135,7 +132,7 @@ describe('오프라인에서 AI 정리', () => {
   it('멈춰 기다리지 않고 바로 실패해 연결될 때 나도 모르게 차감되지 않는다', async () => {
     // Given
     onlineManager.setOnline(false);
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
     function useMutationCapture() {
       return useMutation(useParseMemoMutationOptions({ memoId: 5 })).mutateAsync;
@@ -176,7 +173,7 @@ describe('오프라인에서 할 일로 바꾸기', () => {
   it('멈춰 기다리지 않고 요청을 보내 바로 실패한다', async () => {
     // Given
     onlineManager.setOnline(false);
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.post.mockRejectedValue(new NetworkError());
     let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
     function useMutationCapture() {
@@ -230,7 +227,7 @@ describe('오프라인에서 메모 삭제', () => {
   it('멈춰 기다리지 않고 바로 실패해 연결 문제를 알린다', async () => {
     // Given
     onlineManager.setOnline(false);
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.delete.mockRejectedValue(new NetworkError());
     let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
     function useMutationCapture() {

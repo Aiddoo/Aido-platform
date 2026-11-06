@@ -5,7 +5,7 @@ import { EntitlementService } from '@src/features/billing/subscription/apis/enti
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createErrorReporterStub, createMockHttpClient } from '@src/shared/__tests__';
+import { createErrorReporterStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -25,7 +25,7 @@ function createQueryClient() {
 describe('SuggestionEntry', () => {
   test('제안 API가 실패해도 오류를 던지지 않고 칸 안에서 다시 시도를 보인다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(serverError());
     const queryClient = createQueryClient();
     queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1', name: '아이도' });
@@ -51,7 +51,7 @@ describe('SuggestionEntry', () => {
 
   test('한도 스냅샷을 읽지 못해도 오류를 던지지 않고 칸 안에서 다시 시도를 보인다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(serverError());
     const queryClient = createQueryClient();
     queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1', name: '아이도' });

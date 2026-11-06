@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockDIContainer } from '@src/shared/__tests__';
+import { createTestDiContainer } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
@@ -13,7 +13,7 @@ const C = { id: 3 };
 
 async function renderReorderableList(initial: { items: Item[]; updatedAt: number }) {
   const onReorder = jest.fn();
-  const container = createMockDIContainer();
+  const container = createTestDiContainer();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StaticDIProvider container={container}>{children}</StaticDIProvider>
   );

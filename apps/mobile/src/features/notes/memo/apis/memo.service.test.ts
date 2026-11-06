@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { ApiError } from '@src/shared/errors/api-error';
 import { err } from '@src/shared/errors/result';
 
@@ -9,7 +9,7 @@ const logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {
 describe('MemoService.parseMemo', () => {
   test('서버 체인 제한 25초보다 오래 기다려 앱이 먼저 끊지 않는다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(err(new ApiError('INTERNAL', '서버 오류', 500)));
     const service = new MemoService(httpClient, logger);
 

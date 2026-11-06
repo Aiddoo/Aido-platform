@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createPreferenceApiError,
@@ -8,11 +8,11 @@ import {
 import { PreferenceService } from './preference.service';
 
 describe('PreferenceService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: PreferenceService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new PreferenceService(httpClient);
   });
 

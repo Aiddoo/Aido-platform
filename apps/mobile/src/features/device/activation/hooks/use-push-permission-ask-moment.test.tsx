@@ -7,7 +7,7 @@ import {
   createPushPermissionResponse,
 } from '@src/features/notification/__tests__/notification.factories';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
+import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -55,7 +55,7 @@ function setup(permissionStatus: 'undetermined' | 'granted' | 'denied' = 'undete
       createPushPermissionResponse({ status: permissionStatus, canAskAgain: true }),
     ),
   });
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const pushDeviceService = new PushDeviceService(
     gateway,
@@ -64,7 +64,7 @@ function setup(permissionStatus: 'undetermined' | 'granted' | 'denied' = 'undete
     silentLogger,
     () => 'Asia/Seoul',
   );
-  const container = createMockDIContainer({ pushDeviceService, logger: silentLogger });
+  const container = createTestDiContainer({ pushDeviceService, logger: silentLogger });
   const queryClient = createTestQueryClient();
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>

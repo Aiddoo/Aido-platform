@@ -1,4 +1,4 @@
-import { createMockHttpClient, createMockTokenStore } from '@src/shared/__tests__';
+import { createHttpClientStub, createMockTokenStore } from '@src/shared/__tests__';
 
 import {
   createAuthApiError,
@@ -15,14 +15,14 @@ import {
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
-  let publicHttpClient: ReturnType<typeof createMockHttpClient>;
-  let authHttpClient: ReturnType<typeof createMockHttpClient>;
+  let publicHttpClient: ReturnType<typeof createHttpClientStub>;
+  let authHttpClient: ReturnType<typeof createHttpClientStub>;
   let tokenStore: ReturnType<typeof createMockTokenStore>;
   let service: AuthService;
 
   beforeEach(() => {
-    publicHttpClient = createMockHttpClient();
-    authHttpClient = createMockHttpClient();
+    publicHttpClient = createHttpClientStub();
+    authHttpClient = createHttpClientStub();
     tokenStore = createMockTokenStore();
     service = new AuthService(publicHttpClient, authHttpClient, tokenStore);
   });

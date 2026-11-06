@@ -5,7 +5,7 @@ import { createVoiceNoteFixture } from '@src/features/voice/__tests__/voice-note
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createMemorySyncStorage,
-  createMockHttpClient,
+  createHttpClientStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -31,7 +31,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
     pages: [{ items: [], hasNext: false, nextCursor: null }],
     pageParams: [null],
   });
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const voiceNoteStorageService = createVoiceNoteStorageServiceFake();
   if (hasVoiceNote) {

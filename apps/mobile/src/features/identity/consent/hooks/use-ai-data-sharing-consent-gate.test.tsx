@@ -12,8 +12,8 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import {
   createHapticsStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -57,8 +57,8 @@ async function renderGate(
   consentOverrides: Partial<Consent> | null,
   { me = { id: 'account-1' } }: { me?: { id: string } | null } = {},
 ) {
-  const authHttp = createMockHttpClient();
-  const userHttp = createMockHttpClient();
+  const authHttp = createHttpClientStub();
+  const userHttp = createHttpClientStub();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -75,7 +75,7 @@ async function renderGate(
     </OverlayProvider>,
     {
       di: {
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         haptics: createHapticsStub(),
         logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
         consentService: new ConsentService(authHttp),

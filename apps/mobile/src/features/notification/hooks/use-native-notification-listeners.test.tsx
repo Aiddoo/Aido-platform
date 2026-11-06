@@ -1,19 +1,20 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
-import { createMockDIContainer } from '@src/shared/__tests__';
+import { createTestDiContainer } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
 import { useNativeNotificationListeners } from './use-native-notification-listeners';
 
-const logger: Logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+const logger: Logger = createLoggerStub();
 
 async function setup() {
   const gateway = createPushNotificationGatewayStub();
   const processResponse = jest.fn();
   const handleForegroundNotification = jest.fn();
-  const container = createMockDIContainer({ logger, pushNotificationGateway: gateway });
+  const container = createTestDiContainer({ logger, pushNotificationGateway: gateway });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>{children}</StaticDIProvider>
   );

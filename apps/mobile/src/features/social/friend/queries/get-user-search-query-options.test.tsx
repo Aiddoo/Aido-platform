@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
+import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
@@ -9,9 +9,9 @@ import { createSearchUsersDto } from '../__tests__/friend.factories';
 import { FriendService } from '../apis/friend.service';
 import { useGetUserSearchQueryOptions } from './get-user-search-query-options';
 
-const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
+const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
   const queryClient = createTestQueryClient();
-  const container = createMockDIContainer({
+  const container = createTestDiContainer({
     friendService: new FriendService(httpClient),
   });
 
@@ -25,7 +25,7 @@ const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
 describe('useGetUserSearchQueryOptions', () => {
   test('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const wrapper = createWrapper(httpClient);
 
     // When
@@ -39,7 +39,7 @@ describe('useGetUserSearchQueryOptions', () => {
 
   test('유효한 검색어면 결과를 view-model(displayName/actionState)로 매핑한다', async () => {
     // Given
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createSearchUsersDto() });
     const wrapper = createWrapper(httpClient);
 

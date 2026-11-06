@@ -1,7 +1,7 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
-  createMockDIContainer,
-  createMockHttpClient,
+  createTestDiContainer,
+  createHttpClientStub,
   createMockTokenStore,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -30,12 +30,12 @@ const input = {
 
 describe('비밀번호 변경 실패 안내', () => {
   let client: QueryClient;
-  let authHttp: ReturnType<typeof createMockHttpClient>;
+  let authHttp: ReturnType<typeof createHttpClientStub>;
   let unmount: (() => Promise<void>) | undefined;
 
   beforeEach(() => {
     client = createTestQueryClient();
-    authHttp = createMockHttpClient();
+    authHttp = createHttpClientStub();
     unmount = undefined;
   });
 
@@ -44,8 +44,8 @@ describe('비밀번호 변경 실패 안내', () => {
   });
 
   const changePassword = async () => {
-    const authService = new AuthService(createMockHttpClient(), authHttp, createMockTokenStore());
-    const container = createMockDIContainer({ authService });
+    const authService = new AuthService(createHttpClientStub(), authHttp, createMockTokenStore());
+    const container = createTestDiContainer({ authService });
     const rendered = await renderHook(() => useChangePasswordMutationOptions(), {
       wrapper: ({ children }: PropsWithChildren) => (
         <StaticDIProvider container={container}>

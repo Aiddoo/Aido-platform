@@ -1,4 +1,4 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { createSyncStorageStub } from '@src/shared/__tests__';
 
 import { StoreReviewTransitions } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
@@ -6,7 +6,7 @@ import { createStoreReviewRepository } from './store-review.repository';
 const KEY = 'aido_store_review_prompt_v1:account-a';
 
 const createMemoryStorage = () => {
-  const storage = createMockSyncStorage();
+  const storage = createSyncStorageStub();
   const values = new Map<string, string>();
   storage.get.mockImplementation((key) => values.get(key));
   storage.set.mockImplementation((key, value) => values.set(key, value));
@@ -90,7 +90,7 @@ describe('StoreReviewRepository', () => {
 
   it('손상된 저장값은 안전한 빈 상태로 복구한다', () => {
     // Given
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('{broken');
 
     // When

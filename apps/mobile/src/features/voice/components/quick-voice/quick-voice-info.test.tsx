@@ -6,9 +6,9 @@ import { createEntitlementSnapshotDto } from '@src/features/billing/subscription
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import {
   createErrorReporterStub,
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ok } from '@src/shared/errors/result';
@@ -30,7 +30,7 @@ describe('QuickVoiceInfo', () => {
         callback(0, 0, 200, 20, 16, 300);
       }
     });
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto()));
     await render(
       <GestureHandlerProvider>
@@ -40,8 +40,8 @@ describe('QuickVoiceInfo', () => {
           >
             <QueryClientProvider client={createTestQueryClient()}>
               <StaticDIProvider
-                container={createMockDIContainer({
-                  analytics: createMockAnalytics(),
+                container={createTestDiContainer({
+                  analytics: createAnalyticsStub(),
                   errorReporter: createErrorReporterStub(),
                   logger: silentLogger,
                   entitlementService: new EntitlementService(httpClient, silentLogger),

@@ -1,9 +1,9 @@
 import '@src/shared/i18n/init';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
-  createMockAnalytics,
-  createMockDIContainer,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createTestDiContainer,
+  createHttpClientStub,
   createMockTokenStore,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -34,11 +34,11 @@ const input = {
 
 async function register(dto: ReturnType<typeof createRegisterDto>) {
   const client = createTestQueryClient();
-  const publicHttp = createMockHttpClient();
+  const publicHttp = createHttpClientStub();
   publicHttp.post.mockResolvedValue({ ok: true, value: dto });
-  const container = createMockDIContainer({
-    authService: new AuthService(publicHttp, createMockHttpClient(), createMockTokenStore()),
-    analytics: createMockAnalytics(),
+  const container = createTestDiContainer({
+    authService: new AuthService(publicHttp, createHttpClientStub(), createMockTokenStore()),
+    analytics: createAnalyticsStub(),
   });
   const { result } = await renderHook(() => useRegisterMutationOptions(), {
     wrapper: ({ children }: PropsWithChildren) => (

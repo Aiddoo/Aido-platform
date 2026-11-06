@@ -5,8 +5,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
@@ -34,7 +34,7 @@ async function renderMarkControl({
   isListening?: boolean;
   markCount?: number;
 }) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
   const coachmarkService = new CoachmarkService(
     createCoachmarkRepository(createMemorySyncStorage()),
@@ -42,7 +42,7 @@ async function renderMarkControl({
   if (isSeen) {
     coachmarkService.complete({ accountId, kind: 'voice-note-mark' });
   }
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const onPress = jest.fn();
 
   await renderUi(

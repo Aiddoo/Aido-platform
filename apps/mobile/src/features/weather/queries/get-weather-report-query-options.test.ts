@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import { createWeatherReport } from '../__tests__/weather-report.factories';
 import { WeatherService } from '../apis/weather.service';
@@ -11,7 +11,7 @@ import {
 describe('getWeatherReportQueryOptions', () => {
   it('위치가 실제로 바뀐 리비전마다 다른 리포트 캐시를 쓰고, 모두 날씨 무효화 범위 안에 둔다', () => {
     // Given
-    const service = new WeatherService(createMockHttpClient());
+    const service = new WeatherService(createHttpClientStub());
 
     // When
     const saved = getWeatherReportQueryOptions(service, { locationRevision: 0 });

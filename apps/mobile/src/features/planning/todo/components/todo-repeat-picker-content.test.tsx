@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import {
   createErrorReporterStub,
   createHapticsStub,
-  createMockAnalytics,
+  createAnalyticsStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -36,7 +36,7 @@ async function renderSheet({
         onCancel={onCancel}
       />
     </LocalDateProvider>,
-    { di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub(), haptics } },
+    { di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub(), haptics } },
   );
 
   return { onChange, onCancel, haptics };

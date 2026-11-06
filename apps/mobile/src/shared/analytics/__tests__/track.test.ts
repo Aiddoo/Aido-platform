@@ -1,12 +1,12 @@
-import { createMockAnalytics } from '@src/shared/__tests__';
+import { createAnalyticsStub } from '@src/shared/__tests__';
 
 import { track } from '../track';
 
 describe('track', () => {
-  let analytics: ReturnType<typeof createMockAnalytics>;
+  let analytics: ReturnType<typeof createAnalyticsStub>;
 
   beforeEach(() => {
-    analytics = createMockAnalytics();
+    analytics = createAnalyticsStub();
   });
 
   test('이벤트명과 파라미터를 analytics.trackEvent에 전달한다', () => {

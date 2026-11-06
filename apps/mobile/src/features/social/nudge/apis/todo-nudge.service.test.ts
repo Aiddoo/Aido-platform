@@ -1,4 +1,4 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createNudgeApiError,
@@ -10,11 +10,11 @@ import { isTodoNudgeError } from '../domains/todo-nudge.error';
 import { TodoNudgeService } from './todo-nudge.service';
 
 describe('TodoNudgeService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: TodoNudgeService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
+    httpClient = createHttpClientStub();
     service = new TodoNudgeService(httpClient);
   });
 

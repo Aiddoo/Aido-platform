@@ -1,5 +1,5 @@
 import { getBundledWhatsNewCampaign } from '@src/features/app-config/whats-new/domains/whats-new.registry';
-import { createMockSyncStorage } from '@src/shared/__tests__/create-mock-sync-storage';
+import { createSyncStorageStub } from '@src/shared/__tests__/create-sync-storage-stub';
 import '@src/shared/i18n/init';
 import { i18n } from '@src/shared/i18n';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
@@ -138,7 +138,7 @@ describe('WhatsNewBottomSheet', () => {
     if (!campaign) {
       throw new Error('bundled campaign missing');
     }
-    const storage = createMockSyncStorage();
+    const storage = createSyncStorageStub();
     storage.get.mockReturnValue('xlarge');
     mockSafeAreaInsets = { top: 59, right: 0, bottom: 34, left: 0 };
     await act(async () => {

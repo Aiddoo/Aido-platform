@@ -1,5 +1,5 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { createSyncStorageStub } from '@src/shared/__tests__';
 
 import { StoreReviewTransitions } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
@@ -11,7 +11,7 @@ const ALL_DONE = { accountId: ACCOUNT, moment: 'all_todos_done' } as const;
 const presentable: WaitUntilPresentable = async () => true;
 
 const createFixture = () => {
-  const storage = createMockSyncStorage();
+  const storage = createSyncStorageStub();
   const values = new Map<string, string>();
   storage.get.mockImplementation((key) => values.get(key));
   storage.set.mockImplementation((key, value) => values.set(key, value));

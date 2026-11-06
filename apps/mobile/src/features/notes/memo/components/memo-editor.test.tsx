@@ -4,7 +4,7 @@ import { TodoCategoryService } from '@src/features/planning/category/apis/todo-c
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createMemorySyncStorage,
-  createMockHttpClient,
+  createHttpClientStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -58,7 +58,7 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
     ],
     pageParams: [null],
   });
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation((url) =>
     url === `v1/memos/${MEMO_ID}`
       ? Promise.resolve(ok({ memo: SAVED_MEMO_DTO }))

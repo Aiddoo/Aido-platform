@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import {
   createErrorReporterStub,
-  createMockAnalytics,
+  createAnalyticsStub,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -47,7 +47,7 @@ function SessionProbe({
 
 async function renderSession({ mode }: { mode?: 'quick' | 'note' } = {}) {
   const speechRecognizer = createSpeechRecognizerStub();
-  const analytics = createMockAnalytics();
+  const analytics = createAnalyticsStub();
   const onCaptured = jest.fn().mockResolvedValue(null);
   await renderUi(<SessionProbe onCaptured={onCaptured} mode={mode} />, {
     di: { speechRecognizer, analytics, logger, errorReporter: createErrorReporterStub() },
@@ -569,7 +569,7 @@ describe('useVoiceCaptureSession', () => {
     const { unmount } = await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
       di: {
         speechRecognizer,
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         logger,
         errorReporter: createErrorReporterStub(),
       },

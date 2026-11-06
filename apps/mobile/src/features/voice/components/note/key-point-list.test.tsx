@@ -5,8 +5,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
@@ -26,9 +26,9 @@ describe('KeyPointList', () => {
   it('시간 안내를 붙여도 첫 포인트를 누르면 그 지점부터 듣는다', async () => {
     // Given
     const { keyPoints } = createVoiceNoteDigest();
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const onPressKeyPoint = jest.fn();
     await renderUi(
       <KeyPointList hasTimeCoachmark keyPoints={keyPoints} onPressKeyPoint={onPressKeyPoint} />,
@@ -86,9 +86,9 @@ describe('KeyPointList', () => {
   it('들을 녹음이 없으면 시간 안내를 띄우지 않고 소비하지도 않는다', async () => {
     // Given
     const { keyPoints } = createVoiceNoteDigest();
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const coachmarkService = new CoachmarkService(
       createCoachmarkRepository(createMemorySyncStorage()),
     );

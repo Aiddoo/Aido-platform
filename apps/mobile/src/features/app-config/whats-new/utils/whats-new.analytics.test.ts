@@ -1,4 +1,4 @@
-import { createMockAnalytics } from '@src/shared/__tests__/create-mock-analytics';
+import { createAnalyticsStub } from '@src/shared/__tests__/create-analytics-stub';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 
 import {
@@ -15,7 +15,7 @@ const createAttributionStore = (): jest.Mocked<FeatureAttributionStore> => ({
 describe('whats-new analytics', () => {
   it('허브 노출과 닫기에 캠페인과 진입점만 기록한다', () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
 
     // When
     recordWhatsNewImpression(analytics, {
@@ -40,7 +40,7 @@ describe('whats-new analytics', () => {
 
   it('카드 CTA는 저카디널리티 기능만 분석하고 계정은 로컬 귀속에만 사용한다', () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const attribution = createAttributionStore();
 
     // When
@@ -70,7 +70,7 @@ describe('whats-new analytics', () => {
 
   it('계정 조회가 실패해도 CTA 분석과 이동을 막지 않고 귀속만 생략한다', () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const attribution = createAttributionStore();
 
     // When
@@ -92,7 +92,7 @@ describe('whats-new analytics', () => {
 
   it('로컬 귀속 저장이 실패해도 CTA 분석 호출은 예외를 노출하지 않는다', () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const attribution = createAttributionStore();
     attribution.record.mockImplementation(() => {
       throw new Error('MMKV unavailable');
@@ -118,7 +118,7 @@ describe('whats-new analytics', () => {
 
   it('분석 어댑터가 동기 실패해도 허브 노출과 닫기는 예외를 노출하지 않는다', () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     analytics.trackEvent.mockImplementation(() => {
       throw new Error('analytics unavailable');
     });
@@ -142,7 +142,7 @@ describe('whats-new analytics', () => {
 
   it('CTA 분석이 동기 실패해도 로컬 귀속을 기록하고 예외를 노출하지 않는다', () => {
     // Given
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const attribution = createAttributionStore();
     analytics.trackEvent.mockImplementation(() => {
       throw new Error('analytics unavailable');

@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createMockAnalytics } from '@src/shared/__tests__';
+import { createErrorReporterStub, createAnalyticsStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 
@@ -16,7 +16,7 @@ const MON_THU: TodoRepeat = {
 
 const renderLine = (timeLabel: string | null, todo: Parameters<typeof createParentTodo>[0]) =>
   renderUi(<TodoScheduleLine todo={createParentTodo(todo)} timeLabel={timeLabel} />, {
-    di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub() },
+    di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
   });
 
 describe('TodoScheduleLine', () => {

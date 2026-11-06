@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
@@ -18,7 +18,7 @@ import { QuotaChip } from './quota-chip';
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto()));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },

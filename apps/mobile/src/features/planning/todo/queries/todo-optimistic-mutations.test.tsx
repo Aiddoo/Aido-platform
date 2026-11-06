@@ -10,8 +10,8 @@ import { useUpdateSubTodoMutationOptions } from '@src/features/planning/composer
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
   createPendingResponse,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -68,7 +68,7 @@ const createCompletions = (totalTodos: number, completedTodos: number): DailyCom
 });
 
 async function renderMutations() {
-  const httpClient = createMockHttpClient();
+  const httpClient = createHttpClientStub();
   const queryClient = createTestQueryClient();
   const current: { value: ReturnType<typeof useTodoMutations> | null } = { value: null };
 
@@ -84,7 +84,7 @@ async function renderMutations() {
     {
       queryClient,
       di: {
-        analytics: createMockAnalytics(),
+        analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
         subTodoService: new SubTodoService(httpClient),

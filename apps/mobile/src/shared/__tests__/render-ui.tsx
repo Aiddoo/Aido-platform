@@ -8,7 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement, ReactNode } from 'react';
 
-import { createMockDIContainer } from './create-mock-di-container';
+import { createTestDiContainer } from './create-test-di-container';
 import { createTestQueryClient } from './query-client';
 
 export { createTestQueryClient } from './query-client';
@@ -30,7 +30,7 @@ export async function renderUi(
   { di, queryClient }: RenderUiOptions = {},
 ): Promise<RenderUiResult> {
   const client = queryClient ?? createTestQueryClient();
-  const container = createMockDIContainer(di);
+  const container = createTestDiContainer(di);
 
   function Harness({ children }: { children: ReactNode }) {
     return (

@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createMockAnalytics, createMockDIContainer } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -42,7 +42,7 @@ describe('앱 로컬 날짜 Provider', () => {
   });
 
   async function setup(device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE }) {
-    const analytics = createMockAnalytics();
+    const analytics = createAnalyticsStub();
     const errorReporter = createMockErrorReporter();
     const remove = jest.fn();
     let appStateListener: ((state: AppStateStatus) => void) | undefined;
@@ -53,7 +53,7 @@ describe('앱 로컬 날짜 Provider', () => {
     });
 
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createMockDIContainer({ analytics, errorReporter })}>
+      <StaticDIProvider container={createTestDiContainer({ analytics, errorReporter })}>
         <LocalDateProvider useDeviceCalendar={() => ({ timeZone: device.timeZone })}>
           {children}
         </LocalDateProvider>

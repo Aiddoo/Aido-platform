@@ -1,8 +1,8 @@
 import '@src/shared/i18n/init';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import {
-  createMockAnalytics,
-  createMockHttpClient,
+  createAnalyticsStub,
+  createHttpClientStub,
   createPendingResponse,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -30,7 +30,7 @@ function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
 
 describe('SubTodoActionsBottomSheet', () => {
   it('지우는 동안 라벨이 바뀌고 다시 눌리지 않는다', async () => {
-    const httpClient = createMockHttpClient();
+    const httpClient = createHttpClientStub();
     const pendingDelete = createPendingResponse(ok(undefined));
     httpClient.delete.mockReturnValue(pendingDelete.response);
     const todo = createParentTodo({ subTodos: [createSubTodo()] });
@@ -59,7 +59,7 @@ describe('SubTodoActionsBottomSheet', () => {
         di: {
           subTodoService: new SubTodoService(httpClient),
           todoService: new TodoService(httpClient),
-          analytics: createMockAnalytics(),
+          analytics: createAnalyticsStub(),
           errorReporter: createMockErrorReporter(),
         },
         queryClient,
