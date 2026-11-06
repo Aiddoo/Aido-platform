@@ -1,16 +1,19 @@
-import {
-  whatsNewConfigSchema,
-  type WhatsNewConfig,
-} from '@src/features/app-config/whats-new/domains/whats-new.model';
+import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import {
   WHATS_NEW_CAMPAIGN_ID,
   LEGACY_WHATS_NEW_CAMPAIGN_ID,
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
 } from '@src/features/app-config/whats-new/domains/whats-new.registry';
-import { userSchema } from '@src/features/identity/user/domains/user.model';
 import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time.constants';
-import { z } from 'zod';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
+
+import type {
+  ActivationChecklistSteps,
+  ActivationIdentity,
+  ActivationProgress,
+  ActivationUser,
+} from '../schemas/activation.schema';
 
 // 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다
 const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
@@ -22,34 +25,18 @@ const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
 const PUSH_REGISTRATION_DEFERRED_SINCE = '2026-08-01T00:00:00.000Z';
 export const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
-const activationProgressSchema = z.object({
-  todoCreatedAt: z.date().nullable(),
-  activatedAt: z.date().nullable(),
-  pushRegistrationUnlockedAt: z.date().nullable(),
-});
-export type ActivationProgress = z.infer<typeof activationProgressSchema>;
-const activationIdentitySchema = z.object({ accountId: z.string(), campaignId: z.string() });
-export type ActivationIdentity = z.infer<typeof activationIdentitySchema>;
-const activationUserSchema = userSchema.pick({ id: true, createdAt: true });
-export type ActivationUser = z.infer<typeof activationUserSchema>;
-const pushRegistrationInputSchema = z.object({
-  config: whatsNewConfigSchema.optional(),
-  user: activationUserSchema.optional(),
-  progress: activationProgressSchema,
-});
-type PushRegistrationInput = z.infer<typeof pushRegistrationInputSchema>;
-const checklistEligibilityInputSchema = pushRegistrationInputSchema.extend({ now: z.date() });
-type ChecklistEligibilityInput = z.infer<typeof checklistEligibilityInputSchema>;
-const activationChecklistStepsSchema = z.object({
-  hasCreatedTodo: z.boolean(),
-  hasCompletedTodo: z.boolean(),
-});
-type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
+interface PushRegistrationInput {
+  config: WhatsNewConfig | undefined;
+  user: ActivationUser | undefined;
+  progress: ActivationProgress;
+}
+interface ChecklistEligibilityInput extends PushRegistrationInput {
+  now: Instant;
+}
 // 친구 초대는 선택 단계라 노출 판단에 넣지 않는다. 필수 단계(만들기·완료)만 본다
-const checklistVisibilityInputSchema = checklistEligibilityInputSchema.extend({
-  steps: activationChecklistStepsSchema,
-});
-type ChecklistVisibilityInput = z.infer<typeof checklistVisibilityInputSchema>;
+interface ChecklistVisibilityInput extends ChecklistEligibilityInput {
+  steps: ActivationChecklistSteps;
+}
 
 function resolveEnabledCampaign(
   config: WhatsNewConfig,
@@ -71,7 +58,7 @@ function isNewUserCohort(
   return Boolean(campaign && user && user.createdAt.getTime() >= campaign.launchedAt.getTime());
 }
 
-function activationIdentity(
+function getActivationIdentity(
   config: WhatsNewConfig | undefined,
   user: ActivationUser | undefined,
 ): ActivationIdentity | null {
@@ -100,7 +87,7 @@ function isChecklistEligible({ config, user, progress, now }: ChecklistEligibili
 
   return isWithinTimeWindow(
     user.createdAt.getTime(),
-    now.getTime(),
+    toEpochMs(now),
     ACTIVATION_CHECKLIST_WINDOW_MS,
   );
 }
@@ -109,7 +96,7 @@ function isChecklistEligible({ config, user, progress, now }: ChecklistEligibili
  * 시작 체크리스트 단계. 서버의 할 일 기록(재설치·다른 기기·웹에서 만든 할 일 포함)과
  * 이 기기에서 기록한 진행 중 하나라도 있으면 끝난 단계다. 서버 기록을 아직 못 읽었으면 기기 기록만 본다.
  */
-function checklistSteps(
+function getChecklistSteps(
   progress: ActivationProgress,
   todoExistence: TodoExistence | undefined,
 ): ActivationChecklistSteps {
@@ -145,14 +132,14 @@ function shouldRegisterPushAutomatically({
   return progress.activatedAt != null || progress.pushRegistrationUnlockedAt != null;
 }
 
-function daysSinceSignup(user: ActivationUser, now: Date): number {
-  return calculateElapsedDays(user.createdAt.getTime(), now.getTime());
+function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
+  return calculateElapsedDays(user.createdAt.getTime(), toEpochMs(now));
 }
 
 export const ActivationPolicy = {
-  activationIdentity,
-  checklistSteps,
-  daysSinceSignup,
+  getActivationIdentity,
+  getChecklistSteps,
+  getDaysSinceSignup,
   isChecklistEligible,
   isChecklistVisible,
   isNewUserCohort,

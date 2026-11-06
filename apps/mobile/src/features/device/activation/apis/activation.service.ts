@@ -1,17 +1,15 @@
 import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import type { GrowthEventMap } from '@src/shared/analytics';
+import type { Instant } from '@src/shared/date/instant';
 
-import {
-  ActivationPolicy,
-  type ActivationProgress,
-  type ActivationUser,
-} from '../domains/activation.model';
+import { ActivationPolicy } from '../domains/activation.model';
+import type { ActivationProgress, ActivationUser } from '../schemas/activation.schema';
 import type { ActivationProgressRepository } from './activation-progress.repository';
 
 interface ActivationActionInput {
   config: WhatsNewConfig | undefined;
   user: ActivationUser | undefined;
-  now: Date;
+  now: Instant;
 }
 
 interface TodoCompletionInput extends ActivationActionInput {
@@ -34,14 +32,14 @@ export class ActivationService {
     config: WhatsNewConfig | undefined,
     user: ActivationUser | undefined,
   ): ActivationProgress => {
-    const identity = ActivationPolicy.activationIdentity(config, user);
+    const identity = ActivationPolicy.getActivationIdentity(config, user);
     return identity
       ? this.#repository.get(identity)
       : { todoCreatedAt: null, activatedAt: null, pushRegistrationUnlockedAt: null };
   };
 
   recordTodoCreated = ({ config, user, now }: ActivationActionInput): ActivationProgress | null => {
-    const identity = ActivationPolicy.activationIdentity(config, user);
+    const identity = ActivationPolicy.getActivationIdentity(config, user);
     if (!identity) {
       return null;
     }
@@ -54,7 +52,7 @@ export class ActivationService {
     isCompleted,
     now,
   }: TodoCompletionInput): TodoCompletionResult => {
-    const identity = ActivationPolicy.activationIdentity(config, user);
+    const identity = ActivationPolicy.getActivationIdentity(config, user);
     if (!isCompleted || !identity || !user) {
       return { progress: null, event: null };
     }
@@ -65,7 +63,7 @@ export class ActivationService {
       event: result.isClaimed
         ? {
             campaign_id: identity.campaignId,
-            days_since_signup: ActivationPolicy.daysSinceSignup(user, now),
+            days_since_signup: ActivationPolicy.getDaysSinceSignup(user, now),
           }
         : null,
     };
@@ -76,7 +74,7 @@ export class ActivationService {
     user,
     now,
   }: ActivationActionInput): ActivationProgress | null => {
-    const identity = ActivationPolicy.activationIdentity(config, user);
+    const identity = ActivationPolicy.getActivationIdentity(config, user);
     if (!identity) {
       return null;
     }

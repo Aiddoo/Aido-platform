@@ -3,20 +3,27 @@ import { getCachedWhatsNewConfig } from '@src/features/app-config/whats-new/quer
 import type { User } from '@src/features/identity/user/domains/user.model';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { GrowthEventMap } from '@src/shared/analytics';
+import { type Instant, toInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { ActivationService } from '../apis/activation.service';
 import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
 import { ActivationPolicy } from '../domains/activation.model';
+import type { ActivationProgress } from '../schemas/activation.schema';
 
 interface ActivationMutationBridgeInput {
   queryClient: QueryClient;
   service: ActivationService;
-  now?: Date;
+  now?: Instant;
 }
 
 interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
   isCompleted: boolean;
+}
+
+/** 기본값 인자는 호출 때마다 새로 계산된다 */
+function getCurrentInstant() {
+  return toInstant(new Date().toISOString());
 }
 
 function getContext(queryClient: QueryClient) {
@@ -30,9 +37,9 @@ function updateProgressCache(
   queryClient: QueryClient,
   config: WhatsNewConfig | undefined,
   user: User | undefined,
-  progress: ReturnType<ActivationService['getProgress']>,
+  progress: ActivationProgress,
 ) {
-  const identity = ActivationPolicy.activationIdentity(config, user);
+  const identity = ActivationPolicy.getActivationIdentity(config, user);
   if (!identity) {
     return;
   }
@@ -48,7 +55,7 @@ function updateProgressCache(
 export function recordTodoCreatedForActivation({
   queryClient,
   service,
-  now = new Date(),
+  now = getCurrentInstant(),
 }: ActivationMutationBridgeInput): void {
   const { config, user } = getContext(queryClient);
   const progress = service.recordTodoCreated({ config, user, now });
@@ -61,7 +68,7 @@ export function recordTodoCompletionForActivation({
   queryClient,
   service,
   isCompleted,
-  now = new Date(),
+  now = getCurrentInstant(),
 }: TodoCompletionBridgeInput): GrowthEventMap['activation_completed'] | null {
   const { config, user } = getContext(queryClient);
   const result = service.recordTodoCompletion({ config, user, isCompleted, now });
@@ -74,7 +81,7 @@ export function recordTodoCompletionForActivation({
 export function unlockPushRegistrationForActivation({
   queryClient,
   service,
-  now = new Date(),
+  now = getCurrentInstant(),
 }: ActivationMutationBridgeInput): boolean {
   const { config, user } = getContext(queryClient);
   const progress = service.unlockPushRegistration({ config, user, now });

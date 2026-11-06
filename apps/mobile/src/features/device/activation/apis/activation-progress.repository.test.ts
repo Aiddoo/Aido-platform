@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
 
@@ -22,11 +23,11 @@ describe('ActivationProgressRepository', () => {
     const repository = createActivationProgressRepository(createMemoryStorage());
 
     // When
-    repository.markTodoCreated(identity, new Date('2026-08-02T10:00:00.000Z'));
-    const result = repository.markTodoCreated(identity, new Date('2026-08-03T10:00:00.000Z'));
+    repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
+    const result = repository.markTodoCreated(identity, toInstant('2026-08-03T10:00:00.000Z'));
 
     // Then
-    expect(result.todoCreatedAt?.toISOString()).toBe('2026-08-02T10:00:00.000Z');
+    expect(result.todoCreatedAt).toBe('2026-08-02T10:00:00.000Z');
   });
 
   it('생성 기록이 있어야 완료를 한 번만 claim한다', () => {
@@ -34,15 +35,15 @@ describe('ActivationProgressRepository', () => {
     const repository = createActivationProgressRepository(createMemoryStorage());
 
     // When
-    const beforeCreate = repository.claimActivated(identity, new Date('2026-08-02T12:00:00.000Z'));
-    repository.markTodoCreated(identity, new Date('2026-08-02T10:00:00.000Z'));
-    const first = repository.claimActivated(identity, new Date('2026-08-02T12:00:00.000Z'));
-    const duplicate = repository.claimActivated(identity, new Date('2026-08-03T12:00:00.000Z'));
+    const beforeCreate = repository.claimActivated(identity, toInstant('2026-08-02T12:00:00.000Z'));
+    repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
+    const first = repository.claimActivated(identity, toInstant('2026-08-02T12:00:00.000Z'));
+    const duplicate = repository.claimActivated(identity, toInstant('2026-08-03T12:00:00.000Z'));
 
     // Then
     expect(beforeCreate.isClaimed).toBe(false);
     expect(first.isClaimed).toBe(true);
-    expect(first.progress.activatedAt?.toISOString()).toBe('2026-08-02T12:00:00.000Z');
+    expect(first.progress.activatedAt).toBe('2026-08-02T12:00:00.000Z');
     expect(duplicate.isClaimed).toBe(false);
   });
 
@@ -67,7 +68,7 @@ describe('ActivationProgressRepository', () => {
   it('계정과 캠페인이 다르면 진행 상태를 공유하지 않는다', () => {
     // Given
     const repository = createActivationProgressRepository(createMemoryStorage());
-    repository.markTodoCreated(identity, new Date('2026-08-02T10:00:00.000Z'));
+    repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
 
     // When
     const anotherAccount = repository.get({ ...identity, accountId: 'account-2' });
@@ -83,14 +84,14 @@ describe('ActivationProgressRepository', () => {
     const repository = createActivationProgressRepository(createMemoryStorage());
 
     // When
-    repository.unlockPushRegistration(identity, new Date('2026-08-02T10:00:00.000Z'));
+    repository.unlockPushRegistration(identity, toInstant('2026-08-02T10:00:00.000Z'));
     const result = repository.unlockPushRegistration(
       identity,
-      new Date('2026-08-03T10:00:00.000Z'),
+      toInstant('2026-08-03T10:00:00.000Z'),
     );
 
     // Then
-    expect(result.pushRegistrationUnlockedAt?.toISOString()).toBe('2026-08-02T10:00:00.000Z');
+    expect(result.pushRegistrationUnlockedAt).toBe('2026-08-02T10:00:00.000Z');
   });
 
   it('저장소 쓰기 실패가 핵심 할 일 동작으로 전파되지 않는다', () => {
@@ -102,9 +103,10 @@ describe('ActivationProgressRepository', () => {
     const repository = createActivationProgressRepository(storage);
 
     // When
-    const create = () => repository.markTodoCreated(identity, new Date('2026-08-02T10:00:00.000Z'));
+    const create = () =>
+      repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
     const unlock = () =>
-      repository.unlockPushRegistration(identity, new Date('2026-08-02T10:00:00.000Z'));
+      repository.unlockPushRegistration(identity, toInstant('2026-08-02T10:00:00.000Z'));
 
     // Then
     expect(create).not.toThrow();

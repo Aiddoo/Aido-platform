@@ -1,15 +1,10 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { z } from 'zod';
+import { type Instant, toInstant } from '@src/shared/date/instant';
 
-import type { ActivationIdentity, ActivationProgress } from '../domains/activation.model';
+import { persistedActivationProgressSchema } from '../schemas/activation-persisted.schema';
+import type { ActivationIdentity, ActivationProgress } from '../schemas/activation.schema';
 
 const KEY_PREFIX = 'aido_activation_v1';
-
-const persistedActivationProgressSchema = z.object({
-  todoCreatedAt: z.iso.datetime().nullable(),
-  activatedAt: z.iso.datetime().nullable(),
-  pushRegistrationUnlockedAt: z.iso.datetime().nullable().default(null),
-});
 
 const EMPTY_PROGRESS: ActivationProgress = {
   todoCreatedAt: null,
@@ -24,21 +19,17 @@ interface ClaimActivationResult {
 
 export interface ActivationProgressRepository {
   get(identity: ActivationIdentity): ActivationProgress;
-  markTodoCreated(identity: ActivationIdentity, at: Date): ActivationProgress;
-  claimActivated(identity: ActivationIdentity, at: Date): ClaimActivationResult;
-  unlockPushRegistration(identity: ActivationIdentity, at: Date): ActivationProgress;
+  markTodoCreated(identity: ActivationIdentity, at: Instant): ActivationProgress;
+  claimActivated(identity: ActivationIdentity, at: Instant): ClaimActivationResult;
+  unlockPushRegistration(identity: ActivationIdentity, at: Instant): ActivationProgress;
+}
+
+function toNullableInstant(value: string | null) {
+  return value == null ? null : toInstant(value);
 }
 
 const activationProgressKey = ({ accountId, campaignId }: ActivationIdentity): string =>
   `${KEY_PREFIX}:${accountId}:${campaignId}`;
-
-function toPersisted(progress: ActivationProgress) {
-  return {
-    todoCreatedAt: progress.todoCreatedAt?.toISOString() ?? null,
-    activatedAt: progress.activatedAt?.toISOString() ?? null,
-    pushRegistrationUnlockedAt: progress.pushRegistrationUnlockedAt?.toISOString() ?? null,
-  };
-}
 
 export function createActivationProgressRepository(
   storage: SyncStorage,
@@ -60,17 +51,15 @@ export function createActivationProgressRepository(
       return { ...EMPTY_PROGRESS };
     }
     return {
-      todoCreatedAt: parsed.data.todoCreatedAt ? new Date(parsed.data.todoCreatedAt) : null,
-      activatedAt: parsed.data.activatedAt ? new Date(parsed.data.activatedAt) : null,
-      pushRegistrationUnlockedAt: parsed.data.pushRegistrationUnlockedAt
-        ? new Date(parsed.data.pushRegistrationUnlockedAt)
-        : null,
+      todoCreatedAt: toNullableInstant(parsed.data.todoCreatedAt),
+      activatedAt: toNullableInstant(parsed.data.activatedAt),
+      pushRegistrationUnlockedAt: toNullableInstant(parsed.data.pushRegistrationUnlockedAt),
     };
   };
 
   const save = (identity: ActivationIdentity, progress: ActivationProgress): boolean => {
     try {
-      storage.set(activationProgressKey(identity), JSON.stringify(toPersisted(progress)));
+      storage.set(activationProgressKey(identity), JSON.stringify(progress));
       return true;
     } catch {
       return false;

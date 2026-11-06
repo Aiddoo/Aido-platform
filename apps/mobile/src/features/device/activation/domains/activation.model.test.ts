@@ -1,10 +1,8 @@
 import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import { toInstant } from '@src/shared/date/instant';
 
-import {
-  ACTIVATION_CHECKLIST_WINDOW_MS,
-  ActivationPolicy,
-  type ActivationProgress,
-} from './activation.model';
+import type { ActivationProgress } from '../schemas/activation.schema';
+import { ACTIVATION_CHECKLIST_WINDOW_MS, ActivationPolicy } from './activation.model';
 
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');
 
@@ -71,7 +69,7 @@ describe('ActivationPolicy', () => {
     it('가입 후 7일 미만인 미활성 신규 사용자에게 체크리스트를 표시한다', () => {
       // Given
       const user = { id: 'new-user', createdAt: LAUNCHED_AT };
-      const now = new Date('2026-08-07T23:59:59.999Z');
+      const now = toInstant('2026-08-07T23:59:59.999Z');
 
       // When
       const result = ActivationPolicy.isChecklistEligible({
@@ -93,14 +91,14 @@ describe('ActivationPolicy', () => {
       const activated = ActivationPolicy.isChecklistEligible({
         config: createConfig(),
         user,
-        progress: createProgress({ activatedAt: new Date('2026-08-02T00:00:00.000Z') }),
-        now: new Date('2026-08-02T00:00:01.000Z'),
+        progress: createProgress({ activatedAt: toInstant('2026-08-02T00:00:00.000Z') }),
+        now: toInstant('2026-08-02T00:00:01.000Z'),
       });
       const expired = ActivationPolicy.isChecklistEligible({
         config: createConfig(),
         user,
         progress: createProgress(),
-        now: new Date('2026-08-08T00:00:00.000Z'),
+        now: toInstant('2026-08-08T00:00:00.000Z'),
       });
 
       // Then
@@ -111,7 +109,7 @@ describe('ActivationPolicy', () => {
 
   describe('isChecklistVisible', () => {
     const user = { id: 'new-user', createdAt: LAUNCHED_AT };
-    const withinWindow = new Date('2026-08-03T00:00:00.000Z');
+    const withinWindow = toInstant('2026-08-03T00:00:00.000Z');
     const requiredDone = { hasCreatedTodo: true, hasCompletedTodo: true };
 
     it('필수 단계를 끝내면 친구 초대를 하지 않았어도 체크리스트를 숨긴다', () => {
@@ -157,7 +155,9 @@ describe('ActivationPolicy', () => {
         config: createConfig(),
         user,
         progress: createProgress(),
-        now: new Date(LAUNCHED_AT.getTime() + ACTIVATION_CHECKLIST_WINDOW_MS),
+        now: toInstant(
+          new Date(LAUNCHED_AT.getTime() + ACTIVATION_CHECKLIST_WINDOW_MS).toISOString(),
+        ),
         steps,
       });
 
@@ -189,11 +189,11 @@ describe('ActivationPolicy', () => {
       const progress = createProgress();
 
       // When
-      const created = ActivationPolicy.checklistSteps(progress, {
+      const created = ActivationPolicy.getChecklistSteps(progress, {
         hasTodo: true,
         hasCompletedTodo: false,
       });
-      const completed = ActivationPolicy.checklistSteps(progress, {
+      const completed = ActivationPolicy.getChecklistSteps(progress, {
         hasTodo: true,
         hasCompletedTodo: true,
       });
@@ -205,10 +205,10 @@ describe('ActivationPolicy', () => {
 
     it('서버 기록을 못 읽었으면 이 기기 기록으로 판단한다', () => {
       // Given
-      const progress = createProgress({ todoCreatedAt: new Date('2026-08-02T00:00:00.000Z') });
+      const progress = createProgress({ todoCreatedAt: toInstant('2026-08-02T00:00:00.000Z') });
 
       // When
-      const result = ActivationPolicy.checklistSteps(progress, undefined);
+      const result = ActivationPolicy.getChecklistSteps(progress, undefined);
 
       // Then
       expect(result).toEqual({ hasCreatedTodo: true, hasCompletedTodo: false });
@@ -217,12 +217,12 @@ describe('ActivationPolicy', () => {
     it('서버에서 할 일을 지워도 이 기기에서 끝낸 단계는 되돌리지 않는다', () => {
       // Given
       const progress = createProgress({
-        todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
-        activatedAt: new Date('2026-08-02T00:01:00.000Z'),
+        todoCreatedAt: toInstant('2026-08-02T00:00:00.000Z'),
+        activatedAt: toInstant('2026-08-02T00:01:00.000Z'),
       });
 
       // When
-      const result = ActivationPolicy.checklistSteps(progress, {
+      const result = ActivationPolicy.getChecklistSteps(progress, {
         hasTodo: false,
         hasCompletedTodo: false,
       });
@@ -246,7 +246,7 @@ describe('ActivationPolicy', () => {
       const activated = ActivationPolicy.shouldRegisterPushAutomatically({
         config,
         user: { id: 'new', createdAt: LAUNCHED_AT },
-        progress: createProgress({ activatedAt: new Date('2026-08-02T00:00:00.000Z') }),
+        progress: createProgress({ activatedAt: toInstant('2026-08-02T00:00:00.000Z') }),
       });
 
       // Then
@@ -278,7 +278,7 @@ describe('ActivationPolicy', () => {
         config: createConfig(),
         user,
         progress: createProgress({
-          pushRegistrationUnlockedAt: new Date('2026-08-02T00:00:00.000Z'),
+          pushRegistrationUnlockedAt: toInstant('2026-08-02T00:00:00.000Z'),
         }),
       });
 
@@ -317,13 +317,13 @@ describe('ActivationPolicy', () => {
 
       // Then
       expect(result).toBe(false);
-      expect(ActivationPolicy.activationIdentity(undefined, user)).toBeNull();
+      expect(ActivationPolicy.getActivationIdentity(undefined, user)).toBeNull();
       expect(
         ActivationPolicy.isChecklistEligible({
           config: undefined,
           user,
           progress: createProgress(),
-          now: new Date('2026-08-02T00:00:00.000Z'),
+          now: toInstant('2026-08-02T00:00:00.000Z'),
         }),
       ).toBe(false);
     });

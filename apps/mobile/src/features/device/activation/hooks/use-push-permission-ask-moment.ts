@@ -34,9 +34,7 @@ export function usePushPermissionAskMoment() {
     }
     const unlockedAt =
       activation.progress.activatedAt ?? activation.progress.pushRegistrationUnlockedAt;
-    return `${activation.user?.id ?? 'compatibility-fallback'}:${
-      unlockedAt?.toISOString() ?? 'existing'
-    }`;
+    return `${activation.user?.id ?? 'compatibility-fallback'}:${unlockedAt ?? 'existing'}`;
   }, [activation.progress, activation.user, canAsk]);
 
   const isDue =

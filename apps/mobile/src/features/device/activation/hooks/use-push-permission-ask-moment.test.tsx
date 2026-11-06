@@ -9,11 +9,12 @@ import {
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { toInstant } from '@src/shared/date/instant';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import type { ActivationProgress, ActivationUser } from '../domains/activation.model';
+import type { ActivationProgress, ActivationUser } from '../schemas/activation.schema';
 import { usePushPermissionAskMoment } from './use-push-permission-ask-moment';
 
 type ActivationState = {
@@ -139,7 +140,7 @@ describe('usePushPermissionAskMoment', () => {
       ...mockActivationState,
       progress: {
         ...mockActivationState.progress,
-        activatedAt: new Date('2026-08-02T00:00:00.000Z'),
+        activatedAt: toInstant('2026-08-02T00:00:00.000Z'),
       },
     };
     await rerender(undefined);

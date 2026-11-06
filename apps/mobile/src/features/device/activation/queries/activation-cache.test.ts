@@ -5,6 +5,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { toInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { createActivationProgressRepository } from '../apis/activation-progress.repository';
@@ -53,7 +54,7 @@ describe('activation mutation bridge', () => {
     recordTodoCreatedForActivation({
       queryClient,
       service,
-      now: new Date('2026-08-02T00:00:00.000Z'),
+      now: toInstant('2026-08-02T00:00:00.000Z'),
     });
 
     // Then
@@ -65,7 +66,7 @@ describe('activation mutation bridge', () => {
         }),
       ),
     ).toEqual({
-      todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
+      todoCreatedAt: toInstant('2026-08-02T00:00:00.000Z'),
       activatedAt: null,
       pushRegistrationUnlockedAt: null,
     });
@@ -79,7 +80,7 @@ describe('activation mutation bridge', () => {
     recordTodoCreatedForActivation({
       queryClient,
       service,
-      now: new Date('2026-08-02T00:00:00.000Z'),
+      now: toInstant('2026-08-02T00:00:00.000Z'),
     });
 
     // When
@@ -87,13 +88,13 @@ describe('activation mutation bridge', () => {
       queryClient,
       service,
       isCompleted: true,
-      now: new Date('2026-08-03T00:00:00.000Z'),
+      now: toInstant('2026-08-03T00:00:00.000Z'),
     });
     const duplicate = recordTodoCompletionForActivation({
       queryClient,
       service,
       isCompleted: true,
-      now: new Date('2026-08-04T00:00:00.000Z'),
+      now: toInstant('2026-08-04T00:00:00.000Z'),
     });
 
     // Then
@@ -110,8 +111,8 @@ describe('activation mutation bridge', () => {
         }),
       ),
     ).toEqual({
-      todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
-      activatedAt: new Date('2026-08-03T00:00:00.000Z'),
+      todoCreatedAt: toInstant('2026-08-02T00:00:00.000Z'),
+      activatedAt: toInstant('2026-08-03T00:00:00.000Z'),
       pushRegistrationUnlockedAt: null,
     });
   });
@@ -126,7 +127,7 @@ describe('activation mutation bridge', () => {
     const unlocked = unlockPushRegistrationForActivation({
       queryClient,
       service,
-      now: new Date('2026-08-02T00:00:00.000Z'),
+      now: toInstant('2026-08-02T00:00:00.000Z'),
     });
 
     // Then
@@ -141,7 +142,7 @@ describe('activation mutation bridge', () => {
     ).toEqual({
       todoCreatedAt: null,
       activatedAt: null,
-      pushRegistrationUnlockedAt: new Date('2026-08-02T00:00:00.000Z'),
+      pushRegistrationUnlockedAt: toInstant('2026-08-02T00:00:00.000Z'),
     });
   });
 
@@ -158,7 +159,7 @@ describe('activation mutation bridge', () => {
     const unlocked = unlockPushRegistrationForActivation({
       queryClient,
       service: createService(),
-      now: new Date('2026-08-02T00:00:00.000Z'),
+      now: toInstant('2026-08-02T00:00:00.000Z'),
     });
 
     // Then

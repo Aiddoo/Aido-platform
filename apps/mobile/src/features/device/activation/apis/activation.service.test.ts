@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import type { WhatsNewConfig } from '@src/features/app-config/whats-new/domains/whats-new.model';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
 import { ActivationService } from './activation.service';
@@ -30,7 +31,7 @@ describe('ActivationService', () => {
     service.recordTodoCreated({
       config,
       user,
-      now: new Date('2026-08-02T10:00:00.000Z'),
+      now: toInstant('2026-08-02T10:00:00.000Z'),
     });
 
     // When
@@ -38,13 +39,13 @@ describe('ActivationService', () => {
       config,
       user,
       isCompleted: true,
-      now: new Date('2026-08-03T12:00:00.000Z'),
+      now: toInstant('2026-08-03T12:00:00.000Z'),
     });
     const duplicate = service.recordTodoCompletion({
       config,
       user,
       isCompleted: true,
-      now: new Date('2026-08-04T12:00:00.000Z'),
+      now: toInstant('2026-08-04T12:00:00.000Z'),
     });
 
     // Then
@@ -67,13 +68,13 @@ describe('ActivationService', () => {
     const existingCreate = service.recordTodoCreated({
       config,
       user: existingUser,
-      now: new Date('2026-08-02T10:00:00.000Z'),
+      now: toInstant('2026-08-02T10:00:00.000Z'),
     });
     const uncomplete = service.recordTodoCompletion({
       config,
       user: { id: 'new-user', createdAt: new Date('2026-08-01T00:00:00.000Z') },
       isCompleted: false,
-      now: new Date('2026-08-02T12:00:00.000Z'),
+      now: toInstant('2026-08-02T12:00:00.000Z'),
     });
 
     // Then
