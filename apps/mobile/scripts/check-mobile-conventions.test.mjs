@@ -544,3 +544,95 @@ test('es-toolkit/compat import는 거부하고 허용 목록의 파일만 통과
     },
   );
 });
+
+const ROUTE_FILE = 'apps/mobile/app/(app)/feed/index.tsx';
+
+test('파라미터 훅 밖에서 router.setParams를 부르면 거부한다', () => {
+  withFixture(
+    {
+      [ROUTE_FILE]: `router.setParams({ date: undefined });`,
+      'apps/mobile/src/features/planning/todo/components/feed-list-pane.tsx': `router.setParams({ date: undefined });`,
+    },
+    (errors) => {
+      assert.equal(errors.filter((error) => error.includes('router.setParams')).length, 2);
+    },
+  );
+});
+
+test('공용 훅과 파라미터 훅의 router.setParams, 테스트의 호출은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/hooks/use-route-params.ts': `router.setParams({ date: undefined });`,
+      'apps/mobile/src/features/notification/hooks/use-notification-category-param.ts': `router.setParams({});`,
+      'apps/mobile/src/features/planning/todo/hooks/use-feed-params.test.tsx': `router.setParams({});`,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('useLocalSearchParams 결과를 구조 분해하면 거부한다', () => {
+  withFixture({ [ROUTE_FILE]: `const { view } = useLocalSearchParams();` }, (errors) => {
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /구조 분해/u);
+  });
+});
+
+test('스키마로 parse한 값의 구조 분해는 통과한다', () => {
+  withFixture(
+    { [ROUTE_FILE]: `const { view } = viewSchema.parse(useLocalSearchParams());` },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('파라미터 훅 파일에서 z.object를 정의하면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notification/hooks/use-notification-category-param.ts': `const schema = z.object({});`,
+      'apps/mobile/src/features/voice/hooks/use-voice-note-params.ts': `const schema = z.object({});`,
+    },
+    (errors) => {
+      assert.equal(errors.filter((error) => error.includes('schemas/')).length, 2);
+    },
+  );
+});
+
+test('파라미터 훅이 아닌 파일의 z.object는 이 규칙에 걸리지 않는다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notification/schemas/notification-params.schema.ts': `const schema = z.object({});`,
+      'apps/mobile/src/features/notification/hooks/use-notification-list.ts': `const schema = z.object({});`,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('Platform.OS는 거부하고 Platform.Version과 EXPO_OS는 통과한다', () => {
+  withFixture(
+    {
+      [ROUTE_FILE]: `const a = Platform.OS === 'ios'; const b = Platform.Version; const c = process.env.EXPO_OS;`,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /EXPO_OS/u);
+    },
+  );
+});
+
+test('react-native의 Image import를 거부하고 공용 Image는 통과한다', () => {
+  withFixture(
+    {
+      [ROUTE_FILE]: `import { Image, View } from 'react-native';`,
+      'apps/mobile/src/features/notification/components/a.tsx': `import { Image } from '@src/shared/ui'; import { View } from 'react-native';`,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /shared\/ui/u);
+    },
+  );
+});

@@ -104,7 +104,6 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/support/inquiry/constants/',
   'apps/mobile/src/features/support/inquiry/hooks/',
   'apps/mobile/src/features/support/inquiry/queries/',
-  'apps/mobile/src/features/support/inquiry/utils/',
   'apps/mobile/src/features/insights/achievement/constants/',
   'apps/mobile/src/features/insights/achievement/domains/',
   'apps/mobile/src/features/insights/achievement/hooks/',
@@ -842,6 +841,99 @@ function checkStrictNullishComparisons(sourceFile, repositoryRoot, errors) {
 
 // 앱의 Hermes(260318099.0.5)에서 실측해 없는 표준 메서드. TS lib에는 있어 typecheck를 통과하고 호출한 순간 앱에서만 죽는다.
 // 같은 시대의 toReversed·toSpliced·with·findLast·findLastIndex는 있다. jest.setup.ts도 같은 목록을 Node에서 지운다.
+const ROUTE_PARAMS_HOOK = 'apps/mobile/src/shared/hooks/use-route-params.ts';
+const ROUTE_PARAM_HOOK_FILE = /\/hooks\/use-[^/]*-params?\.tsx?$/u;
+
+function isRouterSetParamsCall(node) {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    ts.isIdentifier(node.expression.expression) &&
+    node.expression.expression.text === 'router' &&
+    node.expression.name.text === 'setParams'
+  );
+}
+
+function isUseLocalSearchParamsCall(node) {
+  return (
+    node !== undefined &&
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    node.expression.text === 'useLocalSearchParams'
+  );
+}
+
+function isZodObjectCall(node) {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    ts.isIdentifier(node.expression.expression) &&
+    node.expression.expression.text === 'z' &&
+    node.expression.name.text === 'object'
+  );
+}
+
+/** URL 값은 `useRouteParams`와 `schemas/`의 스키마로 읽고 쓴다. 플랫폼 값과 이미지도 한 가지로 쓴다 */
+function checkRouteParamConventions(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (isTestSource(relativePath)) {
+    return;
+  }
+
+  function visit(node) {
+    if (
+      isRouterSetParamsCall(node) &&
+      relativePath !== ROUTE_PARAMS_HOOK &&
+      !ROUTE_PARAM_HOOK_FILE.test(relativePath)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요.`,
+      );
+    }
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isObjectBindingPattern(node.name) &&
+      isUseLocalSearchParamsCall(node.initializer)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} useLocalSearchParams 결과를 구조 분해하지 마세요. schemas/의 스키마로 parse한 값을 씁니다.`,
+      );
+    }
+    if (ROUTE_PARAM_HOOK_FILE.test(relativePath) && isZodObjectCall(node)) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} route 파라미터 스키마는 훅 파일이 아니라 schemas/{name}-params.schema.ts에 둡니다.`,
+      );
+    }
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'Platform' &&
+      node.name.text === 'OS'
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다.`,
+      );
+    }
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === 'react-native' &&
+      node.importClause?.namedBindings !== undefined &&
+      ts.isNamedImports(node.importClause.namedBindings) &&
+      node.importClause.namedBindings.elements.some(
+        (element) => (element.propertyName ?? element.name).text === 'Image',
+      )
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} react-native의 Image 대신 @src/shared/ui의 Image를 씁니다.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 const HERMES_MISSING_METHODS = new Map([
   ['toSorted', 'es-toolkit의 sortBy'],
   ['fromAsync', 'for await'],
@@ -934,6 +1026,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
     checkSdkImports(sourceFile, repositoryRoot, errors);
     checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors);
+    checkRouteParamConventions(sourceFile, repositoryRoot, errors);
   }
 
   const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];
