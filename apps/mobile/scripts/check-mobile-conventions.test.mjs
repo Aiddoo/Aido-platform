@@ -506,13 +506,13 @@ test('SDK를 shared/infra 밖에서 import하면 거부한다', () => {
   );
 });
 
-test('shared/infra와 허용된 경계 훅, 테스트의 SDK import는 통과한다', () => {
+test('shared/infra와 테스트의 SDK import는 통과한다', () => {
   withFixture(
     {
       'apps/mobile/src/shared/infra/clipboard/expo-clipboard.gateway.ts': `
         import * as Clipboard from 'expo-clipboard';
       `,
-      'apps/mobile/src/features/voice/hooks/use-voice-note-player.ts': `
+      'apps/mobile/src/shared/infra/audio/use-audio-part-playlist.ts': `
         import { useAudioPlaylist } from 'expo-audio';
       `,
       'apps/mobile/src/features/planning/todo/hooks/use-new-feature.test.ts': `

@@ -150,10 +150,6 @@ const SDK_MODULES = [
   '@react-native-firebase/analytics',
 ];
 const SDK_INFRA_ROOT = 'apps/mobile/src/shared/infra/';
-// 라이브러리 자체가 React 훅인 경계 파일. 파일 하나에서만 import한다.
-const SDK_BOUNDARY_HOOKS = new Map([
-  ['apps/mobile/src/features/voice/hooks/use-voice-note-player.ts', ['expo-audio']],
-]);
 // 규칙을 넣기 전부터 있던 위반. 출시 후 첫 스택에서 모두 옮겨 비운다. 새 위반을 여기 더하지 않는다.
 const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/app/_layout.tsx', ['expo-updates']],
@@ -239,10 +235,7 @@ function checkSdkImports(sourceFile, repositoryRoot, errors) {
   if (relativePath.startsWith(SDK_INFRA_ROOT) || isTestSource(relativePath)) {
     return;
   }
-  const allowed = [
-    ...(SDK_BOUNDARY_HOOKS.get(relativePath) ?? []),
-    ...(SDK_IMPORT_ALLOWLIST.get(relativePath) ?? []),
-  ];
+  const allowed = SDK_IMPORT_ALLOWLIST.get(relativePath) ?? [];
   for (const statement of sourceFile.statements) {
     if (
       !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
