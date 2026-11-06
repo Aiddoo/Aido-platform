@@ -3,6 +3,7 @@ import type { HttpClient } from '@src/core/ports/http';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
@@ -11,7 +12,11 @@ import { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import { createPushNotificationGatewayStub } from '@src/features/notification/__tests__/notification.fixtures';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
+import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
 
 import { createAnalyticsStub } from './create-analytics-stub';
 import { createErrorReporterStub } from './create-error-reporter-stub';
@@ -41,6 +46,10 @@ export function createTestDi({
   return {
     memoService: new MemoService(httpClient, logger),
     todoCategoryService: new TodoCategoryService(httpClient),
+    todoCommentService: new TodoCommentService(httpClient),
+    todoService: new TodoService(httpClient),
+    subTodoService: new SubTodoService(httpClient),
+    draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
     inquiryService: new InquiryService(httpClient),
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),

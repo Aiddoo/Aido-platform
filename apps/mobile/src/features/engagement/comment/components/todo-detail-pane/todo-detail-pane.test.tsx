@@ -1,27 +1,17 @@
 import '@src/shared/i18n/init';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
 import { ApiError } from '@src/shared/errors/api-error';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import { err, ok } from '@src/shared/errors/result';
+import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
-import { TodoCommentService } from '../../apis/todo-comment.service';
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
 import { TodoDetailPane } from './todo-detail-pane';
 
@@ -29,6 +19,8 @@ const TODO_ID = 42;
 const COMMENT_ID = 'ckcomment0001';
 const USER_ID = 'clz7x5p8k0001qz0z8z8z8z8z';
 const CREATED_AT = '2026-08-15T09:00:00.000Z';
+/** 새 댓글은 연결 실패를 두 번 더 시도해 1.5초 뒤에 실패로 끝난다 */
+const RETRY_WAIT = { timeout: 4_000 };
 
 const PAGINATION = {
   previousCursor: null,
@@ -124,17 +116,10 @@ async function renderTodoDetail() {
   const view = await renderUi(<TodoDetailPane presentation="screen" />, {
     withLocalDate: true,
     withOverlay: true,
-    di: {
-      todoCommentService: new TodoCommentService(httpClient),
-      todoService: new TodoService(httpClient),
-      userService: new UserService(httpClient),
-      analytics: createAnalyticsStub(),
-      coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
-      draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+    di: createTestDi({
+      httpClient,
       clipboard: { hasContent: jest.fn(), paste: jest.fn(), copy: jest.fn() },
-      logger: createLoggerStub(),
-      errorReporter: createErrorReporterStub(),
-    },
+    }),
   });
   await screen.findByTestId('todo-comment-input-0');
   await screen.findByText('오늘도 화이팅!');
@@ -254,5 +239,28 @@ describe('할 일 상세 입력창과 키보드', () => {
     // Then
     await waitFor(() => expect(screen.getByTestId('todo-comment-input-0').props.value).toBe(''));
     expect(KeyboardController.dismiss).toHaveBeenCalled();
+  });
+
+  it('오프라인에서 보내면 멈추지 않고 실패해 입력값이 남고 다시 보낼 수 있다', async () => {
+    // Given
+    const { httpClient } = await renderTodoDetail();
+    httpClient.post.mockRejectedValue(new NetworkError());
+    onlineManager.setOnline(false);
+
+    try {
+      // When
+      await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '오프라인 글');
+      await fireEvent.press(screen.getByTestId('todo-comment-submit'));
+
+      // Then
+      await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+      await waitFor(
+        () => expect(screen.getByTestId('todo-comment-submit')).toBeEnabled(),
+        RETRY_WAIT,
+      );
+      expect(screen.getByTestId('todo-comment-input-0').props.value).toBe('오프라인 글');
+    } finally {
+      onlineManager.setOnline(true);
+    }
   });
 });

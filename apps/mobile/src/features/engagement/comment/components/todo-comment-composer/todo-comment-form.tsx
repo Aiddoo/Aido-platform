@@ -223,7 +223,9 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
     try {
       await match(mode)
         .with({ type: 'edit' }, async ({ target }) => {
-          await updateComment.mutateAsync({ target, input: { content: contents[0] } });
+          if (!TodoCommentComposerPolicy.isSameAsOriginal(target, contents[0])) {
+            await updateComment.mutateAsync({ target, input: { content: contents[0] } });
+          }
         })
         .with({ type: 'new' }, { type: 'reply' }, async (writeMode) => {
           const submission = TodoCommentComposerPolicy.prepareSubmission({

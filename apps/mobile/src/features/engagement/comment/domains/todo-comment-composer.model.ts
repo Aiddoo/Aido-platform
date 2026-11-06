@@ -72,6 +72,11 @@ function getTrimmedContents(items: TodoCommentFormValues['items']): [string, ...
   return first == null ? null : [first, ...rest];
 }
 
+/** 글자가 그대로면 서버에 보낼 것이 없다. 보낼 글은 앞뒤 공백을 지운 값이다 */
+function isSameAsOriginal(target: Pick<TodoComment, 'content'>, trimmedContent: string) {
+  return target.content === trimmedContent;
+}
+
 type TodoCommentBackAction = 'blocked' | 'closeComposer' | 'native';
 
 /** 작성기가 열려 있으면 먼저 닫고, 아니면 화면을 닫는다. 보내는 중에는 초안을 지키려고 막는다 */
@@ -89,6 +94,7 @@ function getBackAction(
 export const TodoCommentComposerPolicy = {
   getBackAction,
   canChain,
+  isSameAsOriginal,
   shouldCloseOnKeyboardHide,
   getComposerTarget,
   getReplyParentId,

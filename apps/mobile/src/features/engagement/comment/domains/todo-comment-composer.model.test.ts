@@ -112,6 +112,22 @@ describe('TodoCommentComposer', () => {
   });
 });
 
+describe('TodoCommentComposerPolicy.isSameAsOriginal', () => {
+  it('공백을 지운 글이 원래 글과 같으면 수정할 것이 없다', () => {
+    // Given
+    const target = createTodoComment({ content: '원래 글' });
+
+    // When
+    const result = [
+      TodoCommentComposerPolicy.isSameAsOriginal(target, '원래 글'),
+      TodoCommentComposerPolicy.isSameAsOriginal(target, '바뀐 글'),
+    ];
+
+    // Then
+    expect(result).toEqual([true, false]);
+  });
+});
+
 describe('TodoCommentComposerPolicy.getBackAction', () => {
   const target = createTodoComment();
 

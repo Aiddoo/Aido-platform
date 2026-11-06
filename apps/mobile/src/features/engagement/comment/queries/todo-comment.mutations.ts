@@ -68,6 +68,8 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
   const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
+    // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 연결 뒤 몰래 보내지 않는다
+    networkMode: 'always',
     mutationKey: TODO_COMMENT_MUTATION_KEYS.createCommentChain(todoId),
     retry: (failureCount, error) =>
       failureCount < MAX_RETRY_COUNT && isRetryableCreationError(error),
@@ -111,6 +113,8 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
   const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
+    // 새 댓글과 같은 이유로 오프라인에서 멈추지 않는다
+    networkMode: 'always',
     mutationKey: TODO_COMMENT_MUTATION_KEYS.updateComment(todoId),
     mutationFn: async ({ target, input }: UpdateTodoCommentMutationParams) =>
       unwrap(await todoCommentService.updateComment(todoId, target.id, input)),
