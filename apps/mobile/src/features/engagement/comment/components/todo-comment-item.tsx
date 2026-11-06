@@ -53,8 +53,10 @@ import {
 } from '../domains/todo-comment-composer.model';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useCommentDoubleTap } from '../hooks/use-comment-double-tap';
-import { useDeleteTodoCommentMutationOptions } from '../queries/use-delete-todo-comment-mutation-options';
-import { useSetTodoCommentLikeMutationOptions } from '../queries/use-set-todo-comment-like-mutation-options';
+import {
+  useDeleteTodoCommentMutationOptions,
+  useSetTodoCommentLikeMutationOptions,
+} from '../queries/todo-comment.mutations';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {
   popTodoCommentLikeButton,

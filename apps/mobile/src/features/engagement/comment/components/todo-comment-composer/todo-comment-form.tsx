@@ -37,8 +37,10 @@ import {
 } from '../../domains/todo-comment-composer.model';
 import type { TodoCommentAuthor } from '../../domains/todo-comment.model';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
-import { useCreateTodoCommentChainMutationOptions } from '../../queries/use-create-todo-comment-chain-mutation-options';
-import { useUpdateTodoCommentMutationOptions } from '../../queries/use-update-todo-comment-mutation-options';
+import {
+  useCreateTodoCommentChainMutationOptions,
+  useUpdateTodoCommentMutationOptions,
+} from '../../queries/todo-comment.mutations';
 import { getFocusedCommentFieldIndexAfterRemoval } from '../../utils/comment-form-fields';
 import { getCommentFormMaxHeight } from '../../utils/comment-form-layout';
 import { createTodoCommentDraftKey } from '../../utils/todo-comment-draft';

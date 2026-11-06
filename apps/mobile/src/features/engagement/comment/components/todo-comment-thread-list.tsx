@@ -41,8 +41,8 @@ import {
   type TodoCommentThreadAnchor,
 } from '../domains/todo-comment.model';
 import { useCommentParams } from '../hooks/use-comment-params';
-import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/get-todo-comment-threads-infinite-query-options';
 import { refreshTodoComments } from '../queries/todo-comment-cache';
+import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-view';
 import { TodoCommentReplies } from './todo-comment-replies';

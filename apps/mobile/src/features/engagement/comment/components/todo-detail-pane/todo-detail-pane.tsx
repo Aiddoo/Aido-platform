@@ -1,6 +1,6 @@
-import type { TodoCommentSort } from '@aido/api';
+import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLogger, useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import { TodoDetailCard } from '@src/features/planning/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
@@ -35,7 +35,7 @@ import {
 import { useAndroidTodoCommentBackHandler } from '../../hooks/use-android-todo-comment-back-handler';
 import { useCommentParams } from '../../hooks/use-comment-params';
 import { useTodoCommentBack } from '../../hooks/use-todo-comment-back';
-import { getTodoCommentThreadsInfiniteQueryOptions } from '../../queries/get-todo-comment-threads-infinite-query-options';
+import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../../queries/todo-comment.queries';
 import { TodoCommentComposerBar } from '../todo-comment-composer/todo-comment-composer-bar';
 import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
 import { TodoCommentKeyboardScrollView } from '../todo-comment-keyboard-scroll-view';
@@ -232,17 +232,24 @@ function TodoDetailHeader() {
 function useChangeSort() {
   const { todoId } = useTodoScreenParams();
   const queryClient = useQueryClient();
-  const service = useTodoCommentService();
   const { trackEvent } = useTrack();
   const logger = useLogger();
   const [isPending, setIsPending] = useState(false);
+  const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
+    todoId,
+    sort: TODO_COMMENT_SORT.LATEST,
+    anchorCommentId: null,
+  });
+  const popularOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
+    todoId,
+    sort: TODO_COMMENT_SORT.POPULAR,
+    anchorCommentId: null,
+  });
 
   const run = (sort: TodoCommentSort, commit: () => void) => {
     setIsPending(true);
     queryClient
-      .prefetchInfiniteQuery(
-        getTodoCommentThreadsInfiniteQueryOptions(service, { todoId, sort, anchorCommentId: null }),
-      )
+      .prefetchInfiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
       .finally(() => {
         setIsPending(false);
         commit();

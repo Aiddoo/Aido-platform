@@ -1,4 +1,4 @@
-import { createTodoComment } from '../__tests__/todo-comment.factories';
+import { createTodoComment } from '../__tests__/todo-comment.fixtures';
 import { createTodoCommentDraftKey } from './todo-comment-draft';
 
 describe('createTodoCommentDraftKey', () => {

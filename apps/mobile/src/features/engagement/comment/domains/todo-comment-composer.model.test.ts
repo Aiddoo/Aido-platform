@@ -1,4 +1,4 @@
-import { createTodoComment } from '../__tests__/todo-comment.factories';
+import { createTodoComment } from '../__tests__/todo-comment.fixtures';
 import { TodoCommentComposer } from './todo-comment-composer.model';
 
 describe('TodoCommentComposer', () => {

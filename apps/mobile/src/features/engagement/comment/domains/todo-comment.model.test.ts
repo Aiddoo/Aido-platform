@@ -2,7 +2,7 @@ import {
   createTodoComment,
   createTodoCommentReply,
   createTodoCommentThread,
-} from '../__tests__/todo-comment.factories';
+} from '../__tests__/todo-comment.fixtures';
 import { TodoCommentPolicy } from './todo-comment.model';
 
 describe('TodoCommentPolicy', () => {

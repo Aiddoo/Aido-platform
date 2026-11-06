@@ -23,7 +23,7 @@ import {
   createTodoCommentReply,
   createTodoCommentThread,
   TODO_ID,
-} from '../__tests__/todo-comment.factories';
+} from '../__tests__/todo-comment.fixtures';
 import { TodoCommentService } from '../apis/todo-comment.service';
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
 import { TodoCommentComposer } from '../domains/todo-comment-composer.model';

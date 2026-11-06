@@ -15,7 +15,7 @@ import {
   type TodoCommentThread,
   type TodoCommentThreadAnchor,
 } from '../domains/todo-comment.model';
-import { useGetTodoCommentRepliesInfiniteQueryOptions } from '../queries/get-todo-comment-replies-infinite-query-options';
+import { useGetTodoCommentRepliesInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { useThreadExpansion } from './todo-comment-expansion';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentRailRow } from './todo-comment-thread-rail';

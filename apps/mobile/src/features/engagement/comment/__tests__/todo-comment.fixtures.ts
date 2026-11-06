@@ -3,42 +3,44 @@ import type { TodoComment, TodoCommentThread } from '../domains/todo-comment.mod
 const CREATED_AT = new Date('2026-08-15T09:00:00.000Z');
 export const TODO_ID = 42;
 
-export const createTodoComment = (overrides?: Partial<TodoComment>): TodoComment => ({
-  id: 'comment-1',
-  todoId: TODO_ID,
-  threadCommentId: null,
-  replyTo: null,
-  author: {
-    id: 'user-1',
-    name: '김철수',
-    userTag: 'WNTQJEEE',
-    profileImage: null,
-    isTodoOwner: true,
-  },
-  content: '오늘 운동 완료!',
-  likeCount: 0,
-  replyCount: 0,
-  isDeleted: false,
-  isAuthorBlocked: false,
-  isEdited: false,
-  viewer: {
-    isLiked: false,
-    canEdit: true,
-    canDelete: true,
-    canReply: true,
-    canReport: false,
-    canBlock: false,
-  },
-  createdAt: CREATED_AT,
-  editedAt: null,
-  ...overrides,
-});
+export function createTodoComment(overrides?: Partial<TodoComment>): TodoComment {
+  return {
+    id: 'comment-1',
+    todoId: TODO_ID,
+    threadCommentId: null,
+    replyTo: null,
+    author: {
+      id: 'user-1',
+      name: '김철수',
+      userTag: 'WNTQJEEE',
+      profileImage: null,
+      isTodoOwner: true,
+    },
+    content: '오늘 운동 완료!',
+    likeCount: 0,
+    replyCount: 0,
+    isDeleted: false,
+    isAuthorBlocked: false,
+    isEdited: false,
+    viewer: {
+      isLiked: false,
+      canEdit: true,
+      canDelete: true,
+      canReply: true,
+      canReport: false,
+      canBlock: false,
+    },
+    createdAt: CREATED_AT,
+    editedAt: null,
+    ...overrides,
+  };
+}
 
-export const createTodoCommentReply = (
+export function createTodoCommentReply(
   head: TodoComment,
   overrides?: Partial<TodoComment>,
-): TodoComment =>
-  createTodoComment({
+): TodoComment {
+  return createTodoComment({
     id: `${head.id}-reply`,
     threadCommentId: head.id,
     author: {
@@ -60,10 +62,9 @@ export const createTodoCommentReply = (
     },
     ...overrides,
   });
+}
 
-export const createTodoCommentThread = (
-  overrides?: Partial<TodoCommentThread>,
-): TodoCommentThread => {
+export function createTodoCommentThread(overrides?: Partial<TodoCommentThread>): TodoCommentThread {
   const comment = overrides?.comment ?? createTodoComment({ replyCount: 1 });
   // nullish-strict: null은 대표 답글이 없는 묶음, undefined는 기본 대표 답글이다
   const previewReply =
@@ -81,4 +82,4 @@ export const createTodoCommentThread = (
     },
     ...overrides,
   };
-};
+}
