@@ -1,11 +1,6 @@
 import { WEATHER_RESCHEDULE_MAX_TODO_IDS, WEATHER_RESCHEDULE_REASONS } from '@aido/api';
-import { ROUTE_INTEGER_PATTERN } from '@src/shared/utils/route-params';
+import { routeIdSchema } from '@src/shared/utils/route-params';
 import { z } from 'zod';
-
-const todoIdParamCodec = z.codec(z.string().regex(ROUTE_INTEGER_PATTERN), z.int().positive(), {
-  decode: Number,
-  encode: String,
-});
 
 /**
  * 날씨 옮기기 시트의 URL 값. 읽을 때와 쓸 때가 같은 형식이도록 한 곳에서 맡는다.
@@ -13,13 +8,9 @@ const todoIdParamCodec = z.codec(z.string().regex(ROUTE_INTEGER_PATTERN), z.int(
  * reason이 없거나 낯선 값이면 기존 링크처럼 비를 피한다.
  */
 export const weatherRescheduleParamsSchema = z.object({
-  todoIds: z.codec(
-    z.string(),
-    z.array(todoIdParamCodec).min(1).max(WEATHER_RESCHEDULE_MAX_TODO_IDS),
-    {
-      decode: (value) => value.split(','),
-      encode: (todoIds) => todoIds.join(','),
-    },
-  ),
+  todoIds: z.codec(z.string(), z.array(routeIdSchema).min(1).max(WEATHER_RESCHEDULE_MAX_TODO_IDS), {
+    decode: (value) => value.split(','),
+    encode: (todoIds) => todoIds.join(','),
+  }),
   reason: z.enum(WEATHER_RESCHEDULE_REASONS).catch('rain'),
 });

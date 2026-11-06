@@ -3,6 +3,7 @@ import {
   isSampleReportId,
   getSampleReport,
 } from '@src/features/insights/report/constants/sample-reports';
+import { z } from 'zod';
 
 import { routeIdSchema, routeIntegerStringSchema } from './route-params';
 
@@ -63,5 +64,13 @@ describe('routeIdSchema', () => {
 
     // Then
     expect(result.data).toBe(expected);
+  });
+
+  it('쓸 때는 URL 형식인 문자열로 되돌린다', () => {
+    // When
+    const encoded = z.encode(routeIdSchema, 12);
+
+    // Then
+    expect(encoded).toBe('12');
   });
 });
