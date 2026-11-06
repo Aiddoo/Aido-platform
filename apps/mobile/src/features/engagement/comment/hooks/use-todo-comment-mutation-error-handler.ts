@@ -2,9 +2,9 @@ import { ErrorCode } from '@aido/api/errors';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { isApiError, isInfraError, toError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTranslation } from '@src/shared/i18n';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { removeTodoCommentFromCaches } from '../queries/todo-comment-cache';
@@ -29,47 +29,44 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
   const errorReporter = useErrorReporter();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure();
   const { t } = useTranslation('todoComment');
 
-  return useCallback(
-    (error: unknown, operation: TodoCommentMutationOperation, target?: TodoComment) => {
-      const fallback = match(operation)
-        .with('create', () => t('toasts.writeFailed'))
-        .with('update', () => t('toasts.updateFailed'))
-        .with('delete', () => t('toasts.deleteFailed'))
-        .with('like', () => t('toasts.likeFailed'))
-        .exhaustive();
+  return (error: unknown, operation: TodoCommentMutationOperation, target?: TodoComment) => {
+    const fallback = match(operation)
+      .with('create', () => t('toasts.writeFailed'))
+      .with('update', () => t('toasts.updateFailed'))
+      .with('delete', () => t('toasts.deleteFailed'))
+      .with('like', () => t('toasts.likeFailed'))
+      .exhaustive();
 
-      match(error)
-        .when(
-          (value) =>
-            isApiError(value) &&
-            (value.hasCode(ErrorCode.TODO_0833) || value.hasCode(ErrorCode.TODO_0831)),
-          () => {
-            if (target != null) {
-              removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
-            }
-            toast.warning(t('toasts.alreadyDeleted'));
-          },
-        )
-        .when(
-          (value) => isApiError(value) && value.status === TOO_MANY_REQUESTS_STATUS,
-          () => toast.warning(t('toasts.throttled')),
-        )
-        .with(P.when(isApiError), (apiError) => toast.error(apiError, { fallback }))
-        .otherwise((unknownError) => {
-          const normalizedError = toError(unknownError);
-          errorReporter.captureException(normalizedError, {
-            feature: 'todo_comment',
-            endpoint: `v1/todos/${todoId}/comments`,
-            method: HTTP_METHOD[operation],
-            statusCode: isInfraError(unknownError)
-              ? (unknownError.statusCode ?? undefined)
-              : undefined,
-          });
-          toast.error(isInfraError(unknownError) ? normalizedError : undefined, { fallback });
+    match(error)
+      .when(
+        (value) =>
+          isApiError(value) &&
+          (value.hasCode(ErrorCode.TODO_0833) || value.hasCode(ErrorCode.TODO_0831)),
+        () => {
+          if (target != null) {
+            removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
+          }
+          toast.warning(t('toasts.alreadyDeleted'));
+        },
+      )
+      .when(
+        (value) => isApiError(value) && value.status === TOO_MANY_REQUESTS_STATUS,
+        () => toast.warning(t('toasts.throttled')),
+      )
+      .with(P.when(isApiError), (apiError) => showFailure(apiError, fallback))
+      .otherwise((unknownError) => {
+        errorReporter.captureException(toError(unknownError), {
+          feature: 'todo_comment',
+          endpoint: `v1/todos/${todoId}/comments`,
+          method: HTTP_METHOD[operation],
+          statusCode: isInfraError(unknownError)
+            ? (unknownError.statusCode ?? undefined)
+            : undefined,
         });
-    },
-    [errorReporter, queryClient, t, toast, todoId],
-  );
+        showFailure(unknownError, fallback);
+      });
+  };
 }
