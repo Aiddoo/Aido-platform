@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { useCalendarRange } from '../../hooks/use-calendar-range';
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
-import { useFeedDateKey } from '../../hooks/use-feed-date';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useGetDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
 import { Calendar } from './calendar';
 import { RepeatHorizonHint } from './repeat-horizon-hint';

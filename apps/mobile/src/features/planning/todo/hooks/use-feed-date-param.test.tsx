@@ -2,10 +2,11 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, renderHook } from '@testing-library/react-native';
-import { type PropsWithChildren, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import type { PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 
-import { FeedDateProvider, useFeedDateContext } from './feed-date-provider';
+import { useFeedDateKey, useFeedDateParam } from './use-feed-params';
 
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 
@@ -28,7 +29,11 @@ describe('피드 날짜 선택', () => {
   });
 
   async function setup(initialDate?: string) {
-    const onDateChange = jest.fn();
+    let date = initialDate;
+    jest.mocked(useLocalSearchParams).mockImplementation(() => ({ date }));
+    jest.mocked(router.setParams).mockImplementation((next) => {
+      date = typeof next?.date === 'string' ? next.date : undefined;
+    });
     const container = createTestDiContainer({
       analytics: createAnalyticsStub(),
       errorReporter: {
@@ -38,35 +43,29 @@ describe('피드 날짜 선택', () => {
         setUserId: jest.fn(),
       },
     });
-    const wrapper = ({ children }: PropsWithChildren) => {
-      const [date, setDate] = useState(initialDate);
-      return (
-        <StaticDIProvider container={container}>
-          <LocalDateProvider>
-            <FeedDateProvider
-              date={date}
-              onDateChange={(value) => {
-                onDateChange(value);
-                setDate(value);
-              }}
-            >
-              {children}
-            </FeedDateProvider>
-          </LocalDateProvider>
-        </StaticDIProvider>
-      );
-    };
-    return { ...(await renderHook(() => useFeedDateContext(), { wrapper })), onDateChange };
+    const wrapper = ({ children }: PropsWithChildren) => (
+      <StaticDIProvider container={container}>
+        <LocalDateProvider>{children}</LocalDateProvider>
+      </StaticDIProvider>
+    );
+    const rendered = await renderHook(
+      () => {
+        const [selectedDate, setSelectedDate] = useFeedDateParam();
+        return { selectedDate, setSelectedDate, selectedDateKey: useFeedDateKey() };
+      },
+      { wrapper },
+    );
+    return { ...rendered, readDate: () => date };
   }
 
   test('날짜를 지정한 딥링크는 처음부터 지정한 날짜를 보여준다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 15, 12));
     // When
-    const { result, onDateChange } = await setup('2026-07-13');
+    const { result } = await setup('2026-07-13');
     // Then
     expect(result.current.selectedDateKey).toBe('2026-07-13');
-    expect(onDateChange).not.toHaveBeenCalled();
+    expect(router.setParams).not.toHaveBeenCalled();
   });
 
   test.each([undefined, 'today'])(
@@ -74,12 +73,12 @@ describe('피드 날짜 선택', () => {
     async (date) => {
       // Given
       jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-      const { result, onDateChange } = await setup(date);
+      const { result } = await setup(date);
       // When
       await act(() => jest.advanceTimersByTime(200));
       // Then
       expect(result.current.selectedDateKey).toBe('2026-07-15');
-      expect(onDateChange).not.toHaveBeenCalled();
+      expect(router.setParams).not.toHaveBeenCalled();
     },
   );
 
@@ -88,26 +87,60 @@ describe('피드 날짜 선택', () => {
     async (date) => {
       // Given
       jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-      const { result, onDateChange } = await setup(date);
+      const { result } = await setup(date);
       const selectedDate = result.current.selectedDate;
       // When
       await act(() => jest.advanceTimersByTime(200));
       // Then
       expect(result.current.selectedDateKey).toBe(date);
       expect(result.current.selectedDate).toBe(selectedDate);
-      expect(onDateChange).not.toHaveBeenCalled();
+      expect(router.setParams).not.toHaveBeenCalled();
     },
   );
 
   test('오늘 버튼을 누르면 고정 날짜를 해제하고 다음 자정도 따라간다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-    const { result, onDateChange } = await setup('2026-07-13');
+    const { result, rerender, readDate } = await setup('2026-07-13');
     // When
     await act(() => result.current.setSelectedDate(new Date(2026, 6, 14)));
+    await rerender({});
     await act(() => jest.advanceTimersByTime(200));
     // Then
-    expect(onDateChange).toHaveBeenCalledWith(undefined);
+    expect(readDate()).toBeUndefined();
     expect(result.current.selectedDateKey).toBe('2026-07-15');
+  });
+
+  test('다른 날을 고르면 그 날짜를 URL에 남긴다', async () => {
+    // Given
+    jest.setSystemTime(new Date(2026, 6, 14, 12));
+    const { result, rerender, readDate } = await setup();
+    // When
+    await act(() => result.current.setSelectedDate(new Date(2026, 6, 20)));
+    await rerender({});
+    // Then
+    expect(readDate()).toBe('2026-07-20');
+    expect(result.current.selectedDateKey).toBe('2026-07-20');
+  });
+
+  test('날짜 말고 다른 URL 값이 바뀌어도 고른 날짜의 참조가 같다', async () => {
+    // Given
+    jest.setSystemTime(new Date(2026, 6, 14, 12));
+    const { result, rerender } = await setup('2026-07-13');
+    const selectedDate = result.current.selectedDate;
+    // When
+    jest.mocked(useLocalSearchParams).mockReturnValue({ date: '2026-07-13', todoId: '5' });
+    await rerender({});
+    // Then
+    expect(result.current.selectedDate).toBe(selectedDate);
+  });
+
+  test.each(['내일', '2026-13-40', ''])('잘못된 날짜 %s는 오늘로 읽는다', async (date) => {
+    // Given
+    jest.setSystemTime(new Date(2026, 6, 14, 12));
+    // When
+    const { result } = await setup(date);
+    // Then
+    expect(result.current.selectedDateKey).toBe('2026-07-14');
   });
 });

@@ -37,7 +37,7 @@ import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-
 import { range } from 'es-toolkit';
 import { useMemo, useState } from 'react';
 
-import { useFeedDate } from '../hooks/use-feed-date';
+import { useFeedDateParam } from '../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
 import { groupFriendTodosByCategory } from '../utils/group-friend-todos-by-category';
@@ -48,7 +48,7 @@ const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
 
 export function FriendTodoList() {
   const { friendId } = useFriendScreenParams();
-  const [date] = useFeedDate();
+  const [date] = useFeedDateParam();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [
       useGetFriendTodosQueryOptions({
@@ -123,7 +123,7 @@ function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
 FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const { t } = useTranslation('todo');
   const { data: friend } = useScreenFriend();
-  const [date] = useFeedDate();
+  const [date] = useFeedDateParam();
   const today = useToday();
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const selectTodo = useSingleTap(setSelectedTodoId);
@@ -223,7 +223,7 @@ FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
 FriendTodoList.Empty = function Empty() {
   const { t } = useTranslation('todo');
   const { data: friend } = useScreenFriend();
-  const [date] = useFeedDate();
+  const [date] = useFeedDateParam();
   const today = useToday();
   const isToday = isSameDay(date, today);
   return (

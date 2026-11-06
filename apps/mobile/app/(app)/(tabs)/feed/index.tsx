@@ -13,10 +13,12 @@ import { FeedListPane } from '@src/features/planning/todo/components/feed-list-p
 import { FeedTodoDetailPane } from '@src/features/planning/todo/components/feed-todo-detail-pane';
 import { FriendStrip } from '@src/features/planning/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
-import { FeedDateProvider } from '@src/features/planning/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
-import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
-import { useFeedParams } from '@src/features/planning/todo/hooks/use-feed-params';
+import {
+  useFeedActionParam,
+  useFeedDateKey,
+  useFeedFriendParam,
+} from '@src/features/planning/todo/hooks/use-feed-params';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
@@ -47,31 +49,29 @@ import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
 export default function FeedScreen() {
-  const { date, friendId, selectDate } = useFeedParams();
+  const [friendId] = useFeedFriendParam();
 
   return (
     <>
       <NotificationBell.Toolbar />
-      <FeedDateProvider date={date} onDateChange={selectDate}>
-        <AdaptivePane
-          primary={
-            <FeedListPane>
-              <StyledSafeAreaView edges={['left', 'right']}>
-                <QueryErrorBoundary fallback={FriendStrip.Error}>
-                  <Suspense fallback={<FriendStrip.Loading />}>
-                    <FriendStrip />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </StyledSafeAreaView>
-              {match(friendId)
-                .with(P.string, (id) => <FriendFeed key={id} />)
-                .with(undefined, () => <MyFeed />)
-                .exhaustive()}
-            </FeedListPane>
-          }
-          secondary={<FeedTodoDetailPane />}
-        />
-      </FeedDateProvider>
+      <AdaptivePane
+        primary={
+          <FeedListPane>
+            <StyledSafeAreaView edges={['left', 'right']}>
+              <QueryErrorBoundary fallback={FriendStrip.Error}>
+                <Suspense fallback={<FriendStrip.Loading />}>
+                  <FriendStrip />
+                </Suspense>
+              </QueryErrorBoundary>
+            </StyledSafeAreaView>
+            {match(friendId)
+              .with(P.string, (id) => <FriendFeed key={id} />)
+              .with(undefined, () => <MyFeed />)
+              .exhaustive()}
+          </FeedListPane>
+        }
+        secondary={<FeedTodoDetailPane />}
+      />
     </>
   );
 }
@@ -148,7 +148,7 @@ function MyFeed() {
 /** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
 function AddTodoRequestEntry() {
   const { t } = useTranslation(['widget', 'common']);
-  const { action, clearAction } = useFeedParams();
+  const [action, setAction] = useFeedActionParam();
   const selectedDateKey = useFeedDateKey();
   const isRequested = action === 'add-todo';
   const categories = useQuery({
@@ -163,11 +163,11 @@ function AddTodoRequestEntry() {
       return;
     }
     const frameId = requestAnimationFrame(() => {
-      clearAction();
+      setAction(undefined);
       router.push({ pathname: '/todo/new', params: { date: selectedDateKey, categoryId } });
     });
     return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDateKey, clearAction]);
+  }, [isRequested, categoryId, selectedDateKey, setAction]);
 
   const createEntryStatus = !isRequested
     ? ('idle' as const)
@@ -206,7 +206,7 @@ function AddTodoRequestEntry() {
           button={
             <Result.Button
               onPress={() => {
-                clearAction();
+                setAction(undefined);
                 router.navigate('/settings/category-settings');
               }}
             >
@@ -328,7 +328,7 @@ FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
 
 /** 더는 친구가 아닌 사람의 피드는 같은 화면의 내 피드로 돌린다. */
 function MyFeedRedirect() {
-  const { selectFriend } = useFeedParams();
+  const [_friendId, selectFriend] = useFeedFriendParam();
 
   useEffect(() => {
     selectFriend(undefined);

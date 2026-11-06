@@ -16,11 +16,11 @@ import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { ok, unwrap } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
 import { createTodoDto, createTodoListResponseDto } from '../../__tests__/todo.factories';
 import { TodoService } from '../../apis/todo.service';
-import { FeedDateProvider } from '../providers/feed-date-provider';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
 const accountId = createCurrentUserDto().userId;
@@ -63,13 +63,14 @@ async function renderHint({
   }
   const analytics = createAnalyticsStub();
 
-  const hint = (date: string) => (
-    <LocalDateProvider>
-      <FeedDateProvider date={date} onDateChange={jest.fn()}>
+  const hint = (date: string) => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({ date });
+    return (
+      <LocalDateProvider>
         <RepeatHorizonHint />
-      </FeedDateProvider>
-    </LocalDateProvider>
-  );
+      </LocalDateProvider>
+    );
+  };
   const { rerender } = await renderUi(hint('2027-03-01'), {
     di: {
       coachmarkService,

@@ -93,11 +93,15 @@ export function TodoCommentThreadList({
   ...listProps
 }: TodoCommentThreadListProps) {
   const { todoId } = useTodoScreenParams();
-  const { sort, comment } = useCommentParams();
+  const [{ sort, comment }] = useCommentParams();
   const queryClient = useQueryClient();
   const { listRef } = useTodoCommentReveal();
   const threadsQuery = useInfiniteQuery(
-    useGetTodoCommentThreadsInfiniteQueryOptions({ todoId, sort, anchorCommentId: comment }),
+    useGetTodoCommentThreadsInfiniteQueryOptions({
+      todoId,
+      sort,
+      anchorCommentId: comment ?? null,
+    }),
   );
   const threads = threadsQuery.data?.threads ?? [];
   const anchor = threadsQuery.data?.anchor ?? null;
@@ -234,7 +238,7 @@ function useScrollToAnchor({
   anchor: TodoCommentThreadAnchor | null;
   isLoaded: boolean;
 }) {
-  const { comment } = useCommentParams();
+  const [{ comment }] = useCommentParams();
   const { listRef } = useTodoCommentReveal();
   const toast = useAppToast();
   const { t } = useTranslation('todoComment');

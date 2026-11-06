@@ -121,7 +121,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const isTodoUnavailable =
     isApiError(todoDetailsError) && todoDetailsError.status === NOT_FOUND_STATUS;
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
-  const { sort, comment } = useCommentParams();
+  const [{ sort, comment }] = useCommentParams();
   const { result: backResult } = useTodoCommentBack();
   const isPane = presentation === 'pane';
   const closePane = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
@@ -195,7 +195,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 /** 할 일 본문과 정렬. 댓글과 함께 스크롤된다 */
 function TodoDetailHeader() {
   const { todoId } = useTodoScreenParams();
-  const { sort, setCommentParams } = useCommentParams();
+  const [{ sort }, setCommentParams] = useCommentParams();
   const changeSort = useChangeSort();
 
   return (
@@ -219,7 +219,7 @@ function TodoDetailHeader() {
           value={sort}
           isPending={changeSort.isPending}
           onChange={(next) =>
-            changeSort.run(next, () => setCommentParams({ sort: next, comment: null }))
+            changeSort.run(next, () => setCommentParams({ sort: next, comment: undefined }))
           }
         />
       </Box>

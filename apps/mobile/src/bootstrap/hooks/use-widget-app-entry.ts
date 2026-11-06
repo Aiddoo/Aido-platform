@@ -4,7 +4,7 @@ import {
 } from '@src/features/device/widget/domains/widget-navigation.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { feedSearchParamsSchema } from '@src/features/planning/todo/utils/feed-search-params';
+import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
@@ -26,7 +26,7 @@ export function useWidgetAppEntry() {
   });
   const segments = useSegments();
   const pathname = usePathname();
-  const parameters = feedSearchParamsSchema.parse(useGlobalSearchParams());
+  const parameters = feedParamsSchema.parse(useGlobalSearchParams());
   const url = useLinkingURL();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,

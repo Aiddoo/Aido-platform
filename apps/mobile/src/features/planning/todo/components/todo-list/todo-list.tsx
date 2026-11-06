@@ -38,7 +38,7 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
+import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub-todos-mutation-options';
@@ -59,7 +59,7 @@ import {
 } from '../todo-row';
 
 export function TodoList() {
-  const [selectedDate] = useFeedDate();
+  const [selectedDate] = useFeedDateParam();
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),

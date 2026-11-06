@@ -1,5 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
-import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
+import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/get-todo-details-query-options';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';

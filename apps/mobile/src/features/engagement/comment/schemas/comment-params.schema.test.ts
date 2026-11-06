@@ -16,7 +16,7 @@ describe('commentParamsSchema', () => {
     const params = commentParamsSchema.parse({ sort: 'OLDEST', comment: 'not-a-cuid' });
 
     // Then
-    expect(params).toEqual({ sort: 'LATEST', comment: null });
+    expect(params).toEqual({ sort: 'LATEST', comment: undefined });
   });
 
   it('1.14.0 이하 대화 URL의 intent·returnTo는 무시한다', () => {

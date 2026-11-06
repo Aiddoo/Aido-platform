@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
-import { useFeedDateKey } from '../../hooks/use-feed-date';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useGetHasUpcomingRepeatQueryOptions } from '../../queries/get-has-upcoming-repeat-query-options';
 import { RepeatHintLine } from '../repeat-hint-line';
 

@@ -1,5 +1,8 @@
 import { useCalendarViewMode } from '@src/features/planning/todo/hooks/use-calendar-view-mode';
-import { useFeedDate, useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-date';
+import {
+  useFeedDateParam,
+  useFeedDateKey,
+} from '@src/features/planning/todo/hooks/use-feed-params';
 import {
   diffMonths,
   diffWeeks,
@@ -59,7 +62,7 @@ interface CalendarProps {
 
 export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
   const { t } = useTranslation('common');
-  const [selectedDate, setSelectedDate] = useFeedDate();
+  const [selectedDate, setSelectedDate] = useFeedDateParam();
   const today = useToday();
   const [viewMode] = useCalendarViewMode();
 
@@ -168,7 +171,7 @@ interface CalendarWeekPagerProps {
 }
 
 function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
-  const [selectedDate, setSelectedDate] = useFeedDate();
+  const [selectedDate, setSelectedDate] = useFeedDateParam();
   const baseWeekRef = useRef(getWeekStart(selectedDate));
 
   const weekAtPage = useCallback(
@@ -202,7 +205,7 @@ interface CalendarMonthPagerProps {
 }
 
 function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
-  const [selectedDate, setSelectedDate] = useFeedDate();
+  const [selectedDate, setSelectedDate] = useFeedDateParam();
   const baseMonthRef = useRef(dayjs(selectedDate).startOf('month').toDate());
 
   const monthAtPage = useCallback(

@@ -19,6 +19,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 import { Text } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
@@ -29,7 +30,6 @@ import { TodoService } from '../../apis/todo.service';
 import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';
 import type { Todo } from '../../domains/todo.model';
 import { updateCachedTodo } from '../../queries/todo-cache';
-import { FeedDateProvider } from '../providers/feed-date-provider';
 import { TodoList } from './todo-list';
 
 const DATE = '2026-03-08';
@@ -39,6 +39,7 @@ async function renderTodoList(todo: Todo) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
+  jest.mocked(useLocalSearchParams).mockReturnValue({ date: DATE });
   queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DATE }), {
     todos: [todo],
     hasNext: false,
@@ -51,13 +52,11 @@ async function renderTodoList(todo: Todo) {
 
   await renderUi(
     <LocalDateProvider>
-      <FeedDateProvider date={DATE} onDateChange={() => undefined}>
-        <ScrollViewContainer>
-          <Suspense fallback={<Text>loading</Text>}>
-            <TodoList />
-          </Suspense>
-        </ScrollViewContainer>
-      </FeedDateProvider>
+      <ScrollViewContainer>
+        <Suspense fallback={<Text>loading</Text>}>
+          <TodoList />
+        </Suspense>
+      </ScrollViewContainer>
     </LocalDateProvider>,
     {
       queryClient,

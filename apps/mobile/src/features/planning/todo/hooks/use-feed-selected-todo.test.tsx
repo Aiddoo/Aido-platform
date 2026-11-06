@@ -69,21 +69,33 @@ describe('useFeedSelectedTodo', () => {
     expect(router.setParams).not.toHaveBeenCalled();
   });
 
-  it('medium 이상에서는 피드 URL param을 바꾸고 이전 댓글 상태를 지운다', async () => {
+  it('medium 이상에서는 피드 URL param을 바꾸고 이전 할 일의 댓글 위치와 정렬을 지운다', async () => {
     // Given
-    givenWindow(700);
+    givenWindow(700, { todoId: '5', sort: 'POPULAR' });
     const { result } = await renderHook(() => useFeedSelectedTodo());
 
     // When
     result.current[1](7);
 
     // Then
-    expect(router.setParams).toHaveBeenCalledWith({
+    expect(jest.mocked(router.setParams).mock.calls[0]?.[0]).toStrictEqual({
       todoId: '7',
       comment: undefined,
-      intent: undefined,
-      returnTo: undefined,
+      sort: undefined,
     });
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('medium 이상에서 이미 고른 할 일을 다시 누르면 정렬과 댓글 위치를 그대로 둔다', async () => {
+    // Given
+    givenWindow(700, { todoId: '7', sort: 'POPULAR' });
+    const { result } = await renderHook(() => useFeedSelectedTodo());
+
+    // When
+    result.current[1](7);
+
+    // Then
+    expect(router.setParams).not.toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
   });
 
