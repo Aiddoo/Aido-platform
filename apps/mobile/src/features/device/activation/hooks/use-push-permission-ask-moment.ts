@@ -1,5 +1,5 @@
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
-import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/get-push-permission-query-options';
+import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/notification.queries';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 

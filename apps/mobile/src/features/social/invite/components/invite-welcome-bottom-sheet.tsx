@@ -1,8 +1,8 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
-import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/get-push-permission-query-options';
-import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/use-request-push-permission-mutation-options';
+import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/notification.mutations';
+import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/notification.queries';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BellFilledIcon,

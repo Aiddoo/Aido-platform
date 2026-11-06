@@ -3,7 +3,7 @@ import { createTestDiContainer } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
+import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { useColdStartNotificationResponse } from './use-cold-start-notification-response';
 
 const response = { id: 'r1', actionIdentifier: 'default', data: { notificationId: 1 } };

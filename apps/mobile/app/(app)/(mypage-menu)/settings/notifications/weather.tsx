@@ -7,7 +7,7 @@ import {
   type ClockTime,
   SettingsTimeInput,
 } from '@src/features/notification/components/settings/settings-time-input';
-import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/settings-time-range';
+import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/notification.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';

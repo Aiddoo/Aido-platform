@@ -6,7 +6,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
+import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { NotificationService } from '../apis/notification.service';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';

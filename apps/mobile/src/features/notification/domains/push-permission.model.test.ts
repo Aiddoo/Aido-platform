@@ -1,4 +1,4 @@
-import { createPushPermission } from '../__tests__/notification.factories';
+import { createPushPermission } from '../__tests__/notification.fixtures';
 import { PUSH_PROMPT_SNOOZE_DAYS, PushPermissionPolicy } from './push-permission.model';
 
 const NOW = new Date('2026-11-04T09:00:00.000Z');

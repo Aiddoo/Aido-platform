@@ -6,7 +6,7 @@ import { debounce, noop } from 'es-toolkit';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
-import { useReportPushDeviceMutationOptions } from '../queries/use-report-push-device-mutation-options';
+import { useReportPushDeviceMutationOptions } from '../queries/notification.mutations';
 
 /** 권한 창·제어 센터처럼 짧게 오가는 복귀를 한 번으로 묶는다 */
 const APP_ACTIVE_SYNC_DELAY_MS = 1_000;

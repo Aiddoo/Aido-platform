@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { type ComponentProps, useEffect } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../domains/push-permission.model';
-import { useRequestPushPermissionMutationOptions } from '../queries/use-request-push-permission-mutation-options';
+import { useRequestPushPermissionMutationOptions } from '../queries/notification.mutations';
 
 interface PushPermissionDialogProps extends Omit<
   ComponentProps<typeof ConfirmDialog>,

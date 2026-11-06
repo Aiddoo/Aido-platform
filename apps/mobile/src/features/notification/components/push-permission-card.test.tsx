@@ -17,7 +17,7 @@ import {
   createPushDeviceResponseDto,
   createPushNotificationGatewayStub,
   createPushPermissionResponse,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
 import { createPushPromptRepository } from '../apis/push-prompt.repository';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';

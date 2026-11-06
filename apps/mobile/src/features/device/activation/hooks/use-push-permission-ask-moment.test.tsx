@@ -5,7 +5,7 @@ import {
   createPushDeviceResponseDto,
   createPushNotificationGatewayStub,
   createPushPermissionResponse,
-} from '@src/features/notification/__tests__/notification.factories';
+} from '@src/features/notification/__tests__/notification.fixtures';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';

@@ -7,7 +7,7 @@ import {
   createPushNotificationGatewayStub,
   createUnreadCountResponseDto,
   INVALID_DTO,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {

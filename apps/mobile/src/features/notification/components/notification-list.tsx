@@ -34,8 +34,8 @@ import {
   NotificationPolicy,
 } from '../domains/notification.model';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
-import { useGetNotificationsInfiniteQueryOptions } from '../queries/get-notifications-infinite-query-options';
-import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
+import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
+import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { getCategoryKey } from '../utils/view-models/notification-category.view-model';
 import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';

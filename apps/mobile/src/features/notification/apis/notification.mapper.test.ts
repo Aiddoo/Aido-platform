@@ -1,4 +1,4 @@
-import { createNotificationListResponseDto } from '../__tests__/notification.factories';
+import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import {
   toNotification,

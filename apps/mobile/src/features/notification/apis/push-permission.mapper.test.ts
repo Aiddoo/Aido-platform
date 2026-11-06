@@ -1,4 +1,4 @@
-import { createPushPermissionResponse } from '../__tests__/notification.factories';
+import { createPushPermissionResponse } from '../__tests__/notification.fixtures';
 import { toPushPermission } from './push-permission.mapper';
 
 describe('toPushPermission', () => {

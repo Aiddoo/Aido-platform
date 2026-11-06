@@ -8,7 +8,7 @@ import { router, Slot } from 'expo-router';
 import { act, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { useState } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
+import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { useNotificationResponseProcessor } from './use-notification-response-processor';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다

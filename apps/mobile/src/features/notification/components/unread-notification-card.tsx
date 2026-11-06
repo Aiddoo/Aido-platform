@@ -3,8 +3,8 @@ import { BellFilledIcon, HStack, Text, TextButton, TextSkeleton } from '@src/sha
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Skeleton } from 'heroui-native';
 
-import { useGetUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
-import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read-mutation-options';
+import { useMarkAllAsReadMutationOptions } from '../queries/notification.mutations';
+import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
 export function UnreadNotificationCard() {
   const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());

@@ -7,9 +7,11 @@ import { useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
-import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
-import { useOpenPushSettingsMutationOptions } from '../queries/use-open-push-settings-mutation-options';
-import { useRequestPushPermissionMutationOptions } from '../queries/use-request-push-permission-mutation-options';
+import {
+  useOpenPushSettingsMutationOptions,
+  useRequestPushPermissionMutationOptions,
+} from '../queries/notification.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
 import { PushPermissionDialog } from './push-permission-dialog';
 
 /** 알림 설정 화면 맨 위에 이 기기의 OS 알림 권한과 바로 할 수 있는 행동을 항상 보여 준다 */

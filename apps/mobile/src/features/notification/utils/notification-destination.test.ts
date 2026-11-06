@@ -1,6 +1,6 @@
 import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 
-import { createNotificationListResponseDto } from '../__tests__/notification.factories';
+import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
 import type { NotificationContext, NotificationType } from '../domains/notification.model';
 import { resolveNotificationDestination } from './notification-destination';

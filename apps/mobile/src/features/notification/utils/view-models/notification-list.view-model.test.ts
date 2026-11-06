@@ -1,4 +1,4 @@
-import { createNotificationListResponseDto } from '../../__tests__/notification.factories';
+import { createNotificationListResponseDto } from '../../__tests__/notification.fixtures';
 import { toNotification } from '../../apis/notification.mapper';
 import { toDateSectionedListItems } from './notification-list.view-model';
 

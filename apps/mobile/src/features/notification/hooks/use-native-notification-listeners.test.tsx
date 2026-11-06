@@ -5,7 +5,7 @@ import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
+import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { useNativeNotificationListeners } from './use-native-notification-listeners';
 
 const logger: Logger = createLoggerStub();

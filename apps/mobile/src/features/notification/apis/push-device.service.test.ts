@@ -7,7 +7,7 @@ import {
   createPushNotificationGatewayStub,
   createPushPermissionResponse,
   INVALID_DTO,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
 import { PushDeviceService } from './push-device.service';
 
 const DEVICE_ID = 'ios_device-123';

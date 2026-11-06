@@ -10,9 +10,11 @@ import { match } from 'ts-pattern';
 
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
 import { usePushPermissionPrompt } from '../hooks/use-push-permission-prompt';
-import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
-import { useOpenPushSettingsMutationOptions } from '../queries/use-open-push-settings-mutation-options';
-import { useRequestPushPermissionMutationOptions } from '../queries/use-request-push-permission-mutation-options';
+import {
+  useOpenPushSettingsMutationOptions,
+  useRequestPushPermissionMutationOptions,
+} from '../queries/notification.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
 import { PushPermissionDialog } from './push-permission-dialog';
 
 const SOURCE: PushPermissionPromptSource = 'feed_card';

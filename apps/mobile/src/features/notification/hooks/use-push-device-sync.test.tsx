@@ -12,7 +12,7 @@ import {
   createNotificationApiError,
   createPushDeviceResponseDto,
   createPushNotificationGatewayStub,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
 import { usePushDeviceSync } from './use-push-device-sync';
 

@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { MarketingPushConsentDialog } from '../components/marketing-push-consent-dialog';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
-import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
+import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
 
 interface MarketingPushOptInPrompt {
   /** 배너를 노출할지 여부 */
