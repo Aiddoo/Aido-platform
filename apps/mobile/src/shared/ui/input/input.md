@@ -75,6 +75,20 @@ import { Input } from '@src/shared/ui/input/input';
 <Input size="large" />
 ```
 
+## 글자 크기
+
+입력 글자는 앱 글자 크기 설정을 따른다. OS 글꼴 배율은 `Text`처럼 끈다(`allowFontScaling={false}`). `Text`와 같은 표(`resolveSize`)를 타서 옆 글자와 같이 커지고, 글자 크기만 가진 `text-input-{토큰}` 유틸리티(`INPUT_FONT_SIZE_CLASSES`)를 골라 줄 간격은 그대로다. 호출부가 `style`을 넘기면 그 값이 먼저다.
+
+| 앱 설정  | `medium` (b3) | `large` (b2) |
+| -------- | ------------- | ------------ |
+| `xsmall` | 13            | 13           |
+| `small`  | 15            | 15           |
+| `medium` | 15            | 16           |
+| `large`  | 16            | 17           |
+| `xlarge` | 17            | 20           |
+
+고정 높이는 그대로 둔다. 테두리를 뺀 안쪽이 46·54이고 가장 큰 글자의 한 줄을 글자의 1.5배로 넉넉히 잡아도 26·30이라 20·24가 남는다.
+
 ## 상태
 
 ### 비활성화

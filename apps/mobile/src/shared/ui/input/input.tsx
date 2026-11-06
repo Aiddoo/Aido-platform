@@ -1,3 +1,4 @@
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
 import { useState } from 'react';
 import { TextInput } from 'react-native';
@@ -6,7 +7,12 @@ import { withUniwind } from 'uniwind';
 import { Box } from '../box';
 import { Text } from '../text/text';
 import type { InputInternalProps } from './input.types';
-import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './input.variants';
+import {
+  INPUT_TEXT_SIZES,
+  inputContainerVariants,
+  inputLabelVariants,
+  inputTextVariants,
+} from './input.variants';
 
 const StyledTextInput = withUniwind(TextInput);
 
@@ -32,6 +38,7 @@ export function Input({
 }: InputInternalProps) {
   const [isFocused, setIsFocused] = useState(false);
   const InputComponent = textInputComponent ?? StyledTextInput;
+  const { resolveSize } = useFontScale();
 
   return (
     <Box className="gap-1">
@@ -54,7 +61,10 @@ export function Input({
           allowFontScaling={false}
           placeholder={placeholder}
           editable={!isDisabled}
-          className={inputTextVariants({ size, hasLeftContent: !!leftContent })}
+          className={inputTextVariants({
+            fontSize: resolveSize(INPUT_TEXT_SIZES[size]),
+            hasLeftContent: !!leftContent,
+          })}
           onFocus={(e) => {
             setIsFocused(true);
             onFocus?.(e);

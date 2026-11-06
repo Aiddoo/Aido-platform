@@ -45,7 +45,7 @@ import { TextArea } from '@src/shared/ui/text-area';
 | `isInvalid`          | `boolean`                                 | `false`    | 에러 상태                                                                             |
 | `errorMessage`       | `string`                                  | -          | 에러 메시지 (하단 좌측)                                                               |
 | `preserveErrorSpace` | `boolean`                                 | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
-| `textSize`           | `TextSize`                                | -          | 앱 글꼴 크기 설정을 따르는 입력 글자 토큰입니다.                                      |
+| `textSize`           | `TextSize`                                | -          | 줄 간격과 자간 토큰입니다. 글자 크기는 `variant`가 정합니다.                          |
 | `growsWithContent`   | `boolean`                                 | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
 | `className`          | `string`                                  | -          | 컨테이너 추가 스타일                                                                  |
 | `...TextInputProps`  | -                                         | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장)                      |
@@ -94,6 +94,10 @@ import { TextArea } from '@src/shared/ui/text-area';
 ```tsx
 <TextArea growsWithContent className="min-h-11 max-h-28" />
 ```
+
+## 글자 크기
+
+입력 글자는 앱 글자 크기 설정을 따릅니다. OS 글꼴 배율은 `Text`처럼 끕니다(`allowFontScaling={false}`). 글자 크기 토큰은 `filled`·`line`·`bare`가 `b2`, `plain`이 `b3`이고, 글자 크기만 가진 `text-input-{토큰}` 유틸리티(`INPUT_FONT_SIZE_CLASSES`)를 고릅니다. `textSize`는 `text-{토큰}`을 더해 줄 간격과 자간을 정합니다. `text-input-*`가 CSS에서 뒤에 있어 글자 크기는 그대로 `variant`를 따릅니다. 호출부가 `style`을 넘기면 그 값이 먼저입니다.
 
 ## 상태
 

@@ -1,5 +1,16 @@
 import { tv } from '@src/shared/utils/tv';
 
+import type { TextSize } from '../text/text.types';
+import { INPUT_FONT_SIZE_CLASSES } from '../text/text.variants';
+import type { TextAreaVariant } from './text-area.types';
+
+export const TEXT_AREA_TEXT_SIZES = {
+  filled: 'b2',
+  line: 'b2',
+  plain: 'b3',
+  bare: 'b2',
+} satisfies Record<TextAreaVariant, TextSize>;
+
 export const textAreaLabelVariants = tv({
   base: 'text-gray-6',
   variants: {
@@ -46,12 +57,13 @@ export const textAreaTextVariants = tv({
   base: 'flex-1 text-gray-8 placeholder:text-gray-5',
   variants: {
     variant: {
-      filled: 'text-input-lg',
-      line: 'text-input-lg',
+      filled: '',
+      line: '',
       plain: 'text-b3',
       // 키보드에 바로 붙는 칸이다. 줄을 바꾼 새 줄이 칸 밖으로 나가 커서가 잠깐 잘리지 않게 한 줄 넘게 비워 둔다
-      bare: 'text-input-lg pb-10',
+      bare: 'pb-10',
     },
+    fontSize: INPUT_FONT_SIZE_CLASSES,
   },
   defaultVariants: {
     variant: 'filled',

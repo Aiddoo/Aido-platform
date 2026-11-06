@@ -1,5 +1,11 @@
 import { tv } from '@src/shared/utils/tv';
 
+import type { TextSize } from '../text/text.types';
+import { INPUT_FONT_SIZE_CLASSES } from '../text/text.variants';
+import type { InputSize } from './input.types';
+
+export const INPUT_TEXT_SIZES = { medium: 'b3', large: 'b2' } satisfies Record<InputSize, TextSize>;
+
 export const inputLabelVariants = tv({
   base: 'text-gray-6',
   variants: {
@@ -48,16 +54,12 @@ export const inputContainerVariants = tv({
 export const inputTextVariants = tv({
   base: 'flex-1 text-gray-8 placeholder:text-gray-5',
   variants: {
-    size: {
-      medium: 'text-input-md',
-      large: 'text-input-lg',
-    },
+    fontSize: INPUT_FONT_SIZE_CLASSES,
     hasLeftContent: {
       false: 'pl-0',
     },
   },
   defaultVariants: {
-    size: 'large',
     hasLeftContent: false,
   },
 });

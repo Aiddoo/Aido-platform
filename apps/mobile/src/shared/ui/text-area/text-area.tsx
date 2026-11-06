@@ -10,6 +10,7 @@ import { TEXT_SIZE_CLASSES } from '../text/text.variants';
 import { VStack } from '../v-stack/v-stack';
 import type { TextAreaInternalProps } from './text-area.types';
 import {
+  TEXT_AREA_TEXT_SIZES,
   textAreaContainerVariants,
   textAreaLabelVariants,
   textAreaTextVariants,
@@ -101,7 +102,10 @@ export function TextArea({
             scrollEnabled={growsWithContent ? true : undefined}
             textAlignVertical="top"
             className={cn(
-              textAreaTextVariants({ variant }),
+              textAreaTextVariants({
+                variant,
+                fontSize: resolveSize(TEXT_AREA_TEXT_SIZES[variant]),
+              }),
               resolvedTextSize == null ? undefined : TEXT_SIZE_CLASSES[resolvedTextSize],
             )}
             onFocus={(e) => {
