@@ -122,7 +122,7 @@ function MyFeed() {
             <Box px={16}>
               <WhatsNewEntryCard
                 onPress={whatsNew.openFromReentry}
-                onDismiss={whatsNew.dismissReentry}
+                onClose={whatsNew.dismissReentry}
               />
             </Box>
             <Spacing size={12} />

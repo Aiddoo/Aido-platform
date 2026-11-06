@@ -3,9 +3,8 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { getErrorMessage } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
+import { InfoIcon, InlineNotice } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { CloseButton } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -63,29 +62,18 @@ ReorderCoachmark.Contents = function Contents({
   }
 
   return (
-    <HStack
-      gap={8}
-      align="center"
-      className="rounded-xl bg-gray-2 px-3 py-2.5"
+    <InlineNotice
       accessibilityRole="alert"
-    >
-      <InfoIcon width={fontScaledSize(17)} height={fontScaledSize(17)} colorClassName="text-main" />
-      <Text size="b4" shade={7} className="flex-1 shrink">
-        {t(`reorderCoachmark.${kind}`)}
-      </Text>
-      <CloseButton
-        variant="ghost"
-        className="size-4"
-        hitSlop={14}
-        onPress={() => setIsVisible(false)}
-        accessibilityLabel={t('reorderCoachmark.dismiss')}
-      >
-        <CloseIcon
-          width={fontScaledSize(16)}
-          height={fontScaledSize(16)}
-          colorClassName="text-gray-6"
+      image={
+        <InfoIcon
+          width={fontScaledSize(17)}
+          height={fontScaledSize(17)}
+          colorClassName="text-main"
         />
-      </CloseButton>
-    </HStack>
+      }
+      description={t(`reorderCoachmark.${kind}`)}
+      onClose={() => setIsVisible(false)}
+      closeLabel={t('reorderCoachmark.dismiss')}
+    />
   );
 };

@@ -2,12 +2,10 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { type PushPermissionPromptSource, useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, CloseIcon, HStack, ListRow } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
+import { Button, InlineNotice } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { CloseButton } from 'heroui-native';
-import { type ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
@@ -75,8 +73,9 @@ PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps)
 
   return (
     <>
-      <Notice
+      <InlineNotice
         className={className}
+        image={null}
         title={t('permission.card.askTitle')}
         description={t('permission.card.askDescription')}
         action={
@@ -89,7 +88,8 @@ PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps)
             {t('permission.card.continue')}
           </Button>
         }
-        onDismiss={onDismiss}
+        onClose={onDismiss}
+        closeLabel={t('permission.card.dismiss')}
       />
       <PushPermissionDialog source={SOURCE} isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
     </>
@@ -105,8 +105,9 @@ PushPermissionCard.RequestSystem = function RequestSystem({
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
 
   return (
-    <Notice
+    <InlineNotice
       className={className}
+      image={null}
       title={t('permission.card.deniedTitle')}
       description={t('permission.card.requestDescription')}
       action={
@@ -128,7 +129,8 @@ PushPermissionCard.RequestSystem = function RequestSystem({
           {t('permission.card.continue')}
         </Button>
       }
-      onDismiss={onDismiss}
+      onClose={onDismiss}
+      closeLabel={t('permission.card.dismiss')}
     />
   );
 };
@@ -139,8 +141,9 @@ PushPermissionCard.OpenSettings = function OpenSettings({ className, onDismiss }
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
 
   return (
-    <Notice
+    <InlineNotice
       className={className}
+      image={null}
       title={t('permission.card.deniedTitle')}
       description={t('permission.card.settingsDescription')}
       action={
@@ -157,7 +160,8 @@ PushPermissionCard.OpenSettings = function OpenSettings({ className, onDismiss }
           {t('permission.card.openSettings')}
         </Button>
       }
-      onDismiss={onDismiss}
+      onClose={onDismiss}
+      closeLabel={t('permission.card.dismiss')}
     />
   );
 };
@@ -167,8 +171,9 @@ PushPermissionCard.EnableInApp = function EnableInApp({ className, onDismiss }: 
   const navigate = useSingleTap(router.navigate);
 
   return (
-    <Notice
+    <InlineNotice
       className={className}
+      image={null}
       title={t('permission.card.appOffTitle')}
       description={t('permission.card.appOffDescription')}
       action={
@@ -181,49 +186,8 @@ PushPermissionCard.EnableInApp = function EnableInApp({ className, onDismiss }: 
           {t('permission.card.turnOn')}
         </Button>
       }
-      onDismiss={onDismiss}
+      onClose={onDismiss}
+      closeLabel={t('permission.card.dismiss')}
     />
   );
 };
-
-interface NoticeProps {
-  className?: string;
-  title: string;
-  description: string;
-  action: ReactNode;
-  onDismiss: () => void;
-}
-
-function Notice({ className, title, description, action, onDismiss }: NoticeProps) {
-  const { t } = useTranslation('notification');
-
-  return (
-    <ListRow
-      className={cn('rounded-xl bg-gray-1', className)}
-      horizontalPadding="medium"
-      verticalPadding="large"
-      contents={
-        <ListRow.Texts
-          type="2RowTypeA"
-          top={title}
-          topProps={{ size: 'b3', weight: 'medium' }}
-          bottom={description}
-          bottomProps={{ size: 'e1', shade: 6 }}
-        />
-      }
-      right={
-        <HStack align="center" gap={8}>
-          {action}
-          <CloseButton
-            variant="ghost"
-            className="size-5"
-            onPress={onDismiss}
-            accessibilityLabel={t('permission.card.dismiss')}
-          >
-            <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
-          </CloseButton>
-        </HStack>
-      }
-    />
-  );
-}

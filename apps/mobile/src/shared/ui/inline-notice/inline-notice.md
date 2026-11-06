@@ -19,15 +19,18 @@ import { Button, InlineNotice } from '@src/shared/ui';
 
 ## Props
 
-| Prop        | 타입                                                | 설명                                           |
-| ----------- | --------------------------------------------------- | ---------------------------------------------- |
-| title       | `string`                                            | 제목                                           |
-| description | `string`                                            | 설명                                           |
-| image       | `ReactNode`                                         | 제목 앞 그림. 없으면 `status`에 맞는 기본 표시 |
-| action      | `ReactNode`                                         | 설명 아래 행동                                 |
-| onClose     | `() => void`                                        | 넘기면 닫기 버튼(라벨 `common:actions.close`)  |
-| status      | `default \| accent \| success \| warning \| danger` | heroui `Alert` 원본. 상태 색은 의미에만 쓴다   |
-| ...props    | `Alert` 원본(`children` 제외)                       | `className` 등                                 |
+| Prop        | 타입                                                | 설명                                               |
+| ----------- | --------------------------------------------------- | -------------------------------------------------- |
+| title       | `ReactNode`                                         | 제목. 비우면 description만 있는 한 문장 안내다     |
+| description | `string`                                            | 설명                                               |
+| image       | `ReactNode`                                         | 제목 앞 그림. 없으면 `status`에 맞는 기본 표시     |
+| action      | `ReactNode`                                         | 설명 아래 행동                                     |
+| onPress     | `() => void`                                        | 닫기 버튼을 뺀 자리 전체가 눌린다                  |
+| pressLabel  | `string`                                            | 눌리는 자리의 스크린 리더 이름                     |
+| onClose     | `() => void`                                        | 넘기면 닫기 버튼을 그린다                          |
+| closeLabel  | `string`                                            | 닫기 스크린 리더 이름(기본 `common:actions.close`) |
+| status      | `default \| accent \| success \| warning \| danger` | heroui `Alert` 원본. 상태 색은 의미에만 쓴다       |
+| ...props    | `Alert` 원본(`children` 제외)                       | `className` 등                                     |
 
 ## 규칙
 

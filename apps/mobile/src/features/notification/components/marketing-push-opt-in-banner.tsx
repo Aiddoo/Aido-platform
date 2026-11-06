@@ -1,19 +1,13 @@
 import { useTranslation } from '@src/shared/i18n';
-import { CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { CloseButton, PressableFeedback } from 'heroui-native';
+import { InlineNotice } from '@src/shared/ui';
 
 import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-prompt';
 
-/**
- * 광고성 앱 푸시 미동의자에게 feed에서 비침습적으로 동의를 재요청하는 배너 (순수 표현).
- *
- * 노출 여부·상호작용은 useMarketingPushOptInPrompt가 소유하고, 이 컴포넌트는 렌더만 한다.
- */
 interface MarketingPushOptInBannerProps {
   className?: string;
 }
 
+/** 광고성 앱 푸시 미동의자에게 feed에서 동의를 다시 권한다. 노출과 상호작용은 훅이 소유한다 */
 export function MarketingPushOptInBanner({ className }: MarketingPushOptInBannerProps) {
   const { t } = useTranslation('notification');
   const { isVisible, open, dismiss } = useMarketingPushOptInPrompt();
@@ -23,26 +17,15 @@ export function MarketingPushOptInBanner({ className }: MarketingPushOptInBanner
   }
 
   return (
-    <HStack align="center" gap={12} className={cn('rounded-xl bg-gray-1 px-4 py-3.5', className)}>
-      <PressableFeedback onPress={open} className="flex-1">
-        <VStack gap={2}>
-          <Text size="b3" weight="medium">
-            {t('marketingOptIn.bannerTitle')}
-          </Text>
-          <Text size="e1" shade={6}>
-            {t('marketingOptIn.bannerDescription')}
-          </Text>
-        </VStack>
-      </PressableFeedback>
-
-      <CloseButton
-        variant="ghost"
-        className="size-5"
-        accessibilityLabel={t('marketingOptIn.bannerDismiss')}
-        onPress={dismiss}
-      >
-        <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
-      </CloseButton>
-    </HStack>
+    <InlineNotice
+      className={className}
+      image={null}
+      title={t('marketingOptIn.bannerTitle')}
+      description={t('marketingOptIn.bannerDescription')}
+      onPress={open}
+      pressLabel={t('marketingOptIn.bannerTitle')}
+      onClose={dismiss}
+      closeLabel={t('marketingOptIn.bannerDismiss')}
+    />
   );
 }

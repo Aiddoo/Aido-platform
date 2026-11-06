@@ -9,20 +9,19 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ChatBubbleIcon,
-  CloseIcon,
   Flex,
   HeartFilledIcon,
-  HStack,
   InfiniteList,
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Result,
   Text,
   VStack,
+  InlineNotice,
 } from '@src/shared/ui';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
-import { CloseButton, PressableFeedback, Spinner } from 'heroui-native';
+import { PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from 'react';
 import type { ScrollViewProps } from 'react-native';
 import Animated, {
@@ -53,8 +52,6 @@ import { TodoCommentRailRow } from './todo-comment-thread-rail';
 const LOADING_ROW_COUNT = 3;
 const ANCHOR_VIEW_POSITION = 0.2;
 const HINT_HEART_SIZE = 20;
-const HINT_CLOSE_SIZE = 16;
-const HINT_CLOSE_HIT_SLOP = 14;
 const HINT_PULSE = { delayMs: 1_200, peakScale: 1.28 } as const;
 
 const contentContainerStyle = { flexGrow: 1 };
@@ -304,33 +301,18 @@ DoubleTapHint.Contents = function Contents({ accountId }: { accountId: string })
   }
 
   return (
-    <HStack
-      gap={10}
-      align="center"
-      mx={16}
-      mt={12}
-      mb={4}
-      className="rounded-xl bg-gray-2 px-3 py-2.5"
+    <InlineNotice
       accessibilityRole="alert"
       testID="todo-comment-double-tap-hint"
-    >
-      <PulsingHeart />
-      <Text size="b4" shade={8} className="flex-1 shrink">
-        {t('hint.doubleTap')}
-      </Text>
-      <CloseButton
-        variant="ghost"
-        className="size-4"
-        hitSlop={HINT_CLOSE_HIT_SLOP}
-        accessibilityLabel={t('hint.dismiss')}
-        onPress={() => {
-          complete();
-          trackEvent('todo_comment_hint_dismissed', { kind: 'double_tap', reason: 'close' });
-        }}
-      >
-        <CloseIcon width={HINT_CLOSE_SIZE} height={HINT_CLOSE_SIZE} colorClassName="text-gray-6" />
-      </CloseButton>
-    </HStack>
+      className="mx-4 mb-1 mt-3"
+      image={<PulsingHeart />}
+      description={t('hint.doubleTap')}
+      onClose={() => {
+        complete();
+        trackEvent('todo_comment_hint_dismissed', { kind: 'double_tap', reason: 'close' });
+      }}
+      closeLabel={t('hint.dismiss')}
+    />
   );
 };
 

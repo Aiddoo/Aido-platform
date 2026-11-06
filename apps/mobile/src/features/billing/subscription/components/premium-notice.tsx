@@ -3,7 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Spacing, Text } from '@src/shared/ui';
+import { InlineNotice, Spacing, Text } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 import { match } from 'ts-pattern';
@@ -42,28 +42,20 @@ function Ending() {
 
   return (
     <>
-      <HStack
-        gap={10}
-        align="center"
+      <InlineNotice
+        status="accent"
         accessibilityRole="summary"
-        className="rounded-2xl bg-main/10 px-3.5 py-3"
+        className="rounded-2xl bg-main/10"
         testID="subscription-ending-notice"
-      >
-        <Chip className="self-center rounded-full bg-main px-2 py-0.5">
-          <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
-            {badge}
-          </Text>
-        </Chip>
-        <Text
-          size="b4"
-          weight="semibold"
-          tone="brand"
-          lineBreakStrategyIOS="hangul-word"
-          className="flex-1"
-        >
-          {message}
-        </Text>
-      </HStack>
+        image={
+          <Chip className="self-center rounded-full bg-main px-2 py-0.5">
+            <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
+              {badge}
+            </Text>
+          </Chip>
+        }
+        title={message}
+      />
       <Spacing size={12} />
     </>
   );
