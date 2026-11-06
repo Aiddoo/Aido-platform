@@ -1,13 +1,11 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/get-me-query-options';
 import { BadgeIcon } from '@src/features/insights/achievement/components/badge-icon';
 import { Certificate } from '@src/features/insights/achievement/components/certificate';
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '@src/features/insights/achievement/constants/achievement-badge-labels';
 import { AchievementPolicy } from '@src/features/insights/achievement/domains/achievement.model';
-import {
-  achievementScreenParamsSchema,
-  useAchievementScreenParams,
-} from '@src/features/insights/achievement/hooks/use-achievement-screen-params';
-import { useGetWeeklyAchievementQueryOptions } from '@src/features/insights/achievement/queries/get-weekly-achievement-query-options';
+import { useAchievementParams } from '@src/features/insights/achievement/hooks/use-achievement-params';
+import { useGetWeeklyAchievementQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
+import { achievementParamsSchema } from '@src/features/insights/achievement/schemas/achievement-params.schema';
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '@src/features/insights/achievement/utils/achievement-badge.view-model';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -23,6 +21,7 @@ import {
   Spacing,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
   Box,
@@ -39,7 +38,7 @@ const CERTIFICATE_LINE_COUNT = 4;
 
 export default function AchievementDetailScreen() {
   const params = useLocalSearchParams();
-  const parsed = achievementScreenParamsSchema.safeParse(params);
+  const parsed = achievementParamsSchema.safeParse(params);
   if (!parsed.success) {
     return <Redirect href="/achievements" />;
   }
@@ -67,7 +66,7 @@ export default function AchievementDetailScreen() {
 
 function WeeklyAchievementCertificate() {
   const fontScaledSize = useFontScaledSize();
-  const { year, week } = useAchievementScreenParams();
+  const [{ year, week }] = useAchievementParams();
   const [{ data: achievement }, { data: user }] = useSuspenseQueries({
     queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
   });
@@ -78,7 +77,7 @@ function WeeklyAchievementCertificate() {
   const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
 
-  const badgeType = AchievementPolicy.badgeType(achievement);
+  const badgeType = AchievementPolicy.getBadgeType(achievement);
   const badgeName = tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[badgeType]);
 
   const handleShare = async () => {
@@ -175,8 +174,6 @@ function WeeklyAchievementCertificate() {
 }
 
 WeeklyAchievementCertificate.Loading = function Loading() {
-  const fontScaledSize = useFontScaledSize();
-
   return (
     <Certificate>
       <Spacing size={16} />
@@ -192,15 +189,15 @@ WeeklyAchievementCertificate.Loading = function Loading() {
       <Spacing size={16} />
 
       <VStack align="center" gap={4}>
-        <Skeleton className="w-10 rounded dark:bg-gray-2" style={{ height: fontScaledSize(17) }} />
-        <Skeleton className="w-32 rounded dark:bg-gray-2" style={{ height: fontScaledSize(28) }} />
+        <TextSkeleton size="e1" className="w-10" />
+        <TextSkeleton size="t3" className="w-32" />
       </VStack>
 
       <Spacing size={16} />
 
       <VStack align="center">
         {range(CERTIFICATE_LINE_COUNT).map((index) => (
-          <Skeleton key={index} className="w-full rounded" style={{ height: fontScaledSize(20) }} />
+          <TextSkeleton key={index} size="b3" className="w-full" />
         ))}
       </VStack>
 
@@ -211,7 +208,7 @@ WeeklyAchievementCertificate.Loading = function Loading() {
       <Spacing size={14} />
 
       <VStack align="center">
-        <Skeleton className="w-40 rounded dark:bg-gray-2" style={{ height: fontScaledSize(17) }} />
+        <TextSkeleton size="e1" className="w-40" />
       </VStack>
     </Certificate>
   );

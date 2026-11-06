@@ -1,13 +1,8 @@
 import { weeklyAchievementParamSchema } from '@aido/api';
 import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
-import { useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';
 
-export const achievementScreenParamsSchema = z.object({
+export const achievementParamsSchema = z.object({
   year: routeIntegerStringSchema.pipe(weeklyAchievementParamSchema.shape.year),
   week: routeIntegerStringSchema.pipe(weeklyAchievementParamSchema.shape.week),
 });
-
-export function useAchievementScreenParams() {
-  return achievementScreenParamsSchema.parse(useLocalSearchParams());
-}

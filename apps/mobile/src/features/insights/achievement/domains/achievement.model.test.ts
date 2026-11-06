@@ -1,12 +1,12 @@
 import { AchievementPolicy } from './achievement.model';
 
-describe('AchievementPolicy.badgeType', () => {
+describe('AchievementPolicy.getBadgeType', () => {
   it('완료율 100%는 빈틈없는 한 주 배지다', () => {
     // Given
     const achievement = { completionRate: 100 };
 
     // When
-    const badgeType = AchievementPolicy.badgeType(achievement);
+    const badgeType = AchievementPolicy.getBadgeType(achievement);
 
     // Then
     expect(badgeType).toBe('perfect');
@@ -18,8 +18,8 @@ describe('AchievementPolicy.badgeType', () => {
     const upperBound = { completionRate: 99.9 };
 
     // When
-    const lowerBadge = AchievementPolicy.badgeType(lowerBound);
-    const upperBadge = AchievementPolicy.badgeType(upperBound);
+    const lowerBadge = AchievementPolicy.getBadgeType(lowerBound);
+    const upperBadge = AchievementPolicy.getBadgeType(upperBound);
 
     // Then
     expect(lowerBadge).toBe('almost');
@@ -31,7 +31,7 @@ describe('AchievementPolicy.badgeType', () => {
     const achievement = { completionRate: 89.9 };
 
     // When
-    const badgeType = AchievementPolicy.badgeType(achievement);
+    const badgeType = AchievementPolicy.getBadgeType(achievement);
 
     // Then
     expect(badgeType).toBe('completed');

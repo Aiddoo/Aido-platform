@@ -105,6 +105,11 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/support/inquiry/hooks/',
   'apps/mobile/src/features/support/inquiry/queries/',
   'apps/mobile/src/features/support/inquiry/utils/',
+  'apps/mobile/src/features/insights/achievement/constants/',
+  'apps/mobile/src/features/insights/achievement/domains/',
+  'apps/mobile/src/features/insights/achievement/hooks/',
+  'apps/mobile/src/features/insights/achievement/queries/',
+  'apps/mobile/src/features/insights/achievement/utils/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -118,6 +123,7 @@ const CLIENT_OWNED_MODEL_PATHS = [
 const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/notes/memo/',
   'apps/mobile/src/features/support/inquiry/',
+  'apps/mobile/src/features/insights/achievement/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

@@ -3,15 +3,9 @@ import {
   weeklyAchievementListResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type {
-  AchievementPaginationParams,
-  WeeklyAchievement,
-  WeeklyAchievementsResult,
-} from '../domains/achievement.model';
+import type { AchievementPaginationParams } from '../schemas/achievement.schema';
 import { toWeeklyAchievement, toWeeklyAchievementsResult } from './achievement.mapper';
 
 export class AchievementService {
@@ -22,50 +16,24 @@ export class AchievementService {
   }
 
   getWeeklyAchievements = async (
-    params: AchievementPaginationParams,
+    { year, cursor, size }: AchievementPaginationParams,
     signal?: AbortSignal,
-  ): Promise<Result<WeeklyAchievementsResult, ApiError>> => {
-    const result = await this.#httpClient.get('v1/weekly-achievements', {
-      signal,
-      params: {
-        year: params.year,
-        cursor: params.cursor,
-        size: params.size,
-      },
-    });
+  ) =>
+    parseApiResponse(
+      await this.#httpClient.get('v1/weekly-achievements', {
+        signal,
+        params: { year, cursor, size },
+      }),
+      weeklyAchievementListResponseSchema,
+      toWeeklyAchievementsResult,
+      '[AchievementService] Invalid getWeeklyAchievements response',
+    );
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = weeklyAchievementListResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AchievementService] Invalid getWeeklyAchievements response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toWeeklyAchievementsResult(parsed.data));
-  };
-
-  getWeeklyAchievement = async (
-    year: number,
-    week: number,
-    signal?: AbortSignal,
-  ): Promise<Result<WeeklyAchievement, ApiError>> => {
-    const result = await this.#httpClient.get(`v1/weekly-achievements/${year}/${week}`, { signal });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = weeklyAchievementDetailResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AchievementService] Invalid getWeeklyAchievement response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toWeeklyAchievement(parsed.data));
-  };
+  getWeeklyAchievement = async (year: number, week: number, signal?: AbortSignal) =>
+    parseApiResponse(
+      await this.#httpClient.get(`v1/weekly-achievements/${year}/${week}`, { signal }),
+      weeklyAchievementDetailResponseSchema,
+      toWeeklyAchievement,
+      '[AchievementService] Invalid getWeeklyAchievement response',
+    );
 }

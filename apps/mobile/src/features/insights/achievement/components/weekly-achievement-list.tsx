@@ -25,9 +25,10 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 
-import { AchievementPolicy, type WeeklyAchievement } from '../domains/achievement.model';
+import { AchievementPolicy } from '../domains/achievement.model';
 import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
-import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/get-weekly-achievements-infinite-query-options';
+import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
+import type { WeeklyAchievement } from '../schemas/achievement.schema';
 import { BadgeIcon } from './badge-icon';
 
 const LOADING_ROW_COUNT = 5;
@@ -73,7 +74,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();
-  const badgeType = AchievementPolicy.badgeType(achievement);
+  const badgeType = AchievementPolicy.getBadgeType(achievement);
 
   const handlePress = () => {
     trackEvent('badge_item_tapped', {

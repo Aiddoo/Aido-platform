@@ -34,9 +34,9 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-badge-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
-import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/get-weekly-achievements-infinite-query-options';
+import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../utils/achievement-badge.view-model';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
@@ -57,7 +57,7 @@ export function AchievementSummaryCard() {
   const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
   const latest = weeklyAchievements.items[0];
-  const latestBadgeType = latest == null ? null : AchievementPolicy.badgeType(latest);
+  const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
   const latestCompletionRate = latest?.completionRate;
   const latestWeekLabel = latest?.weekLabel;
 

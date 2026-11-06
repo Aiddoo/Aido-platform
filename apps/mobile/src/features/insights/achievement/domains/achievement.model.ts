@@ -1,41 +1,16 @@
-import {
-  weeklyAchievementSchema as weeklyAchievementDtoSchema,
-  weeklyAchievementSummarySchema,
-} from '@aido/api';
-import { z } from 'zod';
-
-const weeklyAchievementSchema = weeklyAchievementDtoSchema.extend({ achievedAt: z.date() });
-export type WeeklyAchievement = z.infer<typeof weeklyAchievementSchema>;
-
-const achievementSummarySchema = weeklyAchievementSummarySchema;
-export type AchievementSummary = z.infer<typeof achievementSummarySchema>;
-
-const achievementPaginationParamsSchema = z.object({
-  year: z.number().int(),
-  cursor: z.number().int().optional(),
-  size: z.number().int().positive().optional(),
-});
-export type AchievementPaginationParams = z.infer<typeof achievementPaginationParamsSchema>;
-
-const weeklyAchievementsResultSchema = z.object({
-  items: z.array(weeklyAchievementSchema),
-  nextCursor: z.number().int().nullable(),
-  hasNext: z.boolean(),
-  summary: achievementSummarySchema,
-});
-export type WeeklyAchievementsResult = z.infer<typeof weeklyAchievementsResultSchema>;
+import type { WeeklyAchievement } from '../schemas/achievement.schema';
 
 export const BadgeType = {
   perfect: 'perfect',
   almost: 'almost',
   completed: 'completed',
 } as const;
-export const badgeTypeSchema = z.enum(BadgeType);
-export type BadgeType = z.infer<typeof badgeTypeSchema>;
+export type BadgeType = (typeof BadgeType)[keyof typeof BadgeType];
 
 const PERFECT_COMPLETION_RATE = 100;
 const ALMOST_COMPLETION_RATE = 90;
 
+/** 완료율 100%는 빈틈없는 한 주, 90% 이상은 아깝다 한 끗, 나머지는 꾸준한 한 걸음 */
 function getBadgeType(achievement: Pick<WeeklyAchievement, 'completionRate'>): BadgeType {
   if (achievement.completionRate >= PERFECT_COMPLETION_RATE) {
     return BadgeType.perfect;
@@ -47,5 +22,5 @@ function getBadgeType(achievement: Pick<WeeklyAchievement, 'completionRate'>): B
 }
 
 export const AchievementPolicy = {
-  badgeType: getBadgeType,
+  getBadgeType,
 } as const;
