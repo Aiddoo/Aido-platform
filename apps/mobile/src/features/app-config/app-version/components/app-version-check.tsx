@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 
 import { AppVersionPolicy } from '../domains/app-version.model';
-import { useGetAppVersionQueryOptions } from '../queries/get-app-version-query-options';
+import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
 
 /** 설치된 버전을 보여 주고, 누르면 스토어 업데이트가 필요한지 확인한다. */
 export function AppVersionCheck() {
