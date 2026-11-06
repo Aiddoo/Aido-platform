@@ -5,8 +5,10 @@ import {
 } from '@aido/api/vocabulary';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { getZonedHour, toDate, toDateKey } from '@src/shared/date/instant';
-import { getDateWithTime } from '@src/shared/date/time-of-day';
+import { getZonedHour, toDateKey } from '@src/shared/date/instant';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import { maxBy, orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -16,6 +18,9 @@ import {
   isFrozenPrecipitation,
   isWetHour,
 } from './weather-report.model';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
@@ -44,24 +49,27 @@ export interface BriefingTodo {
 
 /**
  * 할 일 목록의 값을 브리핑 입력으로 바꾼다. 종일 할 일은 시각이 있어도 시간대를 정하지 않은 것으로 본다.
- * 할 일 시각은 어디서든 그 벽시계라 예보와 맞출 순간은 날짜 + 벽시계 + 기기 시간대로 만든다.
+ * 할 일 시각은 어디서든 그 벽시계라 예보와 맞출 순간은 보고 있는 날짜 + 벽시계 + 기기 시간대로 만든다.
+ * 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있으므로 시작일이 아니라 보고 있는 날짜에 둔다.
  */
-function toBriefingTodo(todo: {
-  id: number;
-  title: string;
-  startDate: string;
-  localTime: string | null;
-  isAllDay: boolean;
-  completed: boolean;
-  subTodoStats: { completed: number; total: number };
-}): BriefingTodo {
+function toBriefingTodo(
+  todo: {
+    id: number;
+    title: string;
+    localTime: string | null;
+    isAllDay: boolean;
+    completed: boolean;
+    subTodoStats: { completed: number; total: number };
+  },
+  { date, timeZone }: { date: string; timeZone: string },
+): BriefingTodo {
   return {
     id: todo.id,
     title: todo.title,
     scheduledAt:
       todo.isAllDay || todo.localTime == null
         ? null
-        : getDateWithTime(toDate(todo.startDate), todo.localTime, todo.localTime),
+        : dayjs.tz(`${date} ${todo.localTime}`, timeZone).toDate(),
     completed: todo.completed,
     subTodoProgress: todo.subTodoStats.total > 0 ? todo.subTodoStats : null,
   };

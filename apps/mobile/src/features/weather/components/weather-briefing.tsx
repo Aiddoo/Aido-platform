@@ -95,11 +95,9 @@ export function WeatherBriefing() {
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.briefing,
   });
+  const todayKey = useTodayKey();
   const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
-    queries: [
-      useGetTodosByDateQueryOptions({ date: useTodayKey() }),
-      useGetPreferenceQueryOptions(),
-    ],
+    queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
   const now = useMinuteNow();
   const deviceTimeZone = getDeviceTimezone();
@@ -114,7 +112,9 @@ export function WeatherBriefing() {
 
   const briefing = WeatherBriefingPolicy.briefing(
     report,
-    todoList.todos.map(WeatherBriefingPolicy.briefingTodo),
+    todoList.todos.map((todo) =>
+      WeatherBriefingPolicy.briefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
+    ),
     { now, timeZone: deviceTimeZone },
   );
 

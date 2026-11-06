@@ -348,43 +348,79 @@ describe('WeatherBriefingPolicy.rescheduleOptions 더위', () => {
 });
 
 describe('WeatherBriefingPolicy.briefingTodo', () => {
+  const SEOUL = { date: '2026-11-02', timeZone: 'Asia/Seoul' };
+  const BASE = {
+    id: 1,
+    title: '산책',
+    completed: false,
+    subTodoStats: { completed: 0, total: 0 },
+  };
+
   it.each([
-    [{ localTime: '16:30', isAllDay: false }, new Date(2026, 10, 2, 16, 30)],
+    [{ localTime: '16:30', isAllDay: false }, new Date('2026-11-02T07:30:00.000Z')],
     [{ localTime: '16:30', isAllDay: true }, null],
     [{ localTime: null, isAllDay: false }, null],
   ])('%o는 브리핑 시각 %s로 본다', (schedule, expected) => {
     // When
-    const todo = WeatherBriefingPolicy.briefingTodo({
-      id: 1,
-      title: '산책',
-      startDate: '2026-11-02',
-      completed: false,
-      subTodoStats: { completed: 0, total: 0 },
-      ...schedule,
-    });
+    const todo = WeatherBriefingPolicy.briefingTodo({ ...BASE, ...schedule }, SEOUL);
 
     // Then
     expect(todo.scheduledAt).toEqual(expected);
   });
 
+  it('어제 시작한 여러 날 할 일도 보고 있는 오늘의 벽시계로 본다', () => {
+    // Given 어제(11-01)부터 모레까지 이어지는 16:30 할 일을 오늘 목록에서 본다
+    // When 오늘 날짜로 브리핑 입력을 만들면
+    const todo = WeatherBriefingPolicy.briefingTodo(
+      { ...BASE, localTime: '16:30', isAllDay: false },
+      SEOUL,
+    );
+
+    // Then 시작일이 아니라 오늘 16:30이라 지난 시각으로 버려지지 않는다
+    expect(todo.scheduledAt).toEqual(new Date('2026-11-02T07:30:00.000Z'));
+    expect(WeatherBriefingPolicy.briefing(report, [todo], CLOCK).kind === 'rainy').toBe(true);
+  });
+
+  it('같은 벽시계도 기기 시간대가 다르면 다른 순간으로 만든다', () => {
+    // Given 같은 날짜와 16:30 When 서울과 로스앤젤레스 기기에서 바꾸면
+    const input = { ...BASE, localTime: '16:30', isAllDay: false };
+    const seoul = WeatherBriefingPolicy.briefingTodo(input, SEOUL);
+    const losAngeles = WeatherBriefingPolicy.briefingTodo(input, {
+      date: '2026-11-02',
+      timeZone: 'America/Los_Angeles',
+    });
+
+    // Then 11월은 로스앤젤레스가 UTC-8이다
+    expect(seoul.scheduledAt).toEqual(new Date('2026-11-02T07:30:00.000Z'));
+    expect(losAngeles.scheduledAt).toEqual(new Date('2026-11-03T00:30:00.000Z'));
+  });
+
+  it('서머타임이 끝나는 날에도 벽시계 그대로의 순간을 만든다', () => {
+    // Given 미국 서머타임이 끝나는 2026-11-01 When 로스앤젤레스 기기의 오후 3시를 바꾸면
+    const todo = WeatherBriefingPolicy.briefingTodo(
+      { ...BASE, localTime: '15:00', isAllDay: false },
+      { date: '2026-11-01', timeZone: 'America/Los_Angeles' },
+    );
+
+    // Then 표준시 UTC-8로 읽는다
+    expect(todo.scheduledAt).toEqual(new Date('2026-11-01T23:00:00.000Z'));
+  });
+
   it('하위 할 일이 있으면 진행을, 없으면 null을 담는다', () => {
     // Given 하위 할 일 3개 중 1개 완료와 하위 할 일 없음 When 브리핑 입력으로 바꾸면 Then 진행은 1/3과 null이다
-    const base = {
-      id: 1,
-      title: '이사 준비',
-      startDate: '2026-11-02',
-      completed: false,
-      localTime: null,
-      isAllDay: true,
-    };
+    const base = { ...BASE, title: '이사 준비', localTime: null, isAllDay: true };
 
     expect(
-      WeatherBriefingPolicy.briefingTodo({ ...base, subTodoStats: { completed: 1, total: 3 } })
-        .subTodoProgress,
+      WeatherBriefingPolicy.briefingTodo(
+        { ...base, subTodoStats: { completed: 1, total: 3 } },
+        SEOUL,
+      ).subTodoProgress,
     ).toEqual({ completed: 1, total: 3 });
     expect(
-      WeatherBriefingPolicy.briefingTodo({ ...base, subTodoStats: { completed: 0, total: 0 } })
-        .subTodoProgress,
+      WeatherBriefingPolicy.briefingTodo(
+        { ...base, subTodoStats: { completed: 0, total: 0 } },
+        SEOUL,
+      ).subTodoProgress,
     ).toBeNull();
   });
 });

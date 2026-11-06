@@ -102,10 +102,11 @@ function WeatherRescheduleSheet() {
 function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
   const { t } = useTranslation('weather');
   const [{ todoIds, reason }, setParams] = useWeatherRescheduleParams();
+  const todayKey = useTodayKey();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
-      useGetTodosByDateQueryOptions({ date: useTodayKey() }),
+      useGetTodosByDateQueryOptions({ date: todayKey }),
       useGetPreferenceQueryOptions(),
     ],
   });
@@ -116,7 +117,14 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
     report.hourly,
     todoIds.flatMap((todoId) => {
       const todo = todosById[todoId];
-      return todo == null ? [] : [WeatherBriefingPolicy.briefingTodo(todo)];
+      return todo == null
+        ? []
+        : [
+            WeatherBriefingPolicy.briefingTodo(todo, {
+              date: todayKey,
+              timeZone: getDeviceTimezone(),
+            }),
+          ];
     }),
     { now, reason },
   );
