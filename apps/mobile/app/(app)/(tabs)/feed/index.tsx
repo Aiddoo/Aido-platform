@@ -1,4 +1,4 @@
-import { WhatsNewReentryCard } from '@src/features/app-config/whats-new/components/whats-new-reentry-card';
+import { WhatsNewEntryCard } from '@src/features/app-config/whats-new/components/whats-new-entry-card';
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
@@ -117,7 +117,7 @@ function MyFeed() {
         {whatsNew.isReentryVisible && (
           <>
             <Box px={16}>
-              <WhatsNewReentryCard
+              <WhatsNewEntryCard
                 onPress={whatsNew.openFromReentry}
                 onDismiss={whatsNew.dismissReentry}
               />

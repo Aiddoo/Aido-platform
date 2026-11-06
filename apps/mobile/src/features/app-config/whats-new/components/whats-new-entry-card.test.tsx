@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
-import { WhatsNewReentryCard } from './whats-new-reentry-card';
+import { WhatsNewEntryCard } from './whats-new-entry-card';
 
 jest.mock('@src/shared/ui', () => {
   const React = require('react');
@@ -43,10 +43,10 @@ jest.mock('heroui-native', () => {
   return { CloseButton, PressableFeedback };
 });
 
-describe('WhatsNewReentryCard', () => {
+describe('WhatsNewEntryCard', () => {
   it('새로운 기능 재진입 문구를 렌더링한다', async () => {
     // When
-    await render(<WhatsNewReentryCard onPress={jest.fn()} onDismiss={jest.fn()} />);
+    await render(<WhatsNewEntryCard onPress={jest.fn()} onDismiss={jest.fn()} />);
 
     // Then
     expect(screen.getByText('새로운 기능을 만나보세요')).toBeTruthy();
@@ -56,7 +56,7 @@ describe('WhatsNewReentryCard', () => {
   it('카드를 누르면 허브를 다시 연다', async () => {
     // Given
     const onPress = jest.fn();
-    await render(<WhatsNewReentryCard onPress={onPress} onDismiss={jest.fn()} />);
+    await render(<WhatsNewEntryCard onPress={onPress} onDismiss={jest.fn()} />);
 
     // When
     await fireEvent.press(screen.getByLabelText('새로운 기능 열기'));
@@ -69,7 +69,7 @@ describe('WhatsNewReentryCard', () => {
     // Given
     const onPress = jest.fn();
     const onDismiss = jest.fn();
-    await render(<WhatsNewReentryCard onPress={onPress} onDismiss={onDismiss} />);
+    await render(<WhatsNewEntryCard onPress={onPress} onDismiss={onDismiss} />);
 
     // When
     await fireEvent.press(screen.getByLabelText('새로운 기능 카드 닫기'));

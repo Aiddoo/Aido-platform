@@ -187,7 +187,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 ## 도메인 다이얼로그와 안내 카드
 
 - 도메인 다이얼로그는 `ConfirmDialog`를 감싸 `Omit<ComponentProps<typeof ConfirmDialog>, 'title' | 'description' | 'cancelButton' | 'confirmButton' | 'secondaryButton'>`로 확장한다. `isOpen`/`onOpenChange`는 원본 그대로 받고 문구·버튼은 안에서 채운다(`PushPermissionDialog`). 사용법은 [confirm-dialog.md](../src/shared/ui/confirm-dialog/confirm-dialog.md)를 본다.
-- 홈 안내 카드(`PushPermissionCard`, `MarketingPushOptInBanner`, `WhatsNewReentryCard`)는 같은 모양 `rounded-xl bg-gray-1 px-4 py-3.5`를 쓴다. 바깥 간격(`mx-4 mb-3`)은 컴포넌트가 아니라 Screen이 `className`으로 넘긴다.
+- 홈 안내 카드(`PushPermissionCard`, `MarketingPushOptInBanner`, `WhatsNewEntryCard`)는 같은 모양 `rounded-xl bg-gray-1 px-4 py-3.5`를 쓴다. 바깥 간격(`mx-4 mb-3`)은 컴포넌트가 아니라 Screen이 `className`으로 넘긴다.
 
 ## 상태·글꼴 배율·시트 규칙
 

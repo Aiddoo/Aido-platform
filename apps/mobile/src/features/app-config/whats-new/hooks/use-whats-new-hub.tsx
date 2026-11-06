@@ -15,7 +15,7 @@ import {
   recordWhatsNewCardCta,
   recordWhatsNewDismissed,
   recordWhatsNewImpression,
-} from '../utils/whats-new.analytics';
+} from '../utils/whats-new-analytics';
 
 interface OpenWhatsNewHubInput {
   accountId: string;

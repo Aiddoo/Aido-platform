@@ -5,7 +5,7 @@ import {
   recordWhatsNewCardCta,
   recordWhatsNewDismissed,
   recordWhatsNewImpression,
-} from './whats-new.analytics';
+} from './whats-new-analytics';
 
 const createAttributionStore = (): jest.Mocked<FeatureAttributionStore> => ({
   record: jest.fn(),

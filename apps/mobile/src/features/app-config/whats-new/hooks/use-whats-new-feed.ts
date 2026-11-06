@@ -12,7 +12,7 @@ import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreg
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 
-import { useGetWhatsNewQueryOptions } from '../queries/get-whats-new-query-options';
+import { useGetWhatsNewQueryOptions } from '../queries/whats-new.queries';
 import { claimAndOpenWhatsNew } from '../utils/whats-new-auto-open';
 import { useWhatsNewHub } from './use-whats-new-hub';
 

@@ -2,13 +2,13 @@ import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, RobotPixelIcon, Text, VStack } from '@src/shared/ui';
 import { CloseButton, PressableFeedback } from 'heroui-native';
 
-interface WhatsNewReentryCardProps {
+interface WhatsNewEntryCardProps {
   onPress: () => void;
   onDismiss: () => void;
 }
 
 /** 새로운 기능을 다시 여는 피드 카드. 피드의 알림 받기 배너와 같은 모양·닫기 버튼을 쓴다 */
-export function WhatsNewReentryCard({ onPress, onDismiss }: WhatsNewReentryCardProps) {
+export function WhatsNewEntryCard({ onPress, onDismiss }: WhatsNewEntryCardProps) {
   const { t } = useTranslation('whatsNew');
 
   return (
