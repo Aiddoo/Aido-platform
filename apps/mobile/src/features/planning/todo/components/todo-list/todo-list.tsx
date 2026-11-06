@@ -23,6 +23,7 @@ import {
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Result,
+  IconButton,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
@@ -300,14 +301,13 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
-          <PressableFeedback
-            onPress={isOptimistic ? undefined : handleActionsPress}
-            hitSlop={8}
-            accessibilityRole="button"
+          <IconButton
             accessibilityLabel={t('actions.more')}
-          >
-            <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
-          </PressableFeedback>
+            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
+            className="min-h-0 min-w-0"
+            hitSlop={8}
+            onPress={isOptimistic ? undefined : handleActionsPress}
+          />
         </HStack>
       }
       onPress={isOptimistic ? undefined : handleRowPress}

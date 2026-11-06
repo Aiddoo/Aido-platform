@@ -31,6 +31,7 @@ import {
   VStack,
   useFetchNextPage,
   useOverlay,
+  IconButton,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -360,13 +361,19 @@ function EditModeGuideTooltip() {
   return (
     <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
-        <PressableFeedback onPress={() => setIsOpen(true)} className="items-center justify-center">
-          <InfoIcon
-            width={fontScaledSize(16)}
-            height={fontScaledSize(16)}
-            colorClassName="text-gray-5"
-          />
-        </PressableFeedback>
+        <IconButton
+          accessibilityLabel={t('friend:list.editHintLabel')}
+          icon={
+            <InfoIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-5"
+            />
+          }
+          className="min-h-0 min-w-0"
+          hitSlop={8}
+          onPress={() => setIsOpen(true)}
+        />
       </Popover.Trigger>
       <HintPopoverContent placement="bottom" description={t('list.editHint')} />
     </Popover>

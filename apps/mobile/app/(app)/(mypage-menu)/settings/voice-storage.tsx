@@ -23,11 +23,11 @@ import {
   TrashIcon,
   useConfirmDialog,
   VStack,
+  IconButton,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatFileSize } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
 import { type PropsWithChildren, Suspense, useState } from 'react';
 
 function VoiceStorageScreen() {
@@ -173,15 +173,14 @@ VoiceStorageScreen.Row = function Row({
       <Text size="b4" shade={7} maxLines={1} className="tabular-nums">
         {formatFileSize(bytes, dateFormatContext.locale)}
       </Text>
-      <PressableFeedback
-        onPress={onRemove}
-        hitSlop={12}
-        accessibilityRole="button"
+      <IconButton
         accessibilityLabel={t('voiceStorage.removeOneTitle')}
+        icon={<TrashIcon width={20} height={20} colorClassName="text-gray-6" />}
+        className="min-h-0 min-w-0"
+        hitSlop={12}
         testID="voice-storage-remove"
-      >
-        <TrashIcon width={20} height={20} colorClassName="text-gray-6" />
-      </PressableFeedback>
+        onPress={onRemove}
+      />
     </HStack>
   );
 };

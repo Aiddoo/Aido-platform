@@ -22,6 +22,8 @@
     "SUN": "일"
   },
   "calendar": {
+    "nextMonth": "다음 달",
+    "previousMonth": "이전 달",
     "weekHeader": "{{month}} {{week}}주차"
   },
   "dateSections": {

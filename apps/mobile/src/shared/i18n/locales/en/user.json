@@ -37,6 +37,7 @@
     "confirmAction": "Delete"
   },
   "profile": {
+    "copyTag": "Copy hashtag",
     "defaultName": "Motivated User",
     "avatarAlt": "{{name}}'s profile",
     "tagCopied": "Hashtag copied",

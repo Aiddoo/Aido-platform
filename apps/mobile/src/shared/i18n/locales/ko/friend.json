@@ -17,6 +17,7 @@
     "sent": "보낸 요청"
   },
   "list": {
+    "editHintLabel": "친구 목록 안내 보기",
     "friendCount": "총 {{count}}명",
     "requestCount": "총 {{count}}개 요청",
     "emptyTitle": "친구를 추가해보세요",

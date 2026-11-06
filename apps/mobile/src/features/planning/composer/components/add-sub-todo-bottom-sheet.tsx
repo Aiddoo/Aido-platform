@@ -35,6 +35,7 @@ import {
   TrashIcon,
   useSheetRoute,
   VStack,
+  IconButton,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
@@ -240,18 +241,20 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
 
       <HStack gap={8} align="center">
         {subTodo != null && (
-          <PressableFeedback
+          <IconButton
             testID="sub-todo-delete"
-            onPress={() => handleDelete(subTodo)}
+            accessibilityLabel={t('actions.delete')}
+            icon={
+              <TrashIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-error"
+              />
+            }
+            className="size-9 min-h-0 min-w-0 rounded-full bg-error/10"
             isDisabled={isBusy}
-            className="size-9 items-center justify-center rounded-full bg-error/10"
-          >
-            <TrashIcon
-              width={fontScaledSize(18)}
-              height={fontScaledSize(18)}
-              colorClassName="text-error"
-            />
-          </PressableFeedback>
+            onPress={() => handleDelete(subTodo)}
+          />
         )}
 
         <Box className="flex-1" />

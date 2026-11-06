@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, MoreIcon, PlusIcon, Text } from '@src/shared/ui';
+import { HStack, MoreIcon, PlusIcon, Text, IconButton } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -85,14 +85,13 @@ SubTodoList.Item = function Item({
       }
       top={<TodoLabel isChecked={isSelected}>{label}</TodoLabel>}
       right={
-        <PressableFeedback
-          onPress={isDisabled ? undefined : onMorePress}
-          hitSlop={8}
-          accessibilityRole="button"
+        <IconButton
           accessibilityLabel={t('actions.more')}
-        >
-          <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
-        </PressableFeedback>
+          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
+          className="min-h-0 min-w-0"
+          hitSlop={8}
+          onPress={isDisabled ? undefined : onMorePress}
+        />
       }
       onLongPress={isDisabled ? undefined : drag}
       isActive={isActive}

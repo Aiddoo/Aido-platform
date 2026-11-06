@@ -11,6 +11,7 @@ import {
   Text,
   TrashIcon,
   VStack,
+  IconButton,
 } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -91,14 +92,13 @@ export function TodoScopeSelectContent({
       <HStack align="center" px={16} className="py-2">
         <Box className="flex-1 items-start">
           {onBack != null && (
-            <PressableFeedback
-              onPress={onBack}
-              hitSlop={12}
-              accessibilityRole="button"
+            <IconButton
               accessibilityLabel={t('common:actions.goBack')}
-            >
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-8" />
-            </PressableFeedback>
+              icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-8" />}
+              className="min-h-0 min-w-0"
+              hitSlop={12}
+              onPress={onBack}
+            />
           )}
         </Box>
         <Text size="b2" weight="semibold" tone="neutral" shade={8} align="center">

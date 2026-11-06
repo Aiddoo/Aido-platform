@@ -7,6 +7,7 @@
     "title": "Memos"
   },
   "list": {
+    "scrollToTop": "Scroll to top",
     "savedTitle": "Saved memos",
     "emptyTitle": "No memos yet",
     "emptyDescription": "Jot down rough ideas here\nand turn them into to-dos later",

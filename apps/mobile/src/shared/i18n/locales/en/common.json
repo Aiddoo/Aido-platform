@@ -22,6 +22,8 @@
     "SUN": "Sun"
   },
   "calendar": {
+    "nextMonth": "Next month",
+    "previousMonth": "Previous month",
     "weekHeader": "Week {{week}} of {{month}}"
   },
   "dateSections": {

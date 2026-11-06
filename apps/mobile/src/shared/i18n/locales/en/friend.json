@@ -17,6 +17,7 @@
     "sent": "Sent"
   },
   "list": {
+    "editHintLabel": "Show friend list tip",
     "friendCount_one": "{{count}} friend total",
     "friendCount_other": "{{count}} friends total",
     "requestCount_one": "{{count}} request total",

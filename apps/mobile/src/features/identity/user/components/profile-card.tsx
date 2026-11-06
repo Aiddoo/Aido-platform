@@ -4,7 +4,16 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, CopyIcon, H4, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  CopyIcon,
+  H4,
+  HStack,
+  IconButton,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
@@ -60,20 +69,22 @@ export function ProfileCard() {
             <Text size="b4" shade={6}>
               {formatUserHashtag(user.userTag)}
             </Text>
-            <PressableFeedback
+            <IconButton
+              accessibilityLabel={t('profile.copyTag')}
+              icon={
+                <CopyIcon
+                  width={fontScaledSize(12)}
+                  height={fontScaledSize(12)}
+                  colorClassName="text-gray-5"
+                />
+              }
+              className="min-h-0 min-w-0 p-1"
               hitSlop={8}
               onPress={(event) => {
                 event.stopPropagation();
                 handleCopyUserTag();
               }}
-              className="p-1"
-            >
-              <CopyIcon
-                width={fontScaledSize(12)}
-                height={fontScaledSize(12)}
-                colorClassName="text-gray-5"
-              />
-            </PressableFeedback>
+            />
           </HStack>
         </VStack>
 

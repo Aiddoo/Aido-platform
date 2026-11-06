@@ -23,6 +23,7 @@ import {
   SheetHeaderLayout,
   Text,
   VStack,
+  IconButton,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -519,15 +520,20 @@ const RepeatCalendar = ({
   onDatePress,
 }: RepeatCalendarProps) => {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
+  const { t: tCommon } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
   const hasDistinctRange = isOpenEnded || (endDate != null && !isSameDay(startDate, endDate));
 
   return (
     <VStack gap={16}>
       <HStack className="items-center justify-between" px={16}>
-        <PressableFeedback onPress={goToPrevMonth} hitSlop={12}>
-          <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />
-        </PressableFeedback>
+        <IconButton
+          accessibilityLabel={tCommon('calendar.previousMonth')}
+          icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
+          className="min-h-0 min-w-0"
+          hitSlop={12}
+          onPress={goToPrevMonth}
+        />
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
           {formatDateKeyLabel(
             toDateKey(displayMonth, getDeviceTimezone()),
@@ -535,9 +541,13 @@ const RepeatCalendar = ({
             dateFormatContext,
           )}
         </Text>
-        <PressableFeedback onPress={goToNextMonth} hitSlop={12}>
-          <ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />
-        </PressableFeedback>
+        <IconButton
+          accessibilityLabel={tCommon('calendar.nextMonth')}
+          icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
+          className="min-h-0 min-w-0"
+          hitSlop={12}
+          onPress={goToNextMonth}
+        />
       </HStack>
 
       <CalendarWeekdayHeader />

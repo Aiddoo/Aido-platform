@@ -37,6 +37,7 @@
     "confirmAction": "탈퇴하기"
   },
   "profile": {
+    "copyTag": "해시태그 복사",
     "defaultName": "열정적인 사용자",
     "avatarAlt": "{{name}} 프로필",
     "tagCopied": "해시태그 복사 완료",

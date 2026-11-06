@@ -1,5 +1,5 @@
-import { ArrowUpIcon, StyledSafeAreaView } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
+import { useTranslation } from '@src/shared/i18n';
+import { ArrowUpIcon, StyledSafeAreaView, IconButton } from '@src/shared/ui';
 import { memo } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -27,6 +27,7 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
   onScrollToTop,
   bottomOffset = 50,
 }: ScrollProgressWidgetProps) {
+  const { t } = useTranslation('memo');
   const surface = useResolveClassNames('bg-gray-2');
   const inner = useResolveClassNames('bg-gray-3');
   const track = useResolveClassNames('bg-gray-4');
@@ -94,9 +95,12 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
             { backgroundColor: inner.backgroundColor },
           ]}
         >
-          <PressableFeedback onPress={onScrollToTop} className="flex-1 items-center justify-center">
-            <ArrowUpIcon width={20} height={20} colorClassName="text-gray-8" />
-          </PressableFeedback>
+          <IconButton
+            accessibilityLabel={t('list.scrollToTop')}
+            icon={<ArrowUpIcon width={20} height={20} colorClassName="text-gray-8" />}
+            className="min-h-0 min-w-0 flex-1"
+            onPress={onScrollToTop}
+          />
         </Animated.View>
       </Animated.View>
     </StyledSafeAreaView>
