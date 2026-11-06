@@ -4,16 +4,18 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { ReportCard } from '@src/features/insights/report/components/report-card';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
-import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report-type';
+import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report.constants';
 import {
   getSampleReport,
   SAMPLE_REPORT_IDS,
 } from '@src/features/insights/report/constants/sample-reports';
 import type { ReportType } from '@src/features/insights/report/domains/report.model';
 import { useReportTypeParam } from '@src/features/insights/report/hooks/use-report-type-param';
-import { useGetReportStatusQueryOptions } from '@src/features/insights/report/queries/get-report-status-query-options';
-import { useGetReportsQueryOptions } from '@src/features/insights/report/queries/get-reports-query-options';
 import { invalidateAiReports } from '@src/features/insights/report/queries/report-cache';
+import {
+  useGetReportsQueryOptions,
+  useGetReportStatusQueryOptions,
+} from '@src/features/insights/report/queries/report.queries';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

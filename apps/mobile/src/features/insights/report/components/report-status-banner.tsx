@@ -3,8 +3,8 @@ import { HStack, Text, TextSkeleton, VStack, Box } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
-import { useGetReportStatusQueryOptions } from '../queries/get-report-status-query-options';
-import { formatDday } from '../utils/format-report';
+import { useGetReportStatusQueryOptions } from '../queries/report.queries';
+import { formatDday } from '../utils/report-format';
 
 export function ReportStatusBanner() {
   const { t } = useTranslation('ai');

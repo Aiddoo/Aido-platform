@@ -10,7 +10,7 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
 
-import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
+import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report.constants';
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
 
 const LOADING_CARD_COUNT = 3;

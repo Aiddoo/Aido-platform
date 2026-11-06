@@ -23,7 +23,7 @@ import { Chip, Separator, Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
 
-import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
+import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report.constants';
 
 interface ActivityReportProps {
   report: AiReport;
