@@ -221,7 +221,8 @@ export function useVoiceNoteRecording({
       unsubscribe();
     };
     const unsubscribe = speechRecognizer.subscribe((event) => {
-      if (event.type !== 'recording-saved') {
+      // 30초 안에 새 녹음을 시작하면 그 파일의 이벤트도 여기로 온다. 옮기면 새 녹음의 조각이 사라진다
+      if (event.type !== 'recording-saved' || !segmentStartsRef.current.has(event.uri)) {
         return;
       }
       receiveRecording(event.uri);

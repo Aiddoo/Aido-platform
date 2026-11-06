@@ -819,6 +819,62 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
+  test('화면이 내려간 뒤 새 녹음의 파일이 와도 옛 초안으로 가져오지 않고 자기 파일만 받는다', async () => {
+    // Given 앞 녹음의 파일을 기다리는 동안 새 녹음이 시작됐다
+    const speechRecognizer = createSpeechRecognizerStub();
+    const files = createLocalFileSystemFake();
+    const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+    const newRecordingUri = files.addFile(RECORDING_DIRECTORY, 'recording_new.wav');
+    const storage = createVoiceNoteStorageServiceFake(files);
+    const onFinished = jest.fn();
+    const { unmount } = await renderUi(
+      <OverlayProvider>
+        <RecordingProbe
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={onFinished}
+          onEmpty={jest.fn()}
+        />
+      </OverlayProvider>,
+      {
+        di: {
+          speechRecognizer,
+          voiceNoteStorageService: storage,
+          analytics: createMockAnalytics(),
+          errorReporter: createErrorReporterStub(),
+          haptics: createHapticsStub(),
+          logger,
+        },
+      },
+    );
+    await start(speechRecognizer);
+    await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('finish'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await act(async () => jest.advanceTimersByTime(3_100));
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
+    const draftId = onFinished.mock.calls[0]?.[0];
+    await act(async () => unmount());
+
+    // When
+    await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: newRecordingUri }));
+
+    // Then
+    expect(files.hasFile(RECORDING_DIRECTORY, 'recording_new.wav')).toBe(true);
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toEqual([]);
+    expect(speechRecognizer.getListenerCount()).toBe(1);
+
+    // When
+    await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+
+    // Then
+    await waitFor(() =>
+      expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1),
+    );
+    expect(speechRecognizer.getListenerCount()).toBe(0);
+  });
+
   test('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecording();
