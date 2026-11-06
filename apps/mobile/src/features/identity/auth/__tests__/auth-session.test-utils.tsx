@@ -52,13 +52,19 @@ interface AuthSessionOptions {
   tokens?: AuthTokenPair;
   tokenStore?: TokenStore;
   di?: Partial<DIContainer>;
+  accountGuides?: readonly { removeAccount(accountId: string): void }[];
 }
 
 /**
  * 로그인·로그아웃·탈퇴가 사용자 결과(토큰, 상태, 초안)로 이어지는지 보는 조립.
  * 네트워크 경계만 stub이고 AuthProvider, AuthService, PushDeviceService는 실제 코드다.
  */
-export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions = {}) {
+export function createAuthSession({
+  tokens,
+  tokenStore,
+  di,
+  accountGuides = [],
+}: AuthSessionOptions = {}) {
   const store = tokenStore ?? createMemoryTokenStore(tokens);
   const publicHttp = createHttpClientStub();
   const authHttp = createHttpClientStub();
@@ -79,7 +85,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     logger: silentLogger,
   });
   const sessionCleanupService = new SessionCleanupService({
-    accountGuides: [],
+    accountGuides,
     queryCache: createSessionQueryCache(queryClient),
     persistedQueryCache: queryCacheStorage,
     drafts: draftService,

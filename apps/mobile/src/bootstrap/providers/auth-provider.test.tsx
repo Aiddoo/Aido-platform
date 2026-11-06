@@ -30,7 +30,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AppState, Text } from 'react-native';
+import { AppState, type AppStateStatus, Text } from 'react-native';
 import { z } from 'zod';
 
 import { AuthProvider, useAuth } from './auth-provider';
@@ -306,6 +306,21 @@ describe('AuthProvider', () => {
       expect(writeSnapshot).not.toHaveBeenCalled();
     });
 
+    it('판정이 끝나기 전에는 위젯을 로그아웃으로 덮어쓰지 않는다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockReturnValue(new Promise(() => undefined));
+
+      // When
+      await renderProvider();
+      await act(async () => {
+        await jest.runOnlyPendingTimersAsync();
+      });
+
+      // Then
+      await expectStatus('loading');
+      expect(writeSnapshot).not.toHaveBeenCalled();
+    });
+
     it('미인증으로 확정되면 위젯을 로그아웃 상태로 쓴다', async () => {
       // Given
       tokenStore.readRefreshToken.mockResolvedValue(null);
@@ -320,6 +335,109 @@ describe('AuthProvider', () => {
   });
 
   describe('잠금 해제 재판정', () => {
+    function captureAppStateListeners() {
+      const listeners: Array<Parameters<typeof AppState.addEventListener>[1]> = [];
+      jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
+        listeners.push(listener);
+        return { remove: jest.fn() };
+      });
+      return (appState: AppStateStatus) =>
+        act(async () => {
+          for (const listener of listeners) {
+            listener(appState);
+          }
+          await jest.advanceTimersByTimeAsync(0);
+        });
+    }
+
+    it.each([
+      ['토큰이 있으면', 'valid-refresh-token', 'authenticated'],
+      ['토큰이 없으면', null, 'unauthenticated'],
+    ])('포그라운드로 돌아와 %s 그 결과로 판정한다', async (_name, refreshToken, expected) => {
+      // Given
+      const changeAppState = captureAppStateListeners();
+      tokenStore.readRefreshToken
+        .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
+        .mockResolvedValueOnce(refreshToken);
+      await renderProvider();
+      await expectStatus('locked');
+
+      // When
+      await changeAppState('active');
+
+      // Then
+      await expectStatus(expected);
+      expect(tokenStore.clear).not.toHaveBeenCalled();
+    });
+
+    it('포그라운드가 아닌 상태 변화에서는 다시 읽지 않는다', async () => {
+      // Given
+      const changeAppState = captureAppStateListeners();
+      tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+      await renderProvider();
+      await expectStatus('locked');
+
+      // When
+      await changeAppState('background');
+      await changeAppState('inactive');
+
+      // Then
+      expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(1);
+      await expectStatus('locked');
+    });
+
+    it('돌아왔는데 아직 잠겨 있으면 locked로 남고 다음 복귀에 다시 판정한다', async () => {
+      // Given
+      const changeAppState = captureAppStateListeners();
+      tokenStore.readRefreshToken
+        .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
+        .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
+        .mockResolvedValueOnce('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('locked');
+
+      // When
+      await changeAppState('active');
+      await expectStatus('locked');
+      await changeAppState('active');
+
+      // Then
+      await expectStatus('authenticated');
+      expect(errorReporter.captureException).not.toHaveBeenCalled();
+    });
+
+    it('재판정이 영구 오류면 리포팅하고 미인증으로 내려가되 토큰은 지우지 않는다', async () => {
+      // Given
+      const changeAppState = captureAppStateListeners();
+      tokenStore.readRefreshToken
+        .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
+        .mockRejectedValueOnce(new Error('Could not decrypt the value'));
+      await renderProvider();
+      await expectStatus('locked');
+
+      // When
+      await changeAppState('active');
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
+      expect(tokenStore.clear).not.toHaveBeenCalled();
+    });
+
+    it('이미 판정이 끝난 뒤의 포그라운드 복귀는 토큰을 다시 읽지 않는다', async () => {
+      // Given
+      const changeAppState = captureAppStateListeners();
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+
+      // When
+      await changeAppState('active');
+
+      // Then
+      expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(1);
+    });
+
     it.each(['success', 'failure'] as const)(
       '로그아웃 후 늦게 끝난 %s 판정은 세션을 변경하거나 리포팅하지 않는다',
       async (outcome) => {

@@ -11,6 +11,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -27,6 +28,7 @@ import { ApiError } from '@src/shared/errors/api-error';
 import { err, ok } from '@src/shared/errors/result';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
+import { RETRY_MARKER_HEADER } from '@src/shared/infra/http/token-refresh-hook';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
@@ -65,6 +67,27 @@ beforeEach(() => {
 afterEach(() => {
   jest.clearAllTimers();
   jest.useRealTimers();
+});
+
+describe('부팅', () => {
+  it.each([
+    ['토큰이 있으면', ACCOUNT_A_TOKENS, 'authenticated'],
+    ['토큰이 없으면', undefined, 'unauthenticated'],
+  ] as const)('%s 네트워크 없이 판정하고 토큰을 그대로 둔다', async (_name, tokens, expected) => {
+    // Given
+    const session = createAuthSession({ tokens });
+
+    // When
+    await session.renderSession(() => useAuth().status, expected);
+
+    // Then
+    expect(session.publicHttp.post).not.toHaveBeenCalled();
+    expect(session.authHttp.post).not.toHaveBeenCalled();
+    expect(session.authHttp.delete).not.toHaveBeenCalled();
+    expect(session.requestRefresh).not.toHaveBeenCalled();
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBe(tokens?.refreshToken ?? null);
+    await expect(session.tokenStore.readAccessToken()).resolves.toBe(tokens?.accessToken ?? null);
+  });
 });
 
 describe('로그아웃', () => {
@@ -350,6 +373,42 @@ describe('탈퇴', () => {
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
     await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
     expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
+  });
+
+  it('성공하면 조회 캐시를 비우고 그 계정의 안내 기록만 지운다', async () => {
+    // Given
+    const removeAccount = jest.fn();
+    const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+    const session = createAuthSession({
+      tokens: ACCOUNT_A_TOKENS,
+      accountGuides: [{ removeAccount }],
+    });
+    session.userHttp.get.mockResolvedValue(ok(account));
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    const { result } = await session.renderSession(
+      () => ({
+        status: useAuth().status,
+        meOptions: useGetMeQueryOptions(),
+        deleteAccount: useMutation(useDeleteAccountMutationOptions()),
+      }),
+      'authenticated',
+    );
+    await act(async () => {
+      await session.queryClient.fetchQuery(result.current.meOptions);
+    });
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(removeAccount).toHaveBeenCalledTimes(1);
+    expect(removeAccount).toHaveBeenCalledWith(account.userId);
+    expect(session.queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeUndefined();
   });
 
   it('비밀번호가 틀려 실패하면 토큰과 상태를 유지한다', async () => {
@@ -767,6 +826,7 @@ describe('로그인 직전 정리', () => {
 });
 
 describe('토큰 만료', () => {
+  const ROTATED_TOKENS = { accessToken: 'access-a2', refreshToken: 'refresh-a2' };
   const originalFetch = global.fetch;
 
   afterEach(() => {
@@ -784,10 +844,11 @@ describe('토큰 만료', () => {
       sessionEpoch,
     });
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
-    return createAuthSession({
+    const session = createAuthSession({
       tokenStore,
       di: { userService: new UserService(new KyHttpClient(client)) },
     });
+    return { ...session, client };
   }
 
   const useStatusProbe = () => useAuth().status;
@@ -810,6 +871,143 @@ describe('토큰 만료', () => {
     await expect(session.tokenStore.readRefreshToken()).resolves.toBe(
       ACCOUNT_A_TOKENS.refreshToken,
     );
+  });
+
+  it('동시에 만료된 요청은 갱신 한 번으로 모두 재시도하고 로그인을 유지한다', async () => {
+    // Given
+    const requestRefresh = jest.fn(
+      async () =>
+        new Response(JSON.stringify({ data: ROTATED_TOKENS }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    const session = createSessionWithRealPipeline(requestRefresh);
+    global.fetch = jest.fn(async (input) =>
+      input instanceof Request && input.headers.get(RETRY_MARKER_HEADER) === '1'
+        ? new Response(JSON.stringify({ success: true, data: {}, timestamp: 0 }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        : new Response(null, { status: 401 }),
+    );
+    const http = new KyHttpClient(session.client);
+    const { result } = await session.renderSession(useStatusProbe, 'authenticated');
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+    requestRefresh.mockClear();
+
+    // When
+    const requests = Promise.all([
+      http.get('v1/todos'),
+      http.get('v1/friends'),
+      http.get('v1/memos'),
+    ]);
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+    const results = await requests;
+
+    // Then
+    expect(results.map(({ ok: isOk }) => isOk)).toEqual([true, true, true]);
+    expect(requestRefresh).toHaveBeenCalledTimes(1);
+    expect(result.current).toBe('authenticated');
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBe(ROTATED_TOKENS.refreshToken);
+  });
+
+  it('갱신이 401이면 세션을 끝내고 원인을 한 번만 알린다', async () => {
+    // Given
+    const session = createSessionWithRealPipeline(
+      async () =>
+        new Response(JSON.stringify({ error: { code: 'SESSION_0704' } }), { status: 401 }),
+    );
+
+    // When
+    await session.renderSession(useStatusProbe, 'unauthenticated');
+
+    // Then
+    expect(session.errorReporter.captureMessage).toHaveBeenCalledTimes(1);
+    expect(session.errorReporter.captureMessage).toHaveBeenCalledWith(
+      'session_expired',
+      expect.objectContaining({ errorCode: 'refresh-rejected' }),
+    );
+  });
+
+  it('로그아웃 요청이 세션 거부를 받아도 토큰을 지우고 미인증이 된다', async () => {
+    // Given
+    const sessionEpoch = createSessionEpoch();
+    const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
+    const sessionManager = createSessionManager(tokenStore);
+    const http = new KyHttpClient(
+      createAuthClient({
+        tokenStore,
+        refresh: createTokenRefresher({
+          tokenStore,
+          requestRefresh: async () => new Response(null, { status: 401 }),
+          sessionEpoch,
+        }),
+        endSession: (details) => sessionManager.end(details),
+        sessionEpoch,
+      }),
+    );
+    global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
+    const session = createAuthSession({
+      tokenStore,
+      di: { authService: new AuthService(createHttpClientStub(), http, tokenStore) },
+    });
+    const { result } = await session.renderSession(
+      () => ({ status: useAuth().status, logout: useMutation(useLogoutMutationOptions()) }),
+      'authenticated',
+    );
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+
+    // When
+    await act(async () => {
+      result.current.logout.mutate();
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
+  });
+
+  it('로그아웃 진행 중 세션 만료가 먼저 반영되면 지금은 초안을 남기고 로그아웃 이벤트도 없다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    const analytics = session.container.analytics;
+    const logoutRequest = createPendingResponse(ok({ message: '로그아웃되었습니다.' }));
+    session.authHttp.delete.mockResolvedValue(ok({}));
+    session.authHttp.post.mockReturnValue(logoutRequest.response);
+    const { result } = await session.renderSession(
+      () => ({ status: useAuth().status, logout: useMutation(useLogoutMutationOptions()) }),
+      'authenticated',
+    );
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+    await act(async () => {
+      result.current.logout.mutate();
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // When
+    await act(async () => {
+      emitSessionExpired({ reason: 'refresh-rejected' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    await act(async () => {
+      logoutRequest.settle();
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    expect(session.draftService.restore(memoDraftKey)).toEqual({
+      status: 'restored',
+      value: { content: '작성 중' },
+    });
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith('auth_logout', undefined);
+    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
   });
 
   it('갱신이 401이면 세션을 끝내고 초안은 남긴다', async () => {
