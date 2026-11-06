@@ -7,7 +7,7 @@ import { ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { match } from 'ts-pattern';
 
 export default function WhatsNewRoute() {
-  const [{ releaseId, source }] = useWhatsNewParams();
+  const { releaseId, source } = useWhatsNewParams();
   const isInviteAvailable = useInviteAvailability();
 
   return (

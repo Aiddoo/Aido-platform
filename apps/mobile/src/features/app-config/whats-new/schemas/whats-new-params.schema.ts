@@ -16,4 +16,3 @@ export const whatsNewParamsSchema = z.object({
   releaseId: releaseIdSchema.catch(() => WhatsNewPolicy.getLatestRelease(RELEASES).id),
   source: whatsNewSourceSchema.catch('mypage'),
 });
-export type WhatsNewParams = z.output<typeof whatsNewParamsSchema>;
