@@ -1,6 +1,6 @@
 import type { ErrorCodeType } from '@aido/api/errors';
 
-import type { BusinessError } from './result';
+import type { CodedError } from './result';
 
 /**
  * 서버 비즈니스 에러 (4xx)
@@ -8,7 +8,7 @@ import type { BusinessError } from './result';
  * - status: HTTP 상태 코드
  * - details: 서버가 제공하는 추가 정보
  */
-export class ApiError extends Error implements BusinessError {
+export class ApiError extends Error implements CodedError {
   override readonly name = 'ApiError';
 
   constructor(

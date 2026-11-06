@@ -1,4 +1,4 @@
-import type { BusinessError } from '@src/shared/errors';
+import type { CodedError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 
 export const TodoNudgeErrorCode = {
@@ -7,7 +7,7 @@ export const TodoNudgeErrorCode = {
 
 export type TodoNudgeErrorCode = (typeof TodoNudgeErrorCode)[keyof typeof TodoNudgeErrorCode];
 
-export class TodoNudgeError extends Error implements BusinessError {
+export class TodoNudgeError extends Error implements CodedError {
   override readonly name = 'TodoNudgeError';
 
   constructor(

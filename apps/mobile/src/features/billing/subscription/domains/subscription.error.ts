@@ -1,4 +1,4 @@
-import type { BusinessError } from '@src/shared/errors';
+import type { CodedError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 
 export const SubscriptionErrorCode = {
@@ -19,7 +19,7 @@ export const SubscriptionErrorCode = {
 export type SubscriptionErrorCode =
   (typeof SubscriptionErrorCode)[keyof typeof SubscriptionErrorCode];
 
-export class SubscriptionError extends Error implements BusinessError {
+export class SubscriptionError extends Error implements CodedError {
   override readonly name = 'SubscriptionError';
 
   constructor(

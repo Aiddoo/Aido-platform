@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { type BusinessError, isApiError } from '@src/shared/errors';
+import { type CodedError, isApiError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
@@ -9,7 +9,7 @@ export const InviteErrorCode = {
 
 export type InviteErrorCode = (typeof InviteErrorCode)[keyof typeof InviteErrorCode];
 
-export class InviteError extends Error implements BusinessError {
+export class InviteError extends Error implements CodedError {
   override readonly name = 'InviteError';
 
   constructor(

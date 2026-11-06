@@ -9,14 +9,13 @@ import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-i
 import { getCachedInviteAvailability } from '@src/features/social/invite/queries/invite-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
+import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { isFriendError } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
 import { patchSearchedUser } from './friend-cache';
 
@@ -86,11 +85,9 @@ export const useSendRequestByTagMutationOptions = () => {
         return;
       }
 
-      if (isApiError(err) || isFriendError(err)) {
-        toast.error(err.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('friend:toast.requestFailed') });
+      toast.error(isBusinessError(err) ? err : undefined, {
+        fallback: t('friend:toast.requestFailed'),
+      });
     },
   });
 };

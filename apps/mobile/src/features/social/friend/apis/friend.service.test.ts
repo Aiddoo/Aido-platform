@@ -1,4 +1,5 @@
 import { createMockHttpClient } from '@src/shared/__tests__';
+import { isBusinessError } from '@src/shared/errors/result';
 
 import {
   createAcceptFriendRequestDto,
@@ -11,7 +12,7 @@ import {
   createSentRequestsDto,
   INVALID_DTO,
 } from '../__tests__/friend.factories';
-import { isFriendError } from '../domains/friend.error';
+import { FRIEND_ERROR_CODE } from '../domains/friend.error';
 import { FriendService } from './friend.service';
 
 describe('FriendService', () => {
@@ -26,28 +27,26 @@ describe('FriendService', () => {
   // ── sendRequestByTag ─────────────────────────
 
   describe('sendRequestByTag', () => {
-    test('빈 문자열 → FriendError.EMPTY_TAG', async () => {
+    test('빈 문자열 → BusinessError EMPTY_TAG', async () => {
       // Given & When
       const result = await service.sendRequestByTag('  ');
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isFriendError(result.error)).toBe(true);
-        expect(result.error.code).toBe('FRIEND_EMPTY_TAG');
+        expect(isBusinessError(result.error, FRIEND_ERROR_CODE.EMPTY_TAG)).toBe(true);
       }
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
-    test('잘못된 형식 → FriendError.INVALID_TAG', async () => {
+    test('잘못된 형식 → BusinessError INVALID_TAG', async () => {
       // Given & When
       const result = await service.sendRequestByTag('abc');
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isFriendError(result.error)).toBe(true);
-        expect(result.error.code).toBe('FRIEND_INVALID_TAG');
+        expect(isBusinessError(result.error, FRIEND_ERROR_CODE.INVALID_TAG)).toBe(true);
       }
       expect(httpClient.post).not.toHaveBeenCalled();
     });
@@ -364,15 +363,14 @@ describe('FriendService', () => {
   // ── searchUsers ─────────────────────────
 
   describe('searchUsers', () => {
-    test('2자 미만 검색어 → FriendError, HTTP 미호출', async () => {
+    test('2자 미만 검색어 → BusinessError, HTTP 미호출', async () => {
       // Given & When
       const result = await service.searchUsers({ query: ' a ' });
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isFriendError(result.error)).toBe(true);
-        expect(result.error.code).toBe('FRIEND_SEARCH_QUERY_TOO_SHORT');
+        expect(isBusinessError(result.error, FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT)).toBe(true);
       }
       expect(httpClient.get).not.toHaveBeenCalled();
     });

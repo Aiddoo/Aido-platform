@@ -13,11 +13,12 @@ import {
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
+import { BusinessError } from '@src/shared/errors/business-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.types';
 
-import { type FriendError, FriendErrors } from '../domains/friend.error';
+import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';
 import {
   FriendPolicy,
   type FriendRequest,
@@ -38,7 +39,7 @@ export interface SearchUsersParams extends PaginationParams {
   query: string;
 }
 
-export type FriendServiceError = ApiError | FriendError;
+export type FriendServiceError = ApiError | BusinessError<FriendErrorCode>;
 
 export class FriendService {
   readonly #httpClient: HttpClient;
@@ -53,11 +54,11 @@ export class FriendService {
     const trimmed = userTag.trim();
 
     if (!trimmed) {
-      return err(FriendErrors.emptyTag());
+      return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
     }
 
     if (!FriendPolicy.isValidTag({ userTag: trimmed })) {
-      return err(FriendErrors.invalidTag());
+      return err(new BusinessError(FRIEND_ERROR_CODE.INVALID_TAG));
     }
 
     const result = await this.#httpClient.post(`v1/follows/${encodeURIComponent(trimmed)}`);
@@ -200,7 +201,7 @@ export class FriendService {
 
     // HTTP 호출 전 최소 길이 가드 (2자 미만이면 네트워크 요청 없이 실패)
     if (!FriendPolicy.isValidSearchQuery({ query: query })) {
-      return err(FriendErrors.searchQueryTooShort());
+      return err(new BusinessError(FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT));
     }
 
     const result = await this.#httpClient.get('v1/follows/search', {

@@ -7,13 +7,13 @@
  * 5xx/네트워크/타임아웃은 throw InfraError로 ErrorBoundary 처리
  */
 
-export interface BusinessError {
+export interface CodedError {
   readonly code: string;
   readonly message: string;
   readonly details?: Record<string, unknown>;
 }
 
-export type Result<T, E extends BusinessError = BusinessError> =
+export type Result<T, E extends CodedError = CodedError> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
@@ -21,15 +21,15 @@ export type Result<T, E extends BusinessError = BusinessError> =
 export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
 
 /** 실패 Result 생성 */
-export const err = <E extends BusinessError>(error: E): Result<never, E> => ({ ok: false, error });
+export const err = <E extends CodedError>(error: E): Result<never, E> => ({ ok: false, error });
 
 /** Result가 성공인지 확인 (타입 가드) */
-export const isOk = <T, E extends BusinessError>(
+export const isOk = <T, E extends CodedError>(
   result: Result<T, E>,
 ): result is { ok: true; value: T } => result.ok === true;
 
 /** Result가 실패인지 확인 (타입 가드) */
-export const isErr = <T, E extends BusinessError>(
+export const isErr = <T, E extends CodedError>(
   result: Result<T, E>,
 ): result is { ok: false; error: E } => result.ok === false;
 
@@ -38,7 +38,7 @@ export const isErr = <T, E extends BusinessError>(
  * - React Query mutationFn에서 사용
  * - 에러는 onError 콜백에서 처리
  */
-export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
+export const unwrap = <T, E extends CodedError>(result: Result<T, E>): T => {
   if (result.ok) {
     return result.value;
   }
@@ -46,8 +46,18 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 };
 
 /**
- * BusinessError 타입 가드
- * - code와 message를 가진 Error 객체인지 확인
+ * 코드를 가진 오류(서버 ApiError, 도메인 BusinessError)인지 확인한다.
+ * 코드를 함께 넘기면 그 코드인 오류만 걸러낸다.
  */
-export const isBusinessError = (error: unknown): error is BusinessError =>
-  error instanceof Error && 'code' in error && typeof error.code === 'string';
+export function isBusinessError(error: unknown): error is CodedError;
+export function isBusinessError<TCode extends string>(
+  error: unknown,
+  code: TCode,
+): error is CodedError & { readonly code: TCode };
+export function isBusinessError(error: unknown, code?: string): error is CodedError {
+  if (!(error instanceof Error) || !('code' in error) || typeof error.code !== 'string') {
+    return false;
+  }
+
+  return code == null || error.code === code;
+}

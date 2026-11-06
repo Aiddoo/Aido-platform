@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors';
-import type { BusinessError } from '@src/shared/errors/result';
+import type { CodedError } from '@src/shared/errors/result';
 import { match, P } from 'ts-pattern';
 
 export type TodoSeriesFailure =
@@ -18,7 +18,7 @@ export type TodoSeriesFailure =
  * 반복 생성 응답에 규칙이 없다. 옛 서버(롤백 중)는 repeat를 모르고 단일 할 일 하나만 만들고 201을 준다.
  * 성공으로 처리하면 사용자는 반복이 만들어진 줄 안다.
  */
-export class TodoSeriesNotCreatedError extends Error implements BusinessError {
+export class TodoSeriesNotCreatedError extends Error implements CodedError {
   override readonly name = 'TodoSeriesNotCreatedError';
   readonly code = 'TODO_SERIES_NOT_CREATED';
 

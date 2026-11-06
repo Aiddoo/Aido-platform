@@ -1,11 +1,6 @@
 {
   "screenTitle": "친구 관리",
   "fallbackName": "친구",
-  "errors": {
-    "invalidTag": "올바른 해시태그 형식이 아니에요",
-    "emptyTag": "해시태그를 입력해주세요",
-    "searchQueryTooShort": "두 글자 이상 입력해주세요"
-  },
   "toast": {
     "requestSent": "친구 요청을 보냈어요",
     "requestAccepted": "친구 요청을 수락했어요",

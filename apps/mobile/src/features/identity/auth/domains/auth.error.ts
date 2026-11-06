@@ -1,4 +1,4 @@
-import type { BusinessError } from '@src/shared/errors';
+import type { CodedError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 
 import type { OAuthProviderSlug } from './oauth.model';
@@ -24,7 +24,7 @@ export const AuthErrorCode = {
 
 export type AuthErrorCode = (typeof AuthErrorCode)[keyof typeof AuthErrorCode];
 
-export class AuthError extends Error implements BusinessError {
+export class AuthError extends Error implements CodedError {
   override readonly name = 'AuthError';
 
   constructor(

@@ -1,11 +1,6 @@
 {
   "screenTitle": "Friends",
   "fallbackName": "Friend",
-  "errors": {
-    "invalidTag": "Invalid hashtag format",
-    "emptyTag": "Please enter a hashtag",
-    "searchQueryTooShort": "Please enter at least 2 characters"
-  },
   "toast": {
     "requestSent": "Friend request sent",
     "requestAccepted": "Friend request accepted",
