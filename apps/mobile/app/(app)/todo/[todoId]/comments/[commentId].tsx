@@ -1,5 +1,4 @@
 import { todoCommentIdSchema } from '@aido/api';
-import { createTodoCommentHref } from '@src/features/engagement/comment/utils/navigation/todo-comment-route';
 import { todoScreenParamsSchema } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
@@ -15,5 +14,12 @@ export default function LegacyTodoCommentThreadRoute() {
     return <Redirect href="/feed" />;
   }
 
-  return <Redirect href={createTodoCommentHref(params.data)} />;
+  return (
+    <Redirect
+      href={{
+        pathname: '/todo/[todoId]',
+        params: { todoId: params.data.todoId, comment: params.data.commentId },
+      }}
+    />
+  );
 }

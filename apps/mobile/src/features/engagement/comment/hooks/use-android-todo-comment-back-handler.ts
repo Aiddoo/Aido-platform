@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { BackHandler } from 'react-native';
 
-import { resolveHardwareBackAction } from '../utils/navigation/todo-comment-back';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentBack } from './use-todo-comment-back';
 
 /** 화면에 focus가 있을 때만 Android 뒤로가기를 듣고, focus를 잃거나 사라지면 구독을 푼다 */
@@ -12,7 +12,7 @@ export function useAndroidTodoCommentBackHandler({ onExit }: { onExit?: () => vo
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        const action = resolveHardwareBackAction({
+        const action = TodoCommentPolicy.getHardwareBackAction({
           isHandledByComment: handleBack(),
           canExit: onExit != null,
         });

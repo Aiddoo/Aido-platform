@@ -33,8 +33,8 @@ import {
   TodoCommentComposer,
 } from '../../domains/todo-comment-composer.model';
 import { useAndroidTodoCommentBackHandler } from '../../hooks/use-android-todo-comment-back-handler';
+import { useCommentParams } from '../../hooks/use-comment-params';
 import { useTodoCommentBack } from '../../hooks/use-todo-comment-back';
-import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { getTodoCommentThreadsInfiniteQueryOptions } from '../../queries/get-todo-comment-threads-infinite-query-options';
 import { TodoCommentComposerBar } from '../todo-comment-composer/todo-comment-composer-bar';
 import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
@@ -121,7 +121,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const isTodoUnavailable =
     isApiError(todoDetailsError) && todoDetailsError.status === NOT_FOUND_STATUS;
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
-  const [{ sort, comment }] = useTodoCommentRoute();
+  const { sort, comment } = useCommentParams();
   const { result: backResult } = useTodoCommentBack();
   const isPane = presentation === 'pane';
   const closePane = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
@@ -195,7 +195,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 /** 할 일 본문과 정렬. 댓글과 함께 스크롤된다 */
 function TodoDetailHeader() {
   const { todoId } = useTodoScreenParams();
-  const [{ sort }, setCommentRoute] = useTodoCommentRoute();
+  const { sort, setCommentParams } = useCommentParams();
   const changeSort = useChangeSort();
 
   return (
@@ -219,7 +219,7 @@ function TodoDetailHeader() {
           value={sort}
           isPending={changeSort.isPending}
           onChange={(next) =>
-            changeSort.run(next, () => setCommentRoute({ sort: next, comment: null }))
+            changeSort.run(next, () => setCommentParams({ sort: next, comment: null }))
           }
         />
       </Box>

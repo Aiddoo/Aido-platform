@@ -165,11 +165,12 @@ features/engagement/comment/
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
   constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts
   queries/ get-todo-comment-{threads,replies}-infinite-query-options.ts  use-{create-…-chain,update,delete,set-…-like}-mutation-options.ts  todo-comment-cache.ts
-  hooks/ use-todo-comment-route.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-comment-double-tap.ts  use-is-todo-comment-submitting.ts  use-todo-comment-mutation-error-handler.ts
+  hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-comment-double-tap.ts  use-is-todo-comment-submitting.ts  use-todo-comment-mutation-error-handler.ts
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx  todo-detail-pane/todo-detail-pane.tsx
-  utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  comment-form-*.ts  navigation/{todo-comment-route,todo-comment-back}.ts
+  utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  comment-form-*.ts
+  schemas/ comment-params.schema.ts
 ```
 
 ## 검증

@@ -44,7 +44,7 @@ import {
   type TodoCommentThread,
   type TodoCommentThreadAnchor,
 } from '../domains/todo-comment.model';
-import { useTodoCommentRoute } from '../hooks/use-todo-comment-route';
+import { useCommentParams } from '../hooks/use-comment-params';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/get-todo-comment-threads-infinite-query-options';
 import { refreshTodoComments } from '../queries/todo-comment-cache';
 import { TodoCommentItem } from './todo-comment-item';
@@ -95,7 +95,7 @@ export function TodoCommentThreadList({
   ...flashListProps
 }: TodoCommentThreadListProps) {
   const { todoId } = useTodoScreenParams();
-  const [{ sort, comment }] = useTodoCommentRoute();
+  const { sort, comment } = useCommentParams();
   const queryClient = useQueryClient();
   const { listRef } = useTodoCommentReveal();
   const { t } = useTranslation('todoComment');
@@ -253,7 +253,7 @@ function useScrollToAnchor({
   anchor: TodoCommentThreadAnchor | null;
   isLoaded: boolean;
 }) {
-  const [{ comment }] = useTodoCommentRoute();
+  const { comment } = useCommentParams();
   const { listRef } = useTodoCommentReveal();
   const toast = useAppToast();
   const { t } = useTranslation('todoComment');

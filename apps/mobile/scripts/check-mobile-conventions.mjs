@@ -45,6 +45,7 @@ const TODO_COMMENT_TEST_ROOTS = [
   `${TODO_COMMENT_ROOT}/constants/`,
   `${TODO_COMMENT_ROOT}/domains/`,
   `${TODO_COMMENT_ROOT}/apis/`,
+  `${TODO_COMMENT_ROOT}/schemas/`,
   `${TODO_COMMENT_ROOT}/utils/navigation/`,
   `${TODO_COMMENT_ROOT}/utils/`,
   `${TODO_COMMENT_ROOT}/utils/view-models/`,

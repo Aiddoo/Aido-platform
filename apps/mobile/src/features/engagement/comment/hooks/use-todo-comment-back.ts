@@ -10,7 +10,7 @@ import {
   type TodoCommentComposerForm,
   TodoCommentComposer,
 } from '../domains/todo-comment-composer.model';
-import { getTodoCommentBackResult } from '../utils/navigation/todo-comment-back';
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useIsTodoCommentSubmitting } from './use-is-todo-comment-submitting';
 
 /** Header back과 Android back이 같은 순서로 동작한다. 작성기를 닫았으면 true를 돌려준다 */
@@ -19,7 +19,7 @@ export function useTodoCommentBack() {
   const { control, reset } = useFormContext<TodoCommentComposerForm>();
   const mode = useWatch({ control, name: 'mode' });
   const isSubmitting = useIsTodoCommentSubmitting();
-  const result = getTodoCommentBackResult({ mode, isSubmitting });
+  const result = TodoCommentPolicy.getBackAction({ mode, isSubmitting });
 
   const handleBack = useCallback(
     () =>

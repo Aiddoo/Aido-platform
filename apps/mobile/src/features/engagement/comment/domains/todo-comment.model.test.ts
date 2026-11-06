@@ -344,3 +344,41 @@ describe('TodoCommentPolicy', () => {
     });
   });
 });
+
+describe('TodoCommentPolicy.getBackAction', () => {
+  const target = createTodoComment();
+
+  it('답글·수정 중이면 화면보다 작성기를 먼저 닫는다', () => {
+    // When
+    const results = [
+      TodoCommentPolicy.getBackAction({ mode: { type: 'reply', target }, isSubmitting: false }),
+      TodoCommentPolicy.getBackAction({ mode: { type: 'edit', target }, isSubmitting: false }),
+      TodoCommentPolicy.getBackAction({ mode: { type: 'new' }, isSubmitting: false }),
+    ];
+
+    // Then
+    expect(results).toEqual(['closeComposer', 'closeComposer', 'native']);
+  });
+
+  it('보내는 중에는 초안을 지키려고 뒤로가기를 막는다', () => {
+    // When
+    const result = TodoCommentPolicy.getBackAction({ mode: { type: 'new' }, isSubmitting: true });
+
+    // Then
+    expect(result).toBe('blocked');
+  });
+});
+
+describe('TodoCommentPolicy.getHardwareBackAction', () => {
+  it('댓글이 처리하지 않은 뒤로가기는 pane이면 선택을 풀고 화면이면 기본 동작이다', () => {
+    // When
+    const actions = [
+      TodoCommentPolicy.getHardwareBackAction({ isHandledByComment: true, canExit: true }),
+      TodoCommentPolicy.getHardwareBackAction({ isHandledByComment: false, canExit: true }),
+      TodoCommentPolicy.getHardwareBackAction({ isHandledByComment: false, canExit: false }),
+    ];
+
+    // Then
+    expect(actions).toEqual(['consume', 'exit', 'native']);
+  });
+});
