@@ -56,6 +56,23 @@
       }
     },
     {
+      "files": ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+      "rules": {
+        "eslint/no-console": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/mobile/src/shared/infra/logger/**",
+        "apps/mobile/src/shared/infra/error-reporter/console-error-reporter.ts",
+        "apps/mobile/src/shared/infra/analytics/console-analytics.ts",
+        "apps/mobile/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    },
+    {
       "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
