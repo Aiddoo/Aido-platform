@@ -17,8 +17,8 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { useSuggestionScreenParams } from '../hooks/use-suggestion-screen-params';
-import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
-import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
+import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
+import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { findSheetSuggestion } from '../utils/view-models/suggestion-category.view-model';
 
 type SuggestionCategoryBottomSheetProps = Omit<

@@ -12,7 +12,7 @@ import type { ComponentProps } from 'react';
 import {
   isSuggestionsPremiumRequiredError,
   useGetSuggestionsQueryOptions,
-} from '../queries/get-suggestions-query-options';
+} from '../queries/suggestion.queries';
 
 /**
  * 피드 맨 아래의 있어도 되고 없어도 되는 칸이라 조회 오류를 던지지 않고 이 칸 안에서 다시 시도하게 한다.

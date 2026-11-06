@@ -31,11 +31,11 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
+import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import {
   isSuggestionsPremiumRequiredError,
   useGetSuggestionsQueryOptions,
-} from '../queries/get-suggestions-query-options';
-import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
+} from '../queries/suggestion.queries';
 
 const SUGGESTION_LOADING_COUNT = 2;
 
