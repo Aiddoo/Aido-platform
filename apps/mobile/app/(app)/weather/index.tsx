@@ -43,7 +43,7 @@ const SCREEN_GUTTER = 16;
 const HERO_GUTTER = 24;
 const HERO_TOP = 6;
 const CARDS_TOP = 32;
-const BLOCK_GAP = 12;
+const CARD_GAP = 12;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
 const COLUMN_MAX_WIDTH = 560;
 /** 헤더 아래로 페이드가 이어지는 길이 */
@@ -53,107 +53,19 @@ const IS_IOS = process.env.EXPO_OS === 'ios';
 /** iOS 26부터는 투명 헤더 아래 내용을 시스템 스크롤 엣지 효과가 흐리므로 직접 그린 페이드를 쓰지 않는다. */
 const HAS_NATIVE_EDGE_EFFECT = IS_IOS && Number.parseInt(String(Platform.Version), 10) >= 26;
 
+/**
+ * 위치를 확인하는 동안에도 서버에 저장된 위치로 리포트를 바로 받는다.
+ * 모든 카드가 한 요청을 공유하므로 오류는 경계 하나에서 한 번만 보이고, 로딩은 카드마다 따로 풀린다.
+ * 좁은 창은 한 단, 넓은 창(iPad·Duo 펼침)은 지금 날씨와 예보·상세를 두 단으로 나누고 각 단을 따로 스크롤한다.
+ */
 export default function WeatherScreen() {
   const location = useWeatherLocation();
   useWeatherScreenTracking(location.status);
-
-  return (
-    <>
-      <WeatherBackground />
-      {match(location)
-        .with({ status: 'needsPermission' }, { status: 'denied' }, () => (
-          <WeatherStatusView>
-            <WeatherLocationPrompt />
-          </WeatherStatusView>
-        ))
-        .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
-          <WeatherReportSections />
-        ))
-        .exhaustive()}
-      <DevOverrideBadge />
-    </>
-  );
-}
-
-/**
- * 위치를 확인하는 동안에도 서버에 저장된 위치로 리포트를 바로 받는다.
- * 모든 블록이 한 요청을 공유하므로 오류는 경계 하나에서 한 번만 보이고, 로딩은 블록마다 따로 풀린다.
- * 좁은 창은 한 단, 넓은 창(iPad·Duo 펼침)은 지금 날씨와 예보·상세를 두 단으로 나누고 각 단을 따로 스크롤한다.
- */
-function WeatherReportSections() {
   const locationRevision = useWeatherLocationRevision();
   const isCompact = useWindowSizeClass() === 'compact';
 
-  return (
-    <QueryErrorBoundary fallback={WeatherReportFallback} resetKeys={[locationRevision]}>
-      <AdaptivePane
-        primary={
-          <WeatherScrollView>
-            <WeatherColumn>
-              <WeatherNowBlocks />
-              {isCompact && (
-                <>
-                  <Spacing size={BLOCK_GAP} />
-                  <WeatherForecastBlocks />
-                </>
-              )}
-            </WeatherColumn>
-          </WeatherScrollView>
-        }
-        secondary={
-          <WeatherScrollView>
-            <WeatherColumn>
-              <WeatherForecastBlocks />
-            </WeatherColumn>
-          </WeatherScrollView>
-        }
-      />
-    </QueryErrorBoundary>
-  );
-}
-
-function WeatherColumn({ children }: PropsWithChildren) {
-  return (
-    <Box className="w-full self-center" style={{ maxWidth: COLUMN_MAX_WIDTH }}>
-      {children}
-    </Box>
-  );
-}
-
-function WeatherNowBlocks() {
-  return (
-    <>
-      <Box px={SCREEN_GUTTER}>
-        <WeatherLocationPrompt.SavedLocationNotice />
-      </Box>
-      <Box pt={HERO_TOP} px={HERO_GUTTER}>
-        <Suspense fallback={<WeatherHero.Loading />}>
-          <WeatherHero />
-        </Suspense>
-      </Box>
-      <VStack gap={BLOCK_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
-        <Suspense fallback={<WeatherAlerts.Loading />}>
-          <WeatherAlerts />
-        </Suspense>
-        <QueryErrorBoundary fallback={WeatherBriefing.Error}>
-          <Suspense fallback={<WeatherBriefing.Loading />}>
-            <WeatherBriefing />
-          </Suspense>
-        </QueryErrorBoundary>
-        <Suspense fallback={<NextHourPrecipitation.Loading />}>
-          <NextHourPrecipitation />
-        </Suspense>
-        <Suspense fallback={<HourlyForecast.Loading />}>
-          <HourlyForecast />
-        </Suspense>
-      </VStack>
-    </>
-  );
-}
-
-function WeatherForecastBlocks() {
-  return (
-    <VStack gap={BLOCK_GAP} px={SCREEN_GUTTER}>
+  const forecastCards = (
+    <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
       <Suspense fallback={<DailyForecast.Loading />}>
         <DailyForecast />
       </Suspense>
@@ -170,6 +82,75 @@ function WeatherForecastBlocks() {
         <WeatherAttribution background="dark" />
       </Suspense>
     </VStack>
+  );
+
+  return (
+    <>
+      <WeatherBackground />
+      {match(location)
+        .with({ status: 'needsPermission' }, { status: 'denied' }, () => (
+          <WeatherStatusView>
+            <WeatherLocationPrompt />
+          </WeatherStatusView>
+        ))
+        .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
+          <QueryErrorBoundary fallback={WeatherReportFallback} resetKeys={[locationRevision]}>
+            <AdaptivePane
+              primary={
+                <WeatherScrollView>
+                  <WeatherColumn>
+                    <Box px={SCREEN_GUTTER}>
+                      <WeatherLocationPrompt.SavedLocationNotice />
+                    </Box>
+                    <Box pt={HERO_TOP} px={HERO_GUTTER}>
+                      <Suspense fallback={<WeatherHero.Loading />}>
+                        <WeatherHero />
+                      </Suspense>
+                    </Box>
+                    <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
+                      <Suspense fallback={<WeatherAlerts.Loading />}>
+                        <WeatherAlerts />
+                      </Suspense>
+                      <QueryErrorBoundary fallback={WeatherBriefing.Error}>
+                        <Suspense fallback={<WeatherBriefing.Loading />}>
+                          <WeatherBriefing />
+                        </Suspense>
+                      </QueryErrorBoundary>
+                      <Suspense fallback={<NextHourPrecipitation.Loading />}>
+                        <NextHourPrecipitation />
+                      </Suspense>
+                      <Suspense fallback={<HourlyForecast.Loading />}>
+                        <HourlyForecast />
+                      </Suspense>
+                    </VStack>
+                    {isCompact && (
+                      <>
+                        <Spacing size={CARD_GAP} />
+                        {forecastCards}
+                      </>
+                    )}
+                  </WeatherColumn>
+                </WeatherScrollView>
+              }
+              secondary={
+                <WeatherScrollView>
+                  <WeatherColumn>{forecastCards}</WeatherColumn>
+                </WeatherScrollView>
+              }
+            />
+          </QueryErrorBoundary>
+        ))
+        .exhaustive()}
+      <DevOverrideBadge />
+    </>
+  );
+}
+
+function WeatherColumn({ children }: PropsWithChildren) {
+  return (
+    <Box className="w-full self-center" style={{ maxWidth: COLUMN_MAX_WIDTH }}>
+      {children}
+    </Box>
   );
 }
 
