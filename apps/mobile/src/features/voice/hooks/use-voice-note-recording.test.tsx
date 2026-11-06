@@ -690,4 +690,148 @@ describe('useVoiceNoteRecording', () => {
     );
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
+
+  test('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
+    // Given
+    const { speechRecognizer, storage } = await renderRecording();
+    await start(speechRecognizer);
+    await say(speechRecognizer, '실패 전에 한 말', false);
+
+    // When
+    await act(async () => speechRecognizer.emit({ type: 'error', code: 'audio-capture' }));
+
+    // Then
+    const draftId = screen.getByTestId('draft-id').props.children;
+    expect(screen.getByTestId('status')).toHaveTextContent('failed');
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text)).toEqual([
+      '실패 전에 한 말',
+    ]);
+  });
+
+  test('화면이 내려간 뒤에도 기다리던 초안 쓰기가 끝나 글자가 남는다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    const storage = createVoiceNoteStorageServiceFake();
+    const { unmount } = await renderUi(
+      <OverlayProvider>
+        <RecordingProbe
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={jest.fn()}
+          onEmpty={jest.fn()}
+        />
+      </OverlayProvider>,
+      {
+        di: {
+          speechRecognizer,
+          voiceNoteStorageService: storage,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          haptics: createHapticsStub(),
+          logger,
+        },
+      },
+    );
+    await start(speechRecognizer);
+    await say(speechRecognizer, '앱을 떠나기 전 말.');
+    const draftId = screen.getByTestId('draft-id').props.children;
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)).toBeUndefined();
+
+    // When
+    await act(async () => unmount());
+    await act(async () => jest.advanceTimersByTime(2_000));
+
+    // Then
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
+  });
+
+  test('앱을 다시 열어 저장된 초안으로 들어오면 글자를 보여 주고 시간 뒤로 이어 쓴다', async () => {
+    // Given 앞 세션이 저장한 초안이 기기에 있다
+    const speechRecognizer = createSpeechRecognizerStub();
+    const storage = createVoiceNoteStorageServiceFake();
+    storage.drafts.save(
+      ACCOUNT_ID,
+      createVoiceNoteFixture({
+        draftId: 'restored-1',
+        durationMs: 40_000,
+        recordings: [],
+        sentences: [createVoiceNoteSentence({ text: '복원된 말.', startMs: 0, endMs: 40_000 })],
+      }),
+    );
+
+    // When
+    await renderUi(
+      <OverlayProvider>
+        <RecordingProbe
+          seedDraftId="restored-1"
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={jest.fn()}
+          onEmpty={jest.fn()}
+        />
+      </OverlayProvider>,
+      {
+        di: {
+          speechRecognizer,
+          voiceNoteStorageService: storage,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          haptics: createHapticsStub(),
+          logger,
+        },
+      },
+    );
+
+    // Then
+    expect(screen.getByTestId('captions')).toHaveTextContent('복원된 말.');
+
+    // When
+    await start(speechRecognizer);
+    await say(speechRecognizer, '이어 한 말.');
+    await act(async () => jest.advanceTimersByTime(2_000));
+
+    // Then
+    const saved = storage.drafts.find(ACCOUNT_ID, 'restored-1');
+    expect(saved?.sentences.map(({ text }) => text)).toEqual(['복원된 말.', '이어 한 말.']);
+    expect(saved?.sentences[1]?.startMs).toBeGreaterThanOrEqual(40_000);
+  });
+
+  test('저장 공간이 모자라 파일을 옮기지 못해도 글자는 넘기고 조각만 빠진다', async () => {
+    // Given
+    const files = createLocalFileSystemFake();
+    const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+    const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
+    await start(speechRecognizer);
+    await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
+    await say(speechRecognizer, '첫 문장.');
+    files.failNextMove(new Error('no space left'));
+
+    // When
+    await fireEvent.press(screen.getByTestId('finish'));
+    await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // Then
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
+    const draftId = screen.getByTestId('draft-id').props.children;
+    const saved = storage.drafts.find(ACCOUNT_ID, draftId);
+    expect(saved?.sentences).toHaveLength(1);
+    expect(saved?.recordings).toEqual([]);
+  });
+
+  test('녹음 폴더를 만들지 못하면 파일 없이 글자만 받으며 듣는다', async () => {
+    // Given
+    const files = createLocalFileSystemFake();
+    const { speechRecognizer } = await renderRecording({ files });
+    files.failNextEnsureDirectory(new Error('no space left'));
+
+    // When
+    await start(speechRecognizer);
+
+    // Then
+    expect(speechRecognizer.start).toHaveBeenCalledWith(
+      expect.objectContaining({ recordingDirectory: null }),
+    );
+    expect(screen.getByTestId('status')).toHaveTextContent('listening');
+  });
 });
