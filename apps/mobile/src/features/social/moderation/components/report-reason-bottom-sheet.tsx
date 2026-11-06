@@ -14,7 +14,6 @@ import {
   VStack,
   useSheetRoute,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -22,6 +21,7 @@ import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import {
   type Control,
+  Controller,
   FormProvider,
   useForm,
   useFormContext,
@@ -68,7 +68,7 @@ export function ReportReasonBottomSheet({
   const { success } = useAppToast();
   const sheet = useSheetRoute('/feed');
   const reportContent = useMutation(useReportContentMutationOptions());
-  const formMethods = useForm({
+  const form = useForm({
     resolver: zodResolver(userReportFormSchema),
     defaultValues: { detail: '' },
     mode: 'onChange',
@@ -104,13 +104,10 @@ export function ReportReasonBottomSheet({
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
       footer={
-        <SubmitButton
-          control={formMethods.control}
-          onPress={() => formMethods.handleSubmit(handleReport)()}
-        />
+        <SubmitButton control={form.control} onPress={() => form.handleSubmit(handleReport)()} />
       }
     >
-      <FormProvider {...formMethods}>
+      <FormProvider {...form}>
         <VStack gap={16} pb={16} testID="report-reason-sheet">
           <VStack gap={2}>
             <Text size="b3" shade={7}>
@@ -140,8 +137,10 @@ function ReasonField() {
   const { control } = useFormContext<UserReportFormInput>();
 
   return (
-    <FormField control={control} name="reason">
-      {({ onChange, value }) => (
+    <Controller
+      control={control}
+      name="reason"
+      render={({ field: { onChange, value } }) => (
         <RadioGroup value={value} onValueChange={onChange} className="gap-0 overflow-hidden">
           <IconRadioItem value="SPAM" label={t('report.reason.SPAM')} testID="report-reason-SPAM" />
           <IconRadioItem
@@ -166,7 +165,7 @@ function ReasonField() {
           />
         </RadioGroup>
       )}
-    </FormField>
+    />
   );
 }
 
@@ -175,8 +174,10 @@ function DetailField() {
   const { control } = useFormContext<UserReportFormInput>();
 
   return (
-    <FormField control={control} name="detail">
-      {({ onChange, value }, { error }) => (
+    <Controller
+      control={control}
+      name="detail"
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
         <BottomSheetTextArea
           label={t('report.detailLabel')}
           placeholder={t('report.detailPlaceholder')}
@@ -189,7 +190,7 @@ function DetailField() {
           testID="report-detail-input"
         />
       )}
-    </FormField>
+    />
   );
 }
 
