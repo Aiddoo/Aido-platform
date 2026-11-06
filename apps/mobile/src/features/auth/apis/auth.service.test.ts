@@ -14,20 +14,6 @@ import {
   createUpdateMarketingConsentDto,
   INVALID_DTO,
 } from '../__tests__/auth.factories';
-
-jest.mock('@src/shared/config/env', () => ({
-  ENV: {
-    APP_ENV: 'development',
-    IS_DEV: true,
-    IS_PRODUCTION: false,
-    API_URL: 'http://localhost:3000',
-    SCHEME: 'aido',
-    PLATFORM: 'ios',
-    IS_IOS: true,
-    IS_ANDROID: false,
-  },
-}));
-
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {

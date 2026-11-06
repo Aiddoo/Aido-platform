@@ -64,6 +64,7 @@ jest.mock('react-native-keyboard-controller', () =>
 jest.mock('react-native-reserved-regions', () =>
   require('./src/shared/__tests__/mocks/react-native-reserved-regions'),
 );
+jest.mock('expo-router', () => require('./src/shared/__tests__/mocks/expo-router'));
 jest.mock(
   'react-native-safe-area-context',
   () => require('react-native-safe-area-context/jest/mock').default,
@@ -90,4 +91,9 @@ const { clearTestQueryClients } = require('./src/shared/__tests__/query-client')
 afterEach(async () => {
   await cleanup();
   clearTestQueryClients();
+});
+
+const { resetExpoRouterMock } = require('./src/shared/__tests__/mocks/expo-router');
+beforeEach(() => {
+  resetExpoRouterMock();
 });

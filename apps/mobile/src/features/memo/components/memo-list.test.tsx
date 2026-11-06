@@ -1,21 +1,11 @@
 import '@src/shared/i18n/init';
-import { AuthService } from '@src/features/auth/apis/auth.service';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { MemoService } from '@src/features/memo/apis/memo.service';
 import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import { UserService } from '@src/features/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { createVoiceNoteFixture } from '@src/features/voice/__tests__/voice-note.factories';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
-  createErrorReporterStub,
-  createHapticsStub,
   createMemorySyncStorage,
-  createMockAnalytics,
   createMockHttpClient,
-  createMockTokenStore,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -26,10 +16,10 @@ import { OverlayProvider } from '@src/shared/ui';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
+import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { MemoList } from './memo-list';
 
 const ACCOUNT_ID = 'account-1';
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 const EMPTY_TITLE = '아직 메모가 없어요';
 
 async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
@@ -59,20 +49,10 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
     {
       queryClient,
       di: {
-        analytics: createMockAnalytics(),
-        errorReporter: createErrorReporterStub(),
-        logger,
-        memoService: new MemoService(httpClient),
-        userService: new UserService(httpClient),
-        entitlementService: new EntitlementService(httpClient, logger),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
-        coachmarkService: new CoachmarkService(
-          createCoachmarkRepository(createMemorySyncStorage()),
-        ),
+        ...createMemoTestDi(httpClient),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
-        haptics: createHapticsStub(),
         voiceNoteStorageService,
       },
     },

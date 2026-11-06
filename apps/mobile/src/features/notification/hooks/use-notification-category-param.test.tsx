@@ -3,6 +3,9 @@ import { Pressable, Text } from 'react-native';
 
 import { useNotificationCategoryParam } from './use-notification-category-param';
 
+// renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
+jest.unmock('expo-router');
+
 function CategoryProbe() {
   const [category, setCategory] = useNotificationCategoryParam();
   return (

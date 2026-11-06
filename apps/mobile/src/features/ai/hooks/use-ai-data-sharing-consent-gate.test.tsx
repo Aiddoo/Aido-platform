@@ -33,10 +33,6 @@ import {
   useAiDataSharingConsentGate,
 } from './use-ai-data-sharing-consent-gate';
 
-jest.mock('@src/shared/config/env', () => ({
-  ENV: { API_URL: 'http://test', SOCIAL_AUTH_REDIRECT_URL: 'http://test' },
-}));
-
 const RENEWAL_NOTICE = '지금 답하지 않아도 전처럼 쓸 수 있어요.';
 
 function ConsentGateProbe() {

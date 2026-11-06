@@ -1,21 +1,8 @@
 import '@src/shared/i18n/init';
 import { AiService } from '@src/features/ai/apis/ai.service';
-import { AuthService } from '@src/features/auth/apis/auth.service';
-import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
-import { UserService } from '@src/features/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import {
-  createErrorReporterStub,
-  createHapticsStub,
-  createIdGeneratorStub,
-  createMemorySyncStorage,
-  createMockAnalytics,
-  createMockHttpClient,
-  createMockTokenStore,
-} from '@src/shared/__tests__';
+import { createMemorySyncStorage, createMockHttpClient } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -30,7 +17,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 
 import { createMemo } from '../__tests__/memo.fixtures';
-import { MemoService } from '../apis/memo.service';
+import { createMemoTestDi } from '../__tests__/memo.test-utils';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import { MemoEditor } from './memo-editor';
 
@@ -78,21 +65,10 @@ async function renderEditor(toolbar: 'stack' | 'pane') {
     {
       queryClient,
       di: {
-        memoService: new MemoService(httpClient),
-        entitlementService: new EntitlementService(httpClient, logger),
-        userService: new UserService(httpClient),
-        coachmarkService: new CoachmarkService(
-          createCoachmarkRepository(createMemorySyncStorage()),
-        ),
+        ...createMemoTestDi(httpClient),
         todoCategoryService: new TodoCategoryService(httpClient),
         aiService: new AiService(httpClient, logger),
-        idGenerator: createIdGeneratorStub(),
         draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
-        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
-        analytics: createMockAnalytics(),
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsStub(),
-        logger,
       },
     },
   );

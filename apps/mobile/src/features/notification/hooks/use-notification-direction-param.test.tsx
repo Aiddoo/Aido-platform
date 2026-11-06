@@ -3,6 +3,9 @@ import { Pressable, Text } from 'react-native';
 
 import { useNotificationDirectionParam } from './use-notification-direction-param';
 
+// renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
+jest.unmock('expo-router');
+
 function DirectionProbe() {
   const [direction, setDirection] = useNotificationDirectionParam();
   return (

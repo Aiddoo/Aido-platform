@@ -12,6 +12,9 @@ import { Linking, Pressable, Text, View } from 'react-native';
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
 
+// renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
+jest.unmock('expo-router');
+
 jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() }));
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));

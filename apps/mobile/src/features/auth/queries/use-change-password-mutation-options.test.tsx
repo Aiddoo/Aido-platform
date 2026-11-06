@@ -21,18 +21,6 @@ jest.mock('@src/shared/hooks/use-app-toast', () => ({
   useAppToast: () => ({ success: jest.fn(), error: mockToastError }),
 }));
 jest.mock('expo-router', () => ({ router: { back: jest.fn() } }));
-jest.mock('@src/shared/config/env', () => ({
-  ENV: {
-    APP_ENV: 'development',
-    IS_DEV: true,
-    IS_PRODUCTION: false,
-    API_URL: 'http://localhost:3000',
-    SCHEME: 'aido',
-    PLATFORM: 'ios',
-    IS_IOS: true,
-    IS_ANDROID: false,
-  },
-}));
 
 const input = {
   currentPassword: 'current-pass1!',

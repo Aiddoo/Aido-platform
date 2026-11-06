@@ -10,6 +10,9 @@ import { createPushNotificationGatewayStub } from '../__tests__/notification.fac
 import type { NotificationAuthStatus } from '../utils/navigation/notification-response-disposition';
 import { useNotificationResponseProcessor } from './use-notification-response-processor';
 
+// renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
+jest.unmock('expo-router');
+
 const logger: Logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 const createResponse = (
