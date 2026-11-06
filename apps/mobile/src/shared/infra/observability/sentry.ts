@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/react-native';
 import { ENV } from '@src/shared/config/env';
 import type { ComponentType } from 'react';
 
+import { scrubBreadcrumb, scrubSentryEvent } from './scrub-sentry-event';
+
 /**
  * Sentry 초기화(앱 루트에서 1회).
  *
@@ -19,6 +21,10 @@ export const initSentry = (): void => {
 
     // IP/쿠키 등 기본 PII 전송 비활성. 사용자 식별은 ErrorReporter.setUserId로 명시 연결.
     sendDefaultPii: false,
+
+    // 메모 본문·음성 글자·토큰·이메일이 어디로 들어와도 나가기 직전에 한 번 더 지운다.
+    beforeSend: scrubSentryEvent,
+    beforeBreadcrumb: scrubBreadcrumb,
 
     // Session Replay (에러 발생 세션 위주로 수집)
     replaysSessionSampleRate: 0.1,

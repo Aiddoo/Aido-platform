@@ -1,6 +1,6 @@
 import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
-import { getErrorMessage, toError } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useNavigationContainerRef, usePathname } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -134,7 +134,7 @@ export function useNotificationResponseProcessor({
         gateway.clearLastResponse();
       } catch (error) {
         logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, {
-          error: toError(error),
+          error: getErrorMessage(error),
         });
       } finally {
         processingResponseIds.current.delete(responseId);
@@ -151,7 +151,9 @@ export function useNotificationResponseProcessor({
       }
       const parsed = toPushNotificationPayload(response.data);
       if (!parsed.success) {
-        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, { error: parsed.error });
+        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, {
+          error: getErrorMessage(parsed.error),
+        });
         return;
       }
       const pending = pendingResponses.current.get(responseId) ?? {
