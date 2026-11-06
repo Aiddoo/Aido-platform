@@ -1,6 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { useAppVersionService } from '@src/bootstrap/providers/di-context';
-import { inquiryHref } from '@src/features/support/inquiry/utils/inquiry-href';
 import { t } from '@src/shared/i18n';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
@@ -22,7 +21,10 @@ export function useOpenSubscriptionInquiry() {
         diagnosticCode,
         installation: appVersionService.getInstallation(),
       });
-      router.push(inquiryHref({ category: INQUIRY_CATEGORY.PAYMENT, content }));
+      router.push({
+        pathname: '/settings/inquiry',
+        params: { category: INQUIRY_CATEGORY.PAYMENT, content },
+      });
     },
     [appVersionService],
   );
