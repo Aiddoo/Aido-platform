@@ -1,6 +1,5 @@
 import {
   useErrorReporter,
-  useHaptics,
   useIdGenerator,
   useOfflineModelPromptRepository,
   useSpeechRecognizer,
@@ -17,13 +16,10 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { VoiceRecordingIntake } from '../apis/voice-recording-intake';
-import {
-  type VoiceNoteCaptions,
-  VoiceNoteCaptionPolicy,
-} from '../domains/voice-note-caption.model';
 import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
+import { useVoiceNoteCaptions } from './use-voice-note-captions';
 
 interface UseVoiceNoteRecordingOptions {
   accountId: string;
@@ -49,13 +45,7 @@ export function useVoiceNoteRecording({
 }: UseVoiceNoteRecordingOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const storage = useVoiceNoteStorageService();
-  const offlineModelPrompt = useOfflineModelPromptRepository();
-  const toast = useAppToast();
-  const confirmDialog = useConfirmDialog();
-  const errorReporter = useErrorReporter();
-  const haptics = useHaptics();
   const idGenerator = useIdGenerator();
-  const { trackEvent } = useTrack();
 
   const [seedNote] = useState(() =>
     seedDraftId == null ? undefined : storage.drafts.find(accountId, seedDraftId),
@@ -69,12 +59,6 @@ export function useVoiceNoteRecording({
         createdAt: new Date(),
       }),
   );
-  const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
-    seedNote == null
-      ? VoiceNoteCaptionPolicy.createVoiceNoteCaptions()
-      : VoiceNoteCaptionPolicy.createCaptionsFromNote(seedNote),
-  );
-  const captionsRef = useRef(captions);
   const [intake] = useState(
     () =>
       new VoiceRecordingIntake({
@@ -108,14 +92,16 @@ export function useVoiceNoteRecording({
     onCaptured,
   });
 
+  const captions = useVoiceNoteCaptions({
+    seedNote,
+    getElapsedMs: session.getElapsedMs,
+    onChange: () => persist('later'),
+  });
+
   const toNote = (): VoiceNote => {
     const nowMs = session.getElapsedMs();
     return VoiceNotePolicy.withRecordings(
-      VoiceNotePolicy.withSentences(
-        baseNote,
-        VoiceNoteCaptionPolicy.getCaptionSentences(captionsRef.current, nowMs),
-        nowMs,
-      ),
+      VoiceNotePolicy.withSentences(baseNote, captions.getSentencesAt(nowMs), nowMs),
       intake.getRecordings(),
     );
   };
@@ -135,15 +121,6 @@ export function useVoiceNoteRecording({
     }
   }
 
-  const updateCaptions = (next: VoiceNoteCaptions) => {
-    if (next === captionsRef.current) {
-      return;
-    }
-    captionsRef.current = next;
-    setCaptions(next);
-    persist('later');
-  };
-
   useSpeechEvent((event) => {
     match(event)
       .with({ type: 'start' }, () => {
@@ -153,17 +130,10 @@ export function useVoiceNoteRecording({
         intake.segmentStarted(uri, session.getElapsedMs());
       })
       .with({ type: 'result' }, (result) => {
-        updateCaptions(
-          VoiceNoteCaptionPolicy.applyCaptionResult(captionsRef.current, result, {
-            nowMs: session.getElapsedMs(),
-            segmentStartMs: currentSegmentStartRef.current,
-          }),
-        );
+        captions.applyResult(result, currentSegmentStartRef.current);
       })
       .with({ type: 'end' }, () => {
-        updateCaptions(
-          VoiceNoteCaptionPolicy.commitProvisional(captionsRef.current, session.getElapsedMs()),
-        );
+        captions.commitProvisional();
       })
       .with({ type: 'recording-saved' }, ({ uri }) => {
         intake.receive(uri, currentSegmentStartRef.current);
@@ -205,16 +175,66 @@ export function useVoiceNoteRecording({
   /** 확인을 기다리는 사이 화면이 내려갔거나 초안을 지웠다. 묻지도 듣지도 않는다 */
   const isStartAbandoned = () => isUnmountedRef.current || intake.isDiscarded();
 
-  /**
-   * Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
-   * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
-   */
-  const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
+  const offerOnDeviceModel = useOfflineModelOffer(accountId, isStartAbandoned);
+
+  const start = async ({
+    startLocale,
+    contextualStrings,
+  }: {
+    startLocale: SpeechLocale;
+    contextualStrings: readonly string[];
+  }) => {
+    await offerOnDeviceModel(startLocale);
+    if (isStartAbandoned()) {
+      return;
+    }
+    const hasBegun = await session.begin({
+      locale: startLocale,
+      contextualStrings,
+      recordingDirectory: storage.recordings.prepareDirectory(accountId),
+      seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
+    });
+    hasBegunRef.current = hasBegun;
+  };
+
+  const discard = () => {
+    hasBegunRef.current = false;
+    session.cancel();
+    intake.discard();
+  };
+
+  return {
+    ...session,
+    draftId: baseNote.draftId,
+    sentences: captions.sentences,
+    interimText: captions.interimText,
+    hasText: captions.hasText,
+    bookmarksMs: captions.bookmarksMs,
+    markCount: captions.markCount,
+    start,
+    mark: captions.mark,
+    discard,
+  };
+}
+
+/**
+ * Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
+ * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
+ */
+function useOfflineModelOffer(accountId: string, isAbandoned: () => boolean) {
+  const speechRecognizer = useSpeechRecognizer();
+  const offlineModelPrompt = useOfflineModelPromptRepository();
+  const toast = useAppToast();
+  const confirmDialog = useConfirmDialog();
+  const errorReporter = useErrorReporter();
+  const { trackEvent } = useTrack();
+
+  return async (startLocale: SpeechLocale) => {
     const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(
       startLocale,
       'note',
     );
-    if (isStartAbandoned()) {
+    if (isAbandoned()) {
       return;
     }
     if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
@@ -244,56 +264,5 @@ export function useVoiceNoteRecording({
     if (result === 'scheduled') {
       toast.toast(t('voiceNote:offlineModel.scheduled'));
     }
-  };
-
-  const start = async ({
-    startLocale,
-    contextualStrings,
-  }: {
-    startLocale: SpeechLocale;
-    contextualStrings: readonly string[];
-  }) => {
-    await offerOnDeviceModel(startLocale);
-    if (isStartAbandoned()) {
-      return;
-    }
-    const hasBegun = await session.begin({
-      locale: startLocale,
-      contextualStrings,
-      recordingDirectory: storage.recordings.prepareDirectory(accountId),
-      seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
-    });
-    hasBegunRef.current = hasBegun;
-  };
-
-  const mark = () => {
-    haptics.selection();
-    updateCaptions(
-      VoiceNoteCaptionPolicy.withBookmark(captionsRef.current, session.getElapsedMs()),
-    );
-  };
-
-  const discard = () => {
-    hasBegunRef.current = false;
-    session.cancel();
-    intake.discard();
-  };
-
-  return {
-    ...session,
-    draftId: baseNote.draftId,
-    /** 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 `interimText`로 따로 그린다 */
-    sentences: VoiceNoteCaptionPolicy.getCaptionSentences(
-      { ...captions, provisional: captions.provisional.slice(0, -1) },
-      0,
-    ),
-    interimText: VoiceNoteCaptionPolicy.getCaptionInterimText(captions),
-    /** 이어 받은 글자까지 포함해 들은 글자가 있다. 있으면 묻지 않고 지우면 안 된다 */
-    hasText: VoiceNoteCaptionPolicy.hasCaptionText(captions),
-    bookmarksMs: captions.bookmarksMs,
-    markCount: VoiceNoteCaptionPolicy.getMarkedSentenceCount(captions),
-    start,
-    mark,
-    discard,
   };
 }
