@@ -13,6 +13,7 @@
 | 표시 언어   | `ko` / `en`                                                        | `Accept-Language`, 앱 언어 설정                  |
 
 - **할 일 시간은 떠 있는 시각이다.** 진실은 달력 날짜 + 벽시계이고 어디서든 그 시각이다. `Todo.scheduledTime`(순간)은 `날짜 + 벽시계 + 사용자 현재 시간대`로 만든 파생값으로 알림과 출시 앱 호환에 쓴다([5절](#5-떠-있는-시각)).
+- **모바일 앱 모델의 순간은 `Instant`다.** `shared/date/instant.ts`의 ISO 8601 문자열 brand(`instantSchema`는 Zod `.brand()`, 오프셋 표기도 받는다)로 서버 값을 `toInstant`로 한 번 검증해 `Date` 변환 없이 둔다. `Date`는 구조 공유가 안 돼 재조회마다 모든 항목이 다시 그려지지만 문자열은 같은 값이면 같은 참조다(메모 18개 재조회: 참조 유지 0개 → 18개). 읽기·비교는 `toDateKey(instant, timeZone)`, `toHHmm(instant, timeZone)`, `formatDateLabel(instant, …)`, `toEpochMs`, `isBefore`, `diffMs`를 쓴다. 문자열 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다. `Date`는 네이티브 피커 같은 경계 컴포넌트 안에서만 만든다. 초안 `sourceUpdatedAt`처럼 숫자로 저장된 값은 `toEpochMs(instant)`로 `Date#getTime()`과 같은 값을 만든다. 영속 캐시의 옛 `$date` 태그는 읽을 때 계속 `Date`로 되살린다. 모든 feature를 옮긴 뒤 `$date` 직렬화를 지우고 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
 - 달력 날짜를 process 시간대의 `Date`로 바꾼 뒤 요일·자정을 계산하지 않는다. 날짜 산술은 `YYYY-MM-DD` key로 한다.
 - 서버 process(Docker `ENV TZ=UTC`·CI `TZ: UTC`)와 PostgreSQL 세션(`TimeZone=UTC`)은 UTC로 고정한다. 그래도 코드는 process 시간대에 의존하지 않는다. 사용자 시간대가 필요하면 `dayjs.tz(…, timezone)`, 시간대가 없는 달력 계산은 `dayjs.utc(…)`를 쓴다.
 - dayjs plugin은 `apps/api/src/shared/domain/date/dayjs.setup.ts` 한 곳에서만 등록한다.

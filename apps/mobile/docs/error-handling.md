@@ -11,7 +11,7 @@
 | 트랙    | 에러 타입                        | 전달 방식                    | 처리 위치                                             |
 | ------- | -------------------------------- | ---------------------------- | ----------------------------------------------------- |
 | Track 1 | `ApiError` (4xx)                 | `err()` → `unwrap()` → throw | mutation `onError`, 조회는 경계(404는 안내 화면)      |
-| Track 2 | `{Feature}Error` (Policy·SDK)    | `err()` → `unwrap()` → throw | mutation `onError`                                    |
+| Track 2 | `BusinessError` (Policy·SDK)     | `err()` → `unwrap()` → throw | mutation `onError`                                    |
 | Track 3 | `InfraError` (5xx·네트워크·파싱) | 직접 `throw`                 | 조회는 `<QueryErrorBoundary>`, mutation은 기본 토스트 |
 
 - 예상한 에러는 구체적으로 안내한다(코드별 분기·토스트·다이얼로그).
@@ -22,7 +22,7 @@
 ## Result
 
 ```typescript
-export type Result<T, E extends BusinessError = BusinessError> =
+export type Result<T, E extends CodedError = CodedError> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 ```
@@ -52,7 +52,7 @@ Service는 `Result`를 돌려주고, `queryFn`·`mutationFn`은 `unwrap()`한다
 
 ```typescript
 // shared/errors/api-error.ts
-class ApiError extends Error implements BusinessError {
+class ApiError extends Error implements CodedError {
   constructor(
     public readonly code: string,
     message: string, // resolveMessage가 고른 사용자 문구
@@ -74,51 +74,62 @@ onError: (error) => {
     router.push({ pathname: './verify-email', params: { email } });
     return;
   }
-  if (isApiError(error) || is{Feature}Error(error)) {
-    toast.error(error.message);
-    return;
-  }
-  // InfraError의 message가 개발용일 수 있어 기본 문구를 쓴다. 다시 던지지 않는다
-  toast.error(undefined, { fallback: t('common:toast.defaultError') });
+  // 사용자 문구가 있는 오류만 그대로 보이고 나머지는 폴백이다. 다시 던지지 않는다
+  showFailure(error);
 },
 ```
 
 `toast.error(error, { fallback })`는 사용자 문구면 그 메시지를, 아니면 fallback을 보여 준다.
 
-## Track 2: 기능 오류 ({Feature}Error)
+## Track 2: 기능 오류 (BusinessError)
 
 서버에 보내기 전에 Policy가 거부하거나(자기 자신에게 친구 요청, 한도 초과), 외부 SDK 오류를 도메인 언어로 바꿀 때 쓴다. 폼 형식 검증은 Zod + react-hook-form이 맡는다. `ApiError`와 별개다.
 
-```typescript
-// features/social/friend/domains/friend.error.ts
-export const FriendErrorCode = {
-  INVALID_TAG: 'FRIEND_INVALID_TAG',
-} as const;
-export type FriendErrorCode = (typeof FriendErrorCode)[keyof typeof FriendErrorCode];
+`BusinessError`(`shared/errors/business-error.ts`)는 코드만 들고 있다. 문구는 `errors` 카탈로그의 코드 키로 `getUserFacingMessage`가 고른다. 서버 코드와 앱 코드가 같은 카탈로그를 쓰므로 feature마다 클래스와 팩토리, 가드를 반복하지 않는다.
 
-export class FriendError extends Error implements BusinessError {
-  override readonly name = 'FriendError';
-  constructor(
-    public readonly code: FriendErrorCode,
-    message: string,
-  ) {
-    super(message);
+```typescript
+// shared/errors/business-error.ts
+export class BusinessError<TCode extends string = string> extends Error {
+  constructor(readonly code: TCode) {
+    super(code);
   }
 }
 
-export const FriendErrors = {
-  invalidTag: () => new FriendError(FriendErrorCode.INVALID_TAG, t('friend:errors.invalidTag')),
+// features/social/friend/domains/friend.error.ts: 코드 표만 소유한다. 값은 바꾸지 않는다
+export const FRIEND_ERROR_CODE = {
+  INVALID_TAG: 'FRIEND_INVALID_TAG',
+  EMPTY_TAG: 'FRIEND_EMPTY_TAG',
 } as const;
 
-export const isFriendError = (error: unknown): error is FriendError => error instanceof FriendError;
+// Service: 던지지 않고 Result로 돌려준다
+return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
+
+// 판별: 코드를 넘기면 그 코드인 오류만 통과한다. 서버 ApiError도 같은 길이다
+if (isBusinessError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 ```
 
-| 요소      | 패턴                 | 위치                                                   |
-| --------- | -------------------- | ------------------------------------------------------ |
-| 코드 상수 | `{Feature}ErrorCode` | `features/{area}/{feature}/domains/{feature}.error.ts` |
-| 클래스    | `{Feature}Error`     | 같은 파일                                              |
-| 팩토리    | `{Feature}Errors`    | 같은 파일                                              |
-| 가드      | `is{Feature}Error`   | 같은 파일                                              |
+| 요소        | 패턴                           | 위치                                                     |
+| ----------- | ------------------------------ | -------------------------------------------------------- |
+| 코드 상수   | `{FEATURE}_ERROR_CODE`         | `features/{area}/{feature}/domains/{feature}.error.ts`   |
+| 문구        | 코드를 키로 한 ko·en 항목      | `shared/i18n/locales/{ko,en}/errors.json`                |
+| 던지기      | `new BusinessError(코드)`      | Service·Policy 경계                                      |
+| 판별        | `isBusinessError(error, 코드)` | 호출부. `match`로 분기하면 `exhaustive()`를 쓴다         |
+| 사용자 문구 | `getUserFacingMessage(error)`  | `useMutationFailure`, `toast.error(error, { fallback })` |
+
+`isBusinessError(error)`는 코드를 가진 모든 오류(`ApiError`, `BusinessError`, 아직 옮기지 않은 `{Feature}Error`)에 참이고, 그 타입은 `CodedError`다. 옮긴 feature는 friend이고 나머지 `*.error.ts`는 뒤 단계에서 같은 모양으로 옮긴다. 옮기지 않은 `{Feature}Error` 클래스는 `implements CodedError`로 `Result`와 함께 쓴다.
+
+## 저장 실패 알림
+
+저장 실패는 `useMutationFailure`(`shared/hooks/use-mutation-failure.ts`) 한 곳에서 햅틱과 토스트 한 번으로 알린다. 입력값과 화면은 그대로 둔다. 오프라인 저장 실패도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다.
+
+```typescript
+const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+
+mutationOptions({
+  networkMode: 'always',
+  onError: (error) => showFailure(error), // 호출마다 폴백을 바꾸려면 showFailure(error, t('memo:toasts.deleteRetry'))
+});
+```
 
 SDK 오류 변환은 어댑터·Service 경계에서만 한다(`AuthErrors.fromExpoAppleError`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
 

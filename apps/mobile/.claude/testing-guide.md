@@ -64,8 +64,8 @@ const DEFAULT_MEMO = memoSchema.parse({
   id: 1,
   content: '장보기',
   isPinned: false,
-  createdAt: new Date('2026-11-06T00:00:00.000Z'),
-  updatedAt: new Date('2026-11-06T00:00:00.000Z'),
+  createdAt: '2026-11-06T00:00:00.000Z',
+  updatedAt: '2026-11-06T00:00:00.000Z',
 });
 
 export function createMemo(overrides: Partial<Memo> = {}): Memo {
@@ -102,19 +102,21 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | 실행되는 코드                       | 가로챈 만큼 가짜다          | 포트 안쪽의 서비스·모델·화면은 실제 코드다 |
 | 파일을 옮기거나 라이브러리를 바꾸면 | 테스트가 깨진다             | 그대로다                                   |
 
-| 도구                                                    | 용도                                                         |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
-| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`    | 모델 fixture(`createX(overrides)`)                           |
-| `features/{area}/{f}/__tests__/{f}.test-utils.ts`       | 그 feature 화면 테스트의 `di` 조립(`createMemoTestDi`)       |
-| `renderUi(ui, { di, queryClient })`                     | 실제 provider 위에 `di` 필드만 덮어써 렌더                   |
-| `createMockDIContainer(overrides)` + `StaticDIProvider` | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패 |
-| `createMemorySyncStorage()`                             | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                  |
-| `createMockHttpClient()`                                | HTTP 포트 stub                                               |
-| `createTestQueryClient()`                               | 테스트용 QueryClient                                         |
-| `createPurchasesGatewayStub()`                          | 결제 포트 stub                                               |
-| `createSpeechRecognizerStub()`                          | 음성 인식 포트 stub                                          |
-| `createLocalFileSystemFake()`                           | 파일 시스템 fake                                             |
-| `createHapticsStub()`, `createErrorReporterStub()`      | 햅틱·오류 보고 stub                                          |
+| 도구                                                                      | 용도                                                                                     |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`                      | 모델 fixture(`createX(overrides)`)                                                       |
+| `createTestDi({ httpClient, …overrides })`                                | 실제 Service를 포트 stub 위에 조립한 `di`. 응답은 `httpClient`에 정한다                  |
+| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })`           | 실제 provider 위에 `di` 필드만 덮어써 렌더. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다 |
+| `createTestDiContainer(overrides)` + `StaticDIProvider`                   | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패                             |
+| `createMemorySyncStorage()`                                               | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                                              |
+| `createHttpClientStub()`                                                  | HTTP 포트 stub                                                                           |
+| `createAnalyticsStub()`, `createStorageStub()`, `createSyncStorageStub()` | Analytics·저장소 포트 stub                                                               |
+| `createLoggerStub()`                                                      | Logger 포트 stub. `jest.fn()` 네 개를 파일마다 만들지 않는다                             |
+| `createTestQueryClient()`                                                 | 테스트용 QueryClient                                                                     |
+| `createPurchasesGatewayStub()`                                            | 결제 포트 stub                                                                           |
+| `createSpeechRecognizerStub()`                                            | 음성 인식 포트 stub                                                                      |
+| `createLocalFileSystemFake()`                                             | 파일 시스템 fake                                                                         |
+| `createHapticsStub()`, `createErrorReporterStub()`                        | 햅틱·오류 보고 stub                                                                      |
 
 ```tsx
 // Given

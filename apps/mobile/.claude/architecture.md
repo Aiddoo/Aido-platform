@@ -617,13 +617,13 @@ features/{area}/{feature}/
     └── {feature}.error.ts       # 기능 오류
 ```
 
-스키마는 `schemas/` 한 곳에 모은다. 서버와 같은 값은 계약에서 `pick`·`extend`로 유도해 다시 적지 않는다. 앱에서 모양이 다른 값(응답 문자열 → `Date`)만 `extend`로 바꾼다.
+스키마는 `schemas/` 한 곳에 모은다. 서버와 같은 값은 계약에서 `pick`·`extend`로 유도해 다시 적지 않는다. 앱에서 모양이 다른 값(응답 문자열 → `Instant` brand)만 `extend`로 바꾼다.
 
 ```typescript
 // features/notes/memo/schemas/memo.schema.ts
 export const memoSchema = memoContractSchema
   .pick({ id: true, content: true, isPinned: true })
-  .extend({ createdAt: z.date(), updatedAt: z.date() });
+  .extend({ createdAt: instantSchema, updatedAt: instantSchema });
 export type Memo = z.infer<typeof memoSchema>;
 
 export const memoResourceLimitSchema = memoResourceLimitResponseSchema.pick({
@@ -665,7 +665,7 @@ export const MemoPolicy = {
 - 다른 피처의 Policy를 재수출하거나 위임만 하는 함수를 두지 않는다.
 - class로 만들지 않는다.
 
-**순간과 달력 값.** 순간은 `Date`이고 달력 날짜·시각 값은 [dates](../../../docs/conventions/dates.md)를 따른다. 영속 캐시는 `$date` 태그로 `Date`를 복원한다(`query-cache-persistence.ts`).
+**순간과 달력 값.** 순간은 `Instant`(ISO 문자열 brand, `shared/date/instant.ts`)이고 달력 날짜·시각 값은 [dates](../../../docs/conventions/dates.md)를 따른다. 아직 `Date`를 쓰는 feature가 있어 영속 캐시는 `$date` 태그로 `Date`를 복원한다(`query-cache-persistence.ts`). 모두 옮기면 지운다.
 
 **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.date()`·`z.iso.time()`, `z.email()`·`z.url()`, `z.partialRecord`, `z.discriminatedUnion`, `z.enum(튜플)`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`, `.strict()`는 쓰지 않는다.
 
@@ -727,8 +727,8 @@ export class MemoService {
 export function toMemo(dto: MemoDto): Memo {
   return {
     ...pick(dto, ['id', 'content', 'isPinned']),
-    createdAt: new Date(dto.createdAt),
-    updatedAt: new Date(dto.updatedAt),
+    createdAt: toInstant(dto.createdAt),
+    updatedAt: toInstant(dto.updatedAt),
   };
 }
 ```
@@ -788,7 +788,7 @@ export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMemoMutationFailure();
+  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
@@ -812,7 +812,7 @@ export function useCreateMemoMutationOptions() {
 - **signal:** 서버 GET은 `signal`을 넘긴다.
 - **select:** 함수 참조가 바뀌면 다시 실행되므로 모듈 수준 `function`(`selectMemos`)이나 `useCallback`으로 둔다. 필요한 값만 구독할 때 쓴다. 오류를 던지는 데 쓰지 않고 서버 스키마를 변환하지 않는다(캐시에 DTO가 남으면 낙관적 업데이트가 서버 모양을 알아야 한다).
 - **필터:** 클라이언트 필터는 key에 넣지 않고 select로 같은 캐시를 공유한다. 서버 파라미터는 key에 넣는다.
-- **구조 공유:** `Date`는 plain 객체가 아니어서 같은 값이어도 새 참조가 되고 그 객체와 조상까지 참조가 바뀐다. 그래서 `Date`가 있는 모델은 재조회 때 다시 그려질 수 있다.
+- **구조 공유:** `Date`는 plain 객체가 아니어서 같은 값이어도 새 참조가 되고 그 객체와 조상까지 참조가 바뀐다. 그래서 `Date`가 있는 모델은 재조회 때 다시 그려질 수 있다. 순간은 `Instant` 문자열로 둔다(메모 18개 재조회에서 유지되는 참조 0개 → 18개, `memo.mapper.structural-sharing.test.ts`).
 - **추적 속성:** 결과를 rest로 구조 분해하지 않는다.
 - **`mutationFn`:** 반드시 `unwrap()`한다. `Result.err()`를 돌려주면 React Query가 성공으로 보고 `onSuccess`를 부른다. 오류 분기는 [에러 처리](../docs/error-handling.md)를 본다.
 - **`onSettled`:** Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 바로 떠나는 create·delete·convert는 돌려주지 않는다. update는 뒤로 가기 저장이 떠나므로 돌려주지 않고, 대신 `onSuccess`에서 목록의 그 항목을 바꾼다(`replaceMemoInList`). 화면에 머무는 pin만 돌려준다(`useToggleMemoPinMutationOptions`). 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
