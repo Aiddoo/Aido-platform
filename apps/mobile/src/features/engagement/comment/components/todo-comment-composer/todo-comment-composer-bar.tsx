@@ -106,7 +106,7 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
       <Box px={12} pt={8} className="bg-white" testID="todo-comment-composer">
         <Box ref={composerRef} collapsable={false} onLayout={handleContentLayout}>
           <Suspense fallback={<TodoCommentComposerBar.Loading />}>
-            <ComposerContent />
+            <ComposerInput />
           </Suspense>
         </Box>
         <Animated.View style={bottomSpacerStyle} />
@@ -119,7 +119,7 @@ TodoCommentComposerBar.Loading = function Loading() {
   return <Skeleton className="h-14 w-full rounded-3xl" />;
 };
 
-function ComposerContent() {
+function ComposerInput() {
   const { todoId } = useTodoScreenParams();
   const { t } = useTranslation('todoComment');
   const [{ data: detail }, { data: user }] = useSuspenseQueries({

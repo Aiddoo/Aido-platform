@@ -110,7 +110,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
                     />
                   }
                 />
-                <Body
+                <CommentText
                   comment={comment}
                   likeButtonScale={likeButtonScale}
                   onLongPress={() => setIsMenuOpen(true)}
@@ -196,7 +196,7 @@ function Meta({ text, isShrinkable = false }: { text: string; isShrinkable?: boo
   );
 }
 
-function Body({
+function CommentText({
   comment,
   likeButtonScale,
   onLongPress,

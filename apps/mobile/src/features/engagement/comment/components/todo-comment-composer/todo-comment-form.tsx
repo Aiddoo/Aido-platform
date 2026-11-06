@@ -1,4 +1,4 @@
-import { useDraftService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useDraftService, useIdGenerator, useLogger } from '@src/bootstrap/providers/di-context';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
@@ -17,12 +17,10 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import * as Crypto from 'expo-crypto';
 import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
-import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
@@ -198,6 +196,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   const { todoId } = useTodoScreenParams();
   const logger = useLogger();
   const draftService = useDraftService();
+  const idGenerator = useIdGenerator();
   const expandThread = useExpandThread();
   const { handleSubmit, reset } = useFormContext<TodoCommentFormValues>();
   const createCommentChain = useMutation(useCreateTodoCommentChainMutationOptions({ todoId }));
@@ -233,7 +232,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
             todoId,
             parentId: TodoCommentComposerPolicy.getReplyParentId(writeMode),
             contents,
-            createClientRequestId: Crypto.randomUUID,
+            createClientRequestId: () => idGenerator.create(),
           });
           preparedSubmissionRef.current = submission;
           const chain = await createCommentChain.mutateAsync({
@@ -374,8 +373,10 @@ function CommentField({
   const { control } = useFormContext<TodoCommentFormValues>();
 
   return (
-    <FormField control={control} name={name}>
-      {({ value, onChange, onBlur, ref }, { error }) => (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { value, onChange, onBlur, ref }, fieldState: { error } }) => (
         <TextArea
           ref={ref}
           nativeID={isFocused ? TODO_COMMENT_INPUT_NATIVE_ID : undefined}
@@ -403,7 +404,7 @@ function CommentField({
           className="min-h-11 max-h-28"
         />
       )}
-    </FormField>
+    />
   );
 }
 

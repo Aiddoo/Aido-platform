@@ -52,7 +52,10 @@ const HINT_HEART_SIZE = 20;
 const HINT_PULSE = { delayMs: 1_200, peakScale: 1.28 } as const;
 
 const contentContainerStyle = { flexGrow: 1 };
-const keyExtractor = (thread: TodoCommentThread) => thread.comment.id;
+
+function getThreadKey(thread: TodoCommentThread) {
+  return thread.comment.id;
+}
 
 type ThreadListProps = ComponentProps<typeof InfiniteList<TodoCommentThread>>;
 
@@ -133,7 +136,7 @@ export function TodoCommentThreadList({
       key={`${todoId}:${sort}:${comment ?? ''}`}
       data={threads}
       extraData={anchor}
-      keyExtractor={keyExtractor}
+      keyExtractor={getThreadKey}
       renderItem={renderItem}
       renderScrollComponent={renderKeyboardScrollView}
       contentContainerStyle={contentContainerStyle}

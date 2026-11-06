@@ -327,10 +327,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
     'apps/mobile/src/features/billing/subscription/hooks/use-open-subscription-management.ts',
     ['expo-linking', 'expo-application'],
   ],
-  [
-    'apps/mobile/src/features/engagement/comment/components/todo-comment-composer/todo-comment-form.tsx',
-    ['expo-crypto'],
-  ],
   ['apps/mobile/src/features/weather/components/weather-hero.tsx', ['expo-localization']],
   [
     'apps/mobile/src/features/weather/components/weather-scene/weather-scene-canvas.tsx',
