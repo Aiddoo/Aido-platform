@@ -121,6 +121,7 @@ export {
   TrashIcon,
 } from './icon';
 export * from './icon-count-button';
+export { InlineNotice, type InlineNoticeProps } from './inline-notice';
 export {
   BottomSheetInput,
   Input,
