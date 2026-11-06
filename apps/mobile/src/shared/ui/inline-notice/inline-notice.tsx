@@ -26,7 +26,7 @@ export function InlineNotice({
   status = 'default',
   title,
   description,
-  image,
+  image = <Alert.Indicator />,
   action,
   onClose,
   ...props
@@ -35,7 +35,7 @@ export function InlineNotice({
 
   return (
     <Alert status={status} {...props}>
-      {image === undefined ? <Alert.Indicator /> : image}
+      {image}
       <Alert.Content>
         <Alert.Title>
           <Text size="b3" weight="semibold" tone={getTextTone(status)}>
