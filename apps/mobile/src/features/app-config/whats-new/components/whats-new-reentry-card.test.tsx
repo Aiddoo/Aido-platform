@@ -44,13 +44,13 @@ jest.mock('heroui-native', () => {
 });
 
 describe('WhatsNewReentryCard', () => {
-  it('기능 가이드 재진입 문구를 렌더링한다', async () => {
+  it('새로운 기능 재진입 문구를 렌더링한다', async () => {
     // When
     await render(<WhatsNewReentryCard onPress={jest.fn()} onDismiss={jest.fn()} />);
 
     // Then
-    expect(screen.getByText('새 기능 다시 보기')).toBeTruthy();
-    expect(screen.getByText('14일 동안 언제든 기능 가이드를 다시 열 수 있어요')).toBeTruthy();
+    expect(screen.getByText('새로운 기능을 만나보세요')).toBeTruthy();
+    expect(screen.getByText('14일 동안 여기서 다시 볼 수 있어요')).toBeTruthy();
   });
 
   it('카드를 누르면 허브를 다시 연다', async () => {
@@ -59,7 +59,7 @@ describe('WhatsNewReentryCard', () => {
     await render(<WhatsNewReentryCard onPress={onPress} onDismiss={jest.fn()} />);
 
     // When
-    await fireEvent.press(screen.getByLabelText('아이두 기능 가이드 열기'));
+    await fireEvent.press(screen.getByLabelText('새로운 기능 열기'));
 
     // Then
     expect(onPress).toHaveBeenCalledTimes(1);
@@ -72,7 +72,7 @@ describe('WhatsNewReentryCard', () => {
     await render(<WhatsNewReentryCard onPress={onPress} onDismiss={onDismiss} />);
 
     // When
-    await fireEvent.press(screen.getByLabelText('기능 가이드 카드 닫기'));
+    await fireEvent.press(screen.getByLabelText('새로운 기능 카드 닫기'));
 
     // Then
     expect(onDismiss).toHaveBeenCalledTimes(1);

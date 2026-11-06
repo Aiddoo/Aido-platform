@@ -2,15 +2,15 @@
   "hub": {
     "title": "새로 생겼어요",
     "description": "아이두에 새로 생긴 기능을 소개해요.",
-    "sheetLabel": "아이두 기능 가이드",
-    "closeLabel": "기능 가이드 닫기"
+    "sheetLabel": "새로운 기능",
+    "closeLabel": "새로운 기능 닫기"
   },
   "entry": {
-    "mypage": "아이두 기능 가이드",
-    "feedTitle": "새 기능 다시 보기",
-    "feedDescription": "14일 동안 언제든 기능 가이드를 다시 열 수 있어요",
-    "openLabel": "아이두 기능 가이드 열기",
-    "dismissLabel": "기능 가이드 카드 닫기"
+    "mypage": "새로운 기능",
+    "feedTitle": "새로운 기능을 만나보세요",
+    "feedDescription": "14일 동안 여기서 다시 볼 수 있어요",
+    "openLabel": "새로운 기능 열기",
+    "dismissLabel": "새로운 기능 카드 닫기"
   },
   "cards": {
     "friendInvite": {

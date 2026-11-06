@@ -2,15 +2,15 @@
   "hub": {
     "title": "What's new",
     "description": "Meet what's new in Aido.",
-    "sheetLabel": "Aido feature guide",
-    "closeLabel": "Close feature guide"
+    "sheetLabel": "What's new",
+    "closeLabel": "Close What's new"
   },
   "entry": {
-    "mypage": "Aido feature guide",
-    "feedTitle": "See what's new again",
-    "feedDescription": "You can reopen this guide anytime for 14 days",
-    "openLabel": "Open Aido feature guide",
-    "dismissLabel": "Dismiss feature guide card"
+    "mypage": "What's new",
+    "feedTitle": "See what's new",
+    "feedDescription": "You can reopen it here for 14 days",
+    "openLabel": "Open What's new",
+    "dismissLabel": "Dismiss What's new card"
   },
   "cards": {
     "friendInvite": {

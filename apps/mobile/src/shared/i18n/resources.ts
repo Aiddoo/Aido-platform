@@ -5,7 +5,6 @@ import enAppVersion from './locales/en/app-version.json';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enErrors from './locales/en/errors.json';
-import enWhatsNew from './locales/en/feature-discovery.json';
 import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
 import enInvite from './locales/en/invite.json';
@@ -22,6 +21,7 @@ import enVoiceNote from './locales/en/voice-note.json';
 import enVoicePlan from './locales/en/voice-plan.json';
 import enVoice from './locales/en/voice.json';
 import enWeather from './locales/en/weather.json';
+import enWhatsNew from './locales/en/whats-new.json';
 import enWidget from './locales/en/widget.json';
 import koAchievement from './locales/ko/achievement.json';
 import koAi from './locales/ko/ai.json';
@@ -30,7 +30,6 @@ import koAppVersion from './locales/ko/app-version.json';
 import koAuth from './locales/ko/auth.json';
 import koCommon from './locales/ko/common.json';
 import koErrors from './locales/ko/errors.json';
-import koWhatsNew from './locales/ko/feature-discovery.json';
 import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
 import koInvite from './locales/ko/invite.json';
@@ -47,6 +46,7 @@ import koVoiceNote from './locales/ko/voice-note.json';
 import koVoicePlan from './locales/ko/voice-plan.json';
 import koVoice from './locales/ko/voice.json';
 import koWeather from './locales/ko/weather.json';
+import koWhatsNew from './locales/ko/whats-new.json';
 import koWidget from './locales/ko/widget.json';
 
 // ko 카탈로그가 원문(소스 오브 트루스) — i18next.d.ts의 타입 소스로 사용된다
@@ -74,7 +74,7 @@ export const resources = {
     appIcon: koAppIcon,
     appVersion: koAppVersion,
     widget: koWidget,
-    featureDiscovery: koWhatsNew,
+    whatsNew: koWhatsNew,
     voice: koVoice,
     voiceNote: koVoiceNote,
   },
@@ -101,7 +101,7 @@ export const resources = {
     appIcon: enAppIcon,
     appVersion: enAppVersion,
     widget: enWidget,
-    featureDiscovery: enWhatsNew,
+    whatsNew: enWhatsNew,
     voice: enVoice,
     voiceNote: enVoiceNote,
   },

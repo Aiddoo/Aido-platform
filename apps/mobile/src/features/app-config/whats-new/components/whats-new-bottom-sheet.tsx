@@ -45,10 +45,10 @@ const CARD_CTA_TEST_IDS = {
 } as const satisfies Record<WhatsNewCardId, string>;
 
 interface CardCopy {
-  title: ParseKeys<'featureDiscovery'>;
-  description: ParseKeys<'featureDiscovery'>;
-  cta?: ParseKeys<'featureDiscovery'>;
-  ctaLabel?: ParseKeys<'featureDiscovery'>;
+  title: ParseKeys<'whatsNew'>;
+  description: ParseKeys<'whatsNew'>;
+  cta?: ParseKeys<'whatsNew'>;
+  ctaLabel?: ParseKeys<'whatsNew'>;
 }
 
 const CARD_COPY = {
@@ -91,7 +91,7 @@ export function WhatsNewBottomSheet({
   onExit,
   onCardCta,
 }: WhatsNewBottomSheetProps) {
-  const { t } = useTranslation(['featureDiscovery', 'common']);
+  const { t } = useTranslation(['whatsNew', 'common']);
   const { fontScale } = useFontScale();
   const insets = useSafeAreaInsets();
   const listMaxHeight = Math.max(
@@ -135,7 +135,7 @@ export function WhatsNewBottomSheet({
 }
 
 function FeatureCard({ card, onCta }: { card: WhatsNewCard; onCta: () => void }) {
-  const { t } = useTranslation('featureDiscovery');
+  const { t } = useTranslation('whatsNew');
   const copy = CARD_COPY[card.id];
 
   return (

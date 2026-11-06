@@ -76,7 +76,7 @@ function Underlined({ color, children }: { color: string; children?: React.React
 }
 
 function VoiceSayPreview() {
-  const { t } = useTranslation('featureDiscovery');
+  const { t } = useTranslation('whatsNew');
 
   return (
     <VStack
@@ -141,7 +141,7 @@ function PreviewTodoRow({
 }
 
 function VoicePlanPreview() {
-  const { t } = useTranslation('featureDiscovery');
+  const { t } = useTranslation('whatsNew');
 
   return (
     <VStack
@@ -196,7 +196,7 @@ function FactRow({ title, description }: { title: string; description: string })
 }
 
 function VoiceFactsPreview() {
-  const { t } = useTranslation('featureDiscovery');
+  const { t } = useTranslation('whatsNew');
 
   return (
     <VStack

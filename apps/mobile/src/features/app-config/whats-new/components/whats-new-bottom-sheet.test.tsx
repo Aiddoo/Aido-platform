@@ -126,7 +126,7 @@ describe('WhatsNewBottomSheet', () => {
     );
 
     // When
-    await fireEvent.press(screen.getByLabelText('기능 가이드 닫기'));
+    await fireEvent.press(screen.getByLabelText('새로운 기능 닫기'));
     await fireEvent.press(screen.getByLabelText('친구 초대 화면으로 이동'));
 
     // Then

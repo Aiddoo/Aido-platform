@@ -7,14 +7,14 @@ interface WhatsNewReentryCardProps {
   onDismiss: () => void;
 }
 
-/** 기능 가이드를 다시 여는 피드 카드. 피드의 알림 받기 배너와 같은 모양·닫기 버튼을 쓴다 */
+/** 새로운 기능을 다시 여는 피드 카드. 피드의 알림 받기 배너와 같은 모양·닫기 버튼을 쓴다 */
 export function WhatsNewReentryCard({ onPress, onDismiss }: WhatsNewReentryCardProps) {
-  const { t } = useTranslation('featureDiscovery');
+  const { t } = useTranslation('whatsNew');
 
   return (
     <HStack align="center" gap={12} className="rounded-xl bg-gray-1 px-4 py-3.5">
       <PressableFeedback
-        testID="feature-guide-open"
+        testID="whats-new-open"
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={t('entry.openLabel')}
@@ -34,7 +34,7 @@ export function WhatsNewReentryCard({ onPress, onDismiss }: WhatsNewReentryCardP
       </PressableFeedback>
 
       <CloseButton
-        testID="feature-guide-dismiss"
+        testID="whats-new-dismiss"
         variant="ghost"
         className="size-5"
         onPress={onDismiss}

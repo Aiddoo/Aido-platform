@@ -72,17 +72,17 @@ function MyPageMenuIcon({ Icon }: { Icon: StyledIconType }) {
 }
 
 function Activity() {
-  const { t } = useTranslation(['user', 'featureDiscovery']);
+  const { t } = useTranslation(['user', 'whatsNew']);
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useWhatsNewHub();
   const whatsNewState = useWhatsNewStateService();
   const isInviteAvailable = useInviteAvailability();
-  // 소개할 기능이 모두 꺼져 있으면 기능 가이드 항목을 숨긴다
+  // 소개할 기능이 모두 꺼져 있으면 새로운 기능 항목을 숨긴다
   const campaign = filterAvailableCampaign(getBundledWhatsNewCampaign(WHATS_NEW_CAMPAIGN_ID), {
     isInviteAvailable,
   });
 
-  const openFeatureGuide = () => {
+  const openWhatsNew = () => {
     if (!campaign || !user) {
       return;
     }
@@ -116,10 +116,10 @@ function Activity() {
         <>
           <SettingsCard.Separator />
           <SettingsCard.Item
-            testID="feature-guide-open"
+            testID="whats-new-open"
             icon={<MyPageMenuIcon Icon={InfoIcon} />}
-            label={t('featureDiscovery:entry.mypage')}
-            onPress={openFeatureGuide}
+            label={t('whatsNew:entry.mypage')}
+            onPress={openWhatsNew}
           />
         </>
       )}
