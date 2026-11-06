@@ -1,20 +1,19 @@
 import {
-  type CreateTodoCategoryInput,
   createTodoCategoryResponseSchema,
-  type DeleteTodoCategoryQuery,
   deleteTodoCategoryResponseSchema,
-  type ReorderTodoCategoryInput,
   reorderTodoCategoryResponseSchema,
   todoCategoryListResponseSchema,
-  type UpdateTodoCategoryInput,
   updateTodoCategoryResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { TodoCategoriesResult, TodoCategory } from '../schemas/todo-category.schema';
+import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
+import type {
+  TodoCategoryChange,
+  TodoCategoryRemoval,
+  TodoCategoryReorder,
+} from '../schemas/todo-category.schema';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
 
 export class TodoCategoryService {
@@ -24,103 +23,45 @@ export class TodoCategoryService {
     this.#httpClient = httpClient;
   }
 
-  getCategories = async (signal?: AbortSignal): Promise<Result<TodoCategoriesResult, ApiError>> => {
-    const result = await this.#httpClient.get('v1/todo-categories', { signal });
+  getCategories = async (signal?: AbortSignal) =>
+    parseApiResponse(
+      await this.#httpClient.get('v1/todo-categories', { signal }),
+      todoCategoryListResponseSchema,
+      (dto) => ({ categories: toTodoCategoryWithCounts(dto.items) }),
+      '[TodoCategoryService] Invalid getCategories response',
+    );
 
-    if (!result.ok) {
-      return result;
-    }
+  createCategory = async (input: TodoCategoryFormValues) =>
+    parseApiResponse(
+      await this.#httpClient.post('v1/todo-categories', input),
+      createTodoCategoryResponseSchema,
+      (dto) => toTodoCategory(dto.category),
+      '[TodoCategoryService] Invalid createCategory response',
+    );
 
-    const parsed = todoCategoryListResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCategoryService] Invalid getCategories response: ${parsed.error.message}`,
-      );
-    }
+  updateCategory = async (id: number, input: TodoCategoryChange) =>
+    parseApiResponse(
+      await this.#httpClient.patch(`v1/todo-categories/${id}`, input),
+      updateTodoCategoryResponseSchema,
+      (dto) => toTodoCategory(dto.category),
+      '[TodoCategoryService] Invalid updateCategory response',
+    );
 
-    return ok({
-      categories: toTodoCategoryWithCounts(parsed.data.items),
-    });
-  };
+  deleteCategory = async (id: number, query?: TodoCategoryRemoval) =>
+    parseApiResponse(
+      await this.#httpClient.delete(`v1/todo-categories/${id}`, {
+        params: { moveToCategoryId: query?.moveToCategoryId },
+      }),
+      deleteTodoCategoryResponseSchema,
+      () => undefined,
+      '[TodoCategoryService] Invalid deleteCategory response',
+    );
 
-  createCategory = async (
-    input: CreateTodoCategoryInput,
-  ): Promise<Result<TodoCategory, ApiError>> => {
-    const result = await this.#httpClient.post('v1/todo-categories', input);
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = createTodoCategoryResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCategoryService] Invalid createCategory response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodoCategory(parsed.data.category));
-  };
-
-  updateCategory = async (
-    id: number,
-    input: UpdateTodoCategoryInput,
-  ): Promise<Result<TodoCategory, ApiError>> => {
-    const result = await this.#httpClient.patch(`v1/todo-categories/${id}`, input);
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateTodoCategoryResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCategoryService] Invalid updateCategory response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodoCategory(parsed.data.category));
-  };
-
-  deleteCategory = async (
-    id: number,
-    query?: DeleteTodoCategoryQuery,
-  ): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.delete(`v1/todo-categories/${id}`, {
-      params: { moveToCategoryId: query?.moveToCategoryId },
-    });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = deleteTodoCategoryResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCategoryService] Invalid deleteCategory response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(undefined);
-  };
-
-  reorderCategory = async (
-    id: number,
-    input: ReorderTodoCategoryInput,
-  ): Promise<Result<TodoCategory, ApiError>> => {
-    const result = await this.#httpClient.patch(`v1/todo-categories/${id}/reorder`, input);
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = reorderTodoCategoryResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCategoryService] Invalid reorderCategory response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodoCategory(parsed.data.category));
-  };
+  reorderCategory = async (id: number, input: TodoCategoryReorder) =>
+    parseApiResponse(
+      await this.#httpClient.patch(`v1/todo-categories/${id}/reorder`, input),
+      reorderTodoCategoryResponseSchema,
+      (dto) => toTodoCategory(dto.category),
+      '[TodoCategoryService] Invalid reorderCategory response',
+    );
 }

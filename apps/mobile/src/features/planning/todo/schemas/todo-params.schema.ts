@@ -18,10 +18,6 @@ export const subTodoScreenParamsSchema = todoScreenParamsSchema.extend({
   subTodoId: routeIntegerStringSchema.pipe(todoItemIdParamSchema.shape.itemId),
 });
 
-export const todoCategoryScreenParamsSchema = z.object({
-  categoryId: routeIntegerStringSchema.pipe(todoCategoryIdParamSchema.shape.id),
-});
-
 export const todoSheetDateParamsSchema = feedParamsSchema.pick({ date: true });
 
 export const todoCreateCategoryParamsSchema = z.object({

@@ -1,4 +1,4 @@
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
@@ -155,12 +155,8 @@ export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
 export function invalidateTodos(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
-    queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all }),
+    invalidateTodoCategories(queryClient),
   ]);
-}
-
-export function invalidateTodoCategories(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
 }
 
 export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { todoId: number }) {

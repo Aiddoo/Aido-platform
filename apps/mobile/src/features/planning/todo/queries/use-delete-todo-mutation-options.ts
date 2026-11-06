@@ -1,5 +1,5 @@
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -77,7 +77,7 @@ export const useDeleteTodoMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.deleteFailedRetry') });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      invalidateTodoCategories(queryClient);
       invalidateNudgeInteractions(queryClient);
       settleTodoCompletionWrite(queryClient);
     },

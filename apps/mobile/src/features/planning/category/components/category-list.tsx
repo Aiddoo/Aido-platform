@@ -1,7 +1,4 @@
 import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
-import { useReorderTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import type { TodoCategoryWithCount } from '@src/features/planning/category/schemas/todo-category.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -22,30 +19,44 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
+import type { ReactNode } from 'react';
+import { FlatList } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
-import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
+import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
+import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
+import type { TodoCategoryWithCount } from '../schemas/todo-category.schema';
 import { CategoryDeleteDialog } from './category-delete-dialog';
 
-type CategoryListMode = 'edit' | 'reorder';
+/** 고치기·지우기 탭의 목록 */
+export function CategoryList() {
+  const containerBgStyle = useResolveClassNames('bg-gray-1');
+  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
-interface CategoryListProps {
-  mode: CategoryListMode;
+  return (
+    <FlatList
+      data={data.categories}
+      keyExtractor={(item) => String(item.id)}
+      renderItem={({ item }) => <CategoryList.EditItem category={item} />}
+      style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
+    />
+  );
 }
 
-export function CategoryList({ mode }: CategoryListProps) {
+/** 순서 탭의 목록. 길게 눌러 옮긴다 */
+CategoryList.Reorder = function Reorder() {
   const containerBgStyle = useResolveClassNames('bg-gray-1');
   const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
+  const reorderCategory = useMutation(useReorderTodoCategoryMutationOptions());
   const reorderableList = useReorderableList({
     items: data.categories,
     updatedAt: dataUpdatedAt,
-    isPending: reorderMutation.isPending,
+    isPending: reorderCategory.isPending,
     getItemId: (category) => category.id,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
-      reorderMutation.mutate({
+      reorderCategory.mutate({
         id: movedId,
         input: { targetCategoryId: targetId, position },
       });
@@ -55,34 +66,54 @@ export function CategoryList({ mode }: CategoryListProps) {
   return (
     <ReorderableList
       {...reorderableList}
-      dragEnabled={reorderableList.dragEnabled && mode === 'reorder'}
       shouldUpdateActiveItem
       ListHeaderComponent={
-        mode === 'reorder' && reorderableList.data.length >= 2 ? (
+        reorderableList.data.length >= 2 ? (
           <Box className="pb-2">
             <ReorderCoachmark kind="category" />
           </Box>
         ) : undefined
       }
       keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <CategoryList.Item category={item} mode={mode} />}
+      renderItem={({ item }) => <CategoryList.ReorderItem category={item} />}
       style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
+    />
+  );
+};
+
+interface CategoryRowProps {
+  category: TodoCategoryWithCount;
+  right: ReactNode;
+}
+
+function CategoryRow({ category, right }: CategoryRowProps) {
+  return (
+    <ListRow
+      left={<Box className="size-2 rounded-full" style={{ backgroundColor: category.color }} />}
+      contents={
+        <Text size="b3" weight="medium">
+          {category.name}
+        </Text>
+      }
+      right={
+        <Animated.View entering={FadeIn.duration(250)} className="h-9 justify-center">
+          {right}
+        </Animated.View>
+      }
+      horizontalPadding="medium"
+      verticalPadding="medium"
     />
   );
 }
 
 interface CategoryListItemProps {
   category: TodoCategoryWithCount;
-  mode: CategoryListProps['mode'];
 }
 
-CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
-  const fontScaledSize = useFontScaledSize();
+CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   const { t } = useTranslation('common');
   const push = useSingleTap(router.push);
   const deleteOverlay = useOverlay();
-  const drag = useReorderableDrag();
-  const isActive = useIsActive();
 
   const openDeleteDialog = () => {
     deleteOverlay.open(({ isOpen, close, unmount }) => (
@@ -100,60 +131,61 @@ CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
   };
 
   return (
+    <PressableFeedback className="rounded-xl">
+      <CategoryRow
+        category={category}
+        right={
+          <HStack align="center" gap={4}>
+            <Button
+              variant="weak"
+              color="dark"
+              size="small"
+              display="inline"
+              onPress={() =>
+                push({
+                  pathname: '/todo-categories/[categoryId]/edit',
+                  params: { categoryId: category.id },
+                })
+              }
+            >
+              {t('actions.edit')}
+            </Button>
+            <Button
+              variant="weak"
+              color="danger"
+              size="small"
+              display="inline"
+              onPress={openDeleteDialog}
+            >
+              {t('actions.delete')}
+            </Button>
+          </HStack>
+        }
+      />
+    </PressableFeedback>
+  );
+};
+
+CategoryList.ReorderItem = function ReorderItem({ category }: CategoryListItemProps) {
+  const fontScaledSize = useFontScaledSize();
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
+
+  return (
     <PressableFeedback
-      onLongPress={mode === 'reorder' ? drag : undefined}
+      onLongPress={drag}
       isDisabled={isActive}
       className={cn('rounded-xl', isActive && 'bg-white shadow-md shadow-black/10')}
     >
-      <ListRow
-        left={<Box className="size-2 rounded-full" style={{ backgroundColor: category.color }} />}
-        contents={
-          <Text size="b3" weight="medium">
-            {category.name}
-          </Text>
-        }
+      <CategoryRow
+        category={category}
         right={
-          <Animated.View key={mode} entering={FadeIn.duration(250)} className="h-9 justify-center">
-            {match(mode)
-              .with('edit', () => (
-                <HStack align="center" gap={4}>
-                  <Button
-                    variant="weak"
-                    color="dark"
-                    size="small"
-                    display="inline"
-                    onPress={() =>
-                      push({
-                        pathname: '/todo-categories/[categoryId]/edit',
-                        params: { categoryId: category.id },
-                      })
-                    }
-                  >
-                    {t('actions.edit')}
-                  </Button>
-                  <Button
-                    variant="weak"
-                    color="danger"
-                    size="small"
-                    display="inline"
-                    onPress={() => openDeleteDialog()}
-                  >
-                    {t('actions.delete')}
-                  </Button>
-                </HStack>
-              ))
-              .with('reorder', () => (
-                <MenuIcon
-                  width={fontScaledSize(18)}
-                  height={fontScaledSize(18)}
-                  colorClassName="text-gray-5"
-                />
-              ))
-              .exhaustive()}
-          </Animated.View>
+          <MenuIcon
+            width={fontScaledSize(18)}
+            height={fontScaledSize(18)}
+            colorClassName="text-gray-5"
+          />
         }
-        horizontalPadding="medium"
-        verticalPadding="medium"
       />
     </PressableFeedback>
   );

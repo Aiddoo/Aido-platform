@@ -21,6 +21,7 @@ import {
 import { router } from 'expo-router';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { Suspense } from 'react';
+import { match } from 'ts-pattern';
 
 const VIEW_LABEL_KEYS = {
   edit: 'categorySettings.editTab',
@@ -73,7 +74,10 @@ function TodoCategorySettingsScreen() {
 
           <QueryErrorBoundary>
             <Suspense fallback={<CategoryList.Loading />}>
-              <CategoryList mode={view} />
+              {match(view)
+                .with(CATEGORY_SETTINGS_VIEW.edit, () => <CategoryList />)
+                .with(CATEGORY_SETTINGS_VIEW.reorder, () => <CategoryList.Reorder />)
+                .exhaustive()}
             </Suspense>
           </QueryErrorBoundary>
         </VStack>

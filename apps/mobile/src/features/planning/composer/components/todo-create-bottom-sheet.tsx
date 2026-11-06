@@ -1,3 +1,4 @@
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import {
   useTodoCreateCategoryParam,
@@ -5,7 +6,6 @@ import {
   useTodoCreateVoiceHintParam,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { resolveSheetCategoryId } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { toDate } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -40,7 +40,10 @@ TodoCreateBottomSheet.Form = function Form() {
   const prefill = useTodoCreatePrefillParam();
   const isVoiceHintForced = useTodoCreateVoiceHintParam();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const categoryId = resolveSheetCategoryId(requestedCategoryId, categoriesResult.categories);
+  const categoryId = TodoCategoryPolicy.getInitialCategoryId(
+    categoriesResult.categories,
+    requestedCategoryId,
+  );
 
   useEffect(() => {
     if (categoryId == null) {

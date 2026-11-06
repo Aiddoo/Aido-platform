@@ -1,16 +1,9 @@
-import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useUpdateTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import type { TodoCategory } from '@src/features/planning/category/schemas/todo-category.schema';
-import { useTodoCategoryScreenParams } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { findSheetCategory } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
-import { isBusinessError } from '@src/shared/errors/result';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
-  BottomSheetInput,
   Button,
   INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
@@ -21,14 +14,18 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider, useForm, useFormState } from 'react-hook-form';
+import { useForm, useFormState } from 'react-hook-form';
 
-import { CategoryColorInput } from './category-color-input';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import { useTodoCategoryParams } from '../hooks/use-todo-category-params';
+import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
+import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
+import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
+import type { TodoCategory } from '../schemas/todo-category.schema';
+import { CategoryFormFields } from './category-form-fields';
 
 type CategoryEditBottomSheetProps = Omit<
   ComponentProps<typeof KeyboardBottomSheet>,
@@ -56,14 +53,18 @@ export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
   );
 }
 
-interface SheetContentProps {
+interface CategoryEditBottomSheetContentProps {
   onClose: () => void;
 }
 
-CategoryEditBottomSheet.Content = function Content({ onClose }: SheetContentProps) {
-  const { categoryId } = useTodoCategoryScreenParams();
+CategoryEditBottomSheet.Content = function Content({
+  onClose,
+}: CategoryEditBottomSheetContentProps) {
+  const { categoryId } = useTodoCategoryParams();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const category = useRetainedValue(findSheetCategory(categoriesResult.categories, categoryId));
+  const category = useRetainedValue(
+    TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId),
+  );
 
   useEffect(() => {
     if (category == null) {
@@ -100,68 +101,43 @@ CategoryEditBottomSheet.Error = function ErrorFallback({
   );
 };
 
-interface CategoryEditFormProps extends SheetContentProps {
+interface CategoryEditFormProps extends CategoryEditBottomSheetContentProps {
   category: TodoCategory;
 }
 
 function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
-  const { showBoundary } = useErrorBoundary();
+  const { t } = useTranslation('common');
+  const reportUnexpectedError = useReportUnexpectedError('todo');
+  const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
 
-  const { t } = useTranslation(['todo', 'common']);
-  const updateMutation = useMutation(useUpdateTodoCategoryMutationOptions());
-
-  const formMethods = useForm({
-    resolver: zodResolver(createTodoCategorySchema),
+  const form = useForm({
+    resolver: zodResolver(todoCategoryFormSchema),
     defaultValues: { name: category.name, color: category.color },
   });
-  const { control, handleSubmit } = formMethods;
-  const { isSubmitting } = useFormState({ control });
+  const { isSubmitting } = useFormState({ control: form.control });
 
-  const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
-    try {
-      await updateMutation.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
-    } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
+  // 실패하면 토스트는 mutation이 한 번 알리고 시트와 입력값은 그대로 둔다
+  const submitCategory = form.handleSubmit(async (values) => {
+    if (!TodoCategoryPolicy.hasChanges(category, values)) {
+      onClose();
+      return;
     }
-  };
+
+    try {
+      await updateCategory.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
+    } catch (error) {
+      reportUnexpectedError(error);
+    }
+  });
+  const handleSubmit = useSingleTap(() => submitCategory());
 
   return (
-    <FormProvider {...formMethods}>
-      <VStack gap={40} pb={12}>
-        <VStack gap={20}>
-          <FormField control={control} name="name">
-            {({ onChange, value }, { error }) => (
-              <BottomSheetInput
-                autoFocus
-                label={t('category.nameLabel')}
-                placeholder={t('category.namePlaceholder')}
-                value={value}
-                onChange={onChange}
-                isInvalid={!!error}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'categoryName.required',
-                  byType: { too_big: 'categoryName.tooLong' },
-                })}
-                returnKeyType="done"
-                onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
-              />
-            )}
-          </FormField>
-          <FormField control={control} name="color">
-            {({ onChange, value }) => <CategoryColorInput value={value} onChange={onChange} />}
-          </FormField>
-        </VStack>
+    <VStack gap={40} pb={12}>
+      <CategoryFormFields control={form.control} onSubmit={handleSubmit} />
 
-        <Button
-          size="large"
-          onPress={() => handleSubmit(handleSubmitCategory)()}
-          isLoading={isSubmitting}
-        >
-          {t('common:actions.confirm')}
-        </Button>
-      </VStack>
-    </FormProvider>
+      <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
+        {t('actions.confirm')}
+      </Button>
+    </VStack>
   );
 }

@@ -1,6 +1,6 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { resolveSheetCategoryId } from '@src/features/planning/todo/utils/view-models/todo-sheet-target.view-model';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -61,9 +61,9 @@ SuggestionCategoryBottomSheet.Content = function Content({
     queries: [useGetSuggestionsQueryOptions(), useGetTodoCategoriesQueryOptions()],
   });
   const suggestion = useRetainedValue(findSheetSuggestion(suggestions, suggestionId));
-  const defaultCategoryId = resolveSheetCategoryId(
-    suggestion?.suggestedCategoryId,
+  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesData.categories,
+    suggestion?.suggestedCategoryId,
   );
   const handleSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
 

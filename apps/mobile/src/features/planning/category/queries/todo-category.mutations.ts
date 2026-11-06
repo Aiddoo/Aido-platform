@@ -1,44 +1,43 @@
-import type {
-  CreateTodoCategoryInput,
-  DeleteTodoCategoryQuery,
-  ReorderTodoCategoryInput,
-  UpdateTodoCategoryInput,
-} from '@aido/api';
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import type {
-  OptimisticTodoCategoryWithCount,
-  TodoCategoriesResult,
-} from '@src/features/planning/category/schemas/todo-category.schema';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import {
   createOptimisticId,
+  invalidateFeedTodos,
   invalidateTodos,
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
+import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
+import type {
+  OptimisticTodoCategoryWithCount,
+  TodoCategoriesResult,
+  TodoCategoryChange,
+  TodoCategoryRemoval,
+  TodoCategoryReorder,
+} from '../schemas/todo-category.schema';
+import { invalidateTodoCategories } from './todo-category-cache';
 
-export const useCreateTodoCategoryMutationOptions = () => {
-  const haptics = useHaptics();
+export function useCreateTodoCategoryMutationOptions() {
   const todoCategoryService = useTodoCategoryService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.addFailedRetry'));
 
   return mutationOptions({
-    mutationFn: async (input: CreateTodoCategoryInput) => {
-      const result = await todoCategoryService.createCategory(input);
-      return unwrap(result);
-    },
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
+    mutationFn: async (input: TodoCategoryFormValues) =>
+      unwrap(await todoCategoryService.createCategory(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
 
@@ -72,8 +71,6 @@ export const useCreateTodoCategoryMutationOptions = () => {
       trackEvent('category_created', { color: variables.color });
     },
     onError: (error, _variables, context) => {
-      haptics.notify('error');
-
       if (context?.previousData != null) {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
@@ -83,32 +80,79 @@ export const useCreateTodoCategoryMutationOptions = () => {
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
+      showFailure(error);
     },
   });
-};
-
-interface DeleteTodoCategoryParams {
-  id: number;
-  query?: DeleteTodoCategoryQuery;
 }
 
-export const useDeleteTodoCategoryMutationOptions = () => {
-  const haptics = useHaptics();
+interface UpdateTodoCategoryParams {
+  id: number;
+  input: TodoCategoryChange;
+}
+
+export function useUpdateTodoCategoryMutationOptions() {
   const todoCategoryService = useTodoCategoryService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
 
   return mutationOptions({
-    mutationFn: async ({ id, query }: DeleteTodoCategoryParams) => {
-      const result = await todoCategoryService.deleteCategory(id, query);
-      return unwrap(result);
+    networkMode: 'always',
+    mutationFn: async ({ id, input }: UpdateTodoCategoryParams) =>
+      unwrap(await todoCategoryService.updateCategory(id, input)),
+    onMutate: async ({ id, input }) => {
+      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+
+      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+      );
+
+      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
+        if (!old) {
+          return old;
+        }
+        return {
+          ...old,
+          categories: old.categories.map((c) => (c.id === id ? { ...c, ...input } : c)),
+        };
+      });
+
+      return { previousData };
     },
+    onSuccess: (_data, variables) => {
+      invalidateTodoCategories(queryClient);
+      invalidateFeedTodos(queryClient);
+      toast.success(t('todo:toast.categoryUpdated'));
+      trackEvent('category_updated', {
+        field: variables.input.color ? 'color' : 'name',
+      });
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousData != null) {
+        queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
+      }
+
+      showFailure(error);
+    },
+  });
+}
+
+interface DeleteTodoCategoryParams {
+  id: number;
+  query?: TodoCategoryRemoval;
+}
+
+export function useDeleteTodoCategoryMutationOptions() {
+  const todoCategoryService = useTodoCategoryService();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.deleteFailedRetry'));
+
+  return mutationOptions({
+    mutationFn: async ({ id, query }: DeleteTodoCategoryParams) =>
+      unwrap(await todoCategoryService.deleteCategory(id, query)),
     onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
 
@@ -135,39 +179,31 @@ export const useDeleteTodoCategoryMutationOptions = () => {
       toast.success(t('todo:toast.categoryDeleted'));
     },
     onError: (error, _variables, context) => {
-      haptics.notify('error');
-
       if (context?.previousData != null) {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.deleteFailedRetry') });
+      showFailure(error);
     },
   });
-};
+}
 
 interface ReorderTodoCategoryParams {
   id: number;
-  input: ReorderTodoCategoryInput;
+  input: TodoCategoryReorder;
 }
 
-export const useReorderTodoCategoryMutationOptions = () => {
+export function useReorderTodoCategoryMutationOptions() {
   const haptics = useHaptics();
   const todoCategoryService = useTodoCategoryService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
 
   return mutationOptions({
-    mutationFn: async ({ id, input }: ReorderTodoCategoryParams) => {
-      const result = await todoCategoryService.reorderCategory(id, input);
-      return unwrap(result);
-    },
+    mutationFn: async ({ id, input }: ReorderTodoCategoryParams) =>
+      unwrap(await todoCategoryService.reorderCategory(id, input)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      invalidateTodoCategories(queryClient);
       invalidateWidgetSummary(queryClient);
       trackEvent('category_reordered', { source: 'settings' });
       const accountId = getCachedMe(queryClient)?.id;
@@ -177,68 +213,7 @@ export const useReorderTodoCategoryMutationOptions = () => {
     },
     onError: () => {
       haptics.notify('error');
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      invalidateTodoCategories(queryClient);
     },
   });
-};
-
-interface UpdateTodoCategoryParams {
-  id: number;
-  input: UpdateTodoCategoryInput;
 }
-
-export const useUpdateTodoCategoryMutationOptions = () => {
-  const haptics = useHaptics();
-  const todoCategoryService = useTodoCategoryService();
-  const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
-  const toast = useAppToast();
-
-  return mutationOptions({
-    mutationFn: async ({ id, input }: UpdateTodoCategoryParams) => {
-      const result = await todoCategoryService.updateCategory(id, input);
-      return unwrap(result);
-    },
-    onMutate: async ({ id, input }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
-
-      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
-        TODO_CATEGORY_QUERY_KEYS.list(),
-      );
-
-      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          categories: old.categories.map((c) => (c.id === id ? { ...c, ...input } : c)),
-        };
-      });
-
-      return { previousData };
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      toast.success(t('todo:toast.categoryUpdated'));
-      trackEvent('category_updated', {
-        field: variables.input.color ? 'color' : 'name',
-      });
-    },
-    onError: (error, _variables, context) => {
-      haptics.notify('error');
-
-      if (context?.previousData != null) {
-        queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
-      }
-
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
-    },
-  });
-};

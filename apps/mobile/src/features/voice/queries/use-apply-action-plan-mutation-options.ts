@@ -9,10 +9,8 @@ import {
   invalidateMemoList,
   invalidateMemoResourceLimit,
 } from '@src/features/notes/memo/queries/memo-cache';
-import {
-  invalidateTodoCategories,
-  invalidateTodos,
-} from '@src/features/planning/todo/queries/todo-cache';
+import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
+import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

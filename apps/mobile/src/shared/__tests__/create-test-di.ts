@@ -8,6 +8,7 @@ import { ConsentService } from '@src/features/identity/consent/apis/consent.serv
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 
 import { createAnalyticsStub } from './create-analytics-stub';
@@ -35,6 +36,7 @@ export function createTestDi({
 
   return {
     memoService: new MemoService(httpClient, logger),
+    todoCategoryService: new TodoCategoryService(httpClient),
     inquiryService: new InquiryService(httpClient),
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),

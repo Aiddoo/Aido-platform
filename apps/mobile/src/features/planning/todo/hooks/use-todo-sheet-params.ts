@@ -3,7 +3,6 @@ import { useLocalSearchParams } from 'expo-router';
 
 import {
   subTodoScreenParamsSchema,
-  todoCategoryScreenParamsSchema,
   todoCreateCategoryParamsSchema,
   todoCreatePrefillParamsSchema,
   todoCreateVoiceHintParamsSchema,
@@ -33,8 +32,4 @@ export function useTodoCreateVoiceHintParam(): boolean {
 
 export function useSubTodoScreenParams() {
   return subTodoScreenParamsSchema.parse(useLocalSearchParams());
-}
-
-export function useTodoCategoryScreenParams() {
-  return todoCategoryScreenParamsSchema.parse(useLocalSearchParams());
 }

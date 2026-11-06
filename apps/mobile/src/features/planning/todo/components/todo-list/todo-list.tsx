@@ -1,3 +1,4 @@
+import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -38,7 +39,6 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { ReorderCoachmark } from '../../../../device/coachmark/components/reorder-coachmark';
 import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';

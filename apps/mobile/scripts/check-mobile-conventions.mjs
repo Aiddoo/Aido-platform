@@ -147,6 +147,11 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/engagement/comment/domains/todo-comment.model.ts',
   'apps/mobile/src/features/planning/todo/domains/todo-repeat.model.ts',
   'apps/mobile/src/features/voice/domains/',
+  'apps/mobile/src/features/planning/category/components/',
+  'apps/mobile/src/features/planning/category/constants/',
+  'apps/mobile/src/features/planning/category/domains/',
+  'apps/mobile/src/features/planning/category/hooks/',
+  'apps/mobile/src/features/planning/category/queries/',
 ];
 /** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
 const SCHEMA_FOLDER_FEATURE_PATHS = [
@@ -170,6 +175,7 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/device/app-icon/',
   'apps/mobile/src/features/app-config/app-version/',
   'apps/mobile/src/features/device/store-review/',
+  'apps/mobile/src/features/planning/category/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

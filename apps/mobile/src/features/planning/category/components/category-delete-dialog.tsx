@@ -63,7 +63,7 @@ export function CategoryDeleteDialog({
             className="w-full self-center"
             style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}
           >
-            <TodoMoveCategoryDeleteSection
+            <CategoryMoveDeleteForm
               category={category}
               otherCategories={otherCategories}
               onCancel={() => onOpenChange(false)}
@@ -105,7 +105,7 @@ export function CategoryDeleteDialog({
   );
 }
 
-interface TodoMoveCategoryDeleteSectionProps {
+interface CategoryMoveDeleteFormProps {
   category: TodoCategoryWithCount;
   otherCategories: TodoCategoryWithCount[];
   onCancel: () => void;
@@ -113,13 +113,13 @@ interface TodoMoveCategoryDeleteSectionProps {
   isPending: boolean;
 }
 
-const TodoMoveCategoryDeleteSection = ({
+function CategoryMoveDeleteForm({
   category,
   otherCategories,
   onCancel,
   onDelete,
   isPending,
-}: TodoMoveCategoryDeleteSectionProps) => {
+}: CategoryMoveDeleteFormProps) {
   const { t } = useTranslation('todo');
   const [selectedValue, setSelectedValue] = useState(String(otherCategories[0]?.id));
   const selectedCategory = otherCategories.find((c) => String(c.id) === selectedValue);
@@ -154,7 +154,7 @@ const TodoMoveCategoryDeleteSection = ({
       />
     </>
   );
-};
+}
 
 interface DialogActionsProps {
   onCancel: () => void;
@@ -162,7 +162,7 @@ interface DialogActionsProps {
   isPending: boolean;
 }
 
-const DialogActions = ({ onCancel, onDelete, isPending }: DialogActionsProps) => {
+function DialogActions({ onCancel, onDelete, isPending }: DialogActionsProps) {
   const { t } = useTranslation('common');
   return (
     <HStack gap={8} justify="end">
@@ -180,24 +180,26 @@ const DialogActions = ({ onCancel, onDelete, isPending }: DialogActionsProps) =>
       </Button>
     </HStack>
   );
-};
+}
 
 interface CategoryRadioItemProps {
   category: TodoCategoryWithCount;
 }
 
-const CategoryRadioItem = ({ category }: CategoryRadioItemProps) => (
-  <RadioGroup.Item value={String(category.id)}>
-    <HStack align="center" gap={10} className="rounded-lg px-3 py-2.5">
-      <Radio>
-        <Radio.Indicator />
-      </Radio>
-      <HStack align="center" gap={8}>
-        <Box className="size-2.5 rounded-full" style={{ backgroundColor: category.color }} />
-        <Text size="b3" weight="medium">
-          {category.name}
-        </Text>
+function CategoryRadioItem({ category }: CategoryRadioItemProps) {
+  return (
+    <RadioGroup.Item value={String(category.id)}>
+      <HStack align="center" gap={10} className="rounded-lg px-3 py-2.5">
+        <Radio>
+          <Radio.Indicator />
+        </Radio>
+        <HStack align="center" gap={8}>
+          <Box className="size-2.5 rounded-full" style={{ backgroundColor: category.color }} />
+          <Text size="b3" weight="medium">
+            {category.name}
+          </Text>
+        </HStack>
       </HStack>
-    </HStack>
-  </RadioGroup.Item>
-);
+    </RadioGroup.Item>
+  );
+}
