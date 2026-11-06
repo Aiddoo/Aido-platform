@@ -2,7 +2,7 @@ import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
 import { t } from '@src/shared/i18n';
 
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';
-import { getCalendarWeek } from './date-key';
+import { getCalendarWeek, isSameYearDateKey } from './date-key';
 
 function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
   return context.locale === 'ko-KR' ? 'ko' : 'en';
@@ -40,7 +40,7 @@ export function formatWeekOfMonthLabel(
   context: DateFormatContext,
 ): string {
   const week = getCalendarWeek(dateKey);
-  const isCurrentYear = week.startDateKey.slice(0, 4) === todayDateKey.slice(0, 4);
+  const isCurrentYear = isSameYearDateKey(week.startDateKey, todayDateKey);
   return t('common:calendar.weekHeader', {
     lng: toCatalogLanguage(context),
     month: formatDateKeyLabel(

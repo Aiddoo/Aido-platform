@@ -1,4 +1,4 @@
-import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import { addDaysToDateKey, getCalendarWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
 
 export type DateSectionKey = 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'earlier';
 
@@ -13,7 +13,7 @@ export function getDateSectionKey(dateKey: string, todayDateKey: string): DateSe
   if (getCalendarWeek(dateKey).startDateKey === getCalendarWeek(todayDateKey).startDateKey) {
     return 'thisWeek';
   }
-  if (dateKey.slice(0, 7) === todayDateKey.slice(0, 7)) {
+  if (isSameMonthDateKey(dateKey, todayDateKey)) {
     return 'thisMonth';
   }
   return 'earlier';

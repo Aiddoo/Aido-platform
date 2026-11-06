@@ -35,6 +35,10 @@ export function getMondayOfDateKey(dateKey: string): string {
   return parseDateKey(dateKey).isoWeekday(MONDAY).format(DATE_KEY_FORMAT);
 }
 
+export function getDayOfMonth(dateKey: string): number {
+  return parseDateKey(dateKey).date();
+}
+
 export function getDaysInDateKeyMonth(dateKey: string): number {
   return parseDateKey(dateKey).daysInMonth();
 }

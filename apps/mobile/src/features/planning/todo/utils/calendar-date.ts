@@ -1,5 +1,10 @@
 import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
-import { getCalendarWeek, type CalendarWeek, getDayOfWeek } from '@src/shared/date/date-key';
+import {
+  getCalendarWeek,
+  type CalendarWeek,
+  getDayOfWeek,
+  isSameMonthDateKey,
+} from '@src/shared/date/date-key';
 import { toDateKey } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import dayjs from 'dayjs';
@@ -44,7 +49,7 @@ export function isDateToday(date: Date, now: Date): boolean {
 }
 
 export function isSameMonth(date1: Date, date2: Date): boolean {
-  return toDeviceDateKey(date1).slice(0, 7) === toDeviceDateKey(date2).slice(0, 7);
+  return isSameMonthDateKey(toDeviceDateKey(date1), toDeviceDateKey(date2));
 }
 
 export function isAfterDay(date1: Date, date2: Date): boolean {

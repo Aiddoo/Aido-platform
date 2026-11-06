@@ -3,6 +3,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
+import { isSameMonthDateKey, isSameYearDateKey } from './date-key';
 import { getZonedHour, type Instant, toDate, toDateKey } from './instant';
 import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
 import { isValidHHmm, parseHour, parseMinute } from './time-of-day';
@@ -109,8 +110,7 @@ export function formatDateKeyRange(
   endDateKey: string,
   context: DateFormatContext,
 ): string {
-  const kind: DateLabel =
-    startDateKey.slice(0, 4) === endDateKey.slice(0, 4) ? 'monthDay' : 'fullDate';
+  const kind: DateLabel = isSameYearDateKey(startDateKey, endDateKey) ? 'monthDay' : 'fullDate';
   return `${formatDateKeyLabel(startDateKey, kind, context)} ~ ${formatDateKeyLabel(endDateKey, kind, context)}`;
 }
 
@@ -119,15 +119,14 @@ export function formatDateKeyCompactRange(
   endDateKey: string,
   context: DateFormatContext,
 ): string {
-  if (startDateKey.slice(0, 4) !== endDateKey.slice(0, 4)) {
+  if (!isSameYearDateKey(startDateKey, endDateKey)) {
     return formatDateKeyRange(startDateKey, endDateKey, context);
   }
-  const endLabel =
-    startDateKey.slice(0, 7) === endDateKey.slice(0, 7)
-      ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(
-          toDateKeyInstant(endDateKey),
-        )
-      : formatDateKeyLabel(endDateKey, 'monthDay', context);
+  const endLabel = isSameMonthDateKey(startDateKey, endDateKey)
+    ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(
+        toDateKeyInstant(endDateKey),
+      )
+    : formatDateKeyLabel(endDateKey, 'monthDay', context);
   return `${formatDateKeyLabel(startDateKey, 'monthDay', context)}~${endLabel}`;
 }
 
@@ -216,8 +215,10 @@ export function formatRelativeTime(
   if (elapsedMs < RELATIVE_DAY_LIMIT * DAY_MS) {
     return labels.daysAgo(Math.floor(elapsedMs / DAY_MS));
   }
-  const isSameYear =
-    toDateKey(date, context.timeZone).slice(0, 4) === toDateKey(now, context.timeZone).slice(0, 4);
+  const isSameYear = isSameYearDateKey(
+    toDateKey(date, context.timeZone),
+    toDateKey(now, context.timeZone),
+  );
   return formatDateLabel(date, isSameYear ? 'monthDay' : 'numericDate', context);
 }
 

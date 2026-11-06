@@ -7,7 +7,15 @@ import {
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
-import { addDaysToDateKey, diffDateKeysInDays, getDayOfWeek } from '@src/shared/date/date-key';
+import {
+  addDaysToDateKey,
+  diffDateKeysInDays,
+  getDayOfMonth,
+  getDayOfWeek,
+  getDaysInDateKeyMonth,
+  getMondayOfDateKey,
+  getMonthEndDateKey,
+} from '@src/shared/date/date-key';
 import { isEqual } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -81,10 +89,6 @@ export function getWeekday(dateKey: string): DayOfWeek {
   return DAYS_OF_WEEK.find((day) => DAY_OF_WEEK_MAP[day] === weekday) ?? 'MON';
 }
 
-export function getMonthDay(dateKey: string): number {
-  return Number(dateKey.slice(8, 10));
-}
-
 export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
   return match(repeat)
     .returnType<TodoRepeatKind>()
@@ -129,7 +133,7 @@ export function withRepeatStartDate(
     .with({ frequency: 'DAILY' }, (daily) => daily)
     .with({ frequency: 'MONTHLY' }, (monthly) => ({
       ...monthly,
-      monthDay: getMonthDay(nextStartDate),
+      monthDay: getDayOfMonth(nextStartDate),
     }))
     .with({ frequency: 'WEEKLY' }, (weekly) =>
       hasSameWeekdays(weekly.weekdays, [getWeekday(previousStartDate)])
@@ -211,27 +215,20 @@ export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEdit
   return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
 }
 
-function getMonday(dateKey: string): string {
-  return addDaysToDateKey(dateKey, -((getDayOfWeek(dateKey) + 6) % DAYS_PER_WEEK));
-}
-
-function getDaysInMonth(dateKey: string): number {
-  return new Date(
-    Date.UTC(Number(dateKey.slice(0, 4)), Number(dateKey.slice(5, 7)), 0),
-  ).getUTCDate();
-}
-
 /** 서버 RepeatRule과 같은 규칙: 격주는 시작일이 속한 월요일 시작 주 기준, 매월 n일은 없는 달이면 말일 */
 function isOccurrenceDateKey(repeat: TodoRepeat, startDate: string, dateKey: string): boolean {
   return match(repeat)
     .with({ frequency: 'DAILY' }, () => true)
     .with({ frequency: 'WEEKLY' }, ({ interval, weekdays }) => {
-      const weeks = diffDateKeysInDays(getMonday(startDate), getMonday(dateKey)) / DAYS_PER_WEEK;
+      const weeks =
+        diffDateKeysInDays(getMondayOfDateKey(startDate), getMondayOfDateKey(dateKey)) /
+        DAYS_PER_WEEK;
       return weekdays.includes(getWeekday(dateKey)) && weeks % interval === 0;
     })
     .with(
       { frequency: 'MONTHLY' },
-      ({ monthDay }) => getMonthDay(dateKey) === Math.min(monthDay, getDaysInMonth(dateKey)),
+      ({ monthDay }) =>
+        getDayOfMonth(dateKey) === Math.min(monthDay, getDaysInDateKeyMonth(dateKey)),
     )
     .exhaustive();
 }
@@ -301,8 +298,7 @@ export function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolea
 
 /** 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다 */
 export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
-  const lastDay = String(getDaysInMonth(dateKey)).padStart(2, '0');
-  return isBeyondRepeatHorizon(`${dateKey.slice(0, 8)}${lastDay}`, todayKey);
+  return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
 }
 
 /**

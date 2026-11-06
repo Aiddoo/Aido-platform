@@ -1,16 +1,12 @@
 import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES, type DayOfWeek } from '@aido/api/vocabulary';
+import { getDayOfMonth } from '@src/shared/date/date-key';
 import { toDateKey } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
-import {
-  getMonthDay,
-  type TodoRepeat,
-  type TodoRepeatEnd,
-  TodoRepeatPolicy,
-} from './todo-repeat.model';
+import { type TodoRepeat, type TodoRepeatEnd, TodoRepeatPolicy } from './todo-repeat.model';
 
 const todoRepeatFormShape = z.object({
   startDate: z.date(),
@@ -32,7 +28,7 @@ export function getTodoRepeatFormMonthDay({
   monthDay,
   startDate,
 }: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>): number {
-  return monthDay ?? getMonthDay(toDateKey(startDate, getDeviceTimezone()));
+  return monthDay ?? getDayOfMonth(toDateKey(startDate, getDeviceTimezone()));
 }
 
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
