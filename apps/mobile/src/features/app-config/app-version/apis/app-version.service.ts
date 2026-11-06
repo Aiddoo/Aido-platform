@@ -2,9 +2,9 @@ import { appVersionResponseSchema } from '@aido/api';
 import type { AppStoreListingGateway } from '@src/core/ports/app-store';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';
-import { ParseError } from '@src/shared/errors/infra-error';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
+import { ok, unwrap } from '@src/shared/errors/result';
 
-import type { AppVersionConfig } from '../domains/app-version.model';
 import { toAppVersionConfig } from './app-version.mapper';
 
 export class AppVersionService {
@@ -16,14 +16,15 @@ export class AppVersionService {
 
   getInstallation = () => this.metadata.getInstallation();
 
-  getConfig = async (signal?: AbortSignal): Promise<AppVersionConfig> => {
-    const raw = await this.jsonFetcher.get('v1/app-config/app-version', signal);
-    const parsed = appVersionResponseSchema.safeParse(raw);
-    if (!parsed.success) {
-      throw new ParseError(`[AppVersionService] Invalid response: ${parsed.error.message}`);
-    }
-    return toAppVersionConfig(parsed.data);
-  };
+  getConfig = async (signal?: AbortSignal) =>
+    unwrap(
+      parseApiResponse(
+        ok(await this.jsonFetcher.get('v1/app-config/app-version', signal)),
+        appVersionResponseSchema,
+        toAppVersionConfig,
+        '[AppVersionService] Invalid response',
+      ),
+    );
 
   openStoreListing = () => this.listing.openListing();
 }

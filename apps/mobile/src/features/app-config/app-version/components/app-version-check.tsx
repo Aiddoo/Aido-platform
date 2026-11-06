@@ -36,7 +36,7 @@ export function AppVersionCheck() {
       return;
     }
 
-    if (AppVersionPolicy.shouldOpenStore(input)) {
+    if (AppVersionPolicy.isOutdated(input)) {
       try {
         await service.openStoreListing();
       } catch (error) {
@@ -46,7 +46,7 @@ export function AppVersionCheck() {
       return;
     }
 
-    if (AppVersionPolicy.shouldShowLatestDialog(input)) {
+    if (AppVersionPolicy.isUpToDate(input)) {
       return confirmDialog.open({
         title: t('latestTitle'),
         description: t('latestDescription'),

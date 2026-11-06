@@ -122,6 +122,9 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/device/app-icon/constants/',
   'apps/mobile/src/features/device/app-icon/domains/',
   'apps/mobile/src/features/device/app-icon/queries/',
+  'apps/mobile/src/features/app-config/app-version/components/',
+  'apps/mobile/src/features/app-config/app-version/domains/',
+  'apps/mobile/src/features/app-config/app-version/queries/',
   'apps/mobile/src/features/notification/domains/notification-badge.model.ts',
   'apps/mobile/src/features/notification/domains/notification.model.ts',
   'apps/mobile/src/features/notification/domains/push-permission.model.ts',
@@ -139,6 +142,7 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/device/activation/',
   'apps/mobile/src/features/identity/preference/',
   'apps/mobile/src/features/device/app-icon/',
+  'apps/mobile/src/features/app-config/app-version/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;

@@ -1,14 +1,12 @@
 import type { AppVersionResponse } from '@aido/api';
 
-import type { AppVersionConfig } from '../domains/app-version.model';
+import type { AppVersionConfig } from '../schemas/app-version.schema';
 
-export const toAppVersionConfig = (response: AppVersionResponse): AppVersionConfig =>
-  response.enabled
+export function toAppVersionConfig(dto: AppVersionResponse): AppVersionConfig {
+  return dto.enabled
     ? {
         enabled: true,
-        latestByPlatform: {
-          ios: response.ios.latestVersion,
-          android: response.android.latestVersion,
-        },
+        latestByPlatform: { ios: dto.ios.latestVersion, android: dto.android.latestVersion },
       }
     : { enabled: false };
+}
