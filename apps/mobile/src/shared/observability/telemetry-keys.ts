@@ -258,19 +258,6 @@ export function toFriendSearchLengthBucket(query: string): FriendSearchLengthBuc
  * 상태만 수집해 기능별 노출 → CTA → 실제 성공 퍼널을 계산한다.
  */
 export interface GrowthEventMap {
-  feature_hub_impression: {
-    campaign_id: string;
-    source: FeatureHubSource;
-  };
-  feature_hub_dismissed: {
-    campaign_id: string;
-    source: FeatureHubSource;
-  };
-  feature_card_cta: {
-    campaign_id: string;
-    feature: FeatureKey;
-    source: FeatureHubSource;
-  };
   feature_action_success: {
     campaign_id: string;
     feature: FeatureKey;

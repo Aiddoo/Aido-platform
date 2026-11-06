@@ -28,6 +28,7 @@ export function Release1150Steps({ source }: { source: FeatureHubSource }) {
   const stepper = useStepper<Release1150StepMap>({
     id: 'whats-new-1.15.0',
     initial: { step: 'voiceTodo', context: {} },
+    onStepChange: flow.trackStepViewed,
   });
   const isLast = stepper.step === 'voiceNote';
 
@@ -63,7 +64,7 @@ export function Release1150Steps({ source }: { source: FeatureHubSource }) {
                 description={t('v1_15_0.voiceTodo.description')}
                 actionLabel={t('v1_15_0.voiceTodo.action')}
                 onAction={() => {
-                  flow.trackCta('voice_quick');
+                  flow.trackCta({ step: 'voiceTodo', feature: 'voice_quick' });
                   flow.leaveTo({ pathname: '/todo/new', params: { voiceHint: '1' } });
                 }}
               />
@@ -80,7 +81,7 @@ export function Release1150Steps({ source }: { source: FeatureHubSource }) {
                 description={t('v1_15_0.voiceNote.description')}
                 actionLabel={t('v1_15_0.voiceNote.action')}
                 onAction={() => {
-                  flow.trackCta('voice_note');
+                  flow.trackCta({ step: 'voiceNote', feature: 'voice_note' });
                   startVoiceNote({ navigate: flow.leaveTo });
                 }}
               />

@@ -17,7 +17,7 @@ import { WHATS_NEW_LOG_EVENT } from '../constants/whats-new-log-events';
 import type { Release } from '../schemas/release.schema';
 
 interface WhatsNewFlowInput {
-  release: Pick<Release, 'campaignId'>;
+  release: Pick<Release, 'id' | 'campaignId'>;
   source: FeatureHubSource;
 }
 
@@ -34,7 +34,7 @@ function goBack() {
  * 화면이 사라질 때 닫은 것으로 남기고, 실제 기능으로 떠나거나 끝까지 본 경우만 뺀다.
  */
 export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
-  const { campaignId } = release;
+  const { id: releaseId, campaignId } = release;
   const { trackEvent } = useTrack();
   const featureAttribution = useFeatureAttribution();
   const logger = useLogger();
@@ -42,6 +42,7 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
   const accountId = user?.id;
   const isFinishedRef = useRef(false);
+  const viewedStepsRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (accountId != null) {
@@ -64,8 +65,17 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
     router.replace(href);
   });
 
-  const trackCta = (feature: FeatureKey) => {
+  const trackStepViewed = ({ step, index }: { step: string; index: number }) => {
+    if (viewedStepsRef.current.has(step)) {
+      return;
+    }
+    viewedStepsRef.current.add(step);
+    trackEvent('whats_new_step_viewed', { release_id: releaseId, step, index, source });
+  };
+
+  const trackCta = ({ step, feature }: { step: string; feature: FeatureKey }) => {
     trackEvent('feature_card_cta', { campaign_id: campaignId, feature, source });
+    trackEvent('whats_new_cta_pressed', { release_id: releaseId, step });
     if (accountId == null) {
       return;
     }
@@ -80,8 +90,9 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
 
   const complete = useSingleTap(() => {
     isFinishedRef.current = true;
+    trackEvent('whats_new_completed', { release_id: releaseId, source });
     goBack();
   });
 
-  return { close, complete, leaveTo, trackCta };
+  return { close, complete, leaveTo, trackCta, trackStepViewed };
 }

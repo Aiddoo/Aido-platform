@@ -103,14 +103,17 @@
 
 **기능 발견 / 활성화**
 
-| 이벤트                                    | 파라미터                                                                                                                                        | 의미                       |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `feature_hub_impression`                  | `campaign_id` · `source`: `auto`·`feed_reentry`·`mypage`                                                                                        | 기능 소개 허브 노출        |
-| `feature_hub_dismissed`                   | 위와 같다                                                                                                                                       | 닫음                       |
-| `feature_card_cta`                        | `campaign_id` · `feature`: `memo_ai`·`friend_search`·`todo_reorder`·`category_reorder`·`todo_creation`·`friend_invite`·`voice_quick` · `source` | 카드 CTA                   |
-| `feature_action_success`                  | `campaign_id` · `feature`                                                                                                                       | CTA 뒤 실제 성공(귀속)     |
-| `activation_completed`                    | `campaign_id` · `days_since_signup`(int)                                                                                                        | 활성화 체크리스트 완료     |
-| `coachmark_shown` / `coachmark_dismissed` | `kind`(`CoachmarkKind`)                                                                                                                         | 기능 안내 말풍선 노출·닫기 |
+| 이벤트                                    | 파라미터                                                                                                                                                     | 의미                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| `feature_hub_impression`                  | `campaign_id` · `source`: `auto`·`feed_reentry`·`mypage`                                                                                                     | 새로운 기능 흐름 열림      |
+| `feature_hub_dismissed`                   | 위와 같다                                                                                                                                                    | CTA·완료 없이 화면을 떠남  |
+| `feature_card_cta`                        | `campaign_id` · `feature`: `memo_ai`·`friend_search`·`todo_reorder`·`category_reorder`·`todo_creation`·`friend_invite`·`voice_quick`·`voice_note` · `source` | 단계 CTA                   |
+| `feature_action_success`                  | `campaign_id` · `feature`                                                                                                                                    | CTA 뒤 실제 성공(귀속)     |
+| `whats_new_step_viewed`                   | `release_id` · `step` · `index`(int) · `source`                                                                                                              | 흐름 한 번에 단계당 한 번  |
+| `whats_new_completed`                     | `release_id` · `source`                                                                                                                                      | 마지막 단계에서 완료       |
+| `whats_new_cta_pressed`                   | `release_id` · `step`                                                                                                                                        | 단계 CTA 누름              |
+| `activation_completed`                    | `campaign_id` · `days_since_signup`(int)                                                                                                                     | 활성화 체크리스트 완료     |
+| `coachmark_shown` / `coachmark_dismissed` | `kind`(`CoachmarkKind`)                                                                                                                                      | 기능 안내 말풍선 노출·닫기 |
 
 **AI / 메모**
 

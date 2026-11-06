@@ -121,6 +121,9 @@ export function useApplyActionPlanMutationOptions({
         if (source === 'memo') {
           trackAttributedFeatureSuccess({ accountId, feature: 'memo_ai' });
         }
+        if (source === 'quick-voice') {
+          trackAttributedFeatureSuccess({ accountId, feature: 'voice_quick' });
+        }
       }
     },
     onError: (error) => {
@@ -190,7 +193,7 @@ interface CreateVoiceNoteDigestVariables extends PreparedPlanRequest<VoiceNoteDi
 export function useCreateVoiceNoteDigestMutationOptions() {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
-  const { trackEvent } = useTrack();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const handleFailure = usePlanFailureHandler('VOICE_NOTE', {
     surface: 'voice_note',
     showsFailureInline: true,
@@ -213,6 +216,10 @@ export function useCreateVoiceNoteDigestMutationOptions() {
         ...summarizePlanForAnalytics(plan),
         charged,
       });
+      const accountId = getCachedMe(queryClient)?.id;
+      if (accountId != null) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'voice_note' });
+      }
     },
     onError: (error, { signal }) => {
       if (signal?.aborted === true) {

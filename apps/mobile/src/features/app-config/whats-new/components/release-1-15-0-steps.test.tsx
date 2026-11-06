@@ -81,6 +81,12 @@ describe('Release1150Steps', () => {
       campaign_id: RELEASE_1_15_0.campaignId,
       source: 'auto',
     });
+    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_step_viewed', {
+      release_id: RELEASE_1_15_0.id,
+      step: 'voiceTodo',
+      index: 0,
+      source: 'auto',
+    });
     expect(repository.isSeen({ userId: ACCOUNT_ID, campaignId: RELEASE_1_15_0.campaignId })).toBe(
       true,
     );
@@ -104,6 +110,10 @@ describe('Release1150Steps', () => {
       feature: 'voice_quick',
       source: 'auto',
     });
+    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_cta_pressed', {
+      release_id: RELEASE_1_15_0.id,
+      step: 'voiceTodo',
+    });
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(
       'feature_hub_dismissed',
       expect.anything(),
@@ -121,6 +131,44 @@ describe('Release1150Steps', () => {
     // Then
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/voice-notes/record'));
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('뒤로 돌아와도 단계 조회는 단계마다 한 번만 남는다', async () => {
+    // Given
+    const { analytics } = await renderSteps();
+
+    // When
+    await fireEvent.press(screen.getByText('다음'));
+    await fireEvent.press(screen.getByText('이전'));
+
+    // Then
+    const stepViews = jest
+      .mocked(analytics.trackEvent)
+      .mock.calls.filter(([eventName]) => eventName === 'whats_new_step_viewed');
+    expect(stepViews).toHaveLength(2);
+  });
+
+  it('마지막 단계에서 완료하면 완료를 남기고 닫은 것으로 세지 않는다', async () => {
+    // Given
+    const { analytics, unmount } = await renderSteps();
+    const now = jest.spyOn(Date, 'now');
+    await fireEvent.press(screen.getByText('다음'));
+
+    // When
+    now.mockReturnValue(Date.now() + 60_000);
+    await fireEvent.press(screen.getByText('완료'));
+    await unmount();
+    now.mockRestore();
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_completed', {
+      release_id: RELEASE_1_15_0.id,
+      source: 'auto',
+    });
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+      'feature_hub_dismissed',
+      expect.anything(),
+    );
   });
 
   it('CTA 없이 화면이 사라지면 닫은 것으로 남긴다', async () => {

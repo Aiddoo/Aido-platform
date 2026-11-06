@@ -24,6 +24,7 @@ export function Release1140Steps({ source, isInviteAvailable }: Release1140Steps
   const stepper = useStepper<Release1140StepMap>({
     id: 'whats-new-1.14.0',
     initial: { step: 'friendInvite', context: {} },
+    onStepChange: flow.trackStepViewed,
   });
 
   return (
@@ -40,7 +41,7 @@ export function Release1140Steps({ source, isInviteAvailable }: Release1140Steps
             description={t('v1_14_0.friendInvite.description')}
             actionLabel={isInviteAvailable ? t('v1_14_0.friendInvite.action') : undefined}
             onAction={() => {
-              flow.trackCta('friend_invite');
+              flow.trackCta({ step: 'friendInvite', feature: 'friend_invite' });
               flow.leaveTo('/friends/invite');
             }}
           />
