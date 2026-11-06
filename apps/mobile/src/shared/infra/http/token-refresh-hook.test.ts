@@ -1,4 +1,5 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
 import { createMockTokenStore, runKyAfterResponseHook } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
@@ -31,13 +32,15 @@ describe('createTokenRefreshHook', () => {
   let endSession: jest.MockedFunction<(details: SessionExpiredDetails) => Promise<void>>;
   let captureMessage: jest.SpyInstance;
   let hook: ReturnType<typeof createTokenRefreshHook>;
+  let sessionEpoch: SessionEpoch;
 
   beforeEach(() => {
+    sessionEpoch = createSessionEpoch();
     tokenStore = createMockTokenStore();
     refresh = jest.fn();
     endSession = jest.fn().mockResolvedValue(undefined);
     captureMessage = jest.spyOn(errorReporter, 'captureMessage').mockImplementation(() => {});
-    hook = createTokenRefreshHook({ tokenStore, refresh, endSession });
+    hook = createTokenRefreshHook({ tokenStore, refresh, endSession, sessionEpoch });
   });
 
   afterEach(() => {

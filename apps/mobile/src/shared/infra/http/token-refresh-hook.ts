@@ -1,5 +1,6 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import { logger } from '@src/shared/infra/logger/global-logger';
@@ -14,6 +15,13 @@ import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 /** 갱신 후 재시도된 요청 표시 — 재시도가 다시 401이어도 갱신을 반복하지 않는다 */
 export const RETRY_MARKER_HEADER = 'x-retried-after-refresh';
 
+/** 요청을 보낸 세션의 세대를 ky `context`에 남긴다. 서버로 나가는 헤더에 싣지 않는다 */
+const SENT_EPOCH_CONTEXT_KEY = 'sentSessionEpoch';
+
+export function markRequestEpoch(context: Record<string, unknown>, epoch: number): void {
+  context[SENT_EPOCH_CONTEXT_KEY] = epoch;
+}
+
 /** 세션 종료 확정을 위임하는 포트. 구현은 `SessionManager.end`. */
 export type EndSession = (details: SessionExpiredDetails) => Promise<void>;
 
@@ -21,6 +29,7 @@ export interface TokenRefreshHookDeps {
   tokenStore: TokenStore;
   refresh: TokenRefresher;
   endSession: EndSession;
+  sessionEpoch: SessionEpoch;
 }
 
 /**
@@ -36,7 +45,8 @@ export interface TokenRefreshHookDeps {
  * - 이미 다른 flight가 토큰을 회전한 뒤 도착한 401(stale token)은 갱신 없이
  *   저장된 최신 토큰으로 바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
  * - 세션이 무효로 확정되면(`invalid`) 원 401 응답을 반환하고 세션을 종료한다.
- * - 갱신 도중 세션이 끝났으면(`superseded`) 세션을 끝내지 않고 원 401을 반환한다.
+ * - 요청을 보낸 뒤 세션이 끝났으면 재시도도 갱신도 하지 않고 원 401을 반환한다. 재시도하면
+ *   A가 보낸 요청이 저장된 B 토큰으로 B 계정에서 실행된다. 갱신 도중 끝난 경우(`superseded`)도 같다.
  * - 갱신의 일시 실패(네트워크·5xx·타임아웃·잠긴 키체인)는 갱신기가 재시도 가능한
  *   인프라 에러로 throw하며, 훅은 개입하지 않고 그대로 전파한다 — React Query가
  *   5xx/네트워크와 동일하게 자동 재시도한다(재시도 화면 대신 로딩 유지, 세션 보존).
@@ -44,7 +54,7 @@ export interface TokenRefreshHookDeps {
  *   warning으로 남기고 원 401을 반환한다(화면별 QueryErrorBoundary가 담음, 무음 금지).
  */
 export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterResponseHook => {
-  const { tokenStore, refresh, endSession } = deps;
+  const { tokenStore, refresh, endSession, sessionEpoch } = deps;
 
   // 새 액세스 토큰과 마커를 실어 강제 재시도한다. `new Request(request, ...)`가 원 요청의
   // body·method·나머지 헤더를 보존하고, Authorization만 갱신된 토큰으로 덮어쓴다.
@@ -55,7 +65,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     return ky.retry({ request: new Request(request, { headers }) });
   };
 
-  return async ({ request, response }) => {
+  return async ({ request, options, response }) => {
     if (response.status !== 401) {
       return response;
     }
@@ -67,6 +77,11 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
         statusCode: 401,
         endpoint: getPathname(request.url ?? ''),
       });
+      return response;
+    }
+
+    const sentEpoch = options.context[SENT_EPOCH_CONTEXT_KEY];
+    if (typeof sentEpoch === 'number' && sentEpoch !== sessionEpoch.current()) {
       return response;
     }
 

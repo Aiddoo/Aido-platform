@@ -1,6 +1,8 @@
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
-import { createSessionEpoch } from '@src/core/session/session-epoch';
+import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { createPendingResponse } from '@src/shared/__tests__';
 import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
+import { waitFor } from '@testing-library/react-native';
 import ky, { type KyInstance } from 'ky';
 
 import { createAuthClient } from './auth-client';
@@ -61,6 +63,10 @@ const toRequest = (input: Parameters<typeof fetch>[0]): Request => {
   return input;
 };
 
+async function waitForFetchCalls(count: number) {
+  await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(count));
+}
+
 describe('createAuthClient: 동시 401', () => {
   const ROTATED = JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } });
 
@@ -93,6 +99,7 @@ describe('createAuthClient: 동시 401', () => {
           sessionEpoch: createSessionEpoch(),
         }),
         endSession,
+        sessionEpoch: createSessionEpoch(),
       }),
     );
 
@@ -104,6 +111,98 @@ describe('createAuthClient: 동시 401', () => {
     expect(requestRefresh).toHaveBeenCalledTimes(1);
     expect(authorizations).toEqual(['Bearer access-2', 'Bearer access-2', 'Bearer access-2']);
     expect(endSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('createAuthClient: 계정 전환과 늦은 응답', () => {
+  const TOKENS_A = { accessToken: 'access-a', refreshToken: 'refresh-a' };
+  const TOKENS_B = { accessToken: 'access-b', refreshToken: 'refresh-b' };
+
+  function createPipeline(requestRefresh: RefreshTokensRequest) {
+    const sessionEpoch = createSessionEpoch();
+    const tokenStore = withSessionEpoch(createStatefulTokenStore(TOKENS_A), sessionEpoch);
+    const endSession = jest.fn(async () => undefined);
+    const http = new KyHttpClient(
+      createAuthClient({
+        tokenStore,
+        refresh: createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch }),
+        endSession,
+        sessionEpoch,
+      }),
+    );
+    return { tokenStore, endSession, http };
+  }
+
+  it('A의 늦은 401을 저장된 B 토큰으로 재시도하지 않는다', async () => {
+    // Given
+    const firstResponse = createPendingResponse(errorBody(401, 'AUTH_0102', 'expired'));
+    const sent: Array<string | null> = [];
+    global.fetch = jest.fn((input) => {
+      sent.push(toRequest(input).headers.get('Authorization'));
+      return sent.length === 1 ? firstResponse.response : Promise.resolve(successBody({ id: 1 }));
+    });
+    const requestRefresh = jest.fn<Promise<Response>, [string]>();
+    const { tokenStore, endSession, http } = createPipeline(requestRefresh);
+    const requestOfA = http.post('v1/todos', { title: 'A의 할 일' });
+    await waitForFetchCalls(1);
+
+    // When
+    await tokenStore.clear();
+    await tokenStore.save(TOKENS_B);
+    firstResponse.settle();
+    const result = await requestOfA;
+
+    // Then
+    expect(result.ok).toBe(false);
+    expect(sent).toEqual(['Bearer access-a']);
+    expect(requestRefresh).not.toHaveBeenCalled();
+    expect(endSession).not.toHaveBeenCalled();
+    await expect(tokenStore.readRefreshToken()).resolves.toBe(TOKENS_B.refreshToken);
+  });
+
+  it('A의 늦은 401이 B의 토큰을 지우거나 B 세션을 끝내지 않는다', async () => {
+    // Given
+    const refreshOfA = createPendingResponse(errorBody(401, 'SESSION_0702', 'revoked'));
+    global.fetch = jest.fn(async () => errorBody(401, 'AUTH_0102', 'expired'));
+    const { tokenStore, endSession, http } = createPipeline(() => refreshOfA.response);
+    const requestOfA = http.get('v1/todos');
+    await waitForFetchCalls(1);
+    await Promise.resolve();
+
+    // When
+    await tokenStore.clear();
+    await tokenStore.save(TOKENS_B);
+    refreshOfA.settle();
+    await requestOfA;
+
+    // Then
+    expect(endSession).not.toHaveBeenCalled();
+    await expect(tokenStore.readRefreshToken()).resolves.toBe(TOKENS_B.refreshToken);
+  });
+
+  it('같은 세션의 늦은 401은 지금처럼 저장된 최신 토큰으로 재시도한다', async () => {
+    // Given
+    const firstResponse = createPendingResponse(errorBody(401, 'AUTH_0102', 'expired'));
+    const sent: Array<string | null> = [];
+    global.fetch = jest.fn((input) => {
+      const request = toRequest(input);
+      sent.push(request.headers.get('Authorization'));
+      return request.headers.get(RETRY_MARKER_HEADER) === '1'
+        ? Promise.resolve(successBody({ id: 1 }))
+        : firstResponse.response;
+    });
+    const { tokenStore, http } = createPipeline(jest.fn());
+    const request = http.get('v1/todos');
+    await waitForFetchCalls(1);
+
+    // When
+    await tokenStore.save({ accessToken: 'access-a2', refreshToken: 'refresh-a2' });
+    firstResponse.settle();
+    const result = await request;
+
+    // Then
+    expect(result.ok).toBe(true);
+    expect(sent).toEqual(['Bearer access-a', 'Bearer access-a2']);
   });
 });
 
@@ -133,7 +232,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
         ],
         afterResponse: [
           recordApiFailureBreadcrumb,
-          createTokenRefreshHook({ tokenStore, refresh, endSession }),
+          createTokenRefreshHook({ tokenStore, refresh, endSession, sessionEpoch }),
         ],
       },
     });

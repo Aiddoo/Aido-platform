@@ -321,6 +321,7 @@ describe('로그아웃과 늦은 갱신', () => {
           sessionEpoch,
         }),
         endSession: (details) => sessionManager.end(details),
+        sessionEpoch,
       }),
     );
     const authService = new AuthService(createHttpClientStub(), http, tokenStore);
@@ -368,6 +369,7 @@ describe('토큰 만료', () => {
       tokenStore,
       refresh: createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch }),
       endSession: (details) => sessionManager.end(details),
+      sessionEpoch,
     });
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     return createAuthSession({

@@ -187,6 +187,7 @@ export function DIProvider({
       tokenStore,
       refresh: tokenRefresher,
       endSession: (reason) => sessionManager.end(reason),
+      sessionEpoch,
     });
     const authHttpClient = new KyHttpClient(authKyInstance);
 

@@ -1,10 +1,11 @@
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { ENV } from '@src/shared/config/env';
 import ky, { type KyInstance } from 'ky';
 
 import { recordApiFailureBreadcrumb } from './error-handler';
 import { createAppHeaders, setPerRequestHeaders } from './request-headers';
-import { createTokenRefreshHook, type EndSession } from './token-refresh-hook';
+import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
 import type { TokenRefresher } from './token-refresher';
 
 interface AuthClientDeps {
@@ -14,6 +15,7 @@ interface AuthClientDeps {
   /** 앱 전체 단일 인스턴스. 갈라지면 single-flight mutex가 분리돼 토큰 패밀리를 소모한다. */
   refresh: TokenRefresher;
   endSession: EndSession;
+  sessionEpoch: SessionEpoch;
 }
 
 /**
@@ -28,6 +30,7 @@ export const createAuthClient = ({
   tokenStore,
   refresh,
   endSession,
+  sessionEpoch,
 }: AuthClientDeps): KyInstance => {
   return ky.create({
     // v2: prefixUrl → prefix (append 시맨틱 동일 — input 앞에 붙이고 경계 슬래시 정규화)
@@ -44,10 +47,13 @@ export const createAuthClient = ({
     },
     hooks: {
       beforeRequest: [
-        async ({ request }) => {
+        async ({ request, options }) => {
           // ky v2에서 beforeRequest는 최초 1회만 실행된다(재시도 시 재실행 안 함) —
           // 401 갱신 후 새 토큰 주입은 token-refresh-hook이 재시도 요청에 직접 넣는다.
           setPerRequestHeaders(request.headers);
+
+          // 토큰보다 먼저 읽는다. 사이에 세션이 끝나도 지난 세대로 표시되어 재시도를 막는다
+          markRequestEpoch(options.context, sessionEpoch.current());
 
           const accessToken = await tokenStore.readAccessToken();
           if (accessToken) {
@@ -57,7 +63,7 @@ export const createAuthClient = ({
       ],
       afterResponse: [
         recordApiFailureBreadcrumb,
-        createTokenRefreshHook({ tokenStore, refresh, endSession }),
+        createTokenRefreshHook({ tokenStore, refresh, endSession, sessionEpoch }),
       ],
     },
   });
