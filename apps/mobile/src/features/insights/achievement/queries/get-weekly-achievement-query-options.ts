@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 
-export function getWeeklyAchievementQueryOptions(
+function getWeeklyAchievementQueryOptions(
   achievementService: AchievementService,
   { year, week }: { year: number; week: number },
 ) {

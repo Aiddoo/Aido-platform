@@ -50,7 +50,7 @@ async function readReportLocation(client: QueryClient, logger: Logger, revision:
  * 동시에 열려도 위치 읽기와 PUT이 한 번만 일어난다.
  * 리포트는 이 query를 기다리지 않고 서버에 저장된 위치로 먼저 받는다.
  */
-export function getWeatherLocationQueryOptions(dependencies: WeatherLocationDependencies) {
+function getWeatherLocationQueryOptions(dependencies: WeatherLocationDependencies) {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),
     queryFn: ({ signal, client, queryKey }): Promise<LocationReading> =>

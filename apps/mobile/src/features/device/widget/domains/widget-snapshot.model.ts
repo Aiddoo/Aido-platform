@@ -64,7 +64,7 @@ const widgetDaySnapshotSchema = z.object({
  * v2: 오늘과 (받을 수 있으면) 내일 요약을 함께 저장한다. 자정이 지나면 렌더러가 내일 day를
  * 오늘로 고르므로 앱을 열기 전에도 새 날짜를 표시한다. 저장 key는 v1과 같다.
  */
-export const widgetSnapshotSchema = z.object({
+const widgetSnapshotSchema = z.object({
   version: z.literal(2),
   updatedAtIso: z.string(),
   days: z.union([
@@ -96,20 +96,17 @@ export type WidgetSnapshotStrings = WidgetDaySnapshot['strings'];
 export const widgetRenderStateSchema = z.enum(['data', 'empty', 'loggedOut', 'stale']);
 export type WidgetRenderState = z.infer<typeof widgetRenderStateSchema>;
 
-export function isWidgetSnapshotLoggedOut(snapshot: WidgetSnapshot): boolean {
+function isWidgetSnapshotLoggedOut(snapshot: WidgetSnapshot): boolean {
   return snapshot.days[0].state === 'loggedOut';
 }
 
-export interface WidgetDaySelection {
+interface WidgetDaySelection {
   day: WidgetDaySnapshot;
   renderState: WidgetRenderState;
 }
 
 /** 렌더 시점의 오늘 key와 같은 day를 고른다. 없으면 날짜가 지난 것으로 보고 stale을 표시한다. */
-export function selectWidgetDay(
-  snapshot: WidgetSnapshot,
-  todayLocalDate: string,
-): WidgetDaySelection {
+function selectWidgetDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
   const [firstDay] = snapshot.days;
   if (isWidgetSnapshotLoggedOut(snapshot)) {
     return { day: firstDay, renderState: 'loggedOut' };
@@ -123,7 +120,7 @@ export function selectWidgetDay(
 }
 
 /** 소유자를 모르는 개인 목록은 추측해 보여주지 않고 stale로 표시한다. */
-export function selectWidgetDayForOwner(
+function selectWidgetDayForOwner(
   snapshot: WidgetSnapshot,
   todayLocalDate: string,
   ownerId: string | null,

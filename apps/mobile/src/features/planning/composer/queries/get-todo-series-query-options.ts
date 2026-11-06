@@ -4,10 +4,7 @@ import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-quer
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getTodoSeriesQueryOptions(
-  todoService: TodoService,
-  { seriesId }: { seriesId: string },
-) {
+function getTodoSeriesQueryOptions(todoService: TodoService, { seriesId }: { seriesId: string }) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.series({ seriesId }),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoSeries(seriesId, signal)),

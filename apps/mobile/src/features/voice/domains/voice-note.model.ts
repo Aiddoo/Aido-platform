@@ -25,10 +25,8 @@ const instantSchema = z.codec(z.iso.datetime(), z.date(), {
 });
 
 export const voiceNoteDraftIdSchema = z.string().min(1).brand<'VoiceNoteDraftId'>();
-export type VoiceNoteDraftId = z.infer<typeof voiceNoteDraftIdSchema>;
-
 /** 확정된 문장 하나. 녹음 시작부터의 구간이라 다시 듣기와 같은 시계를 쓴다 */
-export const voiceNoteSentenceSchema = z.object({
+const voiceNoteSentenceSchema = z.object({
   text: z.string(),
   startMs: z.int().nonnegative(),
   endMs: z.int().nonnegative(),
@@ -38,7 +36,7 @@ export const voiceNoteSentenceSchema = z.object({
 });
 export type VoiceNoteSentence = z.infer<typeof voiceNoteSentenceSchema>;
 
-export const voiceNoteKeyPointSchema = z.object({
+const voiceNoteKeyPointSchema = z.object({
   id: z.string().min(1),
   text: z.string().min(1),
   /** 말한 시각을 찾지 못한 포인트는 null이라 그 지점으로 갈 수 없다 */
@@ -47,7 +45,7 @@ export const voiceNoteKeyPointSchema = z.object({
 });
 export type VoiceNoteKeyPoint = z.infer<typeof voiceNoteKeyPointSchema>;
 
-export const voiceNoteDigestSchema = z.object({
+const voiceNoteDigestSchema = z.object({
   title: z.string(),
   summary: z.string(),
   keyPoints: z.array(voiceNoteKeyPointSchema),
@@ -55,33 +53,33 @@ export const voiceNoteDigestSchema = z.object({
 export type VoiceNoteDigest = z.infer<typeof voiceNoteDigestSchema>;
 
 /** 멈췄다 이어 들으면 인식기가 파일을 새로 쓴다. 한 조각은 노트 시계의 어디서 시작하는지 함께 든다 */
-export const voiceNoteRecordingSchema = z.object({
+const voiceNoteRecordingSchema = z.object({
   fileName: z.string().min(1),
   startMs: z.int().nonnegative(),
 });
 export type VoiceNoteRecording = z.infer<typeof voiceNoteRecordingSchema>;
 
 /** 정리를 다시 보낼 때 차감이 겹치지 않도록 앱을 다시 켜도 같은 멱등 키를 쓴다 */
-export const voiceNoteDigestRequestSchema = z.object({
+const voiceNoteDigestRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
 });
-export type VoiceNoteDigestRequest = z.infer<typeof voiceNoteDigestRequestSchema>;
+type VoiceNoteDigestRequest = z.infer<typeof voiceNoteDigestRequestSchema>;
 
 /**
  * 카드 저장 요청. 저장 응답을 받기 전에 화면을 떠나도 다시 눌렀을 때 같은 키를 써 두 번 저장되지 않게 초안에 남긴다.
  * 카드를 고쳐서 보내면 새 키를 쓰도록 내용 지문을 함께 든다.
  */
-export const voiceNotePlanApplyRequestSchema = z.object({
+const voiceNotePlanApplyRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
   fingerprint: z.string(),
 });
-export type VoiceNotePlanApplyRequest = z.infer<typeof voiceNotePlanApplyRequestSchema>;
+type VoiceNotePlanApplyRequest = z.infer<typeof voiceNotePlanApplyRequestSchema>;
 
 /** 메모로 저장 요청. 내용이 정리 결과로 정해져 있어 키만 남긴다 */
-export const voiceNoteMemoSaveRequestSchema = z.object({
+const voiceNoteMemoSaveRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
 });
-export type VoiceNoteMemoSaveRequest = z.infer<typeof voiceNoteMemoSaveRequestSchema>;
+type VoiceNoteMemoSaveRequest = z.infer<typeof voiceNoteMemoSaveRequestSchema>;
 
 /** 고친 카드까지 든 검토 초안. 통째로 읽지 못하면 글자와 요약은 살리고 이 칸만 비워 화면이 알리게 한다 */
 const storedPlanDraftSchema = z.codec(z.unknown(), z.custom<PlanReviewDraft | null>(), {
@@ -142,14 +140,11 @@ export function withSentences(
   return { ...note, sentences: [...sentences], durationMs };
 }
 
-export function withRecordings(
-  note: VoiceNote,
-  recordings: readonly VoiceNoteRecording[],
-): VoiceNote {
+function withRecordings(note: VoiceNote, recordings: readonly VoiceNoteRecording[]): VoiceNote {
   return { ...note, recordings: [...recordings] };
 }
 
-export function withDigestRequest(
+function withDigestRequest(
   note: VoiceNote,
   digestRequest: VoiceNoteDigestRequest | null,
 ): VoiceNote {
@@ -184,33 +179,29 @@ export function withDigestResult(note: VoiceNote, result: VoiceNoteDigestResult)
   };
 }
 
-export function withPlanApplyRequest(
+function withPlanApplyRequest(
   note: VoiceNote,
   planApplyRequest: VoiceNotePlanApplyRequest | null,
 ): VoiceNote {
   return { ...note, planApplyRequest };
 }
 
-export function withAppliedAt(
-  note: VoiceNote,
-  appliedAt: Date,
-  appliedTodoCount: number,
-): VoiceNote {
+function withAppliedAt(note: VoiceNote, appliedAt: Date, appliedTodoCount: number): VoiceNote {
   return { ...note, appliedAt, appliedTodoCount, planDraft: null, planApplyRequest: null };
 }
 
-export function hasAppliedOnlyMemo(note: VoiceNote): boolean {
+function hasAppliedOnlyMemo(note: VoiceNote): boolean {
   return note.appliedAt != null && note.appliedTodoCount === 0;
 }
 
-export function withMemoSaveRequest(
+function withMemoSaveRequest(
   note: VoiceNote,
   memoSaveRequest: VoiceNoteMemoSaveRequest | null,
 ): VoiceNote {
   return { ...note, memoSaveRequest };
 }
 
-export function withMemoSavedAt(note: VoiceNote, memoSavedAt: Date): VoiceNote {
+function withMemoSavedAt(note: VoiceNote, memoSavedAt: Date): VoiceNote {
   return { ...note, memoSavedAt, memoSaveRequest: null };
 }
 
@@ -264,13 +255,13 @@ export function hasNoPlannedTodos(note: VoiceNote): boolean {
   );
 }
 
-export type VoiceNotePlanStatus =
+type VoiceNotePlanStatus =
   | { status: 'applied' }
   | { status: 'no-todos' }
   | { status: 'lost' }
   | { status: 'reviewable'; planDraft: PlanReviewDraft };
 
-export function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
+function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
   if (note.appliedAt != null) {
     return { status: 'applied' };
   }
@@ -282,51 +273,48 @@ export function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
     : { status: 'reviewable', planDraft: note.planDraft };
 }
 
-export function getPlannedTodoCount(note: VoiceNote): number {
+function getPlannedTodoCount(note: VoiceNote): number {
   return note.planDraft?.form.actions.filter(isTodoAction).length ?? 0;
 }
 
-export function getCharacterCount(note: VoiceNote): number {
+function getCharacterCount(note: VoiceNote): number {
   return sumBy(note.sentences, ({ text }) => text.length);
 }
 
-export function getMarkCount(note: VoiceNote): number {
+function getMarkCount(note: VoiceNote): number {
   return note.sentences.filter(({ isBookmarked }) => isBookmarked).length;
 }
 
-export function findSentenceIndexAt(note: VoiceNote, positionMs: number): number {
+function findSentenceIndexAt(note: VoiceNote, positionMs: number): number {
   return note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs);
 }
 
-export function getDigestTitle(note: VoiceNote): string | null {
+function getDigestTitle(note: VoiceNote): string | null {
   return note.digest == null || note.digest.title === '' ? null : note.digest.title;
 }
 
-export function withoutRecordings(note: VoiceNote): VoiceNote {
+function withoutRecordings(note: VoiceNote): VoiceNote {
   return { ...note, recordings: [] };
 }
 
-export function getRecordingSizeBytes(
-  note: VoiceNote,
-  sizes: Readonly<Record<string, number>>,
-): number {
+function getRecordingSizeBytes(note: VoiceNote, sizes: Readonly<Record<string, number>>): number {
   return sumBy(note.recordings, ({ fileName }) => sizes[fileName] ?? 0);
 }
 
-export function hasText(note: VoiceNote): boolean {
+function hasText(note: VoiceNote): boolean {
   return note.sentences.some((sentence) => sentence.text.trim() !== '');
 }
 
-export function canDigest(note: VoiceNote): boolean {
+function canDigest(note: VoiceNote): boolean {
   return note.digest == null && hasText(note);
 }
 
 /** 다시 듣기 파일이 남아 있고 길이를 아는 노트. 파일이 실제로 있는지는 저장소가 확인한다 */
-export function canPlayRecording(note: VoiceNote): boolean {
+function canPlayRecording(note: VoiceNote): boolean {
   return note.recordings.length > 0 && note.durationMs > 0;
 }
 
-export function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint | undefined {
+function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint | undefined {
   if (note.digest == null) {
     return undefined;
   }
@@ -348,7 +336,7 @@ export function toCaptureSeed(note: Pick<VoiceNote, 'sentences' | 'durationMs'>)
   };
 }
 
-export function findRecordingIndexAt(
+function findRecordingIndexAt(
   recordings: readonly { startMs: number }[],
   positionMs: number,
 ): number {
@@ -360,7 +348,7 @@ export function findRecordingIndexAt(
 
 const RETENTION_MS = VOICE_NOTE_RETENTION_DAYS * DAY_MS;
 
-export function isExpired(note: VoiceNote, now: Date): boolean {
+function isExpired(note: VoiceNote, now: Date): boolean {
   return now.getTime() - note.createdAt.getTime() >= RETENTION_MS;
 }
 

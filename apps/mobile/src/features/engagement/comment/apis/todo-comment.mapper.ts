@@ -19,7 +19,7 @@ import type {
   TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
 
-export function toTodoComment(dto: TodoCommentV2): TodoComment {
+function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {
     ...dto,
     createdAt: new Date(dto.createdAt),
@@ -51,7 +51,7 @@ export function toTodoCommentFromV1(todoId: number, dto: TodoCommentV1DTO): Todo
   };
 }
 
-export function toTodoCommentThread(dto: TodoCommentThreadDTO): TodoCommentThread {
+function toTodoCommentThread(dto: TodoCommentThreadDTO): TodoCommentThread {
   return {
     comment: toTodoComment(dto.comment),
     previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),

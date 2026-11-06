@@ -10,7 +10,7 @@ import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();
-export const plannedActionIdSchema = z.string().min(1);
+const plannedActionIdSchema = z.string().min(1);
 
 const plannedTodoShape = {
   type: z.literal('create-todo'),
@@ -54,7 +54,7 @@ export type PlannedTodo = z.infer<typeof plannedTodoSchema>;
 export type PlannedMemo = z.infer<typeof plannedMemoSchema>;
 export type PlannedAction = z.infer<typeof plannedActionSchema>;
 
-export const voicePlanSourceSchema = z.enum(['quick-voice', 'quick-text', 'voice-note', 'memo']);
+const voicePlanSourceSchema = z.enum(['quick-voice', 'quick-text', 'voice-note', 'memo']);
 export type VoicePlanSource = z.infer<typeof voicePlanSourceSchema>;
 
 export const voicePlanSchema = z.object({
@@ -101,7 +101,7 @@ export function isTodoAction(action: PlannedAction): action is PlannedTodo {
   return action.type === 'create-todo';
 }
 
-export function isDuplicateAction(action: PlannedAction) {
+function isDuplicateAction(action: PlannedAction) {
   return isTodoAction(action) && action.duplicateOfTodoId != null;
 }
 
@@ -166,11 +166,11 @@ export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo
   return { ...todo, startDate, endDate: addDaysToDateKey(startDate, spanInDays) };
 }
 
-export function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
+function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
   return { ...todo, scheduledTime };
 }
 
-export function getCategoryId(todo: PlannedTodo, fallbackCategoryId: number) {
+function getCategoryId(todo: PlannedTodo, fallbackCategoryId: number) {
   return todo.categoryId ?? fallbackCategoryId;
 }
 

@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 
-export function getUnreadCountQueryOptions(notificationService: NotificationService) {
+function getUnreadCountQueryOptions(notificationService: NotificationService) {
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
     queryFn: async ({ signal }) => {

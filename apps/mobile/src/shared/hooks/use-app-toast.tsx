@@ -6,7 +6,7 @@ import { useCallback } from 'react';
 
 export type { AppToastVariant };
 
-export interface ToastAction {
+interface ToastAction {
   label: string;
   onPress?: () => void;
 }

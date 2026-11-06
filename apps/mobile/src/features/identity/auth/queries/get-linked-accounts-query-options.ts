@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
 
-export function getLinkedAccountsQueryOptions(authService: AuthService) {
+function getLinkedAccountsQueryOptions(authService: AuthService) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEYS.linkedAccounts(),
     queryFn: async ({ signal }) => {

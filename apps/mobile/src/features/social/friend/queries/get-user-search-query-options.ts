@@ -25,7 +25,7 @@ export function selectSearchedUserViewModels(searchPages: UserSearchPages, fallb
   };
 }
 
-export function getUserSearchQueryOptions(
+function getUserSearchQueryOptions(
   friendService: FriendService,
   {
     query,

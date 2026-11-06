@@ -17,9 +17,6 @@ export type SessionExpiredReason =
   | 'invalid-refresh-response'
   | 'tokens-missing';
 
-/** 갱신기가 서버 응답에 근거해 "세션 무효"로 판정할 수 있는 사유. */
-export type RefreshRejectionReason = Exclude<SessionExpiredReason, 'tokens-missing'>;
-
 /**
  * 세션 종료 사실 + 서버가 아는 경우의 서버 판정.
  *
@@ -30,18 +27,6 @@ export interface SessionExpiredDetails {
   /** `refresh-rejected`일 때만 존재. 예: `SESSION_0704`(토큰 재사용) vs `SESSION_0702`(만료). */
   serverErrorCode?: ErrorCodeType;
 }
-
-/**
- * 앱이 명시적으로 발행하는 관측 이벤트 카탈로그.
- *
- * discriminated union으로 이벤트명과 payload를 강제한다. 새 이벤트는 이 유니온에
- * 추가하는 방식으로만 늘린다(자유 문자열 이벤트 금지).
- */
-export type TelemetryEvent = {
-  name: 'session_expired';
-  severity: Severity;
-  data: { reason: SessionExpiredReason };
-};
 
 /**
  * reason → severity 매핑.

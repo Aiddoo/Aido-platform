@@ -12,12 +12,12 @@ export const memoSchema = memoContractSchema
   .extend({ createdAt: instantSchema, updatedAt: instantSchema });
 export type Memo = z.infer<typeof memoSchema>;
 
-export const memoPageSchema = memoListResponseSchema.shape.pagination
+const memoPageSchema = memoListResponseSchema.shape.pagination
   .pick({ nextCursor: true, hasNext: true })
   .extend({ items: z.array(memoSchema) });
 export type MemoPage = z.infer<typeof memoPageSchema>;
 
-export const memoResourceLimitSchema = memoResourceLimitResponseSchema.pick({
+const memoResourceLimitSchema = memoResourceLimitResponseSchema.pick({
   currentCount: true,
   maxPerUser: true,
 });

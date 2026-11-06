@@ -83,9 +83,7 @@ export const toTodo = (dto: TodoDto): Todo => ({
   commentCount: dto.commentCount,
 });
 
-export const toDailyCompletionSummary = (
-  dto: DailyCompletionSummaryDTO,
-): DailyCompletionSummary => ({
+const toDailyCompletionSummary = (dto: DailyCompletionSummaryDTO): DailyCompletionSummary => ({
   date: dto.date,
   totalTodos: dto.totalTodos,
   completedTodos: dto.completedTodos,

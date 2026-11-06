@@ -2,7 +2,7 @@ import { ReduceMotion, withSpring, withTiming } from 'react-native-reanimated';
 
 export const STEPS_SPRING_CONFIG = { duration: 250, dampingRatio: 1.5 } as const;
 
-export const STEPS_COLOR_DURATION_MS = 200;
+const STEPS_COLOR_DURATION_MS = 200;
 
 /** 움직임 줄이기가 켜져 있으면 목표 값으로 바로 간다 */
 export function springTo(value: number, isReduced: boolean, config?: object) {

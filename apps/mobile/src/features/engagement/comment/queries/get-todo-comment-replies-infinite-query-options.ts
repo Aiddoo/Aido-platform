@@ -26,7 +26,7 @@ function selectTodoCommentReplies(data: TodoCommentReplyPages) {
   return TodoCommentPolicy.flattenReplies(data.pages);
 }
 
-export function getTodoCommentRepliesInfiniteQueryOptions(
+function getTodoCommentRepliesInfiniteQueryOptions(
   service: TodoCommentService,
   { todoId, commentId, aroundReplyId, isEnabled }: TodoCommentRepliesParams,
 ) {

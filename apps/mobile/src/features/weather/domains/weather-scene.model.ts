@@ -38,7 +38,7 @@ const WEATHER_SCENE_PRECIPITATION_KINDS = [
   'hail',
 ] as const;
 
-export type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
+type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
 
 /** 날씨마다 하나씩 두는 대표 대기 효과 */
 const WEATHER_SCENE_ATMOSPHERES = [
@@ -51,7 +51,7 @@ const WEATHER_SCENE_ATMOSPHERES = [
   'frost',
 ] as const;
 
-export type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
+type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
 
 const WEATHER_SCENE_SUNS = ['hidden', 'bright', 'diffuse', 'blazing'] as const;
 

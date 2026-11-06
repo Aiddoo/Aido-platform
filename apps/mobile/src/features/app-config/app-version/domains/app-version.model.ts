@@ -1,8 +1,8 @@
 import { appStoreVersionSchema } from '@aido/api';
 import { z } from 'zod';
 
-export const appVersionPlatformSchema = z.enum(['ios', 'android']);
-export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
+const appVersionPlatformSchema = z.enum(['ios', 'android']);
+const appVersionConfigSchema = z.discriminatedUnion('enabled', [
   z.strictObject({ enabled: z.literal(false) }),
   z.strictObject({
     enabled: z.literal(true),
@@ -13,7 +13,7 @@ export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
   }),
 ]);
 
-export type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
+type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
 export type AppVersionConfig = z.infer<typeof appVersionConfigSchema>;
 
 const appVersionPolicyInputSchema = z.object({

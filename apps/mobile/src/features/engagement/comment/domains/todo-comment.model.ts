@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { TodoCommentComposerMode } from './todo-comment-composer.model';
 
-export const todoCommentAuthorSchema = z.object({
+const todoCommentAuthorSchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
   userTag: z.string().nullable(),
@@ -38,7 +38,7 @@ export const todoCommentSchema = z.object({
 });
 export type TodoComment = z.infer<typeof todoCommentSchema>;
 
-export const todoCommentThreadSchema = z.object({
+const todoCommentThreadSchema = z.object({
   comment: todoCommentSchema,
   previewReply: todoCommentSchema.nullable(),
   replySummary: z.object({
@@ -49,13 +49,13 @@ export const todoCommentThreadSchema = z.object({
 });
 export type TodoCommentThread = z.infer<typeof todoCommentThreadSchema>;
 
-export const todoCommentThreadAnchorSchema = z.object({
+const todoCommentThreadAnchorSchema = z.object({
   threadCommentId: z.string(),
   replyId: z.string().nullable(),
 });
 export type TodoCommentThreadAnchor = z.infer<typeof todoCommentThreadAnchorSchema>;
 
-export const todoCommentPaginationSchema = z.object({
+const todoCommentPaginationSchema = z.object({
   previousCursor: z.string().nullable(),
   nextCursor: z.string().nullable(),
   hasPrevious: z.boolean(),
@@ -63,23 +63,23 @@ export const todoCommentPaginationSchema = z.object({
   size: z.int().positive(),
 });
 
-export const todoCommentThreadPageSchema = z.object({
+const todoCommentThreadPageSchema = z.object({
   items: z.array(todoCommentThreadSchema),
   pagination: todoCommentPaginationSchema,
   anchor: todoCommentThreadAnchorSchema.nullable(),
 });
 export type TodoCommentThreadPage = z.infer<typeof todoCommentThreadPageSchema>;
 
-export const todoCommentReplyPageSchema = z.object({
+const todoCommentReplyPageSchema = z.object({
   items: z.array(todoCommentSchema),
   pagination: todoCommentPaginationSchema,
 });
 export type TodoCommentReplyPage = z.infer<typeof todoCommentReplyPageSchema>;
 
-export const todoCommentChainSchema = z.object({ comments: z.array(todoCommentSchema) });
+const todoCommentChainSchema = z.object({ comments: z.array(todoCommentSchema) });
 export type TodoCommentChain = z.infer<typeof todoCommentChainSchema>;
 
-export const todoCommentLikeResultSchema = z.object({
+const todoCommentLikeResultSchema = z.object({
   commentId: z.string(),
   isLiked: z.boolean(),
   likeCount: z.int().nonnegative(),
@@ -87,20 +87,20 @@ export const todoCommentLikeResultSchema = z.object({
 export type TodoCommentLikeResult = z.infer<typeof todoCommentLikeResultSchema>;
 
 /** 사용자가 직접 펼쳤는지(user), 답글을 올려 앱이 펼쳤는지(auto) */
-export const threadExpansionSchema = z.object({
+const threadExpansionSchema = z.object({
   isExpanded: z.boolean(),
   source: z.enum(['user', 'auto']),
 });
 export type ThreadExpansion = z.infer<typeof threadExpansionSchema>;
 
-export type ReplyFooter = 'viewMore' | 'hide' | 'none';
+type ReplyFooter = 'viewMore' | 'hide' | 'none';
 
 /** 접힌 묶음도 대표 답글 하나는 보이므로 그 이하로 불러온 묶음은 숨길 것이 없다 */
 const COLLAPSED_VISIBLE_REPLY_COUNT = 1;
 
-export type TodoCommentDisplayState = 'active' | 'deleted' | 'blockedAuthor';
+type TodoCommentDisplayState = 'active' | 'deleted' | 'blockedAuthor';
 
-export function getDisplayState(comment: TodoComment): TodoCommentDisplayState {
+function getDisplayState(comment: TodoComment): TodoCommentDisplayState {
   return match(comment)
     .returnType<TodoCommentDisplayState>()
     .with({ isAuthorBlocked: true }, () => 'blockedAuthor')
@@ -108,61 +108,61 @@ export function getDisplayState(comment: TodoComment): TodoCommentDisplayState {
     .otherwise(() => 'active');
 }
 
-export function isActiveComment(comment: TodoComment) {
+function isActiveComment(comment: TodoComment) {
   return getDisplayState(comment) === 'active';
 }
 
-export function isReply(comment: TodoComment) {
+function isReply(comment: TodoComment) {
   return comment.threadCommentId != null;
 }
 
-export function isByTodoOwner(comment: TodoComment) {
+function isByTodoOwner(comment: TodoComment) {
   return comment.author?.isTodoOwner === true;
 }
 
-export function getUserTagLabel(comment: TodoComment) {
+function getUserTagLabel(comment: TodoComment) {
   return comment.author?.userTag == null ? null : `#${comment.author.userTag}`;
 }
 
 /** 대상이 탈퇴·차단으로 이름을 잃으면 서버가 null을 준다. 그때는 @멘션 없이 본문만 보인다 */
-export function getMentionName(comment: TodoComment) {
+function getMentionName(comment: TodoComment) {
   return comment.replyTo?.authorName ?? null;
 }
 
-export function canLikeComment(comment: TodoComment) {
+function canLikeComment(comment: TodoComment) {
   return isActiveComment(comment);
 }
 
-export function canReplyToComment(comment: TodoComment) {
+function canReplyToComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canReply;
 }
 
-export function isEditableComment(comment: TodoComment) {
+function isEditableComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canEdit;
 }
 
-export function canDeleteComment(comment: TodoComment) {
+function canDeleteComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canDelete;
 }
 
 /** 내 할 일에 달린 남의 글. 수정은 작성자만 할 수 있어 지울 수만 있으면 남의 글이다 */
-export function isDeletingOthersComment(comment: TodoComment) {
+function isDeletingOthersComment(comment: TodoComment) {
   return canDeleteComment(comment) && !comment.viewer.canEdit;
 }
 
-export function canCopyComment(comment: TodoComment) {
+function canCopyComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.content != null;
 }
 
-export function canReportComment(comment: TodoComment) {
+function canReportComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canReport;
 }
 
-export function canBlockCommentAuthor(comment: TodoComment) {
+function canBlockCommentAuthor(comment: TodoComment) {
   return isActiveComment(comment) && comment.author != null && comment.viewer.canBlock;
 }
 
-export function hasCommentActions(comment: TodoComment) {
+function hasCommentActions(comment: TodoComment) {
   return (
     isEditableComment(comment) ||
     canCopyComment(comment) ||
@@ -173,16 +173,16 @@ export function hasCommentActions(comment: TodoComment) {
 }
 
 /** 답글이 남은 댓글은 지워도 "삭제된 댓글이에요"로 남는다 */
-export function leavesTombstoneOnDelete(comment: TodoComment) {
+function leavesTombstoneOnDelete(comment: TodoComment) {
   return !isReply(comment) && comment.replyCount > 0;
 }
 
-export function getHiddenReplyCount(thread: TodoCommentThread, loadedCount: number) {
+function getHiddenReplyCount(thread: TodoCommentThread, loadedCount: number) {
   return Math.max(0, thread.replySummary.totalCount - loadedCount);
 }
 
 /** 사용자가 직접 펼친 묶음은 답글을 올려도 그 상태를 지킨다. 그래야 사용자가 연 "답글 숨기기"가 사라지지 않는다 */
-export function expandThread(
+function expandThread(
   current: ThreadExpansion | undefined,
   source: ThreadExpansion['source'],
 ): ThreadExpansion {
@@ -196,7 +196,7 @@ export function expandThread(
  * 펼친 묶음 아래 줄. 더 받을 답글이 있으면 "더 보기", 사용자가 펼쳤고 숨길 답글이 있으면 "숨기기", 그 밖에는 없다.
  * 답글을 올려 앱이 펼친 묶음은 사용자가 숨기기를 누를 이유가 없어 줄을 그리지 않는다.
  */
-export function getReplyFooter(
+function getReplyFooter(
   thread: TodoCommentThread,
   {
     loadedCount,
@@ -217,11 +217,11 @@ export function getReplyFooter(
     .otherwise(() => 'hide');
 }
 
-export function hasRepliesToShow(thread: TodoCommentThread) {
+function hasRepliesToShow(thread: TodoCommentThread) {
   return thread.replySummary.totalCount > 0;
 }
 
-export function flattenThreads(pages: readonly TodoCommentThreadPage[]) {
+function flattenThreads(pages: readonly TodoCommentThreadPage[]) {
   return uniqBy(
     pages.flatMap((page) => page.items),
     (thread) => thread.comment.id,
@@ -229,15 +229,15 @@ export function flattenThreads(pages: readonly TodoCommentThreadPage[]) {
 }
 
 /** 방금 쓴 답글은 마지막 페이지 끝에 먼저 붙고, 남은 페이지를 받으면 그 뒤 위치(작성 순)로 옮겨 간다 */
-export function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
+function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
   return uniqBy(pages.flatMap((page) => page.items).toReversed(), (reply) => reply.id).toReversed();
 }
 
-export function getAnchor(pages: readonly TodoCommentThreadPage[]) {
+function getAnchor(pages: readonly TodoCommentThreadPage[]) {
   return pages[0]?.anchor ?? null;
 }
 
-export function withLikeToggled(comment: TodoComment, isLiked: boolean): TodoComment {
+function withLikeToggled(comment: TodoComment, isLiked: boolean): TodoComment {
   if (comment.viewer.isLiked === isLiked) {
     return comment;
   }
@@ -249,7 +249,7 @@ export function withLikeToggled(comment: TodoComment, isLiked: boolean): TodoCom
   };
 }
 
-export function withLikeResult(comment: TodoComment, result: TodoCommentLikeResult): TodoComment {
+function withLikeResult(comment: TodoComment, result: TodoCommentLikeResult): TodoComment {
   return {
     ...comment,
     likeCount: result.likeCount,
@@ -257,7 +257,7 @@ export function withLikeResult(comment: TodoComment, result: TodoCommentLikeResu
   };
 }
 
-export function withContentEdited(comment: TodoComment, content: string): TodoComment {
+function withContentEdited(comment: TodoComment, content: string): TodoComment {
   return { ...comment, content, isEdited: true };
 }
 
@@ -277,7 +277,7 @@ function withReplyCount(thread: TodoCommentThread, totalCount: number): TodoComm
 }
 
 /** 새 답글은 묶음 수만 늘리고, 대표 답글이 없던 묶음은 그 답글을 대표로 보인다 */
-export function withReplyAdded(
+function withReplyAdded(
   thread: TodoCommentThread,
   replies: readonly TodoComment[],
 ): TodoCommentThread {
@@ -313,7 +313,7 @@ function toTombstone(comment: TodoComment): TodoComment {
  * 지운 글을 묶음에서 뺀다. 답글이 남은 댓글은 tombstone이 되고, 답글 없는 tombstone 댓글은 묶음째 사라진다.
  * 묶음째 사라지면 null을 돌려준다.
  */
-export function withCommentRemoved(
+function withCommentRemoved(
   thread: TodoCommentThread,
   removed: TodoComment,
 ): TodoCommentThread | null {
@@ -332,11 +332,11 @@ export function withCommentRemoved(
   return next.comment.isDeleted && next.replySummary.totalCount === 0 ? null : next;
 }
 
-export function withRepliesRemoved(replies: readonly TodoComment[], commentId: string) {
+function withRepliesRemoved(replies: readonly TodoComment[], commentId: string) {
   return replies.filter((reply) => reply.id !== commentId);
 }
 
-export function findCommentInThread(thread: TodoCommentThread, commentId: string) {
+function findCommentInThread(thread: TodoCommentThread, commentId: string) {
   return [thread.comment, thread.previewReply].find((comment) => comment?.id === commentId) ?? null;
 }
 

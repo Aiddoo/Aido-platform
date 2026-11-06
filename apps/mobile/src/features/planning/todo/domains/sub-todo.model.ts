@@ -13,12 +13,12 @@ export const subTodoStatsSchema = z.object({
   total: z.number(),
   completed: z.number(),
 });
-export type SubTodoStats = z.infer<typeof subTodoStatsSchema>;
+type SubTodoStats = z.infer<typeof subTodoStatsSchema>;
 
 type SubTodoParent = { subTodos: readonly SubTodo[]; subTodoStats: SubTodoStats };
 
 /** 서버 응답 전의 임시 항목. 임시 id로는 체크·수정·순서 변경 요청을 보낼 수 없다 */
-export function isOptimisticSubTodo(subTodo: SubTodo): boolean {
+function isOptimisticSubTodo(subTodo: SubTodo): boolean {
   return subTodo.id < 0;
 }
 
@@ -27,14 +27,14 @@ function isMaxSubTodosReached(stats: SubTodoStats): boolean {
 }
 
 // 통계는 목록에서만 계산한다. 이전 통계에 ±1을 하면 같은 변경이 두 번 들어올 때 1/1이 2/1처럼 어긋난다
-export function calculateSubTodoStats(subTodos: readonly SubTodo[]): SubTodoStats {
+function calculateSubTodoStats(subTodos: readonly SubTodo[]): SubTodoStats {
   return {
     total: subTodos.length,
     completed: subTodos.filter((subTodo) => subTodo.completed).length,
   };
 }
 
-export function toggleSubTodo(
+function toggleSubTodo(
   subTodos: readonly SubTodo[],
   subTodoId: number,
   completed: boolean,
@@ -44,11 +44,11 @@ export function toggleSubTodo(
   );
 }
 
-export function addSubTodo(subTodos: readonly SubTodo[], subTodo: SubTodo): SubTodo[] {
+function addSubTodo(subTodos: readonly SubTodo[], subTodo: SubTodo): SubTodo[] {
   return [...subTodos, subTodo];
 }
 
-export function removeSubTodo(subTodos: readonly SubTodo[], subTodoId: number): SubTodo[] {
+function removeSubTodo(subTodos: readonly SubTodo[], subTodoId: number): SubTodo[] {
   return subTodos.filter((subTodo) => subTodo.id !== subTodoId);
 }
 
@@ -63,11 +63,11 @@ function completionProgress(stats: SubTodoStats): number {
   return stats.completed / stats.total;
 }
 
-export function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boolean {
+function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boolean {
   return !isMaxSubTodosReached(parentTodo.subTodoStats);
 }
 
-export function getSubTodoCompletionProgress(parentTodo: { subTodoStats: SubTodoStats }): number {
+function getSubTodoCompletionProgress(parentTodo: { subTodoStats: SubTodoStats }): number {
   return completionProgress(parentTodo.subTodoStats);
 }
 

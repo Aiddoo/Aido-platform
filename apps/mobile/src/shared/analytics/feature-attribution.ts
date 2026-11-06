@@ -29,7 +29,7 @@ interface ConsumeAttributionInput {
   feature: FeatureKey;
 }
 
-export interface ConsumedFeatureAttribution {
+interface ConsumedFeatureAttribution {
   campaignId: string;
   feature: FeatureKey;
 }

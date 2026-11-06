@@ -23,7 +23,7 @@ interface InviteesFilter {
 }
 
 /** 상태마다 다른 캐시를 둔다. 서버가 상태로 거르고 totalCount도 그 조건으로 센다 */
-export function getInvitedFriendsInfiniteQueryOptions(
+function getInvitedFriendsInfiniteQueryOptions(
   inviteService: InviteService,
   { status }: InviteesFilter = {},
 ) {

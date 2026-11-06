@@ -27,13 +27,13 @@ import {
   TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
 
-export const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
+const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
 /** 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다 */
-export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
+const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
-export const TODO_REPEAT_KINDS = [
+const TODO_REPEAT_KINDS = [
   'DAILY',
   'WEEKDAYS',
   'WEEKENDS',
@@ -41,9 +41,9 @@ export const TODO_REPEAT_KINDS = [
   'BIWEEKLY',
   'MONTHLY',
 ] as const;
-export type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
+type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
 
-export const todoRepeatEndSchema = z.discriminatedUnion('type', [
+const todoRepeatEndSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('NEVER') }),
   z.object({ type: z.literal('UNTIL'), date: z.iso.date() }),
   z.object({
@@ -69,7 +69,7 @@ export const todoRepeatSchema = z.discriminatedUnion('frequency', [
 ]);
 export type TodoRepeat = z.infer<typeof todoRepeatSchema>;
 
-export const todoSeriesSchema = z.object({
+const todoSeriesSchema = z.object({
   id: z.string(),
   repeat: todoRepeatSchema,
   startDate: z.iso.date(),
@@ -89,7 +89,7 @@ export function getWeekday(dateKey: string): DayOfWeek {
   return DAYS_OF_WEEK.find((day) => DAY_OF_WEEK_MAP[day] === weekday) ?? 'MON';
 }
 
-export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
+function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
   return match(repeat)
     .returnType<TodoRepeatKind>()
     .with({ frequency: 'DAILY' }, () => 'DAILY')
@@ -115,15 +115,15 @@ export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
     .exhaustive();
 }
 
-export function withRepeatEnd(repeat: TodoRepeat, end: TodoRepeatEnd): TodoRepeat {
+function withRepeatEnd(repeat: TodoRepeat, end: TodoRepeatEnd): TodoRepeat {
   return { ...repeat, end };
 }
 
-export function isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
+function isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
   return repeat.frequency === 'MONTHLY' && repeat.monthDay >= TODO_REPEAT_MONTH_DAY_CLAMP_FROM;
 }
 
-export function withRepeatStartDate(
+function withRepeatStartDate(
   repeat: TodoRepeat,
   previousStartDate: string,
   nextStartDate: string,
@@ -148,7 +148,7 @@ export function withRepeatStartDate(
 }
 
 /** 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다 */
-export function hasSameRepeat(a: TodoRepeat | null, b: TodoRepeat | null): boolean {
+function hasSameRepeat(a: TodoRepeat | null, b: TodoRepeat | null): boolean {
   return isEqual(normalizeRepeat(a), normalizeRepeat(b));
 }
 
@@ -161,7 +161,7 @@ function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
     : { ...repeat, weekdays: sortWeekdays(repeat.weekdays) };
 }
 
-export type TodoEditScopeDecision = 'not-repeating' | 'this-only' | 'ask' | 'ask-following-only';
+type TodoEditScopeDecision = 'not-repeating' | 'this-only' | 'ask' | 'ask-following-only';
 
 interface TodoEditScopeInput {
   isSeries: boolean;
@@ -174,7 +174,7 @@ interface TodoEditScopeInput {
  * 수정할 때 범위를 어떻게 정할지. 서버는 반복 회차의 규칙 변경을 THIS_AND_FOLLOWING으로만 받고(그 밖은 TODO_0845)
  * 반복 끝내기는 범위 없이 받으며, 날짜 이동은 범위와 상관없이 이 회차에만 적용한다.
  */
-export function getTodoEditScopeDecision({
+function getTodoEditScopeDecision({
   isSeries,
   repeat,
   isDateOnly,
@@ -189,7 +189,7 @@ export function getTodoEditScopeDecision({
   return isDateOnly ? 'this-only' : 'ask';
 }
 
-export interface RepeatOccurrence {
+interface RepeatOccurrence {
   recurrenceGroupId: string | null;
   repeat: TodoRepeat | null;
 }
@@ -198,17 +198,17 @@ export interface RepeatOccurrence {
  * 규칙이 있는 반복 회차인지. 묶음은 있는데 규칙이 없으면 옛 서버(롤백 중)가 만든 묶음이거나 이관에서 패턴을 알 수 없던
  * 묶음이다. 서버는 이런 묶음의 범위 수정과 반복 끝내기를 받지 않아 "이 할 일만"으로 다룬다.
  */
-export function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
+function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
   return recurrenceGroupId != null && repeat != null;
 }
 
 /** 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845) */
-export function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
+function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
   return occurrence.recurrenceGroupId == null || hasRepeatRule(occurrence);
 }
 
 /** 삭제 때 고를 수 있는 범위. 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다 */
-export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEditScope[] {
+function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEditScope[] {
   if (occurrence.recurrenceGroupId == null) {
     return [];
   }
@@ -253,7 +253,7 @@ function* walkOccurrenceDateKeys(
 const OCCURRENCE_SEARCH_DAYS = 62;
 
 /** from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다 */
-export function getRepeatOccurrenceDateKeys(
+function getRepeatOccurrenceDateKeys(
   repeat: TodoRepeat,
   startDate: string,
   { from, to }: { from: string; to: string },
@@ -262,10 +262,7 @@ export function getRepeatOccurrenceDateKeys(
 }
 
 /** 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null */
-export function getFirstRepeatOccurrenceDateKey(
-  repeat: TodoRepeat,
-  startDate: string,
-): string | null {
+function getFirstRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string): string | null {
   const [first] = walkOccurrenceDateKeys(
     repeat,
     startDate,
@@ -274,10 +271,7 @@ export function getFirstRepeatOccurrenceDateKey(
   return first ?? null;
 }
 
-export function getLastRepeatOccurrenceDateKey(
-  repeat: TodoRepeat,
-  startDate: string,
-): string | null {
+function getLastRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string): string | null {
   const limit = match(repeat.end)
     .with({ type: 'NEVER' }, () => null)
     .with({ type: 'UNTIL' }, ({ date }) => date)
@@ -292,12 +286,12 @@ export function getLastRepeatOccurrenceDateKey(
 }
 
 /** 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지 */
-export function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
+function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
   return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
 }
 
 /** 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다 */
-export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
+function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
   return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
 }
 
@@ -305,7 +299,7 @@ export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): b
  * 3개월 안내를 보일지. 달력 아래 한 곳에서만 보인다. 월 보기는 그 달이 일부라도 넘어가면(점이 끊겨 보인다),
  * 주 보기는 고른 날이 넘어가면 보인다.
  */
-export function shouldShowRepeatHorizonHint(
+function shouldShowRepeatHorizonHint(
   dateKey: string,
   todayKey: string,
   viewMode: 'week' | 'month',

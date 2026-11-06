@@ -10,7 +10,7 @@ import {
 } from '../../domains/premium-access.model';
 
 /** 영수증 출처. 관리자, 스토어 구독(결제), 초대 보상 기간 */
-export type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';
+type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';
 
 export type SubscriptionReceiptRow =
   | { type: 'account' }
@@ -26,12 +26,12 @@ export type SubscriptionReceiptRow =
   | { type: 'daysLeft'; days: number; endingNotice: PremiumEndingNotice | null };
 
 /** 영수증 아래 한 줄. "그다음엔 어떻게 되나"가 행만으로 드러나지 않을 때만 붙인다 */
-export type SubscriptionReceiptFootnote =
+type SubscriptionReceiptFootnote =
   | { type: 'returnsToFreePlan'; date: Date }
   | { type: 'rewardStartsAfterSubscription'; days: number }
   | { type: 'manageAutoRenewalInStore' };
 
-export type SubscriptionReceiptAction = 'subscribe' | 'manage';
+type SubscriptionReceiptAction = 'subscribe' | 'manage';
 
 interface SubscriptionReceiptContents {
   rows: SubscriptionReceiptRow[];

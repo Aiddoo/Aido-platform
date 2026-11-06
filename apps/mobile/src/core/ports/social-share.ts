@@ -1,4 +1,4 @@
-export interface SocialFeedShare {
+interface SocialFeedShare {
   title: string;
   description: string;
   imageUrl: string;

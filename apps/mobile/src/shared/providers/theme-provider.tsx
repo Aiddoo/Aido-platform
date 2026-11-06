@@ -19,7 +19,7 @@ import { useColorScheme } from 'react-native';
 import { Uniwind, useResolveClassNames } from 'uniwind';
 
 export type { ThemeMode };
-export type ResolvedTheme = 'light' | 'dark';
+type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeProviderProps extends PropsWithChildren {
   syncStorage?: SyncStorage;

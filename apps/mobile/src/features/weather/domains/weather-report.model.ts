@@ -38,7 +38,7 @@ const nextHourForecastSchema = z.object({
   periods: z.array(nextHourPeriodSchema),
   minutes: z.array(minuteForecastSchema),
 });
-export type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
+type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
 
 const hourlyForecastSchema = weatherHourlyForecastSchema.extend({ startsAt: z.date() });
 export type HourlyForecastEntry = z.infer<typeof hourlyForecastSchema>;
@@ -112,7 +112,7 @@ export function selectUpcomingHours(
   return hourly.filter((hour) => hourEndsAt(hour) > now.getTime());
 }
 
-export type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
+type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
 
 /** 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 안내한다. */
 export type PrecipitationPrecision = 'minute' | 'hour';
@@ -224,7 +224,7 @@ function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boo
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */
-export function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
+function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
   return now.getTime() - report.fetchedAt.getTime() > NOWCAST_EXPIRES_AFTER_MS;
 }
 
@@ -249,7 +249,7 @@ function selectActiveAlerts(alerts: readonly WeatherAlert[], now: Date): Weather
   return alerts.filter((alert) => alert.expiresAt.getTime() > now.getTime());
 }
 
-export function isAlertInEffect(alert: WeatherAlert, now: Date): boolean {
+function isAlertInEffect(alert: WeatherAlert, now: Date): boolean {
   return alert.effectiveAt.getTime() <= now.getTime();
 }
 
@@ -354,7 +354,7 @@ function toTemperatureBars(daily: readonly DailyForecastEntry[]): TemperatureBar
   }));
 }
 
-export type SunEvents =
+type SunEvents =
   | { kind: 'regular'; sunrise: Date | null; sunset: Date | null }
   | { kind: 'polarDay' }
   | { kind: 'polarNight' };
@@ -398,7 +398,7 @@ function compareFeelsLike(current: CurrentWeather): FeelsLikeComparison {
  * 날씨 시각은 위치 시간대로 보여 준다. 지금 그 벽시계가 기기와 다를 때만 '현지' 시각임을 밝힌다.
  * 서울·도쿄처럼 이름만 다르고 오프셋이 같으면 다르지 않다.
  */
-export function isDifferentWallClock(
+function isDifferentWallClock(
   report: { location: Pick<WeatherReport['location'], 'timezone'> },
   deviceTimeZone: string,
   now: Date,
@@ -408,7 +408,7 @@ export function isDifferentWallClock(
 
 export type AttributionBackground = 'light' | 'dark';
 
-export type AttributionMark = { kind: 'logo'; uri: string } | { kind: 'text'; serviceName: string };
+type AttributionMark = { kind: 'logo'; uri: string } | { kind: 'text'; serviceName: string };
 
 /**
  * 어두운 바탕(하늘 장면·다크 테마)에는 흰 글자 로고(dark), 밝은 바탕에는 검은 글자 로고(light)를 쓴다.

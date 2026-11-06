@@ -16,7 +16,7 @@ export function toMe(user: User, { defaultName }: { defaultName: string }) {
   };
 }
 
-export function getMeQueryOptions(
+function getMeQueryOptions(
   userService: UserService,
   { select }: { select: (user: User) => ReturnType<typeof toMe> },
 ) {

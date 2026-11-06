@@ -6,7 +6,7 @@ export type UserReportTarget = Pick<
   'targetUserId' | 'targetType' | 'targetId'
 >;
 
-export function toTodoReportTarget({
+function toTodoReportTarget({
   todoId,
   ownerId,
 }: {
@@ -26,11 +26,11 @@ export function toCommentReportTarget({
   return { targetUserId: authorId, targetType: 'COMMENT', targetId: commentId };
 }
 
-export function toProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
+function toProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
   return { targetUserId: userId, targetType: 'PROFILE' };
 }
 
-export function toNudgeMessageReportTarget({
+function toNudgeMessageReportTarget({
   nudgeId,
   senderId,
 }: {
@@ -40,7 +40,7 @@ export function toNudgeMessageReportTarget({
   return { targetUserId: senderId, targetType: 'NUDGE_MESSAGE', targetId: String(nudgeId) };
 }
 
-export function toCheerMessageReportTarget({
+function toCheerMessageReportTarget({
   cheerId,
   senderId,
 }: {

@@ -19,7 +19,7 @@ import {
   type VoiceNotePlayback,
 } from '../utils/voice-note-playback';
 
-export interface VoiceNotePlayerPart {
+interface VoiceNotePlayerPart {
   uri: string;
   startMs: number;
 }

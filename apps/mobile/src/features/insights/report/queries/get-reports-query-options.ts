@@ -5,7 +5,7 @@ import type { GetAiReportsParams } from '@src/features/insights/report/domains/r
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getReportsQueryOptions(
+function getReportsQueryOptions(
   reportService: ReportService,
   { params }: { params?: GetAiReportsParams },
 ) {

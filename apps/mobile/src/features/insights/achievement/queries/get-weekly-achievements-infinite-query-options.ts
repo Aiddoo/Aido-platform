@@ -17,7 +17,7 @@ function selectWeeklyAchievements(
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
-export function getWeeklyAchievementsInfiniteQueryOptions(
+function getWeeklyAchievementsInfiniteQueryOptions(
   achievementService: AchievementService,
   { year }: { year: number },
 ) {

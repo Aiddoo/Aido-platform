@@ -6,7 +6,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getSuggestionsQueryOptions(suggestionService: SuggestionService) {
+function getSuggestionsQueryOptions(suggestionService: SuggestionService) {
   return queryOptions({
     queryKey: SUGGESTION_QUERY_KEYS.suggestions(),
     queryFn: async ({ signal }) => {

@@ -4,10 +4,10 @@ import {
 } from '@aido/api';
 import { z } from 'zod';
 
-export const weeklyAchievementSchema = weeklyAchievementDtoSchema.extend({ achievedAt: z.date() });
+const weeklyAchievementSchema = weeklyAchievementDtoSchema.extend({ achievedAt: z.date() });
 export type WeeklyAchievement = z.infer<typeof weeklyAchievementSchema>;
 
-export const achievementSummarySchema = weeklyAchievementSummarySchema;
+const achievementSummarySchema = weeklyAchievementSummarySchema;
 export type AchievementSummary = z.infer<typeof achievementSummarySchema>;
 
 const achievementPaginationParamsSchema = z.object({
@@ -17,7 +17,7 @@ const achievementPaginationParamsSchema = z.object({
 });
 export type AchievementPaginationParams = z.infer<typeof achievementPaginationParamsSchema>;
 
-export const weeklyAchievementsResultSchema = z.object({
+const weeklyAchievementsResultSchema = z.object({
   items: z.array(weeklyAchievementSchema),
   nextCursor: z.number().int().nullable(),
   hasNext: z.boolean(),
@@ -36,7 +36,7 @@ export type BadgeType = z.infer<typeof badgeTypeSchema>;
 const PERFECT_COMPLETION_RATE = 100;
 const ALMOST_COMPLETION_RATE = 90;
 
-export function getBadgeType(achievement: Pick<WeeklyAchievement, 'completionRate'>): BadgeType {
+function getBadgeType(achievement: Pick<WeeklyAchievement, 'completionRate'>): BadgeType {
   if (achievement.completionRate >= PERFECT_COMPLETION_RATE) {
     return BadgeType.perfect;
   }

@@ -9,7 +9,7 @@ type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
 const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
 const THANKS_PREVIEW_PAGE_SIZE = 20;
 
-export function getNudgeThanksPreviewInfiniteQueryOptions(
+function getNudgeThanksPreviewInfiniteQueryOptions(
   todoNudgeService: TodoNudgeService,
   { todoId }: { todoId: number },
 ) {

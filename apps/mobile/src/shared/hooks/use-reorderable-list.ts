@@ -9,7 +9,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { getReorderInstruction, type ReorderInstruction } from '../utils/reorder-instruction';
 
-export interface ReorderedList<TItem, TId> {
+interface ReorderedList<TItem, TId> {
   instruction: ReorderInstruction<TId>;
   items: TItem[];
 }

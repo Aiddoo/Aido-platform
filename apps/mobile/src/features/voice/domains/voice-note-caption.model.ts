@@ -247,7 +247,7 @@ export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
 }
 
 /** 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다 */
-export function hasCaptionText(captions: VoiceNoteCaptions): boolean {
+function hasCaptionText(captions: VoiceNoteCaptions): boolean {
   return captions.sentences.length > 0 || captions.provisional.length > 0;
 }
 

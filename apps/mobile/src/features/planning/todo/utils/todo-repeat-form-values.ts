@@ -52,7 +52,7 @@ export function toTodoRepeatFormValues(
     .exhaustive();
 }
 
-export function withTodoRepeatFormStartDate(
+function withTodoRepeatFormStartDate(
   values: TodoRepeatFormValues,
   nextStartDate: Date,
 ): TodoRepeatFormValues {

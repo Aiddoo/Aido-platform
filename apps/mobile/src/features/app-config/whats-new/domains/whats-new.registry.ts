@@ -7,12 +7,7 @@ export const PREVIOUS_WHATS_NEW_CAMPAIGN_ID = 'feature-discovery-2026-11';
 /** 1.9.0에 시작한 이전 캠페인. 그때 가입한 사용자의 시작 체크리스트가 이 id로 이어진다 */
 export const LEGACY_WHATS_NEW_CAMPAIGN_ID = 'feature-discovery-2026-08';
 
-export const WHATS_NEW_CARD_IDS = [
-  'friend_invite',
-  'voice_say',
-  'voice_plan',
-  'voice_facts',
-] as const;
+const WHATS_NEW_CARD_IDS = ['friend_invite', 'voice_say', 'voice_plan', 'voice_facts'] as const;
 
 export type WhatsNewCardId = (typeof WHATS_NEW_CARD_IDS)[number];
 

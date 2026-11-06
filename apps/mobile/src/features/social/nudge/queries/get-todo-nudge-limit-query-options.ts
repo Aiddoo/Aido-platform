@@ -4,7 +4,7 @@ import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-que
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getTodoNudgeLimitQueryOptions(todoNudgeService: TodoNudgeService) {
+function getTodoNudgeLimitQueryOptions(todoNudgeService: TodoNudgeService) {
   return queryOptions({
     queryKey: NUDGE_QUERY_KEYS.limit(),
     queryFn: async ({ signal }) => {

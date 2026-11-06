@@ -13,7 +13,7 @@ import {
   snapshotTodoCommentCaches,
 } from './todo-comment-cache';
 
-export type TodoCommentLikeVia = 'button' | 'double_tap';
+type TodoCommentLikeVia = 'button' | 'double_tap';
 
 interface SetTodoCommentLikeMutationParams {
   isLiked: boolean;

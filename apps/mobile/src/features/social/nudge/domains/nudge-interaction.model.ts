@@ -10,7 +10,7 @@ import { z } from 'zod';
 export const nudgeDirectionSchema = getNudgeInteractionsQuerySchema.shape.direction;
 export type NudgeDirection = z.infer<typeof nudgeDirectionSchema>;
 
-export const nudgeInteractionSchema = z.object({
+const nudgeInteractionSchema = z.object({
   id: z.number(),
   senderId: z.string(),
   senderName: z.string(),
@@ -29,14 +29,14 @@ export const nudgeInteractionSchema = z.object({
 });
 export type NudgeInteraction = z.infer<typeof nudgeInteractionSchema>;
 
-export const nudgeInteractionPageSchema = z.object({
+const nudgeInteractionPageSchema = z.object({
   items: z.array(nudgeInteractionSchema),
   nextCursor: z.number().nullable(),
   hasNext: z.boolean(),
 });
 export type NudgeInteractionPage = z.infer<typeof nudgeInteractionPageSchema>;
 
-export const nudgeInteractionStatusSchema = z.enum([
+const nudgeInteractionStatusSchema = z.enum([
   'UNAVAILABLE',
   'THANKED',
   'COMPLETED',
@@ -61,7 +61,7 @@ export function getNudgeInteractionStatusFromFlags(
     .exhaustive();
 }
 
-export const nudgeThanksPreviewSchema = z.object({
+const nudgeThanksPreviewSchema = z.object({
   todoId: z.number(),
   throughNudgeId: z.number().nullable(),
   totalRecipients: z.number().int().nonnegative(),
@@ -79,20 +79,15 @@ export const nudgeThanksPreviewSchema = z.object({
 });
 export type NudgeThanksPreview = z.infer<typeof nudgeThanksPreviewSchema>;
 
-export const nudgeThanksSummaryStateSchema = z.enum([
-  'NONE',
-  'PENDING',
-  'SENT',
-  'SENT_WITH_PENDING',
-]);
-export type NudgeThanksSummaryState = z.infer<typeof nudgeThanksSummaryStateSchema>;
+const nudgeThanksSummaryStateSchema = z.enum(['NONE', 'PENDING', 'SENT', 'SENT_WITH_PENDING']);
+type NudgeThanksSummaryState = z.infer<typeof nudgeThanksSummaryStateSchema>;
 
-export interface NudgeThanksSummary {
+interface NudgeThanksSummary {
   state: NudgeThanksSummaryState;
   pendingRecipientCount: number;
 }
 
-export function getNudgeInteractionStatus(
+function getNudgeInteractionStatus(
   nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
 ): NudgeInteractionStatus {
   return getNudgeInteractionStatusFromFlags(
@@ -103,27 +98,27 @@ export function getNudgeInteractionStatus(
   );
 }
 
-export function isThankableTodo(
+function isThankableTodo(
   todo: { completed: boolean; visibility: TodoVisibility },
   { isOwner }: { isOwner: boolean },
 ): boolean {
   return isOwner && todo.completed && todo.visibility === 'PUBLIC';
 }
 
-export function isReplyableNudge(
+function isReplyableNudge(
   nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
   currentUserId: string,
 ): boolean {
   return nudge.receiverId === currentUserId && nudge.isAvailable;
 }
 
-export function isThankablePreview(
+function isThankablePreview(
   preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
 ): boolean {
   return preview.throughNudgeId != null && preview.recipients.length > 0;
 }
 
-export function getNudgeThanksSummary(
+function getNudgeThanksSummary(
   preview: Pick<
     NudgeThanksPreview,
     'throughNudgeId' | 'recipients' | 'totalRecipients' | 'thankedRecipientCount'

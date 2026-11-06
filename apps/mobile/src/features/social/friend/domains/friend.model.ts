@@ -7,7 +7,7 @@ import {
 import { friendLimitErrorDetailsSchema } from '@aido/api/errors';
 import { z } from 'zod';
 
-export const friendUserSchema = z.object({
+const friendUserSchema = z.object({
   id: z.string(),
   userTag: z.string(),
   name: z.string().nullable(),
@@ -17,7 +17,7 @@ export const friendUserSchema = z.object({
 });
 export type FriendUser = z.infer<typeof friendUserSchema>;
 
-export const friendRequestSchema = z.object({
+const friendRequestSchema = z.object({
   id: z.string(),
   userTag: z.string(),
   name: z.string().nullable(),
@@ -26,7 +26,7 @@ export const friendRequestSchema = z.object({
 });
 export type FriendRequest = z.infer<typeof friendRequestSchema>;
 
-export const searchedUserSchema = z.object({
+const searchedUserSchema = z.object({
   id: z.string(),
   userTag: z.string(),
   name: z.string().nullable(),
@@ -46,19 +46,19 @@ const friendSearchInputSchema = z.object({ query: z.string() });
 type FriendSearchInput = z.infer<typeof friendSearchInputSchema>;
 
 /** userTag: 서버 경로 검증(userTagParamSchema)과 같은 규칙 */
-export function isValidTag(tag: string): boolean {
+function isValidTag(tag: string): boolean {
   return userTagParamSchema.shape.userTag.safeParse(tag.trim()).success;
 }
 
-export function isValidSearchQuery(query: string): boolean {
+function isValidSearchQuery(query: string): boolean {
   return query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
-export function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>): boolean {
+function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>): boolean {
   return isValidTag(user.userTag);
 }
 
-export function hasValidSearchQuery(input: FriendSearchInput): boolean {
+function hasValidSearchQuery(input: FriendSearchInput): boolean {
   return isValidSearchQuery(input.query);
 }
 

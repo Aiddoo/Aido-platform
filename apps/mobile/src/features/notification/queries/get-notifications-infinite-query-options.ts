@@ -19,7 +19,7 @@ interface NotificationPageParam {
 
 const INITIAL_NOTIFICATION_PAGE_PARAM: NotificationPageParam = {};
 
-export function getNotificationsInfiniteQueryOptions(
+function getNotificationsInfiniteQueryOptions(
   notificationService: NotificationService,
   { params }: { params?: NotificationQueryParams },
 ) {

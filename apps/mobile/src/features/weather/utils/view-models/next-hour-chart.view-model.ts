@@ -6,7 +6,7 @@ import type { MinuteForecast } from '../../domains/weather-report.model';
 /** 그래프 좌표계. 화면에서는 viewBox로 폭에 맞춰 같은 비율로 늘린다. */
 export const NEXT_HOUR_CHART_SIZE = { width: 326, height: 92, baseline: 84, top: 8 } as const;
 
-export const PRECIPITATION_LEVELS = ['light', 'moderate', 'heavy'] as const;
+const PRECIPITATION_LEVELS = ['light', 'moderate', 'heavy'] as const;
 export type PrecipitationLevel = (typeof PRECIPITATION_LEVELS)[number];
 
 /** 강도(mm/h) → 그래프 높이(0~1). 2.5mm/h 미만은 약함, 7.6mm/h 미만은 보통, 그 이상은 강함이다. */
@@ -33,7 +33,7 @@ function toPrecipitationLevel(intensity: number): number {
   return clamp(lower.level + ratio * (upper.level - lower.level), 0, 1);
 }
 
-export interface NextHourChartGuide {
+interface NextHourChartGuide {
   level: PrecipitationLevel;
   y: number;
 }

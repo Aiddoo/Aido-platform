@@ -4,7 +4,7 @@ import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-que
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getRemindNudgeCooldownQueryOptions(
+function getRemindNudgeCooldownQueryOptions(
   todoNudgeService: TodoNudgeService,
   { userId }: { userId: string },
 ) {

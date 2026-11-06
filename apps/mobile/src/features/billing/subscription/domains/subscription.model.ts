@@ -7,10 +7,10 @@ import {
   PLAY_STORE_SUBSCRIPTIONS_URL,
 } from '../constants/subscription.constants';
 
-export const planTypeSchema = z.enum(['monthly', 'annual']);
+const planTypeSchema = z.enum(['monthly', 'annual']);
 export type PlanType = z.infer<typeof planTypeSchema>;
 
-export const subscriptionPlanSchema = z.object({
+const subscriptionPlanSchema = z.object({
   identifier: z.string(),
   planType: planTypeSchema,
   priceString: z.string(),
@@ -21,7 +21,7 @@ export const subscriptionPlanSchema = z.object({
 });
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
 
-export const subscriptionOfferingSchema = z.object({
+const subscriptionOfferingSchema = z.object({
   identifier: z.string(),
   plans: z.array(subscriptionPlanSchema),
 });

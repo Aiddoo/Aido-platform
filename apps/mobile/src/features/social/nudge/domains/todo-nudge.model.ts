@@ -3,7 +3,7 @@ import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
 import { z } from 'zod';
 
-export const nudgeLimitInfoSchema = z.object({
+const nudgeLimitInfoSchema = z.object({
   dailyLimit: z.number().nullable(),
   usedToday: z.number(),
   remainingToday: z.number().nullable(),
@@ -11,7 +11,7 @@ export const nudgeLimitInfoSchema = z.object({
 });
 export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
 
-export const nudgeCooldownInfoSchema = z.object({
+const nudgeCooldownInfoSchema = z.object({
   canNudge: z.boolean(),
   cooldownEndsAt: z.date().nullable(),
   remainingSeconds: z.number().nullable(),
@@ -21,7 +21,7 @@ export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 export type SendTodoNudgeInput = CreateNudgeInput;
 export type SendRemindNudgeInput = CreateRemindNudgeInput;
 
-export const sendTodoNudgeResultSchema = z.object({
+const sendTodoNudgeResultSchema = z.object({
   message: z.string(),
 });
 export type SendTodoNudgeResult = z.infer<typeof sendTodoNudgeResultSchema>;
@@ -35,7 +35,7 @@ const nudgeBannerStateSchema = z.discriminatedUnion('type', [
     dailyLimit: z.number().nullable(),
   }),
 ]);
-export type NudgeBannerState = z.infer<typeof nudgeBannerStateSchema>;
+type NudgeBannerState = z.infer<typeof nudgeBannerStateSchema>;
 
 const MAX_MESSAGE_LENGTH = NUDGE_LIMITS.MAX_MESSAGE_LENGTH;
 

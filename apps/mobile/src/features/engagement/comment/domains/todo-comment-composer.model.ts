@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { type TodoComment, todoCommentSchema } from './todo-comment.model';
 
-export const todoCommentComposerModeSchema = z.discriminatedUnion('type', [
+const todoCommentComposerModeSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('new') }),
   z.object({ type: z.literal('reply'), target: todoCommentSchema }),
   z.object({ type: z.literal('edit'), target: todoCommentSchema }),
@@ -26,28 +26,28 @@ export type TodoCommentComposerForm = z.infer<typeof todoCommentComposerFormSche
 
 const EMPTY_ITEMS: TodoCommentComposerForm['items'] = [{ content: '' }];
 
-export function newComposer(): TodoCommentComposerForm {
+function newComposer(): TodoCommentComposerForm {
   return { mode: { type: 'new' }, items: EMPTY_ITEMS };
 }
 
-export function replyComposer(target: TodoComment): TodoCommentComposerForm {
+function replyComposer(target: TodoComment): TodoCommentComposerForm {
   return { mode: { type: 'reply', target }, items: EMPTY_ITEMS };
 }
 
-export function editComposer(target: TodoComment): TodoCommentComposerForm {
+function editComposer(target: TodoComment): TodoCommentComposerForm {
   return { mode: { type: 'edit', target }, items: [{ content: target.content ?? '' }] };
 }
 
 /** 답글·수정을 쓰지 않은 채 키보드를 내리면(바깥 탭·뒤로가기) 작성기도 함께 닫는다. 쓴 글이 있으면 남긴다 */
-export function shouldCloseOnKeyboardHide({ mode, items }: TodoCommentComposerForm) {
+function shouldCloseOnKeyboardHide({ mode, items }: TodoCommentComposerForm) {
   return mode.type !== 'new' && items.every((item) => item.content.trim().length === 0);
 }
 
-export function canChainComposer(mode: TodoCommentComposerMode, itemCount: number) {
+function canChainComposer(mode: TodoCommentComposerMode, itemCount: number) {
   return mode.type !== 'edit' && itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE;
 }
 
-export function getComposerTarget(mode: TodoCommentComposerMode): TodoComment | null {
+function getComposerTarget(mode: TodoCommentComposerMode): TodoComment | null {
   return match(mode)
     .with({ type: 'new' }, () => null)
     .with({ type: 'reply' }, { type: 'edit' }, ({ target }) => target)
@@ -55,14 +55,14 @@ export function getComposerTarget(mode: TodoCommentComposerMode): TodoComment | 
 }
 
 /** 답글은 대상 글에 그대로 단다. 서버가 그 글이 속한 묶음 끝에 붙인다 */
-export function getReplyParentId(mode: TodoCommentComposerMode): string | null {
+function getReplyParentId(mode: TodoCommentComposerMode): string | null {
   return match(mode)
     .with({ type: 'reply' }, ({ target }) => target.id)
     .otherwise(() => null);
 }
 
 /** 초안은 새 댓글·답글은 할 일마다, 수정은 수정하는 글마다 나눈다 */
-export function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
+function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
   return match(mode)
     .with({ type: 'edit' }, ({ target }) => [todoId, 'edit', target.id] as const)
     .with({ type: 'reply' }, () => [todoId, 'reply'] as const)
@@ -70,7 +70,7 @@ export function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
     .exhaustive();
 }
 
-export function getDraftSourceUpdatedAt(mode: TodoCommentComposerMode) {
+function getDraftSourceUpdatedAt(mode: TodoCommentComposerMode) {
   return match(mode)
     .with({ type: 'edit' }, ({ target }) => (target.editedAt ?? target.createdAt).getTime())
     .otherwise(() => undefined);
@@ -90,7 +90,7 @@ interface PrepareSubmissionParams {
 }
 
 /** 같은 글을 다시 보내면 처음 발급한 멱등 키를 다시 쓴다 */
-export function prepareSubmission({
+function prepareSubmission({
   previousSubmission,
   todoId,
   parentId,
@@ -112,9 +112,7 @@ export function prepareSubmission({
   };
 }
 
-export function getTrimmedContents(
-  items: TodoCommentComposerForm['items'],
-): [string, ...string[]] | null {
+function getTrimmedContents(items: TodoCommentComposerForm['items']): [string, ...string[]] | null {
   const [first, ...rest] = items.map((item) => item.content.trim());
   return first == null ? null : [first, ...rest];
 }

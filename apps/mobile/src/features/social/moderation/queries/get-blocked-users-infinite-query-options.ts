@@ -10,7 +10,7 @@ import type { BlockedUser } from '../domains/user-block.model';
 
 const FIRST_PAGE_CURSOR: string | null = null;
 
-export function getBlockedUsersInfiniteQueryOptions(moderationService: ModerationService) {
+function getBlockedUsersInfiniteQueryOptions(moderationService: ModerationService) {
   return infiniteQueryOptions({
     queryKey: MODERATION_QUERY_KEYS.blockedUsers(),
     queryFn: async ({ pageParam, signal }) =>

@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import type { TodoNudgeService } from '../apis/todo-nudge.service';
 
-export function getNudgeInteractionAvailabilityQueryOptions(todoNudgeService: TodoNudgeService) {
+function getNudgeInteractionAvailabilityQueryOptions(todoNudgeService: TodoNudgeService) {
   return queryOptions({
     queryKey: NUDGE_QUERY_KEYS.interactionAvailability(),
     queryFn: async ({ signal }) =>

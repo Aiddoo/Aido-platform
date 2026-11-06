@@ -31,7 +31,7 @@ export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
   });
 }
 
-export function selectFriendUserViewModels(
+function selectFriendUserViewModels(
   friendPages: InfiniteData<Page<FriendUser>, string | undefined>,
   fallbackName: string,
 ) {

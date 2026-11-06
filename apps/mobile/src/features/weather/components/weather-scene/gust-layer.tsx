@@ -38,7 +38,7 @@ const LEAF_LANES = [0.1, 1] as const;
 const LEAF_OPACITY = 0.85;
 const EDGE_MARGIN = 20;
 
-export type GustTone = 'air' | 'icy';
+type GustTone = 'air' | 'icy';
 
 type StreakStyle = {
   count: number;

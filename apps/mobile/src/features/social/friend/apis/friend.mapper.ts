@@ -54,7 +54,7 @@ export const toSendRequestResult = (dto: SendFriendRequestResponse): SendRequest
   autoAccepted: dto.autoAccepted,
 });
 
-export const toSearchedUser = (dto: SearchedUserDTO): SearchedUser => ({
+const toSearchedUser = (dto: SearchedUserDTO): SearchedUser => ({
   id: dto.id,
   userTag: dto.userTag,
   name: dto.name,

@@ -133,7 +133,7 @@ function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
   return qualifiedCount + waitingCount;
 }
 
-export function toDisplayLink(link: string) {
+function toDisplayLink(link: string) {
   return link.replace(/^https?:\/\//, '');
 }
 

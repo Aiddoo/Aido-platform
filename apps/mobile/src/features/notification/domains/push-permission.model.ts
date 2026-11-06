@@ -3,14 +3,14 @@ import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-export const pushPermissionSchema = z.object({
+const pushPermissionSchema = z.object({
   status: z.enum(PUSH_PERMISSION_STATUS),
   canAskAgain: z.boolean(),
 });
 
 export type PushPermission = z.infer<typeof pushPermissionSchema>;
 
-export const pushDeviceSchema = z.object({
+const pushDeviceSchema = z.object({
   permission: pushPermissionSchema,
   hasActiveToken: z.boolean(),
   reportedAt: z.date(),
@@ -27,7 +27,7 @@ export const PUSH_PERMISSION_STEP = {
   NONE: 'NONE',
 } as const;
 
-export type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
+type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
 
 export const PUSH_PROMPT_SNOOZE_DAYS = 14;
 
@@ -39,19 +39,19 @@ export function isDeliveryAllowed(permission: PushPermission): boolean {
   );
 }
 
-export function isNotDetermined(permission: PushPermission): boolean {
+function isNotDetermined(permission: PushPermission): boolean {
   return permission.status === PUSH_PERMISSION_STATUS.NOT_DETERMINED;
 }
 
-export function canRequestSystemDialog(permission: PushPermission): boolean {
+function canRequestSystemDialog(permission: PushPermission): boolean {
   return !isDeliveryAllowed(permission) && permission.canAskAgain;
 }
 
-export function isBlockedUntilSettings(permission: PushPermission): boolean {
+function isBlockedUntilSettings(permission: PushPermission): boolean {
   return !isDeliveryAllowed(permission) && !permission.canAskAgain;
 }
 
-export function isPromptSnoozed(dismissedAt: Date | null, now: Date): boolean {
+function isPromptSnoozed(dismissedAt: Date | null, now: Date): boolean {
   if (dismissedAt == null) {
     return false;
   }
@@ -59,7 +59,7 @@ export function isPromptSnoozed(dismissedAt: Date | null, now: Date): boolean {
 }
 
 /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
-export function getNextPushPermissionStep(
+function getNextPushPermissionStep(
   permission: PushPermission,
   { pushEnabled }: { pushEnabled: boolean },
 ): PushPermissionStep {

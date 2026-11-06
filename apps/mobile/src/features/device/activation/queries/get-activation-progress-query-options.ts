@@ -11,7 +11,7 @@ type ActivationProgressDependencies = {
   user: ActivationUser | undefined;
 };
 
-export function getActivationProgressQueryOptions(
+function getActivationProgressQueryOptions(
   service: ActivationService,
   { config, user }: ActivationProgressDependencies,
 ) {

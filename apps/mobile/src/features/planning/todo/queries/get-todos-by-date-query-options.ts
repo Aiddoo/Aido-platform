@@ -12,7 +12,7 @@ import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 export const shouldPersistTodosByDate = ({ date, todayKey }: { date: string; todayKey: string }) =>
   date >= addDaysToDateKey(todayKey, -1) && date <= addDaysToDateKey(todayKey, 1);
 
-export function getTodosByDateQueryOptions(
+function getTodosByDateQueryOptions(
   todoService: TodoService,
   { date, todayKey }: { date: string; todayKey: string },
 ) {

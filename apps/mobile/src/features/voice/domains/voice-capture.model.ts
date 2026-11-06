@@ -21,12 +21,12 @@ import {
   withInterimFinalized,
 } from './voice-transcript.model';
 
-export const VOICE_CAPTURE_FAILURE_REASONS = [...SPEECH_ERROR_CODES, 'planning-failed'] as const;
-export const voiceCaptureFailureReasonSchema = z.enum(VOICE_CAPTURE_FAILURE_REASONS);
+const VOICE_CAPTURE_FAILURE_REASONS = [...SPEECH_ERROR_CODES, 'planning-failed'] as const;
+const voiceCaptureFailureReasonSchema = z.enum(VOICE_CAPTURE_FAILURE_REASONS);
 export type VoiceCaptureFailureReason = z.infer<typeof voiceCaptureFailureReasonSchema>;
 
-export const VOICE_PAUSE_CAUSES = ['app-background', 'interrupted', 'user', 'limit'] as const;
-export const voicePauseCauseSchema = z.enum(VOICE_PAUSE_CAUSES);
+const VOICE_PAUSE_CAUSES = ['app-background', 'interrupted', 'user', 'limit'] as const;
+const voicePauseCauseSchema = z.enum(VOICE_PAUSE_CAUSES);
 export type VoicePauseCause = z.infer<typeof voicePauseCauseSchema>;
 
 const captureBaseSchema = z.object({
@@ -36,7 +36,7 @@ const captureBaseSchema = z.object({
   pauseCount: z.int().nonnegative(),
 });
 
-export const capturedPlanSchema = z.object({
+const capturedPlanSchema = z.object({
   plan: voicePlanSchema,
   /** 이 요청으로 횟수를 썼는지. false면 "횟수는 차감되지 않아요"를 보여 준다 */
   isCharged: z.boolean(),
@@ -83,7 +83,7 @@ export function createVoiceCaptureState(): VoiceCaptureState {
   return { status: 'idle', transcript: createVoiceTranscript(), elapsedMs: 0, pauseCount: 0 };
 }
 
-export function getElapsedMs(state: VoiceCaptureState, now: number): number {
+function getElapsedMs(state: VoiceCaptureState, now: number): number {
   return state.status === 'listening'
     ? state.elapsedMs + Math.max(0, now - state.listeningSince)
     : state.elapsedMs;
@@ -124,7 +124,7 @@ function toFinalized(state: VoiceCaptureState): VoiceCaptureState {
  * Android 인식기는 stop 뒤에 마지막 결과 대신 ERROR_CLIENT를 줄 수 있고, 어느 쪽이든 이어서 end가 온다.
  * 앱이 스스로 멈춘 구간의 client는 실패가 아니라 정상 종료이고, 글자 확정은 end가 맡는다.
  */
-export function isStopAcknowledgement(
+function isStopAcknowledgement(
   state: VoiceCaptureState,
   code: SpeechErrorCode,
   isStopRequested: boolean = false,
@@ -254,11 +254,11 @@ export function reduceVoiceCapture(
 }
 
 /** 듣기가 끝났는데 사용자가 끝내지 않았다면(침묵·인식기 제한 시간) 같은 세션을 다시 연다 */
-export function shouldRestartSegment(state: VoiceCaptureState): boolean {
+function shouldRestartSegment(state: VoiceCaptureState): boolean {
   return state.status === 'listening';
 }
 
-export const voiceStallWatchSchema = z.object({
+const voiceStallWatchSchema = z.object({
   /** 마지막 글자를 받았거나 구간이 열린 시각 */
   lastTextAt: z.number(),
   /** 그 뒤로 말소리 크기로 들린 시간의 합(ms) */
@@ -302,7 +302,7 @@ export function withStallRestart(now: number): VoiceStallWatch {
   return createVoiceStallWatch(now, now);
 }
 
-export function shouldRestartStalledRecognizer(
+function shouldRestartStalledRecognizer(
   state: VoiceCaptureState,
   watch: VoiceStallWatch,
   now: number,
@@ -412,7 +412,7 @@ export function reduceRecognizerLink(
     .exhaustive();
 }
 
-export function isActive(state: VoiceCaptureState): boolean {
+function isActive(state: VoiceCaptureState): boolean {
   return (
     state.status === 'preparing' ||
     state.status === 'listening' ||
@@ -421,17 +421,17 @@ export function isActive(state: VoiceCaptureState): boolean {
   );
 }
 
-export function isWrappingUp(state: VoiceCaptureState): boolean {
+function isWrappingUp(state: VoiceCaptureState): boolean {
   return state.status === 'finalizing' || state.status === 'planning';
 }
 
-export function canFinish(state: VoiceCaptureState): boolean {
+function canFinish(state: VoiceCaptureState): boolean {
   const isStopped =
     state.status === 'paused' || (state.status === 'failed' && state.reason !== 'planning-failed');
   return (state.status === 'listening' || isStopped) && !isTranscriptEmpty(state.transcript);
 }
 
-export function canResume(state: VoiceCaptureState): boolean {
+function canResume(state: VoiceCaptureState): boolean {
   return match(state)
     .with({ status: 'paused' }, () => true)
     .with(
@@ -450,11 +450,11 @@ export function canResume(state: VoiceCaptureState): boolean {
     .otherwise(() => false);
 }
 
-export function canResumeWithinLimit(state: VoiceCaptureState, limitMs: number | null): boolean {
+function canResumeWithinLimit(state: VoiceCaptureState, limitMs: number | null): boolean {
   return canResume(state) && (limitMs == null || state.elapsedMs < limitMs);
 }
 
-export function canRetryPlanning(state: VoiceCaptureState): boolean {
+function canRetryPlanning(state: VoiceCaptureState): boolean {
   return (
     state.status === 'failed' &&
     state.reason === 'planning-failed' &&
@@ -462,14 +462,14 @@ export function canRetryPlanning(state: VoiceCaptureState): boolean {
   );
 }
 
-export function isSpeaking(level: number, lastTextAt: number | null, now: number): boolean {
+function isSpeaking(level: number, lastTextAt: number | null, now: number): boolean {
   return (
     level >= SPEAKING_VOLUME_THRESHOLD &&
     (lastTextAt == null || now - lastTextAt < SPEECH_TEXT_GRACE_MS)
   );
 }
 
-export function shouldAutoFinish(
+function shouldAutoFinish(
   state: VoiceCaptureState,
   silentMs: number,
   silenceLimitMs: number = AUTO_FINISH_SILENCE_MS,
@@ -477,10 +477,10 @@ export function shouldAutoFinish(
   return canFinish(state) && silentMs >= silenceLimitMs;
 }
 
-export type VoiceDismissAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
+type VoiceDismissAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
 
 /** 시트의 바깥 탭과 Android 뒤로 가기. 듣기·정리는 X와 같고, 고를 카드가 있으면 계획을 잃기 전에 묻는다. null이면 시트가 닫힌다 */
-export function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
+function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
   return match(state)
     .returnType<VoiceDismissAction | null>()
     .with({ status: 'review' }, ({ plan }) =>
@@ -505,7 +505,7 @@ export function getRemainingCaptureMs(
   return Math.max(0, maxSeconds * 1_000 - getElapsedMs(state, now));
 }
 
-export function isOverQuickLimit(
+function isOverQuickLimit(
   state: VoiceCaptureState,
   now: number,
   maxSeconds: number = QUICK_CAPTURE_MAX_SECONDS,
@@ -513,7 +513,7 @@ export function isOverQuickLimit(
   return getElapsedMs(state, now) >= maxSeconds * 1_000;
 }
 
-export function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boolean {
+function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boolean {
   return state.status === 'paused' && isOverQuickLimit(state, now);
 }
 

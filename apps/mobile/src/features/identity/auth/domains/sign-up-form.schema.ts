@@ -20,4 +20,3 @@ export const signUpFormSchema = z
   });
 
 export type SignUpFormInput = z.input<typeof signUpFormSchema>;
-export type SignUpFormOutput = z.output<typeof signUpFormSchema>;

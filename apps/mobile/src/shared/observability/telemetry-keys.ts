@@ -101,7 +101,7 @@ export const SENTRY_TAGS = {
  * 이벤트/크래시 직전의 행적을 분류해 대시보드에서 필터할 수 있게 한다.
  * 자유 문자열 대신 union으로 고정해 오탈자·미정의 카테고리를 컴파일 타임에 막는다.
  */
-export const BREADCRUMB_CATEGORIES = [
+const BREADCRUMB_CATEGORIES = [
   'http',
   'navigation',
   'auth',
@@ -146,10 +146,10 @@ export type GaReservedPurchaseEventName = 'purchase' | 'in_app_purchase' | 'refu
 
 // 새 이벤트는 해당 기능의 `*EventMap`에 먼저 정의한다 → `AppEventMap`으로 합쳐진다.
 
-export type SocialProvider = OAuthProviderSlug;
-export type AuthMethod = 'email' | SocialProvider;
+type SocialProvider = OAuthProviderSlug;
+type AuthMethod = 'email' | SocialProvider;
 
-export interface AuthEventMap {
+interface AuthEventMap {
   auth_login: { method: AuthMethod };
   auth_signup: { method: AuthMethod };
   auth_logout: undefined;
@@ -160,9 +160,9 @@ export interface AuthEventMap {
   session_expired: { reason: SessionExpiredReason };
 }
 
-export type TodoCreationEntry = 'manual' | 'recurring';
+type TodoCreationEntry = 'manual' | 'recurring';
 
-export interface TodoEventMap {
+interface TodoEventMap {
   todo_created: {
     source: 'manual';
     creation_entry: TodoCreationEntry;
@@ -189,7 +189,7 @@ export interface TodoEventMap {
   category_deleted: undefined;
 }
 
-export interface TodoCommentEventMap {
+interface TodoCommentEventMap {
   /** 댓글·답글 2단계(1.14.1+). chain_size는 한 번에 이어 쓴 글 수다. */
   todo_comment_created: { todo_id: number; is_reply: boolean; chain_size: number };
   todo_comment_deleted: { todo_id: number; is_reply: boolean };
@@ -201,7 +201,7 @@ export interface TodoCommentEventMap {
   todo_comment_hint_dismissed: { kind: 'double_tap'; reason: 'close' | 'used' };
 }
 
-export interface FriendEventMap {
+interface FriendEventMap {
   friend_request_sent: undefined;
   friend_request_cancelled: undefined;
   friend_request_accepted: undefined;
@@ -211,13 +211,13 @@ export interface FriendEventMap {
 }
 
 /** 차단·신고. 상대 사용자 id·신고 상세는 넣지 않는다 */
-export interface ModerationEventMap {
+interface ModerationEventMap {
   user_blocked: undefined;
   user_unblocked: undefined;
   content_reported: { target_type: UserReportTargetType; reason: UserReportReason };
 }
 
-export interface NudgeEventMap {
+interface NudgeEventMap {
   nudge_sent: undefined;
   nudge_replied: { reply_kind: ReplyToNudgeInput['replyKind'] };
   nudge_thanks_sent: { recipient_count: number };
@@ -303,7 +303,7 @@ export interface GrowthEventMap {
  * 친구 초대 퍼널. 사용자 id·초대 코드는 넣지 않는다.
  * 사용 시작과 보상 지급은 서버 로그가 원천이다.
  */
-export interface InviteEventMap {
+interface InviteEventMap {
   invite_link_shared: { channel: InviteShareChannel };
   invite_entry_tapped: { entry: InviteEntrySource };
   invite_link_opened: { source: InviteLinkSource };
@@ -314,7 +314,7 @@ export interface InviteEventMap {
 export type LocalDateChangeTrigger = 'midnight_timer' | 'foreground' | 'calendar_change';
 
 /** 앱 생명주기 기반 제품 지표. 진단용 날짜 값은 Sentry breadcrumb에만 남긴다. */
-export interface LifecycleEventMap {
+interface LifecycleEventMap {
   local_day_changed: {
     trigger: LocalDateChangeTrigger;
   };
@@ -325,7 +325,7 @@ export interface LifecycleEventMap {
   };
 }
 
-export interface SubscriptionEventMap {
+interface SubscriptionEventMap {
   /**
    * 앱에서 결제가 끝난 순간(UI·퍼널 단계). **매출·전환 집계에 쓰지 않는다** — 매출 원본은 RevenueCat `purchase`다.
    * 대시보드 이력을 지키려고 이름은 유지한다.
@@ -361,7 +361,7 @@ export type EntitlementGateSurface =
 /** precheck: 시작 전에 남은 횟수 0을 보고 막았다 · server: 서버가 한도 오류로 막았다 */
 export type LimitReachedTrigger = 'precheck' | 'server';
 
-export interface EntitlementEventMap {
+interface EntitlementEventMap {
   /** 횟수·개수 한도에 닿아 안내를 띄웠다(premium_gate_shown과 함께 남는다) */
   limit_reached_shown: {
     feature: PremiumGateAnalyticsFeature;
@@ -374,7 +374,7 @@ export interface EntitlementEventMap {
   };
 }
 
-export type VoiceCaptureMode = 'quick' | 'note';
+type VoiceCaptureMode = 'quick' | 'note';
 export type VoiceCaptureEntry = 'add_todo_sheet' | 'memo_tab' | 'quick_voice_upgrade';
 export type VoiceCaptureOutcome = 'completed' | 'cancelled' | 'empty' | 'upgraded';
 export type VoiceDurationBucket = 'lt_30s' | '30s_3m' | '3m_10m' | '10m_30m';
@@ -415,12 +415,12 @@ export interface VoiceEventMap {
   voice_note_key_point_played: { position_bucket: VoiceDurationBucket };
 }
 
-export interface CoachmarkEventMap {
+interface CoachmarkEventMap {
   coachmark_shown: { kind: CoachmarkKind };
   coachmark_dismissed: { kind: CoachmarkKind };
 }
 
-export interface AiEventMap {
+interface AiEventMap {
   ai_parse_used: { success: boolean };
   ai_suggestion_acted: { action: 'accept' | 'dismiss' };
   ai_report_viewed: { report_id: number; report_type: ReportType };
@@ -448,12 +448,12 @@ export interface VoiceEventMap {
   };
 }
 
-export interface UserEventMap {
+interface UserEventMap {
   profile_edited: { field: string };
   settings_changed: { setting: string; value: string };
 }
 
-export interface NotificationEventMap {
+interface NotificationEventMap {
   push_notification_opened: {
     type: string;
     action: string;
@@ -474,7 +474,7 @@ export interface NotificationEventMap {
 /** 알림 권한 안내가 보인 곳 */
 export type PushPermissionPromptSource = 'activation' | 'feed_card' | 'settings';
 
-export interface BadgeEventMap {
+interface BadgeEventMap {
   badge_summary_viewed: {
     badge_type: 'perfect' | 'almost' | 'completed';
     completion_rate: number;
@@ -495,7 +495,7 @@ export interface BadgeEventMap {
   badge_opened_from_notification: undefined;
 }
 
-export interface WeatherEventMap {
+interface WeatherEventMap {
   weather_location_permission_result: { result: 'granted' | 'needs_permission' | 'denied' };
   weather_alert_opened: { severity: WeatherAlertSeverity };
   weather_reschedule_opened: { todo_count: number; reason: WeatherRescheduleReason };
@@ -513,7 +513,7 @@ export interface WeatherEventMap {
 }
 
 /** 연결 상태. 오프라인 배너가 뜨는 전환(오프라인 구간)마다 한 번 */
-export interface ConnectivityEventMap {
+interface ConnectivityEventMap {
   offline_banner_shown: undefined;
 }
 

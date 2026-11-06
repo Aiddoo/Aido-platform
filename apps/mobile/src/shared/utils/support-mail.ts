@@ -1,5 +1,5 @@
 /** 문의·신고 수신 주소. 서버 `SUPPORT_EMAIL` 기본값과 같다 */
-export const SUPPORT_EMAIL = 'support@aido.kr';
+const SUPPORT_EMAIL = 'support@aido.kr';
 
 interface DiagnosticCodeInput {
   platform: string;

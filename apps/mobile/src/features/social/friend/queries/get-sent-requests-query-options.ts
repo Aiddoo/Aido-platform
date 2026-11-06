@@ -7,7 +7,7 @@ import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;
 
-export function getSentRequestsQueryOptions(friendService: FriendService) {
+function getSentRequestsQueryOptions(friendService: FriendService) {
   return infiniteQueryOptions({
     queryKey: FRIEND_QUERY_KEYS.sent(),
     queryFn: async ({ pageParam, signal }) => {

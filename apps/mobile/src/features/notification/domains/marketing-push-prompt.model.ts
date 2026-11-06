@@ -32,7 +32,7 @@ export function hasCooldownElapsed(promptState: MarketingPushPromptState, now: D
 }
 
 /** 동의 정보 로딩 전에는 노출하지 않는다. 규칙을 추가하려면 조건 함수를 하나 더 조합한다. */
-export function shouldPromptMarketingPush(
+function shouldPromptMarketingPush(
   consent: Consent | undefined,
   promptState: MarketingPushPromptState,
   now: Date,

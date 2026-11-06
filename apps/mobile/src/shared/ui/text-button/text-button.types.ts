@@ -2,8 +2,8 @@ import type { LinkButton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { PressableProps } from 'react-native';
 
-export type TextButtonSize = 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge';
-export type TextButtonVariant = 'clear' | 'underline' | 'arrow';
+type TextButtonSize = 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge';
+type TextButtonVariant = 'clear' | 'underline' | 'arrow';
 
 export interface TextButtonProps extends Omit<
   ComponentProps<typeof LinkButton>,

@@ -1,10 +1,10 @@
 import { ACCOUNT_PROVIDERS, OAUTH_PROVIDERS } from '@aido/api';
 import { z } from 'zod';
 
-export const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
-export type AccountProvider = z.infer<typeof accountProviderSchema>;
+const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
+type AccountProvider = z.infer<typeof accountProviderSchema>;
 
-export const oauthProviderSchema = z.enum(OAUTH_PROVIDERS);
+const oauthProviderSchema = z.enum(OAUTH_PROVIDERS);
 export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
 
 const ACCOUNT_PROVIDER_SLUG = {
@@ -15,10 +15,8 @@ const ACCOUNT_PROVIDER_SLUG = {
   naver: 'naver',
 } as const satisfies { [Provider in AccountProvider as Lowercase<Provider>]: Lowercase<Provider> };
 
-export const authProviderSlugSchema = z.enum(ACCOUNT_PROVIDER_SLUG);
-export type AuthProviderSlug = z.infer<typeof authProviderSlugSchema>;
-
-export const oauthProviderSlugSchema = authProviderSlugSchema.exclude(['credential']);
+const authProviderSlugSchema = z.enum(ACCOUNT_PROVIDER_SLUG);
+const oauthProviderSlugSchema = authProviderSlugSchema.exclude(['credential']);
 export type OAuthProviderSlug = z.infer<typeof oauthProviderSlugSchema>;
 
 const OAUTH_PROVIDER_BY_SLUG = {
@@ -48,7 +46,7 @@ export type OAuthStartProvider = z.infer<typeof oauthStartProviderSchema>;
 const oauthStartModeSchema = z.enum(['login', 'link']);
 export type OAuthStartMode = z.infer<typeof oauthStartModeSchema>;
 
-export const linkedAccountSchema = z.object({
+const linkedAccountSchema = z.object({
   provider: oauthProviderSchema,
   linked: z.boolean(),
   providerAccountId: z.string().nullable(),
@@ -56,7 +54,7 @@ export const linkedAccountSchema = z.object({
 });
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
-export const linkedAccountsResultSchema = z.object({
+const linkedAccountsResultSchema = z.object({
   accounts: z.array(linkedAccountSchema),
   canUnlink: z.boolean(),
 });

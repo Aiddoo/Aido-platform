@@ -9,11 +9,11 @@ export interface ParsedMemoPlan {
   featureQuota: FeatureQuota | null;
 }
 
-export function canCreateMemo(limit: MemoResourceLimit) {
+function canCreateMemo(limit: MemoResourceLimit) {
   return limit.currentCount < limit.maxPerUser;
 }
 
-export function getMemoPreview(memo: Pick<Memo, 'content'>) {
+function getMemoPreview(memo: Pick<Memo, 'content'>) {
   const [title = '', ...rest] = memo.content.trim().split('\n');
 
   return { title: title.trim(), body: rest.join('\n').trim() };

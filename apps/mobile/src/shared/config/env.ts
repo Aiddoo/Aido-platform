@@ -12,7 +12,7 @@ import { resolveRevenueCatApiKey } from './revenuecat-api-key';
 // =============================================================================
 
 const AppEnvSchema = z.enum(['development', 'preview', 'production']);
-export type AppEnv = z.infer<typeof AppEnvSchema>;
+type AppEnv = z.infer<typeof AppEnvSchema>;
 
 const ExtraSchema = z.object({
   env: AppEnvSchema,
@@ -168,5 +168,3 @@ export const ENV = {
   // 프로덕션이면 항상 활성. 개발/preview는 기본 비활성이며 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성(테스트용).
   SENTRY_ENABLED: extra.isProduction || extra.sentryDebug === true,
 } as const;
-
-export type Env = typeof ENV;

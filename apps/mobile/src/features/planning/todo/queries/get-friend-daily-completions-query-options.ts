@@ -6,7 +6,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { toCompletionsViewModel } from './get-daily-completions-query-options';
 
-export function getFriendDailyCompletionsQueryOptions(
+function getFriendDailyCompletionsQueryOptions(
   service: TodoService,
   {
     friendUserId,

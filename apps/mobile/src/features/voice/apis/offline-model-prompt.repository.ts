@@ -8,7 +8,7 @@ export interface OfflineModelPromptRepository {
   saveDeclined(userId: string, locale: SpeechLocale): void;
 }
 
-export const offlineModelDeclinedStorageKey = (userId: string, locale: SpeechLocale) =>
+const offlineModelDeclinedStorageKey = (userId: string, locale: SpeechLocale) =>
   `${KEY_PREFIX}:${encodeURIComponent(userId)}:${locale}`;
 
 /**

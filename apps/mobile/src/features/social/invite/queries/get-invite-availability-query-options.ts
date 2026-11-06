@@ -8,7 +8,7 @@ import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 // 운영 플래그라 자주 바뀌지 않는다. 진입점이 여러 곳이어도 한 번만 묻는다
 const AVAILABILITY_STALE_TIME_MS = 5 * 60 * 1000;
 
-export function getInviteAvailabilityQueryOptions(inviteService: InviteService) {
+function getInviteAvailabilityQueryOptions(inviteService: InviteService) {
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.availability(),
     queryFn: async ({ signal }) => unwrap(await inviteService.getAvailability(signal)),

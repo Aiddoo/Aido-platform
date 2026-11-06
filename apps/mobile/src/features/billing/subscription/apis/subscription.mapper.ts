@@ -13,7 +13,7 @@ import type {
   SubscriptionPlan,
 } from '../domains/subscription.model';
 
-export function toPlanType(packageType: PurchasePackageType): PlanType | null {
+function toPlanType(packageType: PurchasePackageType): PlanType | null {
   return match(packageType)
     .returnType<PlanType | null>()
     .with('MONTHLY', () => 'monthly')
@@ -22,7 +22,7 @@ export function toPlanType(packageType: PurchasePackageType): PlanType | null {
     .exhaustive();
 }
 
-export function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | null {
+function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | null {
   const planType = toPlanType(storePackage.packageType);
 
   if (planType == null) {

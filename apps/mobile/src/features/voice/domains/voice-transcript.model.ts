@@ -15,7 +15,7 @@ export const voiceTranscriptSchema = z.object({
 });
 export type VoiceTranscript = z.infer<typeof voiceTranscriptSchema>;
 
-export const speechResultSchema = z.object({
+const speechResultSchema = z.object({
   transcript: z.string(),
   isFinal: z.boolean(),
 });
@@ -25,7 +25,7 @@ export function createVoiceTranscript(overrides: Partial<VoiceTranscript> = {}):
   return { sentences: [], interim: '', ...overrides };
 }
 
-export function replaceInterimResult(transcript: VoiceTranscript, text: string): VoiceTranscript {
+function replaceInterimResult(transcript: VoiceTranscript, text: string): VoiceTranscript {
   return { ...transcript, interim: text.trim() };
 }
 

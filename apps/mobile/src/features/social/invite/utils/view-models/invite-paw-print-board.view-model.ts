@@ -16,7 +16,7 @@ export interface PawPrintCell {
   connectorBefore: { isFilled: boolean } | null;
 }
 
-export interface PawPrintRow {
+interface PawPrintRow {
   cells: PawPrintCell[];
   /** 다음 줄로 꺾어 내려가는 연결선 위치(지그재그). 마지막 줄이면 null */
   turn: { side: 'end' | 'start'; isFilled: boolean } | null;

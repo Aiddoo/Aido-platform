@@ -7,7 +7,7 @@ import { Text } from '../text/text';
 
 export type AppToastVariant = 'default' | 'success' | 'warning' | 'danger';
 
-export interface AppToastAction {
+interface AppToastAction {
   label: string;
   onPress?: () => void;
 }

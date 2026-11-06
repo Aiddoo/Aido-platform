@@ -41,7 +41,7 @@ function toAirMeterPosition(value: number, pollutant: AirPollutant): number {
   return clamp((index + withinSegment) / segmentCount, METER_MIN, METER_MAX);
 }
 
-export function pickPollutant(
+function pickPollutant(
   airQuality: Pick<AirQuality, 'pm10' | 'pm25'>,
   pollutant: AirPollutant,
 ): Pick<AirQuality, 'pm10' | 'pm25'> {
@@ -81,14 +81,14 @@ function getCloudCoverLevel(cloudCover: number): CloudCoverLevel {
 /** 상대 습도가 이 값(%) 이상이면 눅눅하다고 안내한다. */
 const MUGGY_HUMIDITY = 80;
 
-export function isMuggy(humidity: number): boolean {
+function isMuggy(humidity: number): boolean {
   return humidity >= MUGGY_HUMIDITY;
 }
 
 /** WHO 기준 자외선 지수 3(보통) 이상부터 차단제를 권한다. */
 const SUNSCREEN_UV_INDEX = 3;
 
-export interface TimeWindow {
+interface TimeWindow {
   startsAt: Date;
   endsAt: Date;
 }
@@ -148,7 +148,7 @@ function getNextSunEvent(
   return null;
 }
 
-export interface Duration {
+interface Duration {
   hours: number;
   minutes: number;
 }

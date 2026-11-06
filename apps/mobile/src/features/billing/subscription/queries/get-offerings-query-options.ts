@@ -52,7 +52,7 @@ function reportStoreUnavailable(
 
 const OFFERINGS_STALE_TIME = 10 * 60 * 1000; // 10분
 
-export function getOfferingsQueryOptions(
+function getOfferingsQueryOptions(
   subscriptionService: SubscriptionService,
   observers: OfferingsObservers,
 ) {

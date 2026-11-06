@@ -4,12 +4,12 @@ import { z } from 'zod';
 export const todoCategorySchema = todoCategorySummarySchema;
 export type TodoCategory = z.infer<typeof todoCategorySchema>;
 
-export const todoCategoryWithCountSchema = todoCategorySchema.extend({
+const todoCategoryWithCountSchema = todoCategorySchema.extend({
   todoCount: z.number(),
 });
 export type TodoCategoryWithCount = z.infer<typeof todoCategoryWithCountSchema>;
 
-export const todoCategoriesResultSchema = z.object({
+const todoCategoriesResultSchema = z.object({
   categories: z.array(todoCategoryWithCountSchema),
 });
 export type TodoCategoriesResult = z.infer<typeof todoCategoriesResultSchema>;

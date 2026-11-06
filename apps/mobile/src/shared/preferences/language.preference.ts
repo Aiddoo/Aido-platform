@@ -1,6 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
-export const LANGUAGE_MODES = ['system', 'ko', 'en'] as const;
+const LANGUAGE_MODES = ['system', 'ko', 'en'] as const;
 
 export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 

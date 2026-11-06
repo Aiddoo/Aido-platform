@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 
-export function getTodoExistenceQueryOptions(todoService: TodoService) {
+function getTodoExistenceQueryOptions(todoService: TodoService) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.existence(),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoExistence(signal)),

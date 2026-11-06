@@ -16,7 +16,7 @@ export const toCompletionsViewModel = (data: {
   return keyBy(data.completions, (c) => c.date);
 };
 
-export function getDailyCompletionsQueryOptions(
+function getDailyCompletionsQueryOptions(
   service: TodoService,
   { startDate, endDate }: { startDate: string; endDate: string },
 ) {

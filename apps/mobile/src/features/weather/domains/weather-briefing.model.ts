@@ -31,7 +31,7 @@ const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 
 const GRAY_CONDITIONS: readonly WeatherCondition[] = ['CLOUDY', 'MOSTLY_CLOUDY', 'FOGGY', 'HAZY'];
 
 /** 하위 할 일 진행. 하위 할 일이 없으면 null이다. */
-export type BriefingSubTodoProgress = { completed: number; total: number } | null;
+type BriefingSubTodoProgress = { completed: number; total: number } | null;
 
 /** 할 일 피처의 모델에 기대지 않도록 브리핑에 필요한 값만 받는다. 시간이 없거나 종일이면 scheduledAt이 null이다. */
 export interface BriefingTodo {
@@ -90,8 +90,8 @@ export interface HourRange {
   endsAt: Date;
 }
 
-export type BriefingDay = 'today' | 'tomorrow';
-export type DayPart = 'dawn' | 'morning' | 'afternoon' | 'evening';
+type BriefingDay = 'today' | 'tomorrow';
+type DayPart = 'dawn' | 'morning' | 'afternoon' | 'evening';
 
 export type BriefingResult =
   | { kind: 'rainy'; todos: ForecastTodo[] }
@@ -112,14 +112,14 @@ export type BriefingResult =
   | { kind: 'dry'; todos: ForecastTodo[] }
   | { kind: 'noScheduledTodos' };
 
-export type BriefingSource = {
+type BriefingSource = {
   location: { timezone: string };
   hourly: HourlyForecastEntry[];
   daily: DailyForecastEntry[];
 };
 
 /** 할 일 날짜는 기기 시간대로 저장되므로 오늘·내일도 기기 시간대로 가른다. */
-export interface BriefingClock {
+interface BriefingClock {
   now: Date;
   timeZone: string;
 }

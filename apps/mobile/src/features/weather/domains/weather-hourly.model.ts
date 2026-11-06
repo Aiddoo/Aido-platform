@@ -21,7 +21,7 @@ const MIN_PEAK_DIFFERENCE = 1;
 const HOURLY_SKIES = ['clear', 'partlyCloudy', 'cloudy', 'hazy'] as const;
 export type HourlySky = (typeof HOURLY_SKIES)[number];
 
-export interface TemperaturePeak {
+interface TemperaturePeak {
   extreme: 'highest' | 'lowest';
   at: Date;
   temperature: number;

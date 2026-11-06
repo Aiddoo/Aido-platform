@@ -14,7 +14,7 @@ export const STORE_REVIEW_REQUEST_WINDOW_DAYS = 365;
 export const STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS = STORE_REVIEW_MIN_ACTIVE_DAYS;
 
 /** 시스템 리뷰 창을 요청할 수 있는 긍정적인 순간 */
-export const STORE_REVIEW_MOMENTS = ['all_todos_done', 'paw_print_celebration'] as const;
+const STORE_REVIEW_MOMENTS = ['all_todos_done', 'paw_print_celebration'] as const;
 export type StoreReviewMoment = (typeof STORE_REVIEW_MOMENTS)[number];
 
 export const storeReviewStateSchema = z.object({

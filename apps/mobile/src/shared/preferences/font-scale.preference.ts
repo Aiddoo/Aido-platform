@@ -1,6 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
-export const FONT_SCALES = ['xsmall', 'small', 'medium', 'large', 'xlarge'] as const;
+const FONT_SCALES = ['xsmall', 'small', 'medium', 'large', 'xlarge'] as const;
 
 export type FontScale = (typeof FONT_SCALES)[number];
 

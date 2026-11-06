@@ -2,7 +2,7 @@ import { t } from '@src/shared/i18n';
 
 import type { OAuthProvider } from '../domains/oauth.model';
 
-export const OAUTH_PROVIDER_LABEL_KEYS = {
+const OAUTH_PROVIDER_LABEL_KEYS = {
   APPLE: 'auth:providers.APPLE',
   GOOGLE: 'auth:providers.GOOGLE',
   KAKAO: 'auth:providers.KAKAO',

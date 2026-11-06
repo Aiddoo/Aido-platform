@@ -4,7 +4,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-export function getFriendTodosQueryOptions(
+function getFriendTodosQueryOptions(
   todoService: TodoService,
   { friendUserId, date }: { friendUserId: string; date: string },
 ) {

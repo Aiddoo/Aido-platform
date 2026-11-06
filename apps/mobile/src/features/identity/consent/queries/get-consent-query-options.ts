@@ -4,7 +4,7 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/con
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getConsentQueryOptions(consentService: ConsentService) {
+function getConsentQueryOptions(consentService: ConsentService) {
   return queryOptions({
     queryKey: CONSENT_QUERY_KEYS.consent(),
     queryFn: async ({ signal }) => {

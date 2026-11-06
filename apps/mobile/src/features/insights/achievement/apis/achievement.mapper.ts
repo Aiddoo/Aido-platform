@@ -22,7 +22,7 @@ export const toWeeklyAchievement = (dto: WeeklyAchievementDto): WeeklyAchievemen
   achievedAt: new Date(dto.achievedAt),
 });
 
-export const toAchievementSummary = (dto: SummaryDto): AchievementSummary => ({
+const toAchievementSummary = (dto: SummaryDto): AchievementSummary => ({
   totalWeeks: dto.totalWeeks,
   perfectWeeks: dto.perfectWeeks,
   currentStreak: dto.currentStreak,

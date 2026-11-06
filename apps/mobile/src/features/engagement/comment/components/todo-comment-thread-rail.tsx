@@ -38,7 +38,7 @@ const RAIL_START = ROW_PADDING_X + COMMENT_AVATAR / 2 - RAIL_WIDTH / 2;
 const TODO_COMMENT_REPLY_INSET = ROW_PADDING_X + COMMENT_AVATAR + AVATAR_GAP;
 const CURVE_WIDTH = TODO_COMMENT_REPLY_INSET - CURVE_AVATAR_GAP - RAIL_START;
 
-export type TodoCommentRailRowKind =
+type TodoCommentRailRowKind =
   | { type: 'comment'; hasReplies: boolean }
   | { type: 'reply'; isLast: boolean }
   | { type: 'toggle' };

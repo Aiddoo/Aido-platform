@@ -1,4 +1,4 @@
-export interface SystemShareContent {
+interface SystemShareContent {
   /** 링크를 뺀 본문. 링크를 어디에 둘지는 플랫폼 어댑터가 정한다 */
   message: string;
   url: string;

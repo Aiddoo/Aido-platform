@@ -153,7 +153,7 @@ export const StaticDIProvider = ({ container, children }: StaticDIProviderProps)
   <DIContext.Provider value={container}>{children}</DIContext.Provider>
 );
 
-export const useDI = (): DIContainer => {
+const useDI = (): DIContainer => {
   const context = use(DIContext);
 
   if (!context) {

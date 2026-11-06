@@ -36,7 +36,3 @@ export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
     },
   };
 }
-
-export type AndroidWidgetSnapshotRepository = ReturnType<
-  typeof createAndroidWidgetSnapshotRepository
->;

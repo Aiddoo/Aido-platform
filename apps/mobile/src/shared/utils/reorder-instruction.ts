@@ -1,4 +1,4 @@
-export type ReorderPosition = 'before' | 'after';
+type ReorderPosition = 'before' | 'after';
 
 export interface ReorderInstruction<TId> {
   movedId: TId;

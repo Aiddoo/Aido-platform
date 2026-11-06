@@ -4,7 +4,7 @@ import { REPORT_QUERY_KEYS } from '@src/features/insights/report/constants/repor
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-export function getReportStatusQueryOptions(reportService: ReportService) {
+function getReportStatusQueryOptions(reportService: ReportService) {
   return queryOptions({
     queryKey: REPORT_QUERY_KEYS.status(),
     queryFn: async ({ signal }) => {

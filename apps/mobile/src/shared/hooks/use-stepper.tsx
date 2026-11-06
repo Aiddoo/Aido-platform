@@ -23,16 +23,14 @@ import {
 
 export type { StepEntry, StepName, StepperContexts } from './stepper-reducer';
 
-export type EmptyContext = Record<string, never>;
-
-export interface StepperHistory<Contexts extends StepperContexts> {
+interface StepperHistory<Contexts extends StepperContexts> {
   push: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;
   replace: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;
   back: () => void;
   go: (delta: number) => void;
 }
 
-export interface StepRenderProps<
+interface StepRenderProps<
   Contexts extends StepperContexts,
   Name extends StepName<Contexts> = StepName<Contexts>,
 > {
@@ -42,11 +40,11 @@ export interface StepRenderProps<
 }
 
 /** 단계 이름을 하나라도 빠뜨리면 컴파일 에러가 난다 */
-export type StepRenderers<Contexts extends StepperContexts> = {
+type StepRenderers<Contexts extends StepperContexts> = {
   [Name in StepName<Contexts>]: (props: StepRenderProps<Contexts, Name>) => ReactNode;
 };
 
-export type StepChange<Contexts extends StepperContexts> = StepEntry<Contexts> & { index: number };
+type StepChange<Contexts extends StepperContexts> = StepEntry<Contexts> & { index: number };
 
 export interface UseStepperOptions<Contexts extends StepperContexts> {
   id: string;

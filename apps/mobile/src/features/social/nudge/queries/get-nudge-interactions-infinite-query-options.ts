@@ -16,7 +16,7 @@ function selectNudgeInteractions(
   return infinitePages.pages.flatMap((page) => page.items);
 }
 
-export function getNudgeInteractionsInfiniteQueryOptions(
+function getNudgeInteractionsInfiniteQueryOptions(
   todoNudgeService: TodoNudgeService,
   { direction }: { direction: NudgeDirection },
 ) {

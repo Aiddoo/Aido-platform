@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
 
-export const subscriptionStatusSchema = z.enum(SUBSCRIPTION_STATUS);
+const subscriptionStatusSchema = z.enum(SUBSCRIPTION_STATUS);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
 const userRoleSchema = z.enum([USER_ROLE.USER, USER_ROLE.ADMIN]);
@@ -29,15 +29,15 @@ export const userSchema = z.object({
 });
 export type User = z.infer<typeof userSchema>;
 
-export const updateProfileResultSchema = userSchema.pick({ name: true, profileImage: true });
+const updateProfileResultSchema = userSchema.pick({ name: true, profileImage: true });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
-export function hasCredential(user: Pick<User, 'providers'>): boolean {
+function hasCredential(user: Pick<User, 'providers'>): boolean {
   return user.providers.includes('CREDENTIAL');
 }
 
 // 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다
-export function hasEntitlementChanged(
+function hasEntitlementChanged(
   previous: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,
   next: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,
 ): boolean {

@@ -1,6 +1,6 @@
 export type PurchaseStore = 'APP_STORE' | 'PLAY_STORE' | 'PROMOTIONAL' | 'OTHER';
 
-export interface PurchaseEntitlement {
+interface PurchaseEntitlement {
   store: PurchaseStore;
   productIdentifier: string;
 }

@@ -4,7 +4,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 
-export function getPushPermissionQueryOptions(pushDeviceService: PushDeviceService) {
+function getPushPermissionQueryOptions(pushDeviceService: PushDeviceService) {
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.permission(),
     queryFn: () => pushDeviceService.readPermission(),

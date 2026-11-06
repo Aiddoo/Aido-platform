@@ -32,7 +32,7 @@ export function hasPassed(endsAt: Date, now: Date) {
   return endsAt.getTime() <= now.getTime();
 }
 
-export function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
+function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
   return daysLeft <= noticeDays;
 }
 

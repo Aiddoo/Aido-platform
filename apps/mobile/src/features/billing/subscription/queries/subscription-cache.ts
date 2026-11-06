@@ -15,7 +15,7 @@ export function isPremiumDependentQuery(query: Pick<Query, 'meta'>) {
 }
 
 /** 프리미엄에 따라 한도·사용량·접근이 달라지는 쿼리를 다시 불러온다. */
-export function invalidatePremiumDependentQueries(queryClient: QueryClient) {
+function invalidatePremiumDependentQueries(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ predicate: isPremiumDependentQuery });
 }
 
@@ -50,7 +50,7 @@ export function watchPremiumEntitlementChanges(queryClient: QueryClient) {
 }
 
 /** 결제 뒤 서버가 스토어 웹훅을 반영할 때까지 내 정보를 다시 받는 간격. 모두 합쳐 10초 남짓에서 멈춘다 */
-export const STORE_PREMIUM_SYNC_DELAYS = [500, 1_000, 1_500, 2_500, 4_000] as const;
+const STORE_PREMIUM_SYNC_DELAYS = [500, 1_000, 1_500, 2_500, 4_000] as const;
 
 interface SyncStorePremiumOptions {
   delays?: readonly number[];

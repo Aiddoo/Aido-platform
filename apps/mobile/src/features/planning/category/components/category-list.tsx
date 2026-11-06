@@ -29,7 +29,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { CategoryDeleteDialog } from './category-delete-dialog';
 
-export type CategoryListMode = 'edit' | 'reorder';
+type CategoryListMode = 'edit' | 'reorder';
 
 interface CategoryListProps {
   mode: CategoryListMode;

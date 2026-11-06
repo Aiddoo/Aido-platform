@@ -26,7 +26,7 @@ import { PickerHeader } from './picker-header';
 
 const isIOS = process.env.EXPO_OS === 'ios';
 
-export interface TodoTimeValue {
+interface TodoTimeValue {
   scheduledTime: string | null;
   isAllDay: boolean;
 }

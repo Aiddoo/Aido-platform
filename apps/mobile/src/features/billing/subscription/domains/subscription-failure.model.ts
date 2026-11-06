@@ -50,7 +50,7 @@ export interface StoreUnavailable {
   diagnosticCode: string;
 }
 
-export function getFailureCause(error: unknown): SubscriptionFailureCause {
+function getFailureCause(error: unknown): SubscriptionFailureCause {
   return match(error)
     .with(P.instanceOf(SubscriptionError), getSubscriptionErrorCause)
     .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network' as const)
@@ -61,7 +61,7 @@ export function getFailureCause(error: unknown): SubscriptionFailureCause {
  * 문의에 붙일 짧은 오류 코드. 메시지·사용자 정보 없이 원인을 찾을 만큼만 담는다.
  * 스토어 SDK 코드가 있으면 괄호로 덧붙인다.
  */
-export function getDiagnosticCode(error: unknown): string {
+function getDiagnosticCode(error: unknown): string {
   return match(error)
     .with(P.instanceOf(SubscriptionError), ({ code, storeErrorCode }) =>
       storeErrorCode == null ? code : `${code} (${storeErrorCode})`,
@@ -74,7 +74,7 @@ export function getDiagnosticCode(error: unknown): string {
     .otherwise(() => 'UNKNOWN');
 }
 
-export function getStoreUnavailable(error: unknown): StoreUnavailable | null {
+function getStoreUnavailable(error: unknown): StoreUnavailable | null {
   return match(error)
     .with(
       P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_UNAVAILABLE }),

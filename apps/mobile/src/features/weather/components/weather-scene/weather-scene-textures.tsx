@@ -490,7 +490,7 @@ function SunRayShape({ ray, center }: { ray: SunRay; center: number }) {
   );
 }
 
-export const MOON_TEXTURE_SIZE = 384;
+const MOON_TEXTURE_SIZE = 384;
 
 /**
  * 달 표면: 여러 겹 값 잡음으로 만든 바다, 격자마다 하나씩 흩어 둔 크레이터와 테두리 밝은 면, 가장자리 어둡기.

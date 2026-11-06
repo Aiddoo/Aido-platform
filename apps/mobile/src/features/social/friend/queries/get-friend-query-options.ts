@@ -15,7 +15,7 @@ import { getFriendsInfiniteQueryOptions } from './get-friends-infinite-query-opt
 
 type FriendPages = InfiniteData<Page<FriendUser>, string | undefined>;
 
-export function selectFriend(
+function selectFriend(
   friendPages: FriendPages,
   { friendId, fallbackName }: { friendId: string; fallbackName: string },
 ): FriendUserViewModel | null {
@@ -23,7 +23,7 @@ export function selectFriend(
   return friend ? toFriendUserViewModel(friend, fallbackName) : null;
 }
 
-export function getFriendQueryOptions(
+function getFriendQueryOptions(
   service: FriendService,
   { select }: { select: (friendPages: FriendPages) => FriendUserViewModel | null },
 ) {

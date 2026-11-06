@@ -56,10 +56,10 @@ function toDialTicks(from: number, to: number, step: number, majorEvery: number)
   };
 }
 
-export const CARDINAL_DIRECTIONS = ['n', 'e', 's', 'w'] as const;
-export type CardinalDirection = (typeof CARDINAL_DIRECTIONS)[number];
+const CARDINAL_DIRECTIONS = ['n', 'e', 's', 'w'] as const;
+type CardinalDirection = (typeof CARDINAL_DIRECTIONS)[number];
 
-export interface CompassNeedle {
+interface CompassNeedle {
   /** 바람이 불어오는 쪽 꼬리와 불어 가는 쪽 머리를 잇는 두 선분 */
   stroke: string;
   head: string;

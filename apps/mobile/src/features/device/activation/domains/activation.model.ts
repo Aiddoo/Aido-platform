@@ -44,7 +44,7 @@ const activationChecklistStepsSchema = z.object({
   hasCreatedTodo: z.boolean(),
   hasCompletedTodo: z.boolean(),
 });
-export type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
+type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
 // 친구 초대는 선택 단계라 노출 판단에 넣지 않는다. 필수 단계(만들기·완료)만 본다
 const checklistVisibilityInputSchema = checklistEligibilityInputSchema.extend({
   steps: activationChecklistStepsSchema,
