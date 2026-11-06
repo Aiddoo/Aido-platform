@@ -41,7 +41,7 @@ function SuggestionsScreen() {
           {match(canViewSuggestions)
             .with(true, () => (
               <VStack gap={12}>
-                <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
+                <AiConsentNotice title={t('consent.notice.suggestions')} />
                 <QueryErrorBoundary fallback={SuggestionsList.Error}>
                   <Suspense fallback={<SuggestionsList.Loading />}>
                     <SuggestionsList />

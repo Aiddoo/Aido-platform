@@ -2,7 +2,7 @@ import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/
 import { toConsent, toUpdateMarketingConsentResult } from './consent.mapper';
 
 describe('toConsent', () => {
-  test('ISO 문자열 → Date 변환', () => {
+  test('ISO 문자열 → Instant 변환', () => {
     // Given
     const dto = createConsentDto({
       termsAgreedAt: '2026-01-01T00:00:00.000Z',
@@ -14,10 +14,9 @@ describe('toConsent', () => {
     const result = toConsent(dto);
 
     // Then
-    expect(result.termsAgreedAt).toBeInstanceOf(Date);
-    expect(result.privacyAgreedAt).toBeInstanceOf(Date);
-    expect(result.marketingAgreedAt).toBeInstanceOf(Date);
-    expect(result.termsAgreedAt?.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+    expect(result.termsAgreedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(result.privacyAgreedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(result.marketingAgreedAt).toBe('2026-02-01T00:00:00.000Z');
   });
 
   test('null → null 유지', () => {
@@ -60,7 +59,7 @@ describe('toConsent', () => {
 
     // Then
     expect(result.aiDataSharingDecision).toBe('AGREED');
-    expect(result.aiDataSharingAgreedAt?.toISOString()).toBe('2026-10-26T09:00:00.000Z');
+    expect(result.aiDataSharingAgreedAt).toBe('2026-10-26T09:00:00.000Z');
   });
 
   test('AI 동의 필드가 없는 이전 서버 응답은 답하지 않은 것으로 본다', () => {
@@ -77,7 +76,7 @@ describe('toConsent', () => {
 });
 
 describe('toUpdateMarketingConsentResult', () => {
-  test('ISO → Date 변환', () => {
+  test('ISO → Instant 변환', () => {
     // Given
     const dto = createUpdateMarketingConsentDto({
       marketingAgreedAt: '2026-02-01T00:00:00.000Z',
@@ -87,8 +86,7 @@ describe('toUpdateMarketingConsentResult', () => {
     const result = toUpdateMarketingConsentResult(dto);
 
     // Then
-    expect(result.marketingAgreedAt).toBeInstanceOf(Date);
-    expect(result.marketingAgreedAt?.toISOString()).toBe('2026-02-01T00:00:00.000Z');
+    expect(result.marketingAgreedAt).toBe('2026-02-01T00:00:00.000Z');
   });
 
   test('null → null (마케팅 동의 철회)', () => {

@@ -7,7 +7,7 @@ import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
-import type { Consent } from '@src/features/identity/consent/domains/consent.model';
+import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';

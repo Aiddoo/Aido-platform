@@ -3,6 +3,7 @@ import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/iden
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { formatDateLabel } from '@src/shared/date/date-format';
+import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,14 +28,14 @@ function TermsSettingsScreen() {
   const { resolvedLanguage } = useLanguage();
   const dateFormatContext = useDateFormatContext();
 
-  const formatAgreedDate = (date: Date | null) => {
+  const formatAgreedDate = (date: Instant | null) => {
     if (date == null) {
       return t('terms.notAgreed');
     }
     return formatDateLabel(date, 'fullDate', dateFormatContext);
   };
 
-  const getConsentDescription = (agreedAt: Date | null) =>
+  const getConsentDescription = (agreedAt: Instant | null) =>
     [
       t('terms.agreedAt', { date: formatAgreedDate(agreedAt) }),
       ...(consent.agreedTermsVersion

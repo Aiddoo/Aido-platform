@@ -1,13 +1,12 @@
-import {
-  AI_DATA_SHARING_CONSENT,
-  type UpdateAiDataSharingConsentInput,
-  type UpdateMarketingConsentInput,
-  type UpdateMarketingPushConsentInput,
-} from '@aido/api';
+import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
-import type { Consent } from '@src/features/identity/consent/domains/consent.model';
+import type {
+  Consent,
+  ConsentAgreement,
+} from '@src/features/identity/consent/schemas/consent.schema';
 import { useTrack } from '@src/shared/analytics';
+import { toInstant } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -25,7 +24,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
   return mutationOptions({
     // 오프라인에 멈춰 있으면 시트의 버튼이 돌기만 하고 나중에도 누를 수 없다. 바로 실패해 시트를 그대로 둔다
     networkMode: 'always',
-    mutationFn: async ({ agreed }: Pick<UpdateAiDataSharingConsentInput, 'agreed'>) => {
+    mutationFn: async ({ agreed }: ConsentAgreement) => {
       const result = await consentService.updateAiDataSharingConsent({
         agreed,
         version: AI_DATA_SHARING_CONSENT.VERSION,
@@ -42,8 +41,10 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
           ? consent
           : {
               ...consent,
-              aiDataSharingDecision: agreed ? 'AGREED' : 'DECLINED',
-              aiDataSharingAgreedAt: agreed ? new Date() : null,
+              aiDataSharingDecision: agreed
+                ? AI_DATA_SHARING_DECISION.AGREED
+                : AI_DATA_SHARING_DECISION.DECLINED,
+              aiDataSharingAgreedAt: agreed ? toInstant(new Date().toISOString()) : null,
               aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
             },
       );
@@ -76,7 +77,7 @@ export const useUpdateMarketingConsentMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    mutationFn: async (input: UpdateMarketingConsentInput) => {
+    mutationFn: async (input: ConsentAgreement) => {
       const result = await consentService.updateMarketingConsent(input);
       return unwrap(result);
     },
@@ -92,7 +93,7 @@ export const useUpdateMarketingConsentMutationOptions = () => {
         }
         return {
           ...old,
-          marketingAgreedAt: input.agreed ? new Date() : null,
+          marketingAgreedAt: input.agreed ? toInstant(new Date().toISOString()) : null,
         };
       });
 
@@ -126,13 +127,18 @@ export const useUpdateMarketingPushConsentMutationOptions = () => {
   const consentService = useConsentService();
   const queryClient = useQueryClient();
   return mutationOptions({
-    mutationFn: async (input: UpdateMarketingPushConsentInput) =>
+    mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentService.updateMarketingPushConsent(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.consent() });
       const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent());
       queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
-        old ? { ...old, marketingPushAgreedAt: input.agreed ? new Date() : null } : old,
+        old
+          ? {
+              ...old,
+              marketingPushAgreedAt: input.agreed ? toInstant(new Date().toISOString()) : null,
+            }
+          : old,
       );
       return { previousData };
     },

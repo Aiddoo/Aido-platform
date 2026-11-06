@@ -3,6 +3,7 @@ import {
   INVALID_DTO,
 } from '@src/features/identity/auth/__tests__/auth.factories';
 import { createHttpClientStub } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 
 import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.fixtures';
 import { ConsentService } from './consent.service';
@@ -19,7 +20,7 @@ describe('ConsentService', () => {
   // ── getConsent ──────────────────────────────
 
   describe('getConsent', () => {
-    test('정상 응답 → ISO 문자열을 Date로 변환', async () => {
+    test('정상 응답 → ISO 문자열을 Instant로 변환', async () => {
       // Given
       const termsAgreedAt = '2026-01-01T00:00:00.000Z';
       const privacyAgreedAt = '2026-01-01T00:00:00.000Z';
@@ -35,10 +36,10 @@ describe('ConsentService', () => {
       expect(result).toEqual({
         ok: true,
         value: {
-          termsAgreedAt: new Date(termsAgreedAt),
-          privacyAgreedAt: new Date(privacyAgreedAt),
+          termsAgreedAt: toInstant(termsAgreedAt),
+          privacyAgreedAt: toInstant(privacyAgreedAt),
           agreedTermsVersion: dto.agreedTermsVersion,
-          marketingAgreedAt: new Date(marketingAgreedAt),
+          marketingAgreedAt: toInstant(marketingAgreedAt),
           marketingPushAgreedAt: null,
           aiDataSharingDecision: 'UNDECIDED',
           aiDataSharingAgreedAt: null,
@@ -86,7 +87,7 @@ describe('ConsentService', () => {
   // ── updateMarketingConsent ──────────────────
 
   describe('updateMarketingConsent', () => {
-    test('동의 → ISO를 Date로 변환', async () => {
+    test('동의 → ISO를 Instant로 변환', async () => {
       // Given
       const marketingAgreedAt = '2026-02-01T00:00:00.000Z';
       const dto = createUpdateMarketingConsentDto({ marketingAgreedAt });
@@ -101,7 +102,7 @@ describe('ConsentService', () => {
       });
       expect(result).toEqual({
         ok: true,
-        value: { marketingAgreedAt: new Date(marketingAgreedAt) },
+        value: { marketingAgreedAt: toInstant(marketingAgreedAt) },
       });
     });
 

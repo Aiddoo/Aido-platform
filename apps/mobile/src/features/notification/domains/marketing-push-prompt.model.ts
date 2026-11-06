@@ -1,4 +1,4 @@
-import type { Consent } from '@src/features/identity/consent/domains/consent.model';
+import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 
 /** 마케팅 푸시 옵트인 배너의 도배 방지 상태 */

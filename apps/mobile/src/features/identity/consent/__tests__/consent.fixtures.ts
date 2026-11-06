@@ -1,6 +1,7 @@
 import type { ConsentResponse, UpdateMarketingConsentResponse } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 
-import type { Consent } from '../domains/consent.model';
+import type { Consent } from '../schemas/consent.schema';
 
 const generateConsentDto = (): ConsentResponse => ({
   termsAgreedAt: '2026-01-01T00:00:00.000Z',
@@ -16,10 +17,10 @@ export const createConsentDto = (overrides?: Partial<ConsentResponse>): ConsentR
 });
 
 const generateConsent = (): Consent => ({
-  termsAgreedAt: new Date('2026-01-01T00:00:00.000Z'),
-  privacyAgreedAt: new Date('2026-01-01T00:00:00.000Z'),
+  termsAgreedAt: toInstant('2026-01-01T00:00:00.000Z'),
+  privacyAgreedAt: toInstant('2026-01-01T00:00:00.000Z'),
   agreedTermsVersion: '1.0.0',
-  marketingAgreedAt: new Date('2026-02-01T00:00:00.000Z'),
+  marketingAgreedAt: toInstant('2026-02-01T00:00:00.000Z'),
   marketingPushAgreedAt: null,
   aiDataSharingDecision: 'UNDECIDED',
   aiDataSharingAgreedAt: null,

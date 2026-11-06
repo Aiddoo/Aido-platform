@@ -1,5 +1,6 @@
+import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
-import type { Consent } from '@src/features/identity/consent/domains/consent.model';
+import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import type { QueryClient } from '@tanstack/react-query';
 
 /**
@@ -10,6 +11,10 @@ export function markAiDataSharingConsentRequired(queryClient: QueryClient) {
   queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (consent) =>
     consent == null
       ? consent
-      : { ...consent, aiDataSharingDecision: 'UNDECIDED', aiDataSharingAgreedAt: null },
+      : {
+          ...consent,
+          aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED,
+          aiDataSharingAgreedAt: null,
+        },
   );
 }

@@ -51,3 +51,10 @@ export const AI_DATA_SHARING_CONSENT = {
 export const AI_DATA_SHARING_DECISIONS = ["AGREED", "DECLINED", "UNDECIDED"] as const;
 
 export type AiDataSharingDecision = (typeof AI_DATA_SHARING_DECISIONS)[number];
+
+/** AI_DATA_SHARING_DECISIONS의 값을 이름으로 가리킨다. 문자열을 직접 비교하지 않도록 쓴다. */
+export const AI_DATA_SHARING_DECISION = {
+  AGREED: "AGREED",
+  DECLINED: "DECLINED",
+  UNDECIDED: "UNDECIDED",
+} as const satisfies Record<AiDataSharingDecision, AiDataSharingDecision>;

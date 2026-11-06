@@ -53,7 +53,7 @@ function ReportsScreen() {
         <Spacing size={16} />
 
         <VStack gap={12}>
-          {canViewReports && <AiConsentNotice>{t('consent.notice.reports')}</AiConsentNotice>}
+          {canViewReports && <AiConsentNotice title={t('consent.notice.reports')} />}
 
           <ScallopedContainer>
             <Box className="items-center px-5 pt-4">

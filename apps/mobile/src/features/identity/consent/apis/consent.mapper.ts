@@ -4,42 +4,52 @@ import type {
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
 } from '@aido/api';
+import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
+import { toInstant } from '@src/shared/date/instant';
 
 import type {
   Consent,
   UpdateAiDataSharingConsentResult,
   UpdateMarketingConsentResult,
   UpdateMarketingPushConsentResult,
-} from '../domains/consent.model';
+} from '../schemas/consent.schema';
 
-export const toConsent = (dto: ConsentResponse): Consent => ({
-  termsAgreedAt: dto.termsAgreedAt ? new Date(dto.termsAgreedAt) : null,
-  privacyAgreedAt: dto.privacyAgreedAt ? new Date(dto.privacyAgreedAt) : null,
-  agreedTermsVersion: dto.agreedTermsVersion,
-  marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
-  marketingPushAgreedAt: dto.marketingPushAgreedAt ? new Date(dto.marketingPushAgreedAt) : null,
-  // 1.13.0 이전 서버는 AI 동의 필드를 주지 않는다. 답하지 않은 것으로 보고 AI 전에 안내를 띄운다
-  aiDataSharingDecision: dto.aiDataSharingDecision ?? 'UNDECIDED',
-  aiDataSharingAgreedAt: dto.aiDataSharingAgreedAt ? new Date(dto.aiDataSharingAgreedAt) : null,
-  aiDataSharingConsentVersion: dto.aiDataSharingConsentVersion ?? null,
-});
+function toNullableInstant(value: string | null) {
+  return value == null ? null : toInstant(value);
+}
 
-export const toUpdateMarketingConsentResult = (
+export function toConsent(dto: ConsentResponse): Consent {
+  return {
+    termsAgreedAt: toNullableInstant(dto.termsAgreedAt),
+    privacyAgreedAt: toNullableInstant(dto.privacyAgreedAt),
+    agreedTermsVersion: dto.agreedTermsVersion,
+    marketingAgreedAt: toNullableInstant(dto.marketingAgreedAt),
+    marketingPushAgreedAt: toNullableInstant(dto.marketingPushAgreedAt),
+    // 1.13.0 이전 서버는 AI 동의 필드를 주지 않는다. 답하지 않은 것으로 보고 AI 전에 안내를 띄운다
+    aiDataSharingDecision: dto.aiDataSharingDecision ?? AI_DATA_SHARING_DECISION.UNDECIDED,
+    aiDataSharingAgreedAt: toNullableInstant(dto.aiDataSharingAgreedAt ?? null),
+    aiDataSharingConsentVersion: dto.aiDataSharingConsentVersion ?? null,
+  };
+}
+
+export function toUpdateMarketingConsentResult(
   dto: UpdateMarketingConsentResponse,
-): UpdateMarketingConsentResult => ({
-  marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
-});
+): UpdateMarketingConsentResult {
+  return { marketingAgreedAt: toNullableInstant(dto.marketingAgreedAt) };
+}
 
-export const toUpdateMarketingPushConsentResult = (
+export function toUpdateMarketingPushConsentResult(
   dto: UpdateMarketingPushConsentResponse,
-): UpdateMarketingPushConsentResult => ({
-  marketingPushAgreedAt: dto.marketingPushAgreedAt ? new Date(dto.marketingPushAgreedAt) : null,
-});
+): UpdateMarketingPushConsentResult {
+  return { marketingPushAgreedAt: toNullableInstant(dto.marketingPushAgreedAt) };
+}
 
-export const toUpdateAiDataSharingConsentResult = (
+export function toUpdateAiDataSharingConsentResult(
   dto: UpdateAiDataSharingConsentResponse,
-): UpdateAiDataSharingConsentResult => ({
-  aiDataSharingDecision: dto.aiDataSharingDecision,
-  aiDataSharingAgreedAt: dto.aiDataSharingAgreedAt ? new Date(dto.aiDataSharingAgreedAt) : null,
-  aiDataSharingConsentVersion: dto.aiDataSharingConsentVersion,
-});
+): UpdateAiDataSharingConsentResult {
+  return {
+    aiDataSharingDecision: dto.aiDataSharingDecision,
+    aiDataSharingAgreedAt: toNullableInstant(dto.aiDataSharingAgreedAt),
+    aiDataSharingConsentVersion: dto.aiDataSharingConsentVersion,
+  };
+}

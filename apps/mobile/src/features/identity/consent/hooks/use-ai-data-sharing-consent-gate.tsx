@@ -1,7 +1,8 @@
 import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
 import { CONSENT_LOG_EVENT } from '@src/features/identity/consent/constants/consent-log-events';
-import { type Consent, ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
+import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
+import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';

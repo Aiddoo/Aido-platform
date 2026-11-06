@@ -1,4 +1,5 @@
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
+import { toInstant } from '@src/shared/date/instant';
 import dayjs from 'dayjs';
 
 import {
@@ -29,7 +30,7 @@ describe('isNotAgreedToMarketingPush', () => {
   it('이미 동의한 상태면 false를 반환한다', () => {
     // Given
     const consent = createConsent({
-      marketingPushAgreedAt: dayjs(NOW).subtract(1, 'day').toDate(),
+      marketingPushAgreedAt: toInstant(dayjs(NOW).subtract(1, 'day').toISOString()),
     });
 
     // When / Then
@@ -81,7 +82,7 @@ describe('MarketingPushPromptPolicy.shouldPrompt', () => {
 
   it('이미 동의한 유저에게는 노출하지 않는다', () => {
     const consent = createConsent({
-      marketingPushAgreedAt: dayjs(NOW).subtract(1, 'day').toDate(),
+      marketingPushAgreedAt: toInstant(dayjs(NOW).subtract(1, 'day').toISOString()),
     });
     expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState(), NOW)).toBe(false);
   });
