@@ -1,12 +1,13 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { ActivationPushPermissionDialog } from '@src/features/device/activation/components/activation-push-permission-dialog';
+import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/use-logout-mutation-options';
 import { MyPagePaneLayoutProvider } from '@src/features/identity/user/hooks/use-mypage-pane-layout';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
-import { useQueryErrorResetBoundary } from '@tanstack/react-query';
+import { useMutation, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
@@ -83,7 +84,8 @@ interface ErrorBoundaryProps {
 }
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  const { status, setStatus } = useAuth();
+  const { status } = useAuth();
+  const logout = useMutation(useLogoutMutationOptions());
   const errorReporter = useErrorReporter();
   const { reset: resetQueryErrors } = useQueryErrorResetBoundary();
   const { t } = useTranslation();
@@ -106,9 +108,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     return null;
   }
 
-  // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
-  const handleLogout = () => setStatus('unauthenticated');
-
   // 실패한 Suspense 조회는 리셋 없이 다시 마운트하면 재요청 없이 같은 오류를 다시 던진다
   const handleRetry = () => {
     resetQueryErrors();
@@ -122,8 +121,14 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         description={t('appError.description')}
         button={
           <HStack gap={8}>
-            <Result.Button onPress={handleRetry}>{t('appError.retry')}</Result.Button>
-            <Result.Button color="primary" onPress={handleLogout}>
+            <Result.Button isDisabled={logout.isPending} onPress={handleRetry}>
+              {t('appError.retry')}
+            </Result.Button>
+            <Result.Button
+              color="primary"
+              isLoading={logout.isPending}
+              onPress={() => logout.mutate()}
+            >
               {t('appError.logout')}
             </Result.Button>
           </HStack>
