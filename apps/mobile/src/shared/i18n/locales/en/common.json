@@ -53,6 +53,10 @@
     "mailSubject": "[Aido] Error report ({{code}})",
     "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n"
   },
+  "infiniteList": {
+    "loadMoreFailed": "Try again",
+    "loadMoreFailedLabel": "Couldn't load more. Try again"
+  },
   "offlineBanner": {
     "message": "You're offline. We'll reload when you're back online."
   },

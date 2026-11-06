@@ -1,6 +1,6 @@
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, DocsIcon, Text, TextSkeleton } from '@src/shared/ui';
+import { Box, Button, DocsIcon, InfiniteList, Text, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
@@ -9,9 +9,11 @@ import { useGetSentRequestsQueryOptions } from '../queries/get-sent-requests-que
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
 import { UserList } from './user-list';
 
+const LIST_CONTENT_STYLE = { flexGrow: 1 };
+
 export function SentRequestList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
     useSuspenseInfiniteQuery(useGetSentRequestsQueryOptions());
   const [refreshing, onRefresh] = useRefresh(refetch);
 
@@ -19,10 +21,11 @@ export function SentRequestList() {
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
   return (
-    <UserList
+    <InfiniteList
       data={requests}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <SentRequestList.Item request={item} />}
+      contentContainerStyle={LIST_CONTENT_STYLE}
       ListHeaderComponent={
         <Box py={12}>
           <Text size="b4" shade={6}>
@@ -33,6 +36,7 @@ export function SentRequestList() {
       ListEmptyComponent={<SentRequestList.Empty />}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
+      isFetchNextPageError={isFetchNextPageError}
       fetchNextPage={fetchNextPage}
       refreshing={refreshing}
       onRefresh={onRefresh}
@@ -41,26 +45,31 @@ export function SentRequestList() {
 }
 
 SentRequestList.Item = function Item({ request }: { request: FriendRequest }) {
-  const { t } = useTranslation('common');
-  const cancel = useMutation(useCancelRequestMutationOptions());
-
   return (
     <UserList.Item
       displayName={request.name ?? request.userTag}
       profileImage={request.profileImage}
-      right={
-        <Button
-          variant="weak"
-          color="danger"
-          size="small"
-          display="inline"
-          onPress={() => cancel.mutate(request.id)}
-          isDisabled={cancel.isPending}
-        >
-          {t('actions.cancel')}
-        </Button>
-      }
+      right={<SentRequestList.CancelButton key={request.id} requestId={request.id} />}
     />
+  );
+};
+
+/** 목록이 행을 재활용해도 취소 중 상태가 다른 요청으로 넘어가지 않게 요청마다 새로 만든다 */
+SentRequestList.CancelButton = function CancelButton({ requestId }: { requestId: string }) {
+  const { t } = useTranslation('common');
+  const cancel = useMutation(useCancelRequestMutationOptions());
+
+  return (
+    <Button
+      variant="weak"
+      color="danger"
+      size="small"
+      display="inline"
+      onPress={() => cancel.mutate(requestId)}
+      isDisabled={cancel.isPending}
+    >
+      {t('actions.cancel')}
+    </Button>
   );
 };
 
