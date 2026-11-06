@@ -148,6 +148,7 @@ export function BottomSheet({
             handleIndicatorClassName="bg-gray-4"
             handleIndicatorStyle={SHARED_SHEET_STYLES.handleIndicator}
             contentContainerClassName="flex-none p-0"
+            contentContainerProps={CONTENT_CONTAINER_PROPS}
             footerComponent={footer == null ? undefined : renderFooter}
             onAnimate={handleAnimate}
           >
@@ -252,6 +253,8 @@ function SheetMeasuredSignal({ onMeasured }: { onMeasured: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  // HeroUI 기본 pb-safe-offset-3가 머리글 고정 시트의 높이에 더해진다. 안쪽 여백은 시트 내용이 맡는다
+  contentContainer: { paddingBottom: 0 },
   overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'black' },
   fixedBody: { flexShrink: 1 },
   footer: {
@@ -262,3 +265,5 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 32,
   },
 });
+
+const CONTENT_CONTAINER_PROPS = { style: styles.contentContainer };
