@@ -1,4 +1,5 @@
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { noop } from 'es-toolkit';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
@@ -15,7 +16,7 @@ export function useNotificationNavigation() {
         .with({ kind: 'route' }, ({ href }) => router.navigate(href))
         .with({ kind: 'webview' }, ({ url }) => openUrl(url))
         .with({ kind: 'browser' }, ({ url }) => Linking.openURL(url))
-        .with({ kind: 'none' }, () => {})
+        .with({ kind: 'none' }, noop)
         .exhaustive();
     },
     [openUrl],
