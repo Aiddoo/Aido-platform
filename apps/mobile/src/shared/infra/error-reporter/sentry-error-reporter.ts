@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react-native';
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
 import type { Severity } from '@src/core/ports/severity';
+import { captureError } from '@src/shared/infra/observability/capture-error';
 import { SENTRY_TAGS } from '@src/shared/observability/telemetry-keys';
 import { mapValues, omitBy } from 'es-toolkit';
 
@@ -43,7 +44,7 @@ const toTags = (context: ErrorReporterContext = {}): Record<string, string> => {
  */
 export const createSentryErrorReporter = (): ErrorReporter => ({
   captureException(error: Error, context?: ErrorReporterContext): void {
-    Sentry.captureException(error, {
+    captureError(error, {
       level: severityToSentryLevel[context?.severity ?? 'error'],
       tags: toTags(context),
     });

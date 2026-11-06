@@ -5,6 +5,9 @@ export { BusinessError } from './business-error';
 // Boundary 에러 분류 (라우트 ErrorBoundary 처리 분기)
 export { type BoundaryErrorKind, classifyBoundaryError } from './classify-boundary-error';
 
+// Sentry 전송 방식 판정 (이슈 / breadcrumb)
+export { classifyErrorReport, type ErrorReportKind } from './classify-error-report';
+
 // Infrastructure Errors
 export {
   InfraError,

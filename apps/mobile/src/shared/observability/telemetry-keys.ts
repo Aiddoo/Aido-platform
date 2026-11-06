@@ -91,6 +91,8 @@ export const SENTRY_TAGS = {
   ENDPOINT: 'endpoint',
   STATUS_CODE: 'statusCode',
   SOURCE: 'source',
+  /** 서버 Sentry의 `request_id` 태그와 같은 값 */
+  REQUEST_ID: 'request_id',
 } as const;
 
 /**
@@ -109,6 +111,7 @@ export const BREADCRUMB_CATEGORIES = [
   'invite',
   'network',
   'voice',
+  'error',
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
 

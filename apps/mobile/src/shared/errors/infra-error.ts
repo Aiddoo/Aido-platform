@@ -34,10 +34,13 @@ export class TimeoutError extends InfraError {
 /** 5xx 서버 에러 */
 export class ServerError extends InfraError {
   readonly statusCode: number;
+  /** 같은 요청의 서버 로그·Sentry 이벤트를 찾는 `X-Request-Id` */
+  readonly requestId: string | null;
 
-  constructor(status: number) {
+  constructor(status: number, requestId: string | null = null) {
     super(t('common:infraErrors.server'));
     this.statusCode = status;
+    this.requestId = requestId;
   }
 }
 

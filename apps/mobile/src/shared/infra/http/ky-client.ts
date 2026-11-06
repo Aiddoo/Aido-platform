@@ -19,6 +19,7 @@ import {
 import { z } from 'zod';
 
 import { resolveMessage } from './error-handler';
+import { REQUEST_ID_HEADER } from './request-headers';
 
 const errorEnvelopeSchema = z.object({
   error: z.object({
@@ -115,7 +116,7 @@ export class KyHttpClient implements HttpClient {
         const { response } = error;
 
         if (response.status >= 500) {
-          throw new ServerError(response.status);
+          throw new ServerError(response.status, error.request.headers.get(REQUEST_ID_HEADER));
         }
 
         // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다

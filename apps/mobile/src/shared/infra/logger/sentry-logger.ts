@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import { captureError } from '@src/shared/infra/observability/capture-error';
 import {
   SENTRY_FEATURES,
   SENTRY_TAGS,
@@ -59,7 +60,7 @@ export const createSentryLogger = (): Logger => {
       if (error) {
         const feature = logEventFeature(message);
         // 커스텀 메시지·컨텍스트를 extra로 첨부 → Sentry 이슈 상세에서 바로 확인 가능.
-        Sentry.captureException(error, {
+        captureError(error, {
           tags: {
             [SENTRY_TAGS.SOURCE]: 'logger',
             ...(feature != null && { [SENTRY_TAGS.FEATURE]: feature }),
