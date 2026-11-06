@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 
-import { parsedTodoDataSchema } from "@aido/api";
+import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api";
 import { DAYS_OF_WEEK, TODO_VISIBILITIES } from "@aido/api/vocabulary";
 import { z } from "zod";
 
+import { memoDraftSchema } from "#api/modules/ai-assistance/application/prompts/parsing/parse-memo/schema";
 import { todoDraftSchema } from "#api/modules/ai-assistance/application/prompts/parsing/parse-todo/schema";
 import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/application/prompts/parsing/schedule/schedule-expression.schema";
 import { quickPlanDraftSchema } from "#api/modules/ai-assistance/application/prompts/planning/quick-plan/schema";
@@ -20,7 +21,12 @@ import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-respon
 export const GOLDEN_VARIANTS = ["ko", "en", "mixed"] as const;
 export type GoldenVariant = (typeof GOLDEN_VARIANTS)[number];
 
-export const GOLDEN_TASKS = ["parse-todo", "quick-plan", "voice-note-digest"] as const;
+export const GOLDEN_TASKS = [
+  "parse-todo",
+  "parse-memo",
+  "quick-plan",
+  "voice-note-digest",
+] as const;
 export type GoldenTask = (typeof GOLDEN_TASKS)[number];
 
 const goldenBase = {
@@ -38,6 +44,16 @@ export const parseTodoGoldenCaseSchema = z.object({
   expected: parsedTodoDataSchema,
 });
 export type ParseTodoGoldenCase = z.infer<typeof parseTodoGoldenCaseSchema>;
+
+/** parse-memo golden 한 줄. expected의 categoryId는 요청 기본값 GOLDEN_MEMO_CATEGORY_ID다. */
+export const parseMemoGoldenCaseSchema = z.object({
+  ...goldenBase,
+  input: z.string(),
+  draft: memoDraftSchema,
+  expected: parsedMemoDataSchema,
+});
+export type ParseMemoGoldenCase = z.infer<typeof parseMemoGoldenCaseSchema>;
+export const GOLDEN_MEMO_CATEGORY_ID = 1;
 
 const planningContextSchema = z.object({
   categories: z.array(z.object({ id: z.number().int(), name: z.string() })),
@@ -116,6 +132,10 @@ const goldenPath = (task: GoldenTask, variant: GoldenVariant) =>
 
 export function loadParseTodoGoldenCases(variant: GoldenVariant): ParseTodoGoldenCase[] {
   return readGoldenLines(parseTodoGoldenCaseSchema, goldenPath("parse-todo", variant));
+}
+
+export function loadParseMemoGoldenCases(variant: GoldenVariant): ParseMemoGoldenCase[] {
+  return readGoldenLines(parseMemoGoldenCaseSchema, goldenPath("parse-memo", variant));
 }
 
 export function loadQuickPlanGoldenCases(variant: GoldenVariant): QuickPlanGoldenCase[] {

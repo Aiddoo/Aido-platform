@@ -1,6 +1,6 @@
 /**
  * AI 프롬프트 live eval. 실제 AI 업체를 호출하므로 수동으로만 실행한다(CI·hook 제외).
- *   pnpm --filter @aido/server ai:eval --task parse-todo|quick-plan|voice-note-digest \
+ *   pnpm --filter @aido/server ai:eval --task parse-todo|parse-memo|quick-plan|voice-note-digest \
  *     --provider anthropic|google|openai [추가 jsonl 경로…]
  * 키는 운영 설정과 같은 env(ANTHROPIC_API_KEY·GOOGLE_GENERATIVE_AI_API_KEY·OPENAI_API_KEY)에서 읽는다.
  * 고른 업체의 키가 없으면 호출 없이 안내만 하고 0으로 끝낸다. --provider를 빼면 AI_PROVIDER_ORDER 폴백 체인이다.
@@ -20,6 +20,7 @@ import { parseArgs } from "node:util";
 
 import { AI_DATA_SHARING_CONSENT, AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { ConfigService } from "@nestjs/config";
+import { omit } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import { AiGenerationError } from "../../src/modules/ai-assistance/application/ports/generation/ai-generation.errors.js";
@@ -28,6 +29,7 @@ import type {
   AiGeneratorPort,
 } from "../../src/modules/ai-assistance/application/ports/generation/ai-generator.port.js";
 import { generateWithPrompt } from "../../src/modules/ai-assistance/application/prompts/kit/prompt-definition.js";
+import { parseMemoPrompt } from "../../src/modules/ai-assistance/application/prompts/parsing/parse-memo/index.js";
 import { parseTodoPrompt } from "../../src/modules/ai-assistance/application/prompts/parsing/parse-todo/index.js";
 import { quickPlanPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/quick-plan/index.js";
 import { voiceNoteDigestPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/voice-note-digest/index.js";
@@ -43,12 +45,16 @@ import { TypedConfigService } from "../../src/platform/config/services/config.se
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
 import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
 import {
+  GOLDEN_MEMO_CATEGORY_ID,
   GOLDEN_TASKS,
   GOLDEN_VARIANTS,
   type GoldenTask,
+  loadParseMemoGoldenCases,
   loadParseTodoGoldenCases,
   loadQuickPlanGoldenCases,
   loadVoiceNoteDigestGoldenCases,
+  type ParseMemoGoldenCase,
+  parseMemoGoldenCaseSchema,
   type ParseTodoGoldenCase,
   parseTodoGoldenCaseSchema,
   type PlannedTodoExpectation,
@@ -198,6 +204,67 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
   };
 }
 
+/** 메모는 할 일을 입력 순서대로 만들므로 같은 순서로 제목과 일정을 비교한다. */
+function parseMemoCase(golden: ParseMemoGoldenCase): EvalCase {
+  return {
+    id: golden.id,
+    metrics: ["date", "title"],
+    async generate(generator) {
+      const now = new Date(golden.now);
+      const built = parseMemoPrompt.build(
+        {
+          content: golden.input,
+          timezone: golden.timezone,
+          now,
+          categories: [],
+          upcomingTodos: [],
+        },
+        golden.locale,
+      );
+      const { value, meta } = await generateWithPrompt(
+        generator,
+        parseMemoPrompt,
+        built,
+        {
+          content: golden.input,
+          timezone: golden.timezone,
+          now,
+          locale: golden.locale,
+          ownedCategoryIds: new Set<number>(),
+          defaultCategoryId: GOLDEN_MEMO_CATEGORY_ID,
+          upcomingTodos: [],
+        },
+        options,
+      );
+      const actual = value.parsedMemo.todos;
+      const expected = golden.expected.todos;
+      const sameCount = actual.length === expected.length;
+      const toSchedule = (todo: (typeof actual)[number]) =>
+        omit(todo, ["title", "repeat", "items", "categoryId", "duplicateOfTodoId"]);
+      const date =
+        sameCount &&
+        expected.every(
+          (todo, index) =>
+            actual[index] != null && same(toSchedule(todo), toSchedule(actual[index])),
+        );
+      const title =
+        sameCount &&
+        expected.every(
+          (todo, index) => actual[index] != null && titleMatches(todo.title, actual[index].title),
+        );
+      return {
+        meta,
+        score: {
+          metrics: { date, title },
+          ...(!(date && title) && {
+            diff: { expected: golden.expected, actual: value.parsedMemo },
+          }),
+        },
+      };
+    },
+  };
+}
+
 const PLAN_METRICS = ["date", "title", "duplicate"] as const satisfies readonly Metric[];
 
 function quickPlanCase(golden: QuickPlanGoldenCase): EvalCase {
@@ -285,6 +352,12 @@ function loadCases(task: GoldenTask, extraPaths: readonly string[]): EvalCase[] 
         ...extraPaths.flatMap((path) => readGoldenLines(parseTodoGoldenCaseSchema, path)),
       ].map(parseTodoCase),
     )
+    .with("parse-memo", () =>
+      [
+        ...GOLDEN_VARIANTS.flatMap((variant) => loadParseMemoGoldenCases(variant)),
+        ...extraPaths.flatMap((path) => readGoldenLines(parseMemoGoldenCaseSchema, path)),
+      ].map(parseMemoCase),
+    )
     .with("quick-plan", () =>
       [
         ...GOLDEN_VARIANTS.flatMap((variant) => loadQuickPlanGoldenCases(variant)),
@@ -302,6 +375,7 @@ function loadCases(task: GoldenTask, extraPaths: readonly string[]): EvalCase[] 
 
 const THINKING_ENV = {
   "parse-todo": "AI_THINKING_PARSE_TODO",
+  "parse-memo": "AI_THINKING_PARSE_MEMO",
   "quick-plan": "AI_THINKING_QUICK_PLAN",
   "voice-note-digest": "AI_THINKING_VOICE_NOTE_DIGEST",
 } as const satisfies Record<GoldenTask, string>;

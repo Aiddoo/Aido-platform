@@ -40,7 +40,7 @@ const dateRefShape = {
   weekOffset: llmInteger()
     .nullable()
     .describe(
-      "WEEKDAY only: 0 = this week, 1 = next week, 2 = the week after next. null for a bare weekday.",
+      "WEEKDAY only: 1 = next week, 2 = the week after next. null for a bare weekday or 'this Friday'.",
     ),
   month: llmInteger().nullable().describe("CALENDAR_DATE: 1-12. null when not stated."),
   day: llmInteger().nullable().describe("CALENDAR_DATE: 1-31. Otherwise null."),

@@ -4,6 +4,7 @@ import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { ExistingTodo } from "../../../../domain/policies/planning/action-plan-dedupe.policy.js";
+import type { DateRef } from "../../../../domain/types/parsing/todo-draft.types.js";
 import { normalizeMemoDraft } from "../../../services/parsing/todo-draft.normalizer.js";
 import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definition.js";
 import { sanitizeTextForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
@@ -37,6 +38,8 @@ export interface ParseMemoOutcome {
   /** 할 일 상한을 넘어 만들지 않은 할 일 수. 메모 원문은 그대로 남는다. */
   readonly omittedTodoCount: number;
   readonly warnings: readonly string[];
+  /** 모델이 낸 날짜 표현의 종류와 주. 서버가 계산한 날짜와 대조하는 로그용이다. */
+  readonly dateRefs: readonly Pick<DateRef, "kind" | "weekOffset">[];
 }
 
 const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
@@ -51,7 +54,7 @@ export const parseMemoPrompt: PromptDefinition<
   ParseMemoNormalizeContext
 > = {
   id: "parse-memo",
-  version: "parse-memo@7",
+  version: "parse-memo@8",
   taskClass: "interactive",
   // 30개 카테고리(이름 50자)·다가오는 할 일 30개와 5,000자 메모의 최대 user 턴이 약 13,800자다.
   maxInputChars: 15_000,

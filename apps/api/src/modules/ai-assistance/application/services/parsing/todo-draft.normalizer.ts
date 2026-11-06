@@ -14,7 +14,11 @@ import {
   findDuplicateTodoId,
 } from "../../../domain/policies/planning/action-plan-dedupe.policy.js";
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
-import type { ScheduleDraft, TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
+import type {
+  DateRef,
+  ScheduleDraft,
+  TodoDraft,
+} from "../../../domain/types/parsing/todo-draft.types.js";
 import { removeInvisibleCharacters } from "../../prompts/kit/untrusted-input.js";
 
 /** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
@@ -164,6 +168,7 @@ export function normalizeMemoDraft(
   hasNoAction: boolean;
   omittedTodoCount: number;
   warnings: NormalizationWarning[];
+  dateRefs: Pick<DateRef, "kind" | "weekOffset">[];
 } {
   const warnings: NormalizationWarning[] = [];
   const tasks = memo.todos.filter((todo) => todo.intent === "TASK");
@@ -212,6 +217,7 @@ export function normalizeMemoDraft(
     hasNoAction,
     omittedTodoCount: totalTaskCount - kept.length,
     warnings,
+    dateRefs: kept.map(({ date: { kind, weekOffset } }) => ({ kind, weekOffset })),
   };
 }
 

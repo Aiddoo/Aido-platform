@@ -144,7 +144,7 @@ describe("ParseMemo", () => {
       model: "fake:test-model",
       processingTimeMs: 0,
       tokenUsage: { input: 150, output: 50 },
-      promptVersion: "parse-memo@7",
+      promptVersion: "parse-memo@8",
     });
   });
 
@@ -567,7 +567,7 @@ describe("ParseMemo", () => {
       scheduledTime: "15:00",
       isAllDay: false,
     });
-    expect(result.meta.promptVersion).toBe("parse-memo@7");
+    expect(result.meta.promptVersion).toBe("parse-memo@8");
   });
 
   it("모든 할 일이 모델 대상 명령이면 안내 할 일 하나만 돌려주고 사용량을 차감하지 않는다", async () => {
@@ -636,6 +636,29 @@ describe("ParseMemo", () => {
     ]);
     expect(JSON.stringify(result)).not.toContain("other-user");
     expect(JSON.stringify(result)).not.toContain("evil.example");
+  });
+
+  it("성공 로그에 모델이 낸 날짜 표현의 kind·weekOffset만 남긴다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [
+        draftTodo("PRIVATE_TITLE", { date: { kind: "WEEKDAY", weekday: "FRI", weekOffset: 0 } }),
+        draftTodo("우유 사기"),
+      ],
+    });
+    // When
+    await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateRefs: [
+          { kind: "WEEKDAY", weekOffset: 0 },
+          { kind: "NONE", weekOffset: null },
+        ],
+      }),
+    );
+    expect(JSON.stringify(fixture.logger.log.mock.calls)).not.toContain("PRIVATE_TITLE");
   });
 
   it("성공 로그에는 메모 원문과 모델이 만든 제목을 남기지 않는다", async () => {

@@ -70,6 +70,36 @@ describe("파싱 프롬프트", () => {
     },
   );
 
+  it.each([
+    {
+      locale: "ko",
+      system: PARSE_MEMO_SYSTEM_KO,
+      input:
+        "입력: 11월 초 건강검진 예약하기, 11월 말 월세 내기, 11월 1일 영수증 정리하기, 12월 초 송년회 장소 예약하기",
+    },
+    {
+      locale: "en",
+      system: PARSE_MEMO_SYSTEM_EN,
+      input:
+        "Input: book a health checkup in early November, pay rent at the end of November, file receipts on November 1, reserve the party venue in early December",
+    },
+  ])(
+    "$locale 프롬프트는 이번 달 이름의 초·말만 이번 달 표현이고 정확한 날짜와 다른 달은 CALENDAR_DATE라고 가르친다",
+    ({ system, input }) => {
+      // Given
+      const line = system.split("\n").findIndex((text) => text === input);
+      // When
+      const output = JSON.parse(system.split("\n")[line + 1]?.replace(/^.*?: /, "") ?? "null");
+      // Then
+      expect(output.todos).toMatchObject([
+        { date: { kind: "MONTH_START", amount: 0 } },
+        { date: { kind: "MONTH_END", amount: 0 } },
+        { date: { kind: "CALENDAR_DATE", month: 11, day: 1 } },
+        { date: { kind: "CALENDAR_DATE", month: 12, day: 1 } },
+      ]);
+    },
+  );
+
   it("system 예시 출력은 모두 LLM schema를 통과한다", () => {
     // Given
     const todoExamples = [
@@ -156,8 +186,8 @@ describe("파싱 프롬프트", () => {
     const versions = definitions.map(({ id, version }) => ({ id, version }));
     // Then
     expect(versions).toEqual([
-      { id: "parse-todo", version: "parse-todo@7" },
-      { id: "parse-memo", version: "parse-memo@7" },
+      { id: "parse-todo", version: "parse-todo@8" },
+      { id: "parse-memo", version: "parse-memo@8" },
     ]);
   });
 });

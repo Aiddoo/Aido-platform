@@ -175,6 +175,7 @@ export class ParseMemo {
         omittedTodoCount,
         itemCount: sumBy(data.todos, (todo) => todo.items.length),
         warnings: value.warnings,
+        dateRefs: value.dateRefs,
       });
       return {
         result: {

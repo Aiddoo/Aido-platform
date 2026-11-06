@@ -30,4 +30,10 @@ export const PARSE_TODO_EXAMPLES_KO = `입력: 내일 오후 3시 팀 미팅
 출력: {"intent":"NO_ACTION","title":"입력 확인 필요","date":{"kind":"NONE","amount":null,"weekday":null,"weekOffset":null,"month":null,"day":null,"year":null},"endDate":null,"time":null,"repeat":{"pattern":"NONE","daysOfWeek":null,"until":null,"forDuration":null},"categoryId":null}
 
 입력: Dentist tomorrow at 3pm
-출력: {"intent":"TASK","title":"Dentist","date":{"kind":"OFFSET_DAYS","amount":1,"weekday":null,"weekOffset":null,"month":null,"day":null,"year":null},"endDate":null,"time":{"hour":3,"minute":0,"meridiem":"PM","partOfDay":null,"relativeMinutes":null},"repeat":{"pattern":"NONE","daysOfWeek":null,"until":null,"forDuration":null},"categoryId":null}`;
+출력: {"intent":"TASK","title":"Dentist","date":{"kind":"OFFSET_DAYS","amount":1,"weekday":null,"weekOffset":null,"month":null,"day":null,"year":null},"endDate":null,"time":{"hour":3,"minute":0,"meridiem":"PM","partOfDay":null,"relativeMinutes":null},"repeat":{"pattern":"NONE","daysOfWeek":null,"until":null,"forDuration":null},"categoryId":null}
+
+<context>의 now가 11월일 때:
+입력: 11월 초 건강검진 예약하기
+출력: {"intent":"TASK","title":"건강검진 예약하기","date":{"kind":"MONTH_START","amount":0,"weekday":null,"weekOffset":null,"month":null,"day":null,"year":null},"endDate":null,"time":null,"repeat":{"pattern":"NONE","daysOfWeek":null,"until":null,"forDuration":null},"categoryId":null}
+입력: 11월 1일 영수증 정리하기
+출력: {"intent":"TASK","title":"영수증 정리하기","date":{"kind":"CALENDAR_DATE","amount":null,"weekday":null,"weekOffset":null,"month":11,"day":1,"year":null},"endDate":null,"time":null,"repeat":{"pattern":"NONE","daysOfWeek":null,"until":null,"forDuration":null},"categoryId":null}`;
