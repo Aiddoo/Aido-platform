@@ -91,6 +91,7 @@ catalog:
   'es-toolkit': '1.53.1'
   'google-auth-library': '11.3.3'
   'jose': '6.2.15'
+  knip: 6.44.1
   'ngeohash': '0.6.4'
   'oxfmt': '0.76.0'
   'oxlint': '1.91.0'

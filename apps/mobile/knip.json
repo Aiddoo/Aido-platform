@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "index.ts",
+    "app/**/*.{ts,tsx}",
+    "app.config.ts",
+    "plugins/*.js",
+    "scripts/*.mjs",
+    "metro.config.js",
+    "babel.config.js",
+    "jest.setup.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+  "ignore": ["**/*.d.ts", "src/shared/constants/query-meta.ts"],
+  "ignoreDependencies": ["expo-glass-effect", "babel-plugin-react-compiler", "babel-jest"],
+  "ignoreBinaries": ["adb", "eas", "oxfmt", "oxlint"]
+}
