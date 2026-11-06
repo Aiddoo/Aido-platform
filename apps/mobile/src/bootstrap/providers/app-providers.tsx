@@ -21,15 +21,26 @@ import {
   OverlayProvider,
   QueryErrorBoundary,
   QueryErrorFallback,
+  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { usePathname } from 'expo-router';
-import { type PropsWithChildren, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import { type PropsWithChildren, useEffect, useState } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ReservedRegionsProvider } from 'react-native-reserved-regions';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 interface AppProvidersProps extends PropsWithChildren {
   encryptedStorageBootstrap: EncryptedStorageBootstrap;
+}
+
+/** 이 경계가 그리면 AuthGateLayout이 내려가 있어 스플래시를 내릴 곳이 여기뿐이다 */
+function BootQueryErrorFallback({ reset }: Pick<QueryErrorFallbackProps, 'reset'>) {
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
+  return <QueryErrorFallback reset={reset} onInquiry={openSupportMail} />;
 }
 
 export function AppProviders({ children, encryptedStorageBootstrap }: AppProvidersProps) {
@@ -59,9 +70,7 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                               <ReservedRegionsProvider style={{ flex: 1 }}>
                                 {/* 이 경계가 그리면 내비게이터가 내려가 있어 문의는 화면 이동 대신 메일로 연다 */}
                                 <QueryErrorBoundary
-                                  fallback={({ reset }) => (
-                                    <QueryErrorFallback reset={reset} onInquiry={openSupportMail} />
-                                  )}
+                                  fallback={({ reset }) => <BootQueryErrorFallback reset={reset} />}
                                 >
                                   <OverlayProvider resetKey={pathname}>
                                     <OfflineBanner />

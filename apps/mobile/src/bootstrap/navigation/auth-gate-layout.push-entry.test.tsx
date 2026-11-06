@@ -216,7 +216,7 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     jest.restoreAllMocks();
   });
 
-  it('앱 종료 상태 탭: 스플래시가 먼저 내려가고 피드가 focus된 뒤 읽음 응답을 기다려 목적지로 간다', async () => {
+  it('앱 종료 상태 탭: 읽음 응답을 받고 목적지로 간 뒤에 스플래시를 내린다', async () => {
     // Given
     const read = createPendingResponse(READ_OK);
     const { route, gateway, focusLog, hideLog } = await setup({
@@ -231,16 +231,34 @@ describe('푸시 탭 진입 (지금 동작)', () => {
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
-    expect(hideLog).toEqual(['/loading']);
-    expect(focusLog).toEqual(['feed']);
+    expect(hideLog).toEqual([]);
 
     // When
     await act(async () => read.settle());
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    await waitFor(() => expect(hideLog).toEqual(['/todo/42']));
     expect(focusLog).toEqual(['feed', 'todo']);
     expect(gateway.clearLastResponse).toHaveBeenCalled();
+  });
+
+  it('스플래시에 갇히지 않는다: 읽음 응답이 없어도 예산 뒤 내린다', async () => {
+    // Given
+    const { route, hideLog } = await setup({
+      status: 'loading',
+      lastResponse: TODO_RESPONSE,
+      markRead: () => new Promise(noop),
+    });
+
+    // When
+    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+    // Then
+    await waitFor(() => expect(hideLog.length).toBeGreaterThan(0), {
+      timeout: NOTIFICATION_READ_BUDGET_MS + 1000,
+    });
+    expect(route.getPathname()).toBe('/todo/42');
   });
 
   it('앱 종료 상태 탭: 뒤로 가면 피드이고 다시 이동하지 않는다', async () => {
@@ -261,7 +279,7 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     // Given
     const { route } = await setup({ status: 'locked', lastResponse: TODO_RESPONSE });
     await waitFor(() => expect(route.getPathname()).toBe('/loading'));
-    expect(SplashScreen.hideAsync).toHaveBeenCalled();
+    await waitFor(() => expect(SplashScreen.hideAsync).toHaveBeenCalled());
 
     // When
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
