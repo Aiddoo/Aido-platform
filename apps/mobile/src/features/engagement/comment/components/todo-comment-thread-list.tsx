@@ -19,14 +19,13 @@ import {
   VStack,
   InlineNotice,
 } from '@src/shared/ui';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { ScrollViewProps } from 'react-native';
+import { type ScrollViewProps, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
-  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -52,6 +51,7 @@ const HINT_HEART_SIZE = 20;
 const HINT_PULSE = { delayMs: 1_200, peakScale: 1.28 } as const;
 
 const contentContainerStyle = { flexGrow: 1 };
+const styles = StyleSheet.create({ fallbackScrollView: { flex: 1 } });
 
 function getThreadKey(thread: TodoCommentThread) {
   return thread.comment.id;
@@ -77,31 +77,29 @@ interface TodoCommentThreadListProps extends Omit<
 > {
   /** 할 일 본문과 정렬처럼 댓글 위에 함께 스크롤되는 영역 */
   header: ReactNode;
-  extraContentPadding: SharedValue<number>;
+}
+
+function renderThreadListScrollView(props: ScrollViewProps) {
+  return <TodoCommentKeyboardScrollView {...props} />;
 }
 
 /**
  * 할 일 상세의 댓글 묶음 목록. 바깥 스크롤은 키보드를 따라가는 하나뿐이고 묶음 행만 가상화한다.
  * 알림으로 연 댓글은 그 위치가 든 페이지를 받아 그 묶음으로 옮기고 잠깐 강조한다.
  */
-export function TodoCommentThreadList({
-  header,
-  extraContentPadding,
-  ...listProps
-}: TodoCommentThreadListProps) {
+export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThreadListProps) {
   const { todoId } = useTodoScreenParams();
   const [{ sort, comment }] = useCommentParams();
   const queryClient = useQueryClient();
   const { listRef } = useTodoCommentReveal();
-  const threadsQuery = useInfiniteQuery(
+  const threadsQuery = useSuspenseInfiniteQuery(
     useGetTodoCommentThreadsInfiniteQueryOptions({
       todoId,
       sort,
       anchorCommentId: comment ?? null,
     }),
   );
-  const threads = threadsQuery.data?.threads ?? [];
-  const anchor = threadsQuery.data?.anchor ?? null;
+  const { threads, anchor } = threadsQuery.data;
   const [isRefreshing, refresh] = useRefresh(
     useCallback(
       () =>
@@ -112,22 +110,12 @@ export function TodoCommentThreadList({
       [queryClient, todoId],
     ),
   );
-  const renderKeyboardScrollView = useCallback(
-    (props: ScrollViewProps) => (
-      <TodoCommentKeyboardScrollView {...props} extraContentPadding={extraContentPadding} />
-    ),
-    [extraContentPadding],
-  );
   const renderItem = useCallback(
     ({ item }: { item: TodoCommentThread }) => <ThreadRow thread={item} anchor={anchor} />,
     [anchor],
   );
 
-  useScrollToAnchor({ threads, anchor, isLoaded: threadsQuery.isSuccess });
-
-  if (threadsQuery.isError && threadsQuery.data == null) {
-    throw threadsQuery.error;
-  }
+  useScrollToAnchor({ threads, anchor });
 
   return (
     <InfiniteList
@@ -138,7 +126,7 @@ export function TodoCommentThreadList({
       extraData={anchor}
       keyExtractor={getThreadKey}
       renderItem={renderItem}
-      renderScrollComponent={renderKeyboardScrollView}
+      renderScrollComponent={renderThreadListScrollView}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
@@ -155,9 +143,7 @@ export function TodoCommentThreadList({
           )}
         </>
       }
-      ListEmptyComponent={
-        threadsQuery.isPending ? TodoCommentThreadList.Loading : TodoCommentThreadList.Empty
-      }
+      ListEmptyComponent={TodoCommentThreadList.Empty}
       hasNextPage={threadsQuery.hasNextPage}
       isFetchingNextPage={threadsQuery.isFetchingNextPage}
       isFetchNextPageError={threadsQuery.isFetchNextPageError}
@@ -168,15 +154,23 @@ export function TodoCommentThreadList({
   );
 }
 
-TodoCommentThreadList.Loading = function Loading() {
+TodoCommentThreadList.Loading = function Loading({
+  header,
+}: Pick<TodoCommentThreadListProps, 'header'>) {
   return (
-    <VStack testID="todo-comment-thread-list-loading">
-      {range(LOADING_ROW_COUNT).map((index) => (
-        <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>
-          <TodoCommentItem.Loading />
-        </TodoCommentRailRow>
-      ))}
-    </VStack>
+    <TodoCommentKeyboardScrollView
+      style={styles.fallbackScrollView}
+      showsVerticalScrollIndicator={false}
+    >
+      {header}
+      <VStack testID="todo-comment-thread-list-loading">
+        {range(LOADING_ROW_COUNT).map((index) => (
+          <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>
+            <TodoCommentItem.Loading />
+          </TodoCommentRailRow>
+        ))}
+      </VStack>
+    </TodoCommentKeyboardScrollView>
   );
 };
 
@@ -194,13 +188,22 @@ TodoCommentThreadList.Empty = function Empty() {
   );
 };
 
-TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+TodoCommentThreadList.Error = function ErrorFallback({
+  header,
+  reset,
+}: QueryErrorFallbackProps & Pick<TodoCommentThreadListProps, 'header'>) {
   const { t } = useTranslation('todoComment');
 
   return (
-    <Flex flex={1} justify="center" align="center" py={32}>
-      <Result title={t('list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
-    </Flex>
+    <TodoCommentKeyboardScrollView
+      style={styles.fallbackScrollView}
+      showsVerticalScrollIndicator={false}
+    >
+      {header}
+      <Flex flex={1} justify="center" align="center" py={32}>
+        <Result title={t('list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
+      </Flex>
+    </TodoCommentKeyboardScrollView>
   );
 };
 
@@ -229,11 +232,9 @@ function ThreadRow({
 function useScrollToAnchor({
   threads,
   anchor,
-  isLoaded,
 }: {
   threads: readonly TodoCommentThread[];
   anchor: TodoCommentThreadAnchor | null;
-  isLoaded: boolean;
 }) {
   const [{ comment }] = useCommentParams();
   const { listRef } = useTodoCommentReveal();
@@ -242,7 +243,7 @@ function useScrollToAnchor({
   const handledCommentRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (comment == null || !isLoaded || handledCommentRef.current === comment) {
+    if (comment == null || handledCommentRef.current === comment) {
       return;
     }
     handledCommentRef.current = comment;
@@ -258,7 +259,7 @@ function useScrollToAnchor({
         ?.scrollToIndex({ index, viewPosition: ANCHOR_VIEW_POSITION, animated: true })
         .catch(noop);
     }
-  }, [anchor, comment, isLoaded, listRef, t, threads, toast]);
+  }, [anchor, comment, listRef, t, threads, toast]);
 }
 
 function LoadPrevious({ isLoading, onPress }: { isLoading: boolean; onPress: () => void }) {

@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { View } from 'react-native';
 import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
+import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 
 import type { TodoCommentThread } from '../schemas/todo-comment.schema';
 
@@ -20,6 +21,8 @@ const REVEAL_MARGIN = 16;
 interface TodoCommentRevealValue {
   listRef: RefObject<FlashListRef<TodoCommentThread> | null>;
   composerRef: RefObject<ComponentRef<typeof View> | null>;
+  /** 키보드가 열린 채 작성기가 커지면 목록 끝을 그만큼 더 올린다 */
+  extraContentPadding: SharedValue<number>;
   reveal: (target: RefObject<ComponentRef<typeof View> | null>) => void;
   /** 키보드와 무관하게 행이 작성 바에 가려 있으면 그만큼 올린다(알림으로 연 답글) */
   showAboveComposer: (target: RefObject<ComponentRef<typeof View> | null>) => void;
@@ -34,6 +37,7 @@ const TodoCommentRevealContext = createContext<TodoCommentRevealValue | null>(nu
 export function TodoCommentRevealProvider({ children }: PropsWithChildren) {
   const listRef = useRef<FlashListRef<TodoCommentThread>>(null);
   const composerRef = useRef<ComponentRef<typeof View>>(null);
+  const extraContentPadding = useSharedValue(0);
   const pendingRef = useRef<{ remove: () => void } | null>(null);
   const frameRef = useRef<number | null>(null);
 
@@ -87,8 +91,14 @@ export function TodoCommentRevealProvider({ children }: PropsWithChildren) {
   useEffect(() => clearPending, [clearPending]);
 
   const value = useMemo(
-    () => ({ listRef, composerRef, reveal, showAboveComposer: scrollAboveComposer }),
-    [reveal, scrollAboveComposer],
+    () => ({
+      listRef,
+      composerRef,
+      extraContentPadding,
+      reveal,
+      showAboveComposer: scrollAboveComposer,
+    }),
+    [extraContentPadding, reveal, scrollAboveComposer],
   );
 
   return <TodoCommentRevealContext value={value}>{children}</TodoCommentRevealContext>;

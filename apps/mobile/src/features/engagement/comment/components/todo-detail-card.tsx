@@ -19,10 +19,13 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   ChatBubbleIcon,
+  DocsIcon,
   EyeIcon,
   HStack,
   QueryErrorBoundary,
+  Result,
   Text,
   TextSkeleton,
   VStack,
@@ -152,6 +155,37 @@ function MetricItem({ icon, count }: { icon: React.ReactNode; count: number }) {
     </HStack>
   );
 }
+
+/** 할 일을 고르지 않은 넓은 화면의 오른쪽 칸 */
+TodoDetailCard.Empty = function Empty() {
+  const { t } = useTranslation('todo');
+
+  return (
+    <Box flex={1} px={32}>
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('detail.emptyTitle')}
+        description={t('detail.selectPrompt')}
+      />
+    </Box>
+  );
+};
+
+/** 지워졌거나 더는 볼 수 없는 할 일(친구 끊김·차단 등). 알림·위젯이 예전 할 일을 열 때 보인다 */
+TodoDetailCard.Unavailable = function Unavailable({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation(['todo', 'common']);
+
+  return (
+    <Box flex={1} px={32} testID="todo-unavailable">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('todo:detail.unavailableTitle')}
+        description={t('todo:detail.unavailableDescription')}
+        button={<Result.Button onPress={onClose}>{t('common:actions.goBack')}</Result.Button>}
+      />
+    </Box>
+  );
+};
 
 TodoDetailCard.Loading = function Loading() {
   return (

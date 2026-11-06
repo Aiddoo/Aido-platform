@@ -2,6 +2,14 @@ import { WhatsNewEntryCard } from '@src/features/app-config/whats-new/components
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
+import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
+import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
+import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
+import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
+import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
+import { TodoDetailCard } from '@src/features/engagement/comment/components/todo-detail-card';
+import { TodoDetailHeader } from '@src/features/engagement/comment/components/todo-detail-header';
+import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
@@ -9,8 +17,6 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
-import { FeedListPane } from '@src/features/planning/todo/components/feed-list-pane';
-import { FeedTodoDetailPane } from '@src/features/planning/todo/components/feed-todo-detail-pane';
 import { FriendStrip } from '@src/features/planning/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
@@ -19,6 +25,12 @@ import {
   useFeedDateKey,
   useFeedFriendParam,
 } from '@src/features/planning/todo/hooks/use-feed-params';
+import {
+  useFeedSelectedTodo,
+  useFeedTodoDetailHandoff,
+} from '@src/features/planning/todo/hooks/use-feed-selected-todo';
+import { useIsTodoUnavailable } from '@src/features/planning/todo/hooks/use-is-todo-unavailable';
+import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
@@ -32,6 +44,7 @@ import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
+import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
   AdaptivePane,
   Box,
@@ -44,7 +57,8 @@ import {
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Suspense, useEffect } from 'react';
+import { Separator } from 'heroui-native';
+import { type PropsWithChildren, Suspense, useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
@@ -342,4 +356,77 @@ function MyFeedRedirect() {
   }, [selectFriend]);
 
   return null;
+}
+
+/** 피드 목록 칸. 접힌 화면으로 바뀌면 선택된 할 일과 댓글 위치를 상세 화면으로 넘긴다 */
+function FeedListPane({ children }: PropsWithChildren) {
+  useFeedTodoDetailHandoff();
+
+  return (
+    <Box flex={1} className="bg-white">
+      {children}
+    </Box>
+  );
+}
+
+function FeedTodoDetailPane() {
+  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
+  const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+
+  if (selectedTodoId == null) {
+    return (
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+        <TodoDetailCard.Empty />
+      </StyledSafeAreaView>
+    );
+  }
+
+  return <FeedTodoDetail key={selectedTodoId} onClose={closeDetail} />;
+}
+
+/** 펼친 피드의 오른쪽 칸. 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */
+function FeedTodoDetail({ onClose }: { onClose: () => void }) {
+  const { todoId } = useTodoScreenParams();
+  const [{ sort, comment }] = useCommentParams();
+  const date = useFeedDateKey();
+  const isTodoUnavailable = useIsTodoUnavailable();
+
+  return (
+    <KeyboardBottomGapProvider>
+      <StyledSafeAreaView
+        edges={['left', 'right']}
+        className="flex-1 bg-white"
+        testID="todo-detail"
+      >
+        <TodoCommentSession onExit={onClose}>
+          <TodoCommentTitleBar date={date} />
+
+          <Separator />
+
+          {isTodoUnavailable ? (
+            <TodoDetailCard.Unavailable onClose={onClose} />
+          ) : (
+            <TodoCommentKeyboardArea>
+              <QueryErrorBoundary
+                resetKeys={[todoId, sort, comment]}
+                fallback={(props) => (
+                  <TodoCommentThreadList.Error {...props} header={<TodoDetailHeader />} />
+                )}
+              >
+                <Suspense
+                  fallback={<TodoCommentThreadList.Loading header={<TodoDetailHeader />} />}
+                >
+                  <TodoCommentThreadList header={<TodoDetailHeader />} />
+                </Suspense>
+              </QueryErrorBoundary>
+
+              <QueryErrorBoundary resetKeys={[todoId]}>
+                <TodoCommentComposerBar />
+              </QueryErrorBoundary>
+            </TodoCommentKeyboardArea>
+          )}
+        </TodoCommentSession>
+      </StyledSafeAreaView>
+    </KeyboardBottomGapProvider>
+  );
 }

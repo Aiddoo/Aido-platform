@@ -1,5 +1,4 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
@@ -28,7 +27,7 @@ import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 const SUBTITLE_LAYOUT_PLACEHOLDER = ' ';
 
 /** 펼친 피드의 상세 pane 제목 바. pane은 Stack 화면이 아니라 네이티브 헤더가 없고, 선택 해제는 목록 pane이 맡는다 */
-export function TodoCommentTitleBar() {
+export function TodoCommentTitleBar({ date }: { date: string }) {
   const { title, subtitle } = useTodoCommentTitle();
 
   return (
@@ -42,7 +41,7 @@ export function TodoCommentTitleBar() {
         </Text>
       </VStack>
 
-      <TodoActionsButton />
+      <TodoActionsButton date={date} />
       <TodoModerationMenu />
     </HStack>
   );
@@ -69,6 +68,8 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
       <Stack.Screen
         options={{
           ...screenOptions,
+          // 작성기가 열려 있으면 swipe가 화면을 닫지 않고 뒤로가기가 작성기부터 닫는다
+          gestureEnabled: backResult === 'native',
           headerTitle: () => <StackHeaderTitle title={title} subtitle={subtitle} />,
         }}
       />
@@ -125,10 +126,9 @@ function StackHeaderTitle({ title, subtitle }: StackHeaderTitleProps) {
 }
 
 /** 내 할 일이면 기존 할 일 옵션 시트를 연다. 친구 할 일의 신고·차단은 TodoModerationMenu가 맡는다. */
-function TodoActionsButton() {
+function TodoActionsButton({ date }: { date: string }) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoScreenParams();
-  const date = useFeedDateKey();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: me } = useQuery(useGetMeQueryOptions());

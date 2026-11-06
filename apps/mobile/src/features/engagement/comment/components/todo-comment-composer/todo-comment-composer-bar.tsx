@@ -13,7 +13,6 @@ import { KeyboardStickyView, useKeyboardHandler } from 'react-native-keyboard-co
 import Animated, {
   interpolate,
   ReduceMotion,
-  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -29,20 +28,15 @@ const OPENED_BOTTOM_PADDING = 8;
 const KEYBOARD_OPEN_PROGRESS = 1;
 const EXTRA_PADDING_DURATION_MS = 150;
 
-interface TodoCommentComposerBarProps {
-  /** 키보드가 열린 채 작성기가 커지면 목록 끝을 그만큼 더 올린다 */
-  extraContentPadding: SharedValue<number>;
-}
-
 /**
  * 목록 아래 한 번 놓이는 작성 바. 키보드를 UI 스레드에서 따라가고(KeyboardStickyView + useKeyboardHandler),
  * 아래 여백도 키보드 진행률로 바뀌어 JS 리렌더 없이 붙는다.
  */
-export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentComposerBarProps) {
+export function TodoCommentComposerBar() {
   const insets = useSafeAreaInsets();
   const keyboardBottomGap = useKeyboardBottomGap();
   const isScreenFocused = useIsFocused();
-  const { composerRef } = useTodoCommentReveal();
+  const { composerRef, extraContentPadding } = useTodoCommentReveal();
   const keyboardProgress = useSharedValue(0);
   const baselineHeightRef = useRef(0);
   const closedBottomPadding = (insets.bottom || DEFAULT_BOTTOM_INSET) + CLOSED_EXTRA_PADDING;

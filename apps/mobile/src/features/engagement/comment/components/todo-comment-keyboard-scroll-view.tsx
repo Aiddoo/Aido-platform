@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
 import type Reanimated from 'react-native-reanimated';
 
+import { useTodoCommentReveal } from './todo-comment-reveal';
+
 interface TodoCommentKeyboardScrollViewProps extends Omit<
   ComponentProps<typeof KeyboardChatScrollView>,
   | 'ref'
@@ -13,6 +15,7 @@ interface TodoCommentKeyboardScrollViewProps extends Omit<
   | 'keyboardDismissMode'
   | 'keyboardShouldPersistTaps'
   | 'freeze'
+  | 'extraContentPadding'
 > {
   ref?: Ref<Reanimated.ScrollView>;
 }
@@ -29,6 +32,7 @@ export function TodoCommentKeyboardScrollView({
   ...props
 }: TodoCommentKeyboardScrollViewProps) {
   const keyboardBottomGap = useKeyboardBottomGap();
+  const { extraContentPadding } = useTodoCommentReveal();
   // 대화를 push한 동안 아래에 남은 개요가 위 화면의 키보드에 반응하면 돌아왔을 때 스크롤 위치가 밀린다.
   const isScreenFocused = useIsFocused();
 
@@ -41,6 +45,7 @@ export function TodoCommentKeyboardScrollView({
       keyboardShouldPersistTaps="handled"
       keyboardLiftBehavior={keyboardLiftBehavior}
       offset={keyboardBottomGap}
+      extraContentPadding={extraContentPadding}
       freeze={!isScreenFocused}
     />
   );

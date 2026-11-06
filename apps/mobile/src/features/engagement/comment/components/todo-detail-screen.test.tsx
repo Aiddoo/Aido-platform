@@ -12,8 +12,8 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
-import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
-import { TodoDetailPane } from './todo-detail-pane';
+import TodoDetailRoute from '../../../../../app/(app)/todo/[todoId]';
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '../constants/todo-comment.constants';
 
 const TODO_ID = 42;
 const COMMENT_ID = 'ckcomment0001';
@@ -113,7 +113,7 @@ async function renderTodoDetail() {
   });
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
-  const view = await renderUi(<TodoDetailPane presentation="screen" />, {
+  const view = await renderUi(<TodoDetailRoute />, {
     withLocalDate: true,
     withOverlay: true,
     di: createTestDi({
