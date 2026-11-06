@@ -47,6 +47,9 @@ export const pushNotificationPayloadSchema = pushNotificationDataSchema
   });
 export type PushNotificationPayload = z.infer<typeof pushNotificationPayloadSchema>;
 
+/** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
+export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
+
 /** 슬롯에 보관하는 눌린 응답 */
 export interface PendingNotificationResponse {
   id: string;

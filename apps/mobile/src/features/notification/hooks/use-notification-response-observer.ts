@@ -9,7 +9,7 @@ import {
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage, isApiError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -187,36 +187,28 @@ function useOpenResponse(
       sessionEpoch.current() === epoch && store.getState().pending?.id === target.id;
     const { data } = target;
     try {
-      if (data.notificationId > 0) {
-        try {
-          unwrap(await notificationService.markAsRead(data.notificationId));
-        } catch (error) {
-          if (isApiError(error) && (error.status === 403 || error.status === 404)) {
-            if (isCurrent()) {
-              finishResponse(target.id);
-            }
-            return;
-          }
-          throw error;
-        }
-      }
+      const ownership = await notificationService.checkOwnership(data.notificationId);
       if (!isCurrent()) {
         return;
       }
-      await navigate(
-        resolveNotificationDestination(data, {
-          today,
-          windowSizeClass,
-          viewerId: getCachedMe(queryClient)?.id,
-        }),
-      );
-      trackOpened(data);
-      if (data.notificationId > 0) {
-        recordOpened(data.notificationId);
+      if (ownership !== 'foreign') {
+        await navigate(
+          resolveNotificationDestination(data, {
+            today,
+            windowSizeClass,
+            viewerId: getCachedMe(queryClient)?.id,
+          }),
+        );
+        trackOpened(data);
+        if (data.notificationId > 0) {
+          recordOpened(data.notificationId);
+        }
       }
       finishResponse(target.id);
     } catch (error) {
-      logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, { error: getErrorMessage(error) });
+      // 외부 링크를 열지 못한 경우다. 같은 탭을 다시 시도하지 않고 끝낸다
+      logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
+      finishResponse(target.id);
     } finally {
       if (inFlightIdRef.current === target.id) {
         inFlightIdRef.current = null;
@@ -239,16 +231,9 @@ function useOpenResponse(
   });
 
   useEffect(() => {
-    if (response == null) {
-      return;
+    if (response != null) {
+      decide(response);
     }
-    decide(response);
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        decide(response);
-      }
-    });
-    return () => subscription.remove();
   }, [isStartupRoute, response, status]);
 }
 

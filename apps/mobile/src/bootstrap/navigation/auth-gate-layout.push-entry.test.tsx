@@ -6,6 +6,7 @@ import {
   createMarkReadResponseDto,
   createPushNotificationGatewayStub,
 } from '@src/features/notification/__tests__/notification.fixtures';
+import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
 import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
   createHttpClientStub,
@@ -25,7 +26,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
 import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
-import { AppState, type AppStateStatus, Linking, Pressable, Text } from 'react-native';
+import { Linking, Pressable, Text } from 'react-native';
 
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
@@ -328,21 +329,12 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     expect(route.getPathname()).toBe('/feed');
   });
 
-  it('오프라인: 이동하지 않고 포그라운드로 돌아올 때 다시 시도한다', async () => {
+  it('오프라인: 읽음을 확인하지 못해도 바로 이동하고 opened를 기록한다', async () => {
     // Given
-    const appStateListeners: Array<(state: AppStateStatus) => void> = [];
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-      appStateListeners.push(listener);
-      return { remove: noop };
-    });
-    let isOnline = false;
     const { route, gateway, httpClient } = await setup({
       status: 'authenticated',
       markRead: async () => {
-        if (!isOnline) {
-          throw new NetworkError();
-        }
-        return READ_OK;
+        throw new NetworkError();
       },
     });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
@@ -351,17 +343,27 @@ describe('푸시 탭 진입 (지금 동작)', () => {
     await act(async () => gateway.emitResponse(TODO_RESPONSE));
 
     // Then
-    await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
-    expect(route.getPathname()).toBe('/feed');
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledWith('v1/notifications/7/opened'));
+    expect(gateway.getLastResponse()).toBeNull();
+  });
+
+  it('서버가 답이 없어도 읽음 예산이 지나면 이동한다', async () => {
+    // Given
+    const { route, gateway } = await setup({
+      status: 'authenticated',
+      markRead: () => new Promise(noop),
+    });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
 
     // When
-    isOnline = true;
-    await act(async () => {
-      appStateListeners.forEach((listener) => listener('active'));
-    });
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
 
     // Then
-    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    expect(route.getPathname()).toBe('/feed');
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'), {
+      timeout: NOTIFICATION_READ_BUDGET_MS + 1000,
+    });
   });
 
   it('로그아웃하면 진행 중인 읽음이 끝나도 이동하지 않고 마지막 응답을 지운다', async () => {

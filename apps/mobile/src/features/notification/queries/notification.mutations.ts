@@ -5,7 +5,13 @@ import {
   usePushDeviceService,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
-import { getErrorMessage, isApiError, isConnectivityError, toError } from '@src/shared/errors';
+import {
+  getErrorMessage,
+  isApiError,
+  isConnectivityError,
+  ServerError,
+  toError,
+} from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -18,6 +24,8 @@ import {
   restoreNotificationCache,
   setCachedPushPermission,
 } from './notification-cache';
+
+const PUSH_OPENED_RETRIES = 3;
 
 export function useMarkAllAsReadMutationOptions() {
   const haptics = useHaptics();
@@ -167,7 +175,17 @@ export function useRequestPushPermissionMutationOptions() {
   });
 }
 
-/** 눌린 푸시를 기록하고 알림함을 읽음으로 맞춘다. 서버의 opened는 읽음도 함께 처리한다 */
+function shouldRetryPushOpened(failureCount: number, error: unknown) {
+  return (
+    failureCount < PUSH_OPENED_RETRIES &&
+    (isConnectivityError(error) || error instanceof ServerError)
+  );
+}
+
+/**
+ * 눌린 푸시를 기록하고 알림함을 읽음으로 맞춘다. 서버의 opened는 읽음도 함께 처리하므로,
+ * 예산 안에 읽음을 확인하지 못한 탭도 여기서 뒤늦게 읽음이 된다. 오프라인이면 연결될 때까지 멈춰 있다.
+ */
 export function useRecordPushOpenedMutationOptions() {
   const notificationService = useNotificationService();
   const sessionEpoch = useSessionEpoch();
@@ -177,6 +195,7 @@ export function useRecordPushOpenedMutationOptions() {
   return mutationOptions({
     mutationFn: async (notificationId: number) =>
       unwrap(await notificationService.markOpened(notificationId)),
+    retry: shouldRetryPushOpened,
     onMutate: (notificationId) => {
       const epoch = sessionEpoch.current();
       const isSameSession = () => sessionEpoch.current() === epoch;

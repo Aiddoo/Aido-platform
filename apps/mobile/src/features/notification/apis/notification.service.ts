@@ -8,9 +8,10 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { identity } from 'es-toolkit';
+import { identity, withTimeout } from 'es-toolkit';
 
-import type { GetNotificationsQuery } from '../schemas/notification.schema';
+import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
+import type { GetNotificationsQuery, NotificationOwnership } from '../schemas/notification.schema';
 import { toNotificationListResult } from './notification.mapper';
 
 export class NotificationService {
@@ -83,6 +84,28 @@ export class NotificationService {
       (dto) => dto.optedOut,
       '[NotificationService] Invalid marketing opt-out response',
     );
+
+  /**
+   * 눌린 푸시를 읽음 처리하며 내 알림인지 본다. 예산 안에 답이 없어도 항상 끝난다.
+   * 0은 서버 알림 기록이 없는 푸시라 묻지 않는다.
+   */
+  checkOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
+    if (notificationId === 0) {
+      return 'ok';
+    }
+    try {
+      const result = await withTimeout(
+        () => this.markAsRead(notificationId),
+        NOTIFICATION_READ_BUDGET_MS,
+      );
+      if (result.ok) {
+        return 'ok';
+      }
+      return result.error.status === 403 || result.error.status === 404 ? 'foreign' : 'unknown';
+    } catch {
+      return 'unknown';
+    }
+  };
 
   setBadgeCount = (count: number): Promise<void> => this.#badgeGateway.setBadgeCount(count);
 

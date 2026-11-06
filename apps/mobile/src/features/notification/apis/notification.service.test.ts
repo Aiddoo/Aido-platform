@@ -1,4 +1,7 @@
 import { createHttpClientStub } from '@src/shared/__tests__';
+import { NetworkError } from '@src/shared/errors';
+import { err, ok } from '@src/shared/errors/result';
+import { noop } from 'es-toolkit';
 
 import {
   createMarkReadResponseDto,
@@ -8,6 +11,7 @@ import {
   createUnreadCountResponseDto,
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';
+import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {
@@ -137,5 +141,84 @@ describe('NotificationService', () => {
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
+  });
+});
+
+describe('NotificationService.checkOwnership', () => {
+  function setup() {
+    const httpClient = createHttpClientStub();
+    return {
+      httpClient,
+      service: new NotificationService(httpClient, createPushNotificationGatewayStub()),
+    };
+  }
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('읽음이 성공하면 내 알림이다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+
+    // When
+    const ownership = await service.checkOwnership(7);
+
+    // Then
+    expect(ownership).toBe('ok');
+  });
+
+  test.each([403, 404])('읽음이 %s면 다른 계정 알림이다', async (status) => {
+    // Given
+    const { httpClient, service } = setup();
+    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ status })));
+
+    // When
+    const ownership = await service.checkOwnership(7);
+
+    // Then
+    expect(ownership).toBe('foreign');
+  });
+
+  test('다른 4xx와 네트워크 실패는 모르는 것이다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+    httpClient.patch.mockResolvedValueOnce(err(createNotificationApiError({ status: 400 })));
+    httpClient.patch.mockRejectedValueOnce(new NetworkError());
+
+    // When
+    const rejected = await service.checkOwnership(7);
+    const offline = await service.checkOwnership(7);
+
+    // Then
+    expect(rejected).toBe('unknown');
+    expect(offline).toBe('unknown');
+  });
+
+  test('응답이 예산을 넘기면 기다리지 않고 모르는 것으로 끝난다', async () => {
+    // Given
+    jest.useFakeTimers();
+    const { httpClient, service } = setup();
+    httpClient.patch.mockReturnValue(new Promise(noop));
+
+    // When
+    const ownership = service.checkOwnership(7);
+    await jest.advanceTimersByTimeAsync(NOTIFICATION_READ_BUDGET_MS);
+
+    // Then
+    await expect(ownership).resolves.toBe('unknown');
+  });
+
+  test('ID가 0이면 묻지 않는다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+
+    // When
+    const ownership = await service.checkOwnership(0);
+
+    // Then
+    expect(ownership).toBe('ok');
+    expect(httpClient.patch).not.toHaveBeenCalled();
   });
 });
