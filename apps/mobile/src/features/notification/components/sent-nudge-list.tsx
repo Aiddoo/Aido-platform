@@ -26,7 +26,7 @@ import { RefreshControl } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';
+import { toDateSectionedListItems } from '../utils/date-section';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {

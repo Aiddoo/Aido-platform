@@ -1,4 +1,6 @@
 import { addDaysToDateKey, getCalendarWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
+import { type Instant, toDateKey } from '@src/shared/date/instant';
+import { groupBy } from 'es-toolkit';
 
 export type DateSectionKey = 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'earlier';
 
@@ -17,4 +19,28 @@ export function getDateSectionKey(dateKey: string, todayDateKey: string): DateSe
     return 'thisMonth';
   }
   return 'earlier';
+}
+
+export type DateSectionedListItem<TEntry> =
+  | { type: 'header'; section: DateSectionKey }
+  | { type: 'item'; entry: TEntry };
+
+export function toDateSectionedListItems<TEntry extends { createdAt: Date | Instant }>(
+  entries: readonly TEntry[],
+  todayDateKey: string,
+  timeZone: string,
+): DateSectionedListItem<TEntry>[] {
+  const getSection = (entry: TEntry) =>
+    getDateSectionKey(toDateKey(entry.createdAt, timeZone), todayDateKey);
+  const sections = groupBy(entries, getSection);
+  return Object.values(sections).flatMap((sectionEntries): DateSectionedListItem<TEntry>[] => {
+    const first = sectionEntries[0];
+    if (first == null) {
+      return [];
+    }
+    return [
+      { type: 'header', section: getSection(first) },
+      ...sectionEntries.map((entry) => ({ type: 'item' as const, entry })),
+    ];
+  });
 }

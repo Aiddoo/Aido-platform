@@ -101,3 +101,14 @@ test('인증되어도 루트 화면이 준비되지 않으면 이동을 기다�
   // Then
   expect(result).toEqual({ status: 'defer', reason: 'navigation-not-ready' });
 });
+
+describe('NotificationPolicy.getCategoryKey', () => {
+  test.each([
+    'INVITE_JOINED',
+    'INVITE_REWARDED',
+    'INVITE_PROGRESS',
+    'INVITE_QUALIFY_REMINDER',
+  ] as const)('초대 알림 %s는 알림함에서 친구 라벨로 보인다', (type) => {
+    expect(NotificationPolicy.getCategoryKey({ type })).toBe('friend');
+  });
+});

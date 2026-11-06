@@ -33,9 +33,8 @@ import { useNotificationNavigation } from '../hooks/use-notification-navigation'
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
 import { type Notification, type NotificationCategory } from '../schemas/notification.schema';
+import { toDateSectionedListItems } from '../utils/date-section';
 import { resolveNotificationDestination } from '../utils/notification-destination';
-import { getCategoryKey } from '../utils/view-models/notification-category.view-model';
-import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';
 import { NotificationListRow } from './notification-list-row';
 
 type NotificationListProps = {
@@ -163,7 +162,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
 
   return (
     <NotificationListRow
-      label={t(`categories.${getCategoryKey(notification.type)}`)}
+      label={t(`categories.${NotificationPolicy.getCategoryKey(notification)}`)}
       title={notification.title}
       body={notification.body}
       createdAt={notification.createdAt}
