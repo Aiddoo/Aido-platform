@@ -74,7 +74,6 @@ import {
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { memoFormSchema, type MemoFormValues } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
-import { memoAiReviewHref } from '../utils/memo-href';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
@@ -655,7 +654,7 @@ function useMemoAiParse() {
       sourceUpdatedAt,
     });
     if (draft.status === 'restored') {
-      push(memoAiReviewHref(memoId));
+      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
       return;
     }
     if (defaultCategoryId == null || !gate.guard()) {
@@ -672,7 +671,7 @@ function useMemoAiParse() {
         categoryId: defaultCategoryId,
         sourceUpdatedAt,
       });
-      push(memoAiReviewHref(memoId));
+      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
       return;
     } catch {
       // 오류 안내는 mutation이 맡는다. 동의 없음(AI_1311)만 여기서 동의부터 다시 시작한다

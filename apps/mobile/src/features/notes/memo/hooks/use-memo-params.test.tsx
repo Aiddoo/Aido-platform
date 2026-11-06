@@ -48,7 +48,7 @@ describe('useSelectedMemo', () => {
     // Then
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/memo/[memoId]',
-      params: { memoId: '5' },
+      params: { memoId: 5 },
     });
     expect(router.setParams).not.toHaveBeenCalled();
   });

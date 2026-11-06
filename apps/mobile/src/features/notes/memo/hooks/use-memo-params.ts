@@ -5,7 +5,6 @@ import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { memoScreenParamsSchema, selectedMemoParamsSchema } from '../schemas/memo-params.schema';
-import { memoDetailHref } from '../utils/memo-href';
 
 export function useMemoScreenParams() {
   return memoScreenParamsSchema.parse(useLocalSearchParams());
@@ -21,7 +20,7 @@ export function useSelectedMemo() {
       match({ windowSizeClass, memoId })
         .with({ windowSizeClass: 'compact', memoId: P.nullish }, noop)
         .with({ windowSizeClass: 'compact', memoId: P.number }, ({ memoId: selected }) =>
-          router.push(memoDetailHref(selected)),
+          router.push({ pathname: '/memo/[memoId]', params: { memoId: selected } }),
         )
         .with({ windowSizeClass: P.union('medium', 'expanded') }, () =>
           router.setParams({ memoId: memoId == null ? undefined : String(memoId) }),
