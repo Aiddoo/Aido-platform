@@ -394,8 +394,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           icon: NOTIFICATION_ICON,
           color: BRAND_COLOR,
-          // TODO: 알림음 파일 추가 시 설정
-          // sounds: ["./assets/sounds/notification.wav"],
         },
       ],
 

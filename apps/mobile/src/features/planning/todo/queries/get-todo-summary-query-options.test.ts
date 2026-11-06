@@ -25,7 +25,7 @@ describe('getTodoSummaryQueryOptions refetchInterval', () => {
     queryClient = createTestQueryClient();
   });
 
-  async function fetchSummary(params: { date: string; todayDate: string }, responseDate: string) {
+  async function fetchSummary(params: { date: string }, responseDate: string) {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createSummaryDto(responseDate) });
     const options = getTodoSummaryQueryOptions(new TodoService(httpClient), params);
@@ -38,26 +38,9 @@ describe('getTodoSummaryQueryOptions refetchInterval', () => {
     return { query, refetchInterval };
   }
 
-  it('내일 요청에 오늘 요약이 오면 date를 모르는 이전 서버로 보고 다시 묻지 않는다', async () => {
-    // Given
-    const { query, refetchInterval } = await fetchSummary(
-      { date: '2026-07-13', todayDate: '2026-07-12' },
-      '2026-07-12',
-    );
-
-    // When
-    const interval = refetchInterval(query);
-
-    // Then
-    expect(interval).toBe(false);
-  });
-
   it('오늘 요청에 전날 요약이 오면 서버가 날짜를 따라잡을 때까지 짧게 다시 묻는다', async () => {
     // Given
-    const { query, refetchInterval } = await fetchSummary(
-      { date: '2026-07-13', todayDate: '2026-07-13' },
-      '2026-07-12',
-    );
+    const { query, refetchInterval } = await fetchSummary({ date: '2026-07-13' }, '2026-07-12');
 
     // When
     const interval = refetchInterval(query);
@@ -68,10 +51,7 @@ describe('getTodoSummaryQueryOptions refetchInterval', () => {
 
   it('요청한 날짜의 요약이 오면 다시 묻지 않는다', async () => {
     // Given
-    const { query, refetchInterval } = await fetchSummary(
-      { date: '2026-07-13', todayDate: '2026-07-12' },
-      '2026-07-13',
-    );
+    const { query, refetchInterval } = await fetchSummary({ date: '2026-07-13' }, '2026-07-13');
 
     // When
     const interval = refetchInterval(query);

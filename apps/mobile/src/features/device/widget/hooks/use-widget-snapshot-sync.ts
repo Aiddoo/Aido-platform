@@ -84,10 +84,9 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const userId = user?.id;
   const tomorrowDate = addDaysToDateKey(date, 1);
   const isUserDataEnabled = authState === 'authenticated' && userId != null;
-  const todayQueryOptions = useGetTodoSummaryQueryOptions({ date, todayDate: date, userId });
+  const todayQueryOptions = useGetTodoSummaryQueryOptions({ date, userId });
   const tomorrowQueryOptions = useGetTodoSummaryQueryOptions({
     date: tomorrowDate,
-    todayDate: date,
     userId,
   });
   const [{ data }, { data: tomorrowData }] = useQueries({

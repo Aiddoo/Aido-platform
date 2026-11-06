@@ -30,8 +30,7 @@ export function InviteEntryBanner({ className, ...props }: ComponentProps<typeof
     select: selectUserId,
   });
   const { data: summary } = useQuery({
-    // 오늘 요약이므로 기기 기준 오늘(todayDate)도 같은 날짜다
-    ...useGetTodoSummaryQueryOptions({ date: todayKey, todayDate: todayKey, userId }),
+    ...useGetTodoSummaryQueryOptions({ date: todayKey, userId }),
     enabled: userId != null,
   });
   // 닫은 날은 저장소가 원본이다. 저장소 변경을 구독해 다른 화면에서 닫아도 따라간다

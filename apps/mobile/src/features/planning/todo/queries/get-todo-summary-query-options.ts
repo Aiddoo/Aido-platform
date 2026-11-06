@@ -15,20 +15,17 @@ const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
  * 그대로 상속받고, staleTime 1분으로 포그라운드 복귀(focusManager) 시 재조회된다.
  * date 키 회전(LocalDateProvider)이 자정 넘김을 새 쿼리로 만든다.
  *
- * 자정 직후 기기와 서버의 날짜가 잠시 어긋나면(시계 차이로 거부되거나 date를 모르는 이전 서버가
- * 다른 날짜를 돌려줌) foreground를 기다리지 않고 5s→10s→20s→40s로 4번만 다시 묻는다.
- * 내일 요청에 오늘 요약이 오면 이전 서버라 다시 물어도 바뀌지 않으므로 묻지 않는다.
+ * 자정 직후 기기와 서버의 날짜가 잠시 어긋나면(시계 차이로 거부되거나 다른 날짜를 돌려줌)
+ * foreground를 기다리지 않고 5s→10s→20s→40s로 4번만 다시 묻는다.
  */
 interface TodoSummaryQueryParams {
   date: string;
-  /** 기기 기준 오늘. 내일 요청에 오늘 요약이 오면 date를 모르는 이전 서버로 본다. */
-  todayDate: string;
   userId?: string | null;
 }
 
 export function getTodoSummaryQueryOptions(
   service: TodoService,
-  { date, todayDate, userId }: TodoSummaryQueryParams,
+  { date, userId }: TodoSummaryQueryParams,
 ) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.widgetSummaryByDate({ date, userId }),
@@ -39,10 +36,6 @@ export function getTodoSummaryQueryOptions(
     staleTime: 60_000,
     refetchInterval: (query) => {
       const { data, status, dataUpdateCount, errorUpdateCount } = query.state;
-      const isDateUnsupported = date !== todayDate && data?.date === todayDate;
-      if (isDateUnsupported) {
-        return false;
-      }
       const isCaughtUp = status !== 'error' && (data == null || data.date === date);
       if (isCaughtUp) {
         return false;
