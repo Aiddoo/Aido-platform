@@ -1,3 +1,4 @@
+import { unwrap } from '@src/core/errors/result';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
@@ -22,7 +23,7 @@ describe('FeatureCampaignService', () => {
     const service = new FeatureCampaignService(fetcher);
 
     // When
-    const result = await service.getConfig();
+    const result = unwrap(await service.getConfig());
 
     // Then
     expect(result).toEqual({
