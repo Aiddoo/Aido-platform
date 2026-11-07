@@ -8,7 +8,7 @@ import {
 import { isBusinessError, unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage, getUserFacingMessage, isApiError } from '@src/shared/errors';
+import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
 import { useTranslation, t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,11 @@ import { match } from 'ts-pattern';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
+import {
+  isInviteRotateRejectedError,
+  isTerminalRedeemFailure,
+  toRedeemFailureReason,
+} from '../domains/invite.error';
 import type { InviteShareContent } from '../schemas/invite-share.schema';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 import type { InviteCode } from '../schemas/invite.schema';
@@ -145,12 +149,12 @@ export function useRotateInviteCodeMutationOptions() {
       success(t('invite:toast.rotated'));
     },
     onError: (rotateError) => {
-      if (isApiError(rotateError)) {
+      if (isInviteRotateRejectedError(rotateError)) {
         error(rotateError.message);
       }
     },
     // 네트워크·서버 장애는 화면 오류 경계가 맡는다
-    throwOnError: (rotateError) => !isApiError(rotateError),
+    throwOnError: (rotateError) => !isInviteRotateRejectedError(rotateError),
   });
 }
 

@@ -7,17 +7,12 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import {
-  getErrorMessage,
-  isApiError,
-  isConnectivityError,
-  ServerError,
-  toError,
-} from '@src/shared/errors';
+import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { isPushReportRetryableError } from '../domains/notification.error';
 import {
   invalidateNotifications,
   invalidatePushPermission,
@@ -145,7 +140,7 @@ export function useReportPushDeviceMutationOptions() {
       unwrap(await pushDeviceService.report({ force })),
     onSuccess: () => invalidatePushPermission(queryClient),
     onError: (error) => {
-      if (isApiError(error) || isConnectivityError(error)) {
+      if (isPushReportRetryableError(error)) {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, {
           error: getErrorMessage(error),
         });

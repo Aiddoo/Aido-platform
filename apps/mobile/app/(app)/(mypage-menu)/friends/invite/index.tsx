@@ -1,10 +1,10 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { InviteLinkCard } from '@src/features/social/invite/components/invite-link-card';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { InviteShareActions } from '@src/features/social/invite/components/invite-share-actions';
 import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
+import { MyInviteCode } from '@src/features/social/invite/components/my-invite-code';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
@@ -74,8 +74,8 @@ export default function MyInviteScreen() {
 
               {/* 네 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
               <QueryErrorBoundary fallback={MyInviteScreen.Error}>
-                <Suspense fallback={<InviteLinkCard.Loading />}>
-                  <InviteLinkCard />
+                <Suspense fallback={<MyInviteCode.Loading />}>
+                  <MyInviteCode />
                 </Suspense>
 
                 <Suspense fallback={<InviteShareActions.Loading />}>
@@ -133,7 +133,7 @@ MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallba
   if (isInviteDisabledError(error)) {
     return (
       <>
-        <InviteLinkCard.Unavailable />
+        <MyInviteCode.Unavailable />
         <InviteShareActions.Unavailable />
         <PawPrintBoardCard>
           <InvitePawPrintBoard.Unavailable />

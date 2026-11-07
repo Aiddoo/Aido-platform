@@ -25,7 +25,7 @@ import {
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 
 /** 내 초대 코드와 링크. 코드는 길게 눌러 고를 수 있고 복사 버튼으로 링크를 복사한다 */
-export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VStack>) {
+export function MyInviteCode({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation(['invite', 'common']);
   const createInviteShareContent = useCreateInviteShareContent();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
@@ -49,7 +49,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
   };
 
   return (
-    <InviteLinkCardSurface className={className} {...props}>
+    <MyInviteCodeSurface className={className} {...props}>
       <Text size="b4" weight="semibold" shade={6}>
         {t('myInvite.codeLabel')}
       </Text>
@@ -107,39 +107,39 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
           {t('myInvite.rotate.button')}
         </TextButton>
       </HStack>
-    </InviteLinkCardSurface>
+    </MyInviteCodeSurface>
   );
 }
 
-InviteLinkCard.Loading = function Loading() {
+MyInviteCode.Loading = function Loading() {
   return (
-    <InviteLinkCardSurface accessibilityState={{ busy: true }}>
+    <MyInviteCodeSurface accessibilityState={{ busy: true }}>
       <TextSkeleton size="b4" className="w-20" />
       <HStack align="center" justify="between">
         <TextSkeleton size="h1" className="w-44" />
         <Skeleton className="h-10 w-[72px] rounded-lg dark:bg-gray-2" />
       </HStack>
       <TextSkeleton size="b3" className="w-36" />
-    </InviteLinkCardSurface>
+    </MyInviteCodeSurface>
   );
 };
 
 /** 초대가 꺼져 있다. 다시 시도해도 같으니 안내만 한다(사용 가능 여부는 초대 조회가 다시 받는다) */
-InviteLinkCard.Unavailable = function Unavailable() {
+MyInviteCode.Unavailable = function Unavailable() {
   const { t } = useTranslation('invite');
 
   return (
-    <InviteLinkCardSurface className="min-h-[136px] justify-center">
+    <MyInviteCodeSurface className="min-h-[136px] justify-center">
       <Result
         icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
         title={t('myInvite.unavailable.title')}
         description={t('myInvite.unavailable.description')}
       />
-    </InviteLinkCardSurface>
+    </MyInviteCodeSurface>
   );
 };
 
-function InviteLinkCardSurface({ className, ...props }: ComponentProps<typeof VStack>) {
+function MyInviteCodeSurface({ className, ...props }: ComponentProps<typeof VStack>) {
   return (
     <VStack
       gap={10}

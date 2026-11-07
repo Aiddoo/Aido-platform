@@ -909,12 +909,6 @@ const PENDING_SERVER_ERROR_READING_PATHS = new Set([
   'apps/mobile/src/features/billing/subscription/utils/subscription-diagnostic-code.ts',
   // 서버 응답이면 안내하고 아니면 Sentry로 보낸다
   'apps/mobile/src/features/engagement/comment/hooks/use-todo-comment-mutation-error-handler.ts',
-  // 서버 응답과 연결 실패는 경고 로그로만 남긴다
-  'apps/mobile/src/features/notification/queries/notification.mutations.ts',
-  // 서버 응답은 토스트로, 그 밖은 화면 오류 경계로 보낸다
-  'apps/mobile/src/features/social/invite/queries/invite.mutations.ts',
-  // 서버 응답이 아닌 실패만 Sentry로 보낸다
-  'apps/mobile/src/features/social/nudge/queries/nudge.mutations.ts',
 ]);
 
 function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
@@ -949,8 +943,6 @@ function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
 const PENDING_CARD_NAME_PATHS = new Set([
   // Box와 클래스로 그린 성취 요약이다
   'apps/mobile/src/features/insights/achievement/components/achievement-summary-card.tsx',
-  // VStack과 클래스로 그린 초대 링크 면이다
-  'apps/mobile/src/features/social/invite/components/invite-link-card.tsx',
 ]);
 
 // 공용 부품 이름(Avatar, BottomSheet, Button, Input, Text, TextArea)은 앱 안에서 하나의 뜻만 갖는다.
