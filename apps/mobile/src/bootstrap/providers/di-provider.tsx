@@ -289,6 +289,7 @@ export function DIProvider({
       authHttpClient,
       logger,
       getDeviceTimezone,
+      sessionEpoch,
     );
     const deviceTimezoneService = new DeviceTimezoneService(
       createDeviceTimezoneRepository(mmkvSyncStorage),

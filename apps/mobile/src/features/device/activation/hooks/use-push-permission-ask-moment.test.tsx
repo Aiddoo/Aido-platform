@@ -1,5 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import {
@@ -61,6 +62,7 @@ function setup({
     httpClient,
     silentLogger,
     () => 'Asia/Seoul',
+    createSessionEpoch(),
   );
   const activationRepository = createActivationProgressRepository(createMemorySyncStorage());
   const queryClient = createTestQueryClient();

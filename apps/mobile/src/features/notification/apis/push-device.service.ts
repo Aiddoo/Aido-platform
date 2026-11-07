@@ -4,6 +4,7 @@ import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { isEqual, noop } from 'es-toolkit';
@@ -27,6 +28,7 @@ export class PushDeviceService {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
   readonly #getTimeZone: () => string;
+  readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
   #lastReported: ReportedPushDevice | null = null;
   #reportInFlight: Promise<unknown> | null = null;
 
@@ -36,12 +38,14 @@ export class PushDeviceService {
     httpClient: HttpClient,
     logger: Logger,
     getTimeZone: () => string,
+    sessionEpoch: Pick<SessionEpoch, 'current'>,
   ) {
     this.#gateway = gateway;
     this.#deviceIdService = deviceIdService;
     this.#httpClient = httpClient;
     this.#logger = logger;
     this.#getTimeZone = getTimeZone;
+    this.#sessionEpoch = sessionEpoch;
   }
 
   readPermission = async (): Promise<PushPermission> =>
@@ -129,10 +133,15 @@ export class PushDeviceService {
   };
 
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
+    const epoch = this.#sessionEpoch.current();
     // 보고가 해제보다 늦게 도착하면 로그아웃한 기기로 푸시가 다시 간다. 진행 중인 보고를 먼저 끝낸다
     await this.#reportInFlight?.catch(noop);
-    this.#lastReported = null;
     const deviceId = await this.#deviceIdService.get();
+    // 기다리는 사이 세션이 끝나고 다시 로그인했다면 같은 기기의 등록은 새 세션의 것이라 지우지 않는다
+    if (this.#sessionEpoch.current() !== epoch) {
+      return ok(undefined);
+    }
+    this.#lastReported = null;
     const result = await this.#httpClient.delete('v1/notifications/token', {
       ...config,
       params: { deviceId },

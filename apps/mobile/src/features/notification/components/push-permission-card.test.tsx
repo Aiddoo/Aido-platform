@@ -1,3 +1,4 @@
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import '@src/shared/i18n/init';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
@@ -55,6 +56,7 @@ async function renderCard(
         httpClient,
         silentLogger,
         () => 'Asia/Seoul',
+        createSessionEpoch(),
       ),
       preferenceService: new PreferenceService(httpClient),
       userService: new UserService(httpClient),

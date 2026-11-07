@@ -8,6 +8,7 @@ import {
 } from '@src/bootstrap/providers/query-cache-persistence';
 import { ok } from '@src/core/errors/result';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -68,6 +69,7 @@ export function createAuthSession({
   accountGuides = [],
 }: AuthSessionOptions = {}) {
   const store = tokenStore ?? createMemoryTokenStore(tokens);
+  const sessionEpoch = createSessionEpoch();
   const publicHttp = createHttpClientStub();
   const authHttp = createHttpClientStub();
   const socialAuthGateway = createSocialAuthGatewayStub();
@@ -112,6 +114,7 @@ export function createAuthSession({
       authHttp,
       silentLogger,
       () => 'Asia/Seoul',
+      sessionEpoch,
     ),
     userService: new UserService(userHttp),
     todoService: new TodoService(createHttpClientStub()),
@@ -120,6 +123,7 @@ export function createAuthSession({
     queryCacheStorage,
     sessionCleanupService,
     sessionRevocationService,
+    sessionEpoch,
     ...di,
   });
 

@@ -1,4 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
@@ -13,6 +14,7 @@ import { PushDeviceService } from './push-device.service';
 const DEVICE_ID = 'ios_device-123';
 
 function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () => 'Asia/Seoul') {
+  const sessionEpoch = createSessionEpoch();
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const logger: jest.Mocked<Logger> = {
@@ -27,8 +29,9 @@ function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () =
     httpClient,
     logger,
     getTimeZone,
+    sessionEpoch,
   );
-  return { service, gateway, httpClient, logger };
+  return { service, gateway, httpClient, logger, sessionEpoch };
 }
 
 describe('PushDeviceService.report', () => {
@@ -343,5 +346,34 @@ describe('PushDeviceService.unregister', () => {
     // Then
     expect(deletedBeforeReportSettled).toBe(false);
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('보고를 기다리는 사이 세션이 바뀌면 해제하지 않아 새 세션의 기기 등록을 지키지 않는다', async () => {
+    // Given 이전 세션의 보고가 진행 중이다
+    const { service, httpClient, sessionEpoch } = setup();
+    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.put.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePut = resolve;
+        }),
+    );
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const reporting = service.report();
+    while (resolvePut == null) {
+      await Promise.resolve();
+    }
+    const unregistering = service.unregister();
+
+    // When 기다리는 사이 세션이 끝나고 다시 로그인해 보고가 끝난다
+    sessionEpoch.advance();
+    resolvePut({ ok: true, value: createPushDeviceResponseDto() });
+    const [, result] = await Promise.all([reporting, unregistering]);
+
+    // Then 새 세션의 등록을 지우는 DELETE를 보내지 않고, 새 세션의 보고 기록도 지우지 않는다
+    expect(result).toEqual({ ok: true, value: undefined });
+    expect(httpClient.delete).not.toHaveBeenCalled();
+    await service.report();
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 });
