@@ -23,7 +23,7 @@ export function MenuActionItem({
   const isDanger = variant === 'danger';
   const titleElement = (
     <Menu.ItemTitle>
-      <Text size="b2" weight="medium">
+      <Text size="b2" weight="medium" className={isDanger ? 'text-danger' : 'text-foreground'}>
         {title}
       </Text>
     </Menu.ItemTitle>
@@ -42,7 +42,9 @@ export function MenuActionItem({
         <VStack flex={1}>
           {titleElement}
           <Menu.ItemDescription>
-            <Text size="b4">{description}</Text>
+            <Text size="b4" className="text-muted">
+              {description}
+            </Text>
           </Menu.ItemDescription>
         </VStack>
       )}
