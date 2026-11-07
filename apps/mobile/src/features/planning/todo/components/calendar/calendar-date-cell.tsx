@@ -6,8 +6,8 @@ import { PressableFeedback } from 'heroui-native';
 import { memo, type ReactNode } from 'react';
 
 import { useFeedDateParam } from '../../hooks/use-feed-params';
-import { isSameDay } from '../../utils/calendar-date';
 import { DAY_TYPE_TONE, getMonthViewDayStyle, isTodayHighlighted } from '../../utils/calendar-day';
+import { isSameDay } from '../../utils/calendar-day-comparison';
 
 interface CalendarDateCellProps {
   date: Date;

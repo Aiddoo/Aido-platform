@@ -3,7 +3,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useMemo, useReducer } from 'react';
 import { match } from 'ts-pattern';
 
-import { getMonthWeeks } from '../utils/calendar-date';
+import { getMonthWeeks } from '../utils/calendar-grid';
 
 export interface DatePickerState {
   startDate: Date;

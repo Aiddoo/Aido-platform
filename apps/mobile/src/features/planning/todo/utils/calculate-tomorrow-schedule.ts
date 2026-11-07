@@ -1,7 +1,7 @@
 import type { Instant } from '@src/shared/date/instant';
 import { addLocalDays } from '@src/shared/date/local-day';
 
-import { isBeforeDay } from './calendar-date';
+import { isBeforeDay } from './calendar-day-comparison';
 
 interface TomorrowSchedule {
   startDate: Date;

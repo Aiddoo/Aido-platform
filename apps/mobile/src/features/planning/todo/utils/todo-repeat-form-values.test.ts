@@ -95,7 +95,11 @@ describe('반복 달력에서 날짜 누르기', () => {
     const values = createValues();
 
     // When
-    const next = withTodoRepeatFormCalendarDate(values, new Date(2026, 10, 1), TODAY, TIME_ZONE);
+    const next = withTodoRepeatFormCalendarDate(values, {
+      date: new Date(2026, 10, 1),
+      today: TODAY,
+      timeZone: TIME_ZONE,
+    });
 
     // Then
     expect(next).toBe(values);
@@ -107,7 +111,11 @@ describe('반복 달력에서 날짜 누르기', () => {
     const date = new Date(2026, 10, 20);
 
     // When
-    const next = withTodoRepeatFormCalendarDate(values, date, TODAY, TIME_ZONE);
+    const next = withTodoRepeatFormCalendarDate(values, {
+      date: date,
+      today: TODAY,
+      timeZone: TIME_ZONE,
+    });
 
     // Then
     expect(next).toMatchObject({ endType: 'UNTIL', untilDate: fromDate(date) });
@@ -119,7 +127,11 @@ describe('반복 달력에서 날짜 누르기', () => {
     const date = new Date(2026, 10, 25);
 
     // When
-    const next = withTodoRepeatFormCalendarDate(values, date, TODAY, TIME_ZONE);
+    const next = withTodoRepeatFormCalendarDate(values, {
+      date: date,
+      today: TODAY,
+      timeZone: TIME_ZONE,
+    });
 
     // Then
     expect(next).toMatchObject({ startDate: fromDate(date), untilDate: null });
@@ -131,8 +143,16 @@ describe('반복 달력에서 날짜 누르기', () => {
     const earlier = new Date(2026, 10, 3);
 
     // When
-    const moved = withTodoRepeatFormCalendarDate(values, earlier, TODAY, TIME_ZONE);
-    const same = withTodoRepeatFormCalendarDate(values, new Date(2026, 10, 9), TODAY, TIME_ZONE);
+    const moved = withTodoRepeatFormCalendarDate(values, {
+      date: earlier,
+      today: TODAY,
+      timeZone: TIME_ZONE,
+    });
+    const same = withTodoRepeatFormCalendarDate(values, {
+      date: new Date(2026, 10, 9),
+      today: TODAY,
+      timeZone: TIME_ZONE,
+    });
 
     // Then
     expect(moved.startDate).toEqual(fromDate(earlier));

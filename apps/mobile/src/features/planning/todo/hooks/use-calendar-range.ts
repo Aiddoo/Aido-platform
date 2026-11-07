@@ -2,7 +2,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
-import { getCalendarRange, getWeekRange } from '../utils/calendar-date';
+import { getCalendarRange, getWeekRange } from '../utils/calendar-grid';
 import { useCalendarViewMode } from './use-calendar-view-mode';
 import { useFeedDateParam } from './use-feed-params';
 

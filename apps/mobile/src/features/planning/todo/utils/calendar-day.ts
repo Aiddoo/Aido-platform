@@ -8,7 +8,7 @@ import {
   isSameMonth,
   isSaturday,
   isSunday,
-} from './calendar-date';
+} from './calendar-day-comparison';
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';
 

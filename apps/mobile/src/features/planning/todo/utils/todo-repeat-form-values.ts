@@ -7,7 +7,7 @@ import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import { getWeekday, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
-import { isAfterDay, isBeforeDay, isSameDay } from './calendar-date';
+import { isAfterDay, isBeforeDay, isSameDay } from './calendar-day-comparison';
 
 export function toTodoRepeatFormValues(
   startDate: Instant,
@@ -137,11 +137,15 @@ export function getTodoRepeatFormFirstOccurrenceKey(
       );
 }
 
+interface PickedCalendarDate {
+  date: Date;
+  today: Date;
+  timeZone: string;
+}
+
 export function withTodoRepeatFormCalendarDate(
   values: TodoRepeatFormValues,
-  date: Date,
-  today: Date,
-  timeZone: string,
+  { date, today, timeZone }: PickedCalendarDate,
 ): TodoRepeatFormValues {
   if (isBeforeDay(date, today, timeZone)) {
     return values;

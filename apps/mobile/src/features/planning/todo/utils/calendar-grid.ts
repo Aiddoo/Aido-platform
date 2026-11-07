@@ -4,11 +4,9 @@ import {
   diffDateKeysInDays,
   getCalendarWeek,
   type CalendarWeek,
-  getDayOfWeek,
   getMonthEndDateKey,
-  isSameMonthDateKey,
 } from '@src/shared/date/date-key';
-import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/instant';
 import {
   addLocalDays,
   addLocalMonths,
@@ -21,12 +19,6 @@ import type { CalendarViewMode } from '@src/shared/preferences/calendar-view-mod
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-/** 달력 날짜를 가리키는 값. Date는 달력 칸, Instant는 폼에 담긴 값이다 */
-type Day = Date | Instant;
-
-const SUNDAY = 0;
-const SATURDAY = 6;
-
 function getWeekOfDate(date: Date, timeZone: string): CalendarWeek {
   return getCalendarWeek(toDateKey(date, timeZone));
 }
@@ -34,44 +26,6 @@ function getWeekOfDate(date: Date, timeZone: string): CalendarWeek {
 /** 앱 달력 주의 시작. 그 주 일요일 0시다 */
 export function getWeekStart(date: Date, timeZone: string): Date {
   return toLocalDay(getWeekOfDate(date, timeZone).startDateKey);
-}
-
-/** 달력 입력 값을 느슨하게 읽는다. 없거나 읽을 수 없으면 던지지 않고 null이다 */
-export function parseInstantOrNull(date?: Date | string | number | null): Instant | null {
-  if (date == null) {
-    return null;
-  }
-
-  const parsed = toDate(date);
-  return Number.isNaN(parsed.getTime()) ? null : fromDate(parsed);
-}
-
-export function isSameDay(date1: Day, date2: Day, timeZone: string): boolean {
-  return toDateKey(date1, timeZone) === toDateKey(date2, timeZone);
-}
-
-export function isDateToday(date: Day, now: Day, timeZone: string): boolean {
-  return isSameDay(date, now, timeZone);
-}
-
-export function isSameMonth(date1: Day, date2: Day, timeZone: string): boolean {
-  return isSameMonthDateKey(toDateKey(date1, timeZone), toDateKey(date2, timeZone));
-}
-
-export function isAfterDay(date1: Day, date2: Day, timeZone: string): boolean {
-  return toDateKey(date1, timeZone) > toDateKey(date2, timeZone);
-}
-
-export function isBeforeDay(date1: Day, date2: Day, timeZone: string): boolean {
-  return toDateKey(date1, timeZone) < toDateKey(date2, timeZone);
-}
-
-export function isSunday(date: Day, timeZone: string): boolean {
-  return getDayOfWeek(toDateKey(date, timeZone)) === SUNDAY;
-}
-
-export function isSaturday(date: Day, timeZone: string): boolean {
-  return getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY;
 }
 
 /** 두 날짜의 주 단위 차이 (date1 - date2, 앱 달력 주의 시작으로 정규화) */
@@ -130,12 +84,19 @@ export function getWeekRange(
   return { rangeStart: week.startDateKey, rangeEnd: week.endDateKey };
 }
 
-export function shiftCalendarDate(
-  viewMode: CalendarViewMode,
-  date: Date,
-  step: -1 | 1,
-  timeZone: string,
-): Date {
+interface ShiftCalendarDateInput {
+  viewMode: CalendarViewMode;
+  date: Date;
+  step: -1 | 1;
+  timeZone: string;
+}
+
+export function shiftCalendarDate({
+  viewMode,
+  date,
+  step,
+  timeZone,
+}: ShiftCalendarDateInput): Date {
   return match(viewMode)
     .with('week', () => addLocalWeeks(getWeekStart(date, timeZone), step, timeZone))
     .with('month', () => addLocalMonths(startOfLocalMonth(date, timeZone), step, timeZone))

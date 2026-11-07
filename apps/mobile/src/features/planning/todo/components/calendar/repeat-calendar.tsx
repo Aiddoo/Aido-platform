@@ -7,7 +7,6 @@ import { memo } from 'react';
 import { match } from 'ts-pattern';
 
 import type { useDatePicker } from '../../hooks/use-date-picker';
-import { isBeforeDay } from '../../utils/calendar-date';
 import {
   DAY_TYPE_TONE,
   getDatePickerDayStyle,
@@ -15,6 +14,7 @@ import {
   getWeekRangeBand,
   isTodayHighlighted,
 } from '../../utils/calendar-day';
+import { isBeforeDay } from '../../utils/calendar-day-comparison';
 import { PickerMonthHeader } from '../picker-month-header';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 

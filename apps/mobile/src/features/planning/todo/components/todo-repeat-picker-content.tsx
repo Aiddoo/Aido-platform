@@ -25,7 +25,7 @@ import {
   type TodoRepeatFormValues,
 } from '../schemas/todo-repeat-form.schema';
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
-import { isSameDay } from '../utils/calendar-date';
+import { isSameDay } from '../utils/calendar-day-comparison';
 import {
   getTodoRepeatFormFirstOccurrenceKey,
   isTodoRepeatFormPreset,
@@ -385,7 +385,7 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
   const handleCalendarPress = (date: Date) => {
     applyRepeatFormValues(
       form,
-      withTodoRepeatFormCalendarDate(form.getValues(), date, today, timeZone),
+      withTodoRepeatFormCalendarDate(form.getValues(), { date, today, timeZone }),
     );
   };
 

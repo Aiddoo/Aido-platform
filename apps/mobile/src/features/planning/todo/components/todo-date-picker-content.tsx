@@ -10,8 +10,8 @@ import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
-import { isSameDay, isSameMonth } from '../utils/calendar-date';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
+import { isSameDay, isSameMonth } from '../utils/calendar-day-comparison';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
 import { PickerMonthHeader } from './picker-month-header';

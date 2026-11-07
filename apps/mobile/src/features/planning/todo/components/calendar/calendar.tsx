@@ -26,15 +26,15 @@ import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
 import type { DailyCompletionSummary } from '../../schemas/todo.schema';
+import { isSameMonth } from '../../utils/calendar-day-comparison';
 import {
   diffMonths,
   diffWeeks,
   getMonthWeeks,
   getWeekDates,
   getWeekStart,
-  isSameMonth,
   shiftCalendarDate,
-} from '../../utils/calendar-date';
+} from '../../utils/calendar-grid';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
 import { CalendarDateCell } from './calendar-date-cell';
 import { CalendarNavigation } from './calendar-navigation';
@@ -63,8 +63,9 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
     .exhaustive();
 
   const handlePrevious = () =>
-    setSelectedDate(shiftCalendarDate(viewMode, selectedDate, -1, timeZone));
-  const handleNext = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, 1, timeZone));
+    setSelectedDate(shiftCalendarDate({ viewMode, date: selectedDate, step: -1, timeZone }));
+  const handleNext = () =>
+    setSelectedDate(shiftCalendarDate({ viewMode, date: selectedDate, step: 1, timeZone }));
 
   return (
     <VStack className="bg-white" gap={8}>
