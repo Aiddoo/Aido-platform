@@ -206,16 +206,20 @@ export function useDeleteAccountMutationOptions() {
   return mutationOptions({
     networkMode: 'always',
     // 푸시 기기는 서버 탈퇴가 전 세션과 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
-    mutationFn: async (input: DeleteAccountInput) => unwrap(await authService.deleteAccount(input)),
-    onSuccess: () => {
+    // 탈퇴가 성공한 뒤 기다리는 사이 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다.
+    // 지운 계정의 초안과 안내 기록이 남지 않도록 콜백에 두지 않는다.
+    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
+    mutationFn: async (input: DeleteAccountInput) => {
+      const accountId = getCachedMe(queryClient)?.id;
+      unwrap(await authService.deleteAccount(input));
       haptics.notify('success');
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       analytics.resetData();
-      const accountId = getCachedMe(queryClient)?.id;
       if (accountId != null) {
         sessionCleanupService.afterAccountDeleted(accountId);
       }
+      signOut();
     },
     onError: (error) => {
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
@@ -225,12 +229,6 @@ export function useDeleteAccountMutationOptions() {
       }
 
       showFailure(error);
-    },
-    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
-    onSettled: (_data, error) => {
-      if (!error) {
-        signOut();
-      }
     },
   });
 }

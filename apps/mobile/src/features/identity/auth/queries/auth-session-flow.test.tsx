@@ -409,6 +409,54 @@ describe('탈퇴', () => {
     expect(session.queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeUndefined();
   });
 
+  it('탈퇴 응답을 기다리는 사이 세션이 만료돼도 초안과 안내 기록을 지운다', async () => {
+    // Given
+    const removeAccount = jest.fn();
+    const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+    const session = createAuthSession({
+      tokens: ACCOUNT_A_TOKENS,
+      accountGuides: [{ removeAccount }],
+    });
+    const deleteRequest = createPendingResponse(ok(createDeleteAccountDto()));
+    session.userHttp.get.mockResolvedValue(ok(account));
+    session.authHttp.delete.mockImplementation((url) =>
+      url === 'v1/auth/account' ? deleteRequest.response : Promise.resolve(ok({})),
+    );
+    const { result } = await session.renderSession(
+      () => ({
+        status: useAuthStatus(),
+        meOptions: useGetMeQueryOptions(),
+        deleteAccount: useMutation(useDeleteAccountMutationOptions()),
+      }),
+      'authenticated',
+    );
+    await act(async () => {
+      await session.queryClient.fetchQuery(result.current.meOptions);
+    });
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+    await act(async () => {
+      result.current.deleteAccount.mutate({ password: 'password-1' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      emitSessionExpired({ reason: 'refresh-rejected' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+
+    // When
+    await act(async () => {
+      deleteRequest.settle();
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    await waitFor(() =>
+      expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
+    );
+    expect(removeAccount).toHaveBeenCalledWith(account.userId);
+  });
+
   it('비밀번호가 틀려 실패하면 토큰과 상태를 유지한다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
