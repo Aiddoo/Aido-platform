@@ -1,11 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
-import {
-  useSubTodoParams,
-  useTodoSheetDateParam,
-} from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useSubTodoId, useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import type { SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
@@ -36,9 +33,9 @@ export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
 }
 
 EditSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
-  const { todoId } = useTodoParams();
-  const { subTodoId } = useSubTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [subTodoId] = useSubTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
@@ -64,7 +61,7 @@ interface EditSubTodoFormProps {
 
 function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const { t } = useTranslation('todo');
-  const date = useTodoSheetDateParam();
+  const [date] = useTodoSheetDateKey();
   const fontScaledSize = useFontScaledSize();
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),

@@ -4,8 +4,8 @@ import { TodoScopeSelectContent } from '@src/features/planning/todo/components/t
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
-import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import {
   type TodoRepeat,
@@ -64,8 +64,8 @@ export function TodoEditBottomSheet() {
 
 TodoEditBottomSheet.Form = function Form() {
   const sheet = useSheetRoute('/feed');
-  const { todoId } = useTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
 

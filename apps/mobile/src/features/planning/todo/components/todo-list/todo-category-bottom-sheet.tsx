@@ -17,8 +17,8 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useTodoParams } from '../../hooks/use-todo-params';
-import { useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
+import { useTodoId } from '../../hooks/use-todo-params';
+import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-params';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { TodoScopeStep } from '../todo-scope-step';
@@ -53,8 +53,8 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
 
 TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());

@@ -32,8 +32,8 @@ import { type ComponentProps, type ComponentType, Suspense, useEffect } from 're
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useTodoParams } from '../../hooks/use-todo-params';
-import { useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
+import { useTodoId } from '../../hooks/use-todo-params';
+import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-params';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
 import {
   useDeleteTodoMutationOptions,
@@ -93,8 +93,8 @@ TodoActionsBottomSheet.ActionList = function ActionList({
 }: TodoActionListProps) {
   const { t } = useTranslation(['todo', 'common']);
   const today = useToday();
-  const { todoId } = useTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());

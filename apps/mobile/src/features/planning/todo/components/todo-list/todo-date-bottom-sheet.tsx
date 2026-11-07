@@ -16,8 +16,8 @@ import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useTodoParams } from '../../hooks/use-todo-params';
-import { useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
+import { useTodoId } from '../../hooks/use-todo-params';
+import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-params';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
@@ -53,8 +53,8 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 
 TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => void }) {
   const { timeZone } = useDateFormatContext();
-  const { todoId } = useTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());

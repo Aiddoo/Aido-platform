@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -40,7 +40,7 @@ type NudgeThanksBottomSheetProps = Omit<
 
 export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const sheet = useSheetRoute('/feed');
   const handleClose = () => sheet.close();
 
@@ -75,7 +75,7 @@ export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
 
 NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { height } = useWindowDimensions();
   const thanksPreviewQuery = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),

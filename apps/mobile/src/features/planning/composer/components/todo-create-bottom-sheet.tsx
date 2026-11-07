@@ -5,12 +5,8 @@ import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import {
-  useTodoCreateCategoryParam,
-  useTodoCreatePrefillParams,
-  useTodoCreateVoiceHintParam,
-  useTodoSheetDateParam,
-} from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
@@ -20,6 +16,7 @@ import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -73,10 +70,9 @@ export function TodoCreateBottomSheet({ onMemoChanged }: TodoCreateBottomSheetPr
 
 TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSheetProps) {
   const sheet = useSheetRoute('/feed');
-  const date = useTodoSheetDateParam();
-  const requestedCategoryId = useTodoCreateCategoryParam();
-  const prefill = useTodoCreatePrefillParams();
-  const isVoiceHintRequested = useTodoCreateVoiceHintParam();
+  const [date] = useTodoSheetDateKey();
+  const [{ categoryId: requestedCategoryId, title, time, voiceHint }] =
+    useRouteParams(todoCreateParamsSchema);
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesResult.categories,
@@ -96,16 +92,16 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
   return (
     <TodoCreateForm
       defaultValues={{
-        title: prefill.title ?? '',
+        title: title ?? '',
         startDate: fromDate(toDate(date)),
         endDate: null,
-        scheduledTime: prefill.time ?? null,
-        isAllDay: prefill.time == null,
+        scheduledTime: time ?? null,
+        isAllDay: time == null,
         categoryId,
         visibility: 'PUBLIC',
         repeat: null,
       }}
-      isVoiceHintRequested={isVoiceHintRequested}
+      isVoiceHintRequested={voiceHint != null}
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
       onClose={() => sheet.close()}

@@ -1,7 +1,7 @@
 import { useClipboard, useLogger } from '@src/bootstrap/providers/di-context';
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { getErrorMessage } from '@src/shared/errors';
@@ -201,7 +201,7 @@ function CommentText({
   onLongPress: () => void;
 }) {
   const { t } = useTranslation('todoComment');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const burst = useTodoCommentHeartBurstValues();
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
@@ -278,7 +278,7 @@ function Placeholder({ state }: { state: 'deleted' | 'blockedAuthor' }) {
 
 function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedValue<number> }) {
   const { t } = useTranslation('todoComment');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const isReducedMotion = useReduceMotion();
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
@@ -334,7 +334,7 @@ function ReplyButton({
   rowRef: RefObject<ComponentRef<typeof View> | null>;
 }) {
   const { t } = useTranslation('todoComment');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { trackEvent } = useTrack();
   const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
@@ -376,7 +376,7 @@ interface ActionMenuProps {
 
 /** ⋯와 길게 누르기가 같은 메뉴를 연다. 내 글은 수정·복사·삭제, 남의 글은 복사·신고·차단이다 */
 function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) {
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { t } = useTranslation(['todoComment', 'moderation']);
   const push = useSingleTap(router.push);
   const clipboard = useClipboard();

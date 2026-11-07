@@ -1,5 +1,5 @@
 import { useIsTodoUnavailable } from '@src/features/planning/todo/hooks/use-is-todo-unavailable';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { QueryErrorBoundary } from '@src/shared/ui';
 import { Suspense } from 'react';
 
@@ -16,7 +16,7 @@ interface TodoCommentPaneProps {
 
 /** 할 일 상세와 댓글 목록, 작성 바. 할 일이 사라졌으면 안내 카드로 바꾼다 */
 export function TodoCommentPane({ onClose }: TodoCommentPaneProps) {
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const [{ sort, comment }] = useCommentParams();
   const isTodoUnavailable = useIsTodoUnavailable();
 

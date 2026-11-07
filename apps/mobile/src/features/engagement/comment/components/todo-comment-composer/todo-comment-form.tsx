@@ -1,5 +1,5 @@
 import { useDraftService, useIdGenerator, useLogger } from '@src/bootstrap/providers/di-context';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { getErrorMessage } from '@src/shared/errors';
@@ -81,7 +81,7 @@ export function TodoCommentForm({
   style,
   ...scrollViewProps
 }: TodoCommentFormProps) {
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { height: viewportHeight } = useWindowDimensions();
   const { control, setFocus, getValues, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });
@@ -197,7 +197,7 @@ export function TodoCommentForm({
 }
 
 function useTodoCommentSubmit({ userId }: { userId: string }) {
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const logger = useLogger();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
@@ -264,7 +264,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 
 /** 작성 중인 글을 모드별 초안으로 저장하고 다시 열면 이어 쓴다 */
 function ComposerDraft({ userId, mode }: { userId: string; mode: TodoCommentComposerMode }) {
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { t } = useTranslation('todoComment');
   const toast = useAppToast();
   const { subscribe, setValue } = useTodoCommentForm();

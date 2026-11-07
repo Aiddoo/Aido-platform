@@ -1,4 +1,4 @@
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -42,7 +42,7 @@ export function TodoCommentTitleBar({ date }: { date: string }) {
 TodoCommentTitleBar.StackHeader = function StackHeader() {
   const screenOptions = useStackScreenOptions();
   const { t } = useTranslation(['common', 'moderation', 'todo', 'todoComment']);
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const moderation = useTodoModerationActions({ todoId });
   const { result: backResult, handleBack } = useTodoCommentBack();
 
@@ -100,7 +100,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
 /** 내 할 일이면 기존 할 일 옵션 시트를 연다. 친구 할 일의 신고·차단은 TodoModerationMenu가 맡는다. */
 function TodoActionsButton({ date }: { date: string }) {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
@@ -124,7 +124,7 @@ function TodoActionsButton({ date }: { date: string }) {
 /** 펼친 피드 pane의 ⋯. 친구 할 일에서만 신고·차단을 보인다 */
 function TodoModerationMenu() {
   const { t } = useTranslation('moderation');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const moderation = useTodoModerationActions({ todoId });
   const [isOpen, setIsOpen] = useState(false);
 

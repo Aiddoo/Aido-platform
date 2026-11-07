@@ -20,8 +20,8 @@ import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useTodoParams } from '../../hooks/use-todo-params';
-import { useSubTodoParams, useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
+import { useSubTodoId, useTodoId } from '../../hooks/use-todo-params';
+import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-params';
 import { useDeleteSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { TodoActionRow } from '../todo-action-row';
@@ -58,9 +58,9 @@ interface SubTodoActionListProps {
 
 SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoActionListProps) {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoParams();
-  const { subTodoId } = useSubTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [subTodoId] = useSubTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));

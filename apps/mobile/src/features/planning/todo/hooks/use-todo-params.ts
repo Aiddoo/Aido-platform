@@ -1,7 +1,17 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 
-import { todoParamsSchema } from '../schemas/todo-params.schema';
+import { subTodoParamsSchema, todoParamsSchema } from '../schemas/todo-params.schema';
 
-export function useTodoParams() {
-  return todoParamsSchema.parse(useLocalSearchParams());
+/** `/todo/[todoId]` 경로의 할 일. 화면의 정체성이라 바꾸지 않는다. 잘못된 값은 route가 먼저 돌려보낸다 */
+export function useTodoId() {
+  const [{ todoId }] = useRouteParams(todoParamsSchema);
+
+  return [todoId] as const;
+}
+
+/** `/todo/[todoId]/sub-todos/[subTodoId]` 경로의 하위 항목 */
+export function useSubTodoId() {
+  const [{ subTodoId }] = useRouteParams(subTodoParamsSchema);
+
+  return [subTodoId] as const;
 }

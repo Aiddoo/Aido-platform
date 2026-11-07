@@ -1,4 +1,4 @@
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
@@ -30,7 +30,7 @@ export default function TodoReportSheetRoute() {
 /** 할 일 상세 캐시에서 주인을 읽어 신고 대상으로 넘긴다. 상세 화면에서 열어 보통 바로 그린다 */
 function TodoReportSheet() {
   const { t } = useTranslation('moderation');
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
   return (

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
-import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -28,8 +28,8 @@ export function AddSubTodoBottomSheet(props: AddSubTodoBottomSheetProps) {
 }
 
 AddSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
-  const { todoId } = useTodoParams();
-  const date = useTodoSheetDateParam();
+  const [todoId] = useTodoId();
+  const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
 
@@ -47,7 +47,7 @@ AddSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () =>
 };
 
 function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) {
-  const date = useTodoSheetDateParam();
+  const [date] = useTodoSheetDateKey();
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: '' },

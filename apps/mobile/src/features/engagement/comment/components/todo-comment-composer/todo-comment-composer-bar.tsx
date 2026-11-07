@@ -1,5 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
@@ -115,7 +115,7 @@ TodoCommentComposerBar.Loading = function Loading() {
 };
 
 function ComposerInput() {
-  const { todoId } = useTodoParams();
+  const [todoId] = useTodoId();
   const { t } = useTranslation('todoComment');
   const [{ data: detail }, { data: user }] = useSuspenseQueries({
     queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
