@@ -12,11 +12,13 @@ export function useRouteFriendQuery() {
   const query = useSuspenseInfiniteQuery(useGetFriendInfiniteQueryOptions({ friendId }));
   const { data: friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage } = query;
 
+  const shouldFetchNextPage = !friend && hasNextPage && !isFetching && !isFetchNextPageError;
+
   useEffect(() => {
-    if (!friend && hasNextPage && !isFetching && !isFetchNextPageError) {
+    if (shouldFetchNextPage) {
       fetchNextPage({ cancelRefetch: false }).catch(noop);
     }
-  }, [friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage]);
+  }, [shouldFetchNextPage, fetchNextPage]);
 
   return query;
 }

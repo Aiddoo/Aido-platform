@@ -35,7 +35,7 @@ export function useGetFriendsInfiniteQueryOptions() {
         return undefined;
       }
 
-      return lastPage.items[lastPage.items.length - 1]?.followId;
+      return lastPage.items.at(-1)?.followId;
     },
     select: selectItemsWithTotal,
     ...PERSISTED_QUERY_OPTIONS,
@@ -65,7 +65,7 @@ export function useGetReceivedRequestsInfiniteQueryOptions() {
         return undefined;
       }
 
-      return lastPage.items[lastPage.items.length - 1]?.id;
+      return lastPage.items.at(-1)?.id;
     },
     select: selectItemsWithTotal,
   });
@@ -84,7 +84,7 @@ export function useGetSentRequestsInfiniteQueryOptions() {
         return undefined;
       }
 
-      return lastPage.items[lastPage.items.length - 1]?.id;
+      return lastPage.items.at(-1)?.id;
     },
     select: selectItemsWithTotal,
   });

@@ -177,21 +177,25 @@ export class InviteService {
   };
 
   /**
-   * 로그인 전에 남긴 초대를 찾는다. 지났으면 지우고 null이다. 로그인 전에만 남기므로 처음 로그인한
-   * 계정이 이어서 연다. 찾기만 하고 지우지 않아 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다.
+   * 로그인 전에 남긴 초대 중 아직 이어서 열 수 있는 것. 없거나 기한이 지났으면 null이다.
+   * 로그인 전에만 남기므로 처음 로그인한 계정이 이어서 연다. 저장소는 바꾸지 않아
+   * 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다.
    */
-  findPendingRedemption = (now: Instant): PendingRedemption | null => {
+  findFreshPendingRedemption = (now: Instant): PendingRedemption | null => {
     const pending = this.#pendingRedemptionRepository.find();
-    if (pending == null) {
-      return null;
-    }
-
-    if (!InviteRedemptionPolicy.isFresh(pending, now)) {
-      this.#pendingRedemptionRepository.clear();
+    if (pending == null || !InviteRedemptionPolicy.isFresh(pending, now)) {
       return null;
     }
 
     return pending;
+  };
+
+  /** 기한이 지난 초대를 저장소에서 지운다 */
+  discardStalePendingRedemption = (now: Instant) => {
+    const pending = this.#pendingRedemptionRepository.find();
+    if (pending != null && !InviteRedemptionPolicy.isFresh(pending, now)) {
+      this.#pendingRedemptionRepository.clear();
+    }
   };
 
   /** 수락했거나 다시 열어도 같은 실패라 더 이어서 열 필요가 없을 때 */

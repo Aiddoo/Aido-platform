@@ -1,5 +1,4 @@
-import { usePushPromptRepository } from '@src/bootstrap/providers/di-context';
-import { useSyncStorage } from '@src/bootstrap/providers/di-context';
+import { usePushPromptRepository, useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';

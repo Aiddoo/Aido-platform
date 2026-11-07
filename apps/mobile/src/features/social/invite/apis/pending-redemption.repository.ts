@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import {
   type PendingRedemption,
@@ -18,20 +19,8 @@ export function createPendingRedemptionRepository(
   storage: SyncStorage,
 ): PendingRedemptionRepository {
   return {
-    find: () => {
-      const raw = storage.get(PENDING_REDEMPTION_KEY);
-      if (raw == null) {
-        return null;
-      }
-
-      try {
-        const parsed = pendingRedemptionSchema.safeParse(JSON.parse(raw));
-        return parsed.success ? parsed.data : null;
-      } catch {
-        // 손상된 값은 초대가 없는 것으로 본다
-        return null;
-      }
-    },
+    // 손상된 값은 초대가 없는 것으로 본다
+    find: () => parseStoredJson(storage.get(PENDING_REDEMPTION_KEY), pendingRedemptionSchema),
     save: (pending) => {
       storage.set(PENDING_REDEMPTION_KEY, JSON.stringify(pending));
     },

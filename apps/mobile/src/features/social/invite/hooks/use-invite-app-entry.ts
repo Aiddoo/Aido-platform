@@ -36,7 +36,9 @@ export function useInviteAppEntry() {
 
     // 첫 화면이 그려진 다음 프레임에 이동해야 탭 화면이 아래에 남는다
     const frameId = requestAnimationFrame(() => {
-      const pending = inviteService.findPendingRedemption(getNowInstant());
+      const now = getNowInstant();
+      inviteService.discardStalePendingRedemption(now);
+      const pending = inviteService.findFreshPendingRedemption(now);
       if (pending == null) {
         return;
       }

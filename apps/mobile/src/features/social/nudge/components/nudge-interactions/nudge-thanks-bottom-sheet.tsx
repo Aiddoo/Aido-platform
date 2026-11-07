@@ -1,4 +1,3 @@
-import { FlashList } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTranslation } from '@src/shared/i18n';
@@ -7,6 +6,7 @@ import {
   Button,
   HeartFilledIcon,
   HStack,
+  InfiniteList,
   ModalBottomSheet,
   QueryErrorBoundary,
   Result,
@@ -18,10 +18,9 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';
-import { Skeleton, Spinner } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { match } from 'ts-pattern';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { isNudgeThanksChangedError } from '../../domains/todo-nudge.error';
@@ -120,40 +119,14 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
           ),
         }}
       >
-        <FlashList
+        <InfiniteList
           data={recipients}
           keyExtractor={(recipient) => recipient.id}
           renderItem={({ item }) => <NudgeThanksBottomSheet.Recipient recipient={item} />}
-          ListFooterComponent={match({
-            isFetchNextPageError: thanksPreviewQuery.isFetchNextPageError,
-            isFetchingNextPage: thanksPreviewQuery.isFetchingNextPage,
-          })
-            .with({ isFetchNextPageError: true }, () => (
-              <Button
-                variant="weak"
-                size="medium"
-                onPress={() => thanksPreviewQuery.fetchNextPage()}
-              >
-                {t('common:actions.retry')}
-              </Button>
-            ))
-            .with({ isFetchingNextPage: true }, () => (
-              <Box py={12}>
-                <Spinner />
-              </Box>
-            ))
-            .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
-            .exhaustive()}
-          onEndReached={() => {
-            if (
-              thanksPreviewQuery.hasNextPage &&
-              !thanksPreviewQuery.isFetching &&
-              !thanksPreviewQuery.isFetchNextPageError
-            ) {
-              return thanksPreviewQuery.fetchNextPage({ cancelRefetch: false });
-            }
-          }}
-          onEndReachedThreshold={0.5}
+          hasNextPage={thanksPreviewQuery.hasNextPage}
+          isFetchingNextPage={thanksPreviewQuery.isFetchingNextPage}
+          isFetchNextPageError={thanksPreviewQuery.isFetchNextPageError}
+          fetchNextPage={thanksPreviewQuery.fetchNextPage}
         />
       </Box>
       <Text size="e1" shade={5}>

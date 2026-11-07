@@ -1,11 +1,14 @@
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
-import { useInviteActivationStep } from '@src/features/social/invite/hooks/use-invite-activation-step';
+import { InvitePolicy } from '@src/features/social/invite/domains/invite.model';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
+import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { useQuery } from '@tanstack/react-query';
 import { Chip, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -26,7 +29,13 @@ interface ActivationChecklistProps {
 export function ActivationChecklist({ className }: ActivationChecklistProps) {
   const { t } = useTranslation(['todo', 'invite']);
   const { steps, isVisible } = useActivationChecklist();
-  const inviteStep = useInviteActivationStep();
+  const isInviteAvailable = useIsInviteAvailable();
+  // 초대 요약은 기능이 켜진 걸 확인한 뒤에만 부른다(꺼져 있으면 서버가 거절한다)
+  const { data: invite } = useQuery({
+    ...useGetInviteQueryOptions(),
+    enabled: isInviteAvailable,
+    throwOnError: false,
+  });
   const openMyInvite = useOpenMyInvite();
   // 끝나서 숨길 때도 접히는 동안은 그려 두어 아래 목록이 한 번에 뛰지 않게 한다
   const [isMounted, setIsMounted] = useState(isVisible);
@@ -63,9 +72,9 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
 
         <ActivationStep label={t('activation.createTodo')} isCompleted={steps.hasCreatedTodo} />
         <ActivationStep label={t('activation.completeTodo')} isCompleted={steps.hasCompletedTodo} />
-        {inviteStep.isVisible && (
+        {isInviteAvailable && (
           <ActivationInviteStep
-            isCompleted={inviteStep.isCompleted}
+            isCompleted={invite != null && InvitePolicy.hasInvitedAnyone(invite)}
             onPress={() => openMyInvite('activation_checklist')}
           />
         )}

@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import type { Instant } from '@src/shared/date/instant';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import {
   type MarketingPushPromptState,
@@ -21,16 +22,11 @@ export function createMarketingPushPromptRepository(
   storage: SyncStorage,
 ): MarketingPushPromptRepository {
   const get = (): MarketingPushPromptState => {
-    const saved = storage.get(MARKETING_PUSH_PROMPT_KEY);
-    if (!saved) {
-      return { ...EMPTY_STATE };
-    }
-    try {
-      const parsed = marketingPushPromptStateSchema.safeParse(JSON.parse(saved));
-      return parsed.success ? parsed.data : { ...EMPTY_STATE };
-    } catch {
-      return { ...EMPTY_STATE };
-    }
+    const saved = parseStoredJson(
+      storage.get(MARKETING_PUSH_PROMPT_KEY),
+      marketingPushPromptStateSchema,
+    );
+    return saved ?? { ...EMPTY_STATE };
   };
 
   return {

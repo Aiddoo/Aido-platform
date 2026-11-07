@@ -2,6 +2,7 @@ import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, ReadableContent, StyledSafeAreaView, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
@@ -13,14 +14,13 @@ import { InviteRewardPolicy } from '../domains/invite-reward.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
+import type { InviteLinkSource } from '../schemas/invite-redemption.schema';
 import type { InviteCode } from '../schemas/invite.schema';
 
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 export function InviteCardActions() {
   const status = useAuthStatus();
   const [{ inviteCode, source }] = useInviteParams();
-  const inviteService = useInviteService();
-  const { t } = useTranslation('invite');
 
   if (inviteCode == null) {
     return null;
@@ -30,15 +30,27 @@ export function InviteCardActions() {
     return <InviteCardActions.Redeem inviteCode={inviteCode} />;
   }
 
-  const handleContinueAsGuest = (pathname: '/sign-up' | '/login') => {
+  return <InviteCardActions.Guest inviteCode={inviteCode} source={source} />;
+}
+
+InviteCardActions.Guest = function Guest({
+  inviteCode,
+  source,
+}: {
+  inviteCode: InviteCode;
+  source: InviteLinkSource;
+}) {
+  const { t } = useTranslation('invite');
+  const inviteService = useInviteService();
+  const continueAsGuest = useSingleTap((pathname: '/sign-up' | '/login') => {
     inviteService.savePendingRedemption({ inviteCode, source }, getNowInstant());
     router.push(pathname);
-  };
+  });
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
       <ReadableContent px={20} pt={12} pb={12} gap={4}>
-        <Button testID="invite-card-signup" onPress={() => handleContinueAsGuest('/sign-up')}>
+        <Button testID="invite-card-signup" onPress={() => continueAsGuest('/sign-up')}>
           {t('card.signUp')}
         </Button>
 
@@ -46,7 +58,7 @@ export function InviteCardActions() {
           <TextButton
             testID="invite-card-login"
             size="medium"
-            onPress={() => handleContinueAsGuest('/login')}
+            onPress={() => continueAsGuest('/login')}
           >
             {t('card.login')}
           </TextButton>
@@ -54,7 +66,7 @@ export function InviteCardActions() {
       </ReadableContent>
     </StyledSafeAreaView>
   );
-}
+};
 
 /**
  * 로그인한 사용자의 수락 버튼. 가입한 지 얼마 안 된 계정은 보상을, 오래 쓴 계정은 친구 맺기만 안내한다.

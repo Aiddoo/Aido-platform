@@ -262,11 +262,12 @@ export function DIProvider({
 
     const todoCategoryService = new TodoCategoryService(authHttpClient);
 
-    const deviceIdService = new DeviceIdService(
-      secureDeviceIdStore,
-      expoVendorIdGateway,
-      expoIdGenerator,
-    );
+    const deviceIdService = new DeviceIdService({
+      store: secureDeviceIdStore,
+      vendorIdGateway: expoVendorIdGateway,
+      idGenerator: expoIdGenerator,
+      platform: process.env.EXPO_OS,
+    });
     const pushNotification = createExpoPushNotificationGateway(logger);
     const notificationService = new NotificationService(
       authHttpClient,

@@ -19,6 +19,7 @@ import {
   Text,
   TextSkeleton,
   useAdaptivePaneLayoutKey,
+  useFetchNextPage,
   VStack,
 } from '@src/shared/ui';
 import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
@@ -28,7 +29,7 @@ import {
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { noop, range } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
@@ -79,11 +80,12 @@ export function FriendStrip({ onInvite }: FriendStripProps) {
 
   const { items: friends } = friendPages;
 
-  const handleEndReached = () => {
-    if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) {
-      fetchNextPage({ cancelRefetch: false }).catch(noop);
-    }
-  };
+  const { fetchOnEndReached, retry } = useFetchNextPage({
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  });
 
   return (
     <HStack align="start" style={{ height }}>
@@ -117,10 +119,10 @@ export function FriendStrip({ onInvite }: FriendStripProps) {
               <ListEnd
                 hasNextPage={hasNextPage}
                 isFetchNextPageError={isFetchNextPageError}
-                onRetry={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
+                onRetry={retry}
               />
             }
-            onEndReached={handleEndReached}
+            onEndReached={fetchOnEndReached}
             onEndReachedThreshold={END_REACHED_THRESHOLD}
             drawDistance={DRAW_DISTANCE}
             onLoad={() => setIsListLoaded(true)}

@@ -69,6 +69,9 @@ const PAW_PRINT_PRESS_SPRING = {
   reduceMotion: ReduceMotion.System,
 };
 const NEW_PAW_PRINT_STAGGER_MS = 160;
+/** 기다리는 발자국이 흔들리기까지 쉬는 시간과 한 번 꺾는 데 걸리는 시간 */
+const WAITING_WIGGLE_REST_MS = 1700;
+const WAITING_WIGGLE_STEP_MS = 190;
 
 /**
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
@@ -476,11 +479,11 @@ function WaitingPawPrint() {
       return;
     }
 
-    const step = { duration: 190, reduceMotion: ReduceMotion.System };
+    const step = { duration: WAITING_WIGGLE_STEP_MS, reduceMotion: ReduceMotion.System };
     rotation.set(
       withRepeat(
         withSequence(
-          withDelay(1700, withTiming(-7, step)),
+          withDelay(WAITING_WIGGLE_REST_MS, withTiming(-7, step)),
           withTiming(6, step),
           withTiming(-3, step),
           withTiming(0, step),

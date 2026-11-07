@@ -37,7 +37,10 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
       return;
     }
     const task = requestIdleCallback(() => {
-      if (hasClaimedRef.current || inviteService.findPendingRedemption(getNowInstant()) != null) {
+      if (
+        hasClaimedRef.current ||
+        inviteService.findFreshPendingRedemption(getNowInstant()) != null
+      ) {
         return;
       }
       hasClaimedRef.current = true;

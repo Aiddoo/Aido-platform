@@ -29,10 +29,7 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { NotificationPolicy } from '../domains/notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
-import type {
-  PendingNotificationResponse,
-  PushNotificationPayload,
-} from '../schemas/notification.schema';
+import type { PendingNotificationResponse } from '../schemas/notification.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
@@ -239,7 +236,7 @@ function useOpenReadyEntry(
   const { isEnteringApp } = useNotificationEntry();
   const logger = useLogger();
   const navigate = useNotificationNavigation();
-  const trackOpened = useTrackPushOpened();
+  const { trackEvent } = useTrack();
   const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
   const openedByIndexIdRef = useRef<string | null>(null);
   const inFlightIdRef = useRef<string | null>(null);
@@ -254,7 +251,22 @@ function useOpenReadyEntry(
       if (destination.kind !== 'route' || openedByIndexIdRef.current !== response.id) {
         await navigate(destination);
       }
-      trackOpened(data);
+      try {
+        trackEvent('push_notification_opened', {
+          type: data.type ?? 'UNKNOWN',
+          action: data.action.type,
+          ...(data.campaignKey && { campaign_key: data.campaignKey }),
+          ...(data.variantId && { variant_id: data.variantId }),
+          ...(data.purpose && { purpose: data.purpose }),
+        });
+        if (data.type === 'WEEKLY_ACHIEVEMENT') {
+          trackEvent('badge_opened_from_notification');
+        }
+      } catch (error) {
+        logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, {
+          error: getErrorMessage(error),
+        });
+      }
       if (data.notificationId > 0) {
         recordOpened(data.notificationId);
       }
@@ -285,26 +297,4 @@ function useOpenReadyEntry(
     const timer = setTimeout(() => abandon(entry.response.id), NOTIFICATION_ENTRY_HOLD_MAX_MS);
     return () => clearTimeout(timer);
   }, [entry, isEnteringApp]);
-}
-
-function useTrackPushOpened() {
-  const { trackEvent } = useTrack();
-  const logger = useLogger();
-
-  return (data: PushNotificationPayload) => {
-    try {
-      trackEvent('push_notification_opened', {
-        type: data.type ?? 'UNKNOWN',
-        action: data.action.type,
-        ...(data.campaignKey && { campaign_key: data.campaignKey }),
-        ...(data.variantId && { variant_id: data.variantId }),
-        ...(data.purpose && { purpose: data.purpose }),
-      });
-      if (data.type === 'WEEKLY_ACHIEVEMENT') {
-        trackEvent('badge_opened_from_notification');
-      }
-    } catch (error) {
-      logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, { error: getErrorMessage(error) });
-    }
-  };
 }

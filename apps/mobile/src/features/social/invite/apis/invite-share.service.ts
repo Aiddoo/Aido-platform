@@ -10,8 +10,8 @@ import type { InviteShareChannel } from '../schemas/invite-share.schema';
 interface InviteShareServicePorts {
   socialShare: SocialShareGateway;
   systemShare: Pick<SystemShareGateway, 'share'>;
-  clipboard: ClipboardGateway;
-  errorReporter: ErrorReporter;
+  clipboard: Pick<ClipboardGateway, 'copy'>;
+  errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
 }
 
 /**
@@ -21,8 +21,8 @@ interface InviteShareServicePorts {
 export class InviteShareService {
   readonly #socialShare: SocialShareGateway;
   readonly #systemShare: Pick<SystemShareGateway, 'share'>;
-  readonly #clipboard: ClipboardGateway;
-  readonly #errorReporter: ErrorReporter;
+  readonly #clipboard: Pick<ClipboardGateway, 'copy'>;
+  readonly #errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
 
   readonly #channels: Record<
     InviteShareChannel,

@@ -8,7 +8,7 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   InfiniteList,
@@ -21,7 +21,6 @@ import {
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
-import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 
 import { NOTIFICATION_TYPE_LABEL_KEYS } from '../constants/notification-labels';
@@ -109,10 +108,49 @@ interface NotificationItemProps {
 }
 
 NotificationList.Item = function Item({ notification }: NotificationItemProps) {
-  const handlePress = useSingleTap(useNotificationPress(notification));
-  const push = useSingleTap(router.push);
   const { t } = useTranslation(['notification', 'moderation']);
+  const push = useSingleTap(router.push);
+  const navigateToDestination = useNotificationNavigation();
+  const today = useTodayKey();
+  const windowSizeClass = useWindowSizeClass();
+  const logger = useLogger();
+  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
   const receivedCheer = NotificationPolicy.findReceivedCheer(notification);
+
+  const handlePress = useSingleTap(() => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    if (
+      NotificationPolicy.isAiFeature(notification) &&
+      gate.promptIfBlocked({ description: t('list.premiumDescription') })
+    ) {
+      return;
+    }
+
+    const destination = resolveNotificationDestination(
+      {
+        type: notification.type,
+        context: notification.context,
+        routing: notification.routing,
+        action: notification.action,
+      },
+      { today, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
+    );
+    trackEvent('notification_center_opened', {
+      type: notification.type,
+      destination: destination.kind,
+    });
+    navigateToDestination(destination).catch((error) =>
+      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, {
+        error: getErrorMessage(error),
+      }),
+    );
+  });
 
   // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 메시지를 신고한다
   const handleReportCheer =
@@ -154,57 +192,3 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
     />
   );
 };
-
-function useNotificationPress(notification: Notification) {
-  const navigateToDestination = useNotificationNavigation();
-  const today = useTodayKey();
-  const windowSizeClass = useWindowSizeClass();
-  const logger = useLogger();
-
-  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
-  const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
-  const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
-
-  return useCallback(() => {
-    if (!notification.isRead) {
-      markAsRead(notification.id);
-    }
-
-    if (
-      NotificationPolicy.isAiFeature(notification) &&
-      gate.promptIfBlocked({ description: tGlobal('notification:list.premiumDescription') })
-    ) {
-      return;
-    }
-
-    const destination = resolveNotificationDestination(
-      {
-        type: notification.type,
-        context: notification.context,
-        routing: notification.routing,
-        action: notification.action,
-      },
-      { today, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
-    );
-    trackEvent('notification_center_opened', {
-      type: notification.type,
-      destination: destination.kind,
-    });
-    navigateToDestination(destination).catch((error) =>
-      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, {
-        error: getErrorMessage(error),
-      }),
-    );
-  }, [
-    notification,
-    markAsRead,
-    trackEvent,
-    queryClient,
-    gate,
-    navigateToDestination,
-    today,
-    windowSizeClass,
-    logger,
-  ]);
-}

@@ -360,7 +360,7 @@ describe('InviteService', () => {
     });
   });
 
-  describe('findPendingRedemption', () => {
+  describe('findFreshPendingRedemption', () => {
     it('7일 안에 저장한 초대면 지우지 않고 반환한다', () => {
       // Given
       const { service, pendingRedemptionRepository } = createService();
@@ -368,14 +368,30 @@ describe('InviteService', () => {
       pendingRedemptionRepository.save(pending);
 
       // When
-      const result = service.findPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
+      const result = service.findFreshPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
 
       // Then 10-20 → 10-25 = 5일 ≤ 7일
       expect(result).toEqual(pending);
       expect(pendingRedemptionRepository.find()).toEqual(pending);
     });
 
-    it('7일이 지난 초대면 null을 반환하고 지운다', () => {
+    it('7일이 지난 초대면 null을 반환하고 저장소는 그대로 둔다', () => {
+      // Given
+      const { service, pendingRedemptionRepository } = createService();
+      const pending = createPendingRedemption({ savedAt: toInstant('2026-10-10T00:00:00Z') });
+      pendingRedemptionRepository.save(pending);
+
+      // When
+      const result = service.findFreshPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
+
+      // Then 10-10 → 10-25 = 15일 > 7일
+      expect(result).toBeNull();
+      expect(pendingRedemptionRepository.find()).toEqual(pending);
+    });
+  });
+
+  describe('discardStalePendingRedemption', () => {
+    it('7일이 지난 초대는 지운다', () => {
       // Given
       const { service, pendingRedemptionRepository } = createService();
       pendingRedemptionRepository.save(
@@ -383,11 +399,23 @@ describe('InviteService', () => {
       );
 
       // When
-      const result = service.findPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
+      service.discardStalePendingRedemption(toInstant('2026-10-25T00:00:00Z'));
 
-      // Then 10-10 → 10-25 = 15일 > 7일
-      expect(result).toBeNull();
+      // Then
       expect(pendingRedemptionRepository.find()).toBeNull();
+    });
+
+    it('7일 안에 저장한 초대는 지우지 않는다', () => {
+      // Given
+      const { service, pendingRedemptionRepository } = createService();
+      const pending = createPendingRedemption({ savedAt: toInstant('2026-10-20T00:00:00Z') });
+      pendingRedemptionRepository.save(pending);
+
+      // When
+      service.discardStalePendingRedemption(toInstant('2026-10-25T00:00:00Z'));
+
+      // Then
+      expect(pendingRedemptionRepository.find()).toEqual(pending);
     });
   });
 

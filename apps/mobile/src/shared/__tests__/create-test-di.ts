@@ -219,7 +219,12 @@ export function createTestDi({
   });
   const pushDeviceService = new PushDeviceService({
     gateway: pushNotification,
-    deviceIdService: new DeviceIdService(deviceIdStore, vendorIdGateway, idGenerator),
+    deviceIdService: new DeviceIdService({
+      store: deviceIdStore,
+      vendorIdGateway,
+      idGenerator,
+      platform: 'ios',
+    }),
     httpClient,
     logger,
     getTimeZone: getDeviceTimezone,

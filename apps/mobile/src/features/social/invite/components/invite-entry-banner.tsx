@@ -1,6 +1,5 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { useAllDoneBannerRepository } from '@src/bootstrap/providers/di-context';
-import { useSyncStorage } from '@src/bootstrap/providers/di-context';
+import { useAllDoneBannerRepository, useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';

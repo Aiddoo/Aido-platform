@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { type DeviceTimezone, savedDeviceTimezoneSchema } from '../schemas/device-timezone.schema';
 
@@ -14,16 +15,8 @@ export interface DeviceTimezoneRepository {
 export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTimezoneRepository {
   return {
     find: (userId) => {
-      const saved = storage.get(DEVICE_TIMEZONE_KEY);
-      if (saved == null) {
-        return null;
-      }
-      try {
-        const parsed = savedDeviceTimezoneSchema.safeParse(JSON.parse(saved));
-        return parsed.success && parsed.data.userId === userId ? parsed.data.deviceTimezone : null;
-      } catch {
-        return null;
-      }
+      const saved = parseStoredJson(storage.get(DEVICE_TIMEZONE_KEY), savedDeviceTimezoneSchema);
+      return saved?.userId === userId ? saved.deviceTimezone : null;
     },
     save: (userId, deviceTimezone) =>
       storage.set(DEVICE_TIMEZONE_KEY, JSON.stringify({ userId, deviceTimezone })),
