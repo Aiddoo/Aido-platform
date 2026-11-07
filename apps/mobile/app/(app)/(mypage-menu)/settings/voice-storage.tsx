@@ -36,6 +36,7 @@ function VoiceStorageScreen() {
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();
   const confirmDialog = useConfirmDialog();
+  // 저장 용량은 기기의 동기 값이라 쿼리 없이 읽고, 기다리는 것은 계정(me)뿐이다
   const storage = useVoiceNoteStorageService();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const [usage, setUsage] = useState(() => storage.getRecordingUsage(me.id));
