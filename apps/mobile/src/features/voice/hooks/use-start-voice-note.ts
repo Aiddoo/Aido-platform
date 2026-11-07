@@ -8,7 +8,7 @@ import { useRecognitionLanguage } from './use-recognition-language';
 
 interface StartVoiceNoteOptions {
   onSubscribe?: () => void;
-  getRecordHref?: () => Href;
+  prepareRecordHref?: () => Href;
   /** 녹음 화면으로 넘어가는 방법. 기본은 지금 화면 위에 쌓는다 */
   navigate?: (href: Href) => void;
 }
@@ -20,7 +20,11 @@ export function useStartVoiceNote() {
   const [locale] = useRecognitionLanguage();
   const push = useSingleTap(router.push);
 
-  return async ({ onSubscribe, getRecordHref, navigate = push }: StartVoiceNoteOptions = {}) => {
+  return async ({
+    onSubscribe,
+    prepareRecordHref,
+    navigate = push,
+  }: StartVoiceNoteOptions = {}) => {
     if (gate.promptIfBlocked({ onSubscribe })) {
       return;
     }
@@ -31,6 +35,6 @@ export function useStartVoiceNote() {
     if (!(await ensureMicrophonePermission('note', locale))) {
       return;
     }
-    navigate(getRecordHref?.() ?? '/voice-notes/record');
+    navigate(prepareRecordHref?.() ?? '/voice-notes/record');
   };
 }

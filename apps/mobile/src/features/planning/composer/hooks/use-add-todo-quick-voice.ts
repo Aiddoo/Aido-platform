@@ -149,7 +149,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     }
     return startVoiceNote({
       onSubscribe: onExit,
-      getRecordHref: () => {
+      prepareRecordHref: () => {
         const { transcript, elapsedMs } = session.state;
         const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
           draftId: idGenerator.create(),
