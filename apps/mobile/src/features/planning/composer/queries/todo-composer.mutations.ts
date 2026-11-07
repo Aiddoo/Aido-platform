@@ -10,10 +10,6 @@ import { recordTodoCreatedForActivation } from '@src/features/device/activation/
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
-import type {
-  RepeatingTodoDraft,
-  TodoSeriesEditOptions,
-} from '@src/features/planning/todo/apis/todo-series.mapper';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
@@ -31,6 +27,10 @@ import {
   settleTodoListWrite,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTodoSeriesFailureHandler } from '@src/features/planning/todo/queries/todo-series.mutations';
+import type {
+  RepeatingTodoDraft,
+  TodoSeriesEditOptions,
+} from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import type {
   CreateTodoInput,
   UpdateTodoInput,

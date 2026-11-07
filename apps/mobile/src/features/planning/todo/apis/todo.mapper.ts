@@ -19,7 +19,7 @@ import {
   type TodoListResult,
 } from '../schemas/todo.schema';
 import { toSubTodo } from './sub-todo.mapper';
-import { toRepeat } from './todo-series.mapper';
+import { toRepeat } from './todo-repeat.mapper';
 
 /** 옛 서버 응답에는 벽시계 칸이 없다. 순간만 보관하고 시간대는 표시 때 정한다 */
 function toLocalTime({ scheduledTime, scheduledLocalTime }: TodoDto): string | null {

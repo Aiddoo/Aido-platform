@@ -8,7 +8,7 @@ import {
   INVALID_DTO,
 } from '../__tests__/todo.fixtures';
 import { TodoSeriesNotCreatedError } from '../domains/todo-series.error';
-import type { RepeatingTodoDraft } from './todo-series.mapper';
+import type { RepeatingTodoDraft } from '../schemas/todo-repeat.schema';
 import { TodoService } from './todo.service';
 
 describe('TodoService', () => {

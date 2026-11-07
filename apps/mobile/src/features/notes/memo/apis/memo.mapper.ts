@@ -9,7 +9,7 @@ import {
   type ParsedMemoTodo,
 } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-series.mapper';
+import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import type { TodoRepeat } from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import {
   type PlannedAction,

@@ -9,7 +9,7 @@ import {
   type VoiceNoteDigestRequest,
 } from '@aido/api';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
-import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-series.mapper';
+import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { match } from 'ts-pattern';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';

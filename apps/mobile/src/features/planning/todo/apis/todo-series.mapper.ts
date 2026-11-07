@@ -1,93 +1,17 @@
 import type {
   ChangeTodoCategoryInput,
   CreateTodoInput,
-  TodoRepeat as TodoRepeatDto,
-  TodoRepeatEnd as TodoRepeatEndDto,
   TodoSeriesResponse,
   UpdateTodoInput,
   UpdateTodoScheduleInput,
 } from '@aido/api';
-import { match } from 'ts-pattern';
 
 import type {
-  TodoRepeat,
-  TodoRepeatEnd,
+  RepeatingTodoDraft,
   TodoSeries,
-  TodoUpdateScope,
+  TodoSeriesEditOptions,
 } from '../schemas/todo-repeat.schema';
-
-export interface RepeatingTodoDraft {
-  title: string;
-  categoryId: number;
-  startDate: string;
-  scheduledTime?: string | null;
-  isAllDay: boolean;
-  visibility: 'PUBLIC' | 'PRIVATE';
-  repeat: TodoRepeat;
-}
-
-export interface TodoSeriesEditOptions {
-  /** 반복 회차를 고칠 때만. 단일 할 일에 보내면 서버가 TODO_0844로 거절한다 */
-  scope?: TodoUpdateScope;
-  /** 생략은 유지, 값은 규칙 변경·반복 전환, null은 이 회차 뒤로 끝내기 */
-  repeat?: TodoRepeat | null;
-  /** 앞으로 만들 회차에 복사할 체크리스트. 서버는 THIS_AND_FOLLOWING에서만 받는다 */
-  checklist?: readonly { title: string }[];
-}
-
-function toRepeatEnd(end: TodoRepeatEndDto): TodoRepeatEnd {
-  return match(end)
-    .returnType<TodoRepeatEnd>()
-    .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
-    .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
-    .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
-    .exhaustive();
-}
-
-export function toRepeat(dto: TodoRepeatDto): TodoRepeat {
-  return match(dto)
-    .returnType<TodoRepeat>()
-    .with({ frequency: 'DAILY' }, ({ end }) => ({ frequency: 'DAILY', end: toRepeatEnd(end) }))
-    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays, end }) => ({
-      frequency: 'WEEKLY',
-      interval,
-      weekdays: [...weekdays],
-      end: toRepeatEnd(end),
-    }))
-    .with({ frequency: 'MONTHLY' }, ({ monthDay, end }) => ({
-      frequency: 'MONTHLY',
-      monthDay,
-      end: toRepeatEnd(end),
-    }))
-    .exhaustive();
-}
-
-function toRepeatEndDto(end: TodoRepeatEnd): TodoRepeatEndDto {
-  return match(end)
-    .returnType<TodoRepeatEndDto>()
-    .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
-    .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
-    .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
-    .exhaustive();
-}
-
-export function toRepeatDto(repeat: TodoRepeat): TodoRepeatDto {
-  return match(repeat)
-    .returnType<TodoRepeatDto>()
-    .with({ frequency: 'DAILY' }, ({ end }) => ({ frequency: 'DAILY', end: toRepeatEndDto(end) }))
-    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays, end }) => ({
-      frequency: 'WEEKLY',
-      interval,
-      weekdays: [...weekdays],
-      end: toRepeatEndDto(end),
-    }))
-    .with({ frequency: 'MONTHLY' }, ({ monthDay, end }) => ({
-      frequency: 'MONTHLY',
-      monthDay,
-      end: toRepeatEndDto(end),
-    }))
-    .exhaustive();
-}
+import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 
 export function toTodoSeries(dto: TodoSeriesResponse): TodoSeries {
   return {

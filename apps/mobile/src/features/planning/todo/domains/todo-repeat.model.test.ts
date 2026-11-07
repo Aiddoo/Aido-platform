@@ -2,7 +2,7 @@ import { todoRepeatSchema as todoRepeatDtoSchema } from '@aido/api';
 import { z } from 'zod';
 
 import repeatOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
-import { toRepeat } from '../apis/todo-series.mapper';
+import { toRepeat } from '../apis/todo-repeat.mapper';
 import { type TodoRepeat, todoRepeatSchema } from '../schemas/todo-repeat.schema';
 import { TodoRepeatPolicy } from './todo-repeat.model';
 

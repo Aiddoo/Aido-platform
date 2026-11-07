@@ -26,7 +26,13 @@ import {
   todoSeriesEnvelopeSchema,
   updateTodoEnvelopeSchema,
 } from '../schemas/todo-envelope.schema';
-import type { TodoEditScope, TodoSeries, TodoUpdateScope } from '../schemas/todo-repeat.schema';
+import type {
+  RepeatingTodoDraft,
+  TodoEditScope,
+  TodoSeries,
+  TodoSeriesEditOptions,
+  TodoUpdateScope,
+} from '../schemas/todo-repeat.schema';
 import type {
   DailyCompletionsResult,
   Todo,
@@ -36,8 +42,6 @@ import type {
   TodoListResult,
 } from '../schemas/todo.schema';
 import {
-  type RepeatingTodoDraft,
-  type TodoSeriesEditOptions,
   toCreateRepeatingTodoRequest,
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
@@ -79,7 +83,7 @@ export class TodoService {
     return parseApiResponse(
       result,
       todoListEnvelopeSchema,
-      (data) => toTodoListResult(data),
+      toTodoListResult,
       '[TodoService] Invalid getTodos response',
     );
   };
@@ -120,7 +124,7 @@ export class TodoService {
     return parseApiResponse(
       result,
       friendTodoListResponseSchema,
-      (data) => toFriendTodoListResult(data),
+      toFriendTodoListResult,
       '[TodoService] Invalid getFriendTodos response',
     );
   };
@@ -213,7 +217,7 @@ export class TodoService {
     return parseApiResponse(
       result,
       dailyCompletionsRangeResponseSchema,
-      (data) => toDailyCompletionsResult(data),
+      toDailyCompletionsResult,
       '[TodoService] Invalid getDailyCompletions response',
     );
   };
@@ -233,7 +237,7 @@ export class TodoService {
     return parseApiResponse(
       result,
       dailyCompletionsRangeResponseSchema,
-      (data) => toDailyCompletionsResult(data),
+      toDailyCompletionsResult,
       '[TodoService] Invalid getFriendDailyCompletions response',
     );
   };
@@ -248,7 +252,7 @@ export class TodoService {
     return parseApiResponse(
       result,
       todoSummaryResponseSchema,
-      (data) => toTodoSummary(data),
+      toTodoSummary,
       '[TodoService] Invalid getTodoSummary response',
     );
   };
@@ -334,7 +338,7 @@ export class TodoService {
     return parseApiResponse(
       response,
       todoDetailsEnvelopeSchema,
-      (data) => toTodoDetails(data),
+      toTodoDetails,
       '[TodoService] Invalid todo details',
     );
   };
