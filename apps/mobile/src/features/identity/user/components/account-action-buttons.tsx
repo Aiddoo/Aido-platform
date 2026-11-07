@@ -18,6 +18,7 @@ export function AccountActionButtons() {
   const logout = useMutation(useLogoutMutationOptions());
   const deleteAccount = useMutation(useDeleteAccountMutationOptions());
   const confirmDialog = useConfirmDialog();
+  const isPending = logout.isPending || deleteAccount.isPending;
 
   const handleLogoutPress = async () => {
     const isConfirmed = await confirmDialog.openAsync({
@@ -51,11 +52,11 @@ export function AccountActionButtons() {
 
   return (
     <HStack justify="center" align="center" gap={8}>
-      <TextButton size="medium" onPress={handleLogoutPress}>
+      <TextButton size="medium" onPress={handleLogoutPress} isDisabled={isPending}>
         {t('logout.action')}
       </TextButton>
       <Separator orientation="vertical" className="h-3 bg-gray-6" />
-      <TextButton size="medium" onPress={handleWithdrawPress}>
+      <TextButton size="medium" onPress={handleWithdrawPress} isDisabled={isPending}>
         {t('withdraw.action')}
       </TextButton>
     </HStack>

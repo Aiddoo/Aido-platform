@@ -162,7 +162,7 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
                       byType: { too_big: 'email.tooLong' },
                     })}
                     onSubmitEditing={() => {
-                      if (isValid) {
+                      if (isValid && !isSubmitting) {
                         onSubmit();
                       }
                     }}

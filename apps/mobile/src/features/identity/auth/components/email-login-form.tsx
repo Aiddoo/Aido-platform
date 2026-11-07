@@ -113,7 +113,11 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
                 submitBehavior="submit"
                 isInvalid={!!error}
                 errorMessage={resolveValidationMessage(error, { default: 'password.required' })}
-                onSubmitEditing={() => submitEmailLogin()}
+                onSubmitEditing={() => {
+                  if (!isSubmitting) {
+                    submitEmailLogin();
+                  }
+                }}
               />
             )}
           />
