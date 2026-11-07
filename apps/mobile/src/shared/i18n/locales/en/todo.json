@@ -225,17 +225,6 @@
     "preparing": "We're preparing this week's suggestions",
     "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again"
   },
-  "friendStrip": {
-    "me": "Me",
-    "meLabel": "View my to-dos",
-    "friendLabel": "View {{name}}'s to-dos",
-    "findFriends": "Find friends",
-    "loadMoreFailed": "Try again",
-    "loadMoreFailedLabel": "Couldn't load more friends. Try again",
-    "emptyInvite": "Invite",
-    "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",
-    "emptySearchHint": "Find friends to see and cheer on each other's to-dos"
-  },
   "activation": {
     "title": "Create and complete your first to-do",
     "description": "Finish these steps to get started with Aido",

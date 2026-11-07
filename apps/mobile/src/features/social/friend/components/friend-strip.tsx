@@ -62,8 +62,7 @@ interface FriendStripProps {
 }
 
 export function FriendStrip({ onInvite }: FriendStripProps) {
-  const { t } = useTranslation('todo');
-  const { t: tFriend } = useTranslation('friend');
+  const { t } = useTranslation('friend');
   const listRef = useRef<FlashListRef<FriendUser>>(null);
   const [isListLoaded, setIsListLoaded] = useState(false);
   const { width, height } = useFriendStripItemSize();
@@ -108,7 +107,7 @@ export function FriendStrip({ onInvite }: FriendStripProps) {
             renderItem={({ item: friend }) => (
               <FriendStrip.Item
                 friendId={friend.id}
-                name={friend.name ?? tFriend('fallbackName')}
+                name={friend.name ?? t('fallbackName')}
                 profileImage={friend.profileImage}
                 width={width}
               />
@@ -153,7 +152,7 @@ FriendStrip.Item = memo(function Item({
   width,
 }: FriendStripItemProps) {
   const haptics = useHaptics();
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation('friend');
   const [selectedFriendId, setSelectedFriendId] = useFeedFriendParam();
   const isSelected = selectedFriendId === friendId;
   const selectFriend = useSingleTap((nextFriendId: string | undefined) => {
@@ -240,7 +239,7 @@ FriendStrip.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
  * 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
  */
 FriendStrip.Empty = function Empty({ onInvite }: FriendStripProps) {
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation('friend');
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
   const isInviteAvailable = onInvite != null;
@@ -297,7 +296,7 @@ function ListEnd({
   isFetchNextPageError: boolean;
   onRetry: () => void;
 }) {
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation('friend');
   const push = useSingleTap(router.push);
 
   if (isFetchNextPageError) {
