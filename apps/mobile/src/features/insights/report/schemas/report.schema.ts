@@ -21,7 +21,6 @@ const reportStatusSchema = reportStatusContractSchema.extend({
   latestWeekly: aiReportSchema.nullable(),
   latestMonthly: aiReportSchema.nullable(),
 });
-export type ReportStatus = z.infer<typeof reportStatusSchema>;
 
 export const reportStatusResultSchema = reportStatusResponseSchema.extend({
   status: reportStatusSchema,

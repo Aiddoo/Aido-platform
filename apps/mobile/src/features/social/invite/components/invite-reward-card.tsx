@@ -31,7 +31,7 @@ type InviteRewardCardProps = Omit<ComponentProps<typeof PressableFeedback>, 'onP
 const PREVIEW_COLUMNS = 4;
 
 /** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 MyPageInviteCard가 정한다 */
-export function InviteRewardCard({ className, ...props }: InviteRewardCardProps) {
+function InviteRewardCard({ className, ...props }: InviteRewardCardProps) {
   const { t } = useTranslation('invite');
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();

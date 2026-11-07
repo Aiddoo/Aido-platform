@@ -3,7 +3,7 @@ import { AI_DATA_SHARING_DECISIONS } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const consentSchema = z.object({
+const consentSchema = z.object({
   termsAgreedAt: instantSchema.nullable(),
   privacyAgreedAt: instantSchema.nullable(),
   agreedTermsVersion: z.string().nullable(),
@@ -16,17 +16,17 @@ export const consentSchema = z.object({
 });
 export type Consent = z.infer<typeof consentSchema>;
 
-export const updateMarketingConsentResultSchema = consentSchema.pick({ marketingAgreedAt: true });
+const updateMarketingConsentResultSchema = consentSchema.pick({ marketingAgreedAt: true });
 export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
 
-export const updateMarketingPushConsentResultSchema = consentSchema.pick({
+const updateMarketingPushConsentResultSchema = consentSchema.pick({
   marketingPushAgreedAt: true,
 });
 export type UpdateMarketingPushConsentResult = z.infer<
   typeof updateMarketingPushConsentResultSchema
 >;
 
-export const updateAiDataSharingConsentResultSchema = consentSchema.pick({
+const updateAiDataSharingConsentResultSchema = consentSchema.pick({
   aiDataSharingDecision: true,
   aiDataSharingAgreedAt: true,
   aiDataSharingConsentVersion: true,

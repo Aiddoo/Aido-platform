@@ -62,7 +62,6 @@ export const PushPermissionPolicy = {
   isDeliveryAllowed,
   isNotDetermined,
   canRequestSystemDialog,
-  isBlockedUntilSettings,
   isPromptSnoozed,
   getNextStep,
 } as const;

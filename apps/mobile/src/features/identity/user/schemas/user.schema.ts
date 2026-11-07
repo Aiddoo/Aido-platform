@@ -33,10 +33,9 @@ export const userSchema = z.object({
   createdAt: instantSchema,
 });
 export type User = z.infer<typeof userSchema>;
-export type SubscriptionStatus = User['subscriptionStatus'];
 
 /** 이름이나 프로필 사진 중 바꿀 칸만 담는다. profileImage null은 사진 지우기다 */
 export type ProfileChange = UpdateProfileInput;
 
-export const updateProfileResultSchema = userSchema.pick({ name: true, profileImage: true });
+const updateProfileResultSchema = userSchema.pick({ name: true, profileImage: true });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;

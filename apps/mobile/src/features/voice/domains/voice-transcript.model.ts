@@ -106,16 +106,8 @@ function splitLowConfidenceText(text: string, words: readonly string[]): Caption
 }
 
 export const VoiceTranscriptPolicy = {
-  createVoiceTranscript,
-  applyResult,
-  appendFinalResult,
-  replaceInterimResult,
-  withInterimFinalized,
-  getFinalText,
-  getInterimText,
   getTranscriptText,
   mergeHeardTextIntoTitle,
-  getLowConfidenceWords,
   splitLowConfidenceText,
   isTranscriptEmpty,
 } as const;

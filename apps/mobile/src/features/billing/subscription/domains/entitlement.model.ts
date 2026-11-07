@@ -13,7 +13,7 @@ import type {
 } from '../schemas/entitlement.schema';
 
 /** 기능을 지금 시작해도 되는지. 모르는 기능은 서버가 판단하도록 allow다 */
-export type AccessDecision = 'allow' | 'limit-reached' | 'locked';
+type AccessDecision = 'allow' | 'limit-reached' | 'locked';
 
 /** 남은 횟수를 알릴지와 무엇을 알릴지. 무제한·공정 사용 한도·횟수가 없는 기능은 hidden이다 */
 type QuotaStatus =

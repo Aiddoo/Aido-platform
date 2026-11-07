@@ -9,7 +9,7 @@ import type { Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 /** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
-export type PremiumEndingNotice = 'tomorrow' | 'today';
+type PremiumEndingNotice = 'tomorrow' | 'today';
 
 /** 영수증 출처. 관리자, 스토어 구독(결제), 초대 보상 기간 */
 type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';

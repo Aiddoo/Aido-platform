@@ -1,4 +1,4 @@
-export { createStyledIcon, type StyledIcon as StyledIconType } from './create-styled-icon';
+export { type StyledIcon as StyledIconType } from './create-styled-icon';
 export {
   AiIcon,
   AppleIcon,
@@ -10,13 +10,11 @@ export {
   BlockIcon,
   CalendarIcon,
   ChatBubbleIcon,
-  CheckboxIcon,
   CheckIcon,
   CheckmarkIcon,
   ClockIcon,
   CloseIcon,
   CopyIcon,
-  CrosshairIcon,
   CrownIcon,
   DeviceIcon,
   DocsIcon,
@@ -24,7 +22,6 @@ export {
   EnglishIcon,
   EyeIcon,
   EyeOffIcon,
-  FillCheckIcon,
   FillTicketIcon,
   FishIcon,
   FlagFilledIcon,
@@ -58,13 +55,9 @@ export {
   RobotPixelIcon,
   SearchIcon,
   SendIcon,
-  SettingIcon,
   ShareIcon,
   StopIcon,
   SunIcon,
-  ToastErrorIcon,
-  ToastSuccessIcon,
-  ToastWarningIcon,
   TrashIcon,
   WeatherRainIcon,
 } from './icons';

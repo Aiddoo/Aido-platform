@@ -225,7 +225,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
   });
 }
 
-export function usePlanFailureHandler(
+function usePlanFailureHandler(
   feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>,
   {
     surface,

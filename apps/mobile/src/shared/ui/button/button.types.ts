@@ -2,11 +2,11 @@ import type { Button } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { PressableProps } from 'react-native';
 
-export type ButtonSize = 'small' | 'medium' | 'large' | 'xlarge';
-export type ButtonVariant = 'fill' | 'weak';
-export type ButtonColor = 'primary' | 'danger' | 'dark';
-export type ButtonDisplay = 'inline' | 'block' | 'full';
-export type ButtonRadius = 'sm' | 'md' | 'lg' | 'full';
+type ButtonSize = 'small' | 'medium' | 'large' | 'xlarge';
+type ButtonVariant = 'fill' | 'weak';
+type ButtonColor = 'primary' | 'danger' | 'dark';
+type ButtonDisplay = 'inline' | 'block' | 'full';
+type ButtonRadius = 'sm' | 'md' | 'lg' | 'full';
 
 export interface ButtonProps extends Omit<
   ComponentProps<typeof Button>,

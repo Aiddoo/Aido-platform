@@ -4,7 +4,7 @@ import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH } from '@aido/api/vocabulary
 import { addFriendFormSchema } from '../schemas/add-friend-form.schema';
 import type { SearchedUser } from '../schemas/friend.schema';
 
-export type RequestState = 'friend' | 'pending' | 'none';
+type RequestState = 'friend' | 'pending' | 'none';
 
 /** 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길. 초대를 쓸 수 없으면 화면이 넘기지 않는다 */
 export interface FriendLimitInvite {
@@ -16,18 +16,16 @@ export interface FriendLimitInvite {
 export type FriendLimitDialog = { type: 'invite'; limit: number } | { type: 'subscribe' };
 
 /** 서버 경로 검증(userTagParamSchema)과 같은 규칙이다 */
-export function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
+function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
   return addFriendFormSchema.shape.userTag.safeParse(user.userTag.trim()).success;
 }
 
-export function hasValidSearchQuery(input: { query: string }) {
+function hasValidSearchQuery(input: { query: string }) {
   return input.query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
 /** 검색 결과의 사용자와 나 사이 요청 상태. 이미 친구면 요청 대기보다 먼저다 */
-export function getRequestState(
-  user: Pick<SearchedUser, 'isFriend' | 'requestPending'>,
-): RequestState {
+function getRequestState(user: Pick<SearchedUser, 'isFriend' | 'requestPending'>): RequestState {
   if (user.isFriend) {
     return 'friend';
   }
@@ -69,6 +67,5 @@ export const FriendPolicy = {
   hasValidUserTag,
   hasValidSearchQuery,
   getRequestState,
-  getFriendLimit,
   getFriendLimitDialog,
 } as const;

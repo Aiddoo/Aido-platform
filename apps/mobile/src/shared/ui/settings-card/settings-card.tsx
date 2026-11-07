@@ -32,7 +32,7 @@ export function SettingsCard({ label, className, children, ...props }: SettingsC
   );
 }
 
-export interface SettingsCardItemProps extends Omit<
+interface SettingsCardItemProps extends Omit<
   ComponentProps<typeof ListGroup.Item>,
   'children' | 'disabled'
 > {
@@ -93,7 +93,7 @@ SettingsCard.Item = function Item({
   );
 };
 
-export interface SettingsCardItemSkeletonProps {
+interface SettingsCardItemSkeletonProps {
   descriptionLines?: number;
   hasValue?: boolean;
 }
@@ -118,10 +118,7 @@ SettingsCard.ItemSkeleton = function ItemSkeleton({
   );
 };
 
-export interface SettingsCardToggleProps extends Omit<
-  ComponentProps<typeof ControlField>,
-  'children'
-> {
+interface SettingsCardToggleProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
   label: string;
   description?: string;
 }
@@ -149,7 +146,7 @@ SettingsCard.Toggle = function Toggle({
   );
 };
 
-export interface SettingsCardToggleSkeletonProps {
+interface SettingsCardToggleSkeletonProps {
   hasDescription?: boolean;
 }
 

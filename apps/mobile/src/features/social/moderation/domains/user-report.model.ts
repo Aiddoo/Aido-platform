@@ -4,7 +4,7 @@ import type {
   UserReportTarget,
 } from '../schemas/user-report.schema';
 
-export function createTodoReportTarget({
+function createTodoReportTarget({
   todoId,
   ownerId,
 }: {
@@ -24,11 +24,11 @@ export function createCommentReportTarget({
   return { targetUserId: authorId, targetType: 'COMMENT', targetId: commentId };
 }
 
-export function createProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
+function createProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
   return { targetUserId: userId, targetType: 'PROFILE' };
 }
 
-export function createNudgeMessageReportTarget({
+function createNudgeMessageReportTarget({
   nudgeId,
   senderId,
 }: {
@@ -38,7 +38,7 @@ export function createNudgeMessageReportTarget({
   return { targetUserId: senderId, targetType: 'NUDGE_MESSAGE', targetId: String(nudgeId) };
 }
 
-export function createCheerMessageReportTarget({
+function createCheerMessageReportTarget({
   cheerId,
   senderId,
 }: {

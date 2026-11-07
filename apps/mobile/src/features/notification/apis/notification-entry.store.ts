@@ -2,7 +2,7 @@ import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 import type { PendingNotificationResponse } from '../schemas/notification.schema';
 import type { NotificationDestination } from '../utils/notification-destination';
 
-export interface NotificationEntryState {
+interface NotificationEntryState {
   /** 아직 열지 못한 탭 하나. 마지막 탭이 이긴다 */
   pending: PendingNotificationResponse | null;
   /** 소유 확인이 끝나 열 곳이 정해진 탭 */

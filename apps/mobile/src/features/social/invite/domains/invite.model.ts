@@ -112,52 +112,50 @@ function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
   return qualifiedCount + waitingCount;
 }
 
-export function getRemainingToNextMilestone(
-  invite: Pick<Invite, 'qualifiedCount' | 'nextMilestone'>,
-) {
+function getRemainingToNextMilestone(invite: Pick<Invite, 'qualifiedCount' | 'nextMilestone'>) {
   return invite.nextMilestone == null
     ? null
     : calculateRemainingInvites(invite.qualifiedCount, invite.nextMilestone.qualifiedCount);
 }
 
 /** 다음 발자국에서 받는 프리미엄 일수(없으면 0) */
-export function getNextPremiumDays(invite: Pick<Invite, 'nextMilestone'>) {
+function getNextPremiumDays(invite: Pick<Invite, 'nextMilestone'>) {
   return InviteRewardPolicy.getPremiumDays(invite.nextMilestone?.rewards ?? []);
 }
 
-export function getNextFriendSlots(invite: Pick<Invite, 'nextMilestone'>) {
+function getNextFriendSlots(invite: Pick<Invite, 'nextMilestone'>) {
   return InviteRewardPolicy.getFriendSlots(invite.nextMilestone?.rewards ?? []);
 }
 
-export function getEarnedPremiumDays(invite: Pick<Invite, 'rewardsEarned'>) {
+function getEarnedPremiumDays(invite: Pick<Invite, 'rewardsEarned'>) {
   return InviteRewardPolicy.getPremiumDays(invite.rewardsEarned);
 }
 
-export function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
+function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
   return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
 }
 
 /** 최근 premiumCapWindowDays일 동안 초대로 받을 수 있는 프리미엄 일수 */
-export function getMonthlyPremiumCapDays() {
+function getMonthlyPremiumCapDays() {
   return INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS;
 }
 
 /** getMonthlyPremiumCapDays를 세는 기간(일) */
-export function getPremiumCapWindowDays() {
+function getPremiumCapWindowDays() {
   return INVITE_REWARD_CAPS.WINDOW_DAYS;
 }
 
 /** 지금까지 초대로 받을 수 있는 프리미엄 일수 */
-export function getTotalPremiumCapDays() {
+function getTotalPremiumCapDays() {
   return INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL;
 }
 
-export function getMilestoneQualifiedCounts() {
+function getMilestoneQualifiedCounts() {
   return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
 }
 
 /** 가입까지 마친 초대 친구가 한 명이라도 있는지(시작 체크리스트 완료 기준) */
-export function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitingCount'>) {
+function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitingCount'>) {
   return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
 }
 
@@ -165,7 +163,7 @@ export function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitin
  * 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다).
  * 프리미엄 상한은 서버가 정한 premiumCapState를 그대로 따른다
  */
-export function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedCount'>) {
+function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedCount'>) {
   return match({
     premiumCapState: invite.premiumCapState,
     hasPawPrint: invite.qualifiedCount > 0,
@@ -181,7 +179,7 @@ export function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedC
 }
 
 /** 상한에 닿아 초대로는 프리미엄을 더 받지 못한다 */
-export function isPremiumCapReached(invite: Pick<Invite, 'premiumCapState'>) {
+function isPremiumCapReached(invite: Pick<Invite, 'premiumCapState'>) {
   return invite.premiumCapState !== PREMIUM_CAP_STATE.AVAILABLE;
 }
 

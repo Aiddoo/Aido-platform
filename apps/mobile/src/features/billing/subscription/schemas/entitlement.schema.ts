@@ -2,7 +2,7 @@ import { ACCESS_TIERS, PLAN_FEATURE_KEYS, PLAN_QUOTA_PERIODS } from '@aido/api/v
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
+const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
 export type EntitlementFeature = z.infer<typeof entitlementFeatureSchema>;
 
 const accessTierSchema = z.enum(ACCESS_TIERS);

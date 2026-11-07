@@ -147,7 +147,6 @@ export const VoicePlanPolicy = {
   withScheduledTime,
   getCategoryId,
   isDuplicateAction,
-  getDefaultSelection,
   getSelectedActions,
   countSelectedTodos,
   canApplyPlan,

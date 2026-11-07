@@ -1,1 +1,1 @@
-export { IconRadioItem, type IconRadioItemProps } from './icon-radio-item';
+export { IconRadioItem } from './icon-radio-item';

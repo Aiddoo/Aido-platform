@@ -1,1 +1,1 @@
-export { ActionChip, type ActionChipProps } from './action-chip';
+export { ActionChip } from './action-chip';

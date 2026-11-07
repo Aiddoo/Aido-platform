@@ -4,8 +4,6 @@ import { AppToast, type AppToastVariant } from '@src/shared/ui/toast';
 import { useToast } from 'heroui-native';
 import { useCallback } from 'react';
 
-export type { AppToastVariant };
-
 interface ToastAction {
   label: string;
   onPress?: () => void;

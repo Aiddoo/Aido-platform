@@ -3,7 +3,6 @@ import { type Instant, diffMs } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import {
-  STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS,
   STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
   STORE_REVIEW_MIN_ACTIVE_DAYS,
   STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
@@ -31,7 +30,7 @@ export function recordActiveDay(state: StoreReviewState, localDate: string): Sto
     ? state
     : {
         ...state,
-        activeDays: [...state.activeDays, localDate].slice(-STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS),
+        activeDays: [...state.activeDays, localDate].slice(-STORE_REVIEW_MIN_ACTIVE_DAYS),
       };
 }
 

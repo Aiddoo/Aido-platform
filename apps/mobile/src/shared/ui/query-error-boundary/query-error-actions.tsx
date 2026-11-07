@@ -15,7 +15,7 @@ import { VStack } from '../v-stack/v-stack';
 import { QUERY_ERROR_LOG_EVENT } from './query-error-log-events';
 
 /** 예상하지 못한 조회 오류에서 여는 문의. 오류 신고 분류를 미리 고른다 */
-export const BUG_REPORT_INQUIRY_HREF = {
+const BUG_REPORT_INQUIRY_HREF = {
   pathname: '/settings/inquiry',
   params: { category: INQUIRY_CATEGORY.BUG_REPORT },
 } as const;
@@ -26,7 +26,7 @@ export const INQUIRY_SHEET_EXIT: SheetRouteExit = {
   href: BUG_REPORT_INQUIRY_HREF,
 };
 
-export function openBugReportInquiry() {
+function openBugReportInquiry() {
   return router.push(BUG_REPORT_INQUIRY_HREF);
 }
 

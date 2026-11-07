@@ -8,7 +8,7 @@ import {
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const todoCommentSchema = todoCommentV2Schema.extend({
+const todoCommentSchema = todoCommentV2Schema.extend({
   createdAt: instantSchema,
   editedAt: instantSchema.nullable(),
 });

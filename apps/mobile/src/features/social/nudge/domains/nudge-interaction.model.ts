@@ -82,7 +82,7 @@ function getThanksSummary(
   return { state, pendingRecipientCount };
 }
 
-export type NudgeResponseStage = 'unavailable' | 'reply' | 'thanksPrompt' | 'thanked' | 'status';
+type NudgeResponseStage = 'unavailable' | 'reply' | 'thanksPrompt' | 'thanked' | 'status';
 
 /**
  * 상세 화면이 응답 자리에 보일 단계. 받은 사람이 아직 끝나지 않은 할 일에 답할 수 있으면 답장이 먼저고,

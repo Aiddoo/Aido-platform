@@ -12,7 +12,7 @@ interface PreparePlanRequestParams<TInput> {
   createIdempotencyKey: () => string;
 }
 
-export function prepare<TInput>({
+function prepare<TInput>({
   previous,
   input,
   createIdempotencyKey,

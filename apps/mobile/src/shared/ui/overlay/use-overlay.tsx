@@ -9,7 +9,7 @@ export interface Overlay {
   openAsync: <T>(render: OverlayAsyncRender<T>, options: OverlayAsyncOptions<T>) => Promise<T>;
 }
 
-export interface OverlayAsyncOptions<T> {
+interface OverlayAsyncOptions<T> {
   /** 답 없이 사라졌을 때(부른 컴포넌트 unmount, 다시 열기, `resetKey`) 돌려줄 값 */
   dismissedValue: T;
 }

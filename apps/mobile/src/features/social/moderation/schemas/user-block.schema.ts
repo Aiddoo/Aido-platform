@@ -5,7 +5,7 @@ import {
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const blockedUserSchema = blockedUserContractSchema.extend({ blockedAt: instantSchema });
+const blockedUserSchema = blockedUserContractSchema.extend({ blockedAt: instantSchema });
 export type BlockedUser = z.infer<typeof blockedUserSchema>;
 
 export const blockedUsersPageSchema = blockedUsersResponseSchema.extend({

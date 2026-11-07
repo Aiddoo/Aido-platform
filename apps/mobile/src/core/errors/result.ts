@@ -27,20 +27,6 @@ export function err<E extends CodedError>(error: E): Result<never, E> {
   return { ok: false, error };
 }
 
-/** Result가 성공인지 확인 (타입 가드) */
-export function isOk<T, E extends CodedError>(
-  result: Result<T, E>,
-): result is { ok: true; value: T } {
-  return result.ok === true;
-}
-
-/** Result가 실패인지 확인 (타입 가드) */
-export function isErr<T, E extends CodedError>(
-  result: Result<T, E>,
-): result is { ok: false; error: E } {
-  return result.ok === false;
-}
-
 /**
  * Result를 unwrap하여 성공 시 데이터 반환, 실패 시 throw
  * - React Query mutationFn에서 사용

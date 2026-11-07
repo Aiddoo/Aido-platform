@@ -294,7 +294,6 @@ export const VoiceNoteCaptionPolicy = {
   createVoiceNoteCaptions,
   createCaptionsFromNote,
   createVoiceNoteFromTranscript,
-  splitIntoSentences,
   commitProvisional,
   applyCaptionResult,
   withBookmark,

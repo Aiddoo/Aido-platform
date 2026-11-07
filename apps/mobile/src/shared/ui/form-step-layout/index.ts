@@ -1,1 +1,1 @@
-export { FormStepLayout, type FormStepLayoutProps } from './form-step-layout';
+export { FormStepLayout } from './form-step-layout';

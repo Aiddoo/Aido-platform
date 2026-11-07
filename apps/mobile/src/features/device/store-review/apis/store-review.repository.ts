@@ -1,7 +1,7 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { uniq } from 'es-toolkit';
 
-import { STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS } from '../constants/store-review.constants';
+import { STORE_REVIEW_MIN_ACTIVE_DAYS } from '../constants/store-review.constants';
 import { createEmptyStoreReviewState } from '../domains/store-review.model';
 import {
   type LegacyStoreReviewState,
@@ -28,7 +28,7 @@ function storageKey(accountId: string): string {
 function fromLegacy(legacy: LegacyStoreReviewState): StoreReviewState {
   return storeReviewStateSchema.parse({
     activeDays: uniq(legacy.completions.map(({ localDate }) => localDate)).slice(
-      -STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS,
+      -STORE_REVIEW_MIN_ACTIVE_DAYS,
     ),
     requestedAt: legacy.reviewRequestedAt == null ? [] : [legacy.reviewRequestedAt],
   });

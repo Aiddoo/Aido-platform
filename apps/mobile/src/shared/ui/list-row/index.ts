@@ -1,8 +1,2 @@
-export type {
-  ListRowAlignment,
-  ListRowBorder,
-  ListRowHorizontalPadding,
-  ListRowProps,
-  ListRowVerticalPadding,
-} from './list-row';
+export type { ListRowProps } from './list-row';
 export { ListRow } from './list-row';

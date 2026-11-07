@@ -6,7 +6,6 @@ import type { Namespace } from './resources';
 
 export { useTranslation } from 'react-i18next';
 export type { Namespace } from './resources';
-export { resources } from './resources';
 export { i18n };
 
 /**
