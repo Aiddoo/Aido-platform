@@ -34,10 +34,11 @@ export function useAcceptRequestMutationOptions() {
       const result = await friendService.acceptRequest(userId);
       return unwrap(result);
     },
-    onSuccess: () => {
-      invalidateFriends(queryClient);
+    onSuccess: async () => {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
+      // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+      await invalidateFriends(queryClient);
     },
     onError: (error) => {
       haptics.notify('error');
@@ -86,10 +87,11 @@ export function useRejectRequestMutationOptions() {
       const result = await friendService.rejectRequest(userId);
       return unwrap(result);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
+    onSuccess: async () => {
       toast.success(t('friend:toast.requestRejected'));
       trackEvent('friend_request_rejected');
+      // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+      await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
     },
     onError: (error) => {
       haptics.notify('error');
