@@ -7,6 +7,7 @@ import {
   PawIcon,
   Result,
   Text,
+  TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
   Image,
@@ -94,7 +95,15 @@ export function PokeBanner() {
 }
 
 PokeBanner.Loading = function Loading() {
-  return <Skeleton className="h-[72px] rounded-xl" />;
+  return (
+    <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
+      <Skeleton className="size-[72px] rounded-xl" />
+      <VStack flex={1}>
+        <TextSkeleton size="b3" className="w-3/4" />
+        <TextSkeleton size="e1" className="w-1/2" />
+      </VStack>
+    </HStack>
+  );
 };
 
 PokeBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
