@@ -2,17 +2,14 @@ import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-st
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { defaultShouldDehydrateQuery, type Query } from '@tanstack/react-query';
-import type {
-  PersistedClient,
-  PersistQueryClientOptions,
-} from '@tanstack/react-query-persist-client';
+import type { PersistQueryClientOptions } from '@tanstack/react-query-persist-client';
 
 // ⚠️ 영속 계약: 이미 저장된 캐시를 가리키므로 이름을 바꾸면 기존 캐시를 한 번 잃는다
 export const QUERY_CACHE_STORAGE_KEY = 'aido.query-cache';
 const QUERY_CACHE_OWNER_KEY = 'aido.query-cache.owner';
 
 /** 저장한 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
-const QUERY_CACHE_SCHEMA_VERSION = 4;
+const QUERY_CACHE_SCHEMA_VERSION = 5;
 
 /** persister가 쓰는 저장소. 캐시는 주인(사용자 id)별 키에 두고, 주인이 없으면 읽지도 쓰지도 않는다 */
 export interface QueryCacheStorage {
@@ -92,26 +89,6 @@ export const removePlaintextQueryCache = (
 export const shouldPersistQuery = (query: Query): boolean =>
   defaultShouldDehydrateQuery(query) && query.meta?.persist === true;
 
-const DATE_TAG = '$date';
-
-const isTaggedDate = (value: unknown): value is { [DATE_TAG]: number | null } =>
-  typeof value === 'object' &&
-  value != null &&
-  DATE_TAG in value &&
-  Object.keys(value).length === 1;
-
-/** 캐시의 클라이언트 모델은 `Date`를 담으므로 JSON 왕복에서 `Date`를 되살린다 */
-export const serializeQueryCache = (client: PersistedClient): string =>
-  JSON.stringify(client, function replaceDate(this: Record<string, unknown>, key, value) {
-    const raw = this[key];
-    return raw instanceof Date ? { [DATE_TAG]: raw.getTime() } : value;
-  });
-
-export const deserializeQueryCache = (text: string): PersistedClient =>
-  JSON.parse(text, (_key, value) =>
-    isTaggedDate(value) ? new Date(value[DATE_TAG] ?? Number.NaN) : value,
-  );
-
 /**
  * 앱 버전이 바뀌면 모델 모양이 달라질 수 있어 캐시를 버린다.
  * 날씨·알림·AI 결과처럼 서버가 표시 언어로 만든 값도 담겨, 다른 언어로 저장한 캐시도 복원하지 않는다
@@ -134,8 +111,6 @@ export const createQueryPersistOptions = ({
   persister: createAsyncStoragePersister({
     storage,
     key: QUERY_CACHE_STORAGE_KEY,
-    serialize: serializeQueryCache,
-    deserialize: deserializeQueryCache,
   }),
   maxAge: QUERY_CACHE_MAX_AGE_MS,
   buster,

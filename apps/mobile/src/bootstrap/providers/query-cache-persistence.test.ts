@@ -18,10 +18,8 @@ import {
   createQueryCacheBuster,
   createQueryCacheStorage,
   createQueryPersistOptions,
-  deserializeQueryCache,
   QUERY_CACHE_STORAGE_KEY,
   removePlaintextQueryCache,
-  serializeQueryCache,
   shouldPersistQuery,
 } from './query-cache-persistence';
 
@@ -139,125 +137,6 @@ describe('shouldPersistQuery', () => {
   });
 });
 
-describe('serializeQueryCache', () => {
-  it('클라이언트 모델의 Date를 되살린다', () => {
-    // Given
-    const fetchedAt = new Date('2026-11-02T03:00:00.000Z');
-    const client = {
-      timestamp: 1,
-      buster: '1:1.14.0',
-      clientState: { mutations: [], queries: [] },
-      report: { fetchedAt, label: '2026-11-02' },
-    };
-
-    // When
-    const restored = deserializeQueryCache(serializeQueryCache(client));
-
-    // Then
-    expect(restored).toEqual(client);
-  });
-
-  it('Instant 문자열은 복원 뒤에도 오프셋까지 문자열 그대로다', () => {
-    // Given
-    const memo = {
-      createdAt: '2026-11-06T00:00:00.000Z',
-      updatedAt: '2026-11-06T09:00:00+09:00',
-    };
-    const client = {
-      timestamp: 1,
-      buster: '1:1.15.0',
-      clientState: { mutations: [], queries: [] },
-      memo,
-    };
-
-    // When
-    const restored = deserializeQueryCache(serializeQueryCache(client));
-
-    // Then
-    expect(restored).toEqual(client);
-  });
-
-  it('Instant로 옮기기 전에 저장한 $date 값도 Date로 되살린다', () => {
-    // Given 옛 버전이 저장한 캐시
-    const legacy = JSON.stringify({
-      timestamp: 1,
-      buster: '1:1.14.0',
-      clientState: { mutations: [], queries: [] },
-      memo: { createdAt: { $date: 1793923200000 } },
-    });
-
-    // When
-    const restored = deserializeQueryCache(legacy);
-
-    // Then
-    expect(restored).toMatchObject({ memo: { createdAt: new Date(1793923200000) } });
-  });
-
-  it('날씨 리포트의 Instant 시각은 복원 뒤에도 같은 문자열이고 옛 $date 값은 Date로 되살아난다', () => {
-    // Given 새 버전이 저장한 리포트와, 옛 버전이 저장한 같은 모양의 리포트
-    const current = {
-      fetchedAt: '2026-11-02T06:20:00.000Z',
-      hourly: [{ startsAt: '2026-11-02T06:00:00.000Z' }],
-      daily: [{ sunrise: '2026-11-01T21:51:00+00:00', sunset: null }],
-    };
-    const legacy = JSON.stringify({
-      timestamp: 1,
-      buster: '1:1.14.0',
-      clientState: { mutations: [], queries: [] },
-      report: {
-        fetchedAt: { $date: 1793600400000 },
-        hourly: [{ startsAt: { $date: 1793599200000 } }],
-        daily: [{ sunrise: { $date: 1793569860000 }, sunset: null }],
-      },
-    });
-    const client = {
-      timestamp: 1,
-      buster: '1:1.15.0',
-      clientState: { mutations: [], queries: [] },
-      report: current,
-    };
-
-    // When
-    const restoredCurrent = deserializeQueryCache(serializeQueryCache(client));
-    const restoredLegacy = deserializeQueryCache(legacy);
-
-    // Then
-    expect(restoredCurrent).toEqual(client);
-    expect(restoredLegacy).toMatchObject({
-      report: {
-        fetchedAt: new Date(1793600400000),
-        hourly: [{ startsAt: new Date(1793599200000) }],
-        daily: [{ sunrise: new Date(1793569860000), sunset: null }],
-      },
-    });
-  });
-
-  it('달력 날짜와 벽시계 시각 문자열은 복원 뒤에도 문자열 그대로다', () => {
-    // Given
-    const todo = {
-      startDate: '2026-11-06',
-      endDate: '2026-11-08',
-      localTime: '10:00',
-      occurrenceDate: '2026-11-07',
-      scheduledLocalTime: '10:00',
-      repeat: { until: '2027-02-03' },
-    };
-    const client = {
-      timestamp: 1,
-      buster: '1:1.15.0',
-      clientState: { mutations: [], queries: [] },
-      todo,
-      completions: [{ date: '2026-11-06' }],
-    };
-
-    // When
-    const restored = deserializeQueryCache(serializeQueryCache(client));
-
-    // Then
-    expect(restored).toEqual(client);
-  });
-});
-
 describe('createQueryPersistOptions', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -272,7 +151,7 @@ describe('createQueryPersistOptions', () => {
     storage.setOwner('user-1');
     const source = createClient();
     source.getQueryCache().build(source, { queryKey: ['opted'], ...PERSISTED_QUERY_OPTIONS });
-    source.setQueryData(['opted'], { savedAt: new Date('2026-11-02T00:00:00.000Z') });
+    source.setQueryData(['opted'], { savedAt: '2026-11-02T00:00:00.000Z' });
     await persistQueryClientSave({
       queryClient: source,
       ...createQueryPersistOptions({ storage, buster: savedBuster }),
@@ -287,13 +166,26 @@ describe('createQueryPersistOptions', () => {
     return target.getQueryData(['opted']);
   };
 
-  it('같은 앱 버전이면 저장한 조회를 Date까지 복원한다', async () => {
+  it('같은 앱 버전이면 저장한 조회를 Instant 문자열 그대로 복원한다', async () => {
     // Given · When
     const buster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
     const restored = await saveAndRestore(buster, buster);
 
     // Then
-    expect(restored).toEqual({ savedAt: new Date('2026-11-02T00:00:00.000Z') });
+    expect(restored).toEqual({ savedAt: '2026-11-02T00:00:00.000Z' });
+  });
+
+  it('옛 캐시 스키마 버전(4)이 저장한 $date 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
+    // Given
+    const legacyBuster = '4:1.14.0:ko';
+    const currentBuster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
+
+    // When
+    const restored = await saveAndRestore(legacyBuster, currentBuster);
+
+    // Then
+    expect(currentBuster.startsWith('5:')).toBe(true);
+    expect(restored).toBeUndefined();
   });
 
   it('실제 저장·복원을 거친 달력 요약과 목록에도 체크 결과를 날짜 순서대로 반영한다', async () => {
