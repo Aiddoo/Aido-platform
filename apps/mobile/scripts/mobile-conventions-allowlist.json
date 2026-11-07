@@ -6,8 +6,6 @@
       "apps/mobile/app/_layout.tsx": 1,
       "apps/mobile/src/bootstrap/hooks/use-encrypted-storage-bootstrap.ts": 1,
       "apps/mobile/src/bootstrap/hooks/use-user-identity.ts": 1,
-      "apps/mobile/src/bootstrap/providers/auth-boot.ts": 1,
-      "apps/mobile/src/bootstrap/providers/auth-provider.tsx": 1,
       "apps/mobile/src/bootstrap/providers/di-context.tsx": 55,
       "apps/mobile/src/bootstrap/providers/online-manager.ts": 1,
       "apps/mobile/src/bootstrap/providers/query-cache-persistence.ts": 8,
@@ -24,28 +22,6 @@
       "apps/mobile/src/features/device/store-review/apis/store-review.repository.ts": 2,
       "apps/mobile/src/features/device/widget/domains/widget-navigation.model.ts": 2,
       "apps/mobile/src/features/device/widget/hooks/use-widget-snapshot-sync.ts": 1,
-      "apps/mobile/src/features/identity/auth/apis/auth.mapper.ts": 9,
-      "apps/mobile/src/features/identity/auth/constants/auth-provider-labels.ts": 1,
-      "apps/mobile/src/features/identity/auth/domains/auth.error.ts": 3,
-      "apps/mobile/src/features/identity/auth/hooks/use-cooldown.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-change-password-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-delete-account-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-email-login-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-exchange-code-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-forgot-password-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-link-account-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-logout-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-open-apple-login-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-open-google-login-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-open-kakao-login-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-open-naver-login-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-register-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-resend-verification-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-reset-password-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-unlink-account-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-verify-email-mutation-options.ts": 1,
-      "apps/mobile/src/features/identity/auth/utils/get-email-domain-suggestions.ts": 1,
-      "apps/mobile/src/features/identity/auth/utils/log-out-device.ts": 1,
       "apps/mobile/src/features/identity/consent/domains/consent.error.ts": 1,
       "apps/mobile/src/features/identity/consent/queries/consent.mutations.ts": 3,
       "apps/mobile/src/features/identity/user/queries/user.mutations.ts": 1,
@@ -65,12 +41,9 @@
       "apps/mobile/src/features/planning/todo/utils/calculate-tomorrow-schedule.ts": 1,
       "apps/mobile/src/features/planning/todo/utils/calendar-day.ts": 3,
       "apps/mobile/src/features/social/friend/utils/find-friend-by-id.ts": 1,
-      "apps/mobile/src/features/social/invite/apis/invite.mapper.ts": 2,
       "apps/mobile/src/features/social/invite/components/invite-entry-banner.tsx": 1,
       "apps/mobile/src/features/social/invite/domains/invite.error.ts": 1,
       "apps/mobile/src/features/social/invite/hooks/use-invite-app-entry.ts": 1,
-      "apps/mobile/src/features/social/nudge/apis/nudge-interaction.mapper.ts": 3,
-      "apps/mobile/src/features/social/nudge/apis/todo-nudge.mapper.ts": 4,
       "apps/mobile/src/features/social/nudge/utils/nudge-reply-label.ts": 1,
       "apps/mobile/src/features/voice/apis/offline-model-prompt.repository.ts": 1,
       "apps/mobile/src/features/voice/apis/recognition-language.repository.ts": 1,
@@ -146,21 +119,12 @@
   "jest-mock-src": {
     "reason": "포트 stub으로 옮기기 전의 테스트. 파일을 고칠 때 createTestDi와 renderUi로 옮긴다",
     "entries": {
-      "apps/mobile/src/bootstrap/hooks/use-user-identity.test.tsx": 1,
       "apps/mobile/src/bootstrap/hooks/use-widget-app-entry.test.tsx": 1,
-      "apps/mobile/src/bootstrap/navigation/auth-gate-layout.push-entry.test.tsx": 4,
-      "apps/mobile/src/bootstrap/navigation/auth-gate-layout.test.tsx": 7,
-      "apps/mobile/src/features/device/activation/hooks/use-activation-progress.test.tsx": 4,
+      "apps/mobile/src/bootstrap/navigation/auth-gate-layout.push-entry.test.tsx": 3,
+      "apps/mobile/src/bootstrap/navigation/auth-gate-layout.test.tsx": 6,
+      "apps/mobile/src/features/device/activation/hooks/use-activation-progress.test.tsx": 3,
       "apps/mobile/src/features/device/widget/bridge/android-widgets.bridge.test.ts": 2,
-      "apps/mobile/src/features/identity/auth/queries/use-change-password-mutation-options.test.tsx": 1,
-      "apps/mobile/src/features/identity/auth/queries/use-exchange-code-mutation-options.test.tsx": 5,
-      "apps/mobile/src/features/identity/auth/queries/use-open-apple-login-mutation-options.test.tsx": 5,
-      "apps/mobile/src/features/identity/auth/queries/use-register-mutation-options.test.tsx": 1,
-      "apps/mobile/src/features/notification/hooks/use-notification-response-observer.test.tsx": 1,
       "apps/mobile/src/features/notification/hooks/use-timezone-change-notice.test.tsx": 1,
-      "apps/mobile/src/features/planning/todo/queries/todo-series.mutations.test.tsx": 1,
-      "apps/mobile/src/features/planning/todo/queries/todo.mutations.test.tsx": 5,
-      "apps/mobile/src/features/social/nudge/queries/nudge-interaction-analytics.test.tsx": 4,
       "apps/mobile/src/features/weather/hooks/use-weather-scene-clock.test.ts": 1,
       "apps/mobile/src/shared/hooks/use-stable-feed-foreground.test.tsx": 1,
       "apps/mobile/src/shared/preferences/__tests__/language-settings.test.tsx": 1
@@ -171,40 +135,21 @@
     "entries": {
       "apps/mobile/src/features/device/widget/domains/widget-navigation.model.ts": 5,
       "apps/mobile/src/features/device/widget/domains/widget-snapshot.model.ts": 3,
-      "apps/mobile/src/features/identity/auth/domains/auth.model.ts": 1,
       "apps/mobile/src/features/social/nudge/domains/todo-nudge.model.ts": 1
     }
   },
   "feature-upward": {
     "reason": "위층에서 타입, 모델, *-cache 밖의 코드를 가져오는 간선. 줄 수를 넘으면 막는다",
     "entries": {
-      "planning/todo -> planning/composer": {
-        "count": 3,
-        "reason": "to-todo-edit-form-values를 todo로 옮기면 없어진다"
-      },
       "planning/todo -> social/friend": {
-        "count": 4,
-        "reason": "친구 칸과 친구 달력이 친구 쿼리를 읽는다. 슬롯으로 app/에서 조립할 예정"
-      },
-      "planning/todo -> social/invite": {
-        "count": 2,
-        "reason": "친구 칸의 초대 진입. 슬롯으로 app/에서 조립할 예정"
-      },
-      "planning/todo -> social/nudge": {
-        "count": 4,
-        "reason": "친구 할 일 목록의 콕 UI. 2.19 분리 진행 중"
-      },
-      "social/friend -> social/invite": {
         "count": 3,
-        "reason": "친구 목록의 초대 카드와 친구 추가 뒤 초대 갱신"
+        "reason": "친구 칸과 친구 달력이 친구 쿼리를 읽는다. 슬롯으로 app/에서 조립할 예정"
       }
     }
   },
   "forbidden-name": {
     "reason": "규칙을 넣기 전부터 있던 이름. 해당 컴포넌트를 고칠 때 역할 이름으로 바꾼다",
     "entries": {
-      "apps/mobile/src/features/planning/todo/components/friend-strip.tsx": 1,
-      "apps/mobile/src/features/planning/todo/components/todo-repeat-picker-content.tsx": 1,
       "apps/mobile/src/features/social/invite/components/invited-friend-summary.tsx": 1,
       "apps/mobile/src/features/voice/components/quick-voice/quick-voice-panel.tsx": 1,
       "apps/mobile/src/features/weather/components/weather-detail-tile.tsx": 1
@@ -236,22 +181,6 @@
       "planning/category <-> planning/todo": {
         "count": 1,
         "reason": "카테고리 href, 파라미터 훅 이동이 남았다(7단계)"
-      },
-      "planning/composer <-> planning/todo": {
-        "count": 1,
-        "reason": "todo→composer는 to-todo-edit-form-values 3줄. todo로 옮기면 끊긴다"
-      },
-      "planning/todo <-> social/invite": {
-        "count": 1,
-        "reason": "todo→invite는 친구 칸의 초대 진입 2줄"
-      },
-      "planning/todo <-> social/nudge": {
-        "count": 1,
-        "reason": "2.19 nudge↔todo 분리 진행 중"
-      },
-      "social/friend <-> social/invite": {
-        "count": 1,
-        "reason": "friend→invite는 친구 목록의 초대 카드와 친구 추가 뒤 초대 갱신"
       },
       "social/friend <-> social/moderation": {
         "count": 1,
