@@ -14,7 +14,7 @@ import {
   createLoggerStub,
   createMemoryStorage,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -66,7 +66,7 @@ function DigestProbe() {
 async function renderDigest() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
-  const storage = createVoiceNoteStorageServiceFake();
+  const storage = createVoiceNoteStorageFake();
   storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID }));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -85,7 +85,7 @@ async function renderDigest() {
         httpClient,
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMemoryStorage(),
-        voiceNoteStorageService: storage,
+        ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
@@ -167,7 +167,7 @@ describe('useVoiceNoteDigest', () => {
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
 
     // When
-    storage.discard(ACCOUNT_ID, DRAFT_ID);
+    storage.service.discard(ACCOUNT_ID, DRAFT_ID);
     await act(async () => respond());
 
     // Then

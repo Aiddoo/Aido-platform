@@ -38,9 +38,9 @@ import { z } from 'zod';
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
 import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.fixtures';
 import { AuthService } from '../apis/auth.service';
+import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../apis/log-out-device.service';
 import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
-import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from '../utils/log-out-device';
 import {
   useDeleteAccountMutationOptions,
   useEmailLoginMutationOptions,
@@ -736,15 +736,14 @@ describe('로그아웃과 늦은 갱신', () => {
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });
-    const logout = logOutDevice({
-      isOnline: true,
+    const logout = new LogOutDeviceService({
       authService,
       pushDeviceService: { unregister: async () => ok(undefined) },
       tokenStore,
       sessionRevocationService: { record: async () => undefined },
       sessionEpoch,
       logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-    });
+    }).logOut(true);
 
     // When
     await act(async () => {

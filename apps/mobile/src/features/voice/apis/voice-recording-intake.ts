@@ -7,12 +7,16 @@ import {
 } from '../constants/voice-note.constants';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { type VoiceNoteRecording } from '../schemas/voice-note.schema';
+import type { VoiceNoteDraftRepository } from './voice-note-draft.repository';
 import type { VoiceNoteStorageService } from './voice-note-storage.service';
+import type { VoiceRecordingRepository } from './voice-recording.repository';
 
 interface VoiceRecordingIntakeDeps {
   accountId: string;
   draftId: string;
-  storage: Pick<VoiceNoteStorageService, 'drafts' | 'recordings' | 'discard'>;
+  draftRepository: Pick<VoiceNoteDraftRepository, 'find' | 'save'>;
+  recordingRepository: Pick<VoiceRecordingRepository, 'remove' | 'removeSource' | 'save'>;
+  discard: VoiceNoteStorageService['discard'];
   /** 조각 하나를 초안 이름으로 옮겼다 */
   onRecordingSaved: () => void;
 }
@@ -45,7 +49,7 @@ export class VoiceRecordingIntake {
     const startMs = this.#segmentStarts.get(uri) ?? fallbackStartMs;
     this.#segmentStarts.delete(uri);
     if (this.#hasDiscarded) {
-      this.#deps.storage.recordings.removeSource(uri);
+      this.#deps.recordingRepository.removeSource(uri);
     } else {
       const saving = this.#save(uri, startMs).finally(() => this.#pendingSaves.delete(saving));
       this.#pendingSaves.add(saving);
@@ -77,10 +81,10 @@ export class VoiceRecordingIntake {
   };
 
   discard = (): void => {
-    const { accountId, draftId, storage } = this.#deps;
+    const { accountId, draftId, recordingRepository, discard } = this.#deps;
     this.#hasDiscarded = true;
-    this.#recordings.forEach(({ fileName }) => storage.recordings.remove(accountId, fileName));
-    storage.discard(accountId, draftId);
+    this.#recordings.forEach(({ fileName }) => recordingRepository.remove(accountId, fileName));
+    discard(accountId, draftId);
   };
 
   getRecordings = (): readonly VoiceNoteRecording[] => this.#recordings;
@@ -116,15 +120,16 @@ export class VoiceRecordingIntake {
   };
 
   async #save(sourceUri: string, startMs: number): Promise<void> {
-    const { accountId, draftId, storage, onRecordingSaved } = this.#deps;
+    const { accountId, draftId, draftRepository, recordingRepository, onRecordingSaved } =
+      this.#deps;
     const partIndex = this.#partCount;
     this.#partCount += 1;
-    const fileName = await storage.recordings.save({ accountId, draftId, partIndex, sourceUri });
+    const fileName = await recordingRepository.save({ accountId, draftId, partIndex, sourceUri });
     if (fileName == null) {
       return;
     }
     if (this.#hasDiscarded) {
-      storage.recordings.remove(accountId, fileName);
+      recordingRepository.remove(accountId, fileName);
       return;
     }
     this.#recordings = orderBy(
@@ -133,9 +138,9 @@ export class VoiceRecordingIntake {
       ['asc'],
     );
     onRecordingSaved();
-    const handedOff = this.#hasHandedOff ? storage.drafts.find(accountId, draftId) : undefined;
+    const handedOff = this.#hasHandedOff ? draftRepository.find(accountId, draftId) : undefined;
     if (handedOff != null) {
-      storage.drafts.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
+      draftRepository.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
     }
   }
 }

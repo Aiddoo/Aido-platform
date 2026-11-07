@@ -1,5 +1,5 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { useAllDoneBannerRepository } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
@@ -26,7 +26,7 @@ export function InviteEntryBanner({
 }: Pick<ComponentProps<typeof InlineAlert>, 'className' | 'testID'>) {
   const { t } = useTranslation('invite');
   const todayKey = useTodayKey();
-  const inviteService = useInviteService();
+  const allDoneBannerRepository = useAllDoneBannerRepository();
   const openMyInvite = useOpenMyInvite();
   const isInviteAvailable = useInviteAvailability();
   const { data: userId } = useQuery({
@@ -84,7 +84,7 @@ export function InviteEntryBanner({
           {t('entry.inviteFriends')}
         </Button>
       }
-      onClose={() => inviteService.dismissAllDoneBanner(userId, todayKey)}
+      onClose={() => allDoneBannerRepository.dismiss(userId, todayKey)}
       closeLabel={t('entry.allDoneDismiss')}
       {...props}
     />

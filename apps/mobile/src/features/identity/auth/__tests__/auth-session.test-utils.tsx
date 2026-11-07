@@ -28,7 +28,7 @@ import {
   createPushNotificationGatewayStub,
   createSocialAuthGatewayStub,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -39,6 +39,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { AuthService } from '../apis/auth.service';
+import { LogOutDeviceService } from '../apis/log-out-device.service';
 import { createPendingRevocationRepository } from '../apis/pending-revocation.repository';
 import { SessionCleanupService } from '../apis/session-cleanup.service';
 import { createSessionQueryCache } from '../apis/session-query-cache';
@@ -68,7 +69,7 @@ export function createAuthSession({
   accountGuides = [],
 }: AuthSessionOptions = {}) {
   const store = tokenStore ?? createMemoryTokenStore(tokens);
-  const sessionEpoch = createSessionEpoch();
+  const sessionEpoch = di?.sessionEpoch ?? createSessionEpoch();
   const publicHttp = createHttpClientStub();
   const authHttp = createHttpClientStub();
   const socialAuthGateway = createSocialAuthGatewayStub();
@@ -94,7 +95,7 @@ export function createAuthSession({
     queryCache: createSessionQueryCache(queryClient),
     persistedQueryCache: queryCacheStorage,
     drafts: draftService,
-    voiceNotes: createVoiceNoteStorageServiceFake(),
+    voiceNotes: createVoiceNoteStorageFake().service,
     deviceTimezone: new DeviceTimezoneService(
       createDeviceTimezoneRepository(createMemorySyncStorage()),
     ),
@@ -102,24 +103,35 @@ export function createAuthSession({
     logger: createLoggerStub(),
   });
 
+  const authService = new AuthService({
+    publicHttpClient: publicHttp,
+    authHttpClient: authHttp,
+    tokenStore: store,
+    socialAuthGateway,
+  });
+  const pushDeviceService = new PushDeviceService({
+    gateway: createPushNotificationGatewayStub(),
+    deviceIdService: { get: async () => 'device-1' },
+    httpClient: authHttp,
+    logger: createLoggerStub(),
+    getTimeZone: () => 'Asia/Seoul',
+    sessionEpoch,
+  });
+
   const container = createTestDi({
     tokenStore: store,
     logger: createLoggerStub(),
     errorReporter,
     analytics: createAnalyticsStub(),
-    authService: new AuthService({
-      publicHttpClient: publicHttp,
-      authHttpClient: authHttp,
+    authService,
+    pushDeviceService,
+    logOutDeviceService: new LogOutDeviceService({
+      authService,
+      pushDeviceService,
       tokenStore: store,
-      socialAuthGateway,
-    }),
-    pushDeviceService: new PushDeviceService({
-      gateway: createPushNotificationGatewayStub(),
-      deviceIdService: { get: async () => 'device-1' },
-      httpClient: authHttp,
-      logger: createLoggerStub(),
-      getTimeZone: () => 'Asia/Seoul',
+      sessionRevocationService,
       sessionEpoch,
+      logger: createLoggerStub(),
     }),
     userService: new UserService(userHttp),
     todoService: new TodoService(createHttpClientStub()),

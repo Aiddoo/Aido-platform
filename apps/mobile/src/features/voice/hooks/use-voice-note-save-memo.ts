@@ -1,4 +1,4 @@
-import { useIdGenerator, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMutation } from '@tanstack/react-query';
 
@@ -20,7 +20,7 @@ export function useVoiceNoteSaveMemo(
   { onMemoChanged }: UseVoiceNoteSaveMemoParams,
 ) {
   const { accountId, draftId } = useCurrentVoiceNote();
-  const { drafts } = useVoiceNoteStorageService();
+  const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const mutation = useMutation(
     useApplyActionPlanMutationOptions({

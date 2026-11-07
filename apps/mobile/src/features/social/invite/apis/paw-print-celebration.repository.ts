@@ -6,6 +6,7 @@ const PAW_PRINT_CELEBRATION_KEY_PREFIX = 'aido_invite_paw_print_celebrated_v1';
 
 export interface PawPrintCelebrationRepository {
   getCelebratedCount(userId: string): number;
+  /** 줄어든 경우(보상 회수 등)에도 그 수로 맞춰 다음 발자국에서 다시 축하한다 */
   setCelebratedCount(userId: string, count: number): void;
 }
 

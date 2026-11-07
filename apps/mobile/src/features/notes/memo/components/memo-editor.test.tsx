@@ -9,7 +9,7 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -84,7 +84,7 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
-        voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+        ...createVoiceNoteStorageFake().di,
       }),
     },
   );

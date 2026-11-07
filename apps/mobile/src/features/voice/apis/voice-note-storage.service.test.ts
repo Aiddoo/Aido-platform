@@ -17,60 +17,61 @@ const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 function createService() {
   const logger = createLoggerStub();
   const files = createLocalFileSystemFake();
+  const drafts = createVoiceNoteDraftRepository({
+    storage: createMemorySyncStorage(),
+    logger,
+    getTimeZone: () => 'Asia/Seoul',
+  });
   const service = new VoiceNoteStorageService(
-    createVoiceNoteDraftRepository({
-      storage: createMemorySyncStorage(),
-      logger,
-      getTimeZone: () => 'Asia/Seoul',
-    }),
+    drafts,
     createVoiceRecordingRepository(files, logger),
     () => NOW,
   );
 
-  return { files, service };
+  return { files, service, drafts };
 }
 
 describe('VoiceNoteStorageService', () => {
   test('초안을 버리면 그 녹음 파일도 함께 지운다', () => {
     // Given
-    const { files, service } = createService();
+    const { files, service, drafts } = createService();
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav');
-    service.drafts.save('user-1', createVoiceNoteFixture());
+    drafts.save('user-1', createVoiceNoteFixture());
 
     // When
     service.discard('user-1', 'draft-1');
 
     // Then
-    expect(service.drafts.find('user-1', 'draft-1')).toBeUndefined();
+    expect(drafts.find('user-1', 'draft-1')).toBeUndefined();
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
   });
 
   test('아직 쓰지 않은 대기 쓰기만 있는 초안을 버려도 나중에 되살아나지 않는다', () => {
     // Given
     jest.useFakeTimers();
-    const { service } = createService();
-    service.drafts.scheduleSave('user-1', createVoiceNoteFixture());
+    const { service, drafts } = createService();
+    drafts.scheduleSave('user-1', createVoiceNoteFixture());
 
     // When
     service.discard('user-1', 'draft-1');
     jest.advanceTimersByTime(10_000);
 
     // Then
-    expect(service.drafts.find('user-1', 'draft-1')).toBeUndefined();
+    expect(drafts.find('user-1', 'draft-1')).toBeUndefined();
     jest.useRealTimers();
   });
 
   test('30일이 지난 초안은 녹음과 함께 지우고 최근 초안은 남긴다', () => {
     // Given
-    const { files, service } = createService();
+    const { files, service, drafts } = createService();
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', {
       modifiedAt: new Date('2026-11-01T00:00:00.000Z'),
     });
     files.addFile(OWNER_DIRECTORY, 'draft-2-0.wav', {
       modifiedAt: new Date('2026-12-01T00:00:00.000Z'),
     });
-    service.drafts.save('user-1', createVoiceNoteFixture());
-    service.drafts.save(
+    drafts.save('user-1', createVoiceNoteFixture());
+    drafts.save(
       'user-1',
       createVoiceNoteFixture({
         draftId: 'draft-2',
@@ -82,7 +83,7 @@ describe('VoiceNoteStorageService', () => {
     service.removeExpired('user-1');
 
     // Then
-    expect(service.drafts.findAll('user-1').map((note) => note.draftId)).toEqual(['draft-2']);
+    expect(drafts.findAll('user-1').map((note) => note.draftId)).toEqual(['draft-2']);
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-2-0.wav')).toBe(true);
   });
@@ -100,14 +101,14 @@ describe('VoiceNoteStorageService', () => {
       });
 
     const setUp = () => {
-      const { files, service } = createService();
+      const { files, service, drafts } = createService();
       files.addFile(OWNER_DIRECTORY, 'a-0.wav', { sizeBytes: 1_000 });
       files.addFile(OWNER_DIRECTORY, 'a-1.wav', { sizeBytes: 500 });
       files.addFile(OWNER_DIRECTORY, 'b-0.wav', { sizeBytes: 2_000 });
       files.addFile(OWNER_DIRECTORY, 'orphan.wav', { sizeBytes: 300 });
-      service.drafts.save('user-1', createNoteWithRecording('a', '2026-11-01T00:00:00.000Z'));
-      service.drafts.save('user-1', createNoteWithRecording('b', '2026-11-02T00:00:00.000Z'));
-      return { files, service };
+      drafts.save('user-1', createNoteWithRecording('a', '2026-11-01T00:00:00.000Z'));
+      drafts.save('user-1', createNoteWithRecording('b', '2026-11-02T00:00:00.000Z'));
+      return { files, service, drafts };
     };
 
     test('메모에 속한 녹음만 합쳐 전체 용량과 메모별 용량을 최근 순으로 알려 준다', () => {
@@ -127,13 +128,13 @@ describe('VoiceNoteStorageService', () => {
 
     test('한 메모의 녹음을 지워도 글자와 요약은 남고 다시 듣기만 없어진다', () => {
       // Given
-      const { files, service } = setUp();
+      const { files, service, drafts } = setUp();
 
       // When
       service.removeRecordings('user-1', 'a');
 
       // Then
-      const note = service.drafts.find('user-1', 'a');
+      const note = drafts.find('user-1', 'a');
       expect(note?.sentences).toHaveLength(1);
       expect(note?.digest?.summary).toBe(createVoiceNoteDigest().summary);
       expect(note != null && VoiceNotePolicy.canPlayRecording(note)).toBe(false);
@@ -144,7 +145,7 @@ describe('VoiceNoteStorageService', () => {
 
     test('모두 지우면 어느 메모에도 속하지 않은 파일까지 지우고 메모는 남긴다', () => {
       // Given
-      const { files, service } = setUp();
+      const { files, service, drafts } = setUp();
 
       // When
       service.removeAllRecordings('user-1');
@@ -152,7 +153,7 @@ describe('VoiceNoteStorageService', () => {
       // Then
       expect(service.getRecordingUsage('user-1')).toEqual({ totalBytes: 0, notes: [] });
       expect(files.hasFile(OWNER_DIRECTORY, 'orphan.wav')).toBe(false);
-      expect(service.drafts.findAll('user-1')).toHaveLength(2);
+      expect(drafts.findAll('user-1')).toHaveLength(2);
     });
   });
 });

@@ -1,7 +1,7 @@
 import {
   createLocalFileSystemFake,
   createSpeechRecognizerStub,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 
 import { createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
@@ -13,12 +13,14 @@ const DIRECTORY = ['voice-notes', ACCOUNT_ID];
 
 function createIntake() {
   const files = createLocalFileSystemFake();
-  const storage = createVoiceNoteStorageServiceFake(files);
+  const storage = createVoiceNoteStorageFake(files);
   const onRecordingSaved = jest.fn();
   const intake = new VoiceRecordingIntake({
     accountId: ACCOUNT_ID,
     draftId: DRAFT_ID,
-    storage,
+    draftRepository: storage.drafts,
+    recordingRepository: storage.recordings,
+    discard: storage.service.discard,
     onRecordingSaved,
   });
   return { files, storage, intake, onRecordingSaved };

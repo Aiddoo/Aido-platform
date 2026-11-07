@@ -23,7 +23,7 @@ import {
   createMemorySyncStorage,
   createMemoryTokenStore,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -124,7 +124,7 @@ describe('AuthBootProvider', () => {
             queryCache: createSessionQueryCache(queryClient),
             persistedQueryCache: queryCacheStorage,
             drafts: draftService,
-            voiceNotes: createVoiceNoteStorageServiceFake(),
+            voiceNotes: createVoiceNoteStorageFake().service,
             deviceTimezone: deviceTimezoneService,
             pendingRedemption: createPendingRedemptionRepository(createMemorySyncStorage()),
             logger: createLoggerStub(),

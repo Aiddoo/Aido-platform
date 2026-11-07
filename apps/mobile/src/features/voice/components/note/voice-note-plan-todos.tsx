@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -31,7 +31,7 @@ interface VoiceNotePlanTodosProps extends Pick<
 export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
-  const { drafts } = useVoiceNoteStorageService();
+  const drafts = useVoiceNoteDraftRepository();
   const [{ data: categoriesResult }] = useSuspenseQueries({
     queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
   });

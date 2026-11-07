@@ -19,7 +19,7 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -131,7 +131,7 @@ async function renderQuickVoice({
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const voiceNoteStorage = createVoiceNoteStorageServiceFake();
+  const voiceNoteStorage = createVoiceNoteStorageFake();
   const onExit = jest.fn();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
@@ -156,7 +156,7 @@ async function renderQuickVoice({
       queryClient,
       di: createTestDi({
         httpClient,
-        voiceNoteStorageService: voiceNoteStorage,
+        ...voiceNoteStorage.di,
         coachmarkService: new CoachmarkService({
           isSeen: () => isCoachmarkSeen,
           markSeen: jest.fn(),

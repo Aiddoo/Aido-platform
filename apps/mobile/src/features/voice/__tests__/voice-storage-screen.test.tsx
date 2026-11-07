@@ -7,20 +7,15 @@ import {
   createHapticsStub,
   createHttpClientStub,
   createLocalFileSystemFake,
-  createLoggerStub,
-  createMemorySyncStorage,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import VoiceStorageRoute from '../../../../app/(app)/(mypage-menu)/settings/voice-storage';
-import { createVoiceNoteDraftRepository } from '../apis/voice-note-draft.repository';
-import { VoiceNoteStorageService } from '../apis/voice-note-storage.service';
-import { createVoiceRecordingRepository } from '../apis/voice-recording.repository';
 import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
@@ -31,16 +26,7 @@ async function renderScreen({
   hasOrphanFile = false,
 }: { hasRecording?: boolean; hasOrphanFile?: boolean } = {}) {
   const files = createLocalFileSystemFake();
-  const logger = createLoggerStub();
-  const storage = new VoiceNoteStorageService(
-    createVoiceNoteDraftRepository({
-      storage: createMemorySyncStorage(),
-      logger,
-      getTimeZone: () => 'Asia/Seoul',
-    }),
-    createVoiceRecordingRepository(files, logger),
-    getNowInstant,
-  );
+  const storage = createVoiceNoteStorageFake(files);
   if (hasRecording) {
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', { sizeBytes: 2_500_000 });
     storage.drafts.save(
@@ -69,7 +55,7 @@ async function renderScreen({
       queryClient,
       di: {
         userService: new UserService(createHttpClientStub()),
-        voiceNoteStorageService: storage,
+        ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),

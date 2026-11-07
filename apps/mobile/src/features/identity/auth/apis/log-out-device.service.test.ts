@@ -12,7 +12,7 @@ import {
   TimeoutError,
 } from '@src/shared/errors';
 
-import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from './log-out-device';
+import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from './log-out-device.service';
 
 type TimeoutConfig = Pick<RequestConfig, 'timeout'> | undefined;
 
@@ -52,13 +52,13 @@ const createStubServices = ({
   };
 };
 
-describe('logOutDevice', () => {
+describe('LogOutDeviceService.logOut', () => {
   it('오프라인이면 서버 요청 없이 이 기기의 세션만 끝낸다', async () => {
     // Given
     const stub = createStubServices();
 
     // When
-    await logOutDevice({ isOnline: false, ...stub, logger: createLoggerStub() });
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut(false);
 
     // Then
     expect(stub.calls.unregister).toEqual([]);
@@ -71,7 +71,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut(true);
 
     // Then
     expect(stub.calls.unregister).toEqual([{ timeout: LOGOUT_REQUEST_TIMEOUT_MS }]);
@@ -87,7 +87,7 @@ describe('logOutDevice', () => {
     });
 
     // When
-    const result = logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
+    const result = new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut(true);
 
     // Then
     await expect(result).resolves.toBe('ended');
@@ -98,7 +98,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({ isOnline: false, ...stub, logger: createLoggerStub() });
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut(false);
 
     // Then
     expect(stub.calls.recorded).toEqual(['refresh-a']);
@@ -118,7 +118,7 @@ describe('logOutDevice', () => {
     });
 
     // When
-    await logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut(true);
 
     // Then
     expect(stub.calls.recorded).toEqual(['refresh-a']);
@@ -131,7 +131,7 @@ describe('logOutDevice', () => {
     });
 
     // When
-    await logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut(true);
 
     // Then
     expect(stub.calls.recorded).toEqual([]);
@@ -142,8 +142,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({
-      isOnline: false,
+    await new LogOutDeviceService({
       ...stub,
       sessionRevocationService: {
         record: async () => {
@@ -151,7 +150,7 @@ describe('logOutDevice', () => {
         },
       },
       logger: createLoggerStub(),
-    });
+    }).logOut(false);
 
     // Then
     expect(stub.calls.clearLocalSession).toBe(1);
@@ -162,8 +161,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({
-      isOnline: false,
+    await new LogOutDeviceService({
       ...stub,
       tokenStore: {
         readRefreshToken: async () => {
@@ -171,7 +169,7 @@ describe('logOutDevice', () => {
         },
       },
       logger: createLoggerStub(),
-    });
+    }).logOut(false);
 
     // Then
     expect(stub.calls.clearLocalSession).toBe(1);
@@ -184,8 +182,7 @@ describe('logOutDevice', () => {
     const warnings: unknown[] = [];
 
     // When
-    await logOutDevice({
-      isOnline: false,
+    await new LogOutDeviceService({
       ...stub,
       sessionRevocationService: {
         record: async () => {
@@ -193,7 +190,7 @@ describe('logOutDevice', () => {
         },
       },
       logger: { ...createLoggerStub(), warn: (...args: unknown[]) => warnings.push(args) },
-    });
+    }).logOut(false);
 
     // Then
     expect(JSON.stringify(warnings)).not.toContain('refresh-a');
@@ -216,13 +213,12 @@ describe('logOutDevice', () => {
       .mockResolvedValueOnce('refresh-b');
 
     // When
-    const outcome = await logOutDevice({
-      isOnline: true,
+    const outcome = await new LogOutDeviceService({
       ...stub,
       authService,
       tokenStore: { readRefreshToken },
       logger: createLoggerStub(),
-    });
+    }).logOut(true);
 
     // Then
     expect(outcome).toBe('superseded');
@@ -246,13 +242,12 @@ describe('logOutDevice', () => {
       .mockResolvedValueOnce(null);
 
     // When
-    const outcome = await logOutDevice({
-      isOnline: true,
+    const outcome = await new LogOutDeviceService({
       ...stub,
       authService,
       tokenStore: { readRefreshToken },
       logger: createLoggerStub(),
-    });
+    }).logOut(true);
 
     // Then
     expect(outcome).toBe('ended');
@@ -270,12 +265,11 @@ describe('logOutDevice', () => {
     };
 
     // When
-    const outcome = await logOutDevice({
-      isOnline: false,
+    const outcome = await new LogOutDeviceService({
       ...stub,
       authService,
       logger: createLoggerStub(),
-    });
+    }).logOut(false);
 
     // Then
     expect(outcome).toBe('ended');

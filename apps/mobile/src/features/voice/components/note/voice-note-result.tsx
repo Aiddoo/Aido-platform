@@ -1,4 +1,4 @@
-import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useVoiceRecordingRepository } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -100,10 +100,10 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
 
 function useVoiceNoteResultPlayer(note: VoiceNote) {
   const { accountId } = useCurrentVoiceNote();
-  const { recordings } = useVoiceNoteStorageService();
+  const recordingRepository = useVoiceRecordingRepository();
   const [parts] = useState(() =>
     note.recordings.flatMap(({ fileName, startMs }) => {
-      const uri = recordings.findUri(accountId, fileName);
+      const uri = recordingRepository.findUri(accountId, fileName);
       return uri == null ? [] : [{ uri, startMs }];
     }),
   );

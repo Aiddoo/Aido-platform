@@ -7,7 +7,7 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -31,9 +31,9 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
-  const voiceNoteStorageService = createVoiceNoteStorageServiceFake();
+  const voiceNoteStorage = createVoiceNoteStorageFake();
   if (hasVoiceNote) {
-    voiceNoteStorageService.drafts.save(ACCOUNT_ID, createVoiceNoteFixture());
+    voiceNoteStorage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture());
   }
 
   await renderUi(
@@ -49,7 +49,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
-        voiceNoteStorageService,
+        ...voiceNoteStorage.di,
       }),
     },
   );

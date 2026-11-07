@@ -13,10 +13,8 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import InviteCodeEntryRoute from '../../../../../app/invite';
-import { createAllDoneBannerRepository } from '../apis/all-done-banner.repository';
 import { createInstallReferrerRepository } from '../apis/install-referrer.repository';
 import { InviteService } from '../apis/invite.service';
-import { createPawPrintCelebrationRepository } from '../apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '../apis/pending-redemption.repository';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { InviteCodePolicy } from '../domains/invite-code.model';
@@ -34,9 +32,7 @@ function createInviteService() {
     installReferrerRepository: createInstallReferrerRepository(storage, {
       read: () => Promise.resolve(null),
     }),
-    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
     installationIdGateway: { get: () => Promise.resolve(null) },
-    allDoneBannerRepository: createAllDoneBannerRepository(storage),
     logger: { warn: () => undefined },
   });
   return { inviteService, publicHttpClient };

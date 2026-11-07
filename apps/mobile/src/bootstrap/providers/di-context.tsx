@@ -29,6 +29,7 @@ import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import type { AuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import type { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
 import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import type { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
 import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
@@ -47,14 +48,18 @@ import type { TodoCategoryService } from '@src/features/planning/category/apis/t
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import type { FriendService } from '@src/features/social/friend/apis/friend.service';
+import type { AllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
 import type { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/apis/invite.service';
+import type { PawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
 import type { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import type { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import type { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 import type { OfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 import type { RecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import type { VoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
+import type { VoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
 import type { VoiceService } from '@src/features/voice/apis/voice.service';
 import type { WeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
@@ -106,6 +111,8 @@ export interface DIContainer extends SharedDependencies {
   appIconService: AppIconService;
   friendService: FriendService;
   inviteService: InviteService;
+  allDoneBannerRepository: AllDoneBannerRepository;
+  pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   inviteShareService: InviteShareService;
   featureCampaignService: FeatureCampaignService;
   whatsNewRepository: WhatsNewRepository;
@@ -136,7 +143,10 @@ export interface DIContainer extends SharedDependencies {
   weatherIntroductionRepository: WeatherIntroductionRepository;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
+  logOutDeviceService: LogOutDeviceService;
   voiceNoteStorageService: VoiceNoteStorageService;
+  voiceNoteDraftRepository: VoiceNoteDraftRepository;
+  voiceRecordingRepository: VoiceRecordingRepository;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -259,6 +269,12 @@ export function useFriendService() {
 export function useInviteService() {
   return useDI().inviteService;
 }
+export function useAllDoneBannerRepository() {
+  return useDI().allDoneBannerRepository;
+}
+export function usePawPrintCelebrationRepository() {
+  return useDI().pawPrintCelebrationRepository;
+}
 export function useInviteShareService() {
   return useDI().inviteShareService;
 }
@@ -346,8 +362,17 @@ export function useWidgetSyncService() {
 export function useWidgetNavigationRepository() {
   return useDI().widgetNavigationRepository;
 }
+export function useLogOutDeviceService() {
+  return useDI().logOutDeviceService;
+}
 export function useVoiceNoteStorageService() {
   return useDI().voiceNoteStorageService;
+}
+export function useVoiceNoteDraftRepository() {
+  return useDI().voiceNoteDraftRepository;
+}
+export function useVoiceRecordingRepository() {
+  return useDI().voiceRecordingRepository;
 }
 
 export function useAppIconService() {

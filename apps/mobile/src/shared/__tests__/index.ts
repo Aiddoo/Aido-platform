@@ -42,6 +42,6 @@ export { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 export { createSystemShareGatewayStub } from './create-system-share-gateway-stub';
 export { createTestDi } from './create-test-di';
 export { createTokenRefresherStub } from './create-token-refresher-stub';
-export { createVoiceNoteStorageServiceFake } from './create-voice-note-storage-service-fake';
+export { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 export { runKyAfterResponseHook } from './run-ky-after-response-hook';
 export { stubWindowDimensions } from './stub-window-dimensions';

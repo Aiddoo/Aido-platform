@@ -1,4 +1,4 @@
-import { useIdGenerator, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
 import { isNotChargedError } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
@@ -23,7 +23,7 @@ export interface VoiceNoteDigestFailure {
  * 앱을 다시 켜고 다시 눌러도 한 번만 차감된다. 실패해도 글자는 그대로다.
  */
 export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; draftId: string }) {
-  const { drafts } = useVoiceNoteStorageService();
+  const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const aiConsent = useAiDataSharingConsentGate();

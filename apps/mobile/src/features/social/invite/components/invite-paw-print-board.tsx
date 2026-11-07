@@ -1,5 +1,5 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
-import { useHaptics, useInviteService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, usePawPrintCelebrationRepository } from '@src/bootstrap/providers/di-context';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -352,9 +352,11 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
  */
 function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
   const haptics = useHaptics();
-  const inviteService = useInviteService();
+  const pawPrintCelebrationRepository = usePawPrintCelebrationRepository();
   const { requestReviewAt } = useStoreReviewMoment();
-  const [celebratedCount] = useState(() => inviteService.getCelebratedPawPrintCount(userId));
+  const [celebratedCount] = useState(() =>
+    pawPrintCelebrationRepository.getCelebratedCount(userId),
+  );
   const hasNewPawPrint = qualifiedCount > celebratedCount;
 
   useEffect(() => {
@@ -362,13 +364,20 @@ function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
       return;
     }
 
-    inviteService.markPawPrintsCelebrated(userId, qualifiedCount);
+    pawPrintCelebrationRepository.setCelebratedCount(userId, qualifiedCount);
     if (hasNewPawPrint) {
       haptics.notify('success');
       // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
       requestReviewAt('paw_print_celebration');
     }
-  }, [celebratedCount, hasNewPawPrint, inviteService, qualifiedCount, requestReviewAt, userId]);
+  }, [
+    celebratedCount,
+    hasNewPawPrint,
+    pawPrintCelebrationRepository,
+    qualifiedCount,
+    requestReviewAt,
+    userId,
+  ]);
 
   return celebratedCount;
 }

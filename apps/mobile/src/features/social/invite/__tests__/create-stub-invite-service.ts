@@ -5,10 +5,8 @@ import {
   createMemorySyncStorage,
 } from '@src/shared/__tests__';
 
-import { createAllDoneBannerRepository } from '../apis/all-done-banner.repository';
 import { createInstallReferrerRepository } from '../apis/install-referrer.repository';
 import { InviteService } from '../apis/invite.service';
-import { createPawPrintCelebrationRepository } from '../apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '../apis/pending-redemption.repository';
 
 interface StubInviteServiceOptions {
@@ -30,9 +28,7 @@ export function createStubInviteService({
     installReferrerRepository: createInstallReferrerRepository(storage, {
       read: async () => null,
     }),
-    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
     installationIdGateway: { get: async () => null },
-    allDoneBannerRepository: createAllDoneBannerRepository(storage),
     logger: createLoggerStub(),
   });
 }

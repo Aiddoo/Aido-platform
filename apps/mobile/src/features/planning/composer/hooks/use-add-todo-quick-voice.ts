@@ -1,7 +1,7 @@
 import {
   useIdGenerator,
   useLogger,
-  useVoiceNoteStorageService,
+  useVoiceNoteDraftRepository,
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
@@ -226,7 +226,7 @@ interface UseContinueAsVoiceNoteOptions {
 /** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
 function useContinueAsVoiceNote({ session, locale, onExit }: UseContinueAsVoiceNoteOptions) {
   const idGenerator = useIdGenerator();
-  const voiceNoteStorage = useVoiceNoteStorageService();
+  const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
   const startVoiceNote = useVoiceNoteStart();
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
 
@@ -247,7 +247,7 @@ function useContinueAsVoiceNote({ session, locale, onExit }: UseContinueAsVoiceN
           durationMs: elapsedMs,
         });
         if (note.sentences.length > 0) {
-          voiceNoteStorage.drafts.save(me.id, note);
+          voiceNoteDraftRepository.save(me.id, note);
         }
         session.handOff();
         onExit();

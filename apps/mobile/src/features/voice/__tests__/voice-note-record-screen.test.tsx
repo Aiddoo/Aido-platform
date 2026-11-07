@@ -14,7 +14,7 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -37,7 +37,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const storage = createVoiceNoteStorageServiceFake();
+  const storage = createVoiceNoteStorageFake();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -60,7 +60,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         storage: createMemoryStorage(),
         speechRecognizer,
-        voiceNoteStorageService: storage,
+        ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),

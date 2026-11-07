@@ -3,7 +3,9 @@ import {
   useIdGenerator,
   useOfflineModelPromptRepository,
   useSpeechRecognizer,
+  useVoiceNoteDraftRepository,
   useVoiceNoteStorageService,
+  useVoiceRecordingRepository,
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
@@ -47,10 +49,12 @@ export function useVoiceNoteRecording({
 }: UseVoiceNoteRecordingOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const storage = useVoiceNoteStorageService();
+  const draftRepository = useVoiceNoteDraftRepository();
+  const recordingRepository = useVoiceRecordingRepository();
   const idGenerator = useIdGenerator();
 
   const [seedNote] = useState(() =>
-    seedDraftId == null ? undefined : storage.drafts.find(accountId, seedDraftId),
+    seedDraftId == null ? undefined : draftRepository.find(accountId, seedDraftId),
   );
   const [baseNote] = useState<VoiceNote>(
     () =>
@@ -66,7 +70,9 @@ export function useVoiceNoteRecording({
       new VoiceRecordingIntake({
         accountId,
         draftId: baseNote.draftId,
-        storage,
+        draftRepository,
+        recordingRepository,
+        discard: storage.discard,
         onRecordingSaved: () => persist('later'),
       }),
   );
@@ -117,9 +123,9 @@ export function useVoiceNoteRecording({
       return;
     }
     if (timing === 'now') {
-      storage.drafts.save(accountId, note);
+      draftRepository.save(accountId, note);
     } else {
-      storage.drafts.scheduleSave(accountId, note);
+      draftRepository.scheduleSave(accountId, note);
     }
   }
 
@@ -193,7 +199,7 @@ export function useVoiceNoteRecording({
     const hasBegun = await session.begin({
       locale: startLocale,
       contextualStrings,
-      recordingDirectory: storage.recordings.prepareDirectory(accountId),
+      recordingDirectory: recordingRepository.prepareDirectory(accountId),
       seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
     });
     hasBegunRef.current = hasBegun;

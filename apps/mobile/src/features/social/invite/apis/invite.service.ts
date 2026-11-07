@@ -34,10 +34,8 @@ import {
 import { type Invite, type InviteCode, inviteSchema } from '../schemas/invite.schema';
 import { type InvitedFriend, invitedFriendsPageSchema } from '../schemas/invited-friend.schema';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
-import type { AllDoneBannerRepository } from './all-done-banner.repository';
 import type { InstallReferrerRepository } from './install-referrer.repository';
 import { toInvitedFriendsPage, toInvitePreview } from './invite.mapper';
-import type { PawPrintCelebrationRepository } from './paw-print-celebration.repository';
 import type { PendingRedemptionRepository } from './pending-redemption.repository';
 
 type InviteServiceError = ApiError | BusinessError<InviteErrorCode>;
@@ -48,9 +46,7 @@ interface InviteServicePorts {
   authHttpClient: HttpClient;
   pendingRedemptionRepository: PendingRedemptionRepository;
   installReferrerRepository: InstallReferrerRepository;
-  pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   installationIdGateway: InstallationIdGateway;
-  allDoneBannerRepository: AllDoneBannerRepository;
   logger: Pick<Logger, 'warn'>;
 }
 
@@ -64,9 +60,7 @@ export class InviteService {
   readonly #authHttpClient: HttpClient;
   readonly #pendingRedemptionRepository: PendingRedemptionRepository;
   readonly #installReferrerRepository: InstallReferrerRepository;
-  readonly #pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   readonly #installationIdGateway: InstallationIdGateway;
-  readonly #allDoneBannerRepository: AllDoneBannerRepository;
   readonly #logger: Pick<Logger, 'warn'>;
 
   constructor({
@@ -74,18 +68,14 @@ export class InviteService {
     authHttpClient,
     pendingRedemptionRepository,
     installReferrerRepository,
-    pawPrintCelebrationRepository,
     installationIdGateway,
-    allDoneBannerRepository,
     logger,
   }: InviteServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#pendingRedemptionRepository = pendingRedemptionRepository;
     this.#installReferrerRepository = installReferrerRepository;
-    this.#pawPrintCelebrationRepository = pawPrintCelebrationRepository;
     this.#installationIdGateway = installationIdGateway;
-    this.#allDoneBannerRepository = allDoneBannerRepository;
     this.#logger = logger;
   }
 
@@ -181,18 +171,6 @@ export class InviteService {
       toInvitedFriendsPage,
       '[InviteService] Invalid getInvitedFriends response',
     );
-
-  dismissAllDoneBanner = (userId: string, dateKey: string) => {
-    this.#allDoneBannerRepository.dismiss(userId, dateKey);
-  };
-
-  getCelebratedPawPrintCount = (userId: string) =>
-    this.#pawPrintCelebrationRepository.getCelebratedCount(userId);
-
-  /** 줄어든 경우(보상 회수 등)에도 그 수로 맞춰 다음 발자국에서 다시 축하한다 */
-  markPawPrintsCelebrated = (userId: string, pawPrintedCount: number) => {
-    this.#pawPrintCelebrationRepository.setCelebratedCount(userId, pawPrintedCount);
-  };
 
   savePendingRedemption = (input: SavePendingRedemptionInput, now: Instant) => {
     this.#pendingRedemptionRepository.save({ ...input, savedAt: now });

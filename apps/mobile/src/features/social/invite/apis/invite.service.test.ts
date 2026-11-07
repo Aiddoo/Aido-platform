@@ -15,10 +15,8 @@ import {
   INVALID_DTO,
 } from '../__tests__/invite.fixtures';
 import { INVITE_ERROR_CODE } from '../domains/invite.error';
-import { createAllDoneBannerRepository } from './all-done-banner.repository';
 import { createInstallReferrerRepository } from './install-referrer.repository';
 import { InviteService } from './invite.service';
-import { createPawPrintCelebrationRepository } from './paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from './pending-redemption.repository';
 
 function createService({
@@ -39,9 +37,7 @@ function createService({
     authHttpClient,
     pendingRedemptionRepository,
     installReferrerRepository: createInstallReferrerRepository(storage, { read: readReferrer }),
-    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
     installationIdGateway: { get: readInstallationId },
-    allDoneBannerRepository: createAllDoneBannerRepository(storage),
     logger,
   });
 

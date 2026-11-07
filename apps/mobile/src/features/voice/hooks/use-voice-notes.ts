@@ -1,10 +1,10 @@
-import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
 import { useSyncExternalStore } from 'react';
 
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 
 function useStoredVoiceNotes(accountId: string) {
-  const { drafts } = useVoiceNoteStorageService();
+  const drafts = useVoiceNoteDraftRepository();
   return useSyncExternalStore(drafts.subscribe, () => drafts.getSnapshot(accountId));
 }
 

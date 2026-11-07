@@ -27,6 +27,8 @@ import { NotificationService } from '@src/features/notification/apis/notificatio
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { createAllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
+import { createPawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
@@ -51,7 +53,7 @@ import { createMemorySyncStorage } from './create-memory-sync-storage';
 import { createMemoryTokenStore } from './create-memory-token-store';
 import { createPushNotificationGatewayStub } from './create-push-notification-gateway-stub';
 import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
-import { createVoiceNoteStorageServiceFake } from './create-voice-note-storage-service-fake';
+import { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 
 type TestDiOverrides = Partial<DIContainer> & {
   /** 실제 Service들이 함께 쓰는 HTTP 포트. 응답은 테스트가 이 stub에 정한다 */
@@ -143,7 +145,10 @@ export function createTestDi({
     // 초안 id·멱등 키는 쓰는 화면이 많아 호출마다 다른 값을 주는 stub을 기본으로 둔다
     idGenerator: createIdGeneratorStub(),
     // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
-    voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+    ...createVoiceNoteStorageFake().di,
+    // 초대 안내 배너를 그리는 화면이 렌더 때 읽는 저장소라 빈 메모리 저장소를 둔다
+    allDoneBannerRepository: createAllDoneBannerRepository(createMemorySyncStorage()),
+    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(createMemorySyncStorage()),
     // 사용자 식별 훅이 로그인 때 주인을 지정하는 저장소라 기기에 남기지 않는 저장소를 둔다
     queryCacheStorage: disabledQueryCacheStorage,
     // 말로 메모 녹음 훅이 항상 읽는다. 받기 안내를 보는 테스트만 override한다
@@ -373,8 +378,23 @@ export function createTestDi({
     get widgetNavigationRepository() {
       return dependency('widgetNavigationRepository');
     },
+    get allDoneBannerRepository() {
+      return dependency('allDoneBannerRepository');
+    },
+    get pawPrintCelebrationRepository() {
+      return dependency('pawPrintCelebrationRepository');
+    },
+    get logOutDeviceService() {
+      return dependency('logOutDeviceService');
+    },
     get voiceNoteStorageService() {
       return dependency('voiceNoteStorageService');
+    },
+    get voiceNoteDraftRepository() {
+      return dependency('voiceNoteDraftRepository');
+    },
+    get voiceRecordingRepository() {
+      return dependency('voiceRecordingRepository');
     },
   };
 

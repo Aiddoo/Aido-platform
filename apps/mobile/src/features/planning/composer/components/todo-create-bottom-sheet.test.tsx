@@ -14,7 +14,7 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestDi,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -48,7 +48,7 @@ async function renderCreateSheet() {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         voiceService: new VoiceService(httpClient, logger),
-        voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+        ...createVoiceNoteStorageFake().di,
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),

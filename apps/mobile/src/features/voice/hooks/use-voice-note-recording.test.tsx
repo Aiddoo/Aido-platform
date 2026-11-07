@@ -7,7 +7,7 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createVoiceNoteStorageServiceFake,
+  createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { OverlayProvider, Text } from '@src/shared/ui';
@@ -81,7 +81,7 @@ async function renderRecording({
     canSaveRecording: true,
     canContinue: true,
   });
-  const storage = createVoiceNoteStorageServiceFake(files);
+  const storage = createVoiceNoteStorageFake(files);
   const analytics = createAnalyticsStub();
   const handlers = {
     onLimitReached: jest.fn(),
@@ -96,7 +96,7 @@ async function renderRecording({
     {
       di: {
         speechRecognizer,
-        voiceNoteStorageService: storage,
+        ...storage.di,
         offlineModelPromptRepository,
         analytics,
         errorReporter: createErrorReporterStub(),
@@ -337,7 +337,7 @@ describe('useVoiceNoteRecording', () => {
   test('빠른 말하기에서 넘어온 초안은 글자와 시간을 이어 듣고 진입 경로를 남긴다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageServiceFake();
+    const storage = createVoiceNoteStorageFake();
     const analytics = createAnalyticsStub();
     const seed = createVoiceNoteFixture({
       draftId: 'seed-1',
@@ -360,7 +360,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: storage,
+          ...storage.di,
           analytics,
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -547,7 +547,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+          ...createVoiceNoteStorageFake().di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -674,7 +674,7 @@ describe('useVoiceNoteRecording', () => {
     const speechRecognizer = createSpeechRecognizerStub();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-    const storage = createVoiceNoteStorageServiceFake(files);
+    const storage = createVoiceNoteStorageFake(files);
     const onFinished = jest.fn();
     const { unmount } = await renderUi(
       <OverlayProvider>
@@ -688,7 +688,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: storage,
+          ...storage.di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -748,7 +748,7 @@ describe('useVoiceNoteRecording', () => {
       const { rerender } = await renderUi(<OverlayProvider>{probe}</OverlayProvider>, {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+          ...createVoiceNoteStorageFake().di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -804,7 +804,7 @@ describe('useVoiceNoteRecording', () => {
   test('끝내는 동안 화면이 내려가면 글자는 저장하되 결과 화면으로 끌어오지 않는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageServiceFake();
+    const storage = createVoiceNoteStorageFake();
     const onFinished = jest.fn();
     const { unmount } = await renderUi(
       <OverlayProvider>
@@ -818,7 +818,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: storage,
+          ...storage.di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -850,7 +850,7 @@ describe('useVoiceNoteRecording', () => {
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const newRecordingUri = files.addFile(RECORDING_DIRECTORY, 'recording_new.wav');
-    const storage = createVoiceNoteStorageServiceFake(files);
+    const storage = createVoiceNoteStorageFake(files);
     const onFinished = jest.fn();
     const { unmount } = await renderUi(
       <OverlayProvider>
@@ -864,7 +864,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: storage,
+          ...storage.di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -905,7 +905,7 @@ describe('useVoiceNoteRecording', () => {
       const speechRecognizer = createSpeechRecognizerStub();
       const files = createLocalFileSystemFake();
       const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-      const storage = createVoiceNoteStorageServiceFake(files);
+      const storage = createVoiceNoteStorageFake(files);
       const { unmount } = await renderUi(
         <OverlayProvider>
           <RecordingProbe
@@ -918,7 +918,7 @@ describe('useVoiceNoteRecording', () => {
         {
           di: {
             speechRecognizer,
-            voiceNoteStorageService: storage,
+            ...storage.di,
             analytics: createAnalyticsStub(),
             errorReporter: createErrorReporterStub(),
             haptics: createHapticsStub(),
@@ -1007,7 +1007,7 @@ describe('useVoiceNoteRecording', () => {
   test('화면이 내려간 뒤에도 기다리던 초안 쓰기가 끝나 글자가 남는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageServiceFake();
+    const storage = createVoiceNoteStorageFake();
     const { unmount } = await renderUi(
       <OverlayProvider>
         <RecordingProbe
@@ -1020,7 +1020,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: storage,
+          ...storage.di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),
@@ -1044,7 +1044,7 @@ describe('useVoiceNoteRecording', () => {
   test('앱을 다시 열어 저장된 초안으로 들어오면 글자를 보여 주고 시간 뒤로 이어 쓴다', async () => {
     // Given 앞 세션이 저장한 초안이 기기에 있다
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageServiceFake();
+    const storage = createVoiceNoteStorageFake();
     storage.drafts.save(
       ACCOUNT_ID,
       createVoiceNoteFixture({
@@ -1069,7 +1069,7 @@ describe('useVoiceNoteRecording', () => {
       {
         di: {
           speechRecognizer,
-          voiceNoteStorageService: storage,
+          ...storage.di,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           haptics: createHapticsStub(),

@@ -22,6 +22,7 @@ import { createWidgetBridge } from '@src/features/device/widget/bridge/create-wi
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
@@ -237,9 +238,7 @@ export function DIProvider({
         deviceSyncStorage,
         expoInstallReferrerGateway,
       ),
-      pawPrintCelebrationRepository: createPawPrintCelebrationRepository(deviceSyncStorage),
       installationIdGateway: expoInstallationIdGateway,
-      allDoneBannerRepository: createAllDoneBannerRepository(deviceSyncStorage),
       logger,
     });
     const inviteShareService = new InviteShareService({
@@ -328,13 +327,18 @@ export function DIProvider({
     const weatherService = new WeatherService(authHttpClient);
 
     // Voice note — 녹음은 기기 밖으로 나가지 않는다. 초안은 암호화 초안 저장소, 녹음은 문서 폴더에 둔다
+    const voiceNoteDraftRepository = createVoiceNoteDraftRepository({
+      storage: encryptedStorageBootstrap.draftStorage,
+      logger,
+      getTimeZone: getDeviceTimezone,
+    });
+    const voiceRecordingRepository = createVoiceRecordingRepository(
+      expoLocalFileSystemGateway,
+      logger,
+    );
     const voiceNoteStorageService = new VoiceNoteStorageService(
-      createVoiceNoteDraftRepository({
-        storage: encryptedStorageBootstrap.draftStorage,
-        logger,
-        getTimeZone: getDeviceTimezone,
-      }),
-      createVoiceRecordingRepository(expoLocalFileSystemGateway, logger),
+      voiceNoteDraftRepository,
+      voiceRecordingRepository,
       getNowInstant,
     );
 
@@ -393,6 +397,8 @@ export function DIProvider({
       featureCampaignService,
       whatsNewRepository,
       inviteService,
+      allDoneBannerRepository: createAllDoneBannerRepository(deviceSyncStorage),
+      pawPrintCelebrationRepository: createPawPrintCelebrationRepository(deviceSyncStorage),
       inviteShareService,
       inquiryService,
       memoService,
@@ -435,7 +441,17 @@ export function DIProvider({
       networkStatus: expoNetworkStatusGateway,
       widgetSyncService,
       widgetNavigationRepository,
+      logOutDeviceService: new LogOutDeviceService({
+        authService,
+        pushDeviceService,
+        tokenStore,
+        sessionRevocationService,
+        sessionEpoch,
+        logger,
+      }),
       voiceNoteStorageService,
+      voiceNoteDraftRepository,
+      voiceRecordingRepository,
     };
   });
 

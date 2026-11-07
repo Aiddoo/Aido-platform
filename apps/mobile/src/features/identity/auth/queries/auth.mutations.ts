@@ -1,12 +1,8 @@
 import {
   useAuthService,
   useHaptics,
-  useLogger,
-  usePushDeviceService,
+  useLogOutDeviceService,
   useSessionCleanupService,
-  useSessionEpoch,
-  useSessionRevocationService,
-  useTokenStore,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -43,7 +39,6 @@ import type {
   VerifyEmailInput,
 } from '../schemas/auth.schema';
 import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
-import { logOutDevice } from '../utils/log-out-device';
 
 // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
 function useSocialLoginFailure(fallback = t('auth:toasts.loginFailed')) {
@@ -172,13 +167,8 @@ export function useOpenNaverLoginMutationOptions() {
 }
 
 export function useLogoutMutationOptions() {
-  const authService = useAuthService();
+  const logOutDeviceService = useLogOutDeviceService();
   const { trackEvent, clearUser } = useTrack();
-  const pushDeviceService = usePushDeviceService();
-  const tokenStore = useTokenStore();
-  const sessionRevocationService = useSessionRevocationService();
-  const sessionEpoch = useSessionEpoch();
-  const logger = useLogger();
   const { signOut } = useAuthSession();
 
   return mutationOptions({
@@ -187,15 +177,7 @@ export function useLogoutMutationOptions() {
     // 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다. 사용자가 나간 것으로 끝나도록 콜백에 두지 않는다.
     // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
     mutationFn: async () => {
-      const outcome = await logOutDevice({
-        isOnline: onlineManager.isOnline(),
-        authService,
-        pushDeviceService,
-        tokenStore,
-        sessionRevocationService,
-        sessionEpoch,
-        logger,
-      });
+      const outcome = await logOutDeviceService.logOut(onlineManager.isOnline());
       if (outcome === 'superseded') {
         return;
       }
