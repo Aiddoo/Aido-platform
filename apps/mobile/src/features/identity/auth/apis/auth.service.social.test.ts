@@ -42,6 +42,7 @@ describe('소셜 로그인', () => {
       authHttpClient: authHttp,
       tokenStore,
       socialAuthGateway: gateway,
+      deviceType: 'IOS',
     });
   });
 

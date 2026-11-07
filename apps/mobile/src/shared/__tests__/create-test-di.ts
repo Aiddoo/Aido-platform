@@ -19,7 +19,7 @@ import { FeatureCampaignService } from '@src/features/app-config/feature-campaig
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
+import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
@@ -209,6 +209,7 @@ export function createTestDi({
     authHttpClient: httpClient,
     tokenStore,
     socialAuthGateway: socialAuth,
+    deviceType: 'IOS',
   });
   const sessionRevocationService = new SessionRevocationService({
     repository: createPendingRevocationRepository(storage),
@@ -230,7 +231,7 @@ export function createTestDi({
     getTimeZone: getDeviceTimezone,
     sessionEpoch,
   });
-  const purchasesSdkManager = new PurchasesSdkManager({
+  const purchasesSession = new PurchasesSession({
     purchases: purchasesGateway,
     logger,
     analytics,
@@ -325,8 +326,8 @@ export function createTestDi({
       getNowInstant,
     ),
     userService: new UserService(httpClient),
-    purchasesSdkManager,
-    subscriptionService: new SubscriptionService(purchasesSdkManager, purchasesGateway, logger),
+    purchasesSession,
+    subscriptionService: new SubscriptionService(purchasesSession, purchasesGateway, logger),
     entitlementService: new EntitlementService(httpClient, logger),
     weatherService,
     weatherLocationService: new WeatherLocationService({

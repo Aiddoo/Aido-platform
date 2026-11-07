@@ -5,20 +5,20 @@ import {
 } from '@src/shared/__tests__';
 
 import { SubscriptionErrorCode } from '../domains/subscription.error';
-import { PurchasesSdkManager } from './purchases-sdk-manager';
+import { PurchasesSession } from './purchases-session';
 import { SubscriptionService } from './subscription.service';
 
 function createConfiguredService() {
   const purchases = createPurchasesGatewayStub();
   const logger = createLoggerStub();
-  const sdkManager = new PurchasesSdkManager({
+  const session = new PurchasesSession({
     purchases,
     logger,
     analytics: createAnalyticsStub(),
     subscriberAttributes: { appVersion: null, deviceModel: null },
   });
-  sdkManager.configure();
-  return { service: new SubscriptionService(sdkManager, purchases, logger), purchases };
+  session.configure();
+  return { service: new SubscriptionService(session, purchases, logger), purchases };
 }
 
 describe('SubscriptionService', () => {

@@ -739,6 +739,7 @@ describe('로그아웃과 늦은 갱신', () => {
       authHttpClient: http,
       tokenStore,
       socialAuthGateway: createSocialAuthGatewayStub(),
+      deviceType: 'IOS',
     });
     const todosRequest = http.get('v1/todos').catch(() => undefined);
     await act(async () => {
@@ -1109,6 +1110,7 @@ describe('토큰 만료', () => {
           authHttpClient: http,
           tokenStore,
           socialAuthGateway: createSocialAuthGatewayStub(),
+          deviceType: 'IOS',
         }),
       },
     });

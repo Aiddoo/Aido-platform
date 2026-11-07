@@ -23,7 +23,7 @@ export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
 
 const LOGOUT_TIMEOUT_MS = 5_000;
 
-interface SessionRevocationPorts {
+interface SessionRevocationServicePorts {
   repository: PendingRevocationRepository;
   requestRefresh: RefreshTokensRequest;
   /**
@@ -55,7 +55,7 @@ export class SessionRevocationService {
     publicHttpClient,
     logger,
     now,
-  }: SessionRevocationPorts) {
+  }: SessionRevocationServicePorts) {
     this.#repository = repository;
     this.#requestRefresh = requestRefresh;
     this.#publicHttpClient = publicHttpClient;

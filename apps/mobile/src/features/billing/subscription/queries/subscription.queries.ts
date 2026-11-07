@@ -23,17 +23,20 @@ interface OfferingsObservers {
   logger: Logger;
 }
 
-// 다시 시도·재진입마다 같은 설정 문제를 쌓지 않게 앱 실행마다 코드별로 한 번만 남긴다
-const reportedStoreUnavailableCodes = new Set<string>();
+// 다시 시도·재진입마다 같은 설정 문제를 쌓지 않게 앱 실행마다 코드별로 한 번만 남긴다.
+// 보고자별로 기억해 테스트처럼 보고자를 새로 만들면 처음부터 다시 센다
+const reportedStoreUnavailableCodes = new WeakMap<ErrorReporter, Set<string>>();
 
 function reportStoreUnavailable(
   { kind, diagnosticCode }: StoreUnavailable,
   { errorReporter, logger }: OfferingsObservers,
 ) {
-  if (reportedStoreUnavailableCodes.has(diagnosticCode)) {
+  const reportedCodes = reportedStoreUnavailableCodes.get(errorReporter) ?? new Set<string>();
+  if (reportedCodes.has(diagnosticCode)) {
     return;
   }
-  reportedStoreUnavailableCodes.add(diagnosticCode);
+  reportedCodes.add(diagnosticCode);
+  reportedStoreUnavailableCodes.set(errorReporter, reportedCodes);
 
   match(toStoreUnavailableReport(kind, { isDebugBuild: __DEV__ }))
     .with({ channel: 'log' }, () =>

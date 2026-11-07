@@ -5,7 +5,7 @@ import {
 } from '@src/shared/__tests__';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import { PurchasesSdkManager } from './purchases-sdk-manager';
+import { PurchasesSession } from './purchases-session';
 
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -14,7 +14,7 @@ function createManager({
   logger = createLoggerStub(),
   analytics = createAnalyticsStub(),
 } = {}) {
-  const manager = new PurchasesSdkManager({
+  const manager = new PurchasesSession({
     purchases,
     logger,
     analytics,

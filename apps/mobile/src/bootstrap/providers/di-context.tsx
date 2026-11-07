@@ -18,7 +18,7 @@ import type { FeatureCampaignService } from '@src/features/app-config/feature-ca
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import type { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
+import type { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
 import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -135,7 +135,7 @@ export interface DIContainer extends SharedDependencies {
   coachmarkService: CoachmarkService;
   storeReviewService: StoreReviewService;
   userService: UserService;
-  purchasesSdkManager: PurchasesSdkManager;
+  purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
   entitlementService: EntitlementService;
   weatherService: WeatherService;
@@ -340,8 +340,8 @@ export function useStoreReviewService() {
 export function useUserService() {
   return useDI().userService;
 }
-export function usePurchasesSdkManager() {
-  return useDI().purchasesSdkManager;
+export function usePurchasesSession() {
+  return useDI().purchasesSession;
 }
 export function useSubscriptionService() {
   return useDI().subscriptionService;

@@ -22,7 +22,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../../app/(app)/(mypage-menu)/settings/subscription';
-import { PurchasesSdkManager } from '../apis/purchases-sdk-manager';
+import { PurchasesSession } from '../apis/purchases-session';
 import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
@@ -73,13 +73,13 @@ async function renderSubscriptionScreen(
   const purchases = createPurchasesGatewayStub();
   purchases.getOffering.mockImplementation(getOffering);
   const analytics = createAnalyticsStub();
-  const sdkManager = new PurchasesSdkManager({
+  const session = new PurchasesSession({
     purchases,
     logger: createLoggerStub(),
     analytics,
     subscriberAttributes: { appVersion: null, deviceModel: null },
   });
-  sdkManager.configure();
+  session.configure();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
   const queryClient = createTestQueryClient({
@@ -105,8 +105,8 @@ async function renderSubscriptionScreen(
         analytics,
         errorReporter: createErrorReporterStub(),
         logger: createLoggerStub(),
-        purchasesSdkManager: sdkManager,
-        subscriptionService: new SubscriptionService(sdkManager, purchases, createLoggerStub()),
+        purchasesSession: session,
+        subscriptionService: new SubscriptionService(session, purchases, createLoggerStub()),
         applicationMetadata: { getInstallation: () => undefined },
       },
       queryClient,

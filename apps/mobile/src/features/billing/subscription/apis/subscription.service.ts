@@ -10,27 +10,27 @@ import { CustomerInfoPolicy } from '../domains/customer-info.model';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
 import { type CustomerInfo, type SubscriptionStore } from '../schemas/customer-info.schema';
 import type { SubscriptionOffering } from '../schemas/subscription.schema';
-import type { PurchasesSdkManager } from './purchases-sdk-manager';
+import type { PurchasesSession } from './purchases-session';
 import { toSubscriptionError } from './subscription-error.mapper';
 import { toCustomerInfo, toSubscriptionOffering } from './subscription.mapper';
 
 export class SubscriptionService {
-  readonly #sdkManager: Pick<PurchasesSdkManager, 'isConfigured'>;
+  readonly #session: Pick<PurchasesSession, 'isConfigured'>;
   readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;
 
   constructor(
-    sdkManager: Pick<PurchasesSdkManager, 'isConfigured'>,
+    session: Pick<PurchasesSession, 'isConfigured'>,
     purchases: PurchasesGateway,
     logger: Logger,
   ) {
-    this.#sdkManager = sdkManager;
+    this.#session = session;
     this.#purchases = purchases;
     this.#logger = logger;
   }
 
   getOfferings = async (): Promise<Result<SubscriptionOffering, SubscriptionError>> => {
-    if (!this.#sdkManager.isConfigured()) {
+    if (!this.#session.isConfigured()) {
       return err(SubscriptionErrors.storeUnavailable());
     }
 
@@ -49,7 +49,7 @@ export class SubscriptionService {
   };
 
   purchase = async (identifier: string): Promise<Result<boolean, SubscriptionError>> => {
-    if (!this.#sdkManager.isConfigured()) {
+    if (!this.#session.isConfigured()) {
       return err(SubscriptionErrors.storeUnavailable());
     }
 
@@ -69,7 +69,7 @@ export class SubscriptionService {
 
   /** 그 스토어에서 결제한 활성 구독의 상품 id. 알 수 없으면 null이고 호출부는 구독 목록을 연다. */
   getActiveStoreProductId = async (store: SubscriptionStore): Promise<string | null> => {
-    if (!this.#sdkManager.isConfigured()) {
+    if (!this.#session.isConfigured()) {
       return null;
     }
 
@@ -85,7 +85,7 @@ export class SubscriptionService {
   };
 
   restorePurchases = async (): Promise<Result<boolean, SubscriptionError>> => {
-    if (!this.#sdkManager.isConfigured()) {
+    if (!this.#session.isConfigured()) {
       return err(SubscriptionErrors.storeUnavailable());
     }
 
@@ -98,7 +98,7 @@ export class SubscriptionService {
   };
 
   subscribeCustomerInfo = (listener: (customerInfo: CustomerInfo) => void): (() => void) => {
-    if (!this.#sdkManager.isConfigured()) {
+    if (!this.#session.isConfigured()) {
       return noop;
     }
     return this.#purchases.subscribe((dto) => listener(toCustomerInfo(dto)));

@@ -12,11 +12,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 
-import { usePurchasesSdkManager, useSubscriptionService } from './di-context';
+import { usePurchasesSession, useSubscriptionService } from './di-context';
 
 export function PurchasesProvider({ children }: PropsWithChildren) {
   const status = useAuthStatus();
-  const sdkManager = usePurchasesSdkManager();
+  const session = usePurchasesSession();
   const subscriptionService = useSubscriptionService();
   const queryClient = useQueryClient();
   const isAuthenticated = status === 'authenticated';
@@ -34,8 +34,8 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
   useEffect(() => watchPremiumEntitlementChanges(queryClient), [queryClient]);
 
   useEffect(() => {
-    sdkManager.configure();
-  }, [sdkManager]);
+    session.configure();
+  }, [session]);
 
   // 인증 게이트 위의 Provider라 사용자 조회에서 suspend하지 않도록 useSuspenseQuery 대신 useQuery를 쓴다
   const { data: user } = useQuery({
@@ -45,13 +45,13 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      sdkManager.logIn(user.id);
+      session.logIn(user.id);
     }
 
     if (status === 'unauthenticated') {
-      sdkManager.logOut();
+      session.logOut();
     }
-  }, [isAuthenticated, user, status, sdkManager]);
+  }, [isAuthenticated, user, status, session]);
 
   // CustomerInfo 변경 리스너 — 이 기기 구매/복원, 다른 기기 변경, 스토어 직접 취소를 모두 받는다.
   // 프리미엄은 스토어 구독과 보상 기간을 합친 서버 값이 단일 원천이라 캐시에 쓰지 않고 내 정보·권한만 다시 불러온다.

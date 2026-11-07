@@ -7,7 +7,7 @@ import { createWhatsNewRepository } from '@src/features/app-config/whats-new/api
 import { RELEASES } from '@src/features/app-config/whats-new/constants/releases';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
+import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
@@ -218,6 +218,7 @@ export function DIProvider({
       authHttpClient,
       tokenStore,
       socialAuthGateway: expoSocialAuthGateway,
+      deviceType: process.env.EXPO_OS === 'ios' ? 'IOS' : 'ANDROID',
     });
     const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(
@@ -312,7 +313,7 @@ export function DIProvider({
     const userService = new UserService(authHttpClient);
 
     const purchasesGateway = createRevenueCatPurchasesGateway({ isDebugLogEnabled: __DEV__ });
-    const purchasesSdkManager = new PurchasesSdkManager({
+    const purchasesSession = new PurchasesSession({
       purchases: purchasesGateway,
       logger,
       analytics,
@@ -321,11 +322,7 @@ export function DIProvider({
         deviceModel: DEVICE_MODEL_NAME,
       },
     });
-    const subscriptionService = new SubscriptionService(
-      purchasesSdkManager,
-      purchasesGateway,
-      logger,
-    );
+    const subscriptionService = new SubscriptionService(purchasesSession, purchasesGateway, logger);
     const entitlementService = new EntitlementService(authHttpClient, logger);
 
     const weatherService = new WeatherService(authHttpClient);
@@ -419,7 +416,7 @@ export function DIProvider({
       coachmarkService,
       storeReviewService,
       userService,
-      purchasesSdkManager,
+      purchasesSession,
       subscriptionService,
       entitlementService,
       weatherService,

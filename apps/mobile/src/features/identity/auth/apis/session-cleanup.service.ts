@@ -15,7 +15,7 @@ interface SessionPersistedQueryCache {
   clear(): void;
 }
 
-interface SessionCleanupPorts {
+interface SessionCleanupServicePorts {
   queryCache: SessionQueryCache;
   persistedQueryCache: SessionPersistedQueryCache;
   drafts: Pick<DraftService, 'removeAll'>;
@@ -37,33 +37,56 @@ interface SessionCleanupPorts {
  * 다시 요청해 401 루프를 돈다.
  */
 export class SessionCleanupService {
-  readonly #ports: SessionCleanupPorts;
+  readonly #queryCache: SessionQueryCache;
+  readonly #persistedQueryCache: SessionPersistedQueryCache;
+  readonly #drafts: SessionCleanupServicePorts['drafts'];
+  readonly #voiceNotes: SessionCleanupServicePorts['voiceNotes'];
+  readonly #deviceTimezone: SessionCleanupServicePorts['deviceTimezone'];
+  readonly #pendingRedemption: SessionCleanupServicePorts['pendingRedemption'];
+  readonly #accountGuides: SessionCleanupServicePorts['accountGuides'];
+  readonly #logger: SessionCleanupServicePorts['logger'];
 
-  constructor(ports: SessionCleanupPorts) {
-    this.#ports = ports;
+  constructor({
+    queryCache,
+    persistedQueryCache,
+    drafts,
+    voiceNotes,
+    deviceTimezone,
+    pendingRedemption,
+    accountGuides,
+    logger,
+  }: SessionCleanupServicePorts) {
+    this.#queryCache = queryCache;
+    this.#persistedQueryCache = persistedQueryCache;
+    this.#drafts = drafts;
+    this.#voiceNotes = voiceNotes;
+    this.#deviceTimezone = deviceTimezone;
+    this.#pendingRedemption = pendingRedemption;
+    this.#accountGuides = accountGuides;
+    this.#logger = logger;
   }
 
   /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다 */
   afterSignedOut = (): void => {
     this.afterSessionEnded();
-    this.#run('drafts', () => this.#ports.drafts.removeAll());
-    this.#run('voice-notes', () => this.#ports.voiceNotes.removeAll());
-    this.#run('device-timezone', () => this.#ports.deviceTimezone.clear());
-    this.#run('pending-redemption', () => this.#ports.pendingRedemption.clear());
+    this.#run('drafts', () => this.#drafts.removeAll());
+    this.#run('voice-notes', () => this.#voiceNotes.removeAll());
+    this.#run('device-timezone', () => this.#deviceTimezone.clear());
+    this.#run('pending-redemption', () => this.#pendingRedemption.clear());
   };
 
   /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
   afterAccountDeleted = (accountId: string): void => {
-    this.#ports.accountGuides.forEach((guides) => {
+    this.#accountGuides.forEach((guides) => {
       this.#run('account-guides', () => guides.removeAccount(accountId));
     });
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */
   afterSessionEnded = (): void => {
-    this.#run('pending-mutations', () => this.#ports.queryCache.abandonPendingMutations());
-    this.#run('query-cache', () => this.#ports.queryCache.clear());
-    this.#run('persisted-query-cache', () => this.#ports.persistedQueryCache.clear());
+    this.#run('pending-mutations', () => this.#queryCache.abandonPendingMutations());
+    this.#run('query-cache', () => this.#queryCache.clear());
+    this.#run('persisted-query-cache', () => this.#persistedQueryCache.clear());
   };
 
   /**
@@ -71,14 +94,14 @@ export class SessionCleanupService {
    * 다음 계정이 지난 값을 신선한 값으로 읽어 지난 계정의 초안만 남기는 일이 없게 다시 비운다.
    */
   beforeSignIn = (): void => {
-    this.#run('sign-in-queries', () => this.#ports.queryCache.clearQueries());
+    this.#run('sign-in-queries', () => this.#queryCache.clearQueries());
   };
 
   #run = (step: string, cleanup: () => void): void => {
     try {
       cleanup();
     } catch (error) {
-      this.#ports.logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
+      this.#logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
         step,
         error: getErrorMessage(error),
       });

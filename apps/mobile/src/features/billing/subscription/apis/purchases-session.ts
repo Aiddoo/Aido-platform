@@ -11,21 +11,21 @@ export interface SubscriberAttributes {
   deviceModel: string | null;
 }
 
-interface PurchasesSdkManagerPorts {
+interface PurchasesSessionPorts {
   purchases: PurchasesGateway;
   logger: Logger;
-  analytics: Analytics;
+  analytics: Pick<Analytics, 'getAnalyticsId'>;
   subscriberAttributes: SubscriberAttributes;
 }
 
-export class PurchasesSdkManager {
+export class PurchasesSession {
   readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;
-  readonly #analytics: Analytics;
+  readonly #analytics: Pick<Analytics, 'getAnalyticsId'>;
   readonly #subscriberAttributes: SubscriberAttributes;
   #configured = false;
 
-  constructor({ purchases, logger, analytics, subscriberAttributes }: PurchasesSdkManagerPorts) {
+  constructor({ purchases, logger, analytics, subscriberAttributes }: PurchasesSessionPorts) {
     this.#purchases = purchases;
     this.#logger = logger;
     this.#analytics = analytics;

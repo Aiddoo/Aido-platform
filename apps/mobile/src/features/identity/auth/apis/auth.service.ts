@@ -58,6 +58,8 @@ interface AuthServicePorts {
   authHttpClient: HttpClient;
   tokenStore: TokenStore;
   socialAuthGateway: SocialAuthGateway;
+  /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
+  deviceType: 'IOS' | 'ANDROID';
 }
 
 export class AuthService {
@@ -65,17 +67,20 @@ export class AuthService {
   readonly #authHttpClient: HttpClient;
   readonly #tokenStore: TokenStore;
   readonly #socialAuthGateway: SocialAuthGateway;
+  readonly #deviceType: AuthServicePorts['deviceType'];
 
   constructor({
     publicHttpClient,
     authHttpClient,
     tokenStore,
     socialAuthGateway,
+    deviceType,
   }: AuthServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#tokenStore = tokenStore;
     this.#socialAuthGateway = socialAuthGateway;
+    this.#deviceType = deviceType;
   }
 
   /** 로그인 응답의 토큰을 저장한다. 다음 요청부터 이 토큰을 쓴다 */
@@ -166,7 +171,7 @@ export class AuthService {
       await this.#publicHttpClient.post('v1/auth/login', {
         email,
         password,
-        deviceType: process.env.EXPO_OS === 'ios' ? 'IOS' : 'ANDROID',
+        deviceType: this.#deviceType,
       }),
     );
 

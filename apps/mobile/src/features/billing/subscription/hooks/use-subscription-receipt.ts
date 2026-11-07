@@ -1,4 +1,4 @@
-import { usePurchasesSdkManager } from '@src/bootstrap/providers/di-context';
+import { usePurchasesSession } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -13,12 +13,12 @@ import { toSubscriptionReceiptViewModel } from '../utils/subscription-receipt.vi
  */
 export function useSubscriptionReceipt() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const sdkManager = usePurchasesSdkManager();
+  const session = usePurchasesSession();
   const { currentTimeZone } = useLocalDate();
   const now = useMinuteNow();
 
   return toSubscriptionReceiptViewModel(user, {
-    isStoreConfigured: sdkManager.isConfigured(),
+    isStoreConfigured: session.isConfigured(),
     now,
     timeZone: currentTimeZone,
   });
