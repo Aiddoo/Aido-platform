@@ -1,29 +1,34 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { InviteContentsError } from '@src/features/social/invite/components/invite-contents-error';
 import { InviteLinkCard } from '@src/features/social/invite/components/invite-link-card';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
-import { PawPrintBoardCard } from '@src/features/social/invite/components/invite-paw-print-board-card';
-import { InviteRewardLines } from '@src/features/social/invite/components/invite-reward-lines';
 import { InviteShareActions } from '@src/features/social/invite/components/invite-share-actions';
 import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
+  H4,
   HStack,
   Image,
+  QueryErrorActions,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   ReadableContent,
+  Result,
   Spacing,
   StyledSafeAreaView,
   Text,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { Suspense } from 'react';
+import { Chip } from 'heroui-native';
+import { Suspense, type ReactNode } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
@@ -74,7 +79,7 @@ export default function MyInviteScreen() {
               <InviteRewardLines />
 
               {/* 네 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
-              <QueryErrorBoundary fallback={InviteContentsError}>
+              <QueryErrorBoundary fallback={MyInviteScreen.Error}>
                 <Suspense fallback={<InviteLinkCard.Loading />}>
                   <InviteLinkCard />
                 </Suspense>
@@ -124,6 +129,79 @@ export default function MyInviteScreen() {
         </StyledSafeAreaView>
       </ScrollView>
     </>
+  );
+}
+
+/** 초대가 꺼졌으면 블록마다 쓸 수 없음 안내를, 그 밖의 실패는 다시 시도·문의를 한 번만 보인다 */
+MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return (
+      <>
+        <InviteLinkCard.Unavailable />
+        <InviteShareActions.Unavailable />
+        <PawPrintBoardCard>
+          <InvitePawPrintBoard.Unavailable />
+        </PawPrintBoardCard>
+        <Box className="-mx-4">
+          <InvitedFriendSummary.Unavailable />
+        </Box>
+      </>
+    );
+  }
+
+  return (
+    <Box className="min-h-[320px] justify-center">
+      <Result title={t('result.loadFailed.title')} button={<QueryErrorActions onRetry={reset} />} />
+    </Box>
+  );
+};
+
+/** 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */
+function InviteRewardLines() {
+  const { t } = useTranslation('invite');
+
+  return (
+    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4">
+      <RewardLine
+        label={t('myInvite.rewardInviteeLabel')}
+        value={t('myInvite.rewardInvitee', { days: InviteRewardPolicy.getWelcomePremiumDays() })}
+      />
+      <RewardLine
+        label={t('myInvite.rewardInviterLabel')}
+        value={t('myInvite.rewardInviter', {
+          activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+          days: InviteRewardPolicy.getInviterPremiumDays(),
+        })}
+      />
+    </VStack>
+  );
+}
+
+function RewardLine({ label, value }: { label: string; value: string }) {
+  return (
+    <VStack gap={6} accessible accessibilityLabel={`${label}, ${value}`}>
+      <Chip variant="soft" className="rounded-full bg-main/10 px-2.5 py-0.5">
+        <Text size="e1" weight="bold" tone="brand">
+          {label}
+        </Text>
+      </Chip>
+      <WordWrapText size="b3" shade={9}>
+        {value}
+      </WordWrapText>
+    </VStack>
+  );
+}
+
+function PawPrintBoardCard({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('invite');
+
+  return (
+    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-5">
+      <H4>{t('pawPrintBoard.title')}</H4>
+      {children}
+    </VStack>
   );
 }
 
