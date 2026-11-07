@@ -63,7 +63,6 @@ import { createWeatherIntroductionRepository } from '@src/features/weather/apis/
 import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
-import { DEVICE_MODEL_NAME } from '@src/shared/config/device';
 import { ENV } from '@src/shared/config/env';
 import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -77,6 +76,7 @@ import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-in
 import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { expoLocalFileSystemGateway } from '@src/shared/infra/file-system/expo-local-file-system.gateway';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics.gateway';

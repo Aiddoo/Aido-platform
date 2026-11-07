@@ -1,6 +1,6 @@
+import { IS_PHYSICAL_DEVICE } from '@src/shared/infra/device/device-info';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import Constants from 'expo-constants';
-import * as Device from 'expo-device';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -90,7 +90,7 @@ function resolveApiUrl(): string {
     platform: process.env.EXPO_OS,
     env: extra.env,
     apiUrl: extra.apiUrl,
-    isPhysicalDevice: Device.isDevice,
+    isPhysicalDevice: IS_PHYSICAL_DEVICE,
     devMachineIp: extra.devMachineIp,
   };
 

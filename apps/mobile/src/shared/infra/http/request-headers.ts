@@ -1,8 +1,9 @@
 import { i18n } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
-import { getDeviceHeaders } from '@src/shared/utils/device-headers';
 import * as Crypto from 'expo-crypto';
 import type { BeforeRequestState } from 'ky';
+
+import { getDeviceHeaders } from './device-headers';
 
 /** 서버 로그·Sentry와 앱 breadcrumb를 한 요청으로 잇는 ID. 서버가 같은 값을 응답 헤더로 돌려준다. */
 export const REQUEST_ID_HEADER = 'X-Request-Id';

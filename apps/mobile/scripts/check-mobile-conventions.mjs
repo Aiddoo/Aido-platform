@@ -347,18 +347,12 @@ const SDK_IMPORT_ALLOWLIST = new Map([
     ['expo-linking', 'expo-application'],
   ],
   ['apps/mobile/src/features/weather/components/weather-hero.tsx', ['expo-localization']],
-  [
-    'apps/mobile/src/features/weather/components/weather-scene/weather-scene-canvas.tsx',
-    ['expo-device'],
-  ],
   ['apps/mobile/src/features/weather/hooks/use-temperature-unit.ts', ['expo-localization']],
   ['apps/mobile/src/features/weather/hooks/use-weather-location.ts', ['expo-linking']],
   [
     'apps/mobile/src/features/device/widget/bridge/android-widget-task-handler.ts',
     ['expo-linking', 'expo-crypto'],
   ],
-  ['apps/mobile/src/shared/config/device.ts', ['expo-device']],
-  ['apps/mobile/src/shared/config/env.ts', ['expo-device']],
   ['apps/mobile/src/shared/hooks/use-open-url.ts', ['expo-linking', 'expo-web-browser']],
   ['apps/mobile/src/shared/hooks/use-share-view.ts', ['expo-sharing']],
   ['apps/mobile/src/shared/hooks/use-stable-feed-foreground.ts', ['expo-linking']],
@@ -369,7 +363,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
     'apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx',
     ['expo-application', 'expo-linking'],
   ],
-  ['apps/mobile/src/shared/utils/device-headers.ts', ['expo-device']],
 ]);
 
 // es-toolkit/compat은 lodash 호환 계층이라 메인 패키지보다 무겁다. 메인에 없는 기능만 이유와 함께 허용한다.

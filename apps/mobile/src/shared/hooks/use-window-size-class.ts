@@ -1,6 +1,6 @@
 import { useWindowDimensions } from 'react-native';
 
-import { IS_IOS_APP_ON_MAC } from '../config/device';
+import { IS_IOS_APP_ON_MAC } from '../infra/device/device-info';
 import { getWindowSizeClass, type WindowSizeClass } from '../utils/window-size-class';
 
 /**
@@ -10,9 +10,5 @@ import { getWindowSizeClass, type WindowSizeClass } from '../utils/window-size-c
 export function useWindowSizeClass(): WindowSizeClass {
   const { width: windowWidth } = useWindowDimensions();
 
-  if (IS_IOS_APP_ON_MAC) {
-    return 'compact';
-  }
-
-  return getWindowSizeClass(windowWidth);
+  return IS_IOS_APP_ON_MAC ? 'compact' : getWindowSizeClass(windowWidth);
 }

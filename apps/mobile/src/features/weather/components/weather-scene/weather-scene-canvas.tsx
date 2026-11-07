@@ -1,6 +1,6 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
+import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
 import { isEqual } from 'es-toolkit';
-import * as Device from 'expo-device';
 import { useCallback, useEffect, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
@@ -38,7 +38,8 @@ import type { WeatherScene } from './weather-scene';
 import { getCelestialCenter } from './weather-scene-particles';
 
 const LOW_END_MEMORY_BYTES = 3 * 1024 ** 3;
-const IS_LOW_END_DEVICE = Device.totalMemory != null && Device.totalMemory < LOW_END_MEMORY_BYTES;
+const IS_LOW_END_DEVICE =
+  DEVICE_TOTAL_MEMORY_BYTES != null && DEVICE_TOTAL_MEMORY_BYTES < LOW_END_MEMORY_BYTES;
 const STATIC_SCENE_SECONDS = 12;
 const MAX_FRAME_STEP_MS = 100;
 const SCENE_FADE = { duration: 900, easing: Easing.inOut(Easing.quad) };
