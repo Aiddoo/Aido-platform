@@ -178,6 +178,7 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
     if (scope == null) {
       focusTitle();
     }
+
     return scope;
   };
 
@@ -186,6 +187,7 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
       const changes = toTodoUpdateChanges(values, initialValues, timeZone);
       if (!hasTodoUpdateChanges(changes)) {
         onClose();
+
         return;
       }
       const scope = await match(

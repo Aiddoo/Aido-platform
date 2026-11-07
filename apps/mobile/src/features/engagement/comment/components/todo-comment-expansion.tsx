@@ -43,6 +43,7 @@ function useTodoCommentExpansion() {
   if (value == null) {
     throw new Error('useTodoCommentExpansion must be used inside TodoCommentExpansionProvider');
   }
+
   return value;
 }
 
@@ -59,6 +60,7 @@ export function useThreadExpansion(threadCommentId: string, defaultExpansion: Th
 
 export function useExpandThread() {
   const { updateExpansion } = useTodoCommentExpansion();
+
   return useCallback(
     (threadCommentId: string) =>
       updateExpansion(threadCommentId, (current) => expandThread(current, 'auto')),

@@ -237,11 +237,11 @@ interface CalendarPagerProps {
   data: number[];
   value: number;
   onChange: (page: number) => void;
-  children: (page: number) => React.ReactNode;
+  children: (page: number) => ReactNode;
 }
 
 function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) {
-  // 측정 전 첫 프레임은 예전처럼 창 너비로 그려 달력 높이가 0에서 튀어나오지 않게 한다.
+  // 측정 전 첫 프레임은 창 너비로 그려 달력 높이가 0에서 튀어나오지 않게 한다.
   const { width: windowWidth } = useWindowDimensions();
   const [measuredPageWidth, setMeasuredPageWidth] = useState<number | null>(null);
   const pageWidth = measuredPageWidth ?? windowWidth;
@@ -394,6 +394,7 @@ function fillMonthGrid(weeks: Date[][]): Date[][] {
     }
     filled.push(getWeekDates(dayjs(lastDate).add(1, 'day').toDate()));
   }
+
   return filled;
 }
 
@@ -411,6 +412,7 @@ function CompletionIndicator({ completion }: CompletionIndicatorProps) {
   if (completion.totalTodos > 0) {
     return <CategoryIndicator colors={completion.categoryColors ?? []} />;
   }
+
   return null;
 }
 
@@ -441,6 +443,7 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
 
 Calendar.Error = function ErrorState({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
+
   return (
     <HStack px={16} py={4} align="center" gap={8}>
       <Text size="e1" shade={6} className="flex-1">

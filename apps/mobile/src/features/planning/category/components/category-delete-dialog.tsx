@@ -36,8 +36,10 @@ export function CategoryDeleteDialog({
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const portalTarget = usePortalTarget();
 
-  const category = categoriesResult.categories.find((c) => c.id === categoryId);
-  const otherCategories = categoriesResult.categories.filter((c) => c.id !== categoryId);
+  const category = categoriesResult.categories.find((candidate) => candidate.id === categoryId);
+  const otherCategories = categoriesResult.categories.filter(
+    (candidate) => candidate.id !== categoryId,
+  );
 
   if (!category) {
     return null;
@@ -124,7 +126,9 @@ function CategoryMoveDeleteForm({
 }: CategoryMoveDeleteFormProps) {
   const { t } = useTranslation('todo');
   const [selectedValue, setSelectedValue] = useState(String(otherCategories[0]?.id));
-  const selectedCategory = otherCategories.find((c) => String(c.id) === selectedValue);
+  const selectedCategory = otherCategories.find(
+    (candidate) => String(candidate.id) === selectedValue,
+  );
 
   return (
     <>
@@ -142,8 +146,8 @@ function CategoryMoveDeleteForm({
       <Spacing size={16} />
 
       <RadioGroup value={selectedValue} onValueChange={setSelectedValue} className="gap-1.5">
-        {otherCategories.map((c) => (
-          <CategoryRadioItem key={c.id} category={c} />
+        {otherCategories.map((otherCategory) => (
+          <CategoryRadioItem key={otherCategory.id} category={otherCategory} />
         ))}
       </RadioGroup>
 
@@ -166,6 +170,7 @@ interface DialogActionsProps {
 
 function DialogActions({ onCancel, onDelete, isPending }: DialogActionsProps) {
   const { t } = useTranslation('common');
+
   return (
     <HStack gap={8} justify="end">
       <Button variant="weak" color="dark" size="medium" display="inline" onPress={onCancel}>

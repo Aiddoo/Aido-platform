@@ -59,6 +59,7 @@ export function MemoCreateForm() {
           form.setFocus('content');
         }
       });
+
       return () => unsubscribe?.();
     }, [navigation, form.setFocus]),
   );
@@ -79,6 +80,7 @@ export function MemoCreateForm() {
   const handleBack = useSingleTap(async () => {
     if (!isValid) {
       goBack();
+
       return;
     }
     // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다

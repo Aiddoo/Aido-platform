@@ -1,7 +1,6 @@
 export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,
 
-  // Daily Completion (캘린더 달성 표시)
   completions: () => [...TODO_QUERY_KEYS.all, 'completion'] as const,
   // 위젯 요약·존재 여부와 데이터 모양이 달라 낙관적 갱신이 이 범위만 고르도록 따로 묶는다
   completionRanges: () => [...TODO_QUERY_KEYS.completions(), 'range'] as const,
@@ -21,16 +20,13 @@ export const TODO_QUERY_KEYS = {
   upcomingRepeat: ({ date }: { date: string }) =>
     [...TODO_QUERY_KEYS.completions(), 'upcoming-repeat', { date }] as const,
 
-  // 선택된 날짜의 할 일 목록
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: ({ date }: { date: string }) => [...TODO_QUERY_KEYS.lists(), { date }] as const,
 
-  // 친구 할 일 목록 (단일 요청 + 카테고리 그룹핑)
   friendLists: () => [...TODO_QUERY_KEYS.all, 'friend'] as const,
   friendListByDate: ({ userId, date }: { userId: string; date: string }) =>
     [...TODO_QUERY_KEYS.friendLists(), { userId, date }] as const,
 
-  // 친구 일일 완료 현황 (친구 캘린더 달성 표시 — PUBLIC 기준)
   friendCompletionsByRange: ({
     userId,
     startDate,

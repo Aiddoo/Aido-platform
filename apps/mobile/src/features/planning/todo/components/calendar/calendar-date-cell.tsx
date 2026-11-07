@@ -15,7 +15,11 @@ interface CalendarDateCellProps {
   className?: string;
 }
 
-export const CalendarDateCell = memo(({ date, children, className }: CalendarDateCellProps) => {
+export const CalendarDateCell = memo(function CalendarDateCell({
+  date,
+  children,
+  className,
+}: CalendarDateCellProps) {
   const [value, onChange] = useFeedDateParam();
   const today = useToday();
   const { timeZone } = useDateFormatContext();

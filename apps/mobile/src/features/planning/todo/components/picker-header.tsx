@@ -18,6 +18,7 @@ export function PickerHeader({
 }: PickerHeaderProps) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
+
   return (
     <HStack className="items-center" px={16}>
       <Box className="flex-1 items-start">

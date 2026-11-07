@@ -74,6 +74,7 @@ export function TodoCommentRevealProvider({ children }: PropsWithChildren) {
           frameRef.current = null;
           scrollAboveComposer(target);
         });
+
         return;
       }
       // 키보드가 다 오른 뒤 작성 바(대상 안내 줄 포함)의 레이아웃이 끝난 다음 frame에 잰다
@@ -109,5 +110,6 @@ export function useTodoCommentReveal(): TodoCommentRevealValue {
   if (value == null) {
     throw new Error('useTodoCommentReveal must be used inside TodoCommentRevealProvider');
   }
+
   return value;
 }

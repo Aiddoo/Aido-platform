@@ -94,6 +94,7 @@ export function playTodoCommentHeartBurst(
         withDelay(BIG_HEART.reducedHoldMs, withTiming(0, { duration: BIG_HEART.reducedFadeMs })),
       ),
     );
+
     return;
   }
 

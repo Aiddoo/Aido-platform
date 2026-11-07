@@ -108,6 +108,7 @@ export function TodoCommentForm({
       return;
     }
     const frame = requestAnimationFrame(() => setFocus('items.0.content'));
+
     return () => cancelAnimationFrame(frame);
   }, [mode.type, setFocus, targetId]);
 
@@ -117,6 +118,7 @@ export function TodoCommentForm({
         reset(NEW_TODO_COMMENT_FORM_VALUES);
       }
     });
+
     return () => subscription.remove();
   }, [getValues, reset]);
 

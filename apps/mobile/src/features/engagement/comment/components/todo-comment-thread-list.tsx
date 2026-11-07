@@ -246,6 +246,7 @@ function useScrollToAnchor({
 
     if (anchor == null) {
       toast.warning(t('toasts.anchorMissing'));
+
       return;
     }
 
@@ -326,6 +327,7 @@ function PulsingHeart() {
       withSequence(withDelay(HINT_PULSE.delayMs, withSpring(HINT_PULSE.peakScale)), withSpring(1)),
       -1,
     );
+
     return () => cancelAnimation(scale);
   }, [isReducedMotion, scale]);
 

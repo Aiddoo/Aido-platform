@@ -174,6 +174,7 @@ MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
   const { t: tVoiceNote } = useTranslation('voiceNote');
   const startVoiceNote = useVoiceNoteStart();
+
   return (
     <Flex flex={1} justify="center" align="center">
       <Result
@@ -192,6 +193,7 @@ MemoList.Empty = function Empty() {
 
 MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
+
   return (
     <Flex flex={1} justify="center" align="center">
       <Result title={t('memo:list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
@@ -204,6 +206,7 @@ MemoList.More = function More({
   ...props
 }: Omit<ComponentProps<typeof Button>, 'children'> & { hasError: boolean }) {
   const { t } = useTranslation(['memo', 'common']);
+
   return (
     <VStack align="center" gap={8} pb={12}>
       {hasError && (

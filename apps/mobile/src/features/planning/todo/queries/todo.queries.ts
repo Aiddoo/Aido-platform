@@ -146,16 +146,6 @@ export function useGetTodoExistenceQueryOptions() {
 const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
 const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 
-/**
- * 하루의 할 일 요약 (홈 위젯 스냅샷 소스). 위젯은 오늘과 내일 두 날짜를 조회한다.
- *
- * 키가 completions() 하위라 할 일 토글/생성/삭제 뮤테이션의 기존 invalidation을
- * 그대로 상속받고, staleTime 1분으로 포그라운드 복귀(focusManager) 시 재조회된다.
- * date 키 회전(LocalDateProvider)이 자정 넘김을 새 쿼리로 만든다.
- *
- * 자정 직후 기기와 서버의 날짜가 잠시 어긋나면(시계 차이로 거부되거나 다른 날짜를 돌려줌)
- * foreground를 기다리지 않고 5s→10s→20s→40s로 4번만 다시 묻는다.
- */
 interface TodoSummaryQueryParams {
   date: string;
   userId?: string | null;
@@ -180,6 +170,16 @@ export function getTodoSummaryRefetchInterval(
   return attempt < DATE_CATCH_UP_MAX_ATTEMPTS ? DATE_CATCH_UP_BASE_DELAY_MS * 2 ** attempt : false;
 }
 
+/**
+ * 하루의 할 일 요약 (홈 위젯 스냅샷 소스). 위젯은 오늘과 내일 두 날짜를 조회한다.
+ *
+ * 키가 completions() 하위라 할 일 토글/생성/삭제 뮤테이션의 기존 invalidation을
+ * 그대로 상속받고, staleTime 1분으로 포그라운드 복귀(focusManager) 시 재조회된다.
+ * date 키 회전(LocalDateProvider)이 자정 넘김을 새 쿼리로 만든다.
+ *
+ * 자정 직후 기기와 서버의 날짜가 잠시 어긋나면(시계 차이로 거부되거나 다른 날짜를 돌려줌)
+ * foreground를 기다리지 않고 5s→10s→20s→40s로 4번만 다시 묻는다.
+ */
 export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryParams) {
   const todoService = useTodoService();
 

@@ -56,11 +56,11 @@ import {
   TodoComposerSubmitButton,
 } from './todo-composer-fields';
 
-/** 기본 카테고리가 폼 기본값을 정하므로, 카테고리를 읽는 동안에는 시트를 띄우지 않아 폼이 열린 뒤 바뀌지 않게 한다. */
 interface TodoCreateBottomSheetProps {
   onMemoChanged: () => void;
 }
 
+/** 기본 카테고리가 폼 기본값을 정하므로, 카테고리를 읽는 동안에는 시트를 띄우지 않아 폼이 열린 뒤 바뀌지 않게 한다. */
 export function TodoCreateBottomSheet({ onMemoChanged }: TodoCreateBottomSheetProps) {
   return (
     <QueryErrorBoundary fallback={TodoCreateBottomSheet.Error}>
@@ -273,6 +273,7 @@ function TodoCreateForm({
                 <QuickVoiceButton
                   onPress={() => {
                     setIsVoiceHintForced(false);
+
                     return voice.start();
                   }}
                   testID="todo-quick-voice-button"

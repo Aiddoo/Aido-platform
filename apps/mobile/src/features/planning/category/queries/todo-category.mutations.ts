@@ -113,7 +113,9 @@ export function useUpdateTodoCategoryMutationOptions() {
         }
         return {
           ...old,
-          categories: old.categories.map((c) => (c.id === id ? { ...c, ...input } : c)),
+          categories: old.categories.map((category) =>
+            category.id === id ? { ...category, ...input } : category,
+          ),
         };
       });
 
@@ -165,7 +167,7 @@ export function useDeleteTodoCategoryMutationOptions() {
         }
         return {
           ...old,
-          categories: old.categories.filter((c) => c.id !== id),
+          categories: old.categories.filter((category) => category.id !== id),
         };
       });
 

@@ -18,6 +18,7 @@ interface SubTodoListProps {
 
 export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoListProps) {
   const { t } = useTranslation('todo');
+
   return (
     <SubTodoIndent>
       {children}

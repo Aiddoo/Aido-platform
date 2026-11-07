@@ -88,6 +88,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
             isAllDay === todo.isAllDay && (isAllDay || scheduledTime === editValues.scheduledTime);
           if (isUnchanged) {
             onClose();
+
             return;
           }
           const scope = TodoRepeatPolicy.hasRepeatRule(todo)
@@ -122,6 +123,7 @@ TodoTimeBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}

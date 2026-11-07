@@ -62,6 +62,7 @@ export function TodoCommentRailRow({
       return;
     }
     const timer = setTimeout(() => showAboveComposer(rowRef), HIGHLIGHT_REVEAL_DELAY_MS);
+
     return () => clearTimeout(timer);
   }, [isHighlighted, showAboveComposer]);
 

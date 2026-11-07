@@ -79,6 +79,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
         const startDateKey = toDateKey(startDate, timeZone);
         if (startDateKey === todo.startDate) {
           onClose();
+
           return;
         }
         updateSchedule.mutate({
@@ -106,6 +107,7 @@ TodoDateBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}

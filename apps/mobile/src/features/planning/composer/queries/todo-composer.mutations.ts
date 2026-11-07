@@ -71,13 +71,14 @@ export function useCreateTodoMutationOptions() {
 
       await cancelTodoCompletionQueries(queryClient, { date: startDate });
 
-      // 카테고리 캐시에서 카테고리 정보 조회
       const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
         TODO_CATEGORY_QUERY_KEYS.list(),
       );
-      const category = categoriesData?.categories.find((c) => c.id === input.categoryId);
+      const category = categoriesData?.categories.find(
+        (candidate) => candidate.id === input.categoryId,
+      );
 
-      // 카테고리를 찾지 못하면 optimistic 삽입 건너뜀 (서버 응답 후 invalidate로 처리)
+      // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다
       if (!category) {
         return { startDate, optimisticId: undefined };
       }

@@ -168,6 +168,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   const handleBack = () => {
     if (isDirty && isValid) {
       saveAndLeave();
+
       return;
     }
     onLeave();
@@ -363,6 +364,7 @@ MemoEditor.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   const goBack = useSingleTap(() => {
     if (router.canGoBack()) {
       router.back();
+
       return;
     }
     router.replace('/memo');
@@ -651,6 +653,7 @@ function useMemoAiParse() {
     });
     if (draft.status === 'restored') {
       push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+
       return;
     }
     if (defaultCategoryId == null || !gate.guard()) {
@@ -668,6 +671,7 @@ function useMemoAiParse() {
         sourceUpdatedAt,
       });
       push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+
       return;
     } catch {
       // 오류 안내는 mutation이 맡는다. 동의 없음(AI_1311)만 여기서 동의부터 다시 시작한다
@@ -680,6 +684,7 @@ function useMemoAiParse() {
     // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다
     if (consent.wasAsked) {
       toast.error(t('AI_1311'));
+
       return;
     }
     await handlePress();

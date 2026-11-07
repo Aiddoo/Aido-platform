@@ -10,8 +10,7 @@ import type {
   Todo,
 } from '../schemas/todo.schema';
 
-/** 비공개 할 일은 친구에게 보이지 않는다 */
-/** 정하지 않은(null) 공개 범위는 서버 기본값인 공개로 본다 */
+/** 비공개 할 일은 친구에게 보이지 않는다. 정하지 않은(null) 공개 범위는 서버 기본값인 공개로 본다 */
 function isPrivate(todo: { visibility: Todo['visibility'] | null }): boolean {
   return todo.visibility === 'PRIVATE';
 }

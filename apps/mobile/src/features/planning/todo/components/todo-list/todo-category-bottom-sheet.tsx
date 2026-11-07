@@ -78,6 +78,7 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
         onChange={async (categoryId) => {
           if (categoryId === todo.category.id) {
             onClose();
+
             return;
           }
           const scope = TodoRepeatPolicy.hasRepeatRule(todo)
@@ -111,6 +112,7 @@ TodoCategoryBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}

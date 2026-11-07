@@ -160,6 +160,7 @@ FriendTodoList.Loading = function Loading() {
 
 FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
+
   return (
     <Flex flex={1} justify="center" align="center">
       <Result title={t('todo:list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
@@ -170,6 +171,7 @@ FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
 FriendTodoList.Empty = function Empty({ action: EmptyAction }: { action: ComponentType }) {
   const { t } = useTranslation('todo');
   const isToday = useFeedDateKey() === useTodayKey();
+
   return (
     <Flex flex={1} justify="center" align="center">
       <Result

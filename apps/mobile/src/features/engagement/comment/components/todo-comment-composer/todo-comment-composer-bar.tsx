@@ -81,6 +81,7 @@ export function TodoCommentComposerBar() {
       if (keyboardProgress.get() < KEYBOARD_OPEN_PROGRESS) {
         baselineHeightRef.current = height;
         setExtraContentPadding(0);
+
         return;
       }
       setExtraContentPadding(Math.max(height - baselineHeightRef.current, 0));

@@ -42,10 +42,14 @@ import { match } from 'ts-pattern';
 
 import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
-import { useReorderSubTodosMutationOptions } from '../../queries/sub-todo.mutations';
-import { useToggleSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
-import { useReorderTodoMutationOptions } from '../../queries/todo.mutations';
-import { useToggleTodoMutationOptions } from '../../queries/todo.mutations';
+import {
+  useReorderSubTodosMutationOptions,
+  useToggleSubTodoMutationOptions,
+} from '../../queries/sub-todo.mutations';
+import {
+  useReorderTodoMutationOptions,
+  useToggleTodoMutationOptions,
+} from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { groupTodosByCategory } from '../../utils/group-todos-by-category';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
@@ -109,6 +113,7 @@ TodoList.Loading = function Loading() {
 
 TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
+
   return (
     <Flex flex={1} justify="center" align="center">
       <Result title={t('list.loadError')} button={<QueryErrorActions onRetry={reset} />} />

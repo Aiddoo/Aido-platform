@@ -93,6 +93,7 @@ CategoryEditBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}
@@ -120,6 +121,7 @@ function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
   const submitCategory = form.handleSubmit(async (values) => {
     if (!TodoCategoryPolicy.hasChanges(category, values)) {
       onClose();
+
       return;
     }
 
