@@ -11,7 +11,6 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   appendTodoToList,
@@ -229,8 +228,7 @@ export function useCreateRecurringTodoMutationOptions() {
       const result = await todoService.createRepeatingTodo(input);
       return unwrap(result);
     },
-    onSuccess: ({ series }, { input, source }) => {
-      queryClient.setQueryData(TODO_QUERY_KEYS.series({ seriesId: series.id }), series);
+    onSuccess: (_, { input, source }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));

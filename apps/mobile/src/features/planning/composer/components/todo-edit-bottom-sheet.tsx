@@ -39,7 +39,6 @@ import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
-import { useGetTodoSeriesQueryOptions } from '../queries/todo-composer.queries';
 import { addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import {
   hasOnlyDateChanges,
@@ -86,27 +85,7 @@ TodoEditBottomSheet.Form = function Form() {
     onClose: () => sheet.close(),
   };
 
-  // 규칙은 목록 응답에 실려 있다. 구 서버 응답처럼 규칙이 없는 회차만 따로 읽는다
-  return TodoRepeatPolicy.isMissingRepeatRule(todo) ? (
-    <TodoEditBottomSheet.SeriesForm todo={todo} seriesId={todo.recurrenceGroupId} {...sheetProps} />
-  ) : (
-    <TodoEditForm todo={todo} repeat={todo.repeat} {...sheetProps} />
-  );
-};
-
-type TodoEditSheetProps = Pick<TodoEditFormProps, 'isOpen' | 'onOpenChange' | 'onClose'>;
-
-/** 편집 폼의 기본값이 규칙이라, 반복 할 일은 규칙을 읽은 뒤에 시트를 띄운다. */
-TodoEditBottomSheet.SeriesForm = function SeriesForm({
-  todo,
-  seriesId,
-  ...sheetProps
-}: TodoEditSheetProps & { todo: Todo; seriesId: string }) {
-  const { data: series } = useSuspenseQuery(useGetTodoSeriesQueryOptions({ seriesId }));
-
-  return (
-    <TodoEditForm {...sheetProps} todo={todo} repeat={series == null ? null : series.repeat} />
-  );
+  return <TodoEditForm todo={todo} repeat={todo.repeat} {...sheetProps} />;
 };
 
 TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {

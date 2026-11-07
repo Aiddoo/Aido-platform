@@ -1,4 +1,3 @@
-import { ApiError } from '@src/core/errors/api-error';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
@@ -7,7 +6,6 @@ import {
   createTodoListResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo.fixtures';
-import { TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import type { RepeatingTodoDraft } from '../schemas/todo-repeat.schema';
 import { TodoService } from './todo.service';
 
@@ -371,18 +369,17 @@ describe('TodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('응답에 규칙이 없으면(옛 서버) 실패로 돌려준다', async () => {
+    test('반복으로 만들었는데 응답에 규칙이 없으면 검증 실패로 던진다', async () => {
       // Given
       httpClient.post.mockResolvedValue({
         ok: true,
         value: { todo: createTodoDto({ id: 1 }), message: '생성' },
       });
 
-      // When
-      const result = await service.createRepeatingTodo(draft);
-
-      // Then
-      expect(result).toEqual({ ok: false, error: expect.any(TodoSeriesNotCreatedError) });
+      // When & Then
+      await expect(service.createRepeatingTodo(draft)).rejects.toThrow(
+        'Invalid createRepeatingTodo response',
+      );
     });
 
     test('Zod 검증 실패 → ParseError throw', async () => {
@@ -462,100 +459,6 @@ describe('TodoService', () => {
   });
 
   describe('반복 규칙', () => {
-    test('규칙을 읽어 앱 모델로 바꾼다', async () => {
-      // Given
-      httpClient.get.mockResolvedValue({
-        ok: true,
-        value: {
-          id: 'series-1',
-          title: '물 마시기',
-          categoryId: 1,
-          visibility: 'PUBLIC',
-          scheduledTime: null,
-          timezone: 'Asia/Seoul',
-          repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-          startDate: '2026-11-02',
-          nextOccurrenceDate: null,
-          isActive: false,
-          checklist: [],
-          createdAt: '2026-11-02T00:00:00.000Z',
-          updatedAt: '2026-11-02T00:00:00.000Z',
-        },
-      });
-
-      // When
-      const result = await service.getTodoSeries('series-1');
-
-      // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-series/series-1', {
-        signal: undefined,
-      });
-      expect(result).toEqual({
-        ok: true,
-        value: {
-          id: 'series-1',
-          repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-          startDate: '2026-11-02',
-        },
-      });
-    });
-
-    test('규칙이 없는 옛 묶음(TODO_0841)은 null이다', async () => {
-      // Given
-      httpClient.get.mockResolvedValue({
-        ok: false,
-        error: createTodoApiError({ code: 'TODO_0841', message: '없음' }),
-      });
-
-      // When
-      const result = await service.getTodoSeries('series-1');
-
-      // Then
-      expect(result).toEqual({ ok: true, value: null });
-    });
-
-    test('옛 서버에 경로가 없어 404 SYS_0002면 null이다', async () => {
-      // Given
-      httpClient.get.mockResolvedValue({
-        ok: false,
-        error: new ApiError('SYS_0002', '경로 없음', 404),
-      });
-
-      // When
-      const result = await service.getTodoSeries('series-1');
-
-      // Then
-      expect(result).toEqual({ ok: true, value: null });
-    });
-
-    test('규칙의 빈도를 모르면 규칙이 없는 것처럼 돌려준다', async () => {
-      // Given
-      httpClient.get.mockResolvedValue({
-        ok: true,
-        value: {
-          id: 'series-1',
-          title: '물 마시기',
-          categoryId: 1,
-          visibility: 'PUBLIC',
-          scheduledTime: null,
-          timezone: 'Asia/Seoul',
-          repeat: { frequency: 'YEARLY', end: { type: 'NEVER' } },
-          startDate: '2026-11-02',
-          nextOccurrenceDate: null,
-          isActive: false,
-          checklist: [],
-          createdAt: '2026-11-02T00:00:00.000Z',
-          updatedAt: '2026-11-02T00:00:00.000Z',
-        },
-      });
-
-      // When
-      const result = await service.getTodoSeries('series-1');
-
-      // Then
-      expect(result).toEqual({ ok: true, value: null });
-    });
-
     test('반복 끝내기는 repeat null로 PATCH한다', async () => {
       // Given
       httpClient.patch.mockResolvedValue({

@@ -5,7 +5,6 @@ import {
   todoListResponseSchema,
   todoRepeatSchema,
   todoSchema,
-  todoSeriesResponseSchema,
   updateTodoResponseSchema,
 } from '@aido/api';
 import { z } from 'zod';
@@ -23,6 +22,10 @@ export const todoListEnvelopeSchema = todoListResponseSchema.extend({
 export const createTodoEnvelopeSchema = createTodoResponseSchema.extend({
   todo: lenientTodoSchema,
 });
+/** 반복으로 만들면 서버는 규칙을 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */
+export const createRepeatingTodoEnvelopeSchema = createTodoEnvelopeSchema.required({
+  series: true,
+});
 export const updateTodoEnvelopeSchema = updateTodoResponseSchema.extend({
   todo: lenientTodoSchema,
 });
@@ -31,7 +34,4 @@ export const reorderTodoEnvelopeSchema = reorderTodoResponseSchema.extend({
 });
 export const todoDetailsEnvelopeSchema = todoDetailsResponseSchema.extend({
   todo: lenientTodoSchema,
-});
-export const todoSeriesEnvelopeSchema = todoSeriesResponseSchema.extend({
-  repeat: todoRepeatSchema.nullable().catch(null),
 });

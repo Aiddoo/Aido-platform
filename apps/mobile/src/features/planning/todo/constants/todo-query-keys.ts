@@ -37,9 +37,6 @@ export const TODO_QUERY_KEYS = {
     endDate: string;
   }) => [...TODO_QUERY_KEYS.friendLists(), 'completion', { userId, startDate, endDate }] as const,
 
-  series: ({ seriesId }: { seriesId: string }) =>
-    [...TODO_QUERY_KEYS.all, 'series', { seriesId }] as const,
-
   // 할 일 상세 화면 (댓글 캐시는 todo-comment feature가 자기 키로 소유한다)
   pages: () => [...TODO_QUERY_KEYS.all, 'page'] as const,
   page: ({ todoId }: { todoId: number }) => [...TODO_QUERY_KEYS.pages(), { todoId }] as const,

@@ -1,8 +1,6 @@
 import { ApiError } from '@src/core/errors/api-error';
 
 import {
-  isTodoSeriesNotFoundError,
-  TodoSeriesNotCreatedError,
   getTodoSeriesFailure,
   shouldRefreshTodos,
   shouldReopenRepeatPicker,
@@ -56,35 +54,5 @@ describe('getTodoSeriesFailure', () => {
     expect(failure).toBe('limit');
     expect(shouldReopenRepeatPicker(error)).toBe(false);
     expect(shouldRefreshTodos('limit')).toBe(false);
-  });
-});
-
-describe('isTodoSeriesNotFoundError', () => {
-  test.each([
-    { name: '규칙 없음 코드', error: new ApiError('TODO_0841', '없음', 404), expected: true },
-    { name: '옛 서버에 없는 경로', error: new ApiError('SYS_0002', '없음', 404), expected: true },
-    { name: '입력 오류', error: new ApiError('SYS_0002', '잘못됨', 400), expected: false },
-    { name: '다른 404', error: new ApiError('TODO_0801', '없음', 404), expected: false },
-  ])('$name이면 $expected', ({ error, expected }) => {
-    // When
-    const result = isTodoSeriesNotFoundError(error);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('TodoSeriesNotCreatedError', () => {
-  test('입력을 지키고 목록을 새로 읽는 실패로 분류한다', () => {
-    // Given
-    const error = new TodoSeriesNotCreatedError();
-
-    // When
-    const failure = getTodoSeriesFailure(error);
-
-    // Then
-    expect(failure).toBe('not-created');
-    expect(shouldReopenRepeatPicker(error)).toBe(false);
-    expect(shouldRefreshTodos('not-created')).toBe(true);
   });
 });

@@ -13,17 +13,16 @@ import {
   type UpdateTodoScheduleInput,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { isTodoSeriesNotFoundError, TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import {
+  createRepeatingTodoEnvelopeSchema,
   createTodoEnvelopeSchema,
   reorderTodoEnvelopeSchema,
   todoDetailsEnvelopeSchema,
   todoListEnvelopeSchema,
-  todoSeriesEnvelopeSchema,
   updateTodoEnvelopeSchema,
 } from '../schemas/todo-envelope.schema';
 import type {
@@ -259,44 +258,14 @@ export class TodoService {
 
   createRepeatingTodo = async (
     draft: RepeatingTodoDraft,
-  ): Promise<Result<{ todo: Todo; series: TodoSeries }, ApiError | TodoSeriesNotCreatedError>> => {
+  ): Promise<Result<{ todo: Todo; series: TodoSeries }, ApiError>> => {
     const result = await this.#httpClient.post('v1/todos', toCreateRepeatingTodoRequest(draft));
 
-    const parsed = parseApiResponse(
-      result,
-      createTodoEnvelopeSchema,
-      (data) => data,
-      '[TodoService] Invalid createRepeatingTodo response',
-    );
-    if (!parsed.ok) {
-      return parsed;
-    }
-
-    const { todo, series } = parsed.value;
-    if (series == null) {
-      return err(new TodoSeriesNotCreatedError());
-    }
-
-    return ok({ todo: toTodo(todo), series: toTodoSeries(series) });
-  };
-
-  /** 규칙이 없는 옛 묶음과 경로가 없는 옛 서버는 없는 규칙으로 본다. 그 회차는 이 할 일만 고칠 수 있다 */
-  getTodoSeries = async (
-    seriesId: string,
-    signal?: AbortSignal,
-  ): Promise<Result<TodoSeries | null, ApiError>> => {
-    const result = await this.#httpClient.get(`v1/todo-series/${seriesId}`, { signal });
-
-    if (!result.ok) {
-      return isTodoSeriesNotFoundError(result.error) ? ok(null) : result;
-    }
-
-    // 모르는 빈도면 규칙이 없는 것처럼 다룬다
     return parseApiResponse(
       result,
-      todoSeriesEnvelopeSchema,
-      (data) => (data.repeat == null ? null : toTodoSeries({ ...data, repeat: data.repeat })),
-      '[TodoService] Invalid getTodoSeries response',
+      createRepeatingTodoEnvelopeSchema,
+      ({ todo, series }) => ({ todo: toTodo(todo), series: toTodoSeries(series) }),
+      '[TodoService] Invalid createRepeatingTodo response',
     );
   };
 

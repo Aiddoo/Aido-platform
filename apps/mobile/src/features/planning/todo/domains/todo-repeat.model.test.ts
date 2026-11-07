@@ -376,16 +376,3 @@ describe('서버와 같은 회차 표', () => {
     expect(occurrences).toEqual(expected);
   });
 });
-
-describe('TodoRepeatPolicy.isMissingRepeatRule', () => {
-  it('규칙 없이 묶음 id만 있는 회차는 규칙을 따로 읽어야 한다', () => {
-    // When
-    const results = [
-      TodoRepeatPolicy.isMissingRepeatRule({ repeat: null, recurrenceGroupId: 'old-group' }),
-      TodoRepeatPolicy.isMissingRepeatRule({ repeat: null, recurrenceGroupId: null }),
-    ];
-
-    // Then
-    expect(results).toEqual([true, false]);
-  });
-});

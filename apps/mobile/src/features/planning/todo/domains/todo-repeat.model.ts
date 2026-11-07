@@ -154,18 +154,11 @@ interface RepeatOccurrence {
 }
 
 /**
- * 규칙이 있는 반복 회차인지. 묶음은 있는데 규칙이 없으면 옛 서버(롤백 중)가 만든 묶음이거나 이관에서 패턴을 알 수 없던
+ * 규칙이 있는 반복 회차인지. 묶음은 있는데 규칙이 없으면 이관에서 패턴을 알 수 없던
  * 묶음이다. 서버는 이런 묶음의 범위 수정과 반복 끝내기를 받지 않아 "이 할 일만"으로 다룬다.
  */
 function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
   return recurrenceGroupId != null && repeat != null;
-}
-
-/** 규칙이 목록 응답에 실려 있지 않은 반복 회차(구 서버 응답). 규칙을 따로 읽어야 고칠 수 있다 */
-function isMissingRepeatRule<T extends RepeatOccurrence>(
-  occurrence: T,
-): occurrence is T & { recurrenceGroupId: string } {
-  return occurrence.repeat == null && occurrence.recurrenceGroupId != null;
 }
 
 /** 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845) */
@@ -270,7 +263,6 @@ export const TodoRepeatPolicy = {
   isMonthBeyondRepeatHorizon,
   getTodoEditScopeDecision,
   hasRepeatRule,
-  isMissingRepeatRule,
   canChangeRepeat,
   getDeleteScopes,
   withRepeatStartDate,
