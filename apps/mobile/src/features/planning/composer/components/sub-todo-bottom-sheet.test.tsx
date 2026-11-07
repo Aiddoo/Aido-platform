@@ -78,11 +78,14 @@ async function renderEditSheet() {
 
 describe('EditSubTodoBottomSheet', () => {
   it('보내는 동안 전송과 삭제가 모두 잠긴다', async () => {
+    // Given
     const { httpClient, settleRequests } = await renderEditSheet();
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '바뀐 제목');
 
+    // When
     fireEvent.press(submitButton()).catch(() => undefined);
 
+    // Then
     await waitFor(() => {
       expect(submitButton()).toBeDisabled();
     });
@@ -92,10 +95,13 @@ describe('EditSubTodoBottomSheet', () => {
   });
 
   it('지우는 동안에도 전송이 함께 잠긴다', async () => {
+    // Given
     const { httpClient, settleRequests } = await renderEditSheet();
 
+    // When
     fireEvent.press(deleteButton()).catch(() => undefined);
 
+    // Then
     await waitFor(() => {
       expect(deleteButton()).toBeDisabled();
     });
@@ -105,14 +111,13 @@ describe('EditSubTodoBottomSheet', () => {
   });
 
   it('공백만 남기면 전송이 꺼진다', async () => {
+    // Given
     const { settleRequests } = await renderEditSheet();
 
-    // Given
-    // 제목을 공백으로 바꾼다
+    // When
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '   ');
 
     // Then
-    // 전송 버튼이 꺼진다
     await waitFor(() => {
       expect(submitButton()).toBeDisabled();
     });

@@ -44,7 +44,7 @@ async function renderSheet() {
 
 describe('useSelectTodoScope', () => {
   it('범위를 묻는 동안 같은 자리에 범위 선택을 보이고 앞 화면의 입력값은 남긴다', async () => {
-    // Given
+    // When
     await renderSheet();
 
     // Then

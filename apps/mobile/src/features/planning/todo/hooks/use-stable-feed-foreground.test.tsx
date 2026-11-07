@@ -119,6 +119,7 @@ describe('useStableFeedForeground', () => {
   });
 
   it('화면을 떠나면 대기 중인 딥링크 해제를 취소한다', async () => {
+    // Given
     incomingLink.getInitialUrl.mockResolvedValue('aido://feed');
     const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
@@ -126,7 +127,10 @@ describe('useStableFeedForeground', () => {
     });
     expect(globalThis.requestIdleCallback).toHaveBeenCalledTimes(1);
 
+    // When
     await hook.unmount();
+
+    // Then
     expect(globalThis.cancelIdleCallback).toHaveBeenCalledWith(1);
   });
 

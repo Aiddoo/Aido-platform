@@ -421,7 +421,7 @@ describe('TodoRepeatPickerContent', () => {
   });
 
   it('기존 반복이 없으면 삭제 버튼이 없다', async () => {
-    // Given
+    // When
     await renderSheet();
 
     // Then

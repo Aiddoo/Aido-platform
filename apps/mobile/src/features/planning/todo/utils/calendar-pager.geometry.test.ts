@@ -7,9 +7,15 @@ const SYSTEM_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 describe('clampCalendarPage', () => {
   it('페이지 범위 밖의 값을 처음과 마지막 페이지로 맞춘다', () => {
-    expect(clampCalendarPage(-3, 10)).toBe(0);
-    expect(clampCalendarPage(4, 10)).toBe(4);
-    expect(clampCalendarPage(12, 10)).toBe(9);
+    // When
+    const below = clampCalendarPage(-3, 10);
+    const inside = clampCalendarPage(4, 10);
+    const above = clampCalendarPage(12, 10);
+
+    // Then
+    expect(below).toBe(0);
+    expect(inside).toBe(4);
+    expect(above).toBe(9);
   });
 });
 

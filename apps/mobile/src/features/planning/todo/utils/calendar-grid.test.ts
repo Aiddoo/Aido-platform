@@ -137,39 +137,48 @@ describe('diffWeeks', () => {
 
 describe('shiftCalendarDate', () => {
   it('주 보기는 선택한 날짜가 속한 주의 시작에서 한 주 이동한다', () => {
+    // Given
     const wednesday = new Date(2026, 9, 14);
 
-    expect(
-      shiftCalendarDate({ viewMode: 'week', date: wednesday, step: 1, timeZone: SYSTEM_TIME_ZONE }),
-    ).toEqual(new Date(2026, 9, 18));
-    expect(
-      shiftCalendarDate({
-        viewMode: 'week',
-        date: wednesday,
-        step: -1,
-        timeZone: SYSTEM_TIME_ZONE,
-      }),
-    ).toEqual(new Date(2026, 9, 4));
+    // When
+    const next = shiftCalendarDate({
+      viewMode: 'week',
+      date: wednesday,
+      step: 1,
+      timeZone: SYSTEM_TIME_ZONE,
+    });
+    const previous = shiftCalendarDate({
+      viewMode: 'week',
+      date: wednesday,
+      step: -1,
+      timeZone: SYSTEM_TIME_ZONE,
+    });
+
+    // Then
+    expect(next).toEqual(new Date(2026, 9, 18));
+    expect(previous).toEqual(new Date(2026, 9, 4));
   });
 
   it('월 보기는 선택한 날짜가 속한 달의 1일에서 한 달 이동한다', () => {
+    // Given
     const middleOfMonth = new Date(2026, 9, 14);
 
-    expect(
-      shiftCalendarDate({
-        viewMode: 'month',
-        date: middleOfMonth,
-        step: 1,
-        timeZone: SYSTEM_TIME_ZONE,
-      }),
-    ).toEqual(new Date(2026, 10, 1));
-    expect(
-      shiftCalendarDate({
-        viewMode: 'month',
-        date: middleOfMonth,
-        step: -1,
-        timeZone: SYSTEM_TIME_ZONE,
-      }),
-    ).toEqual(new Date(2026, 8, 1));
+    // When
+    const next = shiftCalendarDate({
+      viewMode: 'month',
+      date: middleOfMonth,
+      step: 1,
+      timeZone: SYSTEM_TIME_ZONE,
+    });
+    const previous = shiftCalendarDate({
+      viewMode: 'month',
+      date: middleOfMonth,
+      step: -1,
+      timeZone: SYSTEM_TIME_ZONE,
+    });
+
+    // Then
+    expect(next).toEqual(new Date(2026, 10, 1));
+    expect(previous).toEqual(new Date(2026, 8, 1));
   });
 });

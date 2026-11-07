@@ -75,7 +75,7 @@ describe('TodoList 낙관적 표시', () => {
   });
 
   it('임시 하위 항목은 응답 전까지 체크를 막아 임시 id로 요청을 보내지 않는다', async () => {
-    // Given
+    // When
     await renderTodoList(
       createParentTodo({
         startDate: DATE,

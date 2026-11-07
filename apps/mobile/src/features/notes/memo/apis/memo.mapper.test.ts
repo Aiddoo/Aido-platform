@@ -97,8 +97,13 @@ const TIME_ZONE = getDeviceTimezone();
 
 describe('toConvertMemoToTodosRequest', () => {
   it('편집한 제목과 카테고리, 공개 범위를 기존 batch 계약의 한 항목으로 보낸다', () => {
-    const input = toConvertMemoToTodosRequest(createFormData({ visibility: 'PRIVATE' }), TIME_ZONE);
+    // Given
+    const values = createFormData({ visibility: 'PRIVATE' });
 
+    // When
+    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+
+    // Then
     expect(input.todos).toHaveLength(1);
     expect(input.todos[0]).toMatchObject({
       title: '수정한 메모 제목',
@@ -110,11 +115,15 @@ describe('toConvertMemoToTodosRequest', () => {
   });
 
   it('격주·매월도 빠지지 않고 repeat로 보낸다', () => {
-    const input = toConvertMemoToTodosRequest(
-      createFormData({ repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } } }),
-      TIME_ZONE,
-    );
+    // Given
+    const values = createFormData({
+      repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } },
+    });
 
+    // When
+    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+
+    // Then
     expect(input.todos[0]?.repeat).toEqual({
       frequency: 'MONTHLY',
       monthDay: 15,
@@ -123,19 +132,21 @@ describe('toConvertMemoToTodosRequest', () => {
   });
 
   it('반복 기간과 요일을 유지하고 종일 일정의 남은 시간을 보내지 않는다', () => {
-    const input = toConvertMemoToTodosRequest(
-      createFormData({
-        repeat: {
-          frequency: 'WEEKLY',
-          interval: 1,
-          weekdays: ['MON', 'FRI'],
-          end: { type: 'UNTIL', date: '2026-10-30' },
-        },
-        scheduledTime: '13:30',
-      }),
-      TIME_ZONE,
-    );
+    // Given
+    const values = createFormData({
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['MON', 'FRI'],
+        end: { type: 'UNTIL', date: '2026-10-30' },
+      },
+      scheduledTime: '13:30',
+    });
 
+    // When
+    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+
+    // Then
     expect(input.todos[0]).toMatchObject({
       isAllDay: true,
       repeat: {
@@ -149,23 +160,30 @@ describe('toConvertMemoToTodosRequest', () => {
   });
 
   it('비반복 일정의 시간과 종료 날짜를 보존하고 반복은 보내지 않는다', () => {
-    const input = toConvertMemoToTodosRequest(
-      createFormData({
-        isAllDay: false,
-        scheduledTime: '13:30',
-        endDate: fromDate(new Date(2026, 9, 3)),
-      }),
-      TIME_ZONE,
-    );
+    // Given
+    const values = createFormData({
+      isAllDay: false,
+      scheduledTime: '13:30',
+      endDate: fromDate(new Date(2026, 9, 3)),
+    });
 
+    // When
+    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+
+    // Then
     expect(input.todos[0]).toMatchObject({ scheduledTime: '13:30', endDate: '2026-10-03' });
     expect(input.todos[0]?.recurrence).toBeUndefined();
   });
 
   it('공유 계약을 넘는 제목은 전송 전에 거부한다', () => {
-    expect(() =>
-      toConvertMemoToTodosRequest(createFormData({ title: 'a'.repeat(201) }), TIME_ZONE),
-    ).toThrow();
+    // Given
+    const values = createFormData({ title: 'a'.repeat(201) });
+
+    // When
+    const convert = () => toConvertMemoToTodosRequest(values, TIME_ZONE);
+
+    // Then
+    expect(convert).toThrow();
   });
 });
 
