@@ -28,8 +28,9 @@ function toNullableInstant(value: string | null) {
   return value == null ? null : toInstant(value);
 }
 
-const activationProgressKey = ({ accountId, campaignId }: ActivationIdentity): string =>
-  `${KEY_PREFIX}:${accountId}:${campaignId}`;
+function activationProgressKey({ accountId, campaignId }: ActivationIdentity): string {
+  return `${KEY_PREFIX}:${accountId}:${campaignId}`;
+}
 
 export function createActivationProgressRepository(
   storage: SyncStorage,

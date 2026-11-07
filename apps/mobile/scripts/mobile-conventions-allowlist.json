@@ -17,8 +17,6 @@
       "apps/mobile/src/core/session/session-manager.ts": 1,
       "apps/mobile/src/features/billing/subscription/apis/entitlement.mapper.ts": 2,
       "apps/mobile/src/features/billing/subscription/queries/subscription.mutations.ts": 2,
-      "apps/mobile/src/features/device/activation/apis/activation-progress.repository.ts": 1,
-      "apps/mobile/src/features/device/activation/domains/activation.model.ts": 2,
       "apps/mobile/src/features/device/store-review/apis/store-review.repository.ts": 2,
       "apps/mobile/src/features/identity/consent/domains/consent.error.ts": 1,
       "apps/mobile/src/features/identity/consent/queries/consent.mutations.ts": 3,
@@ -119,7 +117,6 @@
       "apps/mobile/src/bootstrap/hooks/use-widget-app-entry.test.tsx": 1,
       "apps/mobile/src/bootstrap/navigation/auth-gate-layout.push-entry.test.tsx": 3,
       "apps/mobile/src/bootstrap/navigation/auth-gate-layout.test.tsx": 6,
-      "apps/mobile/src/features/device/activation/hooks/use-activation-progress.test.tsx": 3,
       "apps/mobile/src/shared/hooks/use-stable-feed-foreground.test.tsx": 1,
       "apps/mobile/src/shared/preferences/__tests__/language-settings.test.tsx": 1
     }

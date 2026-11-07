@@ -72,12 +72,14 @@ function getActivationIdentity(
   };
 }
 
-const isWithinTimeWindow = (createdAt: number, now: number, window: number): boolean => {
+function isWithinTimeWindow(createdAt: number, now: number, window: number): boolean {
   const elapsed = now - createdAt;
   return elapsed >= 0 && elapsed < window;
-};
-const calculateElapsedDays = (createdAt: number, now: number): number =>
-  Math.max(0, Math.floor((now - createdAt) / DAY_MS));
+}
+
+function calculateElapsedDays(createdAt: number, now: number): number {
+  return Math.max(0, Math.floor((now - createdAt) / DAY_MS));
+}
 
 /** 체크리스트 대상인지. 신규 코호트이고 활성화 전이며 가입 후 7일 안이어야 한다 */
 function isChecklistEligible({ config, user, progress, now }: ChecklistEligibilityInput): boolean {
