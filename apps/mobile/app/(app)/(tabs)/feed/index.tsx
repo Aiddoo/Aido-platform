@@ -15,14 +15,13 @@ import { MarketingPushOptInBanner } from '@src/features/notification/components/
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
 import {
-  useFeedActionParam,
   useFeedDateKey,
   useFeedFriendParam,
 } from '@src/features/planning/todo/hooks/use-feed-params';
@@ -58,15 +57,12 @@ import {
   AdaptivePane,
   Box,
   QueryErrorBoundary,
-  Result,
   Spacing,
   StyledSafeAreaView,
-  Text,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
 import { type PropsWithChildren, Suspense, useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
@@ -188,82 +184,6 @@ function MyFeed() {
       </StyledSafeAreaView>
     </ScrollViewContainer>
   );
-}
-
-/** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
-function AddTodoRequestEntry() {
-  const { t } = useTranslation(['widget', 'common']);
-  const [action, setAction] = useFeedActionParam();
-  const selectedDateKey = useFeedDateKey();
-  const isRequested = action === 'add-todo';
-  const categories = useQuery({
-    ...useGetTodoCategoriesQueryOptions(),
-    enabled: isRequested,
-    throwOnError: false,
-  });
-  const categoryId = categories.data?.categories[0]?.id;
-
-  useEffect(() => {
-    if (!isRequested || categoryId == null) {
-      return;
-    }
-
-    const frameId = requestAnimationFrame(() => {
-      setAction(undefined);
-      router.push({ pathname: '/todo/new', params: { date: selectedDateKey, categoryId } });
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDateKey, setAction]);
-
-  const createEntryStatus = !isRequested
-    ? ('idle' as const)
-    : match(categories)
-        .with({ isLoading: true }, () => 'loading' as const)
-        .with({ isError: true }, () => 'error' as const)
-        .with({ isSuccess: true }, () =>
-          categoryId == null ? ('empty' as const) : ('idle' as const),
-        )
-        .otherwise(() => 'idle' as const);
-
-  return match(createEntryStatus)
-    .with('loading', () => (
-      <Box px={16} py={8}>
-        <Text size="b4" shade={6}>
-          {t('widget:entry.loading')}
-        </Text>
-      </Box>
-    ))
-    .with('error', () => (
-      <Box px={16} py={8}>
-        <Result
-          title={t('widget:entry.loadError')}
-          button={
-            <Result.Button onPress={() => categories.refetch()}>
-              {t('common:actions.retry')}
-            </Result.Button>
-          }
-        />
-      </Box>
-    ))
-    .with('empty', () => (
-      <Box px={16} py={8}>
-        <Result
-          title={t('widget:entry.emptyCategory')}
-          button={
-            <Result.Button
-              onPress={() => {
-                setAction(undefined);
-                router.navigate('/settings/category-settings');
-              }}
-            >
-              {t('widget:entry.manageCategories')}
-            </Result.Button>
-          }
-        />
-      </Box>
-    ))
-    .with('idle', () => null)
-    .exhaustive();
 }
 
 function FriendFeedTodos() {
