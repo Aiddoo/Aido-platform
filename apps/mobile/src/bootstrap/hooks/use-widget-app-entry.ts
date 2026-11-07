@@ -1,5 +1,9 @@
 import { WidgetNavigationPolicy } from '@src/features/device/widget/domains/widget-navigation.model';
 import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
+import {
+  getWidgetRoute,
+  isWidgetRouteShown,
+} from '@src/features/device/widget/utils/widget-navigation-link';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -34,7 +38,7 @@ export function useWidgetAppEntry() {
   );
   const previousUrlRef = useRef(url);
   const [pendingInitialUrl, setPendingInitialUrl] = useState<string | null>(() =>
-    WidgetNavigationPolicy.getRoute(url) ? url : null,
+    getWidgetRoute(url) ? url : null,
   );
   const isAuthenticatedRouteMounted = segments[0] === '(app)';
 
@@ -66,13 +70,13 @@ export function useWidgetAppEntry() {
         }
       }
 
-      const destination = WidgetNavigationPolicy.getRoute(destinationUrl);
+      const destination = getWidgetRoute(destinationUrl);
       if (!destination) {
         return;
       }
       setPendingInitialUrl(null);
       try {
-        if (!WidgetNavigationPolicy.isCurrentRoute(destinationUrl, pathname, parameters)) {
+        if (!isWidgetRouteShown(destinationUrl, pathname, parameters)) {
           router.navigate(destination, { withAnchor: true });
         }
         widgetNavigationRepository.clearIfCurrent(command);
@@ -98,7 +102,7 @@ export function useWidgetAppEntry() {
       setPendingInitialUrl(null);
       return;
     }
-    setPendingInitialUrl(WidgetNavigationPolicy.getRoute(url) ? url : null);
+    setPendingInitialUrl(getWidgetRoute(url) ? url : null);
   }, [url, status, isAuthenticatedRouteMounted]);
 
   useEffect(() => {
@@ -126,7 +130,7 @@ export function useWidgetAppEntry() {
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
-    if (!destinationUrl || !WidgetNavigationPolicy.getRoute(destinationUrl)) {
+    if (!destinationUrl || !getWidgetRoute(destinationUrl)) {
       widgetNavigationRepository.clearIfCurrent(null);
       return;
     }

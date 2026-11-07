@@ -1,7 +1,7 @@
-import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 
 /** 메모리에 두고 바뀔 때 구독자에게 알리는 위젯 이동 명령 저장소 */
-export function createWidgetNavigationStorageFake(): WidgetNavigationStorage {
+export function createObservableSyncStorageFake(): ObservableSyncStorage {
   const values = new Map<string, string>();
   const listeners = new Set<() => void>();
   return {

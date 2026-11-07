@@ -34,7 +34,7 @@ useWidgetSnapshotSync(authState)
 
 ## 플랫폼 경계와 identity
 
-`create-widget-bridge.ios.ts` / `.android.ts`, `widget-navigation-storage.android.ts`와 noop
+`create-widget-bridge.ios.ts` / `.android.ts`, `widget-storage.android.ts`와 noop
 fallback, `register-widget-task-handler.android.ts`와 noop fallback을 사용한다. iOS Metro graph에
 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 분리한다.
 

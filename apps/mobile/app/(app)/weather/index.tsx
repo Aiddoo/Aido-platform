@@ -1,42 +1,23 @@
 import { DailyForecast } from '@src/features/weather/components/daily-forecast';
+import { DevOverrideBadge } from '@src/features/weather/components/dev-override-badge';
 import { HourlyForecast } from '@src/features/weather/components/hourly-forecast';
 import { NextHourPrecipitation } from '@src/features/weather/components/next-hour-precipitation';
 import { WeatherAirQuality } from '@src/features/weather/components/weather-air-quality';
 import { WeatherAlerts } from '@src/features/weather/components/weather-alerts';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
+import { WeatherBackground } from '@src/features/weather/components/weather-background';
 import { WeatherBriefing } from '@src/features/weather/components/weather-briefing';
 import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
-import { WeatherSceneCanvas } from '@src/features/weather/components/weather-scene/weather-scene-canvas';
+import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon';
-import { WeatherTopFade } from '@src/features/weather/components/weather-top-fade';
-import { WEATHER_CONDITION_LABEL_KEYS } from '@src/features/weather/constants/weather-labels';
-import { useDevWeatherOverride } from '@src/features/weather/hooks/use-dev-weather-override';
-import { useOnSkyColor } from '@src/features/weather/hooks/use-on-sky-color';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { useWeatherScene } from '@src/features/weather/hooks/use-weather-scene';
 import { useWeatherScreenTracking } from '@src/features/weather/hooks/use-weather-screen-tracking';
-import { refetchWeather } from '@src/features/weather/queries/weather-cache';
 import { useWeatherLocationRevision } from '@src/features/weather/queries/weather.queries';
-import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { useTranslation } from '@src/shared/i18n';
-import {
-  AdaptivePane,
-  Box,
-  getPrimaryPaneWidth,
-  QueryErrorBoundary,
-  Spacing,
-  StyledSafeAreaView,
-  Text,
-  VStack,
-} from '@src/shared/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { useHeaderHeight } from 'expo-router/react-navigation';
+import { AdaptivePane, Box, QueryErrorBoundary, Spacing, VStack } from '@src/shared/ui';
 import { type ComponentProps, type PropsWithChildren, Suspense } from 'react';
-import { Platform, RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -46,12 +27,6 @@ const CARDS_TOP = 32;
 const CARD_GAP = 12;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
 const COLUMN_MAX_WIDTH = 560;
-/** 헤더 아래로 페이드가 이어지는 길이 */
-const TOP_FADE_EXTENT = 40;
-const DEV_BADGE_BOTTOM = 8;
-const IS_IOS = process.env.EXPO_OS === 'ios';
-/** iOS 26부터는 투명 헤더 아래 내용을 시스템 스크롤 엣지 효과가 흐리므로 직접 그린 페이드를 쓰지 않는다. */
-const HAS_NATIVE_EDGE_EFFECT = IS_IOS && Number.parseInt(String(Platform.Version), 10) >= 26;
 
 /**
  * 위치를 확인하는 동안에도 서버에 저장된 위치로 리포트를 바로 받는다.
@@ -64,34 +39,14 @@ export default function WeatherScreen() {
   const locationRevision = useWeatherLocationRevision();
   const isCompact = useWindowSizeClass() === 'compact';
 
-  const forecastCards = (
-    <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
-      <Suspense fallback={<DailyForecast.Loading />}>
-        <DailyForecast />
-      </Suspense>
-      <Suspense fallback={<WeatherDetailGrid.Loading />}>
-        <WeatherDetailGrid />
-      </Suspense>
-      <Suspense fallback={<WeatherSunMoon.Loading />}>
-        <WeatherSunMoon />
-      </Suspense>
-      <Suspense fallback={<WeatherAirQuality.Loading />}>
-        <WeatherAirQuality />
-      </Suspense>
-      <Suspense fallback={<WeatherAttribution.Loading />}>
-        <WeatherAttribution background="dark" />
-      </Suspense>
-    </VStack>
-  );
-
   return (
     <>
       <WeatherBackground />
       {match(location)
         .with({ status: 'needsPermission' }, { status: 'denied' }, () => (
-          <WeatherStatusView>
+          <WeatherScrollView.Status>
             <WeatherLocationPrompt />
-          </WeatherStatusView>
+          </WeatherScrollView.Status>
         ))
         .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
           <QueryErrorBoundary fallback={WeatherReportFallback} resetKeys={[locationRevision]}>
@@ -126,7 +81,7 @@ export default function WeatherScreen() {
                     {isCompact && (
                       <>
                         <Spacing size={CARD_GAP} />
-                        {forecastCards}
+                        <ForecastCards />
                       </>
                     )}
                   </WeatherColumn>
@@ -134,7 +89,9 @@ export default function WeatherScreen() {
               }
               secondary={
                 <WeatherScrollView>
-                  <WeatherColumn>{forecastCards}</WeatherColumn>
+                  <WeatherColumn>
+                    <ForecastCards />
+                  </WeatherColumn>
                 </WeatherScrollView>
               }
             />
@@ -143,6 +100,29 @@ export default function WeatherScreen() {
         .exhaustive()}
       <DevOverrideBadge />
     </>
+  );
+}
+
+/** 좁은 창은 지금 날씨 아래에, 넓은 창은 오른쪽 단에 같은 카드 묶음을 둔다. */
+function ForecastCards() {
+  return (
+    <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
+      <Suspense fallback={<DailyForecast.Loading />}>
+        <DailyForecast />
+      </Suspense>
+      <Suspense fallback={<WeatherDetailGrid.Loading />}>
+        <WeatherDetailGrid />
+      </Suspense>
+      <Suspense fallback={<WeatherSunMoon.Loading />}>
+        <WeatherSunMoon />
+      </Suspense>
+      <Suspense fallback={<WeatherAirQuality.Loading />}>
+        <WeatherAirQuality />
+      </Suspense>
+      <Suspense fallback={<WeatherAttribution.Loading />}>
+        <WeatherAttribution background="dark" />
+      </Suspense>
+    </VStack>
   );
 }
 
@@ -157,105 +137,8 @@ function WeatherColumn({ children }: PropsWithChildren) {
 /** 리포트 오류·위치 안내는 권한 안내와 같은 자리(가로 여백, 세로 가운데)에 둔다. */
 function WeatherReportFallback(props: ComponentProps<typeof WeatherHero.Error>) {
   return (
-    <WeatherStatusView>
+    <WeatherScrollView.Status>
       <WeatherHero.Error {...props} />
-    </WeatherStatusView>
-  );
-}
-
-/**
- * 권한 안내·오류처럼 한 덩어리만 보여 주는 상태를 헤더 아래 보이는 영역의 세로 가운데에 둔다.
- * iOS는 헤더 높이만큼 내용이 자동으로 내려가므로 그만큼 아래 여백을 더해 가운데를 맞춘다.
- */
-function WeatherStatusView({ children }: PropsWithChildren) {
-  const headerHeight = useHeaderHeight();
-
-  return (
-    <WeatherScrollView bottomInset={IS_IOS ? headerHeight : 0}>
-      <Box px={SCREEN_GUTTER} className="flex-1 justify-center">
-        {children}
-      </Box>
-    </WeatherScrollView>
-  );
-}
-
-interface WeatherScrollViewProps extends PropsWithChildren {
-  /** 기본 아래 여백에 더할 높이 */
-  bottomInset?: number;
-}
-
-function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollViewProps) {
-  const queryClient = useQueryClient();
-  const headerHeight = useHeaderHeight();
-  const insets = useSafeAreaInsets();
-  const [isRefreshing, refresh] = useRefresh(() => refetchWeather(queryClient));
-  const refreshTint = useOnSkyColor('text-on-sky');
-
-  return (
-    <Box flex={1}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingTop: IS_IOS ? 0 : headerHeight,
-          paddingBottom: insets.bottom + 24 + bottomInset,
-        }}
-        refreshControl={
-          <RefreshControl
-            tintColor={refreshTint}
-            progressViewOffset={IS_IOS ? undefined : headerHeight}
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-          />
-        }
-      >
-        <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
-          {children}
-        </StyledSafeAreaView>
-      </ScrollView>
-      {!HAS_NATIVE_EDGE_EFFECT && (
-        <WeatherTopFade solidHeight={insets.top} height={headerHeight + TOP_FADE_EXTENT} />
-      )}
-    </Box>
-  );
-}
-
-/** 해·달은 지명·기온이 놓인 단에 맞춘다. 넓은 화면은 왼쪽 단, iPhone Duo처럼 옆 레일이 있으면 레일을 뺀 영역이다. */
-function WeatherBackground() {
-  const windowSizeClass = useWindowSizeClass();
-  const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const heroWidth =
-    windowSizeClass === 'compact'
-      ? width - insets.left - insets.right
-      : getPrimaryPaneWidth({ windowSizeClass, foldFrame: undefined });
-  return (
-    <WeatherSceneCanvas
-      scene={useWeatherScene()}
-      contentTop={useHeaderHeight()}
-      heroLeft={insets.left}
-      heroWidth={heroWidth}
-    />
-  );
-}
-
-/** 개발 QA로 지금 날씨를 바꿔 보는 중임을 알려 실제 데이터로 착각하지 않게 한다. */
-function DevOverrideBadge() {
-  const override = useDevWeatherOverride();
-  const { t } = useTranslation('weather');
-  const insets = useSafeAreaInsets();
-  if (override == null) {
-    return null;
-  }
-  return (
-    <Box
-      pointerEvents="none"
-      className="absolute self-center rounded-full bg-black/60 px-3 py-1"
-      style={{ bottom: insets.bottom + DEV_BADGE_BOTTOM }}
-    >
-      <Text size="b4" weight="medium" tone="onSky">
-        {`DEV · ${t(WEATHER_CONDITION_LABEL_KEYS[override.condition])} · ${override.isDaylight ? 'day' : 'night'}`}
-      </Text>
-    </Box>
+    </WeatherScrollView.Status>
   );
 }

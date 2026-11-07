@@ -114,7 +114,7 @@ import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encryp
 import { secureDeviceIdStore } from '@src/shared/infra/storage/secure-device-id-store';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
-import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
+import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
@@ -342,7 +342,7 @@ export function DIProvider({
     // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
     const widgetBridge = createWidgetBridge();
     const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
-    const widgetNavigationRepository = createWidgetNavigationRepository(widgetNavigationStorage);
+    const widgetNavigationRepository = createWidgetNavigationRepository(widgetStorage);
 
     const sessionCleanupService = new SessionCleanupService({
       queryCache: createSessionQueryCache(queryClient),

@@ -112,7 +112,7 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `createMemoryStorage()`                                                     | 키체인(`Storage` 포트) 대신 메모리 저장소                                                |
 | `createMemoryTokenStore(tokens)`                                            | 저장·삭제가 다음 읽기에 반영되는 토큰 저장소 fake                                        |
 | `createHttpClientStub()`                                                    | HTTP 포트 stub                                                                           |
-| `createWidgetNavigationStorageFake()`                                       | 위젯 이동 명령 저장소 fake. 바뀔 때 구독자에게 알린다                                    |
+| `createObservableSyncStorageFake()`                                         | 위젯 이동 명령 저장소 fake. 바뀔 때 구독자에게 알린다                                    |
 | `OverlayStateContext.Provider`                                              | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다   |
 | `createAnalyticsStub()`, `createStorageStub()`, `createMemorySyncStorage()` | Analytics·저장소 포트 stub                                                               |
 | `createLoggerStub()`                                                        | Logger 포트 stub. `jest.fn()` 네 개를 파일마다 만들지 않는다                             |

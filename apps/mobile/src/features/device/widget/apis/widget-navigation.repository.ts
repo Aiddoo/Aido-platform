@@ -1,4 +1,4 @@
-import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 
 import { WidgetNavigationPolicy } from '../domains/widget-navigation.model';
 import {
@@ -16,7 +16,7 @@ export interface WidgetNavigationRepository {
 }
 
 export function createWidgetNavigationRepository(
-  storage: WidgetNavigationStorage,
+  storage: ObservableSyncStorage,
 ): WidgetNavigationRepository {
   let cachedRaw: string | undefined;
   let cachedCommand: WidgetNavigationCommand | null = null;

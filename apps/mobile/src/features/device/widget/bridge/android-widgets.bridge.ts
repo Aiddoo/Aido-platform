@@ -1,6 +1,6 @@
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
-import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
+import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import Constants from 'expo-constants';
 import { requestWidgetUpdate } from 'react-native-android-widget';
 
@@ -12,8 +12,8 @@ import { ANDROID_WIDGET_DEFINITIONS } from './android-widget';
 import { createStoredAndroidWidgetRenderer } from './stored-android-widget.renderer';
 import type { WidgetBridge } from './widget-bridge';
 
-const snapshotRepository = createAndroidWidgetSnapshotRepository(widgetNavigationStorage);
-const navigationRepository = createWidgetNavigationRepository(widgetNavigationStorage);
+const snapshotRepository = createAndroidWidgetSnapshotRepository(widgetStorage);
+const navigationRepository = createWidgetNavigationRepository(widgetStorage);
 
 export const renderStoredAndroidWidget = createStoredAndroidWidgetRenderer({
   snapshotRepository,

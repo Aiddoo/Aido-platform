@@ -3,7 +3,7 @@ import { toError } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-linking.gateway';
-import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
+import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { AppState } from 'react-native';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
@@ -93,7 +93,7 @@ export function createAndroidWidgetTaskHandler({
 }
 
 export const androidWidgetTaskHandler = createAndroidWidgetTaskHandler({
-  navigationRepository: createWidgetNavigationRepository(widgetNavigationStorage),
+  navigationRepository: createWidgetNavigationRepository(widgetStorage),
   openApp: expoExternalLinkGateway.open,
   isAppActive: () => AppState.currentState === 'active',
   now: Date.now,

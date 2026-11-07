@@ -1,5 +1,5 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
@@ -8,7 +8,7 @@ import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 
 function createHandler(isAppActive = false) {
   const values = new Map<string, string>();
-  const storage: WidgetNavigationStorage = {
+  const storage: ObservableSyncStorage = {
     get: (key) => values.get(key),
     set: (key, value) => values.set(key, value),
     remove: (key) => values.delete(key),

@@ -9,7 +9,7 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createTestDiContainer,
-  createWidgetNavigationStorageFake,
+  createObservableSyncStorageFake,
 } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -74,7 +74,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
       httpClient,
       inviteService: createStubInviteService(),
       widgetNavigationRepository: createWidgetNavigationRepository(
-        createWidgetNavigationStorageFake(),
+        createObservableSyncStorageFake(),
       ),
     }),
     authSessionStore: mockAuthSessionStore,

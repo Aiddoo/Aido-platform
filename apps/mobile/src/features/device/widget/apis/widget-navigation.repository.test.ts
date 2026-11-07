@@ -1,4 +1,4 @@
-import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 
 import type { WidgetNavigationCommand } from '../schemas/widget-navigation.schema';
 import {
@@ -6,7 +6,7 @@ import {
   WIDGET_NAVIGATION_COMMAND_KEY,
 } from './widget-navigation.repository';
 
-function createStorage(): WidgetNavigationStorage {
+function createStorage(): ObservableSyncStorage {
   const values = new Map<string, string>();
   const listeners = new Set<() => void>();
   return {

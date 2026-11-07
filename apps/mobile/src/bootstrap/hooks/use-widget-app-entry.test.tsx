@@ -7,7 +7,7 @@ import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '@src/features/device/widget/do
 import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createTestDiContainer, createWidgetNavigationStorageFake } from '@src/shared/__tests__';
+import { createTestDiContainer, createObservableSyncStorageFake } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -78,7 +78,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     jest.mocked(useSegments).mockReturnValue(['loading']);
     jest.mocked(usePathname).mockReturnValue('/loading');
     jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
-    mockRepository = createWidgetNavigationRepository(createWidgetNavigationStorageFake());
+    mockRepository = createWidgetNavigationRepository(createObservableSyncStorageFake());
     queryClient = createTestQueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
     queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'original-account' });
     command = {
