@@ -29,7 +29,7 @@ import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated'
 import { match, P } from 'ts-pattern';
 
 import { MemoPolicy } from '../domains/memo.model';
-import { useSelectedMemo } from '../hooks/use-memo-params';
+import { useSelectedMemoId } from '../hooks/use-memo-params';
 import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
 import type { Memo } from '../schemas/memo.schema';
 
@@ -110,7 +110,7 @@ export function MemoList() {
 }
 
 MemoList.Item = function Item({ memo }: { memo: Memo }) {
-  const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
+  const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
   const selectMemo = useSingleTap(setSelectedMemoId);
   const dateFormatContext = useDateFormatContext();
   const { title, body } = MemoPolicy.getMemoPreview(memo);

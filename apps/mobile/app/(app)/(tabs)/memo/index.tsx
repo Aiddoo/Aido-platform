@@ -4,7 +4,7 @@ import { MemoListScrollView } from '@src/features/notes/memo/components/memo-lis
 import { MemoPolicy } from '@src/features/notes/memo/domains/memo.model';
 import {
   useMemoDetailHandoff,
-  useSelectedMemo,
+  useSelectedMemoId,
 } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
@@ -41,7 +41,7 @@ export default function MemoScreen() {
   const { t } = useTranslation('memo');
   const fontScaledSize = useFontScaledSize();
   const isCompact = useWindowSizeClass() === 'compact';
-  const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
+  const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
 
   useMemoDetailHandoff();

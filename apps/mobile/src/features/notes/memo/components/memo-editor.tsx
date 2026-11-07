@@ -67,7 +67,7 @@ import { useResolveClassNames } from 'uniwind';
 import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
-import { useMemoParam, useSelectedMemo } from '../hooks/use-memo-params';
+import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
 import {
   useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,
@@ -101,7 +101,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   const { t } = useTranslation('memo');
   const toast = useAppToast();
   const navigate = useSingleTap(router.navigate);
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const [{ data: memo }, { data: me }] = useSuspenseQueries({
     queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
   });
@@ -237,7 +237,7 @@ MemoEditor.StackToolbar = function StackToolbar({
   onDelete,
 }: MemoEditorToolbarProps) {
   const { t } = useTranslation(['memo', 'common']);
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const { isDirty, isSubmitting, isValid } = useFormState({ control });
   const togglePin = useMutation(useToggleMemoPinMutationOptions());
@@ -313,7 +313,7 @@ MemoEditor.PaneToolbar = function PaneToolbar({
   onConverted,
   onDelete,
 }: MemoEditorToolbarProps) {
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const { isDirty, isSubmitting, isValid } = useFormState({ control });
   const togglePin = useMutation(useToggleMemoPinMutationOptions());
@@ -383,7 +383,7 @@ MemoEditor.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
 };
 
 MemoEditor.PaneError = function PaneError(props: QueryErrorFallbackProps) {
-  const [_selectedMemoId, setSelectedMemoId] = useSelectedMemo();
+  const [_selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
 
   return <MemoUnavailableResult {...props} onLeave={() => setSelectedMemoId(undefined)} />;
 };
@@ -446,7 +446,7 @@ function MemoContentSkeleton() {
 /** 메뉴는 누르면 닫혀 진행이 안 보인다. 본문이 밀리지 않게 위에 띄워 알린다 */
 function MemoAiParsingBadge() {
   const { t } = useTranslation('memo');
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const isParsing = useIsMutating({ mutationKey: MEMO_MUTATION_KEYS.parse({ memoId }) }) > 0;
 
   if (!isParsing) {
@@ -586,7 +586,7 @@ interface MemoDeleteDialogProps {
 
 function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
   const { t } = useTranslation(['memo', 'common']);
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const deleteMemo = useMutation(useDeleteMemoMutationOptions());
 
   const handleConfirm = () => {
@@ -638,7 +638,7 @@ function useMemoAiParse() {
   const push = useSingleTap(router.push);
   const draftService = useDraftService();
   const { timeZone } = useDateFormatContext();
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const [{ data: memo }, { data: me }] = useSuspenseQueries({
     queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
   });
@@ -711,7 +711,7 @@ function useMemoAiParse() {
 function useMemoConvertToTodo(onConverted: () => void) {
   const today = useToday();
   const overlay = useOverlay();
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(

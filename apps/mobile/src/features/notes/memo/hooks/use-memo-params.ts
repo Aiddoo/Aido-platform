@@ -2,18 +2,21 @@ import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-ha
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { noop } from 'es-toolkit';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { memoParamsSchema, selectedMemoParamsSchema } from '../schemas/memo-params.schema';
 
-export function useMemoParam() {
-  return memoParamsSchema.parse(useLocalSearchParams()).memoId;
+/** `/memo/[memoId]` 경로의 메모. 잘못된 값은 route가 먼저 돌려보낸다 */
+export function useMemoId() {
+  const [{ memoId }] = useRouteParams(memoParamsSchema);
+
+  return [memoId] as const;
 }
 
 /** 메모 탭 URL의 `memoId`를 선택된 메모로 읽고, 화면 크기에 맞는 방식으로 선택을 바꾼다. */
-export function useSelectedMemo() {
+export function useSelectedMemoId() {
   const [{ memoId: selectedMemoId }, setParams] = useRouteParams(selectedMemoParamsSchema);
   const windowSizeClass = useWindowSizeClass();
 

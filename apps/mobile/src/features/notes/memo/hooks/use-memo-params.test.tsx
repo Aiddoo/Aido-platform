@@ -2,7 +2,7 @@ import { mockWindowDimensions } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { useSelectedMemo } from './use-memo-params';
+import { useSelectedMemoId } from './use-memo-params';
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 function givenWindow(width: number, params: Record<string, string> = {}) {
@@ -10,7 +10,7 @@ function givenWindow(width: number, params: Record<string, string> = {}) {
   mockedUseLocalSearchParams.mockReturnValue(params);
 }
 
-describe('useSelectedMemo', () => {
+describe('useSelectedMemoId', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -20,7 +20,7 @@ describe('useSelectedMemo', () => {
     givenWindow(700, { memoId: '12' });
 
     // When
-    const { result } = await renderHook(() => useSelectedMemo());
+    const { result } = await renderHook(() => useSelectedMemoId());
 
     // Then
     expect(result.current[0]).toBe(12);
@@ -31,7 +31,7 @@ describe('useSelectedMemo', () => {
     givenWindow(700, { memoId: 'abc' });
 
     // When
-    const { result } = await renderHook(() => useSelectedMemo());
+    const { result } = await renderHook(() => useSelectedMemoId());
 
     // Then
     expect(result.current[0]).toBeUndefined();
@@ -40,7 +40,7 @@ describe('useSelectedMemo', () => {
   it('compact에서는 상세 라우트로 push한다', async () => {
     // Given
     givenWindow(390);
-    const { result } = await renderHook(() => useSelectedMemo());
+    const { result } = await renderHook(() => useSelectedMemoId());
 
     // When
     result.current[1](5);
@@ -56,7 +56,7 @@ describe('useSelectedMemo', () => {
   it('compact에서 선택 해제는 아무것도 하지 않는다', async () => {
     // Given
     givenWindow(390);
-    const { result } = await renderHook(() => useSelectedMemo());
+    const { result } = await renderHook(() => useSelectedMemoId());
 
     // When
     result.current[1](undefined);
@@ -69,7 +69,7 @@ describe('useSelectedMemo', () => {
   it('medium 이상에서는 메모 탭 URL param을 바꾼다', async () => {
     // Given
     givenWindow(700);
-    const { result } = await renderHook(() => useSelectedMemo());
+    const { result } = await renderHook(() => useSelectedMemoId());
 
     // When
     result.current[1](5);
@@ -82,7 +82,7 @@ describe('useSelectedMemo', () => {
   it('medium 이상에서 undefined를 고르면 선택을 해제한다', async () => {
     // Given
     givenWindow(900, { memoId: '5' });
-    const { result } = await renderHook(() => useSelectedMemo());
+    const { result } = await renderHook(() => useSelectedMemoId());
 
     // When
     result.current[1](undefined);

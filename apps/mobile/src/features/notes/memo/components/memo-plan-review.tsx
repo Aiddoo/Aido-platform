@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { useMemoParam } from '../hooks/use-memo-params';
+import { useMemoId } from '../hooks/use-memo-params';
 import { useRefreshMemos } from '../hooks/use-refresh-memos';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
@@ -38,7 +38,7 @@ export function MemoPlanReview({ className }: MemoPlanReviewProps) {
   const navigate = useSingleTap(router.navigate);
   const toast = useAppToast();
   const refreshMemos = useRefreshMemos();
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
       useGetMemoQueryOptions({ memoId }),

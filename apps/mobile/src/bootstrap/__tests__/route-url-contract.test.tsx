@@ -1,7 +1,7 @@
 import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type-param';
-import { useSelectedMemo } from '@src/features/notes/memo/hooks/use-memo-params';
+import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category-param';
 import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
@@ -97,7 +97,7 @@ describe('공개 URL 계약', () => {
     ['닫기', '/memo?memoId=5', undefined, '/memo'],
   ])('폴드 메모 칸: %s', async (_name, url, memoId, expected) => {
     // Given
-    const route = await renderRouteHook(() => useSelectedMemo(), { url });
+    const route = await renderRouteHook(() => useSelectedMemoId(), { url });
 
     // When
     await route.run(([_memoId, setSelectedMemoId]) => setSelectedMemoId(memoId));
