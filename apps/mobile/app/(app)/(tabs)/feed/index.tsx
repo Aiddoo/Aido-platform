@@ -2,14 +2,10 @@ import { WhatsNewEntryNotice } from '@src/features/app-config/whats-new/componen
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
-import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
-import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
+import { TodoCommentPane } from '@src/features/engagement/comment/components/todo-comment-pane';
 import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
-import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
-import { TodoDetailHeader } from '@src/features/engagement/comment/components/todo-detail-header';
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
-import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
@@ -29,29 +25,23 @@ import {
   useFeedSelectedTodo,
   useFeedTodoDetailHandoff,
 } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
-import { useIsTodoUnavailable } from '@src/features/planning/todo/hooks/use-is-todo-unavailable';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { FriendStrip } from '@src/features/social/friend/components/friend-strip';
 import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
+import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
+import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
 import { PokeBanner } from '@src/features/social/nudge/components/poke-banner';
-import { RemindNudgeButton } from '@src/features/social/nudge/components/remind-nudge-button';
-import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
-import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
 import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
-import { useTodayKey } from '@src/shared/hooks/use-today';
-import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
   AdaptivePane,
@@ -252,47 +242,6 @@ function FriendFeedTodos() {
     .exhaustive();
 }
 
-const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
-
-/** 친구 할 일 줄의 콕 버튼. 오늘의 끝나지 않은 할 일에만 보인다 */
-function FriendTodoNudgeAction({ todo }: { todo: Todo }) {
-  const { t } = useTranslation('friend');
-  const { data: friend } = useScreenFriend();
-  const selectedDateKey = useFeedDateKey();
-  const todayKey = useTodayKey();
-  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
-    { targetDateKey: selectedDateKey, isCompleted: todo.completed },
-    todayKey,
-  );
-
-  if (!canNudgeTodo || friend == null) {
-    return null;
-  }
-
-  return (
-    <TodoNudgeButton
-      receiver={{ ...friend, displayName: friend.name ?? t('fallbackName') }}
-      todo={todo}
-      className="min-h-0 py-1.5"
-      hitSlop={COMPACT_ACTION_HIT_SLOP}
-    />
-  );
-}
-
-/** 오늘 할 일이 없는 친구에게 보내는 독촉 콕 버튼 */
-function FriendRemindNudgeAction() {
-  const { t } = useTranslation('friend');
-  const { data: friend } = useScreenFriend();
-
-  if (friend == null) {
-    return null;
-  }
-
-  return (
-    <RemindNudgeButton receiver={{ ...friend, displayName: friend.name ?? t('fallbackName') }} />
-  );
-}
-
 FriendFeedTodos.Loading = function Loading() {
   return (
     <ScrollView
@@ -376,10 +325,7 @@ function FeedTodoDetailPane() {
 
 /** 펼친 피드의 오른쪽 칸. 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */
 function FeedTodoDetail({ onClose }: { onClose: () => void }) {
-  const { todoId } = useTodoParams();
-  const [{ sort, comment }] = useCommentParams();
   const date = useFeedDateKey();
-  const isTodoUnavailable = useIsTodoUnavailable();
 
   return (
     <KeyboardBottomGapProvider>
@@ -390,29 +336,7 @@ function FeedTodoDetail({ onClose }: { onClose: () => void }) {
       >
         <TodoCommentSession onExit={onClose}>
           <TodoCommentTitleBar date={date} />
-
-          {isTodoUnavailable ? (
-            <TodoDetailSummary.Unavailable onClose={onClose} />
-          ) : (
-            <TodoCommentKeyboardArea>
-              <QueryErrorBoundary
-                resetKeys={[todoId, sort, comment]}
-                fallback={(props) => (
-                  <TodoCommentThreadList.Error {...props} header={<TodoDetailHeader />} />
-                )}
-              >
-                <Suspense
-                  fallback={<TodoCommentThreadList.Loading header={<TodoDetailHeader />} />}
-                >
-                  <TodoCommentThreadList header={<TodoDetailHeader />} />
-                </Suspense>
-              </QueryErrorBoundary>
-
-              <QueryErrorBoundary resetKeys={[todoId]}>
-                <TodoCommentComposerBar />
-              </QueryErrorBoundary>
-            </TodoCommentKeyboardArea>
-          )}
+          <TodoCommentPane onClose={onClose} />
         </TodoCommentSession>
       </StyledSafeAreaView>
     </KeyboardBottomGapProvider>
