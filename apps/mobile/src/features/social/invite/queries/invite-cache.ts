@@ -3,9 +3,9 @@ import { invalidateFriends } from '@src/features/social/friend/queries/friend-ca
 import type { QueryClient } from '@tanstack/react-query';
 
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
-import type { RedemptionResult } from '../domains/invite-redemption.model';
-import type { InviteCode } from '../domains/invite.model';
-import type { Invite } from '../domains/invite.model';
+import type { RedemptionResult } from '../schemas/invite-redemption.schema';
+import type { InviteCode } from '../schemas/invite.schema';
+import type { Invite } from '../schemas/invite.schema';
 
 /** 링크를 새로 만들면 서버가 돌려준 요약으로 바로 바꾸고(다시 불러올 때 깜빡이지 않게), 이전 코드 미리보기는 버린다 */
 export function replaceMyInvite(queryClient: QueryClient, myInvite: Invite) {

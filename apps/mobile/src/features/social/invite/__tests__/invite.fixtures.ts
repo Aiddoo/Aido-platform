@@ -6,10 +6,10 @@ import {
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { RedemptionResult } from '../domains/invite-redemption.model';
-import type { PendingRedemption } from '../domains/invite-redemption.model';
-import type { Invite } from '../domains/invite.model';
-import type { InvitedFriend } from '../domains/invited-friend.model';
+import type { RedemptionResult } from '../schemas/invite-redemption.schema';
+import type { PendingRedemption } from '../schemas/invite-redemption.schema';
+import type { Invite } from '../schemas/invite.schema';
+import type { InvitedFriend } from '../schemas/invited-friend.schema';
 
 export const createPendingRedemption = (
   overrides?: Partial<PendingRedemption>,

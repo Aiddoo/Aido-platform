@@ -8,32 +8,34 @@ import type { InstallationIdGateway } from '@src/core/ports/installation-id';
 import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { BusinessError } from '@src/shared/errors/business-error';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { err, ok, type Result } from '@src/shared/errors/result';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
+import { err, type Result } from '@src/shared/errors/result';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import type { Page } from '@src/shared/types/page.types';
+import { identity } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
-import type { InvitePreview } from '../domains/invite-preview.model';
-import { type RedemptionResult, RedemptionResultSchema } from '../domains/invite-redemption.model';
-import {
-  type InviteLinkSource,
-  type PendingRedemption,
-  InviteRedemptionPolicy,
-} from '../domains/invite-redemption.model';
+import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import {
   INVITE_ERROR_CODE,
   type InviteErrorCode,
   isTerminalRedeemFailure,
   toRedeemFailureReason,
 } from '../domains/invite.error';
-import { type InviteCode, parseInviteCode } from '../domains/invite.model';
-import { type Invite, InviteSchema } from '../domains/invite.model';
-import type { InvitedFriend } from '../domains/invited-friend.model';
+import { parseInviteCode } from '../domains/invite.model';
+import type { InvitePreview } from '../schemas/invite-preview.schema';
+import {
+  type InviteLinkSource,
+  type PendingRedemption,
+  type RedemptionResult,
+  RedemptionResultSchema,
+} from '../schemas/invite-redemption.schema';
+import { type Invite, type InviteCode, InviteSchema } from '../schemas/invite.schema';
+import { type InvitedFriend, InvitedFriendsPageSchema } from '../schemas/invited-friend.schema';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
 import type { AllDoneBannerRepository } from './all-done-banner.repository';
 import type { InstallReferrerRepository } from './install-referrer.repository';
-import { InvitedFriendsPageSchema, toInvitedFriendsPage, toInvitePreview } from './invite.mapper';
+import { toInvitedFriendsPage, toInvitePreview } from './invite.mapper';
 import type { PawPrintCelebrationRepository } from './paw-print-celebration.repository';
 import type { PendingRedemptionRepository } from './pending-redemption.repository';
 
@@ -86,21 +88,13 @@ export class InviteService {
     this.#logger = logger;
   }
 
-  getAvailability = async (signal?: AbortSignal): Promise<Result<boolean, ApiError>> => {
-    const result = await this.#publicHttpClient.get('v1/invites/availability', { signal });
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = inviteAvailabilityResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[InviteService] Invalid getAvailability response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(parsed.data.enabled);
-  };
+  getAvailability = async (signal?: AbortSignal): Promise<Result<boolean, ApiError>> =>
+    parseApiResponse(
+      await this.#publicHttpClient.get('v1/invites/availability', { signal }),
+      inviteAvailabilityResponseSchema,
+      ({ enabled }) => enabled,
+      '[InviteService] Invalid getAvailability response',
+    );
 
   getPreview = async (
     rawCode: string,
@@ -123,12 +117,12 @@ export class InviteService {
       return result;
     }
 
-    const parsed = invitePreviewResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[InviteService] Invalid getPreview response: ${parsed.error.message}`);
-    }
-
-    return ok(toInvitePreview(parsed.data));
+    return parseApiResponse(
+      result,
+      invitePreviewResponseSchema,
+      toInvitePreview,
+      '[InviteService] Invalid getPreview response',
+    );
   };
 
   /** 초대를 수락한다. 같은 기기에서 보상을 두 번 받지 않게 설치 식별자를 함께 보낸다 */
@@ -144,63 +138,48 @@ export class InviteService {
       });
       return null;
     });
-    const result = await this.#authHttpClient.post(
-      `v1/invites/${inviteCode}/redeem`,
-      installationId == null ? {} : { installationId },
+    return parseApiResponse(
+      await this.#authHttpClient.post(
+        `v1/invites/${inviteCode}/redeem`,
+        installationId == null ? {} : { installationId },
+      ),
+      RedemptionResultSchema,
+      identity,
+      '[InviteService] Invalid redeem response',
     );
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = RedemptionResultSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[InviteService] Invalid redeem response: ${parsed.error.message}`);
-    }
-
-    return ok(parsed.data);
   };
 
   /** 내 초대 코드·링크와 발자국 요약. 처음 부르면 서버가 코드를 만든다 */
-  getInvite = async (signal?: AbortSignal): Promise<Result<Invite, ApiError>> => {
-    const result = await this.#authHttpClient.get('v1/invites/me', { signal });
-    if (!result.ok) {
-      return result;
-    }
-
-    return ok(this.#parseInvite(result.value, 'getInvite'));
-  };
+  getInvite = async (signal?: AbortSignal): Promise<Result<Invite, ApiError>> =>
+    parseApiResponse(
+      await this.#authHttpClient.get('v1/invites/me', { signal }),
+      InviteSchema,
+      identity,
+      '[InviteService] Invalid getInvite response',
+    );
 
   /** 링크를 새로 만든다. 이전 코드는 다시 쓸 수 없다 */
-  rotateInviteCode = async (): Promise<Result<Invite, ApiError>> => {
-    const result = await this.#authHttpClient.post('v1/invites/me/rotate');
-    if (!result.ok) {
-      return result;
-    }
-
-    return ok(this.#parseInvite(result.value, 'rotateInviteCode'));
-  };
+  rotateInviteCode = async (): Promise<Result<Invite, ApiError>> =>
+    parseApiResponse(
+      await this.#authHttpClient.post('v1/invites/me/rotate'),
+      InviteSchema,
+      identity,
+      '[InviteService] Invalid rotateInviteCode response',
+    );
 
   getInvitedFriends = async (
     params: Partial<GetInvitedFriendsQuery>,
     signal?: AbortSignal,
-  ): Promise<Result<Page<InvitedFriend>, ApiError>> => {
-    const result = await this.#authHttpClient.get('v1/invites/me/invitees', {
-      signal,
-      params: { cursor: params.cursor, limit: params.limit, status: params.status },
-    });
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = InvitedFriendsPageSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[InviteService] Invalid getInvitedFriends response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toInvitedFriendsPage(parsed.data));
-  };
+  ): Promise<Result<Page<InvitedFriend>, ApiError>> =>
+    parseApiResponse(
+      await this.#authHttpClient.get('v1/invites/me/invitees', {
+        signal,
+        params: { cursor: params.cursor, limit: params.limit, status: params.status },
+      }),
+      InvitedFriendsPageSchema,
+      toInvitedFriendsPage,
+      '[InviteService] Invalid getInvitedFriends response',
+    );
 
   dismissAllDoneBanner = (userId: string, dateKey: string) => {
     this.#allDoneBannerRepository.dismiss(userId, dateKey);
@@ -240,15 +219,6 @@ export class InviteService {
   clearPendingRedemption = () => {
     this.#pendingRedemptionRepository.clear();
   };
-
-  #parseInvite(value: unknown, method: string): Invite {
-    const parsed = InviteSchema.safeParse(value);
-    if (!parsed.success) {
-      throw new ParseError(`[InviteService] Invalid ${method} response: ${parsed.error.message}`);
-    }
-
-    return parsed.data;
-  }
 
   /** 처음 실행 때 Play 설치 referrer의 초대 코드를 이어서 열 초대로 남긴다 */
   captureInstallReferrer = async (now: Date): Promise<PendingRedemption | null> => {

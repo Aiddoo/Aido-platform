@@ -1,9 +1,8 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { z } from 'zod';
+
+import { celebratedCountSchema } from '../schemas/paw-print-celebration.schema';
 
 const PAW_PRINT_CELEBRATION_KEY_PREFIX = 'aido_invite_paw_print_celebrated_v1';
-
-const CelebratedCountSchema = z.coerce.number().int().nonnegative().catch(0);
 
 export interface PawPrintCelebrationRepository {
   getCelebratedCount(userId: string): number;
@@ -17,7 +16,7 @@ export function createPawPrintCelebrationRepository(
   const toKey = (userId: string) => `${PAW_PRINT_CELEBRATION_KEY_PREFIX}:${userId}`;
 
   return {
-    getCelebratedCount: (userId) => CelebratedCountSchema.parse(storage.get(toKey(userId))),
+    getCelebratedCount: (userId) => celebratedCountSchema.parse(storage.get(toKey(userId))),
     setCelebratedCount: (userId, count) => storage.set(toKey(userId), String(count)),
   };
 }

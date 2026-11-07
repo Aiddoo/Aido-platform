@@ -1,24 +1,20 @@
 import {
   INVITE_CODE,
-  inviteCodeSchema,
-  normalizeInviteCode,
   INVITE_REWARD_CAPS,
-  PREMIUM_CAP_STATE,
   INVITER_REWARD_MILESTONES,
-  type InviterRewardMilestone,
-  inviteMilestoneSchema,
-  myInviteResponseSchema,
-} from '@aido/api';
+  PREMIUM_CAP_STATE,
+} from '@aido/api/vocabulary';
 import { uniq } from 'es-toolkit';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-import { InviteRewardPolicy, InviteRewardSchema } from './invite-reward.model';
-
-// 서버와 같은 정규화(공백·하이픈 제거, 대문자) 뒤 6자 검증
-export const InviteCodeSchema = inviteCodeSchema;
-
-export type InviteCode = z.output<typeof InviteCodeSchema>;
+import {
+  type Invite,
+  type InviteCode,
+  InviteCodeSchema,
+  type InviterRewardMilestone,
+  normalizeInviteCode,
+} from '../schemas/invite.schema';
+import { InviteRewardPolicy } from './invite-reward.model';
 
 const INVITE_CODE_CHARACTERS = new Set(INVITE_CODE.ALPHABET);
 
@@ -100,18 +96,6 @@ export const InviteCodePolicy = {
   isFilledInviteCode,
   findInvalidCharacters,
 } as const;
-
-const InviteMilestoneSchema = inviteMilestoneSchema.extend({
-  rewards: z.array(InviteRewardSchema),
-});
-
-export const InviteSchema = myInviteResponseSchema.extend({
-  nextMilestone: InviteMilestoneSchema.nullable(),
-  rewardsEarned: z.array(InviteRewardSchema),
-  createdAt: z.coerce.date(),
-});
-
-export type Invite = z.output<typeof InviteSchema>;
 
 export function calculateRemainingInvites(qualifiedCount: number, targetCount: number) {
   return Math.max(targetCount - qualifiedCount, 0);

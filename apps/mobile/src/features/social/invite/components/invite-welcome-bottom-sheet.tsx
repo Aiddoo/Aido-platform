@@ -40,9 +40,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { type RedemptionResult, InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { useInviteWelcomeParams } from '../hooks/use-invite-welcome-params';
 import { getRedemptionResultQueryOptions } from '../queries/invite.queries';
+import { type RedemptionResult } from '../schemas/invite-redemption.schema';
 
 type InviteWelcomeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,

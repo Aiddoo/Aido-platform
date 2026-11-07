@@ -3,7 +3,7 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import {
   type PendingRedemption,
   PendingRedemptionSchema,
-} from '../domains/invite-redemption.model';
+} from '../schemas/invite-redemption.schema';
 
 const PENDING_REDEMPTION_KEY = 'aido_invite_pending_v1';
 

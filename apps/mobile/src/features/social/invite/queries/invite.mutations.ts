@@ -1,4 +1,4 @@
-import { INVITE_FRIENDSHIP } from '@aido/api';
+import { INVITE_FRIENDSHIP } from '@aido/api/vocabulary';
 import {
   useHaptics,
   useInviteService,
@@ -18,9 +18,10 @@ import { match } from 'ts-pattern';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { type InviteShareChannel, type InviteShareContent } from '../domains/invite-share.model';
+import { type InviteShareContent } from '../domains/invite-share.model';
 import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
-import { type InviteCode } from '../domains/invite.model';
+import { type InviteShareChannel } from '../schemas/invite-share.schema';
+import { type InviteCode } from '../schemas/invite.schema';
 import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
 
 export function useRedeemInviteMutationOptions() {

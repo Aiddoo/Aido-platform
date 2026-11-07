@@ -1,7 +1,7 @@
+import { InviteRewardSchema } from '../schemas/invite-reward.schema';
 import {
   calculateRewardQuantity,
   InviteRewardPolicy,
-  InviteRewardSchema,
   isPremiumDaysReward,
 } from './invite-reward.model';
 

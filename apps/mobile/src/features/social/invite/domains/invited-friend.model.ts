@@ -1,19 +1,11 @@
 import {
   INVITE_QUALIFICATION,
-  invitedFriendResponseSchema,
   REDEMPTION_STATUS,
   REDEMPTION_STATUS_UNKNOWN,
-} from '@aido/api';
+} from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-// 모르는 새 상태·사유는 @aido/api 스키마가 UNKNOWN·null로 읽는다
-export const InvitedFriendSchema = invitedFriendResponseSchema.extend({
-  joinedAt: z.coerce.date(),
-  qualifiedAt: z.coerce.date().nullable(),
-});
-
-export type InvitedFriend = z.output<typeof InvitedFriendSchema>;
+import type { InvitedFriend } from '../schemas/invited-friend.schema';
 
 export function orderByJoinedAtDesc(friend: InvitedFriend) {
   return -friend.joinedAt.getTime();

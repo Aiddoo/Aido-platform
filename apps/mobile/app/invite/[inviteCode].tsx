@@ -5,12 +5,12 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
 import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
-import type { InviteCode } from '@src/features/social/invite/domains/invite.model';
 import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
 import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
+import type { InviteCode } from '@src/features/social/invite/schemas/invite.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,

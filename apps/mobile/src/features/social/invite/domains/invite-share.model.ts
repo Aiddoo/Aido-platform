@@ -1,12 +1,6 @@
-import { z } from 'zod';
-
-import type { InviteCode } from './invite.model';
-import type { Invite } from './invite.model';
-
-/** 초대 링크를 보내는 방법. 분석 이벤트 invite_link_shared.channel과 같은 값이다 */
-const InviteShareChannelSchema = z.enum(['kakao', 'copy_link', 'system']);
-
-export type InviteShareChannel = z.output<typeof InviteShareChannelSchema>;
+import type { InviteShareChannel } from '../schemas/invite-share.schema';
+import type { Invite } from '../schemas/invite.schema';
+import type { InviteCode } from '../schemas/invite.schema';
 
 /** shared: 보냈음, copied: 링크를 복사했음, dismissed: 공유 시트를 닫았음 */
 type InviteShareOutcome = 'shared' | 'copied' | 'dismissed';

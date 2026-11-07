@@ -1,4 +1,4 @@
-import { REDEMPTION_REJECTION_REASON } from '@aido/api';
+import { REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetFriendQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
@@ -22,7 +22,8 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { type InvitedFriend, InvitedFriendPolicy } from '../domains/invited-friend.model';
+import { InvitedFriendPolicy } from '../domains/invited-friend.model';
+import { type InvitedFriend } from '../schemas/invited-friend.schema';
 import { invitedFriendChipVariants } from './invited-friend-row.variants';
 
 interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' | 'right'> {

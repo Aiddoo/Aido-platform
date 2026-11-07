@@ -3,49 +3,17 @@ import {
   INVITE_REDEEM_WINDOW_DAYS,
   PREMIUM_SOURCE,
   REDEEM_OUTCOME,
-  redeemInviteResponseSchema,
-} from '@aido/api';
+} from '@aido/api/vocabulary';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
-import { InviteRewardPolicy, InviteRewardSchema } from './invite-reward.model';
-import { InviteCodeSchema } from './invite.model';
-
-/** 초대 코드가 앱에 들어온 경로. 분석 이벤트 invite_link_opened.source와 같은 값이다 */
-export const InviteLinkSourceSchema = z.enum([
-  'universal_link',
-  'app_scheme',
-  'kakao',
-  'install_referrer',
-  'code_entry',
-]);
-
-export type InviteLinkSource = z.output<typeof InviteLinkSourceSchema>;
-
-export const PendingRedemptionSchema = z.strictObject({
-  inviteCode: InviteCodeSchema,
-  source: InviteLinkSourceSchema,
-  savedAt: z.coerce.date(),
-});
-
-export type PendingRedemption = z.output<typeof PendingRedemptionSchema>;
+import type { PendingRedemption, RedemptionResult } from '../schemas/invite-redemption.schema';
+import { InviteRewardPolicy } from './invite-reward.model';
 
 export function isWithinDays(from: Date, now: Date, days: number) {
   return now.getTime() - from.getTime() < days * DAY_MS;
 }
-
-// rewards가 있는 REDEEMED만 모르는 보상 종류를 UNKNOWN으로 흡수하도록 바꾼다
-const [RedeemedSchema, ConnectedSchema, AlreadyFriendsSchema] = redeemInviteResponseSchema.options;
-
-export const RedemptionResultSchema = z.discriminatedUnion('outcome', [
-  RedeemedSchema.extend({ rewards: z.array(InviteRewardSchema) }),
-  ConnectedSchema,
-  AlreadyFriendsSchema,
-]);
-
-export type RedemptionResult = z.output<typeof RedemptionResultSchema>;
 
 export function isFresh(pending: Pick<PendingRedemption, 'savedAt'>, now: Date) {
   return isWithinDays(pending.savedAt, now, INVITE_REDEEM_WINDOW_DAYS);

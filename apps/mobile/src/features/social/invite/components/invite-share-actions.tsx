@@ -17,10 +17,11 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import type { ComponentProps, ReactNode } from 'react';
 
-import { createInviteShareContent, type InviteShareChannel } from '../domains/invite-share.model';
+import { createInviteShareContent } from '../domains/invite-share.model';
 import { useCopiedFeedback } from '../hooks/use-copied-feedback';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import { type InviteShareChannel } from '../schemas/invite-share.schema';
 
 /** 카카오톡 / 링크 복사 / 다른 앱 공유 */
 export function InviteShareActions(props: ComponentProps<typeof VStack>) {

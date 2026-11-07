@@ -1,4 +1,4 @@
-import type { RedemptionStatus } from '@aido/api';
+import type { RedemptionStatus } from '@aido/api/vocabulary';
 import {
   USER_LIST_CONTENT_STYLE,
   UserList,
@@ -11,9 +11,9 @@ import { range } from 'es-toolkit';
 import type { ComponentProps, ReactElement } from 'react';
 import { ScrollView } from 'react-native';
 
-import type { InvitedFriend } from '../domains/invited-friend.model';
 import { invalidateInvite } from '../queries/invite-cache';
 import { useGetInvitedFriendsInfiniteQueryOptions } from '../queries/invite.queries';
+import type { InvitedFriend } from '../schemas/invited-friend.schema';
 import { InvitedFriendRow } from './invited-friend-row';
 
 interface InvitedFriendListProps {

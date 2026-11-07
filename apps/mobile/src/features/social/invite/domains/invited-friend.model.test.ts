@@ -1,10 +1,10 @@
 import { orderBy } from 'es-toolkit';
 
 import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.fixtures';
+import { InvitedFriendSchema } from '../schemas/invited-friend.schema';
 import {
   calculateActiveDaysLeft,
   InvitedFriendPolicy,
-  InvitedFriendSchema,
   orderByJoinedAtDesc,
   orderByWaitingFirst,
 } from './invited-friend.model';

@@ -1,4 +1,4 @@
-import { type RedemptionStatus } from '@aido/api';
+import { type RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { type ClipboardGateway } from '@src/core/ports/clipboard';
 import { type Logger } from '@src/core/ports/logger';
@@ -17,14 +17,11 @@ import { type InviteService } from '../apis/invite.service';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
-import { type RedemptionResult } from '../domains/invite-redemption.model';
 import { isInviteDisabledError } from '../domains/invite.error';
-import { type InviteCode } from '../domains/invite.model';
-import {
-  type InvitedFriend,
-  orderByJoinedAtDesc,
-  orderByWaitingFirst,
-} from '../domains/invited-friend.model';
+import { orderByJoinedAtDesc, orderByWaitingFirst } from '../domains/invited-friend.model';
+import { type RedemptionResult } from '../schemas/invite-redemption.schema';
+import { type InviteCode } from '../schemas/invite.schema';
+import { type InvitedFriend } from '../schemas/invited-friend.schema';
 import { invalidateInviteAvailability } from './invite-cache';
 
 // 화면에 들어올 때마다 다시 확인하고, 떠나면 남기지 않는다

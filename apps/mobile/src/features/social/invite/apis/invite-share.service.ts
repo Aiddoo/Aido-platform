@@ -6,11 +6,8 @@ import { t } from '@src/shared/i18n';
 
 import { INVITE_SHARE_IMAGE } from '../constants/invite-share';
 import { InviteRewardPolicy } from '../domains/invite-reward.model';
-import type {
-  InviteShareChannel,
-  InviteShareContent,
-  InviteShareResult,
-} from '../domains/invite-share.model';
+import type { InviteShareContent, InviteShareResult } from '../domains/invite-share.model';
+import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
 interface InviteShareServiceDependencies {
   socialShare: SocialShareGateway;

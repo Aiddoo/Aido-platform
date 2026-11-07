@@ -1,4 +1,4 @@
-import { INVITE_CODE } from '@aido/api';
+import { INVITE_CODE } from '@aido/api/vocabulary';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
 import { cn } from '@src/shared/utils/cn';

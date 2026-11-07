@@ -1,7 +1,7 @@
-import { INVITE_LINK_BASE_URL } from '@aido/api';
+import { INVITE_LINK_BASE_URL } from '@aido/api/vocabulary';
 
-import type { InviteLinkSource } from '../domains/invite-redemption.model';
 import { parseInviteCode } from '../domains/invite.model';
+import type { InviteLinkSource } from '../schemas/invite-redemption.schema';
 
 export interface InviteSystemPathOptions {
   /** 이 빌드의 앱 스킴 (aido, aido-preview, aido-dev) */
