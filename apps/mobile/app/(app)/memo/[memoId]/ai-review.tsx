@@ -1,113 +1,11 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useMemoParam } from '@src/features/notes/memo/hooks/use-memo-params';
-import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
-import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
+import { MemoPlanReview } from '@src/features/notes/memo/components/memo-plan-review';
 import { memoParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
-import { createMemoPlanDraftKey } from '@src/features/notes/memo/utils/memo-plan-draft';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
-import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
-import { planReviewFormSchema } from '@src/features/voice/schemas/plan-review-form.schema';
-import { voicePlanIdSchema } from '@src/features/voice/schemas/voice-plan.schema';
-import { toEpochMs } from '@src/shared/date/instant';
-import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
-import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent, Result, StyledSafeAreaView } from '@src/shared/ui';
-import { useSuspenseQueries } from '@tanstack/react-query';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Suspense, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { QueryErrorBoundary, ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Suspense } from 'react';
 
 const PLAN_REVIEW_CLASS_NAME = 'flex-1 px-4 pb-3 pt-4';
-
-function AiReviewScreen() {
-  const { t } = useTranslation('memo');
-  const goBack = useSingleTap(router.back);
-  const dismiss = useSingleTap(router.dismiss);
-  const navigate = useSingleTap(router.navigate);
-  const toast = useAppToast();
-  const refreshMemos = useRefreshMemos();
-  const memoId = useMemoParam();
-  const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
-    queries: [
-      useGetMemoQueryOptions({ memoId }),
-      useGetMeQueryOptions(),
-      useGetTodoCategoriesQueryOptions(),
-      useGetPreferenceQueryOptions(),
-    ],
-  });
-  const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoPlanDraftKey({ userId: user.id, memoId }),
-    { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
-  );
-  const fallbackCategoryId = categoriesResult.categories[0]?.id;
-
-  const form = useForm({
-    resolver: zodResolver(planReviewFormSchema),
-    defaultValues: restoredDraft?.form,
-    mode: 'onChange',
-  });
-  // 나눈 결과는 저장하기 전까지 기기에 남긴다. 초안이 비었을 때만 지우므로 고치지 않은 상태도 남는다
-  const discardDraft = useFormDraftAutosave(form.subscribe, {
-    initialValues: { actions: [] },
-    saveDraft: (form) =>
-      saveDraft({ omittedTodoCount: restoredDraft?.omittedTodoCount ?? 0, form }),
-    clearDraft,
-  });
-
-  useEffect(() => {
-    if (restoredDraft == null) {
-      toast.warning(t('aiReview.draftLost'));
-      goBack();
-    }
-  }, [restoredDraft, goBack]);
-
-  if (restoredDraft == null) {
-    return null;
-  }
-
-  if (fallbackCategoryId == null) {
-    return (
-      <Result
-        title={t('aiReview.noCategory')}
-        button={<Result.Button onPress={() => goBack()}>{t('aiReview.goBack')}</Result.Button>}
-      />
-    );
-  }
-
-  return (
-    <PlanReview
-      className={PLAN_REVIEW_CLASS_NAME}
-      form={form}
-      plan={PlanReviewPolicy.toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
-      fallbackCategoryId={fallbackCategoryId}
-      onMemoChanged={refreshMemos}
-      onApplied={() => {
-        discardDraft();
-        dismiss();
-        navigate('/feed');
-      }}
-      onSourceMissing={() => {
-        discardDraft();
-        dismiss();
-        navigate('/memo');
-      }}
-    />
-  );
-}
-
-function createMemoPlanIdentity(memoId: number) {
-  return {
-    planId: voicePlanIdSchema.parse(`memo-${memoId}`),
-    source: 'memo' as const,
-    sourceMemoId: memoId,
-  };
-}
 
 export default function AiReviewRoute() {
   const params = memoParamsSchema.safeParse(useLocalSearchParams());
@@ -121,7 +19,7 @@ export default function AiReviewRoute() {
       <ReadableContent flex={1}>
         <QueryErrorBoundary resetKeys={[params.data.memoId]}>
           <Suspense fallback={<PlanReview.Loading className={PLAN_REVIEW_CLASS_NAME} />}>
-            <AiReviewScreen />
+            <MemoPlanReview className={PLAN_REVIEW_CLASS_NAME} />
           </Suspense>
         </QueryErrorBoundary>
       </ReadableContent>

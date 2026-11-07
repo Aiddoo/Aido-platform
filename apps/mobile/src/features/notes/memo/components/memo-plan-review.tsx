@@ -1,0 +1,113 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import { PlanReview } from '@src/features/voice/components/plan/plan-review';
+import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
+import { planReviewFormSchema } from '@src/features/voice/schemas/plan-review-form.schema';
+import { voicePlanIdSchema } from '@src/features/voice/schemas/voice-plan.schema';
+import { toEpochMs } from '@src/shared/date/instant';
+import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
+import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTranslation } from '@src/shared/i18n';
+import { Result } from '@src/shared/ui';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+
+import { useMemoParam } from '../hooks/use-memo-params';
+import { useRefreshMemos } from '../hooks/use-refresh-memos';
+import { useGetMemoQueryOptions } from '../queries/memo.queries';
+import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
+
+interface MemoPlanReviewProps {
+  className?: string;
+}
+
+/** 메모를 나눈 결과의 검토 폼. 기기에 남긴 초안으로 시작하고 저장하면 피드로 간다 */
+export function MemoPlanReview({ className }: MemoPlanReviewProps) {
+  const { t } = useTranslation('memo');
+  const goBack = useSingleTap(router.back);
+  const dismiss = useSingleTap(router.dismiss);
+  const navigate = useSingleTap(router.navigate);
+  const toast = useAppToast();
+  const refreshMemos = useRefreshMemos();
+  const memoId = useMemoParam();
+  const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
+    queries: [
+      useGetMemoQueryOptions({ memoId }),
+      useGetMeQueryOptions(),
+      useGetTodoCategoriesQueryOptions(),
+      useGetPreferenceQueryOptions(),
+    ],
+  });
+  const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
+    createMemoPlanDraftKey({ userId: user.id, memoId }),
+    { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
+  );
+  const fallbackCategoryId = categoriesResult.categories[0]?.id;
+
+  const form = useForm({
+    resolver: zodResolver(planReviewFormSchema),
+    defaultValues: restoredDraft?.form,
+    mode: 'onChange',
+  });
+  // 나눈 결과는 저장하기 전까지 기기에 남긴다. 초안이 비었을 때만 지우므로 고치지 않은 상태도 남는다
+  const discardDraft = useFormDraftAutosave(form.subscribe, {
+    initialValues: { actions: [] },
+    saveDraft: (form) =>
+      saveDraft({ omittedTodoCount: restoredDraft?.omittedTodoCount ?? 0, form }),
+    clearDraft,
+  });
+
+  useEffect(() => {
+    if (restoredDraft == null) {
+      toast.warning(t('aiReview.draftLost'));
+      goBack();
+    }
+  }, [restoredDraft, goBack]);
+
+  if (restoredDraft == null) {
+    return null;
+  }
+
+  if (fallbackCategoryId == null) {
+    return (
+      <Result
+        title={t('aiReview.noCategory')}
+        button={<Result.Button onPress={() => goBack()}>{t('aiReview.goBack')}</Result.Button>}
+      />
+    );
+  }
+
+  return (
+    <PlanReview
+      className={className}
+      form={form}
+      plan={PlanReviewPolicy.toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
+      fallbackCategoryId={fallbackCategoryId}
+      onMemoChanged={refreshMemos}
+      onApplied={() => {
+        discardDraft();
+        dismiss();
+        navigate('/feed');
+      }}
+      onSourceMissing={() => {
+        discardDraft();
+        dismiss();
+        navigate('/memo');
+      }}
+    />
+  );
+}
+
+function createMemoPlanIdentity(memoId: number) {
+  return {
+    planId: voicePlanIdSchema.parse(`memo-${memoId}`),
+    source: 'memo' as const,
+    sourceMemoId: memoId,
+  };
+}
