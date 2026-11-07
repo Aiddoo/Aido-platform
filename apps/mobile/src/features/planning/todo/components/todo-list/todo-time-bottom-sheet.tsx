@@ -1,5 +1,5 @@
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -54,7 +54,7 @@ export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
 
 TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
   const { timeZone } = useDateFormatContext();
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));

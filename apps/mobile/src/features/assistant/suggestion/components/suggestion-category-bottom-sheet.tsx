@@ -16,7 +16,7 @@ import {
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { useSuggestionScreenParams } from '../hooks/use-suggestion-screen-params';
+import { useSuggestionParams } from '../hooks/use-suggestion-params';
 import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 
@@ -55,7 +55,7 @@ SuggestionCategoryBottomSheet.Content = function Content({
   onClose: (next?: SheetRouteExit) => void;
 }) {
   const { t } = useTranslation('ai');
-  const { suggestionId } = useSuggestionScreenParams();
+  const { suggestionId } = useSuggestionParams();
   const [{ data: suggestions }, { data: categoriesData }] = useSuspenseQueries({
     queries: [useGetSuggestionsQueryOptions(), useGetTodoCategoriesQueryOptions()],
   });

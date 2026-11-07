@@ -8,7 +8,7 @@ import {
   TodoRow,
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import {
@@ -71,7 +71,7 @@ export function TodoDetailCard() {
 
 TodoDetailCard.Owner = function Owner() {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const ownerName = detail.owner.name ?? t('detail.unknownOwner');
 
@@ -90,7 +90,7 @@ TodoDetailCard.Owner = function Owner() {
 };
 
 TodoDetailCard.Task = function Task() {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const todayKey = useTodayKey();
@@ -135,7 +135,7 @@ TodoDetailCard.Task = function Task() {
 
 TodoDetailCard.Schedule = function Schedule() {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
@@ -185,7 +185,7 @@ TodoDetailCard.Schedule = function Schedule() {
 };
 
 TodoDetailCard.SubTodos = function SubTodos() {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
   const todayKey = useTodayKey();
@@ -231,7 +231,7 @@ TodoDetailCard.SubTodos = function SubTodos() {
 
 TodoDetailCard.Metrics = function Metrics() {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const todayKey = useTodayKey();
   const canNudge = TodoNudgePolicy.canNudgeTodoInRange(
@@ -264,7 +264,7 @@ TodoDetailCard.Metrics = function Metrics() {
 };
 
 TodoDetailCard.Thanks = function Thanks() {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
   const isThankable = NudgeInteractionPolicy.isThankableTodo(detail.todo, {
@@ -349,7 +349,7 @@ TodoDetailCard.Unavailable = function Unavailable({ onClose }: { onClose: () => 
 /** 상세 응답에는 반복 규칙이 없어 시작일 목록에서 읽는다. 받기 전이나 실패하면 반복이라고만 보인다 */
 function OwnRepeatLabel() {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: list } = useQuery(useGetTodosByDateQueryOptions({ date: detail.todo.startDate }));
   const dateFormatContext = useDateFormatContext();

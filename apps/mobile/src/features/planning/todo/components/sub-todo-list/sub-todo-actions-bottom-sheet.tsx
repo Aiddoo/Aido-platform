@@ -1,7 +1,7 @@
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import {
-  useSubTodoScreenParams,
+  useSubTodoParams,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -62,8 +62,8 @@ interface SubTodoActionsContentProps {
 
 SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActionsContentProps) {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoScreenParams();
-  const { subTodoId } = useSubTodoScreenParams();
+  const { todoId } = useTodoParams();
+  const { subTodoId } = useSubTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));

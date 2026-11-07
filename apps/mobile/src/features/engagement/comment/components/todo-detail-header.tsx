@@ -1,6 +1,6 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
@@ -20,7 +20,7 @@ import { TodoDetailCard } from './todo-detail-card';
 
 /** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다 */
 export function TodoDetailHeader() {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const [{ sort }, setCommentParams] = useCommentParams();
   const changeSort = useChangeSort();
 
@@ -58,7 +58,7 @@ export function TodoDetailHeader() {
 
 function CommentCount() {
   const { t } = useTranslation('todoComment');
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const { resolvedLanguage } = useLanguage();
   const { data: detail, isPending } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
@@ -79,7 +79,7 @@ function CommentCount() {
 
 /** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
 function useChangeSort() {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const logger = useLogger();

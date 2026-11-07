@@ -10,11 +10,11 @@ import { z } from 'zod';
 
 import { feedParamsSchema } from './feed-params.schema';
 
-export const todoScreenParamsSchema = z.object({
+export const todoParamsSchema = z.object({
   todoId: routeIntegerStringSchema.pipe(todoDetailsParamSchema.shape.todoId),
 });
 
-export const subTodoScreenParamsSchema = todoScreenParamsSchema.extend({
+export const subTodoParamsSchema = todoParamsSchema.extend({
   subTodoId: routeIntegerStringSchema.pipe(todoItemIdParamSchema.shape.itemId),
 });
 

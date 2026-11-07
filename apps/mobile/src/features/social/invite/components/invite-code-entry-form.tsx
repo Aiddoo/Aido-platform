@@ -8,7 +8,7 @@ import {
   parseInviteCode,
   toInviteCodeDraft,
 } from '@src/features/social/invite/domains/invite.model';
-import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
+import { useInviteParams } from '@src/features/social/invite/hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTrack } from '@src/shared/analytics';
@@ -35,7 +35,7 @@ import { ScrollView } from 'react-native';
 
 /** 코드 입력과 제출 버튼. 입력 위에 붙는 안내는 화면이 children으로 넘긴다 */
 export function InviteCodeEntryForm({ children }: PropsWithChildren) {
-  const { openedAt } = useInviteRouteParams();
+  const { openedAt } = useInviteParams();
   const { t } = useTranslation('invite');
   const showFailure = useMutationFailure();
   const { trackEvent } = useTrack();

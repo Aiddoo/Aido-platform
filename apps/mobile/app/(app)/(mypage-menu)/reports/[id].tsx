@@ -1,9 +1,9 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { getSampleReport } from '@src/features/insights/report/constants/sample-reports';
-import { useReportScreenParams } from '@src/features/insights/report/hooks/use-report-screen-params';
+import { useReportParams } from '@src/features/insights/report/hooks/use-report-params';
 import { useGetReportDetailQueryOptions } from '@src/features/insights/report/queries/report.queries';
-import { reportScreenParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
+import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useTrack } from '@src/shared/analytics';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
@@ -23,7 +23,7 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function ReportDetailScreen() {
-  const { id: report } = useReportScreenParams();
+  const { id: report } = useReportParams();
   const { t } = useTranslation('ai');
   const gate = useEntitlementGate('AI_REPORT', { surface: 'report_detail' });
 
@@ -82,7 +82,7 @@ function ReportDetailScreen() {
 }
 
 export default function ReportDetailRoute() {
-  const params = reportScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = reportParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/reports" />;
@@ -92,7 +92,7 @@ export default function ReportDetailRoute() {
 }
 
 function SavedActivityReport() {
-  const { id: report } = useReportScreenParams();
+  const { id: report } = useReportParams();
 
   if (report.kind !== 'saved') {
     return null;

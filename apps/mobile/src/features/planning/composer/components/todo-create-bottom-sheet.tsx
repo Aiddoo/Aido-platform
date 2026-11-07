@@ -7,7 +7,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import {
   useTodoCreateCategoryParam,
-  useTodoCreatePrefillParam,
+  useTodoCreatePrefillParams,
   useTodoCreateVoiceHintParam,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
@@ -75,7 +75,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
   const sheet = useSheetRoute('/feed');
   const date = useTodoSheetDateParam();
   const requestedCategoryId = useTodoCreateCategoryParam();
-  const prefill = useTodoCreatePrefillParam();
+  const prefill = useTodoCreatePrefillParams();
   const isVoiceHintRequested = useTodoCreateVoiceHintParam();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = TodoCategoryPolicy.getInitialCategoryId(

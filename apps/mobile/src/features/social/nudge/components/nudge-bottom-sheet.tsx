@@ -18,7 +18,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
-import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
+import { useRemindNudgeParams } from '../hooks/use-remind-nudge-params';
 import { useSendRemindNudgeMutationOptions } from '../queries/nudge.mutations';
 import { useSendTodoNudgeMutationOptions } from '../queries/nudge.mutations';
 import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
@@ -78,7 +78,7 @@ export function RemindNudgeBottomSheet({
 
 /** route(`/users/[userId]/nudge`)로 띄운 독촉 콕 시트. 받는 사람은 route에서 읽는다 */
 RemindNudgeBottomSheet.Route = function Route() {
-  const { userId, name } = useRemindNudgeRouteParams();
+  const { userId, name } = useRemindNudgeParams();
   const sheet = useSheetRoute('/feed');
 
   return (

@@ -1,6 +1,6 @@
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -87,7 +87,7 @@ function renderThreadListScrollView(props: ScrollViewProps) {
  * 알림으로 연 댓글은 그 위치가 든 페이지를 받아 그 묶음으로 옮기고 잠깐 강조한다.
  */
 export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThreadListProps) {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const [{ sort, comment }] = useCommentParams();
   const queryClient = useQueryClient();
   const { listRef } = useTodoCommentReveal();

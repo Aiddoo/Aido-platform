@@ -7,15 +7,15 @@ import { TodoDetailCard } from '@src/features/engagement/comment/components/todo
 import { TodoDetailHeader } from '@src/features/engagement/comment/components/todo-detail-header';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useIsTodoUnavailable } from '@src/features/planning/todo/hooks/use-is-todo-unavailable';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
-import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
+import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 
 /** 할 일 상세와 댓글·답글 한 화면. 알림·링크는 `?comment=`로 그 댓글 위치를 연다 */
 export default function TodoDetailRoute() {
-  const params = todoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = todoParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/feed" />;
@@ -25,7 +25,7 @@ export default function TodoDetailRoute() {
 }
 
 function TodoDetailScreen() {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const [{ sort, comment }] = useCommentParams();
   const isTodoUnavailable = useIsTodoUnavailable();
 

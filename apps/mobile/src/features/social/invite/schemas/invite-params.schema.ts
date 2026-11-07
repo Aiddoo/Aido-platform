@@ -5,7 +5,7 @@ import { InviteLinkSourceSchema } from '../schemas/invite-redemption.schema';
 import { InviteCodeSchema } from '../schemas/invite.schema';
 
 // 형식이 틀린 코드는 화면이 "찾을 수 없어요"로 보여 주도록 null로 받는다
-export const inviteRouteParamsSchema = z.object({
+export const inviteParamsSchema = z.object({
   inviteCode: InviteCodeSchema.nullable().catch(null),
   source: InviteLinkSourceSchema.catch('app_scheme'),
   // 시스템이 링크를 열어 준 경우에만 있다(+native-intent). 앱 안 이동에는 없다

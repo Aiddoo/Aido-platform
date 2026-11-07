@@ -1,10 +1,10 @@
 import { TodoEditBottomSheet } from '@src/features/planning/composer/components/todo-edit-bottom-sheet';
-import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function TodoEditSheetRoute() {
-  const params = todoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = todoParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/feed" />;

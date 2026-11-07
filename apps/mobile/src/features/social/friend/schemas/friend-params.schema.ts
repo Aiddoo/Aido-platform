@@ -1,7 +1,7 @@
 import { userIdParamSchema } from '@aido/api';
 import { z } from 'zod';
 
-export const friendScreenParamsSchema = z.object({
+export const friendParamsSchema = z.object({
   friendId: userIdParamSchema.shape.userId,
 });
 

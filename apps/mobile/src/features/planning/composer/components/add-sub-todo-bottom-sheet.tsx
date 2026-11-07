@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import {
-  useSubTodoScreenParams,
+  useSubTodoParams,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
@@ -84,7 +84,7 @@ interface SheetContentProps {
 }
 
 AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
@@ -103,8 +103,8 @@ AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
 };
 
 AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
-  const { todoId } = useTodoScreenParams();
-  const { subTodoId } = useSubTodoScreenParams();
+  const { todoId } = useTodoParams();
+  const { subTodoId } = useSubTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));

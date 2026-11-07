@@ -31,7 +31,7 @@ import {
   useFeedTodoDetailHandoff,
 } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
 import { useIsTodoUnavailable } from '@src/features/planning/todo/hooks/use-is-todo-unavailable';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
@@ -451,7 +451,7 @@ function FeedTodoDetailPane() {
 
 /** 펼친 피드의 오른쪽 칸. 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */
 function FeedTodoDetail({ onClose }: { onClose: () => void }) {
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const [{ sort, comment }] = useCommentParams();
   const date = useFeedDateKey();
   const isTodoUnavailable = useIsTodoUnavailable();

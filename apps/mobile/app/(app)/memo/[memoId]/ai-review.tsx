@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useMemoScreenParams } from '@src/features/notes/memo/hooks/use-memo-params';
+import { useMemoParams } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
-import { memoScreenParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
+import { memoParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
 import { createMemoPlanDraftKey } from '@src/features/notes/memo/utils/memo-plan-draft';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
@@ -32,7 +32,7 @@ function AiReviewScreen() {
   const navigate = useSingleTap(router.navigate);
   const toast = useAppToast();
   const refreshMemos = useRefreshMemos();
-  const { memoId } = useMemoScreenParams();
+  const { memoId } = useMemoParams();
   const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
       useGetMemoQueryOptions({ memoId }),
@@ -110,7 +110,7 @@ function createMemoPlanIdentity(memoId: number) {
 }
 
 export default function AiReviewRoute() {
-  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = memoParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/memo" />;

@@ -24,13 +24,13 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
 
-import { useInviteRouteParams } from '../hooks/use-invite-route-params';
+import { useInviteParams } from '../hooks/use-invite-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 import type { InviteCode } from '../schemas/invite.schema';
 
 /** 초대 카드 위쪽. 누가 초대했는지를 가장 크게 보여 준다 */
 export function InvitePreviewCard() {
-  const { inviteCode } = useInviteRouteParams();
+  const { inviteCode } = useInviteParams();
 
   if (inviteCode == null) {
     return <InvitePreviewCard.Empty />;

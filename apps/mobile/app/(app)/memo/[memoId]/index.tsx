@@ -1,12 +1,12 @@
 import { MemoEditor } from '@src/features/notes/memo/components/memo-editor';
-import { memoScreenParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
+import { memoParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 
 export default function MemoDetailRoute() {
-  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = memoParamsSchema.safeParse(useLocalSearchParams());
   const goBack = useSingleTap(router.back);
 
   if (!params.success) {

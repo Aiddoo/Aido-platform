@@ -2,7 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 
-import { useBlockUserRouteParams } from '../hooks/use-block-user-route-params';
+import { useBlockUserParams } from '../hooks/use-block-user-params';
 import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
 
 /**
@@ -11,7 +11,7 @@ import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
  */
 export function BlockUserConfirmDialog() {
   const { t } = useTranslation(['moderation', 'common']);
-  const { userId, name } = useBlockUserRouteParams();
+  const { userId, name } = useBlockUserParams();
   const dialog = useSheetRoute('/feed');
   const blockUser = useMutation(useBlockUserMutationOptions());
 

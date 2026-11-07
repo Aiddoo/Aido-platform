@@ -1,8 +1,8 @@
 import { todoCommentIdSchema } from '@aido/api';
-import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
-const legacyTodoCommentThreadParamsSchema = todoScreenParamsSchema.extend({
+const legacyTodoCommentThreadParamsSchema = todoParamsSchema.extend({
   commentId: todoCommentIdSchema,
 });
 

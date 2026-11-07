@@ -1,6 +1,6 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -51,7 +51,7 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
 
 TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('todo');
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));

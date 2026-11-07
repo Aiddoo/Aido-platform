@@ -3,7 +3,7 @@ import { NudgeModerationToolbar } from '@src/features/social/nudge/components/nu
 import { NudgeResponse } from '@src/features/social/nudge/components/nudge-detail/nudge-response';
 import { NudgeSummary } from '@src/features/social/nudge/components/nudge-detail/nudge-summary';
 import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-detail/nudge-todo-button';
-import { nudgeScreenParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
+import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
   QueryErrorBoundary,
@@ -17,7 +17,7 @@ import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function NudgeDetailRoute() {
-  const params = nudgeScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = nudgeParamsSchema.safeParse(useLocalSearchParams());
   const { t } = useTranslation('todo');
 
   return (

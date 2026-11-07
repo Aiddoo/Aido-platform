@@ -1,4 +1,4 @@
-import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
+import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { isDateToday } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyCompactRange } from '@src/shared/date/date-format';
@@ -92,7 +92,7 @@ TodoActionsBottomSheet.Content = function Content({
 }: TodoActionsContentProps) {
   const { t } = useTranslation(['todo', 'common']);
   const today = useToday();
-  const { todoId } = useTodoScreenParams();
+  const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));

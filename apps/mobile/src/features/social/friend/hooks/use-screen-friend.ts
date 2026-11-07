@@ -2,11 +2,11 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useGetFriendQueryOptions } from '../queries/friend.queries';
-import { useFriendScreenParams } from './use-friend-screen-params';
+import { useFriendParams } from './use-friend-params';
 
 /** 친구 화면의 friendId로 친구를 읽고, 아직 불러오지 않은 페이지에 있으면 다음 페이지를 이어 불러온다. */
 export function useScreenFriend() {
-  const { friendId } = useFriendScreenParams();
+  const { friendId } = useFriendParams();
   const query = useSuspenseInfiniteQuery(useGetFriendQueryOptions({ friendId }));
   const { data: friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage } = query;
 

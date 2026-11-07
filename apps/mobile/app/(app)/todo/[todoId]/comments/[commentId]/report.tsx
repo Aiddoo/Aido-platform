@@ -1,15 +1,15 @@
 import { findCachedTodoComment } from '@src/features/engagement/comment/queries/todo-comment-cache';
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import { useCommentReportRouteParams } from '@src/features/social/moderation/hooks/use-comment-report-route-params';
-import { commentReportRouteParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
+import { useCommentReportParams } from '@src/features/social/moderation/hooks/use-comment-report-params';
+import { commentReportParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function CommentReportSheetRoute() {
-  const params = commentReportRouteParamsSchema.safeParse(useLocalSearchParams());
+  const params = commentReportParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/feed" />;
@@ -29,7 +29,7 @@ export default function CommentReportSheetRoute() {
 function CommentReportSheet() {
   const { t } = useTranslation('moderation');
   const queryClient = useQueryClient();
-  const { todoId, commentId } = useCommentReportRouteParams();
+  const { todoId, commentId } = useCommentReportParams();
   const author = findCachedTodoComment({ queryClient, todoId, commentId })?.author;
 
   if (author == null) {

@@ -2,7 +2,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useLocalSearchParams } from 'expo-router';
 
 import {
-  subTodoScreenParamsSchema,
+  subTodoParamsSchema,
   todoCreateCategoryParamsSchema,
   todoCreatePrefillParamsSchema,
   todoCreateVoiceHintParamsSchema,
@@ -22,7 +22,7 @@ export function useTodoCreateCategoryParam() {
 }
 
 /** 다른 화면이 제안한 제목·시각. 잘못된 값은 버리고 빈 시트로 연다. */
-export function useTodoCreatePrefillParam() {
+export function useTodoCreatePrefillParams() {
   return todoCreatePrefillParamsSchema.parse(useLocalSearchParams());
 }
 
@@ -30,6 +30,6 @@ export function useTodoCreateVoiceHintParam(): boolean {
   return todoCreateVoiceHintParamsSchema.parse(useLocalSearchParams()).voiceHint != null;
 }
 
-export function useSubTodoScreenParams() {
-  return subTodoScreenParamsSchema.parse(useLocalSearchParams());
+export function useSubTodoParams() {
+  return subTodoParamsSchema.parse(useLocalSearchParams());
 }

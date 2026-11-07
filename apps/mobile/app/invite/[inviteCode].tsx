@@ -6,7 +6,7 @@ import { InvitePreviewCard } from '@src/features/social/invite/components/invite
 import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
-import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
+import { useInviteParams } from '@src/features/social/invite/hooks/use-invite-params';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
@@ -84,7 +84,7 @@ function InviteCardScreenLoading() {
 
 /** 가입하면 받는 혜택을 구독 화면과 같은 영수증 톤으로 보여 준다 */
 function InviteBenefitReceipt() {
-  const { inviteCode } = useInviteRouteParams();
+  const { inviteCode } = useInviteParams();
 
   if (inviteCode == null) {
     return null;
@@ -199,7 +199,7 @@ function InviteBenefitReceiptLoading() {
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 function InviteCardActions() {
   const status = useAuthStatus();
-  const { inviteCode, source } = useInviteRouteParams();
+  const { inviteCode, source } = useInviteParams();
   const inviteService = useInviteService();
   const { t } = useTranslation('invite');
 

@@ -1,10 +1,10 @@
 import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
-import { useVerifyEmailScreenParams } from '@src/features/identity/auth/hooks/use-verify-email-screen-params';
+import { useVerifyEmailParams } from '@src/features/identity/auth/hooks/use-verify-email-params';
 import {
   useResendVerificationMutationOptions,
   useVerifyEmailMutationOptions,
 } from '@src/features/identity/auth/queries/auth.mutations';
-import { verifyEmailScreenParamsSchema } from '@src/features/identity/auth/schemas/verify-email-params.schema';
+import { verifyEmailParamsSchema } from '@src/features/identity/auth/schemas/verify-email-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 /** 로그인 중 미인증(EMAIL_0503) 계정이 이메일 인증을 마치는 화면 */
 function VerifyEmailScreen() {
   const { t } = useTranslation('auth');
-  const { email } = useVerifyEmailScreenParams();
+  const { email } = useVerifyEmailParams();
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
 
@@ -35,7 +35,7 @@ function VerifyEmailScreen() {
 
 export default function VerifyEmailRoute() {
   const params = useLocalSearchParams();
-  if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
+  if (!verifyEmailParamsSchema.safeParse(params).success) {
     return <Redirect href="/login" />;
   }
   return (

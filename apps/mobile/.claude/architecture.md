@@ -202,13 +202,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 기준은 frontend-fundamentals-mock-exam-1이다. 파일 구조는 따르지 않고 서비스는 우리 DI로 받는다. 같은 역할의 앱 코드는 다음과 같다.
 
-| 참고 저장소                                | 앱                                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------------ |
-| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                        |
-| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                               |
-| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoScreenParams`로 읽음 |
-| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)          |
-| `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다  |
+| 참고 저장소                                | 앱                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                       |
+| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                              |
+| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoParams`로 읽음      |
+| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)         |
+| `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다 |
 
 ```tsx
 // app/(app)/(tabs)/memo/index.tsx
@@ -270,7 +270,7 @@ Suspense 조회나 파라미터 검증 때문에 부모가 꼭 필요하면 rout
 ```tsx
 // app/(app)/memo/[memoId]/index.tsx
 export default function MemoDetailRoute() {
-  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = memoParamsSchema.safeParse(useLocalSearchParams());
   const goBack = useSingleTap(router.back);
 
   if (!params.success) {
@@ -306,13 +306,13 @@ export default function MemoDetailRoute() {
 
 **데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내리면 Suspense 경계를 블록 단위로 나눌 수 없다. 지역 컴포넌트에 좁힌 값을 넘기는 것은 괜찮다(`MemoList.Item`의 `memo`). 목록의 재사용 인터페이스(`filters`, `orderBy`, `limit`)는 실제 쓰는 곳이 있을 때만 둔다. 안 쓰는 옵션은 만들지 않는다.
 
-**화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 `use…ScreenParams()`나 상태 튜플 훅에서 직접 읽는다. 예외는 목록 행의 id다.
+**화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 `use…Params()`나 상태 튜플 훅에서 직접 읽는다. 예외는 목록 행의 id다.
 
 ```tsx
 // features/notes/memo/components/memo-editor.tsx
 function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
   const { t } = useTranslation(['memo', 'common']);
-  const { memoId } = useMemoScreenParams();
+  const { memoId } = useMemoParams();
   const deleteMemo = useMutation(useDeleteMemoMutationOptions());
 ```
 
@@ -432,7 +432,7 @@ MemoList.Loading = function Loading() {
 | 1    | props                                           | 부모만 아는 값, 한두 단계                                                                          | `onLeave`, `isEditing`                                           |
 | 2    | 컴포넌트를 prop으로                             | 자리는 같고 구현이 갈릴 때. 인터페이스 하나                                                        | `fallback={MemoList.Error}`, `toolbar={MemoEditor.StackToolbar}` |
 | 3    | Query 캐시, `useIsMutating`, `useMutationState` | 서버 값과 진행 상태를 떨어진 곳에서 읽을 때                                                        | `MemoAiParsingBadge`의 `useIsMutating`                           |
-| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoScreenParams`, `useSelectedMemo`                         |
+| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoParams`, `useSelectedMemo`                               |
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
@@ -477,7 +477,7 @@ MemoList.Loading = function Loading() {
 - 같은 화면의 보기 상태(선택 항목, 필터, 날짜, 친구, 작성기)는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`).
 - 쓰는 query param은 nuqs처럼 쓴다. 값 하나면 `[value, setValue]`, 함께 쓰는 값이면 `[values, setValues]`다. 패키지는 넣지 않고 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`) 위에 훅을 만든다. 읽기와 쓰기가 `schemas/{name}-params.schema.ts`의 스키마 하나를 지난다. 스키마 이름은 `{name}ParamsSchema`이고 훅 파일에 두지 않는다.
 - 쓰는 필드의 URL 형식은 문자열이고 `z.codec`이다(`routeIdSchema`, `weatherRescheduleParamsSchema.todoIds`). `.transform`은 `z.encode`에서 터지고 `z.coerce`는 숫자로 남아 조용히 지워지므로 읽기 전용 필드(`routeIntegerStringSchema`, `openedAt`)에만 쓴다. 값 지우기는 `setParams({ date: undefined })`다. boolean은 `?isEditing=false`를 남기지 않도록 끌 때 `undefined`를 넘긴다. 없거나 잘못된 값은 `.catch`로 읽는다.
-- 세터를 부르는 곳이 있으면 `useRouteParams` 위의 튜플이고, 없으면 값 그대로다. 값 하나면 값(`useTodoSheetDateParam(): string`), 여럿이면 객체(`useInquiryParams(): { … }`)다. 경로 세그먼트(`/todo/[todoId]`)도 쓰기가 없는 값이라 같은 규칙이다(`useTodoScreenParams()`). 쓰기가 생기는 순간 튜플로 바꾼다.
+- 세터를 부르는 곳이 있으면 `useRouteParams` 위의 튜플이고, 없으면 값 그대로다. 값 하나면 값(`useTodoSheetDateParam(): string`), 여럿이면 객체(`useInquiryParams(): { … }`)다. 경로 세그먼트(`/todo/[todoId]`)도 쓰기가 없는 값이라 같은 규칙이다(`useTodoParams()`). 쓰기가 생기는 순간 튜플로 바꾼다.
 - 값을 바꿀 때 함께 지울 값이 있으면 그 규칙은 세터 안에 둔다. 호출부가 잊을 수 없다(`useFeedFriendParam`의 `selectFriend`, `useFeedSelectedTodo`의 세터, `CLEARED_TODO_SELECTION`). 공개 세터로 안 되는 넘김(접힌 화면의 상세 넘김)도 훅이 맡는다(`useFeedTodoDetailHandoff`, `useMemoDetailHandoff`). `router.setParams`, `useLocalSearchParams` 구조 분해, 파라미터 훅 파일의 `z.object`는 `check:conventions`가 막는다.
 - 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`). `as`로 건너뛰지 않는다.
 - `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
