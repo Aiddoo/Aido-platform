@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react';
 
 import type { TodoCommentAuthor } from '../schemas/todo-comment.schema';
 
-export type TodoCommentAuthorAvatarSize = 'xs' | 'sm' | 'md';
+type TodoCommentAuthorAvatarSize = 'xs' | 'sm' | 'md';
 
 const AVATAR_SIZE = {
   xs: { px: 20, className: 'size-5' },
