@@ -55,7 +55,7 @@ function PostedReplyThread({ thread }: { thread: TodoCommentThread }) {
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
           <PostReplyButton threadCommentId={thread.comment.id} />
-          <TodoCommentReplies thread={thread} anchor={null} />
+          <TodoCommentReplies thread={thread} anchor={null} isHighlightActive={false} />
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
     </TodoCommentFormProvider>

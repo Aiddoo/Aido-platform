@@ -22,7 +22,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
-import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
 import { type ScrollViewProps, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -34,6 +34,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useCommentParams } from '../hooks/use-comment-params';
 import { refreshTodoComments } from '../queries/todo-comment-cache';
@@ -107,12 +108,13 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
       [queryClient, todoId],
     ),
   );
+  const isHighlightActive = useScrollToAnchor({ threads, anchor });
   const renderItem = useCallback(
-    ({ item }: { item: TodoCommentThread }) => <ThreadRow thread={item} anchor={anchor} />,
-    [anchor],
+    ({ item }: { item: TodoCommentThread }) => (
+      <ThreadRow thread={item} anchor={anchor} isHighlightActive={isHighlightActive} />
+    ),
+    [anchor, isHighlightActive],
   );
-
-  useScrollToAnchor({ threads, anchor });
 
   return (
     <InfiniteList
@@ -120,7 +122,7 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
       ref={listRef}
       key={`${todoId}:${sort}:${comment ?? ''}`}
       data={threads}
-      extraData={anchor}
+      extraData={isHighlightActive ? anchor : null}
       keyExtractor={getThreadKey}
       renderItem={renderItem}
       renderScrollComponent={renderThreadListScrollView}
@@ -200,33 +202,47 @@ TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallba
 function ThreadRow({
   thread,
   anchor,
+  isHighlightActive,
 }: {
   thread: TodoCommentThread;
   anchor: TodoCommentThreadAnchor | null;
+  isHighlightActive: boolean;
 }) {
   const hasReplies = TodoCommentPolicy.hasRepliesToShow(thread);
-  const isAnchoredComment = anchor?.threadCommentId === thread.comment.id && anchor.replyId == null;
+  const isAnchoredComment =
+    isHighlightActive && anchor?.threadCommentId === thread.comment.id && anchor.replyId == null;
 
   return (
     <VStack pb={8} testID={`todo-comment-thread-${thread.comment.id}`}>
       <TodoCommentRailRow kind={{ type: 'comment', hasReplies }} isHighlighted={isAnchoredComment}>
         <TodoCommentItem key={thread.comment.id} comment={thread.comment} />
       </TodoCommentRailRow>
-      {hasReplies && <TodoCommentReplies key={thread.comment.id} thread={thread} anchor={anchor} />}
+      {hasReplies && (
+        <TodoCommentReplies
+          key={thread.comment.id}
+          thread={thread}
+          anchor={anchor}
+          isHighlightActive={isHighlightActive}
+        />
+      )}
     </VStack>
   );
 }
 
-/** 알림으로 연 묶음으로 한 번만 옮긴다. 그 글이 사라졌으면 알리고 목록 맨 위를 보인다 */
+/**
+ * 알림으로 연 묶음으로 한 번만 옮기고, 그 행의 강조도 그 한 번의 시간 동안만 켠다. 그 글이 사라졌으면 알리고 목록 맨 위를 보인다.
+ * 행이 재활용되어 다시 그려져도 강조와 올림이 되풀이되지 않게 켜짐 여부를 목록이 소유한다
+ */
 function useScrollToAnchor({
   threads,
   anchor,
 }: {
   threads: readonly TodoCommentThread[];
   anchor: TodoCommentThreadAnchor | null;
-}) {
+}): boolean {
   const [{ comment }] = useCommentParams();
   const { listRef } = useTodoCommentReveal();
+  const [isHighlightActive, setIsHighlightActive] = useState(false);
   const toast = useAppToast();
   const { t } = useTranslation('todoComment');
   const handledCommentRef = useRef<string | null>(null);
@@ -243,6 +259,7 @@ function useScrollToAnchor({
       return;
     }
 
+    setIsHighlightActive(true);
     const index = threads.findIndex((thread) => thread.comment.id === anchor.threadCommentId);
     if (index >= 0) {
       listRef.current
@@ -250,6 +267,17 @@ function useScrollToAnchor({
         .catch(noop);
     }
   }, [anchor, comment, listRef, t, threads, toast]);
+
+  useEffect(() => {
+    if (!isHighlightActive) {
+      return;
+    }
+    const timer = setTimeout(() => setIsHighlightActive(false), TODO_COMMENT_HIGHLIGHT_DURATION_MS);
+
+    return () => clearTimeout(timer);
+  }, [isHighlightActive]);
+
+  return isHighlightActive;
 }
 
 function LoadPrevious({ isLoading, onPress }: { isLoading: boolean; onPress: () => void }) {

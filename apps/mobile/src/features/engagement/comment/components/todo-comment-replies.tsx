@@ -24,13 +24,15 @@ import { TodoCommentRailRow } from './todo-comment-thread-rail';
 interface TodoCommentRepliesProps {
   thread: TodoCommentThread;
   anchor: TodoCommentThreadAnchor | null;
+  /** 알림으로 연 행을 지금 강조하는 동안만 true */
+  isHighlightActive: boolean;
 }
 
 /**
  * 한 묶음의 답글. 접혀 있으면 서버가 고른 대표 답글 하나와 "답글 N개 더 보기"를, 펼치면 그 자리에서 답글 페이지를
  * 이어 붙인다. 위 행은 움직이지 않고 아래로만 늘어난다.
  */
-export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) {
+export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCommentRepliesProps) {
   const [todoId] = useTodoId();
   const { trackEvent } = useTrack();
   const anchoredReplyId = anchor?.threadCommentId === thread.comment.id ? anchor.replyId : null;
@@ -121,7 +123,7 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
               key={reply.id}
               reply={reply}
               isLast={reply.id === lastReplyId}
-              isHighlighted={reply.id === anchoredReplyId}
+              isHighlighted={isHighlightActive && reply.id === anchoredReplyId}
             />
           ))}
           {isFetchingNextPage ? (

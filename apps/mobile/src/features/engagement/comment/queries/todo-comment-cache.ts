@@ -38,8 +38,12 @@ function replyQueries(todoId: number) {
   return { queryKey: TODO_COMMENT_QUERY_KEYS.replyLists({ todoId }) };
 }
 
+/** 이미 받은 데이터가 있는 쿼리만 멈춘다. 첫 로드를 끊으면 idle로 되돌아가 다시 받지 않아 스켈레톤에 멈춘다 */
 export function cancelTodoCommentQueries({ queryClient, todoId }: TodoCommentCacheParams) {
-  return queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }) });
+  return queryClient.cancelQueries({
+    queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }),
+    predicate: (query) => query.state.data !== undefined,
+  });
 }
 
 export function snapshotTodoCommentCaches({
