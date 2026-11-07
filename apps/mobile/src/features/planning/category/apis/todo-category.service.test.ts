@@ -8,20 +8,19 @@ import {
 } from '../__tests__/todo-category.fixtures';
 import { TodoCategoryService } from './todo-category.service';
 
+function createSut() {
+  const httpClient = createHttpClientStub();
+
+  return { httpClient, service: new TodoCategoryService(httpClient) };
+}
+
 describe('TodoCategoryService', () => {
-  let httpClient: ReturnType<typeof createHttpClientStub>;
-  let service: TodoCategoryService;
-
-  beforeEach(() => {
-    httpClient = createHttpClientStub();
-    service = new TodoCategoryService(httpClient);
-  });
-
   // ── getCategories ────────────────────────────
 
   describe('getCategories', () => {
-    test('정상 응답 → TodoCategoriesResult 반환', async () => {
+    it('응답을 받으면 TodoCategoriesResult를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const dto = createTodoCategoryListDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
 
@@ -37,20 +36,25 @@ describe('TodoCategoryService', () => {
       }
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getCategories()).rejects.toThrow('Invalid getCategories response');
+      // When
+      const result = service.getCategories();
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid getCategories response');
     });
   });
 
   // ── createCategory ───────────────────────────
 
   describe('createCategory', () => {
-    test('정상 응답 → TodoCategory 반환', async () => {
+    it('응답을 받으면 TodoCategory를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const category = createTodoCategoryDto();
       httpClient.post.mockResolvedValue({
         ok: true,
@@ -68,8 +72,9 @@ describe('TodoCategoryService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('개수 초과 → TODO_CATEGORY_0857 에러', async () => {
+    it('개수 초과 → TODO_CATEGORY_0857 에러', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoCategoryApiError({
         code: 'TODO_CATEGORY_0857',
         message: '카테고리 개수 한도에 도달했어요',
@@ -83,22 +88,25 @@ describe('TodoCategoryService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(
-        service.createCategory({ name: '새 카테고리', color: '#FF0000' }),
-      ).rejects.toThrow('Invalid createCategory response');
+      // When
+      const result = service.createCategory({ name: '새 카테고리', color: '#FF0000' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid createCategory response');
     });
   });
 
   // ── updateCategory ───────────────────────────
 
   describe('updateCategory', () => {
-    test('정상 응답 → TodoCategory 반환', async () => {
+    it('응답을 받으면 TodoCategory를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const category = createTodoCategoryDto({ name: '수정된' });
       httpClient.patch.mockResolvedValue({
         ok: true,
@@ -113,8 +121,9 @@ describe('TodoCategoryService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoCategoryApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
@@ -125,22 +134,25 @@ describe('TodoCategoryService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.updateCategory(1, { name: '수정' })).rejects.toThrow(
-        'Invalid updateCategory response',
-      );
+      // When
+      const result = service.updateCategory(1, { name: '수정' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid updateCategory response');
     });
   });
 
   // ── deleteCategory ───────────────────────────
 
   describe('deleteCategory', () => {
-    test('moveToCategoryId를 query params로 전달', async () => {
+    it('moveToCategoryId를 query params로 전달', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.delete.mockResolvedValue({
         ok: true,
         value: { message: '카테고리가 삭제되었습니다.' },
@@ -156,8 +168,9 @@ describe('TodoCategoryService', () => {
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
-    test('할일 존재 → TODO_CATEGORY_0855 에러', async () => {
+    it('할일 존재 → TODO_CATEGORY_0855 에러', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoCategoryApiError({
         code: 'TODO_CATEGORY_0855',
         message: '카테고리에 할 일이 있어요',
@@ -171,20 +184,25 @@ describe('TodoCategoryService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.delete.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.deleteCategory(3)).rejects.toThrow('Invalid deleteCategory response');
+      // When
+      const result = service.deleteCategory(3);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid deleteCategory response');
     });
   });
 
   // ── reorderCategory ──────────────────────────
 
   describe('reorderCategory', () => {
-    test('정상 응답 → TodoCategory 반환', async () => {
+    it('응답을 받으면 TodoCategory를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const category = createTodoCategoryDto({ sortOrder: 2 });
       httpClient.patch.mockResolvedValue({
         ok: true,
@@ -202,8 +220,9 @@ describe('TodoCategoryService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoCategoryApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 

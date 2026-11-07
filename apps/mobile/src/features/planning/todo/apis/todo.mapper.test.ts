@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe('toTodo', () => {
-  test('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {
+  it('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {
     // Given
     const dto = createTodoDto({
       scheduledTime: '2026-03-08T01:00:00.000Z',
@@ -31,7 +31,7 @@ describe('toTodo', () => {
     expect(result.title).toBe(dto.title);
   });
 
-  test('칸이 비어 있는 시간 행은 순간만 보관한다', () => {
+  it('칸이 비어 있는 시간 행은 순간만 보관한다', () => {
     // Given
     const instant = '2026-03-08T01:00:00.000Z';
     const dto = createTodoDto({ scheduledTime: instant, scheduledLocalTime: null });
@@ -44,7 +44,7 @@ describe('toTodo', () => {
     expect(result.scheduledAt).toBe(instant);
   });
 
-  test('isAllDay, completed, visibility 매핑', () => {
+  it('isAllDay, completed, visibility 매핑', () => {
     // Given
     const dto = createTodoDto({ isAllDay: true, completed: true, visibility: 'PRIVATE' });
 
@@ -59,7 +59,7 @@ describe('toTodo', () => {
 });
 
 describe('toTodo — subTodos/subTodoStats', () => {
-  test('subTodos 배열 매핑', () => {
+  it('subTodos 배열 매핑', () => {
     // Given
     const dto = createTodoDto({
       items: [
@@ -79,7 +79,7 @@ describe('toTodo — subTodos/subTodoStats', () => {
     expect(result.subTodoStats).toEqual({ total: 2, completed: 1 });
   });
 
-  test('빈 subTodos → 빈 배열 + zero stats', () => {
+  it('빈 subTodos → 빈 배열 + zero stats', () => {
     // Given
     const dto = createTodoDto({ items: [], itemStats: { total: 0, completed: 0 } });
 
@@ -93,7 +93,7 @@ describe('toTodo — subTodos/subTodoStats', () => {
 });
 
 describe('toDailyCompletionsResult', () => {
-  test('completions 배열 + totalCompleteDays', () => {
+  it('completions 배열 + totalCompleteDays', () => {
     // Given
     const dto = createDailyCompletionsDto();
 
@@ -109,7 +109,7 @@ describe('toDailyCompletionsResult', () => {
 });
 
 describe('toTodo의 반복 규칙', () => {
-  test('소유자 응답의 규칙을 앱 모델로 옮긴다', () => {
+  it('소유자 응답의 규칙을 앱 모델로 옮긴다', () => {
     // Given
     const dto = createTodoDto({
       recurrenceGroupId: 'series-1',
@@ -128,7 +128,7 @@ describe('toTodo의 반복 규칙', () => {
     });
   });
 
-  test('구 서버·친구 응답처럼 키가 없으면 규칙은 null이다', () => {
+  it('구 서버·친구 응답처럼 키가 없으면 규칙은 null이다', () => {
     // Given
     const { repeat: _repeat, ...dto } = createTodoDto({ recurrenceGroupId: 'series-1' });
 

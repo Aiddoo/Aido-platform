@@ -2,7 +2,7 @@ import { createTodoItemResponseDto } from '../__tests__/todo.fixtures';
 import { toSubTodo } from './sub-todo.mapper';
 
 describe('toSubTodo', () => {
-  test('DTO → Domain 매핑', () => {
+  it('DTO → Domain 매핑', () => {
     // Given
     const dto = createTodoItemResponseDto();
 
@@ -18,7 +18,7 @@ describe('toSubTodo', () => {
     });
   });
 
-  test('완료 상태 매핑', () => {
+  it('완료 상태 매핑', () => {
     // Given
     const dto = createTodoItemResponseDto({ completed: true, sortOrder: 3 });
 

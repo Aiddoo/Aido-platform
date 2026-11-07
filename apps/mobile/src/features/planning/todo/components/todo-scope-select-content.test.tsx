@@ -14,7 +14,7 @@ const renderScope = (ui: ReactElement) =>
   });
 
 describe('TodoScopeSelectContent', () => {
-  test('수정은 이 할 일만과 이후 할 일 두 가지를 날짜 설명과 함께 보여준다', async () => {
+  it('수정은 이 할 일만과 이후 할 일 두 가지를 날짜 설명과 함께 보여준다', async () => {
     // Given
     const onChange = jest.fn();
     await renderScope(
@@ -36,7 +36,7 @@ describe('TodoScopeSelectContent', () => {
     expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
   });
 
-  test('삭제는 전체 삭제와 완료 기록 안내까지 한 행으로 보여준다', async () => {
+  it('삭제는 전체 삭제와 완료 기록 안내까지 한 행으로 보여준다', async () => {
     // Given
     const onChange = jest.fn();
     await renderScope(

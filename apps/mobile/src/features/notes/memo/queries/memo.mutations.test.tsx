@@ -1,18 +1,13 @@
 import type { Memo as MemoDto } from '@aido/api';
 import { ok } from '@src/core/errors/result';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
-  createMemorySyncStorage,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
@@ -82,7 +77,8 @@ describe('메모 수정 후 상세 cache', () => {
   });
 
   it('저장 완료 후 즉시 다시 열어도 검증된 수정 응답으로 폼을 초기화한다', async () => {
-    // Given: 상세 cache에 옛 메모가 있다
+    // Given
+    // 상세 cache에 옛 메모가 있다
 
     // When
     await updateMemo(client);
@@ -143,7 +139,6 @@ describe('오프라인에서 AI 정리', () => {
       di: {
         httpClient,
         haptics: createHapticsGatewayStub(),
-        draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
       },
     });
 
@@ -179,9 +174,6 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       di: {
         httpClient,
         haptics: createHapticsGatewayStub(),
-        activationService: new ActivationService(
-          createActivationProgressRepository(createMemorySyncStorage()),
-        ),
       },
     });
 

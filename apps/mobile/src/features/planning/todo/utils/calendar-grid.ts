@@ -46,15 +46,15 @@ export function getMonthWeeks(displayDate: Date, timeZone: string): Date[][] {
   const monthStartKey = toDateKey(monthStart, timeZone);
   const lastWeekStartKey = getCalendarWeek(getMonthEndDateKey(monthStartKey)).startDateKey;
 
-  const weeks: Date[][] = [];
-  let currentWeekStartKey = getCalendarWeek(monthStartKey).startDateKey;
+  const firstWeekStartKey = getCalendarWeek(monthStartKey).startDateKey;
+  const weekCount = diffDateKeysInDays(firstWeekStartKey, lastWeekStartKey) / DAYS_PER_WEEK + 1;
 
-  while (currentWeekStartKey <= lastWeekStartKey) {
-    weeks.push(getWeekDates(toLocalDay(currentWeekStartKey), timeZone));
-    currentWeekStartKey = addDaysToDateKey(currentWeekStartKey, DAYS_PER_WEEK);
-  }
-
-  return weeks;
+  return range(weekCount).map((weekIndex) =>
+    getWeekDates(
+      toLocalDay(addDaysToDateKey(firstWeekStartKey, weekIndex * DAYS_PER_WEEK)),
+      timeZone,
+    ),
+  );
 }
 
 /** 캘린더 그리드 범위 (월간 뷰 - 앞뒤 패딩 주 포함) */

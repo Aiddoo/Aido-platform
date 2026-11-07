@@ -1,11 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHttpClientStub,
-  createPendingResponse,
-} from '@src/shared/__tests__';
+import { createHttpClientStub, createPendingResponse } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -19,6 +14,7 @@ import { SubTodoActionsBottomSheet } from './sub-todo-actions-bottom-sheet';
 
 describe('SubTodoActionsBottomSheet', () => {
   it('지우는 동안 라벨이 바뀌고 다시 눌리지 않는다', async () => {
+    // Given
     const httpClient = createHttpClientStub();
     const pendingDelete = createPendingResponse(ok(undefined));
     httpClient.delete.mockReturnValue(pendingDelete.response);
@@ -45,21 +41,20 @@ describe('SubTodoActionsBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: {
-          httpClient,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-        },
+        di: { httpClient },
         queryClient,
       },
     );
 
+    // When
     fireEvent.press(screen.getByText('삭제하기')).catch(() => undefined);
 
     await waitFor(() => {
       expect(screen.getByText('삭제 중...')).toBeOnTheScreen();
     });
     fireEvent.press(screen.getByText('삭제 중...')).catch(() => undefined);
+
+    // Then
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
     pendingDelete.settle();
   });

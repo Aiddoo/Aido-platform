@@ -1,14 +1,7 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
-import {
-  createHapticsGatewayStub,
-  createHttpClientStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -36,10 +29,6 @@ async function renderSheet() {
       withOverlay: true,
       di: {
         httpClient,
-        todoCategoryService: new TodoCategoryService(httpClient),
-        activationService: new ActivationService(
-          createActivationProgressRepository(createMemorySyncStorage()),
-        ),
         haptics: createHapticsGatewayStub(),
       },
     },

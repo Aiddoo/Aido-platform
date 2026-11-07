@@ -3,7 +3,7 @@ import { toTodo } from '../apis/todo.mapper';
 import { groupFriendTodosByCategory } from './group-friend-todos-by-category';
 
 describe('친구 할 일 목록 표시', () => {
-  test('조회한 원본을 유지하면서 카테고리와 시간 표시를 조합한다', () => {
+  it('조회한 원본을 유지하면서 카테고리와 시간 표시를 조합한다', () => {
     // Given
     const first = toTodo(createTodoDto({ id: 1, scheduledLocalTime: '18:00' }));
     const second = toTodo(
@@ -21,7 +21,7 @@ describe('친구 할 일 목록 표시', () => {
     expect(first).not.toHaveProperty('formattedTime');
   });
 
-  test('할 일이 없는 경우 빈 카테고리 목록을 반환한다', () => {
+  it('할 일이 없는 경우 빈 카테고리 목록을 반환한다', () => {
     // Given
     const todos = { todos: [], hasNext: false, nextCursor: null };
     // When

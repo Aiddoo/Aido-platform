@@ -1,20 +1,10 @@
 import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
-import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
-import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
-  createPendingResponse,
-} from '@src/shared/__tests__';
+import { createHttpClientStub, createPendingResponse } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -58,14 +48,6 @@ async function renderTodoList(todo: Todo) {
       queryClient,
       di: {
         httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        logger: createLoggerStub(),
-        storeReviewService: new StoreReviewService(
-          createStoreReviewRepository(createMemorySyncStorage()),
-          { isAvailable: async () => false, requestReview: async () => undefined },
-          getNowInstant,
-        ),
       },
     },
   );

@@ -12,8 +12,8 @@ const renderLine = (timeLabel: string | null, todo: Parameters<typeof createPare
   });
 
 describe('TodoScheduleLine', () => {
-  test('규칙을 모르는 반복 회차는 반복이라고만 보인다', async () => {
-    // Given & When
+  it('규칙을 모르는 반복 회차는 반복이라고만 보인다', async () => {
+    // When
     await renderLine('오전 10:00', { recurrenceGroupId: 'series-1', repeat: null });
 
     // Then

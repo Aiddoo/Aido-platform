@@ -13,7 +13,7 @@ import {
 } from './memo.mapper';
 
 describe('메모 페이지 응답 매핑', () => {
-  test('날짜를 변환하고 다음 페이지 커서를 화면 모델로 분리한다', () => {
+  it('날짜를 변환하고 다음 페이지 커서를 화면 모델로 분리한다', () => {
     // Given
     const dto = memoListResponseSchema.parse({
       items: [
@@ -38,7 +38,7 @@ describe('메모 페이지 응답 매핑', () => {
     expect(result.items[0]).not.toHaveProperty('userId');
   });
 
-  test('빈 마지막 페이지는 추가 조회를 유발하는 커서를 만들지 않는다', () => {
+  it('빈 마지막 페이지는 추가 조회를 유발하는 커서를 만들지 않는다', () => {
     // Given
     const dto = memoListResponseSchema.parse({
       items: [],
@@ -170,7 +170,7 @@ describe('toConvertMemoToTodosRequest', () => {
 });
 
 describe('toVoicePlanFromParsedMemo', () => {
-  test('이번 주말(토·일 + 그 주 일요일까지)은 반복이 아니라 토요일 한 번이다', () => {
+  it('이번 주말(토·일 + 그 주 일요일까지)은 반복이 아니라 토요일 한 번이다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({
@@ -193,7 +193,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     expect(plan.actions[0]).toMatchObject({ startDate: '2026-11-07', endDate: null, repeat: null });
   });
 
-  test('주말 반복의 끝이 더 뒤면 그대로 반복이다', () => {
+  it('주말 반복의 끝이 더 뒤면 그대로 반복이다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({
@@ -217,7 +217,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     });
   });
 
-  test('종일 일정은 시간을 비우고 반복에는 종료일을 두지 않는다', () => {
+  it('종일 일정은 시간을 비우고 반복에는 종료일을 두지 않는다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({
@@ -240,7 +240,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     expect(plan.actions[0]).toMatchObject({ scheduledTime: null, endDate: null });
   });
 
-  test.each([
+  it.each([
     { why: '서버가 겹침을 알려 주면 그 할 일을 가리킨다', duplicateOfTodoId: 41, expected: 41 },
     {
       why: '서버가 겹침이 없다고 하면 겹치지 않은 것으로 본다',
@@ -259,7 +259,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     expect(plan.actions[0]).toMatchObject({ duplicateOfTodoId: expected });
   });
 
-  test('서버가 준 repeat은 격주·매월도 그대로 쓴다', () => {
+  it('서버가 준 repeat은 격주·매월도 그대로 쓴다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({

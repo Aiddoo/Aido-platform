@@ -35,7 +35,7 @@ describe('todoRepeatFormSchema', () => {
     ],
   ];
 
-  test.each(CASES)('%s는 확인할 수 없다', (_title, overrides, issue) => {
+  it.each(CASES)('%s는 확인할 수 없다', (_title, overrides, issue) => {
     // Given
     const values = createValues(overrides);
 
@@ -48,7 +48,7 @@ describe('todoRepeatFormSchema', () => {
     expect(result.error?.issues[0]?.message).toBe(issue);
   });
 
-  test('요일이 비어도 매월이면 확인할 수 있다', () => {
+  it('요일이 비어도 매월이면 확인할 수 있다', () => {
     // Given
     const values = createValues({ weekdays: [], isMonthly: true });
 
@@ -64,7 +64,7 @@ describe('todoRepeatFormSchema', () => {
     });
   });
 
-  test('끝이 있어도 회차가 있으면 확인할 수 있다', () => {
+  it('끝이 있어도 회차가 있으면 확인할 수 있다', () => {
     // Given
     const values = createValues({
       endType: 'UNTIL',
@@ -80,7 +80,7 @@ describe('todoRepeatFormSchema', () => {
 });
 
 describe('시간대에 따른 반복 규칙', () => {
-  test('같은 순간도 시간대에 따라 매월 반복의 날짜와 요일이 달라진다', () => {
+  it('같은 순간도 시간대에 따라 매월 반복의 날짜와 요일이 달라진다', () => {
     // Given
     const startDate = fromDate(new Date('2026-11-06T15:30:00Z'));
     const values = createValues({ startDate, weekdays: [], isMonthly: true });
@@ -94,7 +94,7 @@ describe('시간대에 따른 반복 규칙', () => {
     expect(losAngeles).toMatchObject({ frequency: 'MONTHLY', monthDay: 6 });
   });
 
-  test('말일에 시작한 매월 반복은 31일 규칙을 유지한다', () => {
+  it('말일에 시작한 매월 반복은 31일 규칙을 유지한다', () => {
     // Given
     const values = createValues({
       startDate: fromDate(new Date('2026-10-31T03:00:00Z')),
@@ -109,7 +109,7 @@ describe('시간대에 따른 반복 규칙', () => {
     expect(repeat).toMatchObject({ frequency: 'MONTHLY', monthDay: 31 });
   });
 
-  test('종료일은 고른 시간대의 날짜로 저장한다', () => {
+  it('종료일은 고른 시간대의 날짜로 저장한다', () => {
     // Given
     const values = createValues({
       endType: 'UNTIL',

@@ -3,18 +3,17 @@ import { createHttpClientStub } from '@src/shared/__tests__';
 import { createTodoApiError, createTodoDto, INVALID_DTO } from '../__tests__/todo.fixtures';
 import { SubTodoService } from './sub-todo.service';
 
+function createSut() {
+  const httpClient = createHttpClientStub();
+
+  return { httpClient, service: new SubTodoService(httpClient) };
+}
+
 describe('SubTodoService', () => {
-  let httpClient: ReturnType<typeof createHttpClientStub>;
-  let service: SubTodoService;
-
-  beforeEach(() => {
-    httpClient = createHttpClientStub();
-    service = new SubTodoService(httpClient);
-  });
-
   describe('addSubTodo', () => {
-    test('정상 응답 → Todo 반환', async () => {
+    it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const todo = createTodoDto();
       httpClient.post.mockResolvedValue({ ok: true, value: { message: '추가됨', todo } });
 
@@ -26,8 +25,9 @@ describe('SubTodoService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoApiError({ code: 'TODO_0821' });
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
@@ -38,20 +38,23 @@ describe('SubTodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.post.mockResolvedValue({ ok: true, value: { message: '', todo: INVALID_DTO } });
 
-      // When & Then
-      await expect(service.addSubTodo(1, { title: '새 항목' })).rejects.toThrow(
-        'Invalid addSubTodo response',
-      );
+      // When
+      const result = service.addSubTodo(1, { title: '새 항목' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid addSubTodo response');
     });
   });
 
   describe('updateSubTodo', () => {
-    test('정상 응답 → Todo 반환', async () => {
+    it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const todo = createTodoDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: { message: '수정됨', todo } });
 
@@ -65,8 +68,9 @@ describe('SubTodoService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoApiError({ code: 'TODO_0822' });
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
@@ -77,23 +81,26 @@ describe('SubTodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.patch.mockResolvedValue({
         ok: true,
         value: { message: '', todo: INVALID_DTO },
       });
 
-      // When & Then
-      await expect(service.updateSubTodo(1, 10, { title: '수정' })).rejects.toThrow(
-        'Invalid updateSubTodo response',
-      );
+      // When
+      const result = service.updateSubTodo(1, 10, { title: '수정' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid updateSubTodo response');
     });
   });
 
   describe('deleteSubTodo', () => {
-    test('정상 응답 → Todo 반환', async () => {
+    it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const todo = createTodoDto();
       httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제됨', todo } });
 
@@ -105,8 +112,9 @@ describe('SubTodoService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoApiError({ code: 'TODO_0822' });
       httpClient.delete.mockResolvedValue({ ok: false, error: apiError });
 
@@ -117,21 +125,26 @@ describe('SubTodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.delete.mockResolvedValue({
         ok: true,
         value: { message: '', todo: INVALID_DTO },
       });
 
-      // When & Then
-      await expect(service.deleteSubTodo(1, 10)).rejects.toThrow('Invalid deleteSubTodo response');
+      // When
+      const result = service.deleteSubTodo(1, 10);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid deleteSubTodo response');
     });
   });
 
   describe('reorderSubTodos', () => {
-    test('정상 응답 → Todo 반환', async () => {
+    it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const todo = createTodoDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: { message: '정렬됨', todo } });
 
@@ -145,8 +158,9 @@ describe('SubTodoService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
+      const { httpClient, service } = createSut();
       const apiError = createTodoApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
@@ -157,17 +171,19 @@ describe('SubTodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
+      const { httpClient, service } = createSut();
       httpClient.patch.mockResolvedValue({
         ok: true,
         value: { message: '', todo: INVALID_DTO },
       });
 
-      // When & Then
-      await expect(service.reorderSubTodos(1, { itemIds: [3, 1, 2] })).rejects.toThrow(
-        'Invalid reorderSubTodos response',
-      );
+      // When
+      const result = service.reorderSubTodos(1, { itemIds: [3, 1, 2] });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid reorderSubTodos response');
     });
   });
 });

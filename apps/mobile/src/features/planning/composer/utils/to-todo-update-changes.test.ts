@@ -21,7 +21,7 @@ const DEFAULTS: AddTodoFormValues = {
 };
 
 describe('toTodoUpdateChanges', () => {
-  test('바뀐 게 없으면 보낼 것이 없다', () => {
+  it('바뀐 게 없으면 보낼 것이 없다', () => {
     // When
     const changes = toTodoUpdateChanges({ ...DEFAULTS }, DEFAULTS, TIME_ZONE);
 
@@ -30,7 +30,7 @@ describe('toTodoUpdateChanges', () => {
     expect(hasTodoUpdateChanges(changes)).toBe(false);
   });
 
-  test('제목만 고치면 제목만 보낸다', () => {
+  it('제목만 고치면 제목만 보낸다', () => {
     // When
     const changes = toTodoUpdateChanges({ ...DEFAULTS, title: '달리기' }, DEFAULTS, TIME_ZONE);
 
@@ -38,7 +38,7 @@ describe('toTodoUpdateChanges', () => {
     expect(changes).toEqual({ input: { title: '달리기' } });
   });
 
-  test('카테고리도 바뀐 값으로 보낸다', () => {
+  it('카테고리도 바뀐 값으로 보낸다', () => {
     // When
     const changes = toTodoUpdateChanges({ ...DEFAULTS, categoryId: 2 }, DEFAULTS, TIME_ZONE);
 
@@ -46,7 +46,7 @@ describe('toTodoUpdateChanges', () => {
     expect(changes.input).toEqual({ categoryId: 2 });
   });
 
-  test('종일로 바꾸면 시간은 null로 비운다', () => {
+  it('종일로 바꾸면 시간은 null로 비운다', () => {
     // When
     const changes = toTodoUpdateChanges({ ...DEFAULTS, isAllDay: true }, DEFAULTS, TIME_ZONE);
 
@@ -54,7 +54,7 @@ describe('toTodoUpdateChanges', () => {
     expect(changes.input).toEqual({ scheduledTime: null, isAllDay: true });
   });
 
-  test('요일 순서만 달라도 같은 규칙이라 repeat을 보내지 않는다', () => {
+  it('요일 순서만 달라도 같은 규칙이라 repeat을 보내지 않는다', () => {
     // When
     const changes = toTodoUpdateChanges(
       {
@@ -74,7 +74,7 @@ describe('toTodoUpdateChanges', () => {
     expect(hasTodoUpdateChanges(changes)).toBe(false);
   });
 
-  test('반복을 없애면 repeat null로 보낸다', () => {
+  it('반복을 없애면 repeat null로 보낸다', () => {
     // When
     const changes = toTodoUpdateChanges({ ...DEFAULTS, repeat: null }, DEFAULTS, TIME_ZONE);
 
@@ -83,7 +83,7 @@ describe('toTodoUpdateChanges', () => {
     expect(hasTodoUpdateChanges(changes)).toBe(true);
   });
 
-  test('날짜만 옮기면 날짜 변경으로 본다', () => {
+  it('날짜만 옮기면 날짜 변경으로 본다', () => {
     // When
     const changes = toTodoUpdateChanges(
       { ...DEFAULTS, startDate: fromDate(new Date(2026, 10, 6, 12)) },

@@ -56,7 +56,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
 
 describe('MemoList', () => {
   it('메모도 말로 남긴 메모도 없으면 빈 화면을 보여 준다', async () => {
-    // Given & When
+    // When
     await renderMemoList({ hasVoiceNote: false });
 
     // Then
@@ -64,7 +64,7 @@ describe('MemoList', () => {
   });
 
   it('말로 남긴 메모가 있으면 메모가 없다는 빈 화면을 숨긴다', async () => {
-    // Given & When
+    // When
     await renderMemoList({ hasVoiceNote: true });
 
     // Then

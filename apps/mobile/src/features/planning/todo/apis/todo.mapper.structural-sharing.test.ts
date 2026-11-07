@@ -6,7 +6,7 @@ import { todoSchema } from '../schemas/todo.schema';
 import { toTodo } from './todo.mapper';
 
 describe('Todo 클라이언트 모델과 캐시', () => {
-  test('동일한 응답을 다시 받으면 기존 엔티티 참조를 유지한다', () => {
+  it('동일한 응답을 다시 받으면 기존 엔티티 참조를 유지한다', () => {
     // Given
     const queryClient = createTestQueryClient();
     const key = ['todo-cache-test'];
@@ -22,7 +22,7 @@ describe('Todo 클라이언트 모델과 캐시', () => {
     expect(todoSchema.parse(todo)).toEqual(todo);
   });
 
-  test('서버의 items와 itemStats를 클라이언트 하위 할 일 정책으로 소비한다', () => {
+  it('서버의 items와 itemStats를 클라이언트 하위 할 일 정책으로 소비한다', () => {
     const todo = toTodo(
       createTodoDto({
         recurrenceGroupId: 'recurring-group',

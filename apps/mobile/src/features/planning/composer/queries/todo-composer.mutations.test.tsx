@@ -56,7 +56,7 @@ async function updateFollowing(error: ApiError) {
 }
 
 describe('이후 회차까지 고치다 거절됐을 때', () => {
-  test.each([
+  it.each([
     [
       new ApiError('TODO_0811', '서버 문구', 403),
       '이 카테고리에 할 일을 더 추가할 수 없어요',

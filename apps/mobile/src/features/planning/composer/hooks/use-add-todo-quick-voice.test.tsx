@@ -4,7 +4,7 @@ import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
@@ -15,7 +15,7 @@ import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createHttpClientStub,
-  createLoggerStub,
+  createMemoryObservableSyncStorage,
   createMemoryStorage,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
@@ -38,11 +38,6 @@ import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 
 const ACCOUNT_ID = 'user-1';
 const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
-let logger: ReturnType<typeof createLoggerStub>;
-
-beforeEach(() => {
-  logger = createLoggerStub();
-});
 
 const createQuickPlanDto = (actions: unknown[], charged = true) => ({
   plan: { actions, omittedTodoCount: 0 },
@@ -134,6 +129,13 @@ async function renderQuickVoice({
   const onExit = jest.fn();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
+  const syncStorage = createMemoryObservableSyncStorage();
+  if (isCoachmarkSeen) {
+    createCoachmarkRepository(syncStorage).markSeen({
+      accountId: ACCOUNT_ID,
+      kind: 'ai-consent-renewal',
+    });
+  }
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   if (consent != null) {
     queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consent));
@@ -156,10 +158,7 @@ async function renderQuickVoice({
       di: {
         httpClient,
         ...voiceNoteStorage.di,
-        coachmarkService: new CoachmarkService({
-          isSeen: () => isCoachmarkSeen,
-          markSeen: jest.fn(),
-        }),
+        syncStorage,
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer,
@@ -167,7 +166,6 @@ async function renderQuickVoice({
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsGatewayStub(),
         storage: createMemoryStorage(),
-        logger,
       },
     },
   );

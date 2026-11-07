@@ -4,7 +4,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { toTodoEditFormValues } from './to-todo-edit-form-values';
 
 describe('수정 폼 기본값의 시각', () => {
-  test('수정 시트 기본값도 같은 벽시계다', () => {
+  it('수정 시트 기본값도 같은 벽시계다', () => {
     // Given
     const todo = createParentTodo({ localTime: '10:00', isAllDay: false });
     // When
@@ -13,7 +13,7 @@ describe('수정 폼 기본값의 시각', () => {
     expect(values.scheduledTime).toBe('10:00');
   });
 
-  test('종일이면 수정 시트에 시각이 없다', () => {
+  it('종일이면 수정 시트에 시각이 없다', () => {
     // Given
     const todo = createParentTodo({ localTime: null, isAllDay: true });
     // When
@@ -22,7 +22,7 @@ describe('수정 폼 기본값의 시각', () => {
     expect(values.scheduledTime).toBeNull();
   });
 
-  test('서버가 벽시계 칸을 비운 시간 행은 보는 시간대로 계산하고, 칸이 있으면 시간대를 바꿔도 그대로다', () => {
+  it('서버가 벽시계 칸을 비운 시간 행은 보는 시간대로 계산하고, 칸이 있으면 시간대를 바꿔도 그대로다', () => {
     // Given
     const legacy = createParentTodo({
       localTime: null,

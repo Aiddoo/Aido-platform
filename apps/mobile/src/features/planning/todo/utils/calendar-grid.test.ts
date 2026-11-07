@@ -16,7 +16,7 @@ afterEach(async () => {
 });
 
 describe('일요일을 기준으로 한 달력 주', () => {
-  test.each([
+  it.each([
     [new Date(2026, 9, 3), new Date(2026, 8, 27)],
     [new Date(2026, 9, 4), new Date(2026, 9, 4)],
     [new Date(2027, 0, 1), new Date(2026, 11, 27)],
@@ -36,7 +36,8 @@ describe('일요일을 기준으로 한 달력 주', () => {
 
 describe('getMonthWeeks', () => {
   it('5주짜리 달은 5주를 반환해야 한다', () => {
-    // Given — 2026년 7월 (5주)
+    // Given
+    // — 2026년 7월 (5주)
     const july = new Date(2026, 6, 1);
 
     // When
@@ -60,7 +61,8 @@ describe('getMonthWeeks', () => {
   });
 
   it('6주짜리 달은 6주를 반환해야 한다', () => {
-    // Given — 2026년 8월 (6주)
+    // Given
+    // — 2026년 8월 (6주)
     const august = new Date(2026, 7, 1);
 
     // When
@@ -72,7 +74,7 @@ describe('getMonthWeeks', () => {
 });
 
 describe('표시 언어와 무관한 달력 범위', () => {
-  test.each(['ko', 'en'] as const)('%s에서도 주·월 범위는 일요일 시작이다', async (language) => {
+  it.each(['ko', 'en'] as const)('%s에서도 주·월 범위는 일요일 시작이다', async (language) => {
     // Given
     await i18n.changeLanguage(language);
     const monday = new Date(2026, 9, 26);
@@ -91,7 +93,8 @@ describe('표시 언어와 무관한 달력 범위', () => {
 
 describe('diffWeeks', () => {
   it('같은 주 안이면 0을 반환해야 한다', () => {
-    // Given — 2026-04-13(월) 기준 같은 주 목요일
+    // Given
+    // — 2026-04-13(월) 기준 같은 주 목요일
     const monday = new Date(2026, 3, 13);
     const thursday = new Date(2026, 3, 16);
 
@@ -108,26 +111,32 @@ describe('diffWeeks', () => {
     const nextWeek = new Date(2026, 3, 20);
     const previousWeek = new Date(2026, 3, 6);
 
-    // When / Then
-    expect(diffWeeks(nextWeek, base, SYSTEM_TIME_ZONE)).toBe(1);
-    expect(diffWeeks(previousWeek, base, SYSTEM_TIME_ZONE)).toBe(-1);
+    // When
+    const next = diffWeeks(nextWeek, base, SYSTEM_TIME_ZONE);
+    const previous = diffWeeks(previousWeek, base, SYSTEM_TIME_ZONE);
+
+    // Then
+    expect(next).toBe(1);
+    expect(previous).toBe(-1);
   });
 
   it('주 단위로 정규화되므로 요일이 달라도 같은 결과를 반환해야 한다', () => {
-    // Given — 2주 차이(서로 다른 요일)
+    // Given
+    // — 2주 차이(서로 다른 요일)
     const base = new Date(2026, 3, 13); // 월
     const twoWeeksLater = new Date(2026, 3, 30); // 목 (2주 + 3일)
 
     // When
     const result = diffWeeks(twoWeeksLater, base, SYSTEM_TIME_ZONE);
 
-    // Then — startOf('week') 기준이므로 정확히 2
+    // Then
+    // — startOf('week') 기준이므로 정확히 2
     expect(result).toBe(2);
   });
 });
 
 describe('shiftCalendarDate', () => {
-  test('주 보기는 선택한 날짜가 속한 주의 시작에서 한 주 이동한다', () => {
+  it('주 보기는 선택한 날짜가 속한 주의 시작에서 한 주 이동한다', () => {
     const wednesday = new Date(2026, 9, 14);
 
     expect(
@@ -143,7 +152,7 @@ describe('shiftCalendarDate', () => {
     ).toEqual(new Date(2026, 9, 4));
   });
 
-  test('월 보기는 선택한 날짜가 속한 달의 1일에서 한 달 이동한다', () => {
+  it('월 보기는 선택한 날짜가 속한 달의 1일에서 한 달 이동한다', () => {
     const middleOfMonth = new Date(2026, 9, 14);
 
     expect(

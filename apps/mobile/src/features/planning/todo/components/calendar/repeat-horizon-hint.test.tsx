@@ -2,15 +2,13 @@ import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAnalyticsStub,
-  createErrorReporterStub,
   createHttpClientStub,
-  createMemorySyncStorage,
+  createMemoryObservableSyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
@@ -49,16 +47,15 @@ async function renderHint({
   );
   const userHttpClient = createHttpClientStub();
   userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-  const userService = new UserService(userHttpClient);
   // 내 정보가 오면 CoachmarkPopover가 대상을 Popover 안으로 옮겨 다시 마운트한다.
   // 그 전에 찾은 줄은 떨어져 나가 눌러도 아무 일이 없으므로, 앱처럼 캐시에 넣고 시작한다.
   const queryClient = createTestQueryClient();
+  const { userService } = createTestDi({ httpClient: userHttpClient });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userService.getCurrentUser()));
-  const coachmarkService = new CoachmarkService(
-    createCoachmarkRepository(createMemorySyncStorage()),
-  );
+  const syncStorage = createMemoryObservableSyncStorage();
+  const coachmarkRepository = createCoachmarkRepository(syncStorage);
   if (isSeen) {
-    coachmarkService.complete({ accountId, kind: 'repeat-horizon' });
+    coachmarkRepository.markSeen({ accountId, kind: 'repeat-horizon' });
   }
   const analytics = createAnalyticsStub();
 
@@ -73,17 +70,15 @@ async function renderHint({
   const { rerender } = await renderUi(hint('2027-03-01'), {
     di: {
       httpClient,
-      coachmarkService,
+      syncStorage,
       analytics,
-      errorReporter: createErrorReporterStub(),
-      userService,
     },
     queryClient,
   });
 
   return {
     analytics,
-    coachmarkService,
+    isCoachmarkPending: () => !coachmarkRepository.isSeen({ accountId, kind: 'repeat-horizon' }),
     httpClient,
     moveTo: (date: string) => rerender(hint(date)),
   };
@@ -141,7 +136,7 @@ describe('RepeatHorizonHint', () => {
     // Given
     const openedAt = Date.now();
     const dateNow = jest.spyOn(Date, 'now').mockReturnValue(openedAt);
-    const { analytics, coachmarkService, moveTo } = await renderHint({});
+    const { analytics, isCoachmarkPending, moveTo } = await renderHint({});
     await screen.findByText(INFO_TITLE, {}, { timeout: 2_000 });
     dateNow.mockReturnValue(openedAt + visibleMs);
 
@@ -149,7 +144,7 @@ describe('RepeatHorizonHint', () => {
     await moveTo('2027-04-01');
 
     // Then
-    expect(coachmarkService.isPending({ accountId, kind: 'repeat-horizon' })).toBe(!isConsumed);
+    expect(isCoachmarkPending()).toBe(!isConsumed);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(isConsumed ? 2 : 1);
   });
 
@@ -169,7 +164,7 @@ describe('RepeatHorizonHint', () => {
 
   it('반복 할 일이 없으면 자동으로 열지 않고 안내를 남겨 둔다', async () => {
     // Given
-    const { analytics, coachmarkService, httpClient } = await renderHint({ hasRepeat: false });
+    const { analytics, isCoachmarkPending, httpClient } = await renderHint({ hasRepeat: false });
 
     // When
     await waitFor(() => expect(httpClient.get).toHaveBeenCalled());
@@ -180,17 +175,17 @@ describe('RepeatHorizonHint', () => {
     // Then
     expect(screen.queryByText(INFO_TITLE)).toBeNull();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
-    expect(coachmarkService.isPending({ accountId, kind: 'repeat-horizon' })).toBe(true);
+    expect(isCoachmarkPending()).toBe(true);
   });
 
   it('X로 닫으면 안내가 끝나고 줄을 눌러 다시 본다', async () => {
     // Given
-    const { coachmarkService } = await renderHint({});
+    const { isCoachmarkPending } = await renderHint({});
     await screen.findByTestId('hint-popover', {}, { timeout: 2_000 });
     await layoutHint();
     await fireEvent.press(screen.getByLabelText('닫기'));
     await waitFor(() => expect(screen.queryByText(INFO_TITLE)).toBeNull());
-    expect(coachmarkService.isPending({ accountId, kind: 'repeat-horizon' })).toBe(false);
+    expect(isCoachmarkPending()).toBe(false);
 
     // When
     await fireEvent.press(screen.getByTestId('repeat-horizon-hint'));

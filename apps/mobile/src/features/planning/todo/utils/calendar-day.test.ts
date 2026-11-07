@@ -22,7 +22,7 @@ const input = (date: Date, isSelected: boolean, today: Date = OTHER_DAY) => ({
 });
 
 describe('getDatePickerDayStyle', () => {
-  test.each([
+  it.each([
     ['선택된 날짜는 항상 selected', input(SUNDAY, true, SUNDAY), 'selected'],
     ['오늘이고 선택되지 않은 날짜는 today', input(MONDAY, false, MONDAY), 'today'],
     ['일요일이고 선택되지 않고 오늘이 아니면 sunday', input(SUNDAY, false), 'sunday'],
@@ -37,7 +37,7 @@ describe('getDatePickerDayStyle', () => {
     expect(result).toBe(expected);
   });
 
-  test('자정을 막 넘긴 순간은 서울에서는 월요일, 뉴욕에서는 일요일로 칠한다', () => {
+  it('자정을 막 넘긴 순간은 서울에서는 월요일, 뉴욕에서는 일요일로 칠한다', () => {
     // Given
     const justAfterMidnightInSeoul = new Date('2025-03-16T15:30:00Z');
     const params = input(justAfterMidnightInSeoul, false);
@@ -53,7 +53,7 @@ describe('getDatePickerDayStyle', () => {
 });
 
 describe('getMonthViewDayStyle', () => {
-  test.each([
+  it.each([
     ['선택된 날짜는 항상 selected', input(SUNDAY, true), 'selected'],
     ['일요일이고 선택되지 않으면 sunday', input(SUNDAY, false), 'sunday'],
     ['토요일이고 선택되지 않으면 saturday', input(SATURDAY, false), 'saturday'],
@@ -79,7 +79,7 @@ describe('getMonthViewDayStyle', () => {
 });
 
 describe('isTodayHighlighted', () => {
-  test.each([
+  it.each([
     ['오늘이고 선택되지 않은 경우 true', input(MONDAY, false, MONDAY), true],
     ['오늘이지만 선택된 경우 false', input(MONDAY, true, MONDAY), false],
     ['오늘이 아니고 선택되지 않은 경우 false', input(MONDAY, false), false],
@@ -103,7 +103,7 @@ describe('getWeekRangeBand', () => {
   const week = (overrides: Record<number, Parameters<typeof day>[0]>) =>
     range(7).map((index) => day(overrides[index]));
 
-  test('시작 칸 가운데부터 끝 칸 가운데까지 한 덩어리로 칠한다', () => {
+  it('시작 칸 가운데부터 끝 칸 가운데까지 한 덩어리로 칠한다', () => {
     // Given
     const days = week({
       1: { isRangeStart: true },
@@ -118,7 +118,7 @@ describe('getWeekRangeBand', () => {
     expect(band).toEqual({ startRatio: 1.5 / 7, endRatio: 3.5 / 7 });
   });
 
-  test('주 전체가 기간 안이면 양 끝까지 칠한다', () => {
+  it('주 전체가 기간 안이면 양 끝까지 칠한다', () => {
     // Given
     const days = range(7).map(() => day({ isInRange: true }));
 
@@ -129,7 +129,7 @@ describe('getWeekRangeBand', () => {
     expect(band).toEqual({ startRatio: 0, endRatio: 1 });
   });
 
-  test('기간에 걸리지 않는 주는 띠가 없다', () => {
+  it('기간에 걸리지 않는 주는 띠가 없다', () => {
     // Given
     const days = week({});
 
@@ -147,7 +147,7 @@ describe('getRepeatWeekDays', () => {
   const PERIOD = { displayMonth: toSeoulDate(1), timeZone: TIME_ZONE };
 
   it('시작과 끝 사이의 날만 기간 띠에 넣는다', () => {
-    // Given & When
+    // When
     const days = getRepeatWeekDays(WEEK, {
       ...PERIOD,
       startDate: toSeoulDate(1),
@@ -162,7 +162,7 @@ describe('getRepeatWeekDays', () => {
   });
 
   it('시작과 끝이 같은 날이면 띠를 그리지 않는다', () => {
-    // Given & When
+    // When
     const days = getRepeatWeekDays(WEEK, {
       ...PERIOD,
       startDate: toSeoulDate(2),
@@ -176,7 +176,7 @@ describe('getRepeatWeekDays', () => {
   });
 
   it('계속 반복은 끝이 없어 시작 뒤 모든 날이 띠에 든다', () => {
-    // Given & When
+    // When
     const days = getRepeatWeekDays(WEEK, {
       ...PERIOD,
       startDate: toSeoulDate(2),
@@ -189,7 +189,7 @@ describe('getRepeatWeekDays', () => {
   });
 
   it('보고 있는 달이 아닌 칸은 띠에 넣지 않는다', () => {
-    // Given & When
+    // When
     const [day] = getRepeatWeekDays([toSeoulDate(31, 10)], {
       ...PERIOD,
       startDate: toSeoulDate(1, 10),

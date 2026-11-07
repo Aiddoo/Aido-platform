@@ -3,13 +3,11 @@ import { err, ok } from '@src/core/errors/result';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
-import { VoiceService } from '@src/features/voice/apis/voice.service';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHapticsGatewayStub,
   createHttpClientStub,
-  createLoggerStub,
   createMemoryStorage,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
@@ -23,11 +21,6 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { TodoCreateBottomSheet } from './todo-create-bottom-sheet';
 
-let logger: ReturnType<typeof createLoggerStub>;
-
-beforeEach(() => {
-  logger = createLoggerStub();
-});
 const PLACEHOLDER = '무엇을 하고 싶나요?';
 
 async function renderCreateSheet() {
@@ -46,7 +39,6 @@ async function renderCreateSheet() {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        voiceService: new VoiceService(httpClient, logger),
         ...createVoiceNoteStorageFake().di,
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
@@ -62,7 +54,8 @@ async function renderCreateSheet() {
 
 describe('TodoCreateBottomSheet 저장 실패', () => {
   it('저장이 실패해도 시트와 입력한 제목이 그대로 남아 다시 보낼 수 있다', async () => {
-    // Given 연결이 없어 저장이 거절된다
+    // Given
+    // 연결이 없어 저장이 거절된다
     const { httpClient } = await renderCreateSheet();
     httpClient.post.mockResolvedValue(err(createTodoApiError()));
     const input = await screen.findByPlaceholderText(PLACEHOLDER);
@@ -77,7 +70,8 @@ describe('TodoCreateBottomSheet 저장 실패', () => {
     });
     expect(screen.getByPlaceholderText(PLACEHOLDER).props.value).toBe('우유 사기');
 
-    // When 다시 보내면 같은 제목으로 한 번 더 요청한다
+    // When
+    // 다시 보내면 같은 제목으로 한 번 더 요청한다
     await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
 
     // Then

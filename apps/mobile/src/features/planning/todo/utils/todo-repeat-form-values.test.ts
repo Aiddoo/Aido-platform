@@ -28,7 +28,7 @@ const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeat
 });
 
 describe('반복 요일 프리셋', () => {
-  test('격주나 매월이면 요일이 같아도 프리셋이 켜진 것으로 보지 않는다', () => {
+  it('격주나 매월이면 요일이 같아도 프리셋이 켜진 것으로 보지 않는다', () => {
     // Given
     const days = [...TODO_REPEAT_WEEKDAYS];
 
@@ -43,7 +43,7 @@ describe('반복 요일 프리셋', () => {
     expect(monthly).toBe(false);
   });
 
-  test('켜진 프리셋을 다시 누르면 요일을 비우고 꺼진 프리셋은 매주로 맞춘다', () => {
+  it('켜진 프리셋을 다시 누르면 요일을 비우고 꺼진 프리셋은 매주로 맞춘다', () => {
     // Given
     const days = [...TODO_REPEAT_WEEKDAYS];
 
@@ -56,7 +56,7 @@ describe('반복 요일 프리셋', () => {
     expect(applied).toMatchObject({ weekdays: days, interval: 1, isMonthly: false });
   });
 
-  test('격주는 켜고 끌 수 있고 매월을 끈다. 매월을 켜면 매주로 돌아간다', () => {
+  it('격주는 켜고 끌 수 있고 매월을 끈다. 매월을 켜면 매주로 돌아간다', () => {
     // Given
     const monthly = createValues({ isMonthly: true });
     const biweekly = createValues({ interval: 2 });
@@ -72,7 +72,7 @@ describe('반복 요일 프리셋', () => {
     expect(toMonthly).toMatchObject({ isMonthly: true, interval: 1 });
   });
 
-  test('요일을 누르면 넣고 뺀다. 매월에서 누르면 그 요일 하나로 돌아간다', () => {
+  it('요일을 누르면 넣고 뺀다. 매월에서 누르면 그 요일 하나로 돌아간다', () => {
     // Given
     const weekly = createValues({ weekdays: ['MON'] });
     const monthly = createValues({ weekdays: ['MON', 'TUE'], isMonthly: true });
@@ -90,7 +90,7 @@ describe('반복 요일 프리셋', () => {
 });
 
 describe('반복 달력에서 날짜 누르기', () => {
-  test('오늘 이전은 값을 바꾸지 않는다', () => {
+  it('오늘 이전은 값을 바꾸지 않는다', () => {
     // Given
     const values = createValues();
 
@@ -105,7 +105,7 @@ describe('반복 달력에서 날짜 누르기', () => {
     expect(next).toBe(values);
   });
 
-  test('시작일 뒤를 누르면 그 날이 종료일이 된다', () => {
+  it('시작일 뒤를 누르면 그 날이 종료일이 된다', () => {
     // Given
     const values = createValues({ endType: 'NEVER' });
     const date = new Date(2026, 10, 20);
@@ -121,7 +121,7 @@ describe('반복 달력에서 날짜 누르기', () => {
     expect(next).toMatchObject({ endType: 'UNTIL', untilDate: fromDate(date) });
   });
 
-  test('기간을 이미 골랐으면 누른 날부터 다시 시작한다', () => {
+  it('기간을 이미 골랐으면 누른 날부터 다시 시작한다', () => {
     // Given
     const values = createValues({ untilDate: fromDate(new Date(2026, 10, 20)) });
     const date = new Date(2026, 10, 25);
@@ -137,7 +137,7 @@ describe('반복 달력에서 날짜 누르기', () => {
     expect(next).toMatchObject({ startDate: fromDate(date), untilDate: null });
   });
 
-  test('시작일 앞을 누르면 시작일을 옮기고 시작일을 다시 누르면 그대로다', () => {
+  it('시작일 앞을 누르면 시작일을 옮기고 시작일을 다시 누르면 그대로다', () => {
     // Given
     const values = createValues({ startDate: fromDate(new Date(2026, 10, 9)), endType: 'NEVER' });
     const earlier = new Date(2026, 10, 3);
@@ -161,7 +161,7 @@ describe('반복 달력에서 날짜 누르기', () => {
 });
 
 describe('반복 폼 값의 시간대', () => {
-  test('시작 요일은 고른 시간대의 날짜로 정한다', () => {
+  it('시작 요일은 고른 시간대의 날짜로 정한다', () => {
     // Given
     const startDate = fromDate(new Date('2026-11-06T15:30:00Z'));
 
@@ -174,7 +174,7 @@ describe('반복 폼 값의 시간대', () => {
     expect(losAngeles.weekdays).toEqual(['FRI']);
   });
 
-  test('말일 규칙이 있는 폼을 열면 매월 며칠인지 규칙 값을 그대로 보여 준다', () => {
+  it('말일 규칙이 있는 폼을 열면 매월 며칠인지 규칙 값을 그대로 보여 준다', () => {
     // Given
     const startDate = fromDate(new Date('2026-02-28T03:00:00Z'));
 

@@ -43,7 +43,7 @@ async function renderSheet() {
 }
 
 describe('useSelectTodoScope', () => {
-  test('범위를 묻는 동안 같은 자리에 범위 선택을 보이고 앞 화면의 입력값은 남긴다', async () => {
+  it('범위를 묻는 동안 같은 자리에 범위 선택을 보이고 앞 화면의 입력값은 남긴다', async () => {
     // Given
     await renderSheet();
 
@@ -52,7 +52,7 @@ describe('useSelectTodoScope', () => {
     expect(screen.getByTestId('title', { includeHiddenElements: true }).props.value).toBe('장보기');
   });
 
-  test('뒤로 가면 null로 끝나고 입력하던 화면이 그대로 돌아온다', async () => {
+  it('뒤로 가면 null로 끝나고 입력하던 화면이 그대로 돌아온다', async () => {
     // Given
     const { onSettled } = await renderSheet();
 
@@ -65,7 +65,7 @@ describe('useSelectTodoScope', () => {
     expect(screen.queryByTestId('todo-scope-select')).toBeNull();
   });
 
-  test('범위를 고르면 그 범위로 한 번만 끝난다', async () => {
+  it('범위를 고르면 그 범위로 한 번만 끝난다', async () => {
     // Given
     const { onSettled } = await renderSheet();
 

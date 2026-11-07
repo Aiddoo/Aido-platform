@@ -53,7 +53,7 @@ describe('피드 날짜 선택', () => {
     return { ...rendered, readDate: () => date };
   }
 
-  test('날짜를 지정한 딥링크는 처음부터 지정한 날짜를 보여준다', async () => {
+  it('날짜를 지정한 딥링크는 처음부터 지정한 날짜를 보여준다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 15, 12));
     // When
@@ -63,21 +63,18 @@ describe('피드 날짜 선택', () => {
     expect(router.setParams).not.toHaveBeenCalled();
   });
 
-  test.each([undefined, 'today'])(
-    '오늘 보기 모드 %s는 자정 뒤 새 오늘을 따라간다',
-    async (date) => {
-      // Given
-      jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-      const { result } = await setup(date);
-      // When
-      await act(() => jest.advanceTimersByTimeAsync(200));
-      // Then
-      expect(result.current.selectedDateKey).toBe('2026-07-15');
-      expect(router.setParams).not.toHaveBeenCalled();
-    },
-  );
+  it.each([undefined, 'today'])('오늘 보기 모드 %s는 자정 뒤 새 오늘을 따라간다', async (date) => {
+    // Given
+    jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
+    const { result } = await setup(date);
+    // When
+    await act(() => jest.advanceTimersByTimeAsync(200));
+    // Then
+    expect(result.current.selectedDateKey).toBe('2026-07-15');
+    expect(router.setParams).not.toHaveBeenCalled();
+  });
 
-  test.each(['2026-07-13', '2026-07-16'])(
+  it.each(['2026-07-13', '2026-07-16'])(
     '직접 고른 날짜 %s는 자정이 지나도 유지한다',
     async (date) => {
       // Given
@@ -93,7 +90,7 @@ describe('피드 날짜 선택', () => {
     },
   );
 
-  test('오늘 버튼을 누르면 고정 날짜를 해제하고 다음 자정도 따라간다', async () => {
+  it('오늘 버튼을 누르면 고정 날짜를 해제하고 다음 자정도 따라간다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
     const { result, rerender, readDate } = await setup('2026-07-13');
@@ -106,7 +103,7 @@ describe('피드 날짜 선택', () => {
     expect(result.current.selectedDateKey).toBe('2026-07-15');
   });
 
-  test('다른 날을 고르면 그 날짜를 URL에 남긴다', async () => {
+  it('다른 날을 고르면 그 날짜를 URL에 남긴다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 12));
     const { result, rerender, readDate } = await setup();
@@ -118,7 +115,7 @@ describe('피드 날짜 선택', () => {
     expect(result.current.selectedDateKey).toBe('2026-07-20');
   });
 
-  test('날짜 말고 다른 URL 값이 바뀌어도 고른 날짜의 참조가 같다', async () => {
+  it('날짜 말고 다른 URL 값이 바뀌어도 고른 날짜의 참조가 같다', async () => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 12));
     const { result, rerender } = await setup('2026-07-13');
@@ -130,7 +127,7 @@ describe('피드 날짜 선택', () => {
     expect(result.current.selectedDate).toBe(selectedDate);
   });
 
-  test.each(['내일', '2026-13-40', ''])('잘못된 날짜 %s는 오늘로 읽는다', async (date) => {
+  it.each(['내일', '2026-13-40', ''])('잘못된 날짜 %s는 오늘로 읽는다', async (date) => {
     // Given
     jest.setSystemTime(new Date(2026, 6, 14, 12));
     // When

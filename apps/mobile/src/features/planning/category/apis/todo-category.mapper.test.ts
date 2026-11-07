@@ -9,7 +9,7 @@ import {
 } from './todo-category.mapper';
 
 describe('toTodoCategoryWithCount', () => {
-  test('sortOrder, todoCount 매핑', () => {
+  it('sortOrder, todoCount 매핑', () => {
     // Given
     const dto = createTodoCategoryWithCountDto({ sortOrder: 2, todoCount: 10 });
 
@@ -26,7 +26,7 @@ describe('toTodoCategoryWithCount', () => {
 });
 
 describe('toTodoCategoryWithCounts', () => {
-  test('배열 변환', () => {
+  it('배열 변환', () => {
     // Given
     const dtos = [
       createTodoCategoryWithCountDto({ id: 1 }),
@@ -42,7 +42,7 @@ describe('toTodoCategoryWithCounts', () => {
     expect(result[1]?.id).toBe(2);
   });
 
-  test('빈 배열 → 빈 배열', () => {
+  it('빈 배열 → 빈 배열', () => {
     // When
     const result = toTodoCategoryWithCounts([]);
 
@@ -52,7 +52,7 @@ describe('toTodoCategoryWithCounts', () => {
 });
 
 describe('toTodoCategory', () => {
-  test('sortOrder 매핑 (todoCount 제외)', () => {
+  it('sortOrder 매핑 (todoCount 제외)', () => {
     // Given
     const dto = createTodoCategoryDto();
 

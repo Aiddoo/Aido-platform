@@ -35,7 +35,7 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
   const brand = useResolveClassNames('text-main');
   const border = useResolveClassNames('border-gray-3');
 
-  const isScrolling = useDerivedValue(() => progress.value > 0 && progress.value < 1);
+  const isScrolling = useDerivedValue(() => 0 < progress.value && progress.value < 1);
   const isAtEnd = useDerivedValue(() => progress.value >= 1);
   const isVisible = useDerivedValue(() => progress.value > 0);
 

@@ -1,6 +1,5 @@
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import {
@@ -11,23 +10,29 @@ import {
 } from './todo-cache';
 
 describe('todo cache invalidation', () => {
-  let client: QueryClient;
   const listKey = TODO_QUERY_KEYS.listByDate({ date: '2026-07-14' });
   const completionKey = TODO_QUERY_KEYS.completionsByRange({ startDate: 'a', endDate: 'b' });
   const friendKey = TODO_QUERY_KEYS.friendListByDate({ userId: 'u', date: 'd' });
   const categoryKey = TODO_CATEGORY_QUERY_KEYS.list();
 
-  beforeEach(() => {
-    client = createTestQueryClient();
+  function createSeededClient() {
+    const client = createTestQueryClient();
     client.setQueryData(listKey, { todos: [] });
     client.setQueryData(completionKey, []);
     client.setQueryData(friendKey, []);
     client.setQueryData(categoryKey, { categories: [] });
-  });
 
-  it('Given 할 일과 카테고리 캐시, When invalidateTodos를 호출하면, Then 모두 무효화한다', async () => {
+    return client;
+  }
+
+  it('할 일과 카테고리 캐시를 모두 무효화한다', async () => {
+    // Given
+    const client = createSeededClient();
+
+    // When
     await invalidateTodos(client);
 
+    // Then
     expect(client.getQueryState(listKey)?.isInvalidated).toBe(true);
     expect(client.getQueryState(friendKey)?.isInvalidated).toBe(true);
     expect(client.getQueryState(categoryKey)?.isInvalidated).toBe(true);
@@ -35,6 +40,7 @@ describe('todo cache invalidation', () => {
 
   it('할 일이 바뀌면 refreshOnTodoChange로 밝힌 다른 피처의 조회만 무효화한다', async () => {
     // Given
+    const client = createSeededClient();
     const dependentKey = ['other-feature', 'depends-on-todo'];
     const independentKey = ['other-feature', 'independent'];
     client.setQueryData(dependentKey, 1);
@@ -55,9 +61,14 @@ describe('todo cache invalidation', () => {
     expect(client.getQueryState(listKey)?.isInvalidated).toBe(false);
   });
 
-  it('Given 피드 캐시, When invalidateFeedTodos를 호출하면, Then 목록·완료 통계만 무효화한다', async () => {
+  it('피드를 새로 고치면 목록과 완료 통계만 무효화한다', async () => {
+    // Given
+    const client = createSeededClient();
+
+    // When
     await invalidateFeedTodos(client);
 
+    // Then
     expect(client.getQueryState(listKey)?.isInvalidated).toBe(true);
     expect(client.getQueryState(completionKey)?.isInvalidated).toBe(true);
     expect(client.getQueryState(friendKey)?.isInvalidated).toBe(false);
@@ -66,6 +77,7 @@ describe('todo cache invalidation', () => {
 
   it('달력 요약을 맞출 때 같은 접두사의 위젯 요약·존재 여부 캐시는 건드리지 않는다', () => {
     // Given
+    const client = createSeededClient();
     client.removeQueries({ queryKey: completionKey });
     const widgetKey = TODO_QUERY_KEYS.widgetSummaryByDate({ date: '2026-07-14', userId: 'u' });
     const widgetSummary = { date: '2026-07-14', totalTodos: 3 };

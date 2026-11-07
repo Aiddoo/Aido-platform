@@ -36,14 +36,14 @@ import {
   shiftCalendarDate,
 } from '../../utils/calendar-grid';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
-import { CalendarDateCell } from './calendar-date-cell';
+import { CALENDAR_DATE_CELL_HEIGHT, CalendarDateCell } from './calendar-date-cell';
 import { CalendarNavigation } from './calendar-navigation';
 import { CALENDAR_CENTER_PAGE, CALENDAR_TOTAL_PAGES, CalendarPager } from './calendar-pager';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
-const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
+const MAX_CATEGORY_INDICATOR_COUNT = 3;
 
 interface CalendarProps {
   completions?: CompletionsByDate;
@@ -58,8 +58,8 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   const { timeZone } = useDateFormatContext();
 
   const pagerHeight = match(viewMode)
-    .with('week', () => DATE_CELL_HEIGHT)
-    .with('month', () => MONTH_WEEKS * DATE_CELL_HEIGHT)
+    .with('week', () => CALENDAR_DATE_CELL_HEIGHT)
+    .with('month', () => MONTH_WEEKS * CALENDAR_DATE_CELL_HEIGHT)
     .exhaustive();
 
   const handlePrevious = () =>
@@ -283,7 +283,7 @@ function fillMonthGrid(weeks: Date[][], timeZone: string): Date[][] {
   const filled = [...weeks];
   while (filled.length < MONTH_WEEKS) {
     const lastWeek = filled.at(-1);
-    const lastDate = lastWeek?.[6];
+    const lastDate = lastWeek?.[DAYS_PER_WEEK - 1];
     if (!lastDate) {
       break;
     }
@@ -329,7 +329,7 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
 
   return (
     <HStack className="h-1.5 w-4 overflow-hidden rounded-2xl">
-      {colors.slice(0, 3).map((color) => (
+      {colors.slice(0, MAX_CATEGORY_INDICATOR_COUNT).map((color) => (
         <Box key={color} style={{ backgroundColor: color }} className="flex-1" />
       ))}
     </HStack>

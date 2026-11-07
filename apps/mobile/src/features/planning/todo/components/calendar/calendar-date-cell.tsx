@@ -9,6 +9,8 @@ import { useFeedDate } from '../../hooks/use-feed-params';
 import { DAY_TYPE_TONE, getMonthViewDayStyle, isTodayHighlighted } from '../../utils/calendar-day';
 import { isSameDay } from '../../utils/calendar-day-comparison';
 
+export const CALENDAR_DATE_CELL_HEIGHT = 56;
+
 interface CalendarDateCellProps {
   date: Date;
   children?: ReactNode;
@@ -30,7 +32,8 @@ export const CalendarDateCell = memo(function CalendarDateCell({
   return (
     <PressableFeedback
       onPress={() => onChange(date)}
-      className={cn('h-[56px] flex-1 items-center justify-between py-1', className)}
+      style={{ height: CALENDAR_DATE_CELL_HEIGHT }}
+      className={cn('flex-1 items-center justify-between py-1', className)}
     >
       <Box
         className={cn(

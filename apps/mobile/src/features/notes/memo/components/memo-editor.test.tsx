@@ -2,7 +2,6 @@ import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createHttpClientStub,
@@ -12,8 +11,6 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -78,8 +75,6 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
       withOverlay: true,
       di: {
         httpClient,
-        todoCategoryService: new TodoCategoryService(httpClient),
-        draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),

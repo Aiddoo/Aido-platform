@@ -27,7 +27,8 @@ describe('calculateTodaySchedule', () => {
     });
 
     it('endDate가 오늘 이후이면 기존 endDate를 그대로 유지한다', () => {
-      // Given: endDate(6/15)가 오늘(6/10)보다 미래
+      // Given
+      // endDate(6/15)가 오늘(6/10)보다 미래
       const endDate = fromDate(new Date(2025, 5, 15));
 
       // When
@@ -38,7 +39,8 @@ describe('calculateTodaySchedule', () => {
     });
 
     it('endDate가 오늘과 같으면 기존 endDate를 그대로 유지한다', () => {
-      // Given: endDate(6/10)가 오늘(6/10)과 같음
+      // Given
+      // endDate(6/10)가 오늘(6/10)과 같음
       const endDate = fromDate(new Date(2025, 5, 10));
 
       // When
@@ -49,7 +51,8 @@ describe('calculateTodaySchedule', () => {
     });
 
     it('endDate가 오늘보다 과거이면 null로 리셋한다', () => {
-      // Given: 기간 할일의 endDate(6/8)가 오늘(6/10)보다 과거 → start > end 역전 방지
+      // Given
+      // 기간 할일의 endDate(6/8)가 오늘(6/10)보다 과거 → start > end 역전 방지
       const endDate = fromDate(new Date(2025, 5, 8));
 
       // When
@@ -62,7 +65,8 @@ describe('calculateTodaySchedule', () => {
 
   describe('설정 시간대 기준', () => {
     it('기기 시간대와 날짜가 다른 시간대에서도 설정 시간대의 today을 쓴다', () => {
-      // Given: 로스앤젤레스는 3/8 낮이고 서울은 3/9 새벽인 순간
+      // Given
+      // 로스앤젤레스는 3/8 낮이고 서울은 3/9 새벽인 순간
       const instant = new Date('2026-03-08T20:00:00.000Z');
 
       // When

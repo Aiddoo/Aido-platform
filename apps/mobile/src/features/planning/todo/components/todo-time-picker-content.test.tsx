@@ -1,11 +1,9 @@
 import '@src/shared/i18n/init';
-import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createAnalyticsStub,
-  createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -32,7 +30,6 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
     {
       queryClient,
       di: {
-        preferenceService: new PreferenceService(createHttpClientStub()),
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsGatewayStub(),

@@ -7,7 +7,7 @@ const SEOUL: DateFormatContext = { locale: 'ko-KR', timeZone: 'Asia/Seoul' };
 const NEW_YORK: DateFormatContext = { locale: 'ko-KR', timeZone: 'America/New_York' };
 
 describe('떠 있는 시각 표시', () => {
-  test.each([SEOUL, NEW_YORK])('어느 기기 시간대든 고른 시각 그대로다 (%o)', (context) => {
+  it.each([SEOUL, NEW_YORK])('어느 기기 시간대든 고른 시각 그대로다 (%o)', (context) => {
     // Given
     const todo = createParentTodo({ localTime: '10:00', isAllDay: false });
     // When
@@ -16,7 +16,7 @@ describe('떠 있는 시각 표시', () => {
     expect(label).toBe('10:00');
   });
 
-  test('종일이거나 시각이 없으면 표시하지 않는다', () => {
+  it('종일이거나 시각이 없으면 표시하지 않는다', () => {
     // Given
     const allDayTodo = createParentTodo({ localTime: '10:00', isAllDay: true });
     const noTimeTodo = createParentTodo({ localTime: null, isAllDay: false });

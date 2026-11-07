@@ -73,7 +73,9 @@ function withDailyCompletionFromTodos(
   date: string,
   todos: readonly Todo[],
 ): DailyCompletionsResult {
-  if (date < result.dateRange.startDate || date > result.dateRange.endDate) {
+  const { startDate, endDate } = result.dateRange;
+  const isInRange = startDate <= date && date <= endDate;
+  if (!isInRange) {
     return result;
   }
   const dayTodos = todos.filter((todo) => isTodoOnDate(todo, date));

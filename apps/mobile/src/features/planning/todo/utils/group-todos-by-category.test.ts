@@ -5,7 +5,7 @@ import { toTodo } from '../apis/todo.mapper';
 import { groupTodosByCategory } from './group-todos-by-category';
 
 describe('카테고리별 할 일 묶기', () => {
-  test('카테고리 순서를 유지하고 할 일이 없는 카테고리도 빈 목록으로 남긴다', () => {
+  it('카테고리 순서를 유지하고 할 일이 없는 카테고리도 빈 목록으로 남긴다', () => {
     // Given
     const study = createTodoCategoryWithCountDto({ id: 2, name: '스터디' });
     const basic = createTodoCategoryWithCountDto({ id: 1, name: '기본' });
@@ -20,7 +20,7 @@ describe('카테고리별 할 일 묶기', () => {
     expect(groups[1]?.todos[0]).toBe(todo);
   });
 
-  test('할 일이 없으면 모든 카테고리가 빈 목록이다', () => {
+  it('할 일이 없으면 모든 카테고리가 빈 목록이다', () => {
     // When
     const groups = groupTodosByCategory([], []);
 

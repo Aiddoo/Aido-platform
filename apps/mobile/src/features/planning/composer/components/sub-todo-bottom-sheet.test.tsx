@@ -11,7 +11,6 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
   createPendingResponse,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
@@ -27,12 +26,6 @@ import { EditSubTodoBottomSheet } from './edit-sub-todo-bottom-sheet';
 
 const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
-
-let logger: ReturnType<typeof createLoggerStub>;
-
-beforeEach(() => {
-  logger = createLoggerStub();
-});
 
 async function renderEditSheet() {
   const httpClient = createHttpClientStub();
@@ -66,7 +59,6 @@ async function renderEditSheet() {
     {
       di: {
         httpClient,
-        logger,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         speechRecognizer: createSpeechRecognizerStub(),
@@ -115,10 +107,12 @@ describe('EditSubTodoBottomSheet', () => {
   it('공백만 남기면 전송이 꺼진다', async () => {
     const { settleRequests } = await renderEditSheet();
 
-    // Given 제목을 공백으로 바꾼다
+    // Given
+    // 제목을 공백으로 바꾼다
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '   ');
 
-    // Then 전송 버튼이 꺼진다
+    // Then
+    // 전송 버튼이 꺼진다
     await waitFor(() => {
       expect(submitButton()).toBeDisabled();
     });
@@ -141,13 +135,16 @@ describe('EditSubTodoBottomSheet', () => {
   it('고친 제목은 앞뒤 공백을 지우고 보낸다', async () => {
     const { httpClient, settleRequests } = await renderEditSheet();
 
-    // Given 제목을 앞뒤 공백과 함께 고친다
+    // Given
+    // 제목을 앞뒤 공백과 함께 고친다
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '  우유 사기  ');
 
-    // When 전송한다
+    // When
+    // 전송한다
     fireEvent.press(submitButton()).catch(() => undefined);
 
-    // Then 공백을 지운 제목으로 수정을 요청한다
+    // Then
+    // 공백을 지운 제목으로 수정을 요청한다
     await waitFor(() => {
       expect(httpClient.patch).toHaveBeenCalledWith(expect.any(String), { title: '우유 사기' });
     });
@@ -183,7 +180,6 @@ describe('AddSubTodoBottomSheet', () => {
       {
         di: {
           httpClient,
-          logger,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           speechRecognizer: createSpeechRecognizerStub(),
@@ -233,7 +229,6 @@ describe('AddSubTodoBottomSheet', () => {
       {
         di: {
           httpClient,
-          logger,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           speechRecognizer: createSpeechRecognizerStub(),

@@ -17,7 +17,8 @@ describe('calculateTomorrowSchedule', () => {
     });
 
     it('오늘이 하루 중 시각을 가져도 startDate는 내일 자정이 된다', () => {
-      // Given: 공유 today는 자정이 아닌 현재 시각을 담는다
+      // Given
+      // 공유 today는 자정이 아닌 현재 시각을 담는다
       const todayAfternoon = new Date(2025, 5, 10, 15, 30);
 
       // When
@@ -70,7 +71,8 @@ describe('calculateTomorrowSchedule', () => {
 
   describe('설정 시간대 기준', () => {
     it('기기 시간대와 날짜가 다른 시간대에서도 설정 시간대의 tomorrow을 쓴다', () => {
-      // Given: 로스앤젤레스는 3/8 낮이고 서울은 3/9 새벽인 순간
+      // Given
+      // 로스앤젤레스는 3/8 낮이고 서울은 3/9 새벽인 순간
       const instant = new Date('2026-03-08T20:00:00.000Z');
 
       // When

@@ -140,7 +140,7 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 | 개수가 고정된 스켈레톤·슬롯                         | es-toolkit `range` | `VoiceNoteDraftList.Loading`                                             |
 
 - 합계·전체 삭제 같은 머리말·꼬리말은 `ListHeaderComponent`·`ListFooterComponent`에 둔다(녹음 저장 공간).
-- RN `FlatList`는 달력과 시간별 예보에만 쓴다. 카테고리 목록(`category-list.tsx`)은 QB 묶음에서 `FlashList`로 바꾼다. 새 목록에 쓰지 않는다.
+- RN `FlatList`는 달력(`calendar-pager.tsx`)과 시간별 예보에만 쓴다. 카테고리 목록(`category-list.tsx`)은 `FlashList`다. 새 목록에 쓰지 않는다.
 - 할 일 `TodoList`와 메모 `MemoList`는 지금 `.map`이다. `MemoList`는 [미룬 일](../../../docs/releases/1.15.0/README.md#출시-후로-미룬-일)에 있다.
 
 ## 긴 글 줄바꿈: `WordWrapText`와 `lineBreakStrategyIOS`

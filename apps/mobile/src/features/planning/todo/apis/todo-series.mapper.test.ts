@@ -45,7 +45,7 @@ const REPEATS: TodoRepeat[] = [
 ];
 
 describe('반복 규칙 변환', () => {
-  test.each(REPEATS)('계약 모양으로 보내고 되받으면 같은 규칙이다: %j', (repeat) => {
+  it.each(REPEATS)('계약 모양으로 보내고 되받으면 같은 규칙이다: %j', (repeat) => {
     // Given
     const dto = todoRepeatSchema.parse(toRepeatDto(repeat));
 
@@ -58,7 +58,7 @@ describe('반복 규칙 변환', () => {
 });
 
 describe('toCreateRepeatingTodoRequest', () => {
-  test('격주·매월·끝없는 반복도 POST /v1/todos의 repeat로 보낸다', () => {
+  it('격주·매월·끝없는 반복도 POST /v1/todos의 repeat로 보낸다', () => {
     // Given
     const draft = createDraft({ frequency: 'MONTHLY', monthDay: 9, end: { type: 'NEVER' } });
 
@@ -70,7 +70,7 @@ describe('toCreateRepeatingTodoRequest', () => {
     expect(request.endDate).toBeUndefined();
   });
 
-  test('종일이면 시간을 보내지 않는다', () => {
+  it('종일이면 시간을 보내지 않는다', () => {
     // Given
     const draft = createDraft(DAILY, { isAllDay: true });
 
@@ -83,7 +83,7 @@ describe('toCreateRepeatingTodoRequest', () => {
 });
 
 describe('toUpdateTodoRequest', () => {
-  test('생략은 유지라 옵션이 없으면 범위·규칙 키를 보내지 않는다', () => {
+  it('생략은 유지라 옵션이 없으면 범위·규칙 키를 보내지 않는다', () => {
     // When
     const request = toUpdateTodoRequest({ title: '새 제목' }, {});
 
@@ -91,7 +91,7 @@ describe('toUpdateTodoRequest', () => {
     expect(request).toEqual({ title: '새 제목' });
   });
 
-  test('null은 반복 끝내기라 repeat 키를 null로 보낸다', () => {
+  it('null은 반복 끝내기라 repeat 키를 null로 보낸다', () => {
     // When
     const request = toUpdateTodoRequest({}, { repeat: null });
 
@@ -99,7 +99,7 @@ describe('toUpdateTodoRequest', () => {
     expect(request).toEqual({ repeat: null });
   });
 
-  test('규칙 변경은 범위와 함께 계약 모양으로 보낸다', () => {
+  it('규칙 변경은 범위와 함께 계약 모양으로 보낸다', () => {
     // When
     const request = updateTodoSchema.parse(
       toUpdateTodoRequest(
@@ -124,7 +124,7 @@ describe('toUpdateTodoRequest', () => {
 });
 
 describe('이후 회차까지 고치는 요청', () => {
-  test('시간은 PATCH로 보내고 날짜는 보내지 않는다', () => {
+  it('시간은 PATCH로 보내고 날짜는 보내지 않는다', () => {
     // When
     const request = toFollowingScheduleRequest({
       startDate: '2026-11-05',
@@ -141,7 +141,7 @@ describe('이후 회차까지 고치는 요청', () => {
     });
   });
 
-  test('카테고리도 PATCH로 범위와 함께 보낸다', () => {
+  it('카테고리도 PATCH로 범위와 함께 보낸다', () => {
     // When
     const request = toFollowingCategoryRequest({ categoryId: 7 });
 
@@ -151,7 +151,7 @@ describe('이후 회차까지 고치는 요청', () => {
 });
 
 describe('toTodoSeries', () => {
-  test('규칙 응답에서 앱이 쓰는 값만 옮긴다', () => {
+  it('규칙 응답에서 앱이 쓰는 값만 옮긴다', () => {
     // When
     const series = toTodoSeries({
       id: 'series-1',

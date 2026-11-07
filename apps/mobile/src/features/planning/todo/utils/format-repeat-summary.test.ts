@@ -31,7 +31,7 @@ describe('formatRepeatCadence', () => {
     [{ frequency: 'MONTHLY', monthDay: 15, end: { type: 'COUNT', count: 10 } }, '매월 15일'],
   ];
 
-  test.each(CASES)('%j → %s', (repeat, expected) => {
+  it.each(CASES)('%j → %s', (repeat, expected) => {
     // When
     const label = formatRepeatCadence(repeat);
 
@@ -41,7 +41,7 @@ describe('formatRepeatCadence', () => {
 });
 
 describe('formatRepeatSummary', () => {
-  test('주기 뒤에 끝나는 조건을 잇는다', () => {
+  it('주기 뒤에 끝나는 조건을 잇는다', () => {
     // When
     const label = formatRepeatSummary(
       { frequency: 'MONTHLY', monthDay: 15, end: { type: 'COUNT', count: 10 } },
