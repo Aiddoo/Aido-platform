@@ -1,7 +1,6 @@
 import { i18n } from '@src/shared/i18n';
 
 import {
-  diffMonths,
   diffWeeks,
   getCalendarRange,
   getWeekStart,
@@ -124,43 +123,6 @@ describe('diffWeeks', () => {
 
     // Then — startOf('week') 기준이므로 정확히 2
     expect(result).toBe(2);
-  });
-});
-
-describe('diffMonths', () => {
-  it('같은 달 안이면 0을 반환해야 한다', () => {
-    // Given
-    const day1 = new Date(2026, 3, 1);
-    const day15 = new Date(2026, 3, 15);
-
-    // When
-    const result = diffMonths(day15, day1, SYSTEM_TIME_ZONE);
-
-    // Then
-    expect(result).toBe(0);
-  });
-
-  it('다음 달이면 1, 이전 달이면 -1을 반환해야 한다', () => {
-    // Given
-    const april = new Date(2026, 3, 15);
-    const may = new Date(2026, 4, 15);
-    const march = new Date(2026, 2, 15);
-
-    // When / Then
-    expect(diffMonths(may, april, SYSTEM_TIME_ZONE)).toBe(1);
-    expect(diffMonths(march, april, SYSTEM_TIME_ZONE)).toBe(-1);
-  });
-
-  it('월말 경계를 넘어도 startOf month 기준으로 정규화되어야 한다', () => {
-    // Given — 1/31 vs 2/1: 달력상 하루 차이지만 월 차이는 1
-    const jan31 = new Date(2026, 0, 31);
-    const feb1 = new Date(2026, 1, 1);
-
-    // When
-    const result = diffMonths(feb1, jan31, SYSTEM_TIME_ZONE);
-
-    // Then
-    expect(result).toBe(1);
   });
 });
 

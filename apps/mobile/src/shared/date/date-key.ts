@@ -20,6 +20,21 @@ export function addDaysToDateKey(dateKey: string, days: number): string {
   return shifted.isValid() ? shifted.format(DATE_KEY_FORMAT) : '';
 }
 
+/** YYYY-MM-DD에 달 수를 더한다. 말일을 넘기면 그 달의 마지막 날로 맞춘다 (1월 31일 + 1달 = 2월 28일). */
+export function addMonthsToDateKey(dateKey: string, months: number): string {
+  const shifted = parseDateKey(dateKey).add(months, 'month');
+  return shifted.isValid() ? shifted.format(DATE_KEY_FORMAT) : '';
+}
+
+export function getMonthStartDateKey(dateKey: string): string {
+  return parseDateKey(dateKey).startOf('month').format(DATE_KEY_FORMAT);
+}
+
+/** 두 YYYY-MM-DD의 달 차이 (to - from). 일은 보지 않고 달만 센다. */
+export function diffDateKeysInMonths(from: string, to: string): number {
+  return parseDateKey(to).startOf('month').diff(parseDateKey(from).startOf('month'), 'month');
+}
+
 /** 두 YYYY-MM-DD 사이의 달력 일수 (to - from, 시간대·DST 무관). */
 export function diffDateKeysInDays(from: string, to: string): number {
   return parseDateKey(to).diff(parseDateKey(from), 'day');

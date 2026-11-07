@@ -10,8 +10,6 @@ import { toDateKey } from '@src/shared/date/instant';
 import {
   addLocalDays,
   addLocalMonths,
-  addLocalWeeks,
-  diffLocalMonths,
   startOfLocalMonth,
   toLocalDay,
 } from '@src/shared/date/local-day';
@@ -36,11 +34,6 @@ export function diffWeeks(date1: Date, date2: Date, timeZone: string): number {
   );
 
   return days / DAYS_PER_WEEK;
-}
-
-/** 두 날짜의 월 단위 차이 (date1 - date2) */
-export function diffMonths(date1: Date, date2: Date, timeZone: string): number {
-  return diffLocalMonths(date1, date2, timeZone);
 }
 
 export function getWeekDates(weekStartDate: Date, timeZone: string): Date[] {
@@ -98,7 +91,7 @@ export function shiftCalendarDate({
   timeZone,
 }: ShiftCalendarDateInput): Date {
   return match(viewMode)
-    .with('week', () => addLocalWeeks(getWeekStart(date, timeZone), step, timeZone))
+    .with('week', () => addLocalDays(getWeekStart(date, timeZone), step * DAYS_PER_WEEK, timeZone))
     .with('month', () => addLocalMonths(startOfLocalMonth(date, timeZone), step, timeZone))
     .exhaustive();
 }

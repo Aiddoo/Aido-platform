@@ -1,4 +1,4 @@
-import { isAfterDay, isBeforeDay, isDateToday, isSameDay } from './calendar-day-comparison';
+import { isAfterDay, isBeforeDay, isSameDay } from './calendar-day-comparison';
 import { getWeekRange } from './calendar-grid';
 
 const SEOUL = 'Asia/Seoul';
@@ -26,8 +26,8 @@ describe('시간대에 따라 달라지는 날', () => {
     const instant = new Date('2026-11-07T16:00:00Z');
 
     // When
-    const inSeoul = isDateToday(instant, now, SEOUL);
-    const inNewYork = isDateToday(instant, now, NEW_YORK);
+    const inSeoul = isSameDay(instant, now, SEOUL);
+    const inNewYork = isSameDay(instant, now, NEW_YORK);
 
     // Then
     expect(inSeoul).toBe(false);

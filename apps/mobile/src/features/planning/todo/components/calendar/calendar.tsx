@@ -1,3 +1,4 @@
+import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { getDayOfWeek } from '@src/shared/date/date-key';
 import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
@@ -5,7 +6,7 @@ import { toDateKey } from '@src/shared/date/instant';
 import {
   addLocalDays,
   addLocalMonths,
-  addLocalWeeks,
+  diffLocalMonths,
   startOfLocalMonth,
   moveToLocalMonth,
 } from '@src/shared/date/local-day';
@@ -28,7 +29,6 @@ import type { CompletionsByDate } from '../../queries/todo.queries';
 import type { DailyCompletionSummary } from '../../schemas/todo.schema';
 import { isSameMonth } from '../../utils/calendar-day-comparison';
 import {
-  diffMonths,
   diffWeeks,
   getMonthWeeks,
   getWeekDates,
@@ -169,7 +169,8 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   const baseWeekRef = useRef(getWeekStart(selectedDate, timeZone));
 
   const weekAtPage = useCallback(
-    (page: number) => addLocalWeeks(baseWeekRef.current, page - CALENDAR_CENTER_PAGE, timeZone),
+    (page: number) =>
+      addLocalDays(baseWeekRef.current, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK, timeZone),
     [timeZone],
   );
 
@@ -211,7 +212,7 @@ function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
   const pageOfMonth = useCallback(
     (month: Date) =>
       clampCalendarPage(
-        diffMonths(month, baseMonthRef.current, timeZone) + CALENDAR_CENTER_PAGE,
+        diffLocalMonths(month, baseMonthRef.current, timeZone) + CALENDAR_CENTER_PAGE,
         CALENDAR_TOTAL_PAGES,
       ),
     [timeZone],

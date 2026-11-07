@@ -1,14 +1,11 @@
+import { getDayOfWeek } from '@src/shared/date/date-key';
+import { toDateKey } from '@src/shared/date/instant';
 import type { TextTone } from '@src/shared/ui';
 
-import {
-  isAfterDay,
-  isBeforeDay,
-  isDateToday,
-  isSameDay,
-  isSameMonth,
-  isSaturday,
-  isSunday,
-} from './calendar-day-comparison';
+import { isAfterDay, isBeforeDay, isSameDay, isSameMonth } from './calendar-day-comparison';
+
+const SUNDAY = 0;
+const SATURDAY = 6;
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';
 
@@ -29,13 +26,13 @@ export function getDatePickerDayStyle({
   if (isSelected) {
     return 'selected';
   }
-  if (isDateToday(date, today, timeZone)) {
+  if (isSameDay(date, today, timeZone)) {
     return 'today';
   }
-  if (isSunday(date, timeZone)) {
+  if (getDayOfWeek(toDateKey(date, timeZone)) === SUNDAY) {
     return 'sunday';
   }
-  if (isSaturday(date, timeZone)) {
+  if (getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY) {
     return 'saturday';
   }
   return 'default';
@@ -50,20 +47,20 @@ export function getMonthViewDayStyle({
   if (isSelected) {
     return 'selected';
   }
-  if (isSunday(date, timeZone)) {
+  if (getDayOfWeek(toDateKey(date, timeZone)) === SUNDAY) {
     return 'sunday';
   }
-  if (isSaturday(date, timeZone)) {
+  if (getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY) {
     return 'saturday';
   }
-  if (isDateToday(date, today, timeZone)) {
+  if (isSameDay(date, today, timeZone)) {
     return 'today';
   }
   return 'default';
 }
 
 export function isTodayHighlighted({ date, isSelected, today, timeZone }: CalendarDayInput) {
-  return !isSelected && isDateToday(date, today, timeZone);
+  return !isSelected && isSameDay(date, today, timeZone);
 }
 
 export const DAY_TYPE_TONE: Record<CalendarDayType, TextTone> = {

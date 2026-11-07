@@ -114,3 +114,40 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(result).toEqual(new Date(2026, 1, 28));
   });
 });
+
+describe('diffLocalMonths', () => {
+  it('같은 달 안이면 0을 반환해야 한다', () => {
+    // Given
+    const day1 = new Date(2026, 3, 1);
+    const day15 = new Date(2026, 3, 15);
+
+    // When
+    const result = diffLocalMonths(day15, day1, SEOUL);
+
+    // Then
+    expect(result).toBe(0);
+  });
+
+  it('다음 달이면 1, 이전 달이면 -1을 반환해야 한다', () => {
+    // Given
+    const april = new Date(2026, 3, 15);
+    const may = new Date(2026, 4, 15);
+    const march = new Date(2026, 2, 15);
+
+    // When / Then
+    expect(diffLocalMonths(may, april, SEOUL)).toBe(1);
+    expect(diffLocalMonths(march, april, SEOUL)).toBe(-1);
+  });
+
+  it('월말 경계를 넘어도 startOf month 기준으로 정규화되어야 한다', () => {
+    // Given — 1/31 vs 2/1: 달력상 하루 차이지만 월 차이는 1
+    const jan31 = new Date(2026, 0, 31);
+    const feb1 = new Date(2026, 1, 1);
+
+    // When
+    const result = diffLocalMonths(feb1, jan31, SEOUL);
+
+    // Then
+    expect(result).toBe(1);
+  });
+});

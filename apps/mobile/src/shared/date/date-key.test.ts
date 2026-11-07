@@ -3,6 +3,9 @@ import { range } from 'es-toolkit';
 
 import {
   addDaysToDateKey,
+  addMonthsToDateKey,
+  diffDateKeysInMonths,
+  getMonthStartDateKey,
   diffDateKeysInDays,
   getCalendarWeek,
   getDayOfWeek,
@@ -214,5 +217,27 @@ describe('getYearOfDateKey', () => {
     // When / Then
     expect(getYearOfDateKey(newYearEve)).toBe(2026);
     expect(getYearOfDateKey(newYear)).toBe(2027);
+  });
+});
+
+describe('달 단위 key 계산', () => {
+  it('말일을 넘기면 그 달의 마지막 날로 맞춰 달을 더한다', () => {
+    // When / Then
+    expect(addMonthsToDateKey('2026-01-31', 1)).toBe('2026-02-28');
+    expect(addMonthsToDateKey('2028-01-31', 1)).toBe('2028-02-29');
+    expect(addMonthsToDateKey('2026-12-15', 1)).toBe('2027-01-15');
+    expect(addMonthsToDateKey('2026-01-15', -1)).toBe('2025-12-15');
+  });
+
+  it('달의 첫날을 구한다', () => {
+    // When / Then
+    expect(getMonthStartDateKey('2026-06-15')).toBe('2026-06-01');
+  });
+
+  it('일은 보지 않고 달 차이만 센다', () => {
+    // When / Then
+    expect(diffDateKeysInMonths('2026-01-31', '2026-02-01')).toBe(1);
+    expect(diffDateKeysInMonths('2026-04-15', '2026-04-01')).toBe(0);
+    expect(diffDateKeysInMonths('2026-04-15', '2026-03-15')).toBe(-1);
   });
 });

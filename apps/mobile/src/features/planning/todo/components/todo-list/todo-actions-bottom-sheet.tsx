@@ -43,7 +43,7 @@ import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import type { Todo } from '../../schemas/todo.schema';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
-import { isDateToday } from '../../utils/calendar-day-comparison';
+import { isSameDay } from '../../utils/calendar-day-comparison';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoActionRow } from '../todo-action-row';
 
@@ -115,7 +115,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   }
 
   const editValues = toTodoScheduleValues(todo, dateFormatContext.timeZone);
-  const isTodoToday = isDateToday(editValues.startDate, today, dateFormatContext.timeZone);
+  const isTodoToday = isSameDay(editValues.startDate, today, dateFormatContext.timeZone);
 
   const sheetParams = { todoId: todo.id, date };
 
