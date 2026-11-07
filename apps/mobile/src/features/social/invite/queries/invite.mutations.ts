@@ -8,6 +8,7 @@ import { isBusinessError, unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +16,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { isInviteRotateRejectedError, toRedeemFailureReason } from '../domains/invite.error';
+import { toRedeemFailureReason } from '../domains/invite.error';
 import type { InviteShareContent } from '../schemas/invite-share.schema';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 import type { InviteCode } from '../schemas/invite.schema';
@@ -48,10 +49,11 @@ export function useRedeemInviteMutationOptions() {
   const logger = useLogger();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedError('invite');
   const { trackEvent } = useTrack();
 
   return mutationOptions({
-    // 오프라인에 멈춰 있다가 나중에 수락되지 않게 바로 실패해 경계가 알린다
+    // 오프라인에 멈춰 있다가 나중에 수락되지 않게 바로 실패해 토스트로 알린다
     networkMode: 'always',
     mutationFn: async (inviteCode: InviteCode) => unwrap(await inviteService.redeem(inviteCode)),
     // 내 정보를 다시 받을 때까지 기다린 뒤 끝나야 환영 시트가 이어 붙은 보상 기간을 보인다(그동안 버튼은 isPending)
@@ -67,17 +69,13 @@ export function useRedeemInviteMutationOptions() {
       haptics.notify('success');
     },
     onError: (redeemError) => {
-      // 오류 경계로 가는 장애는 토스트를 함께 띄우지 않는다
-      if (!isBusinessError(redeemError)) {
-        return;
+      reportUnexpectedError(redeemError);
+      if (isBusinessError(redeemError)) {
+        trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(redeemError) });
       }
-
-      trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(redeemError) });
       haptics.notify('error');
       toast.error(getUserFacingMessage(redeemError));
     },
-    // 네트워크·서버 장애는 화면 오류 경계가 맡는다
-    throwOnError: (redeemError) => !isBusinessError(redeemError),
   });
 }
 
@@ -86,9 +84,10 @@ export function useRotateInviteCodeMutationOptions() {
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedError('invite');
 
   return mutationOptions({
-    // 오프라인에 멈춘 채 나중에 코드가 바뀌지 않게 바로 실패해 경계가 알린다
+    // 오프라인에 멈춘 채 나중에 코드가 바뀌지 않게 바로 실패해 토스트로 알린다
     networkMode: 'always',
     mutationFn: async () => unwrap(await inviteService.rotateInviteCode()),
     onSuccess: (myInvite) => {
@@ -97,13 +96,10 @@ export function useRotateInviteCodeMutationOptions() {
       toast.success(t('invite:toast.rotated'));
     },
     onError: (rotateError) => {
-      if (isInviteRotateRejectedError(rotateError)) {
-        haptics.notify('error');
-        toast.error(getUserFacingMessage(rotateError));
-      }
+      reportUnexpectedError(rotateError);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(rotateError));
     },
-    // 네트워크·서버 장애는 화면 오류 경계가 맡는다
-    throwOnError: (rotateError) => !isInviteRotateRejectedError(rotateError),
   });
 }
 

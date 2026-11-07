@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isBusinessError } from '@src/core/errors/result';
-import { type ApiError, isApiError } from '@src/shared/errors';
+import { isApiError } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
 export const INVITE_ERROR_CODE = {
@@ -12,11 +12,6 @@ export type InviteErrorCode = (typeof INVITE_ERROR_CODE)[keyof typeof INVITE_ERR
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
 export function isInviteDisabledError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.INVITE_2105);
-}
-
-/** 서버가 링크 새로 만들기를 거절했다. 이 실패는 토스트로 알리고 그 밖의 장애는 화면 오류 경계가 맡는다 */
-export function isInviteRotateRejectedError(error: unknown): error is ApiError {
-  return isApiError(error);
 }
 
 /** 초대 수락이 실패한 이유. 분석 이벤트 invite_redeem_failed.reason이 이 값을 그대로 쓴다 */
