@@ -443,6 +443,49 @@ describe('WeatherReportPolicy.getUvLevel', () => {
   });
 });
 
+describe('getHourlyPrecipitationOutlook', () => {
+  it('6시간 안에 비 오는 시간이 있으면 그 첫 시간과 확률을 돌려준다', () => {
+    // Given
+    const { hourly } = createWeatherReport({
+      hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 60]),
+    });
+
+    // When
+    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
+
+    // Then
+    expect(outlook?.hour.startsAt).toEqual('2026-11-02T07:00:00.000Z');
+    expect(outlook?.hour.precipitationChance).toBe(70);
+    expect(outlook?.isOngoing).toBe(false);
+  });
+
+  it('지금 시간이 비 오는 시간이면 지금 오고 있다고 본다', () => {
+    // Given
+    const { hourly } = createWeatherReport({
+      hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [80, 10]),
+    });
+
+    // When
+    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
+
+    // Then
+    expect(outlook?.isOngoing).toBe(true);
+  });
+
+  it('6시간 안에 비 소식이 없으면 빈 카드를 만들지 않도록 null이다', () => {
+    // Given
+    const { hourly } = createWeatherReport({
+      hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10, 10, 10, 10, 10, 90]),
+    });
+
+    // When
+    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
+
+    // Then
+    expect(outlook).toBeNull();
+  });
+});
+
 describe('지역별 리포트 프리셋', () => {
   it('국내처럼 분 단위 예보·특보가 없으면 시간별 예보로 정시 기준 강수를 안내하고 특보는 비운다', () => {
     // Given

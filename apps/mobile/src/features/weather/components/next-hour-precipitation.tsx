@@ -25,9 +25,8 @@ import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors';
 import { PRECIPITATION_LEVEL_LABEL_KEYS } from '../constants/weather-labels';
 import {
   type HourlyPrecipitationOutlook,
-  WeatherNextHourPolicy,
-} from '../domains/weather-next-hour.model';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { usePrecipitationMessage } from '../hooks/use-precipitation-message';
@@ -70,7 +69,7 @@ export function NextHourPrecipitation() {
     return <NextHourPrecipitation.Empty />;
   }
   if (data.nextHour == null) {
-    const outlook = WeatherNextHourPolicy.getHourlyPrecipitationOutlook(data.hourly, now);
+    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(data.hourly, now);
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
