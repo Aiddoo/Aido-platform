@@ -64,6 +64,7 @@ export default function NotificationsScreen() {
             </LineTabTrigger>
           </Tabs.List>
 
+          {/* 콕 상호작용을 쓰는 사용자에게만 보이는 줄이라 응답 전에는 자리를 잡지 않는다. 자리를 잡으면 대부분의 사용자에게서 나타났다 사라진다 */}
           {isDirectionSelectable && (
             <DirectionTabs value={visibleDirection} onValueChange={setDirection} />
           )}
@@ -71,8 +72,9 @@ export default function NotificationsScreen() {
           {match(visibleDirection)
             .with('received', () => (
               <>
+                {/* 벨과 같은 안 읽은 수를 읽어 벨을 거쳐 오면 값이 이미 있다. 0이면 줄 자체가 없으니 자리를 잡지 않는다 */}
                 <QueryErrorBoundary fallback={() => null}>
-                  <Suspense fallback={<UnreadNotificationCard.Loading className="mx-4 my-2" />}>
+                  <Suspense fallback={null}>
                     <UnreadNotificationCard className="mx-4 my-2" />
                   </Suspense>
                 </QueryErrorBoundary>

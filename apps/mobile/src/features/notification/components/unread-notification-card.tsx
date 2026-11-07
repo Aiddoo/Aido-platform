@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { BellFilledIcon, HStack, Text, TextButton, TextSkeleton } from '@src/shared/ui';
+import { BellFilledIcon, HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Card, Skeleton } from 'heroui-native';
+import { Card } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { useMarkAllAsReadMutationOptions } from '../queries/notification.mutations';
@@ -45,17 +45,3 @@ export function UnreadNotificationCard(props: UnreadNotificationCardProps) {
     </Card>
   );
 }
-
-UnreadNotificationCard.Loading = function Loading(props: UnreadNotificationCardProps) {
-  return (
-    <Card {...props}>
-      <HStack align="center" justify="between">
-        <HStack align="center" gap={8}>
-          <Skeleton className="size-[18px] rounded" />
-          <TextSkeleton size="b3" className="w-36" />
-        </HStack>
-        <TextSkeleton size="b4" className="w-14" />
-      </HStack>
-    </Card>
-  );
-};
