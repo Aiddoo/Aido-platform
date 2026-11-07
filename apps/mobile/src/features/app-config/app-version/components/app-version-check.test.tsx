@@ -17,11 +17,14 @@ const ENABLED_RESPONSE = {
 async function renderCheck({
   jsonFetcher,
   currentVersion = '1.14.0',
+  openListing = async () => {},
 }: {
   jsonFetcher: JsonFetcher;
   currentVersion?: string;
+  openListing?: () => Promise<void>;
 }) {
   const listing: jest.Mocked<AppStoreListingGateway> = { openListing: jest.fn() };
+  listing.openListing.mockImplementation(openListing);
   const errorReporter = createErrorReporterStub();
   const service = new AppVersionService(
     jsonFetcher,
@@ -76,6 +79,22 @@ describe('앱 버전 확인', () => {
     // Then
     await screen.findByText('1.14.0');
     expect(listing.openListing).toHaveBeenCalledTimes(1);
+  });
+
+  it('스토어를 열지 못하면 알리고 보고한다', async () => {
+    // Given
+    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue(ENABLED_RESPONSE) };
+    const { errorReporter } = await renderCheck({
+      jsonFetcher,
+      openListing: () => Promise.reject(new Error('스토어 없음')),
+    });
+
+    // When
+    fireEvent.press(screen.getByText('버전 정보'));
+
+    // Then
+    expect(await screen.findAllByText(/앱 스토어를 열지 못했어요/)).not.toHaveLength(0);
+    expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
   });
 
   it('이미 최신이면 스토어를 열지 않고 최신이라고 알린다', async () => {
