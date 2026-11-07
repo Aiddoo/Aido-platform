@@ -9,11 +9,10 @@ import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.
 import {
   createAnalyticsStub,
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
-  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -81,16 +80,16 @@ async function renderDigest() {
     </LocalDateProvider>,
     {
       queryClient,
-      di: createTestDi({
+      di: {
         httpClient,
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMemoryStorage(),
         ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         logger,
-      }),
+      },
     },
   );
 

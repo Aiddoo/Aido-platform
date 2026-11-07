@@ -21,9 +21,9 @@ export interface PushNotificationGatewayStub extends jest.Mocked<PushNotificatio
 }
 
 /** 알림을 허용했고 토큰도 받는 기기가 기본값이다. 테스트마다 다른 부분만 덮어쓴다 */
-export const createPushNotificationGatewayStub = (
+export function createPushNotificationGatewayStub(
   overrides?: Partial<jest.Mocked<PushNotificationGateway>>,
-): PushNotificationGatewayStub => {
+): PushNotificationGatewayStub {
   const receivedListeners = new Set<(notification: ReceivedPushNotification) => void>();
   const responseListeners = new Set<(response: PushNotificationResponse) => void>();
   let lastResponse: PushNotificationResponse | null = null;
@@ -71,4 +71,4 @@ export const createPushNotificationGatewayStub = (
     getListenerCount: () => receivedListeners.size + responseListeners.size,
     ...overrides,
   };
-};
+}

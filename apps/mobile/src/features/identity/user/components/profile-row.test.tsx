@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
-import { createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { i18n } from '@src/shared/i18n';
@@ -18,7 +17,7 @@ function createClipboardStub(copy: ClipboardGateway['copy']): ClipboardGateway {
 async function renderProfileRow(clipboard: ClipboardGateway) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(createCurrentUserDto()));
-  await renderUi(<ProfileRow tierChip={null} />, { queryClient, di: createTestDi({ clipboard }) });
+  await renderUi(<ProfileRow tierChip={null} />, { queryClient, di: { clipboard } });
 }
 
 describe('해시태그 복사', () => {

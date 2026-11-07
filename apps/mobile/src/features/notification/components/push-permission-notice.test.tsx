@@ -12,7 +12,6 @@ import {
   createLoggerStub,
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -50,7 +49,7 @@ async function renderCard(
   queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
 
   await renderUi(<PushPermissionNotice />, {
-    di: createTestDi({
+    di: {
       httpClient,
       syncStorage,
       pushPromptRepository: createPushPromptRepository(syncStorage),
@@ -64,7 +63,7 @@ async function renderCard(
       }),
       analytics: createAnalyticsStub(),
       logger: createLoggerStub(),
-    }),
+    },
     queryClient,
   });
   return { gateway };

@@ -1,4 +1,4 @@
-import { createTestQueryClient, renderUi } from '@src/shared/__tests__/render-ui';
+import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 

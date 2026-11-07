@@ -8,7 +8,6 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -77,7 +76,7 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
       queryClient,
       withLocalDate: true,
       withOverlay: true,
-      di: createTestDi({
+      di: {
         httpClient,
         todoCategoryService: new TodoCategoryService(httpClient),
         draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
@@ -85,7 +84,7 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
         ...createVoiceNoteStorageFake().di,
-      }),
+      },
     },
   );
 

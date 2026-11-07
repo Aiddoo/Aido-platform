@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createHttpClientStub, createTestDi } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -50,7 +50,7 @@ async function renderEditingForm() {
   await renderUi(<EditingForm />, {
     withLocalDate: true,
     withOverlay: true,
-    di: createTestDi({ httpClient }),
+    di: { httpClient },
   });
   await screen.findByTestId('todo-comment-composer-target');
 

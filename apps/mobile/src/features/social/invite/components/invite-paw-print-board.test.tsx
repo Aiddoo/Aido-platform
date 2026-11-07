@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createHapticsStub, createMemorySyncStorage, createTestDi } from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
@@ -24,7 +24,7 @@ async function renderBoard({
   const pawPrintCelebrationRepository =
     createPawPrintCelebrationRepository(createMemorySyncStorage());
   pawPrintCelebrationRepository.setCelebratedCount(USER_ID, celebratedCount);
-  const haptics = createHapticsStub();
+  const haptics = createHapticsGatewayStub();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -38,11 +38,11 @@ async function renderBoard({
     {
       queryClient,
       withLocalDate: true,
-      di: createTestDi({
+      di: {
         inviteService: createStubInviteService(),
         pawPrintCelebrationRepository,
         haptics,
-      }),
+      },
     },
   );
   await screen.findAllByRole('image');

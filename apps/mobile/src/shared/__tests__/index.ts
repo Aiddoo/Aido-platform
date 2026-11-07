@@ -16,7 +16,7 @@ export {
   createExternalLinkGatewayStub,
   createIncomingLinkGatewayStub,
 } from './create-external-link-gateway-stub';
-export { createHapticsStub } from './create-haptics-stub';
+export { createHapticsGatewayStub } from './create-haptics-gateway-stub';
 export { createHttpClientStub } from './create-http-client-stub';
 export { createIdGeneratorStub } from './create-id-generator-stub';
 export { createJsonFetcherStub } from './create-json-fetcher-stub';
@@ -43,5 +43,7 @@ export { createSystemShareGatewayStub } from './create-system-share-gateway-stub
 export { createTestDi } from './create-test-di';
 export { createTokenRefresherStub } from './create-token-refresher-stub';
 export { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
+export { createTestQueryClient } from './query-client';
+export { renderUi, renderUiHook } from './render-ui';
 export { runKyAfterResponseHook } from './run-ky-after-response-hook';
 export { stubWindowDimensions } from './stub-window-dimensions';

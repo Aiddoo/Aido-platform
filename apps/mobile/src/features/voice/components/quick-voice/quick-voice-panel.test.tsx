@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createHapticsStub, createSpeechRecognizerStub } from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createSpeechRecognizerStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useSharedValue } from 'react-native-reanimated';
@@ -38,7 +38,7 @@ async function renderPanel(state: VoiceCaptureState) {
   const onFinish = jest.fn();
   await renderUi(
     <Panel state={state} onContinueAsVoiceNote={onContinueAsVoiceNote} onFinish={onFinish} />,
-    { di: { haptics: createHapticsStub(), speechRecognizer: createSpeechRecognizerStub() } },
+    { di: { haptics: createHapticsGatewayStub(), speechRecognizer: createSpeechRecognizerStub() } },
   );
   return { onContinueAsVoiceNote, onFinish };
 }

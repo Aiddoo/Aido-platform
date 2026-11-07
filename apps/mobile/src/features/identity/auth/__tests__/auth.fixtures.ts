@@ -7,6 +7,7 @@ import type {
   ResetPasswordResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
+import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 
 import type { AuthTokens, AuthTokensEnvelope, RegisterEnvelope } from '../schemas/auth.schema';
 
@@ -146,3 +147,12 @@ export const createAuthApiError = (
   );
 
 export const INVALID_DTO = { invalid: 'data' };
+
+export function createAppleSignInSuccess(): AppleSignInResult {
+  return {
+    type: 'success',
+    identityToken: 'apple-id-token',
+    nonce: 'apple-nonce',
+    givenName: null,
+  };
+}

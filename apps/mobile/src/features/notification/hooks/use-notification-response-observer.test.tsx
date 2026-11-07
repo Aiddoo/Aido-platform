@@ -3,10 +3,10 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import {
   createHttpClientStub,
+  createLoggerStub,
   createPushNotificationGatewayStub,
   createTestDi,
 } from '@src/shared/__tests__';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';

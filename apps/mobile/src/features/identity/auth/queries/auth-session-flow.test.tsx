@@ -36,7 +36,11 @@ import { act, waitFor } from '@testing-library/react-native';
 import { z } from 'zod';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
-import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.fixtures';
+import {
+  createAppleSignInSuccess,
+  createAuthTokensDto,
+  createDeleteAccountDto,
+} from '../__tests__/auth.fixtures';
 import { AuthService } from '../apis/auth.service';
 import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../apis/log-out-device.service';
 import { useAuthSession } from '../hooks/use-auth-session';
@@ -634,6 +638,7 @@ describe('로그인', () => {
   it('Apple 로그인은 토큰을 저장하고 인증 상태가 된다', async () => {
     // Given
     const session = createAuthSession();
+    session.socialAuthGateway.signInWithApple.mockResolvedValue(createAppleSignInSuccess());
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),

@@ -15,9 +15,13 @@ export interface LocalFileSystemFake extends LocalFileSystem {
 }
 
 const ROOT = 'file:///documents/';
-const toKey = (directory: readonly string[]) => directory.join('/');
-const toUri = (directory: readonly string[], name: string) =>
-  `${ROOT}${[...directory, name].join('/')}`;
+function toKey(directory: readonly string[]) {
+  return directory.join('/');
+}
+
+function toUri(directory: readonly string[], name: string) {
+  return `${ROOT}${[...directory, name].join('/')}`;
+}
 
 /** 메모리 안 파일 시스템. 폴더는 파일이 생기거나 ensureDirectory를 부르면 생긴다 */
 export function createLocalFileSystemFake(): LocalFileSystemFake {

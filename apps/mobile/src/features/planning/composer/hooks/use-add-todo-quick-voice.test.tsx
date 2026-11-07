@@ -13,15 +13,14 @@ import { createRecognitionLanguageRepository } from '@src/features/voice/apis/re
 import {
   createAnalyticsStub,
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
+  createLoggerStub,
   createMemoryStorage,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
@@ -154,7 +153,7 @@ async function renderQuickVoice({
     </LocalDateProvider>,
     {
       queryClient,
-      di: createTestDi({
+      di: {
         httpClient,
         ...voiceNoteStorage.di,
         coachmarkService: new CoachmarkService({
@@ -166,10 +165,10 @@ async function renderQuickVoice({
         speechRecognizer,
         analytics,
         errorReporter: createErrorReporterStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         storage: createMemoryStorage(),
         logger,
-      }),
+      },
     },
   );
 

@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Button } from '@src/shared/ui';
@@ -63,7 +63,7 @@ async function renderApply(
   const onMemoChanged = jest.fn();
 
   await renderUi(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
-    di: createTestDi({ httpClient, analytics }),
+    di: { httpClient, analytics },
     queryClient,
   });
   await fireEvent.press(screen.getByText('저장'));

@@ -5,10 +5,9 @@ import { createActivationProgressRepository } from '@src/features/device/activat
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import {
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -35,14 +34,14 @@ async function renderSheet() {
     {
       withLocalDate: true,
       withOverlay: true,
-      di: createTestDi({
+      di: {
         httpClient,
         todoCategoryService: new TodoCategoryService(httpClient),
         activationService: new ActivationService(
           createActivationProgressRepository(createMemorySyncStorage()),
         ),
-        haptics: createHapticsStub(),
-      }),
+        haptics: createHapticsGatewayStub(),
+      },
     },
   );
 

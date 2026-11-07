@@ -1,10 +1,26 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import { disabledQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
+import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
+import type { AppStoreReviewGateway } from '@src/core/ports/app-store-gateway';
+import type { DeviceIdStore } from '@src/core/ports/device-id-store';
 import type { HttpClient } from '@src/core/ports/http-client';
-import { createSessionEpoch } from '@src/core/session/session-epoch';
+import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
+import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
+import type { JsonFetcher } from '@src/core/ports/json-fetcher';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
+import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
+import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
+import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
+import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
+import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import { PurchasesSdkManager } from '@src/features/billing/subscription/apis/purchases-sdk-manager';
+import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -12,397 +28,332 @@ import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/c
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
+import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
+import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
+import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
+import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
+import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
+import { ReportService } from '@src/features/insights/report/apis/report.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
+import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
+import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { FriendService } from '@src/features/social/friend/apis/friend.service';
 import { createAllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
+import { createInstallReferrerRepository } from '@src/features/social/invite/apis/install-referrer.repository';
+import { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
+import { InviteService } from '@src/features/social/invite/apis/invite.service';
 import { createPawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
+import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
+import { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
+import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import { VoiceService } from '@src/features/voice/apis/voice.service';
+import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
+import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
+import { WeatherService } from '@src/features/weather/apis/weather.service';
+import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
+import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { createAnalyticsStub } from './create-analytics-stub';
 import { createAppIconGatewayStub } from './create-app-icon-gateway-stub';
+import {
+  createAppStoreListingGatewayStub,
+  createAppStoreReviewGatewayStub,
+} from './create-app-store-gateway-stub';
+import { createClipboardGatewayStub } from './create-clipboard-gateway-stub';
+import {
+  createInstallReferrerGatewayStub,
+  createInstallationIdGatewayStub,
+  createVendorIdGatewayStub,
+} from './create-device-identity-gateway-stub';
 import { createErrorReporterStub } from './create-error-reporter-stub';
 import {
   createExternalLinkGatewayStub,
   createIncomingLinkGatewayStub,
 } from './create-external-link-gateway-stub';
-import { createHapticsStub } from './create-haptics-stub';
+import { createHapticsGatewayStub } from './create-haptics-gateway-stub';
 import { createHttpClientStub } from './create-http-client-stub';
 import { createIdGeneratorStub } from './create-id-generator-stub';
+import { createJsonFetcherStub } from './create-json-fetcher-stub';
+import type { LocalFileSystemFake } from './create-local-file-system-fake';
+import { createLocationGatewayStub } from './create-location-gateway-stub';
 import { createLoggerStub } from './create-logger-stub';
+import { createMemoryDeviceIdStore } from './create-memory-device-id-store';
 import { createMemoryObservableSyncStorage } from './create-memory-observable-sync-storage';
+import { createMemoryStorage } from './create-memory-storage';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
 import { createMemoryTokenStore } from './create-memory-token-store';
+import { createNativeApplicationMetadataGatewayStub } from './create-native-application-metadata-gateway-stub';
+import { createNetworkStatusGatewayStub } from './create-network-status-gateway-stub';
+import { createPurchasesGatewayStub } from './create-purchases-gateway-stub';
 import { createPushNotificationGatewayStub } from './create-push-notification-gateway-stub';
 import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
+import { createSocialShareGatewayStub } from './create-social-share-gateway-stub';
+import { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
+import { createSystemShareGatewayStub } from './create-system-share-gateway-stub';
+import { createTokenRefresherStub } from './create-token-refresher-stub';
 import { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
+import { createTestQueryClient } from './query-client';
 
-type TestDiOverrides = Partial<DIContainer> & {
-  /** 실제 Service들이 함께 쓰는 HTTP 포트. 응답은 테스트가 이 stub에 정한다 */
-  httpClient?: HttpClient;
-};
+/** 컨테이너에는 없지만 Service와 저장소를 조립하는 데 쓰는 포트. 운영의 `di-provider`가 지역 변수로 만드는 것들이다 */
+interface TestDiPorts {
+  /** 공개 API와 인증 API가 함께 쓰는 HTTP 포트. 응답은 테스트가 이 stub에 정한다 */
+  httpClient: HttpClient;
+  jsonFetcher: JsonFetcher;
+  appStoreReviewGateway: AppStoreReviewGateway;
+  appIconGateway: AppIconGateway;
+  socialShareGateway: SocialShareGateway;
+  installReferrerGateway: InstallReferrerGateway;
+  installationIdGateway: InstallationIdGateway;
+  vendorIdGateway: VendorIdGateway;
+  deviceIdStore: DeviceIdStore;
+  localFileSystem: LocalFileSystemFake;
+  widgetBridge: WidgetBridge;
+  requestRefresh: RefreshTokensRequest;
+  /** 암호화 초안 저장소. 초안, 말로 메모 초안, 인식 언어가 함께 쓴다 */
+  draftStorage: EnumerableSyncStorage;
+  /** 앱과 위젯이 함께 읽는 기기 저장소. 운영의 `deviceSyncStorage` 하나와 같다 */
+  syncStorage: DIContainer['syncStorage'];
+  /** 위젯 진입 명령을 남기는 저장소. 운영의 `widgetStorage`와 같다 */
+  widgetStorage: ObservableSyncStorage;
+  /** 세션 정리가 비우는 조회 캐시를 가진 클라이언트. `renderUi`는 자기 클라이언트를 넘긴다 */
+  queryClient: QueryClient;
+}
+
+export type TestDiOverrides = Partial<DIContainer> & Partial<TestDiPorts>;
 
 /**
- * 실제 Service를 포트 stub 위에 조립한 DI. `renderUi`의 `di`나 `StaticDIProvider`에 넘긴다.
- * 화면 테스트는 서비스를 mock하지 않고 `httpClient` 응답만 정한다.
- * 넣은 override는 조립한 값보다 앞서고, 조립하지 않은 포트에 손대면 이름을 대며 즉시 실패한다.
+ * 운영의 `di-provider`와 같은 모양으로 실제 Service를 포트 stub 위에 조립한 DI.
+ * `renderUi`의 `di`나 `StaticDIProvider`에 넘긴다. 서버 응답은 `httpClient`에 정한다.
+ * - 넣은 포트는 조립에도 쓰인다. `logger`를 넣으면 Service도 그 logger를 쓴다.
+ * - 저장소는 운영처럼 `syncStorage` 하나를 함께 쓴다. 값을 미리 넣으려면 `di.syncStorage.set`을 쓴다.
+ * - Service나 저장소를 직접 넣으면 조립한 것보다 앞선다.
  * 호출마다 stub과 메모리 저장소를 새로 만들어 테스트끼리 상태를 나누지 않는다.
  */
 export function createTestDi({
   httpClient = createHttpClientStub(),
+  jsonFetcher = createJsonFetcherStub(),
+  appStoreReviewGateway = createAppStoreReviewGatewayStub(),
+  appIconGateway = createAppIconGatewayStub(),
+  socialShareGateway = createSocialShareGatewayStub(),
+  installReferrerGateway = createInstallReferrerGatewayStub(),
+  installationIdGateway = createInstallationIdGatewayStub(),
+  vendorIdGateway = createVendorIdGatewayStub(),
+  deviceIdStore = createMemoryDeviceIdStore(),
+  localFileSystem,
+  widgetBridge = { writeSnapshot: jest.fn(async () => {}) },
+  requestRefresh = jest.fn(async () => {
+    throw new Error('createTestDi: requestRefresh를 정하지 않았습니다');
+  }),
+  draftStorage = createMemorySyncStorage(),
+  syncStorage = createMemoryObservableSyncStorage(),
+  widgetStorage = createMemoryObservableSyncStorage(),
+  queryClient = createTestQueryClient(),
   ...overrides
 }: TestDiOverrides = {}): DIContainer {
   const logger = overrides.logger ?? createLoggerStub();
+  const analytics = overrides.analytics ?? createAnalyticsStub();
+  const errorReporter = overrides.errorReporter ?? createErrorReporterStub();
+  const idGenerator = overrides.idGenerator ?? createIdGeneratorStub();
+  const sessionEpoch = overrides.sessionEpoch ?? createSessionEpoch();
+  const tokenStore =
+    overrides.tokenStore ?? withSessionEpoch(createMemoryTokenStore(), sessionEpoch);
+  const storage = overrides.storage ?? createMemoryStorage();
+  const socialAuthGateway = overrides.socialAuthGateway ?? createSocialAuthGatewayStub();
   const pushNotificationGateway =
     overrides.pushNotificationGateway ?? createPushNotificationGatewayStub();
+  const applicationMetadata =
+    overrides.applicationMetadata ?? createNativeApplicationMetadataGatewayStub();
+  const clipboard = overrides.clipboard ?? createClipboardGatewayStub();
+  const systemShare = overrides.systemShare ?? createSystemShareGatewayStub();
+  const locationGateway = overrides.locationGateway ?? createLocationGatewayStub();
+  const purchasesGateway = overrides.purchasesGateway ?? createPurchasesGatewayStub();
 
-  const dependencies: Partial<DIContainer> = {
-    memoService: new MemoService(httpClient, logger),
-    voiceService: new VoiceService(httpClient, logger),
-    suggestionService: new SuggestionService(httpClient, logger),
-    todoCategoryService: new TodoCategoryService(httpClient),
-    todoCommentService: new TodoCommentService(httpClient),
-    todoNudgeService: new TodoNudgeService(httpClient),
-    todoService: new TodoService(httpClient),
-    subTodoService: new SubTodoService(httpClient),
-    draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
-    activationService: new ActivationService(
-      createActivationProgressRepository(createMemorySyncStorage()),
-    ),
-    storeReviewService: new StoreReviewService(
-      createStoreReviewRepository(createMemorySyncStorage()),
-      { isAvailable: jest.fn().mockResolvedValue(false), requestReview: jest.fn() },
-      getNowInstant,
-    ),
-    inquiryService: new InquiryService(httpClient),
-    achievementService: new AchievementService(httpClient),
-    appIconService: new AppIconService(createAppIconGatewayStub()),
-    appVersionService: new AppVersionService({ get: jest.fn() }),
-    applicationMetadata: {
-      getInstallation: () => ({ platform: 'ios', currentVersion: '1.15.0' }),
+  const draftService = new DraftService(createDraftRepository(draftStorage), Date.now);
+  const voiceNoteStorage = createVoiceNoteStorageFake(localFileSystem, {
+    storage: draftStorage,
+    logger,
+  });
+  const whatsNewRepository = createWhatsNewRepository(syncStorage);
+  const coachmarkRepository = createCoachmarkRepository(syncStorage);
+  const pendingRedemptionRepository = createPendingRedemptionRepository(syncStorage);
+  const deviceTimezoneService = new DeviceTimezoneService(
+    createDeviceTimezoneRepository(syncStorage),
+  );
+  const authService = new AuthService({
+    publicHttpClient: httpClient,
+    authHttpClient: httpClient,
+    tokenStore,
+    socialAuthGateway,
+  });
+  const sessionRevocationService = new SessionRevocationService({
+    repository: createPendingRevocationRepository(storage),
+    requestRefresh,
+    publicHttpClient: httpClient,
+    logger,
+    now: Date.now,
+  });
+  const pushDeviceService = new PushDeviceService({
+    gateway: pushNotificationGateway,
+    deviceIdService: new DeviceIdService(deviceIdStore, vendorIdGateway, idGenerator),
+    httpClient,
+    logger,
+    getTimeZone: getDeviceTimezone,
+    sessionEpoch,
+  });
+  const purchasesSdkManager = new PurchasesSdkManager({
+    purchases: purchasesGateway,
+    logger,
+    analytics,
+    subscriberAttributes: {
+      appVersion: applicationMetadata.getInstallation()?.currentVersion ?? null,
+      deviceModel: null,
     },
-    appStoreListing: { openListing: jest.fn() },
-    userService: new UserService(httpClient),
+    isDebugLogEnabled: false,
+  });
+  const weatherService = new WeatherService(httpClient);
+
+  return {
+    storage,
+    logger,
+    analytics,
+    errorReporter,
+    haptics: createHapticsGatewayStub(),
+    idGenerator,
+    speechRecognizer: createSpeechRecognizerStub(),
+    purchasesGateway,
+    pushNotificationGateway,
+    tokenStore,
+    authSessionStore: createAuthSessionStore(),
+    sessionEpoch,
+    sessionManager: createSessionManager(tokenStore),
+    sessionCleanupService: new SessionCleanupService({
+      queryCache: createSessionQueryCache(queryClient),
+      persistedQueryCache: disabledQueryCacheStorage,
+      drafts: draftService,
+      voiceNotes: voiceNoteStorage.service,
+      deviceTimezone: deviceTimezoneService,
+      pendingRedemption: pendingRedemptionRepository,
+      accountGuides: [whatsNewRepository, coachmarkRepository],
+      logger,
+    }),
+    sessionRevocationService,
+    tokenRefresher: createTokenRefresherStub(),
+    featureAttribution: createFeatureAttributionStore(syncStorage),
+    draftService,
+    queryCacheStorage: disabledQueryCacheStorage,
+    recognitionLanguageRepository: createRecognitionLanguageRepository(draftStorage),
+    offlineModelPromptRepository: createOfflineModelPromptRepository(draftStorage),
+    achievementService: new AchievementService(httpClient),
+    reportService: new ReportService(httpClient, logger),
+    suggestionService: new SuggestionService(httpClient, logger),
+    consentService: new ConsentService(httpClient),
+    authService,
     preferenceService: new PreferenceService(httpClient),
-    entitlementService: new EntitlementService(httpClient, logger),
-    authService: new AuthService({
+    activationService: new ActivationService(createActivationProgressRepository(syncStorage)),
+    appVersionService: new AppVersionService(jsonFetcher),
+    appIconService: new AppIconService(appIconGateway),
+    friendService: new FriendService(httpClient),
+    inviteService: new InviteService({
       publicHttpClient: httpClient,
       authHttpClient: httpClient,
-      tokenStore: createMemoryTokenStore(),
-      socialAuthGateway: createSocialAuthGatewayStub(),
+      pendingRedemptionRepository,
+      installReferrerRepository: createInstallReferrerRepository(
+        syncStorage,
+        installReferrerGateway,
+      ),
+      installationIdGateway,
+      logger,
     }),
-    consentService: new ConsentService(httpClient),
-    coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
-    analytics: createAnalyticsStub(),
-    errorReporter: createErrorReporterStub(),
-    pushNotificationGateway,
+    allDoneBannerRepository: createAllDoneBannerRepository(syncStorage),
+    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(syncStorage),
+    inviteShareService: new InviteShareService({
+      socialShare: socialShareGateway,
+      systemShare,
+      clipboard,
+      errorReporter,
+    }),
+    featureCampaignService: new FeatureCampaignService(jsonFetcher),
+    whatsNewRepository,
+    inquiryService: new InquiryService(httpClient),
+    memoService: new MemoService(httpClient, logger),
+    voiceService: new VoiceService(httpClient, logger),
+    moderationService: new ModerationService(httpClient),
+    subTodoService: new SubTodoService(httpClient),
+    todoService: new TodoService(httpClient),
+    todoCommentService: new TodoCommentService(httpClient),
+    todoCategoryService: new TodoCategoryService(httpClient),
     notificationService: new NotificationService(httpClient, pushNotificationGateway, httpClient),
-    logger,
-    // useTrack은 모든 화면에서 귀속 저장소를 함께 주입받는다. 귀속 동작을 검증하는 테스트만 override한다
-    featureAttribution: {
-      record: jest.fn(),
-      consume: jest.fn().mockReturnValue(null),
-    },
-    // 로그아웃 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
-    deviceTimezoneService: new DeviceTimezoneService(
-      createDeviceTimezoneRepository(createMemorySyncStorage()),
-    ),
-    // 인증 입구가 항상 읽는 세대와 응답 슬롯이라 관심 없는 테스트에는 빈 값을 둔다
-    sessionEpoch: createSessionEpoch(),
-    authSessionStore: createAuthSessionStore(),
     notificationEntryStore: createNotificationEntryStore(),
-    // 햅틱은 꾸밈이라 저장·실패 흐름 테스트마다 넣지 않아도 되게 아무것도 하지 않는 stub을 둔다
-    haptics: createHapticsStub(),
-    // 링크를 여는 훅은 화면마다 렌더 때 읽으니 여는 동작을 보는 테스트만 override한다
+    pushDeviceService,
+    deviceTimezoneService,
+    pushPromptRepository: createPushPromptRepository(syncStorage),
+    marketingPushPromptRepository: createMarketingPushPromptRepository(syncStorage),
+    todoNudgeService: new TodoNudgeService(httpClient),
+    coachmarkService: new CoachmarkService(coachmarkRepository),
+    storeReviewService: new StoreReviewService(
+      createStoreReviewRepository(syncStorage),
+      appStoreReviewGateway,
+      getNowInstant,
+    ),
+    userService: new UserService(httpClient),
+    purchasesSdkManager,
+    subscriptionService: new SubscriptionService(purchasesSdkManager, purchasesGateway, logger),
+    entitlementService: new EntitlementService(httpClient, logger),
+    weatherService,
+    weatherLocationService: new WeatherLocationService({
+      gateway: locationGateway,
+      weatherService,
+      logger,
+      errorReporter,
+    }),
+    weatherIntroductionRepository: createWeatherIntroductionRepository(syncStorage),
+    locationGateway,
+    clipboard,
+    applicationMetadata,
+    socialAuthGateway,
+    appStoreListing: createAppStoreListingGatewayStub(),
     externalLink: createExternalLinkGatewayStub(),
+    systemShare,
     incomingLink: createIncomingLinkGatewayStub(),
-    // 기기에 남기는 값을 읽는 훅이 렌더 때 읽으니 값을 정해 두는 테스트만 override한다
-    syncStorage: createMemoryObservableSyncStorage(),
-    // 공유 훅을 렌더 때 읽는 화면이 있어 공유를 보는 테스트만 override한다
-    systemShare: {
-      share: jest.fn().mockResolvedValue(true),
-      isImageShareAvailable: jest.fn().mockResolvedValue(true),
-      shareImage: jest.fn().mockResolvedValue(undefined),
-    },
-    // 초안 id·멱등 키는 쓰는 화면이 많아 호출마다 다른 값을 주는 stub을 기본으로 둔다
-    idGenerator: createIdGeneratorStub(),
-    // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
-    ...createVoiceNoteStorageFake().di,
-    // 초대 안내 배너를 그리는 화면이 렌더 때 읽는 저장소라 빈 메모리 저장소를 둔다
-    allDoneBannerRepository: createAllDoneBannerRepository(createMemorySyncStorage()),
-    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(createMemorySyncStorage()),
-    // 사용자 식별 훅이 로그인 때 주인을 지정하는 저장소라 기기에 남기지 않는 저장소를 둔다
-    queryCacheStorage: disabledQueryCacheStorage,
-    // 말로 메모 녹음 훅이 항상 읽는다. 받기 안내를 보는 테스트만 override한다
-    offlineModelPromptRepository: createOfflineModelPromptRepository(createMemorySyncStorage()),
+    syncStorage,
+    networkStatus: createNetworkStatusGatewayStub(),
+    widgetSyncService: new WidgetSyncService(widgetBridge, errorReporter),
+    widgetNavigationRepository: createWidgetNavigationRepository(widgetStorage),
+    logOutDeviceService: new LogOutDeviceService({
+      authService,
+      pushDeviceService,
+      tokenStore,
+      sessionRevocationService,
+      sessionEpoch,
+      logger,
+    }),
+    ...voiceNoteStorage.di,
     ...overrides,
   };
-
-  const dependency = <TKey extends keyof DIContainer>(key: TKey): DIContainer[TKey] => {
-    const value = dependencies[key];
-    if (value == null) {
-      throw new Error(`테스트 DI에 '${key}'가 주입되지 않았습니다`);
-    }
-    return value;
-  };
-
-  const container: DIContainer = {
-    get storage() {
-      return dependency('storage');
-    },
-    get locationGateway() {
-      return dependency('locationGateway');
-    },
-    get socialAuthGateway() {
-      return dependency('socialAuthGateway');
-    },
-    get applicationMetadata() {
-      return dependency('applicationMetadata');
-    },
-    get appStoreListing() {
-      return dependency('appStoreListing');
-    },
-    get clipboard() {
-      return dependency('clipboard');
-    },
-    get externalLink() {
-      return dependency('externalLink');
-    },
-    get systemShare() {
-      return dependency('systemShare');
-    },
-    get syncStorage() {
-      return dependency('syncStorage');
-    },
-    get incomingLink() {
-      return dependency('incomingLink');
-    },
-    get networkStatus() {
-      return dependency('networkStatus');
-    },
-    get logger() {
-      return dependency('logger');
-    },
-    get analytics() {
-      return dependency('analytics');
-    },
-    get errorReporter() {
-      return dependency('errorReporter');
-    },
-    get haptics() {
-      return dependency('haptics');
-    },
-    get idGenerator() {
-      return dependency('idGenerator');
-    },
-    get speechRecognizer() {
-      return dependency('speechRecognizer');
-    },
-    get purchasesGateway() {
-      return dependency('purchasesGateway');
-    },
-    get pushNotificationGateway() {
-      return dependency('pushNotificationGateway');
-    },
-    get sessionEpoch() {
-      return dependency('sessionEpoch');
-    },
-    get notificationEntryStore() {
-      return dependency('notificationEntryStore');
-    },
-    get tokenStore() {
-      return dependency('tokenStore');
-    },
-    get authSessionStore() {
-      return dependency('authSessionStore');
-    },
-    get sessionManager() {
-      return dependency('sessionManager');
-    },
-    get sessionCleanupService() {
-      return dependency('sessionCleanupService');
-    },
-    get sessionRevocationService() {
-      return dependency('sessionRevocationService');
-    },
-    get tokenRefresher() {
-      return dependency('tokenRefresher');
-    },
-    get featureAttribution() {
-      return dependency('featureAttribution');
-    },
-    get draftService() {
-      return dependency('draftService');
-    },
-    get queryCacheStorage() {
-      return dependency('queryCacheStorage');
-    },
-    get recognitionLanguageRepository() {
-      return dependency('recognitionLanguageRepository');
-    },
-    get offlineModelPromptRepository() {
-      return dependency('offlineModelPromptRepository');
-    },
-    get achievementService() {
-      return dependency('achievementService');
-    },
-    get reportService() {
-      return dependency('reportService');
-    },
-    get suggestionService() {
-      return dependency('suggestionService');
-    },
-    get consentService() {
-      return dependency('consentService');
-    },
-    get authService() {
-      return dependency('authService');
-    },
-    get preferenceService() {
-      return dependency('preferenceService');
-    },
-    get activationService() {
-      return dependency('activationService');
-    },
-    get appVersionService() {
-      return dependency('appVersionService');
-    },
-    get appIconService() {
-      return dependency('appIconService');
-    },
-    get friendService() {
-      return dependency('friendService');
-    },
-    get inviteService() {
-      return dependency('inviteService');
-    },
-    get inviteShareService() {
-      return dependency('inviteShareService');
-    },
-    get featureCampaignService() {
-      return dependency('featureCampaignService');
-    },
-    get whatsNewRepository() {
-      return dependency('whatsNewRepository');
-    },
-    get inquiryService() {
-      return dependency('inquiryService');
-    },
-    get voiceService() {
-      return dependency('voiceService');
-    },
-    get memoService() {
-      return dependency('memoService');
-    },
-    get moderationService() {
-      return dependency('moderationService');
-    },
-    get subTodoService() {
-      return dependency('subTodoService');
-    },
-    get todoService() {
-      return dependency('todoService');
-    },
-    get todoCommentService() {
-      return dependency('todoCommentService');
-    },
-    get todoCategoryService() {
-      return dependency('todoCategoryService');
-    },
-    get notificationService() {
-      return dependency('notificationService');
-    },
-    get pushDeviceService() {
-      return dependency('pushDeviceService');
-    },
-    get deviceTimezoneService() {
-      return dependency('deviceTimezoneService');
-    },
-    get pushPromptRepository() {
-      return dependency('pushPromptRepository');
-    },
-    get marketingPushPromptRepository() {
-      return dependency('marketingPushPromptRepository');
-    },
-    get todoNudgeService() {
-      return dependency('todoNudgeService');
-    },
-    get coachmarkService() {
-      return dependency('coachmarkService');
-    },
-    get storeReviewService() {
-      return dependency('storeReviewService');
-    },
-    get userService() {
-      return dependency('userService');
-    },
-    get purchasesSdkManager() {
-      return dependency('purchasesSdkManager');
-    },
-    get subscriptionService() {
-      return dependency('subscriptionService');
-    },
-    get entitlementService() {
-      return dependency('entitlementService');
-    },
-    get weatherService() {
-      return dependency('weatherService');
-    },
-    get weatherLocationService() {
-      return dependency('weatherLocationService');
-    },
-    get weatherIntroductionRepository() {
-      return dependency('weatherIntroductionRepository');
-    },
-    get widgetSyncService() {
-      return dependency('widgetSyncService');
-    },
-    get widgetNavigationRepository() {
-      return dependency('widgetNavigationRepository');
-    },
-    get allDoneBannerRepository() {
-      return dependency('allDoneBannerRepository');
-    },
-    get pawPrintCelebrationRepository() {
-      return dependency('pawPrintCelebrationRepository');
-    },
-    get logOutDeviceService() {
-      return dependency('logOutDeviceService');
-    },
-    get voiceNoteStorageService() {
-      return dependency('voiceNoteStorageService');
-    },
-    get voiceNoteDraftRepository() {
-      return dependency('voiceNoteDraftRepository');
-    },
-    get voiceRecordingRepository() {
-      return dependency('voiceRecordingRepository');
-    },
-  };
-
-  // 펼치면(`{ ...createTestDi() }`) 주입한 포트만 복사되고, 안 넣은 포트의 getter는 건드리지 않는다
-  const provided = new Set(Object.keys(dependencies));
-  Object.keys(container)
-    .filter((key) => !provided.has(key))
-    .forEach((key) => Object.defineProperty(container, key, { enumerable: false }));
-
-  return container;
 }

@@ -11,11 +11,11 @@ import {
   createExternalLinkGatewayStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
+  createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
   stubWindowDimensions,
 } from '@src/shared/__tests__';
-import { createPendingResponse } from '@src/shared/__tests__/create-pending-response';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError, NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';

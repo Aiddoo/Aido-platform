@@ -1,7 +1,7 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { ok } from '@src/core/errors/result';
-import { createHapticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, useMutation } from '@tanstack/react-query';
@@ -24,7 +24,7 @@ async function renderSubmit(httpClient: ReturnType<typeof createHttpClientStub>)
   }
   await renderUi(<Capture />, {
     withOverlay: true,
-    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
   if (submit == null) {
     throw new Error('mutation을 받지 못했다');

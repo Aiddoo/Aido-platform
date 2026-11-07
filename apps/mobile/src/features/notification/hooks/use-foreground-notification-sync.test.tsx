@@ -1,10 +1,10 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createHttpClientStub,
+  createLoggerStub,
   createPushNotificationGatewayStub,
   createTestDi,
 } from '@src/shared/__tests__';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';

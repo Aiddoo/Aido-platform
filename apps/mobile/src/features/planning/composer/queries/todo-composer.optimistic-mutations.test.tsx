@@ -30,7 +30,6 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createPendingResponse,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -88,7 +87,7 @@ async function renderMutations() {
     </LocalDateProvider>,
     {
       queryClient,
-      di: createTestDi({
+      di: {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
@@ -98,7 +97,7 @@ async function renderMutations() {
           { isAvailable: async () => false, requestReview: async () => undefined },
           getNowInstant,
         ),
-      }),
+      },
     },
   );
 

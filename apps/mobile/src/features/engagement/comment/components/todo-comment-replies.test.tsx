@@ -5,10 +5,9 @@ import {
   createClipboardGatewayStub,
   createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
   createPendingResponse,
-  createTestDi,
 } from '@src/shared/__tests__';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -79,13 +78,13 @@ async function renderThreadWithReplies() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: createTestDi({
+      di: {
         httpClient,
         analytics: createAnalyticsStub(),
         clipboard: createClipboardGatewayStub(),
         logger: createLoggerStub(),
         errorReporter: createErrorReporterStub(),
-      }),
+      },
     },
   );
   view.queryClient.setQueryData(

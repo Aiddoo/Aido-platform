@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { ok } from '@src/core/errors/result';
-import { createHapticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -16,7 +16,7 @@ async function renderInquiry(httpClient: ReturnType<typeof createHttpClientStub>
   await renderUi(<InquiryRoute />, {
     withLocalDate: true,
     withOverlay: true,
-    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
 }
 

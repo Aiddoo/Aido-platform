@@ -15,7 +15,6 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -86,7 +85,7 @@ async function renderStart({
     </LocalDateProvider>,
     {
       queryClient,
-      di: createTestDi({
+      di: {
         httpClient,
         coachmarkService: new CoachmarkService(coachmarkRepository),
         recognitionLanguageRepository:
@@ -95,7 +94,7 @@ async function renderStart({
         analytics,
         errorReporter: createErrorReporterStub(),
         logger,
-      }),
+      },
     },
   );
 

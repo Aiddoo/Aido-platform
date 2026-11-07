@@ -3,7 +3,7 @@ import { PreferenceService } from '@src/features/identity/preference/apis/prefer
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import {
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createAnalyticsStub,
   createHttpClientStub,
 } from '@src/shared/__tests__';
@@ -35,7 +35,7 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
         preferenceService: new PreferenceService(createHttpClientStub()),
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
       },
     },
   );

@@ -7,7 +7,6 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -49,7 +48,7 @@ async function renderMarkControl({
     <Suspense>
       <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onPress} />
     </Suspense>,
-    { di: createTestDi({ httpClient, coachmarkService, analytics }) },
+    { di: { httpClient, coachmarkService, analytics } },
   );
   await screen.findByTestId('voice-note-mark');
 

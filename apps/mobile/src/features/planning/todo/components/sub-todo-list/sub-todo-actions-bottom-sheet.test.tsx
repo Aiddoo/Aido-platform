@@ -5,7 +5,6 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createPendingResponse,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -46,11 +45,11 @@ describe('SubTodoActionsBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: createTestDi({
+        di: {
           httpClient,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
-        }),
+        },
         queryClient,
       },
     );

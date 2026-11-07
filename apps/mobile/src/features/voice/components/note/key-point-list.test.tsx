@@ -7,7 +7,6 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -33,7 +32,7 @@ describe('KeyPointList', () => {
     await renderUi(
       <KeyPointList hasTimeCoachmark keyPoints={keyPoints} onPressKeyPoint={onPressKeyPoint} />,
       {
-        di: createTestDi({ httpClient, analytics }),
+        di: { httpClient, analytics },
       },
     );
     await waitFor(() =>
@@ -76,7 +75,7 @@ describe('KeyPointList', () => {
 
     // When
     await renderUi(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
-      di: createTestDi({ httpClient, analytics, coachmarkService }),
+      di: { httpClient, analytics, coachmarkService },
     });
     await new Promise((resolve) => {
       setTimeout(resolve, 600);

@@ -13,7 +13,6 @@ import {
   createHttpClientStub,
   createLoggerStub,
   createPurchasesGatewayStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -102,7 +101,7 @@ async function renderSubscriptionScreen(
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: createTestDi({
+      di: {
         httpClient,
         analytics,
         errorReporter: createErrorReporterStub(),
@@ -110,7 +109,7 @@ async function renderSubscriptionScreen(
         purchasesSdkManager: sdkManager,
         subscriptionService: new SubscriptionService(sdkManager, purchases, createLoggerStub()),
         applicationMetadata: { getInstallation: () => undefined },
-      }),
+      },
       queryClient,
     },
   );

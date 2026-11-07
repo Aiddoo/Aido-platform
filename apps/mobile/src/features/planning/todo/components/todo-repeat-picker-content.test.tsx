@@ -1,6 +1,6 @@
 import {
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createAnalyticsStub,
 } from '@src/shared/__tests__';
 import '@src/shared/i18n/init';
@@ -27,7 +27,7 @@ async function renderSheet({
 }: { repeat?: TodoRepeat | null; startDate?: Date } = {}) {
   const onChange = jest.fn();
   const onCancel = jest.fn();
-  const haptics = createHapticsStub();
+  const haptics = createHapticsGatewayStub();
 
   await renderUi(
     <LocalDateProvider>

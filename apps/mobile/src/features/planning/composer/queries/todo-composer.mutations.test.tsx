@@ -2,9 +2,8 @@ import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import {
   createAnalyticsStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError, ParseError } from '@src/shared/errors';
@@ -32,11 +31,11 @@ async function updateFollowing(error: ApiError) {
   }
 
   const { queryClient } = await renderUi(<Probe />, {
-    di: createTestDi({
+    di: {
       httpClient,
       analytics: createAnalyticsStub(),
-      haptics: createHapticsStub(),
-    }),
+      haptics: createHapticsGatewayStub(),
+    },
     withOverlay: true,
   });
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
@@ -90,7 +89,7 @@ describe('이후 회차까지 고치다 거절됐을 때', () => {
 async function createFailing(failure: Error) {
   const httpClient = createHttpClientStub();
   httpClient.post.mockRejectedValue(failure);
-  const haptics = createHapticsStub();
+  const haptics = createHapticsGatewayStub();
   const current: { value: ReturnType<typeof useCreate> | null } = { value: null };
 
   function useCreate() {
@@ -103,11 +102,11 @@ async function createFailing(failure: Error) {
   }
 
   await renderUi(<Probe />, {
-    di: createTestDi({
+    di: {
       httpClient,
       analytics: createAnalyticsStub(),
       haptics,
-    }),
+    },
     withOverlay: true,
   });
   const create = current.value;

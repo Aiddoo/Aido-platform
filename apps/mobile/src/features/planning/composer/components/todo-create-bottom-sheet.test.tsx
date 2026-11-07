@@ -7,13 +7,12 @@ import { VoiceService } from '@src/features/voice/apis/voice.service';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -43,7 +42,7 @@ async function renderCreateSheet() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: createTestDi({
+      di: {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
@@ -52,9 +51,9 @@ async function renderCreateSheet() {
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         storage: createMemoryStorage(),
-      }),
+      },
     },
   );
 

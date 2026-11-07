@@ -1,5 +1,5 @@
 import { err } from '@src/core/errors/result';
-import { createHapticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -27,7 +27,7 @@ async function renderUpdate(httpClient = createHttpClientStub()) {
   }
   await renderUi(<Capture />, {
     queryClient,
-    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
   const cached = () => queryClient.getQueryData<Preference>(PREFERENCE_QUERY_KEYS.current());
 

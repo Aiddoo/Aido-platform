@@ -6,7 +6,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-query-keys';
-import { createTestQueryClient } from '@src/shared/__tests__/render-ui';
+import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';

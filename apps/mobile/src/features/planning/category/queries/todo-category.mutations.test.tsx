@@ -1,8 +1,7 @@
 import {
   createAnalyticsStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -44,7 +43,7 @@ async function renderMutations() {
   }
   await renderUi(<Capture />, {
     queryClient,
-    di: createTestDi({ httpClient, analytics, haptics: createHapticsStub() }),
+    di: { httpClient, analytics, haptics: createHapticsGatewayStub() },
   });
 
   return {

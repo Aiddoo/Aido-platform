@@ -1,4 +1,4 @@
-import { createHapticsStub } from '@src/shared/__tests__/create-haptics-stub';
+import { createHapticsGatewayStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { act, screen } from '@testing-library/react-native';
@@ -6,7 +6,7 @@ import { act, screen } from '@testing-library/react-native';
 import { useMutationFailure } from './use-mutation-failure';
 
 async function renderFailure(defaultFallback?: string) {
-  const haptics = createHapticsStub();
+  const haptics = createHapticsGatewayStub();
   let showFailure: ReturnType<typeof useMutationFailure> | undefined;
   function Capture() {
     showFailure = useMutationFailure(defaultFallback);

@@ -4,7 +4,9 @@ import { renderRouter } from 'expo-router/testing-library';
 import type { ComponentType, PropsWithChildren } from 'react';
 import { Fragment } from 'react';
 
-const EMPTY_SCREEN = () => null;
+function EmptyScreen() {
+  return null;
+}
 
 interface RenderRouteHookOptions {
   /** 훅을 돌릴 화면의 주소. 처음 열리는 URL이기도 하다 */
@@ -43,7 +45,7 @@ export async function renderRouteHook<T>(
     {
       _layout: () => <Stack />,
       [`${pathname.replace(/^\//, '')}/index`]: HookScreen,
-      ...Object.fromEntries(screens.map((screen) => [screen, EMPTY_SCREEN])),
+      ...Object.fromEntries(screens.map((screen) => [screen, EmptyScreen])),
     },
     { initialUrl: from ?? url },
   );

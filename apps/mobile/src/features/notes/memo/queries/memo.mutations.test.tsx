@@ -4,10 +4,9 @@ import { createActivationProgressRepository } from '@src/features/device/activat
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import {
   createAnalyticsStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -53,11 +52,11 @@ async function updateMemo(client: QueryClient) {
   }
   const { unmount } = await renderUi(<CaptureOptions />, {
     queryClient: client,
-    di: createTestDi({
+    di: {
       httpClient,
-      haptics: createHapticsStub(),
+      haptics: createHapticsGatewayStub(),
       analytics: createAnalyticsStub(),
-    }),
+    },
   });
   if (options == null) {
     throw new Error('mutation 옵션을 받지 못했다');
@@ -141,11 +140,11 @@ describe('오프라인에서 AI 정리', () => {
     await renderUi(<Capture />, {
       withLocalDate: true,
       withOverlay: true,
-      di: createTestDi({
+      di: {
         httpClient,
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
-      }),
+      },
     });
 
     // When
@@ -177,13 +176,13 @@ describe('오프라인에서 할 일로 바꾸기', () => {
     }
     await renderUi(<Capture />, {
       withOverlay: true,
-      di: createTestDi({
+      di: {
         httpClient,
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         activationService: new ActivationService(
           createActivationProgressRepository(createMemorySyncStorage()),
         ),
-      }),
+      },
     });
 
     // When
@@ -227,7 +226,7 @@ describe('오프라인에서 메모 삭제', () => {
       return null;
     }
     await renderUi(<Capture />, {
-      di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+      di: { httpClient, haptics: createHapticsGatewayStub() },
     });
 
     // When

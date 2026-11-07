@@ -1,21 +1,16 @@
-import type {
-  AppleSignInResult,
-  OAuthSessionRequest,
-  OAuthSessionResult,
-  SocialAuthGateway,
-} from '@src/core/ports/social-auth-gateway';
+import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 
+import { mockMethod } from './mock-method';
+
+/** 사용자가 로그인 창을 닫는 기기가 기본값이다. 성공 응답은 값이 필요하니 테스트가 정한다 */
 export function createSocialAuthGatewayStub(): jest.Mocked<SocialAuthGateway> {
   return {
-    openOAuthSession: jest.fn<Promise<OAuthSessionResult>, [OAuthSessionRequest]>(async () => ({
+    openOAuthSession: mockMethod<SocialAuthGateway['openOAuthSession']>(async () => ({
+      type: 'cancelled',
+    })),
+    signInWithApple: mockMethod<SocialAuthGateway['signInWithApple']>(async () => ({
       type: 'cancelled',
     })),
     completeOAuthSession: jest.fn(),
-    signInWithApple: jest.fn<Promise<AppleSignInResult>, []>(async () => ({
-      type: 'success',
-      identityToken: 'apple-id-token',
-      nonce: 'apple-nonce',
-      givenName: null,
-    })),
   };
 }

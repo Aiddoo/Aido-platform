@@ -11,7 +11,6 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -51,7 +50,7 @@ async function renderSteps() {
     queryClient,
     withLocalDate: true,
     withOverlay: true,
-    di: createTestDi({
+    di: {
       httpClient,
       analytics,
       logger,
@@ -60,7 +59,7 @@ async function renderSteps() {
       featureAttribution: createFeatureAttributionStore(createMemorySyncStorage()),
       recognitionLanguageRepository: createRecognitionLanguageRepository(createMemorySyncStorage()),
       speechRecognizer: createSpeechRecognizerStub(),
-    }),
+    },
   });
 
   return { ...view, analytics, storage };

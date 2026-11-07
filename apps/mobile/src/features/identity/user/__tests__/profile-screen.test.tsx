@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createPendingResponse, createTestDi } from '@src/shared/__tests__';
+import { createHttpClientStub, createPendingResponse } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { i18n } from '@src/shared/i18n';
 import { act, screen } from '@testing-library/react-native';
@@ -16,7 +16,7 @@ describe('프로필 화면', () => {
     httpClient.get.mockReturnValue(pending.response);
 
     // When
-    await renderUi(<ProfileScreen />, { di: createTestDi({ httpClient }), withOverlay: true });
+    await renderUi(<ProfileScreen />, { di: { httpClient }, withOverlay: true });
 
     // Then
     expect(screen.getByText(i18n.t('settings:titles.linkedAccounts'))).toBeTruthy();

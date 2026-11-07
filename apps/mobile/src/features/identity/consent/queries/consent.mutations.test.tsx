@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createHttpClientStub, createTestDi } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -33,7 +33,7 @@ async function renderMarketing(httpClient = createHttpClientStub()) {
     marketingPush = useMarketingPush();
     return null;
   }
-  await renderUi(<Capture />, { queryClient, di: createTestDi({ httpClient }) });
+  await renderUi(<Capture />, { queryClient, di: { httpClient } });
 
   return {
     cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent()),

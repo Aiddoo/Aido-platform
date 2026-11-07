@@ -4,7 +4,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import {
   createAnalyticsStub,
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
   createLocalFileSystemFake,
   createVoiceNoteStorageFake,
@@ -58,7 +58,7 @@ async function renderScreen({
         ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
       },
     },
   );

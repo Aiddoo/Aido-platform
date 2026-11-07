@@ -6,7 +6,6 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -44,13 +43,13 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
       queryClient,
       withLocalDate: true,
       withOverlay: true,
-      di: createTestDi({
+      di: {
         httpClient,
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
         ...voiceNoteStorage.di,
-      }),
+      },
     },
   );
 }

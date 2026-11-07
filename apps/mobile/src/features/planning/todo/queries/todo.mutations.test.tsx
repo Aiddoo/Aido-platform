@@ -11,7 +11,6 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createPendingResponse,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { getNowInstant } from '@src/shared/date/instant';
@@ -62,7 +61,7 @@ async function renderToggle() {
       <Probe />
     </LocalDateProvider>,
     {
-      di: createTestDi({
+      di: {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
@@ -70,7 +69,7 @@ async function renderToggle() {
           createActivationProgressRepository(createMemorySyncStorage()),
         ),
         storeReviewService,
-      }),
+      },
     },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });

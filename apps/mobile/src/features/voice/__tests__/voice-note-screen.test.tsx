@@ -12,11 +12,10 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/consta
 import {
   createAnalyticsStub,
   createErrorReporterStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
-  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -108,16 +107,16 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
     </LocalDateProvider>,
     {
       queryClient,
-      di: createTestDi({
+      di: {
         httpClient,
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMemoryStorage(),
         ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         logger,
-      }),
+      },
     },
   );
 

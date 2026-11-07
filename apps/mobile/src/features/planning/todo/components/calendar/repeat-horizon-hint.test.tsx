@@ -11,9 +11,8 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient, renderUi } from '@src/shared/__tests__/render-ui';
+import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -72,13 +71,13 @@ async function renderHint({
     );
   };
   const { rerender } = await renderUi(hint('2027-03-01'), {
-    di: createTestDi({
+    di: {
       httpClient,
       coachmarkService,
       analytics,
       errorReporter: createErrorReporterStub(),
       userService,
-    }),
+    },
     queryClient,
   });
 

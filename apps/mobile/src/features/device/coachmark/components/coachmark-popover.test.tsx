@@ -5,7 +5,6 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
@@ -37,7 +36,7 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
     <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명">
       <Text testID="target">마이크</Text>
     </CoachmarkPopover>,
-    { di: createTestDi({ httpClient, coachmarkService, analytics }) },
+    { di: { httpClient, coachmarkService, analytics } },
   );
 
   return { analytics };
@@ -68,7 +67,7 @@ async function renderCoachmarkOnHiddenTab() {
     </CoachmarkPopover>
   );
   const { rerender } = await renderUi(coachmark(), {
-    di: createTestDi({ httpClient, coachmarkService, analytics }),
+    di: { httpClient, coachmarkService, analytics },
   });
 
   return {
@@ -123,7 +122,7 @@ describe('CoachmarkPopover', () => {
         <Target />
       </CoachmarkPopover>,
       {
-        di: createTestDi({ httpClient, analytics: createAnalyticsStub() }),
+        di: { httpClient, analytics: createAnalyticsStub() },
       },
     );
     expect(onMount).toHaveBeenCalledTimes(1);
@@ -148,7 +147,7 @@ describe('CoachmarkPopover', () => {
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
       {
-        di: createTestDi({ httpClient, analytics }),
+        di: { httpClient, analytics },
       },
     );
     await act(async () => {
@@ -278,7 +277,7 @@ describe('CoachmarkPopover', () => {
       <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
-      { di: createTestDi({ httpClient, coachmarkService, analytics }) },
+      { di: { httpClient, coachmarkService, analytics } },
     );
 
     // Then
@@ -322,7 +321,7 @@ describe('CoachmarkPopover', () => {
       </CoachmarkPopover>
     );
     const { rerender } = await renderUi(renderHint(false), {
-      di: createTestDi({ httpClient, coachmarkService, analytics }),
+      di: { httpClient, coachmarkService, analytics },
     });
     await waitFor(() =>
       expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
@@ -363,7 +362,7 @@ describe('CoachmarkPopover', () => {
         </CoachmarkPopover>
       );
       const { rerender } = await renderUi(coachmark('2027-03-01'), {
-        di: createTestDi({ httpClient, coachmarkService, analytics }),
+        di: { httpClient, coachmarkService, analytics },
       });
       await waitFor(() =>
         expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {

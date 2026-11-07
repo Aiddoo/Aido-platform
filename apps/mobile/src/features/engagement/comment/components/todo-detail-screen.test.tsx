@@ -13,7 +13,6 @@ import {
   createClipboardGatewayStub,
   createHttpClientStub,
   createPendingResponse,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -151,11 +150,11 @@ async function renderTodoDetail({
   const view = await renderUi(<TodoDetailRoute />, {
     withLocalDate: true,
     withOverlay: true,
-    di: createTestDi({
+    di: {
       httpClient,
       analytics,
       clipboard: createClipboardGatewayStub(),
-    }),
+    },
   });
   await screen.findByTestId('todo-comment-input-0');
   await screen.findByTestId('todo-comment-count');
@@ -360,7 +359,7 @@ describe('할 일 상세 카드', () => {
     await renderUi(<TodoDetailRoute />, {
       withLocalDate: true,
       withOverlay: true,
-      di: createTestDi({ httpClient }),
+      di: { httpClient },
     });
 
     // Then

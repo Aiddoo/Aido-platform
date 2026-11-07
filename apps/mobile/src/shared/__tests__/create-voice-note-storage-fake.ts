@@ -1,4 +1,6 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
+import type { Logger } from '@src/core/ports/logger';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import {
   createVoiceNoteDraftRepository,
   type VoiceNoteDraftRepository,
@@ -28,12 +30,21 @@ export interface VoiceNoteStorageFake {
   >;
 }
 
-export const createVoiceNoteStorageFake = (
+interface VoiceNoteStorageFakeOptions {
+  /** 초안을 남기는 저장소. 운영은 암호화 초안 저장소 하나를 다른 초안과 함께 쓴다 */
+  storage?: EnumerableSyncStorage;
+  logger?: Logger;
+}
+
+export function createVoiceNoteStorageFake(
   files: LocalFileSystemFake = createLocalFileSystemFake(),
-): VoiceNoteStorageFake => {
-  const logger = createLoggerStub();
+  {
+    storage = createMemorySyncStorage(),
+    logger = createLoggerStub(),
+  }: VoiceNoteStorageFakeOptions = {},
+): VoiceNoteStorageFake {
   const drafts = createVoiceNoteDraftRepository({
-    storage: createMemorySyncStorage(),
+    storage,
     logger,
     getTimeZone: () => 'Asia/Seoul',
   });
@@ -50,4 +61,4 @@ export const createVoiceNoteStorageFake = (
       voiceRecordingRepository: recordings,
     },
   };
-};
+}

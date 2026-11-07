@@ -1,9 +1,8 @@
 import { ok } from '@src/core/errors/result';
 import {
   createAnalyticsStub,
-  createHapticsStub,
+  createHapticsGatewayStub,
   createHttpClientStub,
-  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -36,7 +35,7 @@ async function setup() {
   }
   await renderUi(<Capture />, {
     withOverlay: true,
-    di: createTestDi({ httpClient, analytics, haptics: createHapticsStub() }),
+    di: { httpClient, analytics, haptics: createHapticsGatewayStub() },
   });
   if (reply == null || thanks == null) {
     throw new Error('mutation을 받지 못했다');

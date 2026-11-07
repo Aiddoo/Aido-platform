@@ -7,7 +7,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
-  createHapticsStub,
+  createHapticsGatewayStub,
   createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
@@ -88,7 +88,7 @@ async function renderGate(
     {
       di: {
         analytics: createAnalyticsStub(),
-        haptics: createHapticsStub(),
+        haptics: createHapticsGatewayStub(),
         logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
         consentService: new ConsentService(authHttp),
         userService: new UserService(userHttp),

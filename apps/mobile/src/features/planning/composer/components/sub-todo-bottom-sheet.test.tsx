@@ -11,11 +11,10 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
   createPendingResponse,
   createSpeechRecognizerStub,
-  createTestDi,
 } from '@src/shared/__tests__';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -65,13 +64,13 @@ async function renderEditSheet() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: createTestDi({
+      di: {
         httpClient,
         logger,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         speechRecognizer: createSpeechRecognizerStub(),
-      }),
+      },
       queryClient,
     },
   );
@@ -182,13 +181,13 @@ describe('AddSubTodoBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: createTestDi({
+        di: {
           httpClient,
           logger,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           speechRecognizer: createSpeechRecognizerStub(),
-        }),
+        },
         queryClient,
       },
     );
@@ -232,13 +231,13 @@ describe('AddSubTodoBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: createTestDi({
+        di: {
           httpClient,
           logger,
           analytics: createAnalyticsStub(),
           errorReporter: createErrorReporterStub(),
           speechRecognizer: createSpeechRecognizerStub(),
-        }),
+        },
         queryClient,
       },
     );

@@ -1,13 +1,17 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createAnalyticsStub, createHapticsStub } from '@src/shared/__tests__';
+import { createAnalyticsStub, createHapticsGatewayStub } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
-import { createAuthTokensDto, createRegisterDto } from '../__tests__/auth.fixtures';
+import {
+  createAppleSignInSuccess,
+  createAuthTokensDto,
+  createRegisterDto,
+} from '../__tests__/auth.fixtures';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import {
   useChangePasswordMutationOptions,
@@ -101,6 +105,7 @@ describe('Apple 로그인', () => {
   async function loginWithApple(dto: ReturnType<typeof createAuthTokensDto>) {
     const analytics = createAnalyticsStub();
     const session = createAuthSession({ di: { analytics } });
+    session.socialAuthGateway.signInWithApple.mockResolvedValue(createAppleSignInSuccess());
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),
@@ -214,7 +219,7 @@ describe('비밀번호 변경 실패 안내', () => {
 
   it('네트워크 오류도 오류 화면으로 바꾸지 않고 토스트 한 번으로 알린다', async () => {
     // Given
-    const haptics = createHapticsStub();
+    const haptics = createHapticsGatewayStub();
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, di: { haptics } });
     const error = new NetworkError();
     session.authHttp.patch.mockRejectedValue(error);
@@ -304,7 +309,7 @@ describe('소셜 로그인 실패 안내', () => {
 
   it('Apple 로그인 창을 닫으면 토스트 없이 햅틱만 울린다', async () => {
     // Given
-    const haptics = createHapticsStub();
+    const haptics = createHapticsGatewayStub();
     const session = createAuthSession({ di: { haptics } });
     session.socialAuthGateway.signInWithApple.mockResolvedValue({ type: 'cancelled' });
 
