@@ -1,9 +1,10 @@
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
-import { VoiceNoteRecordCaptions } from '@src/features/voice/components/note/voice-note-record-captions';
+import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
+import { VoiceNoteDigest } from '@src/features/voice/components/note/voice-note-digest';
 import { VoiceNoteRecordFooter } from '@src/features/voice/components/note/voice-note-record-footer';
 import { VoiceNoteRecordLanguageToggle } from '@src/features/voice/components/note/voice-note-record-language-toggle';
-import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
@@ -13,7 +14,10 @@ import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-not
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import type { VoiceCaptureState } from '@src/features/voice/schemas/voice-capture.schema';
 import { voiceNoteRecordParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
+import { getRecordingRingLayout } from '@src/features/voice/utils/recording-timer.geometry';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -30,7 +34,12 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
-import { Suspense, useEffect, useLayoutEffect, useRef } from 'react';
+import { Skeleton } from 'heroui-native';
+import { type ComponentProps, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
+import { useWindowDimensions } from 'react-native';
+import { match } from 'ts-pattern';
+
+const MARK_HINT_HEIGHT = 124;
 
 function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
@@ -83,7 +92,7 @@ function VoiceNoteRecordScreen() {
     />
   );
   const captions = (
-    <VoiceNoteRecordCaptions sentences={recording.sentences} interimText={recording.interimText} />
+    <RecordCaptions sentences={recording.sentences} interimText={recording.interimText} />
   );
   const footer = (
     <VoiceNoteRecordFooter
@@ -140,6 +149,58 @@ function VoiceNoteRecordScreen() {
   );
 }
 
+/** 헤더는 레이아웃이 미리 그려 받은 뒤에 밀리지 않는다. 시계와 파형 자리를 받은 뒤와 같은 배치로 잡는다 */
+VoiceNoteRecordScreen.Loading = function Loading() {
+  const isOnline = useIsOnline();
+  const isCompact = useWindowSizeClass() === 'compact';
+  const { height: windowHeight } = useWindowDimensions();
+  const { size: ringSize } = getRecordingRingLayout(windowHeight);
+
+  const clock = <Skeleton className="rounded-full" style={{ width: ringSize, height: ringSize }} />;
+  const waveform = <Skeleton className="h-20 self-stretch rounded-xl" />;
+
+  return match(isOnline)
+    .with(true, () =>
+      isCompact ? (
+        <VStack flex={1} gap={12} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
+          <VStack align="center">{clock}</VStack>
+          {waveform}
+        </VStack>
+      ) : (
+        <HStack flex={1} gap={20} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
+          <VStack flex={1} gap={12} justify="center" align="center">
+            {clock}
+            {waveform}
+          </VStack>
+          <VStack flex={1} />
+        </HStack>
+      ),
+    )
+    .with(false, () => <VoiceNoteDigest.Offline />)
+    .exhaustive();
+};
+
+function RecordCaptions(
+  props: Omit<
+    ComponentProps<typeof SentenceCaptionList>,
+    'isLive' | 'contentBottomInset' | 'className'
+  >,
+) {
+  const isCompact = useWindowSizeClass() === 'compact';
+  const fontScaledSize = useFontScaledSize();
+  const [isMarkHintPending] = useMyPendingCoachmark('voice-note-mark');
+
+  return (
+    <SentenceCaptionList
+      {...props}
+      isLive
+      // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
+      contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
+      className="min-h-24 flex-1"
+    />
+  );
+}
+
 interface RecordClockProps {
   state: VoiceCaptureState;
   limitMs: number | null;
@@ -162,7 +223,7 @@ export default function VoiceNoteRecordRoute() {
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
       <QueryErrorBoundary>
-        <Suspense fallback={<VoiceNoteScreenLoading />}>
+        <Suspense fallback={<VoiceNoteRecordScreen.Loading />}>
           <VoiceNoteRecordScreen />
         </Suspense>
       </QueryErrorBoundary>
