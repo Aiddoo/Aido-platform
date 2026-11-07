@@ -9,7 +9,7 @@ import {
 } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
-import { ok, type Result } from '@src/core/errors/result';
+import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
@@ -119,38 +119,33 @@ export class MemoService {
     content: string,
     categoryId: number,
     idempotencyKey: string,
-  ): Promise<Result<ParsedMemoPlan, ApiError>> => {
-    const result = await this.#httpClient.post(
-      'v1/ai/parse-memo',
-      { content, categoryId },
-      { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: PARSE_MEMO_TIMEOUT_MS },
+  ): Promise<Result<ParsedMemoPlan, ApiError>> =>
+    parseApiResponse(
+      await this.#httpClient.post(
+        'v1/ai/parse-memo',
+        { content, categoryId },
+        { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: PARSE_MEMO_TIMEOUT_MS },
+      ),
+      parseMemoResponseSchema,
+      (dto) => {
+        try {
+          return {
+            plan: toVoicePlanFromParsedMemo(idempotencyKey, dto),
+            featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
+          };
+        } catch (error) {
+          this.#logger.error(MEMO_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
+            method: 'parseMemo',
+            zodError: error instanceof Error ? error.message : undefined,
+          });
+          throw new ParseError('[MemoService] Invalid parseMemo plan');
+        }
+      },
+      '[MemoService] Invalid parseMemo response',
+      (zodError) =>
+        this.#logger.error(MEMO_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
+          method: 'parseMemo',
+          zodError,
+        }),
     );
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = parseMemoResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      this.#logger.error(MEMO_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
-        method: 'parseMemo',
-        zodError: parsed.error.message,
-      });
-      throw new ParseError(`[MemoService] Invalid parseMemo response: ${parsed.error.message}`);
-    }
-
-    try {
-      return ok({
-        plan: toVoicePlanFromParsedMemo(idempotencyKey, parsed.data),
-        featureQuota:
-          parsed.data.featureQuota == null ? null : toFeatureQuota(parsed.data.featureQuota),
-      });
-    } catch (error) {
-      this.#logger.error(MEMO_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
-        method: 'parseMemo',
-        zodError: error instanceof Error ? error.message : undefined,
-      });
-      throw new ParseError('[MemoService] Invalid parseMemo plan');
-    }
-  };
 }

@@ -1,6 +1,7 @@
 import { ApiError } from '@src/core/errors/api-error';
-import { err } from '@src/core/errors/result';
+import { err, ok } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
+import { ParseError } from '@src/shared/errors/infra-error';
 
 import { MemoService } from './memo.service';
 
@@ -22,5 +23,23 @@ describe('MemoService.parseMemo', () => {
       { content: '메모', categoryId: 1 },
       { headers: { 'Idempotency-Key': 'memo-key' }, timeout: 30_000 },
     );
+  });
+
+  test('응답이 계약과 다르면 파싱 실패를 기록하고 던진다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.post.mockResolvedValue(ok({ unexpected: true }));
+    const error = jest.fn();
+    const service = new MemoService(httpClient, { ...logger, error });
+
+    // When
+    const parsing = service.parseMemo('메모', 1, 'memo-key');
+
+    // Then
+    await expect(parsing).rejects.toBeInstanceOf(ParseError);
+    expect(error).toHaveBeenCalledWith('ai.response-parse.failed', undefined, {
+      method: 'parseMemo',
+      zodError: expect.any(String),
+    });
   });
 });
