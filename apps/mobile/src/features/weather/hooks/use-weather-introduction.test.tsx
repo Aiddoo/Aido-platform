@@ -57,12 +57,12 @@ async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {
     di: {
       locationGateway: gateway,
       weatherService,
-      weatherLocationService: new WeatherLocationService(
+      weatherLocationService: new WeatherLocationService({
         gateway,
         weatherService,
         logger,
         errorReporter,
-      ),
+      }),
       weatherIntroductionRepository: introductionRepository,
       inviteService: createStubInviteService(),
       logger,

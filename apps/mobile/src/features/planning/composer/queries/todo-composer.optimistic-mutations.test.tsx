@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
+import '@src/shared/i18n/init';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
@@ -36,6 +36,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
@@ -101,6 +102,7 @@ async function renderMutations() {
         storeReviewService: new StoreReviewService(
           createStoreReviewRepository(createMemorySyncStorage()),
           { isAvailable: async () => false, requestReview: async () => undefined },
+          getNowInstant,
         ),
       },
     },

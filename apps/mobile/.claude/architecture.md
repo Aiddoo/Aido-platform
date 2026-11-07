@@ -816,6 +816,7 @@ export function toMemo(dto: MemoDto): Memo {
 }
 ```
 
+- 생성자는 포트만 받고 기본값을 두지 않는다. 시각(`now`)처럼 바뀌는 값도 조립하는 곳이 넘긴다. 포트가 셋까지면 위치 인자, 넷부터 `{Class}Ports` 객체 하나다. 다른 Service는 쓰는 메서드만 `Pick<XService, 'method'>`로 받는다.
 - `HttpClient`의 성공 값은 `unknown`이다. 응답 타입을 generic으로 단정하지 않고 공유 스키마로 전부 검증한다.
 - 파싱 반복은 `parseApiResponse`(`shared/errors/parse-api-response.ts`)로 쓴다. 오류 문구 접두어를 그대로 받아 기존 문구, 테스트, Sentry 묶음을 유지한다. 파싱 실패 때 로그를 남기는 Service는 옮길 때 로그를 유지한다.
 - Mapper는 DTO·OS 값을 모델로 바꾸는 유일한 지점이고 순수 함수다.

@@ -7,7 +7,7 @@ import { INVITE_SHARE_IMAGE } from '../constants/invite-share';
 import type { InviteShareContent, InviteShareResult } from '../domains/invite-share.model';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
-interface InviteShareServiceDependencies {
+interface InviteShareServicePorts {
   socialShare: SocialShareGateway;
   systemShare: SystemShareGateway;
   clipboard: ClipboardGateway;
@@ -33,12 +33,7 @@ export class InviteShareService {
     system: (content) => this.#shareToSystem(content),
   };
 
-  constructor({
-    socialShare,
-    systemShare,
-    clipboard,
-    errorReporter,
-  }: InviteShareServiceDependencies) {
+  constructor({ socialShare, systemShare, clipboard, errorReporter }: InviteShareServicePorts) {
     this.#socialShare = socialShare;
     this.#systemShare = systemShare;
     this.#clipboard = clipboard;

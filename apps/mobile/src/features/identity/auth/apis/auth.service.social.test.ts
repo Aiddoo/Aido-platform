@@ -64,7 +64,12 @@ describe('소셜 로그인', () => {
     publicHttp = createHttpClientStub();
     authHttp = createHttpClientStub();
     tokenStore = createMemoryTokenStore();
-    service = new AuthService(publicHttp, authHttp, tokenStore, expoSocialAuthGateway);
+    service = new AuthService({
+      publicHttpClient: publicHttp,
+      authHttpClient: authHttp,
+      tokenStore,
+      socialAuthGateway: expoSocialAuthGateway,
+    });
   });
 
   describe('브라우저 로그인(카카오, 네이버, 구글)', () => {

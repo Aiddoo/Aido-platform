@@ -11,7 +11,7 @@ export interface SubscriberAttributes {
   deviceModel: string | null;
 }
 
-interface PurchasesSdkManagerDependencies {
+interface PurchasesSdkManagerPorts {
   purchases: PurchasesGateway;
   logger: Logger;
   analytics: Analytics;
@@ -33,7 +33,7 @@ export class PurchasesSdkManager {
     analytics,
     subscriberAttributes,
     isDebugLogEnabled,
-  }: PurchasesSdkManagerDependencies) {
+  }: PurchasesSdkManagerPorts) {
     this.#purchases = purchases;
     this.#logger = logger;
     this.#analytics = analytics;

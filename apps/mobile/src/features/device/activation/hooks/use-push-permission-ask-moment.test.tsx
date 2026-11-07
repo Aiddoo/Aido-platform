@@ -56,14 +56,14 @@ function setup({
     isUserLoadable ? { ok: true, value: user } : { ok: false, error: createUserApiError() },
   );
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-  const pushDeviceService = new PushDeviceService(
+  const pushDeviceService = new PushDeviceService({
     gateway,
-    { get: async () => 'ios_device-123' },
+    deviceIdService: { get: async () => 'ios_device-123' },
     httpClient,
-    silentLogger,
-    () => 'Asia/Seoul',
-    createSessionEpoch(),
-  );
+    logger: silentLogger,
+    getTimeZone: () => 'Asia/Seoul',
+    sessionEpoch: createSessionEpoch(),
+  });
   const activationRepository = createActivationProgressRepository(createMemorySyncStorage());
   const queryClient = createTestQueryClient();
   const container = createTestDiContainer({

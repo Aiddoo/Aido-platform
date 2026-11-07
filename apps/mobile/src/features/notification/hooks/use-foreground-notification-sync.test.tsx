@@ -16,6 +16,7 @@ async function setup(isAuthenticated: boolean) {
   const notificationService = new NotificationService(
     createHttpClientStub(),
     createPushNotificationGatewayStub(),
+    createHttpClientStub(),
   );
   const syncBadgeCount = jest.spyOn(notificationService, 'syncBadgeCount').mockResolvedValue();
   const queryClient = createTestQueryClient();

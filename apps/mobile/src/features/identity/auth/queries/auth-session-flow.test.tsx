@@ -635,12 +635,12 @@ describe('로그아웃과 늦은 갱신', () => {
         sessionEpoch,
       }),
     );
-    const authService = new AuthService(
-      createHttpClientStub(),
-      http,
+    const authService = new AuthService({
+      publicHttpClient: createHttpClientStub(),
+      authHttpClient: http,
       tokenStore,
-      createSocialAuthGatewayStub(),
-    );
+      socialAuthGateway: createSocialAuthGatewayStub(),
+    });
     const todosRequest = http.get('v1/todos').catch(() => undefined);
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
@@ -998,12 +998,12 @@ describe('토큰 만료', () => {
     const session = createAuthSession({
       tokenStore,
       di: {
-        authService: new AuthService(
-          createHttpClientStub(),
-          http,
+        authService: new AuthService({
+          publicHttpClient: createHttpClientStub(),
+          authHttpClient: http,
           tokenStore,
-          createSocialAuthGatewayStub(),
-        ),
+          socialAuthGateway: createSocialAuthGatewayStub(),
+        }),
       },
     });
     const { result } = await session.renderSession(

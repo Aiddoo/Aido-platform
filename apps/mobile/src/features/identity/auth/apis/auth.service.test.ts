@@ -28,12 +28,12 @@ describe('AuthService', () => {
     publicHttpClient = createHttpClientStub();
     authHttpClient = createHttpClientStub();
     tokenStore = createMemoryTokenStore();
-    service = new AuthService(
+    service = new AuthService({
       publicHttpClient,
       authHttpClient,
       tokenStore,
-      createSocialAuthGatewayStub(),
-    );
+      socialAuthGateway: createSocialAuthGatewayStub(),
+    });
   });
 
   // ── emailLogin ─────────────────────────────

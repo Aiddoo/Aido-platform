@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { UserService } from '@src/features/identity/user/apis/user.service';
+import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createErrorReporterStub,
@@ -11,6 +11,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -33,6 +34,7 @@ async function renderScreen({
   const storage = new VoiceNoteStorageService(
     createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
     createVoiceRecordingRepository(files, logger),
+    getNowInstant,
   );
   if (hasRecording) {
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', { sizeBytes: 2_500_000 });

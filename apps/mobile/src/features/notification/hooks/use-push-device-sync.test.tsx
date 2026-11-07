@@ -55,14 +55,14 @@ describe('usePushDeviceSync', () => {
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
     const timeZone = { current: 'Asia/Seoul' };
     const onReported = jest.fn();
-    const pushDeviceService = new PushDeviceService(
+    const pushDeviceService = new PushDeviceService({
       gateway,
-      { get: async () => 'ios_device-123' },
+      deviceIdService: { get: async () => 'ios_device-123' },
       httpClient,
-      silentLogger,
-      () => timeZone.current,
-      createSessionEpoch(),
-    );
+      logger: silentLogger,
+      getTimeZone: () => timeZone.current,
+      sessionEpoch: createSessionEpoch(),
+    });
     const container = createTestDiContainer({ pushDeviceService, logger: silentLogger });
     const queryClient = createTestQueryClient();
     const wrapper = ({ children }: PropsWithChildren) => (

@@ -211,12 +211,12 @@ export function DIProvider({
     const consentService = new ConsentService(authHttpClient);
 
     // Auth
-    const authService = new AuthService(
+    const authService = new AuthService({
       publicHttpClient,
       authHttpClient,
       tokenStore,
-      expoSocialAuthGateway,
-    );
+      socialAuthGateway: expoSocialAuthGateway,
+    });
     const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(
       createActivationProgressRepository(mmkvSyncStorage),
@@ -283,14 +283,14 @@ export function DIProvider({
       expoPushNotificationGateway,
       publicHttpClient,
     );
-    const pushDeviceService = new PushDeviceService(
-      expoPushNotificationGateway,
+    const pushDeviceService = new PushDeviceService({
+      gateway: expoPushNotificationGateway,
       deviceIdService,
-      authHttpClient,
+      httpClient: authHttpClient,
       logger,
-      getDeviceTimezone,
+      getTimeZone: getDeviceTimezone,
       sessionEpoch,
-    );
+    });
     const deviceTimezoneService = new DeviceTimezoneService(
       createDeviceTimezoneRepository(mmkvSyncStorage),
     );
@@ -317,6 +317,7 @@ export function DIProvider({
     const storeReviewService = new StoreReviewService(
       createStoreReviewRepository(mmkvSyncStorage),
       expoAppStoreGateway,
+      getNowInstant,
     );
 
     // User
@@ -350,6 +351,7 @@ export function DIProvider({
         logger,
       }),
       createVoiceRecordingRepository(expoLocalFileSystemGateway, logger),
+      getNowInstant,
     );
 
     // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
@@ -430,12 +432,12 @@ export function DIProvider({
       subscriptionService,
       entitlementService,
       weatherService,
-      weatherLocationService: new WeatherLocationService(
-        expoLocationGateway,
+      weatherLocationService: new WeatherLocationService({
+        gateway: expoLocationGateway,
         weatherService,
         logger,
         errorReporter,
-      ),
+      }),
       weatherIntroductionRepository: createWeatherIntroductionRepository(mmkvSyncStorage),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,

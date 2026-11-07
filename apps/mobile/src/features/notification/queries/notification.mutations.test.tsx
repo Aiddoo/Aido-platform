@@ -29,7 +29,7 @@ async function setup() {
   );
   const gateway = createPushNotificationGatewayStub();
   const container = createTestDiContainer({
-    notificationService: new NotificationService(httpClient, gateway),
+    notificationService: new NotificationService(httpClient, gateway, httpClient),
     logger: createLoggerStub(),
   });
   const queryClient = createTestQueryClient();

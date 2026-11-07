@@ -1,6 +1,7 @@
 import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
 import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
+import { getNowInstant } from '@src/shared/date/instant';
 
 import {
   createLocalFileSystemFake,
@@ -16,5 +17,6 @@ export const createVoiceNoteStorageServiceFake = (
   return new VoiceNoteStorageService(
     createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
     createVoiceRecordingRepository(files, logger),
+    getNowInstant,
   );
 };

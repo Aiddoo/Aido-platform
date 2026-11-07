@@ -23,6 +23,7 @@ import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.servic
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
+import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 
@@ -67,6 +68,7 @@ export function createTestDi({
     storeReviewService: new StoreReviewService(
       createStoreReviewRepository(createMemorySyncStorage()),
       { isAvailable: jest.fn().mockResolvedValue(false), requestReview: jest.fn() },
+      getNowInstant,
     ),
     inquiryService: new InquiryService(httpClient),
     achievementService: new AchievementService(httpClient),
@@ -79,12 +81,12 @@ export function createTestDi({
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
-    authService: new AuthService(
-      httpClient,
-      httpClient,
-      createMemoryTokenStore(),
-      createSocialAuthGatewayStub(),
-    ),
+    authService: new AuthService({
+      publicHttpClient: httpClient,
+      authHttpClient: httpClient,
+      tokenStore: createMemoryTokenStore(),
+      socialAuthGateway: createSocialAuthGatewayStub(),
+    }),
     consentService: new ConsentService(httpClient),
     coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
     analytics: createAnalyticsStub(),

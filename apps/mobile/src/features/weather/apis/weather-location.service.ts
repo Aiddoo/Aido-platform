@@ -23,18 +23,20 @@ interface ResolveLocationInput {
   readReportLocation: (revision: number) => Promise<Coordinates | null>;
 }
 
+interface WeatherLocationServicePorts {
+  gateway: LocationGateway;
+  weatherService: Pick<WeatherService, 'updateLocation'>;
+  logger: Logger;
+  errorReporter: ErrorReporter;
+}
+
 export class WeatherLocationService {
   readonly #gateway: LocationGateway;
-  readonly #weatherService: WeatherService;
+  readonly #weatherService: Pick<WeatherService, 'updateLocation'>;
   readonly #logger: Logger;
   readonly #errorReporter: ErrorReporter;
 
-  constructor(
-    gateway: LocationGateway,
-    weatherService: WeatherService,
-    logger: Logger,
-    errorReporter: ErrorReporter,
-  ) {
+  constructor({ gateway, weatherService, logger, errorReporter }: WeatherLocationServicePorts) {
     this.#gateway = gateway;
     this.#weatherService = weatherService;
     this.#logger = logger;

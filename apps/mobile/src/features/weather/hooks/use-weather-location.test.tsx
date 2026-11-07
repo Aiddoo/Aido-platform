@@ -69,12 +69,12 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   const container = createTestDiContainer({
     locationGateway: gateway,
     weatherService,
-    weatherLocationService: new WeatherLocationService(
+    weatherLocationService: new WeatherLocationService({
       gateway,
       weatherService,
       logger,
       errorReporter,
-    ),
+    }),
     logger,
     errorReporter,
     analytics,

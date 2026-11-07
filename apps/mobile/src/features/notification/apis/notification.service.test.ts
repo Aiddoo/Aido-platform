@@ -20,7 +20,7 @@ describe('NotificationService', () => {
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
-    service = new NotificationService(httpClient, createPushNotificationGatewayStub());
+    service = new NotificationService(httpClient, createPushNotificationGatewayStub(), httpClient);
   });
 
   // ── getNotifications ─────────────────────────
@@ -149,7 +149,7 @@ describe('NotificationService.checkOwnership', () => {
     const httpClient = createHttpClientStub();
     return {
       httpClient,
-      service: new NotificationService(httpClient, createPushNotificationGatewayStub()),
+      service: new NotificationService(httpClient, createPushNotificationGatewayStub(), httpClient),
     };
   }
 

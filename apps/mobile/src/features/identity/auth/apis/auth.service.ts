@@ -51,18 +51,25 @@ import {
 
 type AuthServiceError = ApiError | BusinessError;
 
+interface AuthServicePorts {
+  publicHttpClient: HttpClient;
+  authHttpClient: HttpClient;
+  tokenStore: TokenStore;
+  socialAuthGateway: SocialAuthGateway;
+}
+
 export class AuthService {
   readonly #publicHttpClient: HttpClient;
   readonly #authHttpClient: HttpClient;
   readonly #tokenStore: TokenStore;
   readonly #socialAuthGateway: SocialAuthGateway;
 
-  constructor(
-    publicHttpClient: HttpClient,
-    authHttpClient: HttpClient,
-    tokenStore: TokenStore,
-    socialAuthGateway: SocialAuthGateway,
-  ) {
+  constructor({
+    publicHttpClient,
+    authHttpClient,
+    tokenStore,
+    socialAuthGateway,
+  }: AuthServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#tokenStore = tokenStore;

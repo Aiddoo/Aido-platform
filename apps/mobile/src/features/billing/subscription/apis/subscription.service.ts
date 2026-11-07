@@ -15,11 +15,15 @@ import { toSubscriptionError } from './subscription-error.mapper';
 import { toCustomerInfo, toSubscriptionOffering } from './subscription.mapper';
 
 export class SubscriptionService {
-  readonly #sdkManager: PurchasesSdkManager;
+  readonly #sdkManager: Pick<PurchasesSdkManager, 'isConfigured'>;
   readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;
 
-  constructor(sdkManager: PurchasesSdkManager, purchases: PurchasesGateway, logger: Logger) {
+  constructor(
+    sdkManager: Pick<PurchasesSdkManager, 'isConfigured'>,
+    purchases: PurchasesGateway,
+    logger: Logger,
+  ) {
     this.#sdkManager = sdkManager;
     this.#purchases = purchases;
     this.#logger = logger;

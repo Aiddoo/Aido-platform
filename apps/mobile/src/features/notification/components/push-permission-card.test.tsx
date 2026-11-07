@@ -50,14 +50,14 @@ async function renderCard(
   await renderUi(<PushPermissionCard />, {
     di: {
       pushPromptRepository: createPushPromptRepository(mmkvSyncStorage),
-      pushDeviceService: new PushDeviceService(
+      pushDeviceService: new PushDeviceService({
         gateway,
-        { get: async () => 'ios_device-123' },
+        deviceIdService: { get: async () => 'ios_device-123' },
         httpClient,
-        silentLogger,
-        () => 'Asia/Seoul',
-        createSessionEpoch(),
-      ),
+        logger: silentLogger,
+        getTimeZone: () => 'Asia/Seoul',
+        sessionEpoch: createSessionEpoch(),
+      }),
       preferenceService: new PreferenceService(httpClient),
       userService: new UserService(httpClient),
       analytics: createAnalyticsStub(),

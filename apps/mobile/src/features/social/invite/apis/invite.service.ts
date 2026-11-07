@@ -42,7 +42,7 @@ import type { PendingRedemptionRepository } from './pending-redemption.repositor
 
 type InviteServiceError = ApiError | BusinessError<InviteErrorCode>;
 
-interface InviteServiceDependencies {
+interface InviteServicePorts {
   /** 미리보기·사용 가능 여부는 로그인 전에도 부른다 */
   publicHttpClient: HttpClient;
   authHttpClient: HttpClient;
@@ -78,7 +78,7 @@ export class InviteService {
     installationIdGateway,
     allDoneBannerRepository,
     logger,
-  }: InviteServiceDependencies) {
+  }: InviteServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#pendingRedemptionRepository = pendingRedemptionRepository;

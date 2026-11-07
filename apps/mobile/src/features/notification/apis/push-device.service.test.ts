@@ -23,14 +23,14 @@ function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () =
     warn: jest.fn(),
     error: jest.fn(),
   };
-  const service = new PushDeviceService(
+  const service = new PushDeviceService({
     gateway,
-    { get: async () => DEVICE_ID },
+    deviceIdService: { get: async () => DEVICE_ID },
     httpClient,
     logger,
     getTimeZone,
     sessionEpoch,
-  );
+  });
   return { service, gateway, httpClient, logger, sessionEpoch };
 }
 

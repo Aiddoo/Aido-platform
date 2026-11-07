@@ -22,7 +22,7 @@ export class NotificationService {
   constructor(
     httpClient: HttpClient,
     badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>,
-    publicHttpClient: HttpClient = httpClient,
+    publicHttpClient: HttpClient,
   ) {
     this.#httpClient = httpClient;
     this.#badgeGateway = badgeGateway;

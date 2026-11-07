@@ -22,6 +22,15 @@ interface ReportedPushDevice {
   device: PushDevice;
 }
 
+interface PushDeviceServicePorts {
+  gateway: PushNotificationGateway;
+  deviceIdService: Pick<DeviceIdService, 'get'>;
+  httpClient: HttpClient;
+  logger: Logger;
+  getTimeZone: () => string;
+  sessionEpoch: Pick<SessionEpoch, 'current'>;
+}
+
 export class PushDeviceService {
   readonly #gateway: PushNotificationGateway;
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
@@ -32,14 +41,14 @@ export class PushDeviceService {
   #lastReported: ReportedPushDevice | null = null;
   #reportInFlight: Promise<unknown> | null = null;
 
-  constructor(
-    gateway: PushNotificationGateway,
-    deviceIdService: Pick<DeviceIdService, 'get'>,
-    httpClient: HttpClient,
-    logger: Logger,
-    getTimeZone: () => string,
-    sessionEpoch: Pick<SessionEpoch, 'current'>,
-  ) {
+  constructor({
+    gateway,
+    deviceIdService,
+    httpClient,
+    logger,
+    getTimeZone,
+    sessionEpoch,
+  }: PushDeviceServicePorts) {
     this.#gateway = gateway;
     this.#deviceIdService = deviceIdService;
     this.#httpClient = httpClient;
