@@ -115,12 +115,14 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 **끊는 방법**
 
-| 위층이 필요한 이유                      | 끊는 방법                                                                |
-| --------------------------------------- | ------------------------------------------------------------------------ |
-| 화면 조각을 함께 보여 줌                | `app/`이 조립해 슬롯(`ReactNode`)으로 넘긴다(`ProfileCard`의 `tierChip`) |
-| 서로의 캐시를 갱신                      | 위층의 `*-cache` 무효화 함수를 쓴다                                      |
-| 받는 쪽이 여럿이거나 정해지지 않은 알림 | `core/events`(`notifications-changed`)                                   |
-| 판단에 위층 값이 필요                   | 호출한 쪽이 값을 인자로 넘긴다(`useStableFeedForeground`)                |
+| 위층이 필요한 이유                         | 끊는 방법                                                                                                                                                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 화면 조각을 함께 보여 줌                   | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다. 받은 쪽이 값을 넘겨 그려야 할 때만 컴포넌트다(`ProfileCard`의 `tierChip`, `FriendTodoList`의 `rowAction`)                                             |
+| 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `friendLimitInvite`, `SessionCleanupService`의 `accountGuides`)         |
+| 다른 기능의 캐시를 갱신                    | **캐시.** 대상이 정해졌으면 위층의 `*-cache` 함수를 쓴다. 대상이 여럿이면 아래층 `*-cache`가 무효화하고 위층 쿼리가 `meta`로 신청한다(`invalidateTodoDependentQueries`와 `refreshOnTodoChange`, `refreshOnPremiumChange`) |
+| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`)                                                                                                                                                     |
+
+코드에 있는 7가지는 위 4가지로 묶인다. 컴포넌트 prop은 슬롯, 콜백은 인자, `meta`는 캐시다. 새 방법을 더하지 않는다.
 
 ## check:conventions가 막는 것
 
