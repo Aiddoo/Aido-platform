@@ -1,6 +1,6 @@
 import type { SubscriptionView } from '../schemas/subscription-params.schema';
-import type { PremiumGateAnalyticsFeature } from '../utils/premium-gate-feature';
-import type { PurchaseFailedReason } from '../utils/purchase-failed-reason';
+import type { PremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
+import type { PurchaseFailedReason } from '../utils/subscription-analytics';
 
 export type EntitlementGateSurface =
   | 'add_todo_sheet'

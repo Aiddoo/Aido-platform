@@ -1,4 +1,4 @@
-import { toPurchaseFailedReason } from './purchase-failed-reason';
+import { toPurchaseFailedReason } from './subscription-analytics';
 
 describe('toPurchaseFailedReason', () => {
   it.each([

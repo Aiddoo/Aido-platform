@@ -16,7 +16,7 @@ import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
-import { toPurchaseFailedReason } from '../utils/purchase-failed-reason';
+import { toPurchaseFailedReason } from '../utils/subscription-analytics';
 import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
 import { syncMeUntilStorePremium } from './subscription-cache';
 

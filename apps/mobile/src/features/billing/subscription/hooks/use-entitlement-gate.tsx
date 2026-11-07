@@ -16,7 +16,7 @@ import { EntitlementPolicy } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
-import { getPremiumGateAnalyticsFeature } from '../utils/premium-gate-feature';
+import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import { useRefillSentence } from './use-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';
