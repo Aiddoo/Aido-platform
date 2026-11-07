@@ -11,12 +11,12 @@ import {
   Spacing,
   StyledSafeAreaView,
   VStack,
+  TintedRefreshControl,
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 export default function SuggestionsScreen() {
   const { t } = useTranslation('ai');
@@ -28,7 +28,6 @@ export default function SuggestionsScreen() {
       ? undefined
       : !EntitlementPolicy.isFeatureLocked(entitlementsQuery.data, 'AI_SUGGESTION');
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
-  const { color: refreshTint } = useResolveClassNames('text-main');
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
@@ -37,12 +36,7 @@ export default function SuggestionsScreen() {
         contentContainerClassName="grow pb-8"
         refreshControl={
           canViewSuggestions === true ? (
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              tintColor={refreshTint}
-              colors={refreshTint == null ? undefined : [refreshTint]}
-            />
+            <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
           ) : undefined
         }
       >

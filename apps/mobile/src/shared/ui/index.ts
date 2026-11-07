@@ -118,6 +118,7 @@ export { SettingsListGroup, SettingsScreenLayout } from './settings-list-group';
 export { Spacing } from './spacing';
 export { Steps } from './steps';
 export { LineTabTrigger, SegmentTabTrigger } from './tab-trigger';
+export { TintedRefreshControl } from './tinted-refresh-control';
 export { ViewTabs } from './view-tabs';
 export {
   STACK_BACK_ICON,

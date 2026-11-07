@@ -3,13 +3,12 @@ import { useTranslation } from '@src/shared/i18n';
 import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { Ref } from 'react';
-import { RefreshControl } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
 
 import { Flex } from '../flex';
 import { HStack } from '../h-stack';
 import { RefreshIcon } from '../icon';
 import { Text } from '../text';
+import { TintedRefreshControl } from '../tinted-refresh-control';
 import { useFetchNextPage } from './use-fetch-next-page';
 
 const END_REACHED_THRESHOLD = 0.5;
@@ -36,7 +35,6 @@ export function InfiniteList<T>({
   progressViewOffset,
   ...props
 }: InfiniteListProps<T>) {
-  const { color: tint } = useResolveClassNames('text-main');
   const { fetchOnEndReached, retry } = useFetchNextPage({
     hasNextPage,
     isFetchingNextPage,
@@ -59,12 +57,10 @@ export function InfiniteList<T>({
       onEndReachedThreshold={END_REACHED_THRESHOLD}
       refreshControl={
         onRefresh == null ? undefined : (
-          <RefreshControl
+          <TintedRefreshControl
             refreshing={refreshing ?? false}
             onRefresh={onRefresh}
             progressViewOffset={progressViewOffset}
-            tintColor={tint}
-            colors={tint == null ? undefined : [tint]}
           />
         )
       }

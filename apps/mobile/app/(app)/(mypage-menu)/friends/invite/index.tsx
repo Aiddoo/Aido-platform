@@ -25,17 +25,16 @@ import {
   Text,
   VStack,
   WordWrapText,
+  TintedRefreshControl,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 import { Suspense, type ReactNode } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
+import { ScrollView } from 'react-native';
 
 export default function MyInviteScreen() {
   const { t } = useTranslation('invite');
   const queryClient = useQueryClient();
-  const { color: refreshTint } = useResolveClassNames('text-main');
   // 발자국 판·링크·친구 요약이 모두 초대 쿼리를 읽으니 한 번에 새로 고친다
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateInvite(queryClient));
 
@@ -46,12 +45,7 @@ export default function MyInviteScreen() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={refreshTint}
-            colors={refreshTint == null ? undefined : [refreshTint]}
-          />
+          <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
         }
       >
         <StyledSafeAreaView edges={['left', 'right']}>

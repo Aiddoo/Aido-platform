@@ -30,13 +30,13 @@ import {
   useOverlay,
   IconButton,
   Image,
+  TintedRefreshControl,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { RefreshControl } from 'react-native';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -46,7 +46,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
 import {
@@ -88,7 +87,6 @@ export function FriendList({ invite }: FriendListProps) {
   });
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
-  const { color: refreshTint } = useResolveClassNames('text-main');
 
   const { items: friends, totalCount } = data;
 
@@ -129,14 +127,7 @@ export function FriendList({ invite }: FriendListProps) {
       }
       onEndReached={fetchOnEndReached}
       onEndReachedThreshold={0.5}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={refreshTint}
-          colors={refreshTint == null ? undefined : [refreshTint]}
-        />
-      }
+      refreshControl={<TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
     />

@@ -27,13 +27,13 @@ import {
   TextSkeleton,
   ViewTabs,
   VStack,
+  TintedRefreshControl,
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 export default function ReportsScreen() {
   const { t } = useTranslation('ai');
@@ -46,19 +46,13 @@ export default function ReportsScreen() {
       : !EntitlementPolicy.isFeatureLocked(entitlementsQuery.data, 'AI_REPORT');
   const [reportType, setReportType] = useReportType();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiReports(queryClient));
-  const { color: refreshTint } = useResolveClassNames('text-main');
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <ScrollView
         className="flex-1 px-4"
         refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={refreshTint}
-            colors={refreshTint == null ? undefined : [refreshTint]}
-          />
+          <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
         }
       >
         <StyledSafeAreaView edges={['left', 'right']}>
