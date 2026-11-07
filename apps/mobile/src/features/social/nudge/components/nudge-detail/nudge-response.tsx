@@ -21,10 +21,10 @@ import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
 import { match, P } from 'ts-pattern';
 
+import { NUDGE_REPLY_LABEL_KEYS } from '../../constants/nudge-labels';
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useReplyToNudgeMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
-import { getNudgeReplyLabelKey } from '../../utils/nudge-reply-label';
 import { ThanksSummaryRow } from '../nudge-interactions/thanks-summary-row';
 
 export function NudgeResponse({ nudgeId }: { nudgeId: number }) {
@@ -61,7 +61,7 @@ export function NudgeResponse({ nudgeId }: { nudgeId: number }) {
       <Text size="b3" shade={6}>
         {match(nudge)
           .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
-            t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+            t('interaction.replyStatus', { reply: t(NUDGE_REPLY_LABEL_KEYS[replyKind]) }),
           )
           .with({ isTodoCompleted: true }, () => t('interaction.completed'))
           .otherwise(() => t('interaction.waiting'))}
@@ -165,7 +165,7 @@ function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
           weight="medium"
           className={isSelected ? 'text-main flex-1' : 'text-gray-9 flex-1'}
         >
-          {t(getNudgeReplyLabelKey(value))}
+          {t(NUDGE_REPLY_LABEL_KEYS[value])}
         </Text>
         {isSelected && <CheckIcon width={20} height={20} colorClassName="text-main" />}
       </HStack>

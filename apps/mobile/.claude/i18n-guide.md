@@ -62,7 +62,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 - **보간**: `t('repeat.weekly', { days })` / 카탈로그 `"매주 {{days}} 반복"`
 - **복수형**: ko는 단일 키(`"{{count}}개"`), en은 `_one`/`_other` 접미사 — `t('list.count', { count })`
-- **enum 라벨 맵**: 값 대신 키를 담는다
+- **enum 라벨 맵**: 값 대신 키를 담는다. 여러 파일이 쓰면 `constants/{feature}-labels.ts`, 한 파일만 쓰면 그 파일 안의 지역 상수다
   ```ts
   export const INQUIRY_CATEGORY_LABEL_KEYS = {
     BUG_REPORT: 'inquiry:category.bugReport',

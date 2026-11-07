@@ -35,9 +35,9 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../utils/achievement-badge.view-model';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 

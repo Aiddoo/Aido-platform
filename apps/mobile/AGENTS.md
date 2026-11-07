@@ -66,7 +66,9 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 | 캐시 helper    | `queries/{feature}-cache.ts`                                       |
 | Query Keys     | `constants/{feature}-query-keys.ts`                                |
 | feature 상수   | `constants/{feature}.constants.ts`                                 |
+| 라벨 키        | `constants/{feature}-labels.ts`. 한 파일만 쓰면 그 파일 지역 상수  |
 | URL params     | `schemas/{name}-params.schema.ts` + `hooks/use-{name}-param(s).ts` |
+| 쿼리 키 값     | `schemas/{name}-query-key.schema.ts`. `Params`는 route에만 쓴다    |
 | 초안 키        | `utils/{feature}-draft.ts`                                         |
 | 표시 값        | `utils/{name}.view-model.ts`                                       |
 | 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                   |

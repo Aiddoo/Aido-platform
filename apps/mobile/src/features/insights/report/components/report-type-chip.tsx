@@ -4,7 +4,7 @@ import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import { REPORT_TYPE_LABEL_KEYS } from '../constants/report.constants';
+import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
 import type { ReportType } from '../schemas/report.schema';
 
 type ReportTypeChipProps = Omit<ComponentProps<typeof Chip>, 'children' | 'color'> & {

@@ -1,11 +1,11 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { BadgeIcon } from '@src/features/insights/achievement/components/badge-icon';
 import { Certificate } from '@src/features/insights/achievement/components/certificate';
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '@src/features/insights/achievement/constants/achievement-labels';
 import { AchievementPolicy } from '@src/features/insights/achievement/domains/achievement.model';
 import { useAchievementParams } from '@src/features/insights/achievement/hooks/use-achievement-params';
 import { useGetWeeklyAchievementQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
 import { achievementParamsSchema } from '@src/features/insights/achievement/schemas/achievement-params.schema';
-import { ACHIEVEMENT_BADGE_NAME_KEYS } from '@src/features/insights/achievement/utils/achievement-badge.view-model';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';

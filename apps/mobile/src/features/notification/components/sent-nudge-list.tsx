@@ -1,8 +1,8 @@
 import { ErrorCode } from '@aido/api/errors';
+import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-labels';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import type { NudgeInteraction } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
-import { getNudgeReplyLabelKey } from '@src/features/social/nudge/utils/nudge-reply-label';
 import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -100,7 +100,7 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
     .with('REPLIED', () =>
       nudge.replyKind == null
         ? ''
-        : t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) }),
+        : t('interaction.replyStatus', { reply: t(NUDGE_REPLY_LABEL_KEYS[nudge.replyKind]) }),
     )
     .with('WAITING', () => t('interaction.waiting'))
     .exhaustive();

@@ -21,7 +21,7 @@ import { router, useNavigation } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
-import { INQUIRY_CATEGORY_LABEL_KEYS } from '../constants/inquiry.constants';
+import { INQUIRY_CATEGORY_LABEL_KEYS } from '../constants/inquiry-labels';
 import { useInquiryParams } from '../hooks/use-inquiry-params';
 import { useCreateInquiryMutationOptions } from '../queries/inquiry.mutations';
 import { inquiryFormSchema } from '../schemas/inquiry-form.schema';

@@ -3,7 +3,7 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { ReportCard } from '@src/features/insights/report/components/report-card';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
-import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report.constants';
+import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report-labels';
 import {
   getSampleReport,
   SAMPLE_REPORT_IDS,

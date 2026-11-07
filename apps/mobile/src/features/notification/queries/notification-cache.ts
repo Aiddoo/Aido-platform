@@ -4,7 +4,7 @@ import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/re
 import { match, P } from 'ts-pattern';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import { notificationListQueryParamsSchema } from '../schemas/notification-list-query-params.schema';
+import { notificationListQueryKeySchema } from '../schemas/notification-list-query-key.schema';
 import type { NotificationListResult } from '../schemas/notification.schema';
 import type { PushPermission } from '../schemas/push-permission.schema';
 
@@ -54,7 +54,7 @@ function containsUnreadNotification(
 }
 
 function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
-  return readQueryKeyParams(queryKey, notificationListQueryParamsSchema)?.unreadOnly === true;
+  return readQueryKeyParams(queryKey, notificationListQueryKeySchema)?.unreadOnly === true;
 }
 
 export async function optimisticallyMarkNotificationsRead(
