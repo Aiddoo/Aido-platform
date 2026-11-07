@@ -1,7 +1,7 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, HStack, Text, VStack } from '@src/shared/ui';
+import { Box, Button, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { match } from 'ts-pattern';
@@ -90,3 +90,14 @@ export function PushPermissionStatusRow() {
     </Box>
   );
 }
+
+PushPermissionStatusRow.Loading = function Loading() {
+  return (
+    <HStack align="center" gap={12}>
+      <VStack gap={2} flex={1}>
+        <TextSkeleton size="b3" className="w-24" />
+        <TextSkeleton size="e1" className="w-16" />
+      </VStack>
+    </HStack>
+  );
+};

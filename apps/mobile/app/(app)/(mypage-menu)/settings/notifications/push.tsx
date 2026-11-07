@@ -1,109 +1,32 @@
-import { useUpdatePushEnabledMutationOptions } from '@src/features/device/activation/queries/activation.mutations';
-import {
-  useUpdateMarketingConsentMutationOptions,
-  useUpdateMarketingPushConsentMutationOptions,
-} from '@src/features/identity/consent/queries/consent.mutations';
-import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
-import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { PushDeliverySettings } from '@src/features/device/activation/components/push-delivery-settings';
+import { MarketingConsentSettings } from '@src/features/identity/consent/components/marketing-consent-settings';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
-import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
-function PushSettingsScreen() {
-  // 두 쿼리를 useSuspenseQueries로 병렬 발사 (개별 useSuspenseQuery는 첫 쿼리에서
-  // suspend되어 두 번째가 직렬로 늦게 시작되는 waterfall이 생긴다)
-  const [{ data: preference }, { data: consent }] = useSuspenseQueries({
-    queries: [useGetPreferenceQueryOptions(), useGetConsentQueryOptions()],
-  });
-  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const pushEnabledMutation = useMutation(useUpdatePushEnabledMutationOptions());
-  const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
-  const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
-  const { t } = useTranslation(['notification', 'auth']);
-
+export default function PushSettingsScreen() {
   return (
-    <>
+    <SettingsScreenLayout>
       <SettingsListGroup>
         <SettingsListGroup.Content>
-          <PushPermissionStatusRow />
+          <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+            <Suspense fallback={<PushPermissionStatusRow.Loading />}>
+              <PushPermissionStatusRow />
+            </Suspense>
+          </QueryErrorBoundary>
         </SettingsListGroup.Content>
       </SettingsListGroup>
 
-      <SettingsListGroup>
-        <SettingsListGroup.Toggle
-          label={t('settings.pushLabel')}
-          description={t('settings.pushDescription')}
-          isSelected={preference.pushEnabled}
-          onSelectedChange={(enabled) => pushEnabledMutation.mutate({ pushEnabled: enabled })}
-          isDisabled={updateMutation.isPending || pushEnabledMutation.isPending}
-        />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.Toggle
-          label={t('settings.nightPushLabel')}
-          description={
-            preference.pushEnabled
-              ? t('settings.nightPushDescription')
-              : t('auth:preference.enablePushFirst')
-          }
-          isSelected={preference.nightPushEnabled}
-          onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
-          isDisabled={
-            !preference.pushEnabled || updateMutation.isPending || pushEnabledMutation.isPending
-          }
-        />
-      </SettingsListGroup>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+        <Suspense fallback={<PushDeliverySettings.Loading />}>
+          <PushDeliverySettings />
+        </Suspense>
+      </QueryErrorBoundary>
 
       {/* 마케팅 수신 동의(일반 + 광고성 푸시)는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
-      <SettingsListGroup>
-        <SettingsListGroup.Toggle
-          label={t('settings.marketingLabel')}
-          description={t('settings.marketingDescription')}
-          isSelected={consent.marketingAgreedAt != null}
-          onSelectedChange={(agreed) => marketingMutation.mutate({ agreed })}
-          isDisabled={marketingMutation.isPending}
-        />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.Toggle
-          label={t('settings.marketingPushLabel')}
-          description={t('settings.marketingPushDescription')}
-          isSelected={consent.marketingPushAgreedAt != null}
-          onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed })}
-          isDisabled={marketingPushMutation.isPending}
-        />
-      </SettingsListGroup>
-    </>
-  );
-}
-
-PushSettingsScreen.Loading = function Loading() {
-  return (
-    <>
-      <SettingsListGroup>
-        <SettingsListGroup.ToggleSkeleton hasDescription />
-      </SettingsListGroup>
-      <SettingsListGroup>
-        <SettingsListGroup.ToggleSkeleton hasDescription />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.ToggleSkeleton hasDescription />
-      </SettingsListGroup>
-      <SettingsListGroup>
-        <SettingsListGroup.ToggleSkeleton hasDescription />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.ToggleSkeleton hasDescription />
-      </SettingsListGroup>
-    </>
-  );
-};
-
-export default function PushSettingsRoute() {
-  return (
-    <SettingsScreenLayout>
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-        <Suspense fallback={<PushSettingsScreen.Loading />}>
-          <PushSettingsScreen />
+        <Suspense fallback={<MarketingConsentSettings.Loading />}>
+          <MarketingConsentSettings />
         </Suspense>
       </QueryErrorBoundary>
     </SettingsScreenLayout>
