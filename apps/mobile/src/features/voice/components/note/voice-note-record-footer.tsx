@@ -1,0 +1,176 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useTranslation } from '@src/shared/i18n';
+import { Box, Button, HStack, PauseIcon, StopIcon, Text, VStack } from '@src/shared/ui';
+import { match, P } from 'ts-pattern';
+
+import { VoiceCapturePolicy } from '../../domains/voice-capture.model';
+import type { VoiceCaptureState } from '../../schemas/voice-capture.schema';
+import { RECORD_CONTROL_ICON_SIZE, RecordControl } from './record-control';
+import { VoiceNoteMarkControl } from './voice-note-mark-control';
+
+interface VoiceNoteRecordFooterProps {
+  state: VoiceCaptureState;
+  limitMs: number | null;
+  markCount: number;
+  onPause: () => void;
+  onFinish: () => void;
+  onMark: () => void;
+  onSummarize: () => void;
+  onClose: () => void;
+  onResume: () => void;
+}
+
+export function VoiceNoteRecordFooter({
+  state,
+  limitMs,
+  markCount,
+  onPause,
+  onFinish,
+  onMark,
+  onSummarize,
+  onClose,
+  onResume,
+}: VoiceNoteRecordFooterProps) {
+  const { t } = useTranslation('voiceNote');
+
+  return (
+    <VStack gap={12} className="self-stretch">
+      {match(state)
+        .with({ status: P.union('paused', 'failed') }, (stopped) => (
+          <StoppedPanel
+            state={stopped}
+            canResume={VoiceCapturePolicy.canResumeWithinLimit(stopped, limitMs)}
+            onSummarize={onSummarize}
+            onClose={onClose}
+            onResume={onResume}
+          />
+        ))
+        .otherwise(() => (
+          <ListeningControls
+            isListening={state.status === 'listening'}
+            markCount={markCount}
+            onPause={onPause}
+            onFinish={onFinish}
+            onMark={onMark}
+          />
+        ))}
+      <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+        {t('record.privacy')}
+      </Text>
+    </VStack>
+  );
+}
+
+function ListeningControls({
+  isListening,
+  markCount,
+  onPause,
+  onFinish,
+  onMark,
+}: {
+  isListening: boolean;
+  markCount: number;
+  onPause: () => void;
+  onFinish: () => void;
+  onMark: () => void;
+}) {
+  const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
+  const iconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
+
+  return (
+    <HStack align="start" className="w-full max-w-90 self-center">
+      <RecordControl
+        label={t('record.pause')}
+        onPress={onPause}
+        isDisabled={!isListening}
+        testID="voice-note-pause"
+      >
+        <PauseIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
+      </RecordControl>
+      <RecordControl
+        label={t('record.finish')}
+        onPress={onFinish}
+        isDisabled={!isListening}
+        isPrimary
+        testID="voice-note-finish"
+      >
+        <StopIcon width={iconSize} height={iconSize} colorClassName="text-white dark:text-gray-9" />
+      </RecordControl>
+      <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onMark} />
+    </HStack>
+  );
+}
+
+function StoppedPanel({
+  state,
+  canResume,
+  onSummarize,
+  onClose,
+  onResume,
+}: {
+  state: Extract<VoiceCaptureState, { status: 'paused' | 'failed' }>;
+  canResume: boolean;
+  onSummarize: () => void;
+  onClose: () => void;
+  onResume: () => void;
+}) {
+  const { t } = useTranslation('voiceNote');
+  const hasHeard = VoiceCapturePolicy.canFinish(state);
+
+  return (
+    <VStack gap={12}>
+      <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
+        <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+          {state.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
+        </Text>
+        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+          {match(state)
+            .with({ status: 'paused' }, ({ cause }) =>
+              hasHeard
+                ? t(`record.pausedDescription.${cause}`)
+                : t(`record.pausedEmptyDescription.${cause}`),
+            )
+            .with({ status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') }, () =>
+              t('record.failedPermission'),
+            )
+            .otherwise(() =>
+              hasHeard ? t('record.failedDescription') : t('record.failedEmptyDescription'),
+            )}
+        </Text>
+      </VStack>
+      <HStack gap={8}>
+        <Box flex={1}>
+          {hasHeard ? (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onSummarize}
+              testID="voice-note-summarize"
+            >
+              {t('record.summarize')}
+            </Button>
+          ) : (
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onClose}
+              testID="voice-note-stopped-close"
+            >
+              {t('record.close')}
+            </Button>
+          )}
+        </Box>
+        {canResume && (
+          <Box flex={1}>
+            <Button size="large" onPress={onResume} testID="voice-note-resume">
+              {t('record.resume')}
+            </Button>
+          </Box>
+        )}
+      </HStack>
+    </VStack>
+  );
+}
