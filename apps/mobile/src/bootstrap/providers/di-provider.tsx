@@ -356,18 +356,22 @@ export function DIProvider({
     });
 
     return {
+      storage,
       logger,
       analytics,
       errorReporter,
       haptics: expoHapticsGateway,
       idGenerator: expoIdGenerator,
       speechRecognizer: expoSpeechRecognizer,
+      purchasesGateway: revenueCatPurchasesGateway,
       pushNotification,
       tokenStore,
       authSessionStore: createAuthSessionStore(),
       sessionEpoch,
+      sessionManager,
       sessionCleanupService,
       sessionRevocationService,
+      tokenRefresher,
       featureAttribution,
       draftService,
       queryCacheStorage,
