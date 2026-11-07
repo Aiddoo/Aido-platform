@@ -13,8 +13,8 @@ export interface CoachmarkRepository {
   removeAccount(accountId: string): void;
 }
 
-const LEGACY_REORDER_KEY_PREFIX = 'aido_reorder_coachmark_v1';
-const LEGACY_FRIEND_STRIP_KEY_PREFIX = 'aido_friend_strip_hint_dismissed_v1';
+const REORDER_KEY_PREFIX = 'aido_reorder_coachmark_v1';
+const FRIEND_STRIP_KEY_PREFIX = 'aido_friend_strip_hint_dismissed_v1';
 const KEY_PREFIX = 'aido_coachmark_v1';
 /** 더는 쓰지 않아 지우는 안내. 이미 본 사람에게 다시 뜰 일이 없어진 뒤에만 올린다 */
 const RETIRED_COACHMARK_KINDS: readonly string[] = ['ai-consent-notice'];
@@ -22,9 +22,9 @@ const RETIRED_COACHMARK_KINDS: readonly string[] = ['ai-consent-notice'];
 /** 재정렬·친구 찾기 안내는 1.14.x까지 쓰던 키를 그대로 읽어 이미 본 사람에게 다시 보이지 않는다 */
 export function coachmarkStorageKey({ accountId, kind }: CoachmarkInput): string {
   return match(kind)
-    .with('todo-reorder', () => `${LEGACY_REORDER_KEY_PREFIX}:${accountId}:todo`)
-    .with('category-reorder', () => `${LEGACY_REORDER_KEY_PREFIX}:${accountId}:category`)
-    .with('friend-strip', () => `${LEGACY_FRIEND_STRIP_KEY_PREFIX}:${accountId}`)
+    .with('todo-reorder', () => `${REORDER_KEY_PREFIX}:${accountId}:todo`)
+    .with('category-reorder', () => `${REORDER_KEY_PREFIX}:${accountId}:category`)
+    .with('friend-strip', () => `${FRIEND_STRIP_KEY_PREFIX}:${accountId}`)
     .with(
       'comment-double-tap',
       'voice-quick-start',
@@ -73,8 +73,8 @@ export function createCoachmarkRepository(
         .filter(
           (key) =>
             key.startsWith(`${KEY_PREFIX}:${accountId}:`) ||
-            key.startsWith(`${LEGACY_REORDER_KEY_PREFIX}:${accountId}:`) ||
-            key === `${LEGACY_FRIEND_STRIP_KEY_PREFIX}:${accountId}`,
+            key.startsWith(`${REORDER_KEY_PREFIX}:${accountId}:`) ||
+            key === `${FRIEND_STRIP_KEY_PREFIX}:${accountId}`,
         )
         .forEach((key) => storage.remove(key));
     },

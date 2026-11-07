@@ -45,6 +45,17 @@
 | `todo-series.error.ts` `TodoSeriesNotCreatedError`    | `POST /v1/todos`가 `repeat`를 모르고 단일 할 일을 만들고 201을 준다  | 성공으로 처리하지 않고 안내한다        |
 | `todo.service.ts` `getTodoSeries`의 404 → `null`      | `GET /v1/todo-series/{id}` 경로가 없어 404 `SYS_0002`로 온다         | 규칙이 없는 할 일로 보고 화면을 그린다 |
 
+기기에 이미 남은 값과 링크를 읽는 앱 코드도 외부 계약이다. 새 앱이 쓰지 않는 모양을 읽어 옮기거나 받아 준다.
+
+| 코드(앱)                                                                 | 읽는 것                                                       | 지울 시점                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------- |
+| `shared/infra/storage/mmkv-draft-storage.ts` `migrateLegacyDrafts`       | 암호화 전 MMKV `aido.drafts`의 초안                           | 미정. 1.16.0 호환 판단 때 정한다        |
+| `store-review.repository.ts` `fromLegacy`                                | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt` | 미정. 1.16.0 호환 판단 때 정한다        |
+| `notification-destination.ts` `fromLegacyFields`                         | `navigation`이 없는 알림의 type·action·context·routing        | 미정. 보관된 알림이 모두 지난 뒤 정한다 |
+| `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                         | 미정. 1.16.0 호환 판단 때 정한다        |
+| `widget-snapshot.schema.ts` `legacyWidgetSnapshotV1Schema`               | 위젯 snapshot v1 저장 JSON                                    | 영구(위젯 snapshot 버전 해석 계약)      |
+| `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다           | 영구(기기 저장 key)                     |
+
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/.claude/e2e-test.md#호환성openapi))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 
 ## 3. REST 버전

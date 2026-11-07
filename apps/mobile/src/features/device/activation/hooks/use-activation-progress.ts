@@ -36,9 +36,8 @@ export function useActivationProgress() {
     enabled: isAuthenticated && progressOptions.enabled,
   });
 
-  // A public rollout-config failure must not disable the legacy push flow for
-  // pre-campaign accounts. The bundled campaign date lets policy distinguish
-  // those users while still deferring prompts for the new-user cohort.
+  // 공개 롤아웃 설정을 받지 못해도 캠페인 이전 계정의 기존 푸시 흐름은 막지 않는다.
+  // 앱에 담긴 캠페인 날짜로 그 사용자를 가르고, 신규 가입자 코호트의 안내는 계속 미룬다.
   const isContextReady = configQuery.isFetched && userQuery.isSuccess;
   const isReady =
     isAuthenticated && isContextReady && (identity == null || progressQuery.isSuccess);
