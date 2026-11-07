@@ -59,7 +59,10 @@ describe("친구 요청 수락", () => {
       expect(
         await fixture.followRepository.findByFollowerAndFollowing("friend", "me"),
       ).toMatchObject({ status: "ACCEPTED", sortOrder: 0 });
-      expect(fixture.notifier.mutual).toHaveLength(2);
+      // 수락한 사람은 화면에서 결과를 봤으므로 요청한 사람에게만 알린다
+      expect(fixture.notifier.mutual).toEqual([
+        { userId: "friend", friendId: "me", friendName: expect.any(String) },
+      ]);
       expect(fixture.notifier.milestones).toEqual([{ userId: "friend" }]);
     },
   );
@@ -94,7 +97,7 @@ describe("친구 요청 수락", () => {
       await execution;
     }
     expect(fixture.cache.friendCounts.has("me")).toBe(false);
-    expect(fixture.notifier.mutual).toHaveLength(2);
+    expect(fixture.notifier.mutual).toHaveLength(1);
   });
 
   it("저장한 관계의 사용자 프로젝션이 없으면 SYS_0001을 전달하고 알림을 보내지 않는다", async () => {

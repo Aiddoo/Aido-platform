@@ -149,10 +149,8 @@ describe("친구 요청 보내기", () => {
     expect(fixture.cache.mutual.size).toBe(0);
     expect(fixture.cache.friendCounts.size).toBe(0);
     expect(fixture.cache.friendIds.size).toBe(0);
-    expect(fixture.notifier.mutual.map((notification) => notification.userId).sort()).toEqual([
-      "friend",
-      "me",
-    ]);
+    // 요청을 보내 친구가 된 사람은 화면에서 결과를 봤으므로 먼저 요청했던 상대에게만 알린다
+    expect(fixture.notifier.mutual.map((notification) => notification.userId)).toEqual(["friend"]);
     expect(fixture.notifier.milestones.map((notification) => notification.userId).sort()).toEqual([
       "friend",
       "me",

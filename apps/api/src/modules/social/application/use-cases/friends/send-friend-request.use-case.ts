@@ -45,7 +45,7 @@ interface SendFriendRequestDependencies {
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly effects: Pick<
     FriendshipEffects,
-    "invalidateFriendshipCaches" | "notifyMutual" | "checkFirstFriendMilestone"
+    "invalidateFriendshipCaches" | "notifyFriendshipEstablished" | "checkFirstFriendMilestone"
   >;
   readonly logger: ApplicationLogger;
 }
@@ -166,19 +166,10 @@ export class SendFriendRequest {
       userId,
       targetUserId,
     });
-    const [userName, targetUserName] = await Promise.all([
-      this.#dependencies.followRepository.getUserDisplayName(userId),
-      this.#dependencies.followRepository.getUserDisplayName(targetUserId),
-    ]);
-    this.#dependencies.effects.notifyMutual({
-      userId,
-      friendId: targetUserId,
-      friendName: targetUserName,
-    });
-    this.#dependencies.effects.notifyMutual({
-      userId: targetUserId,
-      friendId: userId,
-      friendName: userName,
+    this.#dependencies.effects.notifyFriendshipEstablished({
+      actorId: userId,
+      actorName: await this.#dependencies.followRepository.getUserDisplayName(userId),
+      counterpartId: targetUserId,
     });
     await Promise.all([
       this.#dependencies.effects.checkFirstFriendMilestone(userId),

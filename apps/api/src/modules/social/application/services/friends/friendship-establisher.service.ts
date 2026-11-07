@@ -35,7 +35,7 @@ interface FriendshipEstablisherDependencies {
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly effects: Pick<
     FriendshipEffects,
-    "invalidateFriendshipCaches" | "notifyMutual" | "checkFirstFriendMilestone"
+    "invalidateFriendshipCaches" | "notifyFriendshipEstablished" | "checkFirstFriendMilestone"
   >;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -173,19 +173,10 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
     });
     await this.#dependencies.effects.invalidateFriendshipCaches(requesterId, targetUserId);
     if (shouldNotifyFriends) {
-      const [requesterName, targetName] = await Promise.all([
-        this.#dependencies.followRepository.getUserDisplayName(requesterId),
-        this.#dependencies.followRepository.getUserDisplayName(targetUserId),
-      ]);
-      this.#dependencies.effects.notifyMutual({
-        userId: requesterId,
-        friendId: targetUserId,
-        friendName: targetName,
-      });
-      this.#dependencies.effects.notifyMutual({
-        userId: targetUserId,
-        friendId: requesterId,
-        friendName: requesterName,
+      this.#dependencies.effects.notifyFriendshipEstablished({
+        actorId: requesterId,
+        actorName: await this.#dependencies.followRepository.getUserDisplayName(requesterId),
+        counterpartId: targetUserId,
       });
     }
     await Promise.all([
