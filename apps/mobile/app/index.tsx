@@ -3,7 +3,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useIsRestoring } from '@tanstack/react-query';
 import { Redirect } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
 function Index() {
@@ -11,7 +11,9 @@ function Index() {
   const isRestoring = useIsRestoring();
   const entry = useNotificationEntry();
   const isReady = !isRestoring && !entry.isResolving && status === 'authenticated';
-  const href = entry.href ?? getColdStartPath();
+  // 지운 뒤 다시 그려져도 같은 곳으로 보내도록 처음 값을 묶어 둔다
+  const [coldStartPath] = useState(getColdStartPath);
+  const href = entry.href ?? coldStartPath;
 
   useEffect(() => {
     if (isReady) {
