@@ -1,14 +1,10 @@
 import { act, renderHook } from '@testing-library/react-native';
+import { useIsFocused } from 'expo-router';
 import { AccessibilityInfo, AppState, type AppStateStatus } from 'react-native';
 
 import { useWeatherSceneClock } from './use-weather-scene-clock';
 
-let mockIsFocused = true;
 let mockIsReducedMotion = false;
-
-jest.mock('expo-router', () => ({
-  useIsFocused: () => mockIsFocused,
-}));
 
 describe('날씨 장면 시계', () => {
   let appStateListener: ((state: AppStateStatus) => void) | undefined;
@@ -20,7 +16,6 @@ describe('날씨 장면 시계', () => {
   };
 
   beforeEach(() => {
-    mockIsFocused = true;
     mockIsReducedMotion = false;
     appStateListener = undefined;
     Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
@@ -56,7 +51,7 @@ describe('날씨 장면 시계', () => {
 
   test('다른 화면으로 이동해 포커스를 잃으면 멈춘다', async () => {
     // Given
-    mockIsFocused = false;
+    jest.mocked(useIsFocused).mockReturnValue(false);
     // When
     const { result } = await renderHook(() => useWeatherSceneClock());
     // Then

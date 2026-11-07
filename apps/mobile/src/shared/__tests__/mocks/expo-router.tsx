@@ -9,10 +9,17 @@ export const router = {
   navigate: jest.fn(),
   setParams: jest.fn(),
   canGoBack: jest.fn(),
+  dismissAll: jest.fn(),
 };
 export const useLocalSearchParams = jest.fn();
+export const useGlobalSearchParams = jest.fn();
 export const useIsFocused = jest.fn();
-export function useFocusEffect(effect: () => void | (() => void)) {
+export const usePathname = jest.fn();
+export const useSegments = jest.fn();
+export const useRootNavigationState = jest.fn();
+export const useFocusEffect = jest.fn();
+
+function useRunFocusEffect(effect: () => void | (() => void)) {
   useEffect(effect, [effect]);
 }
 
@@ -26,7 +33,12 @@ export function resetExpoRouterMock() {
   });
   router.canGoBack.mockReturnValue(true);
   useLocalSearchParams.mockReset().mockImplementation(() => ({}));
+  useGlobalSearchParams.mockReset().mockImplementation(() => ({}));
   useIsFocused.mockReset().mockReturnValue(true);
+  usePathname.mockReset().mockReturnValue('/');
+  useSegments.mockReset().mockReturnValue([]);
+  useRootNavigationState.mockReset();
+  useFocusEffect.mockReset().mockImplementation(useRunFocusEffect);
 }
 
 resetExpoRouterMock();

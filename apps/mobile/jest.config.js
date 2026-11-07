@@ -35,6 +35,13 @@ const base = {
     '^expo-audio$': '<rootDir>/src/shared/__tests__/mocks/expo-audio.ts',
     // v4(Nitro)는 import 시 NitroModules를 eager 로드해 jest에서 크래시 — 인메모리 목으로 대체
     '^react-native-mmkv$': '<rootDir>/src/shared/__tests__/mocks/react-native-mmkv.ts',
+    // 위젯 트리는 네이티브 렌더러가 그린다. 테스트는 요소 이름과 props로 트리를 읽는다
+    '^react-native-android-widget$':
+      '<rootDir>/src/shared/__tests__/mocks/react-native-android-widget.ts',
+    '^@expo/ui/swift-ui$': '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui.ts',
+    '^@expo/ui/swift-ui/modifiers$':
+      '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui-modifiers.ts',
+    '^expo-widgets$': '<rootDir>/src/shared/__tests__/mocks/expo-widgets.ts',
   },
   watchman: false,
 };

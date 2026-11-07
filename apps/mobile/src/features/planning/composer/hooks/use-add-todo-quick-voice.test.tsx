@@ -41,8 +41,6 @@ import { Pressable, TextInput } from 'react-native';
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));
-
 const ACCOUNT_ID = 'user-1';
 const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
 const logger = createLoggerStub();

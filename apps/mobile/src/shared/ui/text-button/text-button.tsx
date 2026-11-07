@@ -47,6 +47,7 @@ export function TextButton({
       {variant === 'arrow' && (
         <Box className="ml-1">
           <ArrowRightIcon
+            testID="text-button-arrow"
             width={ICON_SIZE_MAP[size]}
             height={ICON_SIZE_MAP[size]}
             colorClassName="text-gray-6"

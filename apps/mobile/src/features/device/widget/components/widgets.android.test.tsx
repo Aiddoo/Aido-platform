@@ -6,13 +6,6 @@ import type { WidgetProps } from '../schemas/widget-props.schema';
 import { createInitialWidgetProps } from '../utils/widget-initial-props';
 import { renderAndroidWidget } from './widgets.android';
 
-jest.mock('react-native-android-widget', () => ({
-  FlexWidget: 'FlexWidget',
-  ListWidget: 'ListWidget',
-  TextWidget: 'TextWidget',
-  SvgWidget: 'SvgWidget',
-}));
-
 type NodeProps = {
   children?: ReactNode;
   text?: string;

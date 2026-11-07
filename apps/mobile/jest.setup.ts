@@ -65,6 +65,16 @@ jest.mock('react-native-reserved-regions', () =>
   require('./src/shared/__tests__/mocks/react-native-reserved-regions'),
 );
 jest.mock('expo-router', () => require('./src/shared/__tests__/mocks/expo-router'));
+// 네이티브 이벤트 스트림을 읽는 훅이라 Jest에서는 값이 오지 않는다. 링크로 들어오는 흐름은 테스트가 값을 정한다.
+jest.mock('expo-linking', () => ({
+  ...jest.requireActual('expo-linking'),
+  useLinkingURL: jest.fn(() => null),
+}));
+// 네이티브 스플래시가 없어 호출이 reject한다. 숨김 시점을 보는 테스트가 호출 기록을 읽는다.
+jest.mock('expo-splash-screen', () => ({
+  hideAsync: jest.fn(async () => {}),
+  preventAutoHideAsync: jest.fn(async () => {}),
+}));
 jest.mock(
   'react-native-safe-area-context',
   () => require('react-native-safe-area-context/jest/mock').default,

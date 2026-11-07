@@ -38,19 +38,6 @@ import { AuthGateLayout } from './auth-gate-layout';
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
 
-jest.mock('uniwind', () => ({
-  Uniwind: { setTheme: jest.fn() },
-  useResolveClassNames: () => ({ backgroundColor: '#ffffff' }),
-}));
-jest.mock('expo-linking', () => ({
-  ...jest.requireActual('expo-linking'),
-  useLinkingURL: jest.fn(() => null),
-}));
-jest.mock('expo-splash-screen', () => ({
-  hideAsync: jest.fn(async () => {}),
-  preventAutoHideAsync: jest.fn(async () => {}),
-}));
-
 const TODO_RESPONSE: PushNotificationResponse = {
   id: 'response-1',
   actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',

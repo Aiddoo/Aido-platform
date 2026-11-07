@@ -1,34 +1,14 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createTestDiContainer } from '@src/shared/__tests__';
+import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError, ServerError } from '@src/shared/errors';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import type { ReactNode } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { Pressable, Text } from 'react-native';
 
 import { OverlayProvider } from '../overlay/overlay-provider';
 import { useOverlay } from '../overlay/use-overlay';
 import { QueryErrorBoundary } from './query-error-boundary';
-
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
-
-jest.mock('heroui-native', () => {
-  const { View } = require('react-native');
-  return {
-    Button: ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
-    LinkButton: ({ children, ...props }: { children: ReactNode }) => (
-      <View {...props}>{children}</View>
-    ),
-    PressableFeedback: Object.assign(
-      ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
-      { Highlight: () => null },
-    ),
-    Spinner: () => <View testID="spinner" />,
-    PortalHost: () => null,
-  };
-});
 
 const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
   captureException: jest.fn(),
@@ -85,12 +65,11 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   const renderWithBoundary = (error: Error) =>
-    render(
-      <StaticDIProvider container={createTestDiContainer({ errorReporter })}>
-        <QueryErrorBoundary>
-          <Thrower error={error} />
-        </QueryErrorBoundary>
-      </StaticDIProvider>,
+    renderUi(
+      <QueryErrorBoundary>
+        <Thrower error={error} />
+      </QueryErrorBoundary>,
+      { di: { errorReporter } },
     );
 
   it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
@@ -153,22 +132,18 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
-    const container = createTestDiContainer({ errorReporter });
-    const screen = await render(
-      <StaticDIProvider container={container}>
-        <QueryErrorBoundary resetKeys={['2026-07-14']}>
-          <MaybeThrower shouldThrow />
-        </QueryErrorBoundary>
-      </StaticDIProvider>,
+    const screen = await renderUi(
+      <QueryErrorBoundary resetKeys={['2026-07-14']}>
+        <MaybeThrower shouldThrow />
+      </QueryErrorBoundary>,
+      { di: { errorReporter } },
     );
     expect(screen.queryByTestId('healthy-content')).toBeNull();
 
     await screen.rerender(
-      <StaticDIProvider container={container}>
-        <QueryErrorBoundary resetKeys={['2026-07-15']}>
-          <MaybeThrower shouldThrow={false} />
-        </QueryErrorBoundary>
-      </StaticDIProvider>,
+      <QueryErrorBoundary resetKeys={['2026-07-15']}>
+        <MaybeThrower shouldThrow={false} />
+      </QueryErrorBoundary>,
     );
 
     expect(screen.getByTestId('healthy-content')).toBeTruthy();
@@ -176,12 +151,11 @@ describe('QueryErrorBoundary 관측', () => {
 
   it('화면의 useErrorBoundary에 context를 제공하고 제출 오류를 기존 fallback에서 처리한다', async () => {
     const error = new ServerError(503);
-    const screen = await render(
-      <StaticDIProvider container={createTestDiContainer({ errorReporter })}>
-        <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
-          <AsyncErrorScreen error={error} />
-        </QueryErrorBoundary>
-      </StaticDIProvider>,
+    const screen = await renderUi(
+      <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
+        <AsyncErrorScreen error={error} />
+      </QueryErrorBoundary>,
+      { di: { errorReporter } },
     );
 
     await fireEvent.press(screen.getByTestId('submit-error'));
@@ -195,14 +169,13 @@ describe('QueryErrorBoundary 관측', () => {
 
   it('OverlayProvider가 별도로 마운트한 overlay에도 오류 context를 전달한다', async () => {
     const error = new ServerError(503);
-    const screen = await render(
-      <StaticDIProvider container={createTestDiContainer({ errorReporter })}>
-        <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
-          <OverlayProvider>
-            <OverlayErrorScreen error={error} />
-          </OverlayProvider>
-        </QueryErrorBoundary>
-      </StaticDIProvider>,
+    const screen = await renderUi(
+      <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
+        <OverlayProvider>
+          <OverlayErrorScreen error={error} />
+        </OverlayProvider>
+      </QueryErrorBoundary>,
+      { di: { errorReporter } },
     );
 
     await fireEvent.press(screen.getByTestId('open-error-overlay'));

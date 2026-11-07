@@ -13,37 +13,6 @@ import {
 import { toWidgetProps } from '../apis/widget-props.mapper';
 import { toWidgetSnapshot } from '../apis/widget-snapshot.mapper';
 
-jest.mock('@expo/ui/swift-ui', () => ({
-  Gauge: 'Gauge',
-  Divider: 'Divider',
-  Link: 'Link',
-  HStack: 'HStack',
-  Image: 'Image',
-  RoundedRectangle: 'RoundedRectangle',
-  Spacer: 'Spacer',
-  Text: 'Text',
-  VStack: 'VStack',
-  ZStack: 'ZStack',
-}));
-jest.mock('@expo/ui/swift-ui/modifiers', () => ({
-  containerBackground: jest.fn(),
-  background: jest.fn(),
-  cornerRadius: jest.fn(),
-  font: jest.fn(),
-  foregroundColor: jest.fn(),
-  frame: jest.fn(),
-  gaugeStyle: jest.fn(),
-  lineLimit: jest.fn(),
-  monospacedDigit: jest.fn(),
-  minimumScaleFactor: jest.fn(),
-  strikethrough: jest.fn(),
-  opacity: jest.fn(),
-  padding: jest.fn(),
-  tint: jest.fn(),
-  widgetURL: (url: string) => ({ $type: 'widgetURL', url }),
-}));
-jest.mock('expo-widgets', () => ({ createWidget: jest.fn(() => ({})) }));
-
 require('./widgets.ios');
 const registration = jest.mocked(createWidget).mock.calls[0];
 

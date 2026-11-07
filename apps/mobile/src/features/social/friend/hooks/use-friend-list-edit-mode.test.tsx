@@ -3,11 +3,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { useFriendListEditMode } from './use-friend-list-edit-mode';
 
-jest.mock('expo-router', () => ({
-  router: { setParams: jest.fn() },
-  useLocalSearchParams: jest.fn(),
-}));
-
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 
 describe('useFriendListEditMode', () => {

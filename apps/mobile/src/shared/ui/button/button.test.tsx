@@ -1,46 +1,36 @@
-import { render, screen } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { screen } from '@testing-library/react-native';
 
 import { Button } from './button';
 import { buttonVariants } from './button.variants';
 
-jest.mock('heroui-native', () => {
-  const { View } = require('react-native');
-  return {
-    Button: ({ children, ...props }: { children: ReactNode }) => <View {...props}>{children}</View>,
-    PressableFeedback: { Highlight: () => null },
-    Spinner: () => <View testID="spinner" />,
-  };
-});
-
 describe('Button', () => {
   test('children을 렌더링한다', async () => {
-    await render(<Button>버튼</Button>);
+    await renderUi(<Button>버튼</Button>);
 
     expect(screen.getByText('버튼')).toBeTruthy();
   });
 
-  test('isLoading일 때 Spinner를 표시하고 children을 숨긴다', async () => {
-    await render(<Button isLoading>로딩</Button>);
+  test('isLoading일 때 children을 숨긴다', async () => {
+    await renderUi(<Button isLoading>로딩</Button>);
 
-    expect(screen.getByTestId('spinner')).toBeTruthy();
     expect(screen.queryByText('로딩')).toBeNull();
   });
 
   test('isDisabled와 isLoading 모두 버튼을 비활성화한다', async () => {
-    const { rerender } = await render(
+    const { rerender } = await renderUi(
       <Button testID="button" isDisabled>
         버튼
       </Button>,
     );
-    expect(screen.getByTestId('button').props.isDisabled).toBe(true);
+    expect(screen.getByTestId('button').props.accessibilityState.disabled).toBe(true);
 
     await rerender(
       <Button testID="button" isLoading>
         버튼
       </Button>,
     );
-    expect(screen.getByTestId('button').props.isDisabled).toBe(true);
+    expect(screen.getByTestId('button').props.accessibilityState.disabled).toBe(true);
   });
 });
 

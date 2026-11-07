@@ -29,15 +29,6 @@ import { AuthGateLayout } from './auth-gate-layout';
 jest.unmock('expo-router');
 
 let mockAuthSessionStore = createAuthSessionStoreStub('loading');
-jest.mock('uniwind', () => ({
-  Uniwind: { setTheme: jest.fn() },
-  useResolveClassNames: () => ({ backgroundColor: '#ffffff' }),
-}));
-jest.mock('expo-linking', () => ({
-  ...jest.requireActual('expo-linking'),
-  useLinkingURL: jest.fn(() => null),
-}));
-
 function LoginScreen() {
   return (
     <Pressable testID="login" onPress={() => mockAuthSessionStore.setStatus('authenticated')}>

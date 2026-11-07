@@ -5,9 +5,6 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
-import { renderStoredAndroidWidget } from './android-widgets.bridge';
-
-jest.mock('./android-widgets.bridge', () => ({ renderStoredAndroidWidget: jest.fn() }));
 
 function createHandler(isAppActive = false) {
   const values = new Map<string, string>();
@@ -19,6 +16,7 @@ function createHandler(isAppActive = false) {
   };
   const navigationRepository = createWidgetNavigationRepository(storage);
   const openApp = jest.fn(async () => {});
+  const renderStoredWidget = jest.fn();
   const errorReporter: jest.Mocked<ErrorReporter> = {
     captureException: jest.fn(),
     captureMessage: jest.fn(),
@@ -29,6 +27,7 @@ function createHandler(isAppActive = false) {
     navigationRepository,
     openApp,
     errorReporter,
+    renderStoredWidget,
     handler: createAndroidWidgetTaskHandler({
       navigationRepository,
       openApp,
@@ -36,6 +35,7 @@ function createHandler(isAppActive = false) {
       now: () => 1000,
       createCommandId: () => 'widget-tap',
       errorReporter,
+      renderStoredWidget,
     }),
   };
 }
@@ -161,7 +161,7 @@ describe('Android 위젯 작업 처리', () => {
 
   it('렌더 요청은 저장된 스냅샷을 사용하고 삭제된 위젯은 갱신하지 않는다', async () => {
     // Given
-    const { handler } = createHandler();
+    const { handler, renderStoredWidget } = createHandler();
     const task = createTask({ widgetAction: 'WIDGET_UPDATE' });
 
     // When
@@ -169,7 +169,7 @@ describe('Android 위젯 작업 처리', () => {
     await handler({ ...task, widgetAction: 'WIDGET_DELETED' });
 
     // Then
-    expect(renderStoredAndroidWidget).toHaveBeenCalledTimes(1);
+    expect(renderStoredWidget).toHaveBeenCalledTimes(1);
     expect(task.renderWidget).toHaveBeenCalledTimes(1);
   });
 

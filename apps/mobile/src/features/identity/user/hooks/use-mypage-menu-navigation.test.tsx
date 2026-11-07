@@ -3,12 +3,6 @@ import { router, usePathname } from 'expo-router';
 
 import { useMyPageMenuNavigation } from './use-mypage-menu-navigation';
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), dismissAll: jest.fn() },
-  usePathname: jest.fn(),
-  useRootNavigationState: jest.fn(),
-}));
-
 const mockedUsePathname = jest.mocked(usePathname);
 
 describe('useMyPageMenuNavigation', () => {

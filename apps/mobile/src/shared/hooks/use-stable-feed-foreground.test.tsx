@@ -2,6 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createIncomingLinkGatewayStub, createTestDiContainer } from '@src/shared/__tests__';
 import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { useFocusEffect } from 'expo-router';
 import type { EffectCallback, PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
@@ -14,12 +15,6 @@ let focusEffect: EffectCallback | undefined;
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
 let deepLinkListener: (() => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
-
-jest.mock('expo-router', () => ({
-  useFocusEffect: (effect: EffectCallback) => {
-    focusEffect = effect;
-  },
-}));
 
 const mockUseKeyboardState = jest.mocked(useKeyboardState);
 
@@ -52,6 +47,9 @@ describe('useStableFeedForeground', () => {
     mockHasActiveOverlay = false;
     mockIsKeyboardVisible = false;
     focusEffect = undefined;
+    jest.mocked(useFocusEffect).mockImplementation((effect: EffectCallback) => {
+      focusEffect = effect;
+    });
     deepLinkListener = undefined;
     idleCallbacks = [];
     Object.defineProperty(AppState, 'currentState', {

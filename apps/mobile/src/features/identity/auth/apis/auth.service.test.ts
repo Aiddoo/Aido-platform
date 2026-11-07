@@ -660,6 +660,5 @@ describe('AuthService', () => {
 
   // ── OAuth 네이티브 메서드 ──────────────────
   // openKakaoLogin, openNaverLogin, openGoogleLogin, openAppleLogin,
-  // linkAccount, linkApple 등은 expo-web-browser, expo-apple-authentication
   // 네이티브 모듈에 의존하므로 별도 통합/E2E 테스트에서 검증
 });

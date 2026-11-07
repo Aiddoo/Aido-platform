@@ -4,11 +4,6 @@ import { BackHandler, TextInput } from 'react-native';
 
 import { useStepper } from './use-stepper';
 
-jest.mock('expo-router', () => {
-  const { useEffect } = require('react');
-  return { useFocusEffect: (effect: () => void | (() => void)) => useEffect(effect, [effect]) };
-});
-
 type Contexts = {
   email: { email: string };
   password: { email: string };

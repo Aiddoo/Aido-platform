@@ -1,38 +1,22 @@
-import { render, screen } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { screen } from '@testing-library/react-native';
 
 import { TextButton } from './text-button';
 import { textButtonVariants } from './text-button.variants';
 
-jest.mock('heroui-native', () => {
-  const { View } = require('react-native');
-  return {
-    LinkButton: ({ children, ...props }: { children: ReactNode }) => (
-      <View {...props}>{children}</View>
-    ),
-  };
-});
-
-jest.mock('../icon', () => ({
-  ArrowRightIcon: () => {
-    const { View } = require('react-native');
-    return <View testID="arrow-icon" />;
-  },
-}));
-
 describe('TextButton', () => {
   test('children을 렌더링한다', async () => {
-    await render(<TextButton>텍스트</TextButton>);
+    await renderUi(<TextButton>텍스트</TextButton>);
 
     expect(screen.getByText('텍스트')).toBeTruthy();
   });
 
   test('variant=arrow일 때만 화살표 아이콘을 표시한다', async () => {
-    const { rerender } = await render(<TextButton variant="arrow">더보기</TextButton>);
-    expect(screen.getByTestId('arrow-icon')).toBeTruthy();
+    const { rerender } = await renderUi(<TextButton variant="arrow">더보기</TextButton>);
+    expect(screen.getByTestId('text-button-arrow')).toBeTruthy();
 
     await rerender(<TextButton variant="clear">더보기</TextButton>);
-    expect(screen.queryByTestId('arrow-icon')).toBeNull();
+    expect(screen.queryByTestId('text-button-arrow')).toBeNull();
   });
 });
 

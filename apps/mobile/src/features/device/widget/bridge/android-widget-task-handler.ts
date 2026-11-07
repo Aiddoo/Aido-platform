@@ -22,6 +22,7 @@ type WidgetTaskDependencies = {
   now: () => number;
   createCommandId: () => string;
   errorReporter: ErrorReporter;
+  renderStoredWidget: typeof renderStoredAndroidWidget;
 };
 
 export function createAndroidWidgetTaskHandler({
@@ -31,6 +32,7 @@ export function createAndroidWidgetTaskHandler({
   now,
   createCommandId,
   errorReporter,
+  renderStoredWidget,
 }: WidgetTaskDependencies) {
   return async (task: WidgetTaskHandlerProps): Promise<void> => {
     if (!ANDROID_WIDGET_DEFINITIONS.some(({ name }) => name === task.widgetInfo.widgetName)) {
@@ -76,7 +78,7 @@ export function createAndroidWidgetTaskHandler({
         return;
       }
 
-      task.renderWidget(renderStoredAndroidWidget(task.widgetInfo));
+      task.renderWidget(renderStoredWidget(task.widgetInfo));
     } catch (error) {
       try {
         errorReporter.captureException(toError(error), {
@@ -97,4 +99,5 @@ export const androidWidgetTaskHandler = createAndroidWidgetTaskHandler({
   now: Date.now,
   createCommandId: expoIdGenerator.create,
   errorReporter,
+  renderStoredWidget: renderStoredAndroidWidget,
 });

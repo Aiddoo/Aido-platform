@@ -4,8 +4,6 @@ import { useIsFocused } from 'expo-router';
 
 import { useCompactDetailHandoff } from './use-compact-detail-handoff';
 
-jest.mock('expo-router', () => ({ useIsFocused: jest.fn() }));
-
 const mockedUseIsFocused = jest.mocked(useIsFocused);
 
 function givenScreen({ isFocused, width }: { isFocused: boolean; width: number }) {

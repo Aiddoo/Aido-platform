@@ -4,11 +4,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { useFeedSelectedTodo } from './use-feed-selected-todo';
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), setParams: jest.fn() },
-  useLocalSearchParams: jest.fn(),
-}));
-
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 function givenWindow(width: number, params: Record<string, string> = {}) {
   mockWindowDimensions(width);
