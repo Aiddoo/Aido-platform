@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { Box, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -21,7 +21,7 @@ const RECORD_BUTTON_PRESS = {
 };
 
 export function useRecordButtonLabelClearance() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
 
   return (
     RECORD_BUTTON_GAP +
@@ -59,7 +59,7 @@ RecordButton.Column = function Column({
   label: ReactNode;
   children: ReactNode;
 }) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <VStack flex={1} align="center" gap={RECORD_BUTTON_GAP}>
@@ -81,7 +81,7 @@ RecordButton.Button = function Button({
   children,
   ...pressableProps
 }: RecordButtonProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const size = fontScaledSize(isPrimary ? RECORD_BUTTON_PRIMARY_SIZE : RECORD_BUTTON_SIDE_SIZE);
 
   return (

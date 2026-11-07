@@ -2,7 +2,7 @@ import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-r
 import { useInviteActivationStep } from '@src/features/social/invite/hooks/use-invite-activation-step';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -219,7 +219,7 @@ interface ActivationStepIndicatorProps {
  * white 토큰은 다크 모드에서 어두워지므로 체크는 Avatar 선택 배지와 같은 색을 쓴다
  */
 function ActivationStepIndicator({ isCompleted }: ActivationStepIndicatorProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const size = fontScaledSize(24);
   const checkSize = fontScaledSize(14);
 

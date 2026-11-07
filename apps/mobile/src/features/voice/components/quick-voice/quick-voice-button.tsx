@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { MicIcon } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
@@ -11,7 +11,7 @@ type QuickVoiceButtonProps = Omit<
 
 export function QuickVoiceButton(pressableProps: QuickVoiceButtonProps) {
   const { t } = useTranslation('voice');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <PressableFeedback

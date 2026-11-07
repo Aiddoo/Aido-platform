@@ -1,7 +1,7 @@
 import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -168,7 +168,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
 };
 
 CategoryList.ReorderItem = function ReorderItem({ category }: CategoryListItemProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const drag = useReorderableDrag();
   const isActive = useIsActive();
 

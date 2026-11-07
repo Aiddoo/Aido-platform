@@ -1,5 +1,5 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -22,7 +22,7 @@ export function VoiceNoteStartButton({
   coachmarkOffset,
 }: VoiceNoteStartButtonProps) {
   const { t } = useTranslation('voiceNote');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const start = useStartVoiceNote();
   const layoutKey = useAdaptivePaneLayoutKey();
 

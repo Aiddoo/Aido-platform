@@ -15,11 +15,11 @@ import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-
 import type { VoiceCaptureState } from '@src/features/voice/schemas/voice-capture.schema';
 import { voiceNoteRecordParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { getRecordingRingLayout } from '@src/features/voice/utils/recording-timer.geometry';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen-awake';
@@ -187,7 +187,7 @@ function RecordCaptions(
   >,
 ) {
   const isCompact = useWindowSizeClass() === 'compact';
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const [isMarkHintPending] = useMyPendingCoachmark('voice-note-mark');
 
   return (

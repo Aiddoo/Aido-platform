@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { HStack, RepeatIcon, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps, ReactNode } from 'react';
@@ -18,7 +18,7 @@ export function RepeatHintLine({
   className,
   ...stackProps
 }: RepeatHintLineProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const iconSize = fontScaledSize(REPEAT_HINT_ICON_SIZE);
 
   return (

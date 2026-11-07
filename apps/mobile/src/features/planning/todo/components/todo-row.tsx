@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -150,7 +150,7 @@ interface TodoTitleLineProps {
 }
 
 export function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <HStack gap={4} align="start">
@@ -172,7 +172,7 @@ interface TodoScheduleLineProps {
 
 export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
   const { t } = useTranslation('todo');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
   const { repeat } = todo;
   const isRepeating = TodoPolicy.isRecurringTodo(todo);

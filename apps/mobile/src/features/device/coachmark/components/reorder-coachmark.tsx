@@ -1,7 +1,7 @@
 import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { InfoIcon, InlineAlert } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -44,7 +44,7 @@ ReorderCoachmark.Contents = function Contents({
   kind: ReorderCoachmarkKind;
   accountId: string;
 }) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const service = useCoachmarkService();
   const coachmarkKind = match(kind)

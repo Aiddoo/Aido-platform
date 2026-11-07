@@ -1,5 +1,5 @@
 import { DictationButton } from '@src/features/voice/components/dictation-button';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetInput,
@@ -121,7 +121,7 @@ export function SubTodoDictation({ form }: SubTodoFormPartProps) {
 }
 
 function SpeechTooltip() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const [isOpen, setIsOpen] = useState(false);
 

@@ -1,5 +1,5 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, PlusIcon, RefreshIcon, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -14,7 +14,7 @@ import { useGetMemoResourceLimitQueryOptions } from '../queries/memo.queries';
 export const MEMO_CREATE_BUTTON_SIZE = 44;
 
 export function MemoCreateButton() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const push = useSingleTap(router.push);
 
@@ -48,14 +48,14 @@ export function MemoCreateButton() {
 }
 
 MemoCreateButton.Loading = function Loading() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
 
   return <Box style={{ width: createButtonSize, height: createButtonSize }} />;
 };
 
 MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const { t } = useTranslation('common');
 

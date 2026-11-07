@@ -6,6 +6,7 @@ import ky, { type KyInstance } from 'ky';
 
 import { recordApiFailureBreadcrumb } from './error-handler';
 import { createAppHeaders, setPerRequestHeaders } from './request-headers';
+import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
 
 interface AuthClientDeps {
@@ -34,7 +35,7 @@ export function createAuthClient({
 }: AuthClientDeps): KyInstance {
   return ky.create({
     prefix: ENV.API_URL,
-    timeout: 10_000,
+    timeout: API_REQUEST_TIMEOUT_MS,
     // 자동 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — ky의 자체 재시도는
     // `shouldRetry: false`로 전부 차단한다(5xx/네트워크를 ky도 재시도하면 이중 계산).
     // limit: 1은 401 갱신 훅의 강제 재시도(`ky.retry()`) 1회를 허용하기 위한 것으로,

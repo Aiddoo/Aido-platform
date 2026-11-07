@@ -14,6 +14,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
+const ROOT_STACK_ANIMATION_DURATION_MS = 250;
+
 export function AuthGateLayout() {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
@@ -61,7 +63,7 @@ export function AuthGateLayout() {
         headerShown: false,
         statusBarStyle: resolvedTheme === 'dark' ? 'light' : 'dark',
         animation: 'fade',
-        animationDuration: 250,
+        animationDuration: ROOT_STACK_ANIMATION_DURATION_MS,
         animationTypeForReplace: 'pop',
         contentStyle: { backgroundColor },
       }}

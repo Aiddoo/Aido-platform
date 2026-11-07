@@ -1,6 +1,6 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FlagIcon, HStack, PlayIcon, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -61,7 +61,7 @@ function hasSameTime(keyPoint: VoiceNoteKeyPoint, previous: VoiceNoteKeyPoint | 
 }
 
 function KeyPointHintSpace() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const [isHintPending] = useMyPendingCoachmark('voice-key-point');
 
   return isHintPending && <Box style={{ height: fontScaledSize(KEY_POINT_HINT_HEIGHT) }} />;

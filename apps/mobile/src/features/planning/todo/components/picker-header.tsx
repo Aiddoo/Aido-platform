@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack, Text } from '@src/shared/ui';
 import { CloseButton, PressableFeedback } from 'heroui-native';
@@ -16,7 +16,7 @@ export function PickerHeader({
   onConfirm,
   isConfirmDisabled = false,
 }: PickerHeaderProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
 
   return (

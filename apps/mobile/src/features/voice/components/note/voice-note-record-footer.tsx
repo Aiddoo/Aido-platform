@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, PauseIcon, StopIcon, Text, VStack } from '@src/shared/ui';
 import { match, P } from 'ts-pattern';
@@ -75,7 +75,7 @@ function ListeningControls({
   onMark: () => void;
 }) {
   const { t } = useTranslation('voiceNote');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const iconSize = fontScaledSize(RECORD_BUTTON_ICON_SIZE);
 
   return (

@@ -11,7 +11,7 @@ import { parseInstantOrNull } from '@src/features/planning/todo/utils/parse-inst
 import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -126,7 +126,7 @@ export function TodoComposerSubmitButton({
   onPress,
   testID,
 }: TodoComposerSubmitButtonProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
   return (

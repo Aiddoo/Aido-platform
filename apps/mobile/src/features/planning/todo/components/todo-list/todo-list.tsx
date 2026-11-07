@@ -4,9 +4,9 @@ import { CategoryHeaderPill } from '@src/features/planning/category/components/c
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -128,7 +128,7 @@ interface CategoryHeaderProps {
 }
 
 function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
 

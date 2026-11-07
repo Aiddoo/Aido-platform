@@ -3,10 +3,10 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import type { BlockTarget } from '@src/features/social/moderation/schemas/user-block.schema';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BlockIcon,
@@ -141,7 +141,7 @@ interface FriendListItemProps {
 FriendList.Item = function Item({ friend }: FriendListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation(['common', 'friend']);
   const displayName = friend.name ?? t('friend:fallbackName');
   const [isEditMode] = useFriendListEditMode();
@@ -290,7 +290,7 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
 }
 
 FriendList.Loading = function Loading() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const infoIconSize = fontScaledSize(16);
   return (
     <UserList.Loading
@@ -353,7 +353,7 @@ FriendList.Empty = function Empty({ invite }: FriendListProps) {
 };
 
 function EditModeGuideTooltip() {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation(['friend', 'common']);
   const [isOpen, setIsOpen] = useState(false);
 

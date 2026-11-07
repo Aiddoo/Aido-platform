@@ -1,4 +1,4 @@
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { cn } from '@src/shared/utils/cn';
 import { Alert, CloseButton, PressableFeedback } from 'heroui-native';
@@ -50,7 +50,7 @@ export function InlineAlert({
   ...props
 }: InlineAlertProps) {
   const { t } = useTranslation('common');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
 
   const contents = (
     <Alert.Content>

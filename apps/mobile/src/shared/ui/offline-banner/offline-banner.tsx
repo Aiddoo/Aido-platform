@@ -1,6 +1,6 @@
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useEffect } from 'react';
 import { AccessibilityInfo } from 'react-native';
@@ -20,7 +20,7 @@ const ICON_SIZE = 16;
 export function OfflineBanner() {
   const isOnline = useIsOnline();
   const { t } = useTranslation('common');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const message = t('offlineBanner.message');
 
   useEffect(() => {

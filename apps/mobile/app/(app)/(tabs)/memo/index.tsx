@@ -12,8 +12,8 @@ import {
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -32,7 +32,7 @@ const HEADER_GAP = 8;
 
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const isCompact = useWindowSizeClass() === 'compact';
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));

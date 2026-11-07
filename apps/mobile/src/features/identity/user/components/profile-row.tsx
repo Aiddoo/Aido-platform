@@ -1,5 +1,5 @@
 import { useClipboard } from '@src/bootstrap/providers/di-context';
-import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -28,7 +28,7 @@ interface ProfileRowProps {
 }
 
 export function ProfileRow({ tierChip }: ProfileRowProps) {
-  const fontScaledSize = useSystemFontScaledSize();
+  const fontScaledSize = useFontScaledSize();
   const { navigate, isSelected } = useMyPageMenuNavigation();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();

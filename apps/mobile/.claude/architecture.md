@@ -17,19 +17,28 @@ Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이�
 
 ---
 
+## 코드 품질 판단 기준
+
+가독성, 예측 가능성, 응집도, 결합도는 [Frontend Fundamentals 코드 품질](https://frontend-fundamentals.com/code-quality/)을 기준으로 판단한다. 좋은 코드는 변경하기 쉬운 코드다. 네 기준은 서로 부딪히므로 함께 안 고치면 오류가 나는 경우에만 공통화하고, 위험이 낮으면 중복을 허용해 나열한다. 이 앱에서는 예시 문법을 옮기지 않고 원칙만 적용한다(`if` 중괄호, 모듈 수준 `function`, `switch` 대신 `match`, `as` 금지). 업무 규칙은 Policy에 두고 SDK는 포트 뒤에 둔다.
+
 ## 디렉토리 구조
 
 ```
 app/                              # Expo Router 화면. 화면 구성이 여기서 읽힌다
 src/
-├── bootstrap/                    # 앱 조립 (auth/, hooks/, navigation/, providers/, query/)
-│   └── providers/
-│       ├── di-provider.tsx       # 서비스·어댑터 조립 (한 곳)
-│       └── di-context.tsx        # DIContainer 타입과 use{X} 훅
+├── bootstrap/                    # 앱 조립. 낱개 파일은 두지 않고 폴더로 모은다
+│   ├── auth/                     # 순수 시작 판정 (resolve-initial-auth-status.ts)
+│   ├── hooks/                    # 앱 시작 때 한 번 도는 훅 (use-auth-boot, use-sync-user-identity, use-widget-app-entry)
+│   ├── navigation/               # 인증 게이트 레이아웃, 콜드 스타트 링크, 루트 오류 경계 로그 키
+│   ├── providers/                # 루트에 끼우는 Provider와 DI 조립
+│   │   ├── di-provider.tsx       # 서비스·어댑터 조립 (한 곳)
+│   │   └── di-context.tsx        # DIContainer 타입과 use{X} 훅
+│   ├── query/                    # QueryClient 설정, 캐시 복원, 재시도, 온라인 감시
+│   └── startup/                  # 앱 시작 때 한 번 하는 정리 (startup-key-cleanup.ts)
 ├── core/
 │   ├── ports/                    # 포트 인터페이스
 │   ├── errors/                   # 포트가 돌려주는 Result, ApiError
-│   ├── observability/            # 포트가 쓰는 Sentry 키, breadcrumb, 사용자 속성
+│   ├── observability/            # 오류·이벤트 계약: Sentry 키, breadcrumb, 사용자 속성, 로그 이벤트 키 검사 테스트
 │   ├── events/
 │   └── session/
 ├── features/{area}/{feature}/    # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능
@@ -43,11 +52,19 @@ src/
 │   ├── utils/                    # {feature}-draft.ts, {name}.view-model.ts, 순수 계산
 │   └── __tests__/                # {entity}.fixtures.ts, {feature}.test-utils.ts
 └── shared/                       # analytics, config, constants, date, di, draft, errors, hooks, i18n,
-                                  # infra(어댑터), observability, preferences, providers, types, ui, utils
+                                  # infra(어댑터), preferences, providers, schemas, stores, types, ui, utils
 ```
 
 - 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. `create{Name}Repository` 함수 하나가 `{Name}Repository` 인터페이스를 돌려주고 메서드는 화살표 속성이다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
 - 다른 피처는 `@src/features/{area}/{feature}/…` 절대 경로로 import한다.
+
+### shared와 bootstrap의 폴더 기준
+
+- `shared/providers`는 기능과 상관없이 어디서든 읽는 앱 설정 Context다(테마, 언어, 글꼴 배율, 로컬 날짜, 키보드 아래 여백). 값을 `use{X}` 훅으로 읽는다. `bootstrap/providers`는 루트에 한 번 끼우는 조립과 전역 동작이다(DI, Query, 인증 시작, 알림, 결제, 제스처). 값을 내려보내지 않고 `children`만 감싼다.
+- `shared/stores`는 React 밖에서도 읽고 구독하는 모듈 단일 저장소다(`createXStore` + `useSyncExternalStore`). 기기 저장소(MMKV)를 읽고 쓰는 일은 `SyncStorage` 포트와 `use-sync-storage-string`이 맡고, `stores`는 메모리 상태만 가진다.
+- 폴더 `index.ts` 재수출(배럴)은 `shared/ui`, `shared/infra/{analytics,logger,error-reporter}`, `shared/errors`, `shared/analytics`, `shared/__tests__`처럼 여러 파일이 하나의 공개 면이 되는 곳에만 둔다. 새 배럴은 만들지 않고 정의 파일에서 직접 import한다.
+- 로그 이벤트 키는 쓰는 파일 옆에 둔다(`shared/hooks/open-url-log-events.ts`). `core/observability`는 오류와 이벤트의 계약(Sentry 키, breadcrumb, 사용자 속성)과 키 형식 테스트를 갖고, `shared/infra/observability`는 Sentry 초기화와 개인정보 지우기(`scrub-sentry-event`)를 갖는다. `shared/observability` 폴더는 없다.
+- `bootstrap`에는 낱개 파일을 두지 않는다. 시작 판정은 `auth/`, 한 번 도는 훅은 `hooks/`, 루트 Provider는 `providers/`, 시작 때 한 번 하는 정리는 `startup/`이다.
 
 ### 기능을 어디에 두나
 
@@ -190,7 +207,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 검증 실패                  | 틀린 칸으로 포커스                                      | `Controller`의 `field.ref`                                                                                                                           |
 | 시트 위에 피커를 열고 닫음 | 키보드 내린 뒤 열림, 닫으면 입력으로 포커스 복귀        | `ModalBottomSheet`가 열릴 때 키보드를 내린다. 복귀는 `onCloseStart`에서 한다([시트](./ui-components.md#시트))                                        |
 | 저장 중·실패               | 중복 제출 없음, 성공 전에 닫지 않음, 실패해도 글자 유지 | `isSubmitting`, `isPending`, 초안                                                                                                                    |
-| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useSystemFontScaledSize`                                                                                                          |
+| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useFontScaledSize`                                                                                                                |
 | 뒤로 가기                  | 작성 중 글자를 잃지 않음                                | 초안 또는 확인                                                                                                                                       |
 
 화면을 끝내기 전에 주요 흐름 한 번, 실패와 재시도 한 번, 키보드, 뒤로 가기, 긴 문구, 큰 글꼴을 직접 해 보고 실행한 것과 못 한 것을 나눠 보고한다.
@@ -363,6 +380,23 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 - 함수는 동사로 시작한다. 변환은 `toX`(`toMemo`), 생성은 `createX`(`createMemoDraftKey`), 불변 갱신은 `withX`다. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX`는 쓰지 않는다.
 - 저장 키, Analytics 이벤트, 서버 필드처럼 밖으로 나가는 문자열은 이름 정리 대상이 아니다.
 
+**판별 함수 접두사.** 같은 뜻은 한 접두사만 쓴다. 판별은 부수효과 없이 boolean만 돌려준다.
+
+| 접두사    | 묻는 것                                        | 예                                       |
+| --------- | ---------------------------------------------- | ---------------------------------------- |
+| `can*`    | 사용자가 이 동작을 해도 되나(권한, 한도, 상태) | `canCreateMemo`, `canEditComment`        |
+| `should*` | 앱이 스스로 이 일을 할 때인가                  | `shouldOfferPremium`, `shouldAutoFinish` |
+| `is*`     | 지금 상태나 분류                               | `isExpired`, `isAdmin`                   |
+| `has*`    | 가진 것, 존재, 이미 일어난 일                  | `hasSubTodos`, `hasChanged`              |
+
+- 부정 이름(`isNot*`, `hasNo*`)은 쓰지 않고 긍정으로 짓는다. `isXAllowed`, `isXEligible`, `isXLocked`, `isXBlocked`처럼 허용을 묻는 판별은 `can*`이다. 앱의 자동 판단은 `can*`이 아니라 `should*`다.
+- 안내를 띄우거나 이동하는 함수는 판별이 아니다. `promptIf*`로 부수효과를 드러내고 true는 "안내를 띄웠다, 멈춘다"다(`gate.promptIfBlocked`, `gate.promptIfBlockedError`). 처리했는지 돌려주는 함수는 true가 "내가 처리했다"다(`interceptBack`). `ensure*`는 true가 통과다. 한 호출부 안에서 true의 뜻이 섞이지 않게 한다.
+- 불리언을 담은 ref는 `*Ref`로 끝낸다(`isRequestingRef`). `.current`를 빠뜨려도 항상 참이 되는 결함을 막는다.
+- 값을 돌려주는 동사도 종류마다 하나다: `get*`(읽기, 파생), `calculate*`(계산), `find*`(없으면 `null`), `create*`, `to*`(변환), `format*`(표시 문자열), `parse*`(실패 시 `null`). 인자가 목표값이면 `toggle`이 아니라 `set*`이나 `with*`다.
+- 같은 종류의 함수는 같은 실패 표현을 쓴다. Repository 읽기와 파서는 없으면 `null`, Service는 `Result`다.
+- 예외: 서버 계약 필드와 라이브러리 이름(`permissions.canEdit`, `isLoading`, `hasNextPage`), OS 상태 이름(`isNotDetermined`), 라이브러리 콜백 규약(`BackHandler`의 true, `onBeforeOpen` 같은 prop이 정한 뜻).
+- Policy Facade 키도 같은 접두사를 따르고 export한 함수 이름 그대로다. Policy에는 업무 판별만 두고, 표시용 판별(`isChecklistVisible` 같은 화면 값)은 Policy에서 뺀다.
+
 ### 목록·스켈레톤
 
 **목록 도구**
@@ -408,7 +442,7 @@ MemoList.Loading = function Loading() {
 | 데이터에 따라 생기는 줄(설명, 하위 항목) | 로딩에서 그리지 않아 끝날 때 위 내용이 밀리지 않게 한다                                                                                  |
 | 받은 뒤 나타나는 버튼·배너               | 자리를 먼저 비워 두거나(`MemoCreateButton.Loading`, `MemoEditor.PaneLoading`의 버튼 줄), 대부분 안 보이면 자리를 잡지 않고 이유를 적는다 |
 | 오류 문구                                | `preserveErrorSpace`로 자리 유지. 입력 칸이 밀리지 않는다                                                                                |
-| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useSystemFontScaledSize`, 칩은 `ActionButton.Icon`                                                               |
+| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useFontScaledSize`, 칩은 `ActionButton.Icon`                                                                     |
 | 재조회                                   | 화면에 데이터가 있으면 fallback으로 바꾸지 않는다. 키가 바뀌는 전환은 `startTransition`을 검토한다                                       |
 | 시트                                     | 내용 높이 변화는 기존 시트 측정을 쓴다. 키보드는 `KeyboardBottomSheet`, `react-native-keyboard-controller`                               |
 | 넓은 화면 전환                           | `AdaptivePane`으로 재마운트 없이 유지                                                                                                    |
@@ -468,7 +502,7 @@ MemoList.Loading = function Loading() {
 `utils/`는 입력만으로 결과를 내는 순수 함수다.
 
 - 파일: export가 하나면 파일 이름이 함수 이름 kebab-case다(`to-screen-name.ts`). 같은 대상의 묶음은 `{대상}.ts`나 정해진 접미사(`{feature}-draft`, `{feature}-analytics`, `{name}.geometry`, `{name}.view-model`)다. `helpers`, `utils`, `common`, `misc`는 쓰지 않는다. 저장소는 `*-store.ts`(`shared/stores/`)이고 `hooks/`에는 `use-*`만 둔다.
-- 함수: 동사로 시작한다(`get`, `calculate`, `is/has/can/should`, `find`, `create`, `with`, `to`, `format`, `parse`). `xxxOf`와 축약(`res`, `tmp`, `cb`, `opts`)은 쓰지 않는다. 넓은 범위의 `result`·`data`는 내용 이름으로 바꾼다.
+- 함수: 동사로 시작한다(`get`, `calculate`, `is/has/can/should`, `find`, `create`, `with`, `to`, `format`, `parse`). 판별 접두사 뜻은 [이름](#이름)의 표를 따른다. `xxxOf`와 축약(`res`, `tmp`, `cb`, `opts`)은 쓰지 않는다. 넓은 범위의 `result`·`data`는 내용 이름으로 바꾼다.
 - 순수성: 네트워크, 저장소, 로그, 현재 시각, 전역 `t`, 시간대 읽기를 하지 않고 인자로 받는다. 부수효과가 있으면 Service나 훅이다.
 - 인자: 위치 인자는 3개까지다. 4개 이상이면 이름 있는 객체다. 단 worklet과 프레임마다 도는 함수(`followLevel`)는 성능 때문에 위치 인자를 유지하고 이유를 주석으로 남긴다. 위치 불리언은 쓰지 않는다. 넓은 모델 대신 쓰는 칸만 `Pick`으로 받는다.
 
@@ -754,7 +788,7 @@ export const MemoPolicy = {
 
 **화면은 Policy로 소비한다.** `MemoPolicy.canCreateMemo(resourceLimit)`처럼 쓴다. 모델을 불필요하게 여러 개 만들지 않는다.
 
-**이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정), `find*`(검색), `create*`(생성), `with*`(불변 갱신). `xxxOf`는 쓰지 않는다. Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
+**이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정, 접두사 뜻은 [이름](#이름)의 표), `find*`(검색), `create*`(생성), `with*`(불변 갱신). 부정 이름은 쓰지 않는다. `xxxOf`는 쓰지 않는다. Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
 
 **첫 인자는 모델이다.** 값이 하나만 필요해도 `Pick<Memo, 'content'>`로 받아 필드가 바뀌면 타입이 알려 주게 한다. 흩어진 필드 나열이나 DTO를 받지 않는다.
 
@@ -959,7 +993,9 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 - **예외는 두 가지뿐이다.**
   - 라이브러리 자체가 React 훅이면 `shared/infra` 안의 경계 훅 파일 하나에서만 import한다(`expo-audio`는 `shared/infra/audio/use-audio-part-playlist.ts`, `expo-keep-awake`는 `shared/infra/keep-awake/use-keep-screen-awake.ts`, `expo-localization`은 `shared/infra/localization/device-locale.ts`, `useLinkingURL`은 `shared/infra/linking/use-linking-url.ts`).
   - React 밖 코드(시작 시 값, 위젯 진입점, 부트스트랩)는 DI 훅을 부를 수 없으니 `shared/infra`의 함수를 직접 import한다.
+- **SDK 직접 import 예외(검사 대상이 아닌 라이브러리).** `expo-router`는 라우터 교체가 route 전체를 바꾸는 일이라 포트로 숨기지 않고, 화면과 route 경계 훅(`useRouteParams`, `useView`, `useSingleTap` 등)에서 import한다. `env.ts`는 `expo-constants`로 앱 설정을 읽고, 루트 레이아웃은 `expo-splash-screen`을, 내비게이션 테마는 `@react-navigation/native`를 직접 쓴다. 이유는 `check-mobile-conventions.mjs`의 `SDK_MODULES` 위 주석에 있다.
 - **`check:conventions`가 강제한다.** 예외 목록은 없다. 검사 대상이 아닌 라이브러리(`expo-router`, UI 라이브러리, 위젯 자기 조립, `expo-constants`, `expo-splash-screen`)와 이유는 `SDK_MODULES` 위 주석에 있다.
+- **파일 이름은 내보내는 이름을 말한다.** 포트 파일은 주 인터페이스 이름의 kebab-case다(`ClipboardGateway` → `clipboard-gateway.ts`, `HttpClient` → `http-client.ts`). 어댑터 파일은 `{공급자}-{포트 파일 이름}.ts` 한 형식이고 내보내는 이름이 그대로 camelCase다(`expo-clipboard-gateway.ts` → `expoClipboardGateway`, `revenuecat-purchases-gateway.ts`, `kakao-social-share-gateway.ts`, `expo-system-share-gateway.ts`). 한 파일이 포트 둘을 구현하지 않고 포트마다 파일을 나눈다(`expo-external-link-gateway.ts`, `expo-incoming-link-gateway.ts`). 테스트는 어댑터 옆 `-gateway.test.ts`다.
 - **포트 이름은 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setFirebaseAppInstanceId` → `setAnalyticsId`, `setString` → `copy`).
 - **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
 - **조립은 `di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
@@ -994,8 +1030,8 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 | `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                 | `storage/device-sync-storage.ts`                 |
 | `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/encrypted-draft-storage.ts`             |
 | `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard-gateway.ts`            |
-| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `X                                               |
-| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `X                                               |
+| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `linking/expo-external-link-gateway.ts`          |
+| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `linking/expo-incoming-link-gateway.ts`          |
 | `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                | `share/expo-system-share-gateway.ts`             |
 | `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location-gateway.ts`              |
 | `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases-gateway.ts`      |
