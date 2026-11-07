@@ -18,10 +18,10 @@ const monthly = createPlan({ identifier: 'monthly', planType: 'monthly' });
 const annual = createPlan({ identifier: 'annual', planType: 'annual' });
 const offering: SubscriptionOffering = { identifier: 'default', plans: [monthly, annual] };
 
-describe('getSelectedPlan', () => {
+describe('findSelectedPlan', () => {
   it('고르지 않았으면 연간을 고른 것으로 본다', () => {
     // When
-    const plan = SubscriptionPolicy.getSelectedPlan(offering, undefined);
+    const plan = SubscriptionPolicy.findSelectedPlan(offering, undefined);
 
     // Then
     expect(plan).toBe(annual);
@@ -32,7 +32,7 @@ describe('getSelectedPlan', () => {
     const monthlyOnly = { ...offering, plans: [monthly] };
 
     // When
-    const plan = SubscriptionPolicy.getSelectedPlan(monthlyOnly, undefined);
+    const plan = SubscriptionPolicy.findSelectedPlan(monthlyOnly, undefined);
 
     // Then
     expect(plan).toBe(monthly);
@@ -40,7 +40,7 @@ describe('getSelectedPlan', () => {
 
   it('고른 요금제가 있으면 그것을 반환한다', () => {
     // When
-    const plan = SubscriptionPolicy.getSelectedPlan(offering, 'monthly');
+    const plan = SubscriptionPolicy.findSelectedPlan(offering, 'monthly');
 
     // Then
     expect(plan).toBe(monthly);
@@ -48,10 +48,10 @@ describe('getSelectedPlan', () => {
 
   it('고른 요금제가 판매에서 빠졌으면 없는 값을 반환한다', () => {
     // When
-    const plan = SubscriptionPolicy.getSelectedPlan(offering, 'old-plan');
+    const plan = SubscriptionPolicy.findSelectedPlan(offering, 'old-plan');
 
     // Then
-    expect(plan).toBeUndefined();
+    expect(plan).toBeNull();
   });
 });
 

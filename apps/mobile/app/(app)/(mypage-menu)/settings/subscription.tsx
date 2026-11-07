@@ -73,7 +73,7 @@ SubscriptionScreen.Plans = function Plans() {
             <Box className="px-5 pb-5">
               <QueryErrorBoundary fallback={PlanPicker.Error}>
                 <Suspense fallback={<PlanPicker.Loading />}>
-                  <PlanPicker chosenPlanId={chosenPlanId} onChange={setChosenPlanId} />
+                  <PlanPicker value={chosenPlanId} onValueChange={setChosenPlanId} />
                 </Suspense>
               </QueryErrorBoundary>
             </Box>
@@ -90,7 +90,7 @@ SubscriptionScreen.Plans = function Plans() {
       </ScrollView>
 
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <PurchaseButton chosenPlanId={chosenPlanId} />
+        <PurchaseButton planId={chosenPlanId} />
       </StyledSafeAreaView>
     </Box>
   );

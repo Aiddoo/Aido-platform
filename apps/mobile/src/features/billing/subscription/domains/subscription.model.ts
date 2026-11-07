@@ -14,11 +14,11 @@ function getMonthlyEquivalent(annualPlan: Pick<SubscriptionPlan, 'price'>) {
   return round(annualPlan.price / 12, 2);
 }
 
-function getSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {
+function findSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {
   if (chosenPlanId != null) {
-    return offering.plans.find((plan) => plan.identifier === chosenPlanId);
+    return offering.plans.find((plan) => plan.identifier === chosenPlanId) ?? null;
   }
-  return findPlanByType(offering.plans, 'annual') ?? offering.plans[0];
+  return findPlanByType(offering.plans, 'annual') ?? offering.plans[0] ?? null;
 }
 
 function findPlanByType(
@@ -31,6 +31,6 @@ function findPlanByType(
 export const SubscriptionPolicy = {
   getAnnualDiscountPercent,
   getMonthlyEquivalent,
-  getSelectedPlan,
+  findSelectedPlan,
   findPlanByType,
 } as const;

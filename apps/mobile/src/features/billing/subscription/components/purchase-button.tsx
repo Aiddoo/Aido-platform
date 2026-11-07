@@ -11,10 +11,10 @@ import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
 
 interface PurchaseButtonProps {
-  chosenPlanId: string | undefined;
+  planId: string | undefined;
 }
 
-export function PurchaseButton({ chosenPlanId }: PurchaseButtonProps) {
+export function PurchaseButton({ planId }: PurchaseButtonProps) {
   const { t } = useTranslation('subscription');
   const purchase = useMutation(usePurchaseMutationOptions());
   const [view] = useSubscriptionView();
@@ -26,8 +26,8 @@ export function PurchaseButton({ chosenPlanId }: PurchaseButtonProps) {
   });
   const selectedPlan =
     availability?.status === 'available'
-      ? SubscriptionPolicy.getSelectedPlan(availability.offering, chosenPlanId)
-      : undefined;
+      ? SubscriptionPolicy.findSelectedPlan(availability.offering, planId)
+      : null;
 
   const handlePurchase = () => {
     if (!selectedPlan || purchase.isPending) {

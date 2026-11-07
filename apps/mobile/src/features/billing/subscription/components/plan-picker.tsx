@@ -1,9 +1,9 @@
 import { useTrack } from '@src/shared/analytics';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { type QueryErrorFallbackProps, VStack } from '@src/shared/ui';
+import { type QueryErrorFallbackProps, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { Skeleton } from 'heroui-native';
+import { Card } from 'heroui-native';
 import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
@@ -21,8 +21,8 @@ import { SubscriptionResult } from './subscription-result';
 const PLAN_ROW_COUNT = 2;
 
 interface PlanPickerProps {
-  chosenPlanId: string | undefined;
-  onChange: (planId: string) => void;
+  value: string | undefined;
+  onValueChange: (planId: string) => void;
 }
 
 /** 스토어를 쓸 수 없으면 예상한 상태라 오류 경계 대신 요금제 자리에서 안내한다 */
@@ -44,8 +44,8 @@ export function PlanPicker(props: PlanPickerProps) {
 
 PlanPicker.Plans = function Plans({
   offering,
-  chosenPlanId,
-  onChange,
+  value,
+  onValueChange,
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
   const [view] = useSubscriptionView();
   const { trackEvent } = useTrack();
@@ -57,8 +57,8 @@ PlanPicker.Plans = function Plans({
 
   return (
     <SubscriptionPlanInput
-      value={SubscriptionPolicy.getSelectedPlan(offering, chosenPlanId)?.identifier}
-      onValueChange={onChange}
+      value={SubscriptionPolicy.findSelectedPlan(offering, value)?.identifier}
+      onValueChange={onValueChange}
     />
   );
 };
@@ -72,7 +72,13 @@ PlanPicker.Loading = function Loading() {
     .with(true, () => (
       <VStack gap={12} accessibilityState={{ busy: true }} testID="subscription-paywall-loading">
         {range(PLAN_ROW_COUNT).map((index) => (
-          <Skeleton key={index} className="h-16 rounded-2xl dark:bg-gray-2" />
+          <Card key={index} className="flex-1 border-2 border-gray-2 bg-white dark:bg-gray-2">
+            <VStack gap={8}>
+              <TextSkeleton size="b3" className="w-16" />
+              <TextSkeleton size="t2" className="w-28" />
+              <TextSkeleton size="e1" className="w-24" />
+            </VStack>
+          </Card>
         ))}
       </VStack>
     ))
