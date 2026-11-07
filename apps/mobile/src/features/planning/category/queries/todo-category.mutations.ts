@@ -24,6 +24,7 @@ import type {
   TodoCategoryRemoval,
   TodoCategoryReorder,
 } from '../schemas/todo-category.schema';
+import { getCategoryUpdatedField } from '../utils/todo-category-analytics';
 import { invalidateTodoCategories } from './todo-category-cache';
 
 export function useCreateTodoCategoryMutationOptions() {
@@ -131,7 +132,7 @@ export function useUpdateTodoCategoryMutationOptions() {
         variables.id,
       );
       trackEvent('category_updated', {
-        field: TodoCategoryPolicy.getChangedField(previous, variables.input),
+        field: getCategoryUpdatedField(previous, variables.input),
       });
     },
     onError: (error, _variables, context) => {

@@ -31,18 +31,6 @@ function hasChanges(category: Pick<TodoCategory, 'name' | 'color'>, form: TodoCa
   return category.name !== form.name || category.color !== form.color;
 }
 
-/** 고친 칸. 색이 달라졌으면 color, 아니면 name. 기존 값을 모르면 요청에 담긴 색을 바뀐 것으로 본다 */
-function getChangedField(
-  category: Pick<TodoCategory, 'color'> | null,
-  change: Partial<Pick<TodoCategoryFormValues, 'color'>>,
-): 'name' | 'color' {
-  if (change.color == null) {
-    return 'name';
-  }
-
-  return category?.color === change.color ? 'name' : 'color';
-}
-
 /** 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다 */
 function requiresTodoMove(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
   return category.todoCount > 0;
@@ -58,5 +46,4 @@ export const TodoCategoryPolicy = {
   findCategory,
   getInitialCategoryId,
   hasChanges,
-  getChangedField,
 } as const;
