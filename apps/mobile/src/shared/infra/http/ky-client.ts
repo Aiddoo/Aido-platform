@@ -6,7 +6,7 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { isNil, mapValues, omitBy } from 'es-toolkit';
 import { HTTPError, type KyInstance, type Options } from 'ky';
 
-import { toApiError, toTransportError } from './ky-error';
+import { readJsonBody, toApiError, toTransportError } from './ky-error';
 
 /**
  * Ky 기반 Result HttpClient — HTTP 결과 → 도메인 에러 분류의 **유일한 소유자**.
@@ -71,7 +71,7 @@ export class KyHttpClient implements HttpClient {
   async #request(request: () => Promise<Response>): Promise<Result<unknown, ApiError>> {
     try {
       const response = await request();
-      const parsed = successEnvelopeSchema.safeParse(await response.json());
+      const parsed = successEnvelopeSchema.safeParse(await readJsonBody(() => response.json()));
       if (!parsed.success) {
         throw new ParseError(`[KyHttpClient] Invalid success envelope: ${parsed.error.message}`);
       }

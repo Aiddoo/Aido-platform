@@ -6,7 +6,7 @@ import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { ENV } from '@src/shared/config/env';
 import ky, { type KyInstance } from 'ky';
 
-import { createApiFailureBreadcrumbHook } from './error-handler';
+import { createApiFailureBreadcrumbHook } from './api-failure-breadcrumb';
 import { createAppHeaders, setPerRequestHeaders } from './request-headers';
 import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';

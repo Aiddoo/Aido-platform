@@ -2,7 +2,7 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { ENV } from '@src/shared/config/env';
 import ky, { type KyInstance } from 'ky';
 
-import { createPublicApiFailureBreadcrumbHook } from './error-handler';
+import { createPublicApiFailureBreadcrumbHook } from './api-failure-breadcrumb';
 import { type AppHeaderSource, applyPerRequestHeaders, createAppHeaders } from './request-headers';
 import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 

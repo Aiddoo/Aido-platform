@@ -43,7 +43,7 @@ Service는 `Result`를 돌려주고, `queryFn`·`mutationFn`은 `unwrap()`한다
 타임아웃 → throw TimeoutError, 네트워크 → throw NetworkError
 ```
 
-- [`error-handler.ts`](../src/shared/infra/http/error-handler.ts)의 afterResponse 훅은 **관측만 한다**(실패 breadcrumb `category: 'http'`). 분류하거나 throw하지 않는다. 훅이 분류까지 하면 5xx가 재시도하지 않는 `ApiError`로 둔갑한다. auth-client 훅은 갱신 경로인 401을 건너뛴다.
+- [`api-failure-breadcrumb.ts`](../src/shared/infra/http/api-failure-breadcrumb.ts)의 afterResponse 훅은 **관측만 한다**(실패 breadcrumb `category: 'http'`). 분류하거나 throw하지 않는다. 훅이 분류까지 하면 5xx가 재시도하지 않는 `ApiError`로 둔갑한다. auth-client 훅은 갱신 경로인 401을 건너뛴다.
 - `resolveMessage`는 i18n `errors` 카탈로그(키 = ErrorCode) → 서버 message → `errors:fallback` 순서로 사용자 문구를 정한다.
 - Service는 `ApiError`를 그대로 전달하고, 응답 schema 검증 실패는 `ParseError`로 던진다.
 - 재시도는 React Query가 소유한다(Ky `retry: 0`).
@@ -236,14 +236,15 @@ logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry �
 
 ## 참고 파일
 
-| 파일                                       | 설명                              |
-| ------------------------------------------ | --------------------------------- |
-| `core/errors/result.ts`                    | Result 타입, ok/err/unwrap        |
-| `core/errors/api-error.ts`                 | ApiError (4xx)                    |
-| `shared/errors/infra-error.ts`             | InfraError (5xx, 네트워크, 파싱)  |
-| `shared/errors/classify-boundary-error.ts` | 경계 오류 분류                    |
-| `shared/errors/user-facing-message.ts`     | 사용자에게 보여도 되는 문구 판정  |
-| `shared/infra/http/ky-client.ts`           | 분류의 단일 소유                  |
-| `shared/infra/http/error-handler.ts`       | 실패 breadcrumb, `resolveMessage` |
-| `shared/ui/query-error-boundary/`          | QueryErrorBoundary                |
-| `features/*/domains/*.error.ts`            | 기능 오류                         |
+| 파일                                          | 설명                             |
+| --------------------------------------------- | -------------------------------- |
+| `core/errors/result.ts`                       | Result 타입, ok/err/unwrap       |
+| `core/errors/api-error.ts`                    | ApiError (4xx)                   |
+| `shared/errors/infra-error.ts`                | InfraError (5xx, 네트워크, 파싱) |
+| `shared/errors/classify-boundary-error.ts`    | 경계 오류 분류                   |
+| `shared/errors/user-facing-message.ts`        | 사용자에게 보여도 되는 문구 판정 |
+| `shared/infra/http/ky-client.ts`              | 분류의 단일 소유                 |
+| `shared/infra/http/api-failure-breadcrumb.ts` | 실패 breadcrumb                  |
+| `shared/infra/http/ky-error.ts`               | `resolveMessage`, 오류 변환      |
+| `shared/ui/query-error-boundary/`             | QueryErrorBoundary               |
+| `features/*/domains/*.error.ts`               | 기능 오류                        |

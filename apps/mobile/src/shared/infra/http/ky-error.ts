@@ -1,10 +1,15 @@
 import { ErrorCode, isErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors/infra-error';
+import {
+  NetworkError,
+  ParseError,
+  ServerError,
+  TimeoutError,
+} from '@src/shared/errors/infra-error';
+import { t, tDynamic } from '@src/shared/i18n';
 import { HTTPError, isNetworkError, TimeoutError as KyTimeoutError } from 'ky';
 
 import { errorEnvelopeSchema } from './error-envelope';
-import { resolveMessage } from './error-handler';
 import { REQUEST_ID_HEADER } from './request-headers';
 
 /**
@@ -15,6 +20,45 @@ const EXPO_FETCH_FAILURE_PREFIX = 'fetch failed: ';
 
 function isExpoFetchFailure(error: unknown) {
   return error instanceof Error && error.message.startsWith(EXPO_FETCH_FAILURE_PREFIX);
+}
+
+/** 본문 파서가 다른 실행 환경에서 던진 SyntaxError도 `instanceof` 없이 알아본다 */
+function isSyntaxError(error: unknown): error is { message: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'SyntaxError' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  );
+}
+
+/**
+ * 성공 응답의 본문을 JSON으로 읽는다. 접속 인증 Wi-Fi의 HTML처럼 JSON이 아니면 `SyntaxError` 대신
+ * 봉투 검증 실패와 같은 `ParseError`로 바꿔 같은 실패를 한 가지로 다룬다.
+ */
+export async function readJsonBody(read: () => Promise<unknown>): Promise<unknown> {
+  try {
+    return await read();
+  } catch (error) {
+    if (isSyntaxError(error)) {
+      throw new ParseError(`Response body is not valid JSON: ${error.message}`);
+    }
+
+    throw error;
+  }
+}
+
+/** code가 알려진 ErrorCode면 로케일 문구를, 아니면 서버 메시지나 폴백을 쓴다 */
+export function resolveMessage(code: string, serverMessage: string): string {
+  if (isErrorCode(code)) {
+    const mapped = tDynamic('errors', code);
+    if (mapped) {
+      return mapped;
+    }
+  }
+  return serverMessage || t('errors:fallback');
 }
 
 /** 4xx 응답을 서버 오류 코드와 사용자 문구가 담긴 ApiError로 바꾼다 */

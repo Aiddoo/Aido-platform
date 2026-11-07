@@ -10,8 +10,8 @@ import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import { waitFor } from '@testing-library/react-native';
 import ky, { type KyInstance } from 'ky';
 
+import { createApiFailureBreadcrumbHook } from './api-failure-breadcrumb';
 import { createAuthClient } from './auth-client';
-import { createApiFailureBreadcrumbHook } from './error-handler';
 import { KyHttpClient } from './ky-client';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import { createTokenRefresher } from './token-refresher';

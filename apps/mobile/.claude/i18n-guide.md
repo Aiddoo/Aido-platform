@@ -75,7 +75,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 ### 에러 메시지
 
-- 서버 에러: `errors` 네임스페이스, **키 = ErrorCode 그대로** (모든 ErrorCode + `fallback`). `error-handler.ts`의 `resolveMessage`가 카탈로그 → 서버 message → `errors:fallback` 순으로 해석
+- 서버 에러: `errors` 네임스페이스, **키 = ErrorCode 그대로** (모든 ErrorCode + `fallback`). `ky-error.ts`의 `resolveMessage`가 카탈로그 → 서버 message → `errors:fallback` 순으로 해석
 - 보안 마스킹 그룹(EMAIL_0502/0507, USER_0602 등)은 **두 언어 모두 동일 문구 유지** — 번역 시에도 그룹 단위로 같게
 - `@aido/api`의 zod message는 서버 소유(한국어 유지) — 모바일 폼은 필드+에러타입 → `validation:*` 키로 표시
 

@@ -9,7 +9,7 @@ import { getErrorMessage } from '@src/shared/errors';
 import ky, { type AfterResponseHook } from 'ky';
 import { match } from 'ts-pattern';
 
-import { getPathname } from './error-handler';
+import { getPathname } from './request-path';
 import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 /** 갱신 후 재시도된 요청 표시 — 재시도가 다시 401이어도 갱신을 반복하지 않는다 */

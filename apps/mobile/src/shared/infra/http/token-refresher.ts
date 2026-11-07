@@ -42,26 +42,19 @@ export function createTokenRefresher({
 }: TokenRefresherDeps): TokenRefresher {
   let inFlight: { epoch: number; outcome: Promise<RefreshOutcome> } | null = null;
 
-  const refresh = async (epoch: number): Promise<RefreshOutcome> => {
-    const concludeInvalid = (details: SessionExpiredDetails): RefreshOutcome =>
-      sessionEpoch.current() === epoch ? { kind: 'invalid', details } : { kind: 'superseded' };
-
-    let refreshToken: string | null;
+  const readRefreshToken = async (): Promise<string | null> => {
     try {
-      refreshToken = await tokenStore.getRefreshToken();
+      return await tokenStore.getRefreshToken();
     } catch (error) {
       // 키체인 접근 실패(기기 잠김 등)는 "토큰 없음"이 아니다. 세션을 끝내면 안 된다.
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_READ_FAILED, { error: getErrorMessage(error) });
       throw new NetworkError();
     }
+  };
 
-    if (!refreshToken) {
-      return concludeInvalid({ reason: 'tokens-missing' });
-    }
-
-    let response: Response;
+  const sendRefreshRequest = async (refreshToken: string): Promise<Response> => {
     try {
-      response = await requestRefresh(refreshToken);
+      return await requestRefresh(refreshToken);
     } catch (error) {
       // 네트워크/타임아웃 — 서버는 회전하지 않았으므로 보유 토큰은 여전히 유효하다.
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, {
@@ -69,6 +62,19 @@ export function createTokenRefresher({
       });
       throw error instanceof KyTimeoutError ? new TimeoutError() : new NetworkError();
     }
+  };
+
+  const refresh = async (epoch: number): Promise<RefreshOutcome> => {
+    const concludeInvalid = (details: SessionExpiredDetails): RefreshOutcome =>
+      sessionEpoch.current() === epoch ? { kind: 'invalid', details } : { kind: 'superseded' };
+
+    const refreshToken = await readRefreshToken();
+
+    if (!refreshToken) {
+      return concludeInvalid({ reason: 'tokens-missing' });
+    }
+
+    const response = await sendRefreshRequest(refreshToken);
 
     // 갱신 응답은 이 함수 밖으로 나가지 않으므로 본문을 직접 읽어도 안전하다.
     const body = await response.json().catch(() => null);

@@ -210,14 +210,14 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 
 ## 관련 코드
 
-| 관심사            | 위치                                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 포트              | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                      |
-| Sentry 어댑터     | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                             |
-| Sentry init·wrap  | `shared/infra/observability/error-reporting.ts`                                                                                            |
-| 전송 입구·분류    | `shared/infra/observability/capture-error.ts`, `shared/errors/classify-error-report.ts`                                                    |
-| 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                         |
-| 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                  |
-| 카탈로그·파사드   | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                            |
-| 환경별 구현·DI    | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                   |
-| 계측 지점         | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |
+| 관심사            | 위치                                                                                                                                                |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 포트              | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                               |
+| Sentry 어댑터     | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                      |
+| Sentry init·wrap  | `shared/infra/observability/error-reporting.ts`                                                                                                     |
+| 전송 입구·분류    | `shared/infra/observability/capture-error.ts`, `shared/errors/classify-error-report.ts`                                                             |
+| 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                                  |
+| 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                           |
+| 카탈로그·파사드   | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                                     |
+| 환경별 구현·DI    | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                            |
+| 계측 지점         | `shared/infra/http/api-failure-breadcrumb.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |

@@ -1,10 +1,10 @@
-import { ErrorCode, isErrorCode } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { t, tDynamic } from '@src/shared/i18n';
 import type { AfterResponseState } from 'ky';
 
 import { errorEnvelopeSchema } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
+import { getPathname } from './request-path';
 
 /**
  * 실패 응답 관측 훅.
@@ -17,14 +17,6 @@ import { REQUEST_ID_HEADER } from './request-headers';
  * (locales/{ko,en}/errors.json — 키는 ErrorCode 그대로, 보안 마스킹 그룹은 동일 문구 유지).
  */
 
-export function getPathname(url: string): string {
-  try {
-    return new URL(url).pathname;
-  } catch {
-    return url;
-  }
-}
-
 /** 응답 본문을 안전하게 JSON으로 읽는다(비-JSON/빈 본문이면 null). clone으로 원본 스트림 보존. */
 async function readBody(response: Response): Promise<unknown> {
   try {
@@ -32,17 +24,6 @@ async function readBody(response: Response): Promise<unknown> {
   } catch {
     return null;
   }
-}
-
-/** code가 알려진 ErrorCode면 로케일 문구를, 아니면 서버 메시지나 폴백을 쓴다 */
-export function resolveMessage(code: string, serverMessage: string): string {
-  if (isErrorCode(code)) {
-    const mapped = tDynamic('errors', code);
-    if (mapped) {
-      return mapped;
-    }
-  }
-  return serverMessage || t('errors:fallback');
 }
 
 /**
