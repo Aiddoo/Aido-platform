@@ -41,65 +41,21 @@ interface UseAddTodoQuickVoiceOptions {
 }
 
 export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptions) {
-  const { t: tVoice } = useTranslation('voice');
-  const logger = useLogger();
-  const idGenerator = useIdGenerator();
-  const toast = useAppToast();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
   const aiConsent = useAiDataSharingConsentGate();
   const ensureMicrophonePermission = useMicrophonePermission();
   const getSpeechContext = useSpeechContext();
   const [locale, setLocale] = useRecognitionLanguage();
-  const planMutation = useMutation(useCreateQuickPlanMutationOptions({ onSubscribe: onExit }));
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
-  const hasAskedConsentRef = useRef(false);
-  const [isConsentRequired, setIsConsentRequired] = useState(false);
-  const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
-  const planAbortRef = useRef<AbortController | null>(null);
+  const planRequest = useQuickPlanRequest({ aiConsent, onExit });
   const isUnmountedRef = useRef(false);
-  const voiceNoteStorage = useVoiceNoteStorageService();
-  const startVoiceNote = useVoiceNoteStart();
   /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
   const [isRestarting, setIsRestarting] = useState(false);
   /** 실패했을 때 입력 칸에 친 글자가 있어 들은 글자를 옮기지 않았다. 고쳐 쓰는 동안 안내가 바뀌지 않게 실패한 때의 판단을 둔다 */
   const [isTypedTextKept, setIsTypedTextKept] = useState(false);
 
-  const onCaptured = async (text: string): Promise<CapturedPlan> => {
-    const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
-      previous: planRequestRef.current,
-      input: { text, source: 'voice' },
-      createIdempotencyKey: idGenerator.create,
-    });
-    planRequestRef.current = request;
-    setIsConsentRequired(false);
-    const abortController = new AbortController();
-    planAbortRef.current = abortController;
-
-    try {
-      const { plan, charged } = await planMutation.mutateAsync({
-        ...request,
-        signal: abortController.signal,
-      });
-      planRequestRef.current = null;
-      return { plan, isCharged: charged };
-    } catch (error) {
-      planRequestRef.current = PlanRequestPolicy.getAfterFailure(request, error);
-      if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
-        hasAskedConsentRef.current = true;
-        if (await aiConsent.requestAgreement()) {
-          return onCaptured(text);
-        }
-      }
-      // 이번 시도는 끝났다. 앞에서 나중에를 눌렀어도 다시 정리하면 안내를 다시 본다
-      hasAskedConsentRef.current = false;
-      setIsConsentRequired(isAiDataSharingConsentRequiredError(error));
-      throw error;
-    }
-  };
-
   const session = useVoiceCaptureSession({
     entry: 'add_todo_sheet',
-    onCaptured,
+    onCaptured: planRequest.send,
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,
     onFailed: (transcript) => {
@@ -111,13 +67,18 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       }
     },
   });
+  const continueAsVoiceNote = useContinueAsVoiceNote({ session, locale, onExit });
+  const changeLocale = useChangeRecognitionLocale({
+    session,
+    ensureMicrophonePermission,
+    setLocale,
+  });
 
   useEffect(() => {
     isUnmountedRef.current = false;
 
     return () => {
       isUnmountedRef.current = true;
-      planAbortRef.current?.abort();
     };
   }, []);
 
@@ -142,7 +103,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     if (!consent.isAgreed || isUnmountedRef.current) {
       return;
     }
-    hasAskedConsentRef.current = consent.wasAsked;
+    planRequest.rememberConsentAsked(consent.wasAsked);
     const isGranted = await ensureMicrophonePermission('quick', locale);
     if (!isGranted || isUnmountedRef.current) {
       return;
@@ -157,7 +118,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
 
   const restart = async () => {
     setIsRestarting(true);
-    planRequestRef.current = null;
+    planRequest.forget();
     session.cancel();
     try {
       await start();
@@ -168,19 +129,108 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
 
   /** 정리를 기다리다 그만둔다. 글자는 입력 칸에 남기고, 같은 글자를 다시 보내면 같은 키라 두 번 차감되지 않는다 */
   const cancelPlanning = () => {
-    planAbortRef.current?.abort();
+    planRequest.abort();
     moveTranscriptToTitle();
     session.cancel();
   };
 
   const typeInstead = () => {
     moveTranscriptToTitle();
-    planRequestRef.current = null;
+    planRequest.forget();
     session.cancel();
   };
 
-  /** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
-  const continueAsVoiceNote = () => {
+  return {
+    ...session,
+    isConsentRequired: planRequest.isConsentRequired,
+    isTypedTextKept,
+    locale,
+    setLocale: changeLocale,
+    start,
+    restart,
+    isRestarting,
+    cancelPlanning,
+    typeInstead,
+    continueAsVoiceNote,
+  };
+}
+
+interface UseQuickPlanRequestOptions {
+  aiConsent: ReturnType<typeof useAiDataSharingConsentGate>;
+  onExit: () => void;
+}
+
+/** 들은 글자로 계획을 요청한다. 같은 글자의 재시도는 같은 키로 보내고, 동의가 막으면 한 번 묻고 이어서 보낸다 */
+function useQuickPlanRequest({ aiConsent, onExit }: UseQuickPlanRequestOptions) {
+  const idGenerator = useIdGenerator();
+  const planMutation = useMutation(useCreateQuickPlanMutationOptions({ onSubscribe: onExit }));
+  const hasAskedConsentRef = useRef(false);
+  const [isConsentRequired, setIsConsentRequired] = useState(false);
+  const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
+  const planAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => planAbortRef.current?.abort(), []);
+
+  const send = async (text: string): Promise<CapturedPlan> => {
+    const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
+      previous: planRequestRef.current,
+      input: { text, source: 'voice' },
+      createIdempotencyKey: idGenerator.create,
+    });
+    planRequestRef.current = request;
+    setIsConsentRequired(false);
+    const abortController = new AbortController();
+    planAbortRef.current = abortController;
+
+    try {
+      const { plan, charged } = await planMutation.mutateAsync({
+        ...request,
+        signal: abortController.signal,
+      });
+      planRequestRef.current = null;
+      return { plan, isCharged: charged };
+    } catch (error) {
+      planRequestRef.current = PlanRequestPolicy.getAfterFailure(request, error);
+      if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
+        hasAskedConsentRef.current = true;
+        if (await aiConsent.requestAgreement()) {
+          return send(text);
+        }
+      }
+      // 이번 시도는 끝났다. 앞에서 나중에를 눌렀어도 다시 정리하면 안내를 다시 본다
+      hasAskedConsentRef.current = false;
+      setIsConsentRequired(isAiDataSharingConsentRequiredError(error));
+      throw error;
+    }
+  };
+
+  return {
+    send,
+    isConsentRequired,
+    rememberConsentAsked: (wasAsked: boolean) => {
+      hasAskedConsentRef.current = wasAsked;
+    },
+    abort: () => planAbortRef.current?.abort(),
+    forget: () => {
+      planRequestRef.current = null;
+    },
+  };
+}
+
+interface UseContinueAsVoiceNoteOptions {
+  session: ReturnType<typeof useVoiceCaptureSession>;
+  locale: SpeechLocale;
+  onExit: () => void;
+}
+
+/** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
+function useContinueAsVoiceNote({ session, locale, onExit }: UseContinueAsVoiceNoteOptions) {
+  const idGenerator = useIdGenerator();
+  const voiceNoteStorage = useVoiceNoteStorageService();
+  const startVoiceNote = useVoiceNoteStart();
+  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+
+  return () => {
     if (me == null) {
       session.finish();
       return Promise.resolve();
@@ -211,8 +261,24 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       },
     });
   };
+}
 
-  /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+interface UseChangeRecognitionLocaleOptions {
+  session: ReturnType<typeof useVoiceCaptureSession>;
+  ensureMicrophonePermission: ReturnType<typeof useMicrophonePermission>;
+  setLocale: (locale: SpeechLocale) => void;
+}
+
+/** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+function useChangeRecognitionLocale({
+  session,
+  ensureMicrophonePermission,
+  setLocale,
+}: UseChangeRecognitionLocaleOptions) {
+  const { t } = useTranslation('voice');
+  const logger = useLogger();
+  const toast = useAppToast();
+
   const applyLocale = async (nextLocale: SpeechLocale) => {
     if (await ensureMicrophonePermission('quick', nextLocale)) {
       setLocale(nextLocale);
@@ -220,24 +286,10 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     }
   };
 
-  const changeLocale = (nextLocale: SpeechLocale) => {
+  return (nextLocale: SpeechLocale) => {
     applyLocale(nextLocale).catch((error: unknown) => {
       logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: getErrorMessage(error) });
-      toast.error(tVoice('listening.languageChangeFailed'));
+      toast.error(t('listening.languageChangeFailed'));
     });
-  };
-
-  return {
-    ...session,
-    isConsentRequired,
-    isTypedTextKept,
-    locale,
-    setLocale: changeLocale,
-    start,
-    restart,
-    isRestarting,
-    cancelPlanning,
-    typeInstead,
-    continueAsVoiceNote,
   };
 }
