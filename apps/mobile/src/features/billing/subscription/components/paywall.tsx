@@ -80,14 +80,14 @@ Paywall.Benefits = function Benefits() {
         image={benefitAiParsingImage}
       />
       <BenefitCard
-        title={t('benefits.nudge.title')}
-        description={t('benefits.nudge.description', { free: formatAmount(free.nudge) })}
-        image={benefitNudgeImage}
-      />
-      <BenefitCard
         title={t('benefits.reminder.title')}
         description={t('benefits.reminder.description')}
         image={benefitNotificationImage}
+      />
+      <BenefitCard
+        title={t('benefits.nudge.title')}
+        description={t('benefits.nudge.description', { free: formatAmount(free.nudge) })}
+        image={benefitNudgeImage}
       />
       <BenefitCard
         title={t('benefits.appIcon.title')}
