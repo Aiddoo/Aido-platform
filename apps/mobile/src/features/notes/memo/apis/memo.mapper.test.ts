@@ -2,6 +2,7 @@ import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { createParseMemoResponseDto } from '@src/features/voice/__tests__/parsed-memo.fixtures';
 import { fromDate } from '@src/shared/date/instant';
+import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 
 import { memoFormSchema } from '../schemas/memo-form.schema';
 import {
@@ -92,9 +93,11 @@ const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoForm
   ...overrides,
 });
 
+const TIME_ZONE = getDeviceTimezone();
+
 describe('toConvertMemoToTodosRequest', () => {
   it('편집한 제목과 카테고리, 공개 범위를 기존 batch 계약의 한 항목으로 보낸다', () => {
-    const input = toConvertMemoToTodosRequest(createFormData({ visibility: 'PRIVATE' }));
+    const input = toConvertMemoToTodosRequest(createFormData({ visibility: 'PRIVATE' }), TIME_ZONE);
 
     expect(input.todos).toHaveLength(1);
     expect(input.todos[0]).toMatchObject({
@@ -109,6 +112,7 @@ describe('toConvertMemoToTodosRequest', () => {
   it('격주·매월도 빠지지 않고 repeat로 보낸다', () => {
     const input = toConvertMemoToTodosRequest(
       createFormData({ repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } } }),
+      TIME_ZONE,
     );
 
     expect(input.todos[0]?.repeat).toEqual({
@@ -129,6 +133,7 @@ describe('toConvertMemoToTodosRequest', () => {
         },
         scheduledTime: '13:30',
       }),
+      TIME_ZONE,
     );
 
     expect(input.todos[0]).toMatchObject({
@@ -150,6 +155,7 @@ describe('toConvertMemoToTodosRequest', () => {
         scheduledTime: '13:30',
         endDate: fromDate(new Date(2026, 9, 3)),
       }),
+      TIME_ZONE,
     );
 
     expect(input.todos[0]).toMatchObject({ scheduledTime: '13:30', endDate: '2026-10-03' });
@@ -157,7 +163,9 @@ describe('toConvertMemoToTodosRequest', () => {
   });
 
   it('공유 계약을 넘는 제목은 전송 전에 거부한다', () => {
-    expect(() => toConvertMemoToTodosRequest(createFormData({ title: 'a'.repeat(201) }))).toThrow();
+    expect(() =>
+      toConvertMemoToTodosRequest(createFormData({ title: 'a'.repeat(201) }), TIME_ZONE),
+    ).toThrow();
   });
 });
 

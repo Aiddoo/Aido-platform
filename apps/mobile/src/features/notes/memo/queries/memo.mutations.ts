@@ -145,8 +145,15 @@ export function useConvertMemoToTodosMutationOptions() {
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
     networkMode: 'always',
-    mutationFn: async ({ memoId, values }: { memoId: number; values: AddTodoFormValues }) =>
-      unwrap(await memoService.convertToTodos(memoId, values)),
+    mutationFn: async ({
+      memoId,
+      values,
+      timeZone,
+    }: {
+      memoId: number;
+      values: AddTodoFormValues;
+      timeZone: string;
+    }) => unwrap(await memoService.convertToTodos(memoId, values, timeZone)),
     onSuccess: (_result, { memoId }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       toast.success(t('memo:toasts.convertedOne'));

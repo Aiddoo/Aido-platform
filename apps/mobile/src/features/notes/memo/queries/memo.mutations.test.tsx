@@ -201,6 +201,7 @@ describe('오프라인에서 할 일로 바꾸기', () => {
         visibility: 'PUBLIC',
         repeat: null,
       },
+      timeZone: 'UTC',
     });
 
     // Then

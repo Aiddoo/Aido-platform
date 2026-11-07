@@ -8,6 +8,7 @@ import {
 import { addTodoFormSchema } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { fromDate } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
@@ -43,6 +44,7 @@ export function MemoConvertBottomSheet({
   const { t } = useTranslation('todo');
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const overlay = useOverlay();
+  const { timeZone } = useDateFormatContext();
   const form = useForm({
     resolver: zodResolver(addTodoFormSchema),
     defaultValues: {
@@ -63,7 +65,7 @@ export function MemoConvertBottomSheet({
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
-      await convertMemo.mutateAsync({ memoId: memo.id, values });
+      await convertMemo.mutateAsync({ memoId: memo.id, values, timeZone });
       onClose();
       onConverted();
     } catch (error) {

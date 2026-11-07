@@ -18,7 +18,6 @@ import {
 } from '@src/features/voice/schemas/voice-plan.schema';
 import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { toDateKey, toInstant } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { pick } from 'es-toolkit';
 
 import type { MemoFormValues } from '../schemas/memo-form.schema';
@@ -48,9 +47,10 @@ export function toMemoRequest({ content }: MemoFormValues): CreateMemoInput {
   return { content };
 }
 
-export function toConvertMemoToTodosRequest(values: AddTodoFormValues): ConvertMemoToTodosInput {
-  const timeZone = getDeviceTimezone();
-
+export function toConvertMemoToTodosRequest(
+  values: AddTodoFormValues,
+  timeZone: string,
+): ConvertMemoToTodosInput {
   return convertMemoToTodosSchema.parse({
     todos: [
       {

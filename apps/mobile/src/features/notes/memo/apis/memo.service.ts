@@ -104,11 +104,11 @@ export class MemoService {
       '[MemoService] Invalid deleteMemo response',
     );
 
-  convertToTodos = async (memoId: number, values: AddTodoFormValues) =>
+  convertToTodos = async (memoId: number, values: AddTodoFormValues, timeZone: string) =>
     parseApiResponse(
       await this.#httpClient.post(
         `v1/memos/${memoId}/convert-to-todos`,
-        toConvertMemoToTodosRequest(values),
+        toConvertMemoToTodosRequest(values, timeZone),
       ),
       convertMemoToTodosResponseSchema,
       noop,
