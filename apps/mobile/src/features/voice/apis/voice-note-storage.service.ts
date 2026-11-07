@@ -89,8 +89,8 @@ export class VoiceNoteStorageService {
     this.#recordings.removeAll();
   };
 
-  #remove(accountId: string, note: VoiceNote): void {
+  #remove = (accountId: string, note: VoiceNote): void => {
     note.recordings.forEach((recording) => this.#recordings.remove(accountId, recording.fileName));
     this.#drafts.remove(accountId, note.draftId);
-  }
+  };
 }

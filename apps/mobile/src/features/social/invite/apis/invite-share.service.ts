@@ -43,7 +43,7 @@ export class InviteShareService {
   share = (channel: InviteShareChannel, content: InviteShareContent) =>
     this.#channels[channel](content);
 
-  async #shareToKakao(content: InviteShareContent): Promise<InviteShareResult> {
+  #shareToKakao = async (content: InviteShareContent): Promise<InviteShareResult> => {
     if (!this.#socialShare.isAvailable()) {
       return this.#shareToSystem(content);
     }
@@ -70,9 +70,9 @@ export class InviteShareService {
       });
       return this.#shareToSystem(content);
     }
-  }
+  };
 
-  async #shareToSystem(content: InviteShareContent): Promise<InviteShareResult> {
+  #shareToSystem = async (content: InviteShareContent): Promise<InviteShareResult> => {
     try {
       const isShared = await this.#systemShare.share({
         message: content.copy.message,
@@ -83,10 +83,10 @@ export class InviteShareService {
     } catch {
       return this.#copyLink(content);
     }
-  }
+  };
 
-  async #copyLink(content: InviteShareContent): Promise<InviteShareResult> {
+  #copyLink = async (content: InviteShareContent): Promise<InviteShareResult> => {
     await this.#clipboard.copy(content.link);
     return { channel: 'copy_link', outcome: 'copied' };
-  }
+  };
 }

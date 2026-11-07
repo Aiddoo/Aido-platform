@@ -172,7 +172,7 @@ export class PushDeviceService {
   openSettings = (): Promise<void> => this.#gateway.openSettings();
 
   /** Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한 상태는 읽고 보고한다 */
-  async #ensureChannel(): Promise<void> {
+  #ensureChannel = async (): Promise<void> => {
     try {
       await this.#gateway.ensureChannel();
     } catch (error) {
@@ -180,10 +180,10 @@ export class PushDeviceService {
         error: getErrorMessage(error),
       });
     }
-  }
+  };
 
   /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다. 권한 상태는 토큰 없이도 보고한다 */
-  async #issueToken(): Promise<string | null> {
+  #issueToken = async (): Promise<string | null> => {
     try {
       return await this.#gateway.getToken();
     } catch (error) {
@@ -192,5 +192,5 @@ export class PushDeviceService {
       });
       return null;
     }
-  }
+  };
 }

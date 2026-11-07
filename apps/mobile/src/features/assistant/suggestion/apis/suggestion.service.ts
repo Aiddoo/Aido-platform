@@ -36,11 +36,9 @@ export class SuggestionService {
       this.#logInvalid('handleSuggestionAction'),
     );
 
-  #logInvalid(method: string) {
-    return (zodError: string) =>
-      this.#logger.error(SUGGESTION_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
-        method,
-        zodError,
-      });
-  }
+  #logInvalid = (method: string) => (zodError: string) =>
+    this.#logger.error(SUGGESTION_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
+      method,
+      zodError,
+    });
 }

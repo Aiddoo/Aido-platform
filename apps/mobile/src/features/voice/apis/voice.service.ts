@@ -127,7 +127,7 @@ export class VoiceService {
   };
 
   /** 제목·내용은 로그에 남기지 않는다. 어느 칸이 계약과 다른지만 남긴다 */
-  #map<T>(method: string, map: () => T): T {
+  #map = <T>(method: string, map: () => T): T => {
     try {
       return map();
     } catch (error) {
@@ -135,5 +135,5 @@ export class VoiceService {
       this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, { method, zodError });
       throw new ParseError(`[VoiceService] Invalid ${method} response: ${zodError}`);
     }
-  }
+  };
 }
