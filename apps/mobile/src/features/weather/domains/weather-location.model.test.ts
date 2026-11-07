@@ -132,21 +132,6 @@ describe('WeatherLocationPolicy.resolveLocationStatus', () => {
   });
 });
 
-describe('WeatherLocationPolicy.toPermissionResult', () => {
-  it.each([
-    [{ isGranted: true, canAskAgain: true }, 'granted'],
-    [{ isGranted: false, canAskAgain: true }, 'needs_permission'],
-    [{ isGranted: false, canAskAgain: false }, 'denied'],
-    [null, 'needs_permission'],
-  ] as const)('권한 요청 결과 %o는 %s로 기록한다', (permission, expected) => {
-    // When
-    const result = WeatherLocationPolicy.toPermissionResult(permission);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('리포트 요청 가능 여부', () => {
   it.each([
     ['checking', true],

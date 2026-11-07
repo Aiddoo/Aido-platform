@@ -12,7 +12,7 @@ import {
   WEATHER_SCENE_PALETTES,
   WEATHER_SCENE_SKY_POSITIONS,
 } from '../../constants/weather-scene-palette';
-import type { WeatherSceneSky } from './weather-scene';
+import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 
 const SKY_TRANSITION = { duration: 1200, easing: Easing.inOut(Easing.quad) };
 

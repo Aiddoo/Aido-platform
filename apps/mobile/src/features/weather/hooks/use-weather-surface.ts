@@ -2,10 +2,10 @@ import { useReduceTransparency } from '@src/shared/hooks/use-reduce-transparency
 import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
 
-import { toWeatherScene, type WeatherSceneSky } from '../components/weather-scene/weather-scene';
 import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { WeatherReport } from '../schemas/weather-report.schema';
+import { toWeatherScene, type WeatherSceneSky } from '../utils/weather-scene.view-model';
 import { useOnSkyColor } from './use-on-sky-color';
 
 const DEFAULT_SKY: WeatherSceneSky = 'clearDay';

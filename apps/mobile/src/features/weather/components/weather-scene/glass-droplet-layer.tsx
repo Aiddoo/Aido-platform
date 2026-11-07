@@ -18,7 +18,7 @@ import {
   hashCycle,
   PARTICLE_SEED_STRIDE,
   placeSprite,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import {
   GLASS_DROP_SPRITE,
   PARTICLE_SAMPLING,

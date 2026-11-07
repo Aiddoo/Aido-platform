@@ -3,14 +3,14 @@ import { range } from 'es-toolkit';
 import type { SharedValue } from 'react-native-reanimated';
 
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
-import type { WeatherSceneSky } from './weather-scene';
 import {
   createParticleSeeds,
   getSceneReferenceWidth,
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import { FOG_BAND_SPRITE, PARTICLE_SAMPLING, useFogBandTexture } from './weather-scene-textures';
 
 const FOG_BAND_SEED = 0xf09b;

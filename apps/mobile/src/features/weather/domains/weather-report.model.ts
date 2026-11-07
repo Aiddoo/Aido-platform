@@ -40,7 +40,7 @@ function hourEndsAt(hour: HourlyForecastEntry): number {
   return toEpochMs(hour.startsAt) + HOUR_MS;
 }
 
-export function selectUpcomingHours(
+export function getUpcomingHours(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): HourlyForecastEntry[] {
@@ -183,7 +183,7 @@ function findTodayForecast(
  * 서버가 심각도 순으로 정렬해 보내므로 순서는 그대로 두고, 화면을 켜 둔 사이 만료된 특보만 뺀다.
  * 아직 발효 전인 특보는 미리 알 수 있도록 남긴다.
  */
-function selectActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
+function getActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
   return alerts.filter((alert) => toEpochMs(alert.expiresAt) > toEpochMs(now));
 }
 
@@ -296,14 +296,14 @@ export const WeatherReportPolicy = {
   isDifferentWallClock,
   isWetHour,
   isFrozenPrecipitation,
-  selectUpcomingHours,
+  getUpcomingHours,
   getPrecipitationWindow,
   getMinutesUntil,
   isReportStale,
   isNowcastExpired,
   getTodayKey,
   findTodayForecast,
-  selectActiveAlerts,
+  getActiveAlerts,
   isAlertInEffect,
   getSunEvents,
   toCompassDirection,

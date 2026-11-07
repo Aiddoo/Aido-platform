@@ -18,7 +18,7 @@ export function toHourlyTimeline(
   report: Pick<WeatherReport, 'hourly' | 'daily'>,
   now: Instant,
 ): HourlyTimelineItem[] {
-  const hours = WeatherReportPolicy.selectUpcomingHours(report.hourly, now);
+  const hours = WeatherReportPolicy.getUpcomingHours(report.hourly, now);
   const last = hours.at(-1);
   if (last == null) {
     return [];

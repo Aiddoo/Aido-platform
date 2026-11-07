@@ -4,7 +4,7 @@ import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { HourlyForecastEntry, WeatherReport } from '../schemas/weather-report.schema';
-import { isWetHour, selectUpcomingHours } from './weather-report.model';
+import { isWetHour, getUpcomingHours } from './weather-report.model';
 
 /** 요약 문장은 앞으로 하루 안의 강수만 말한다. */
 const PRECIPITATION_RANGE_HOURS = 24;
@@ -140,7 +140,7 @@ function summarizeHourly(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
   now: Instant,
 ): HourlySummary | null {
-  const hours = selectUpcomingHours(report.hourly, now).slice(0, PRECIPITATION_RANGE_HOURS);
+  const hours = getUpcomingHours(report.hourly, now).slice(0, PRECIPITATION_RANGE_HOURS);
   const [first] = hours;
   if (first == null) {
     return null;

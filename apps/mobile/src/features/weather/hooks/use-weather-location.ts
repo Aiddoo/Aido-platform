@@ -13,6 +13,7 @@ import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
 import type { PlaceName } from '../schemas/weather-location.schema';
+import { toPermissionResult } from '../utils/weather-analytics';
 
 export type WeatherLocation =
   | { status: 'checking' }
@@ -45,7 +46,7 @@ export function useWeatherLocation(): WeatherLocation {
           return null;
         });
         trackEvent('weather_location_permission_result', {
-          result: WeatherLocationPolicy.toPermissionResult(permission),
+          result: toPermissionResult(permission),
         });
         await refetchWeatherLocation(queryClient);
       },

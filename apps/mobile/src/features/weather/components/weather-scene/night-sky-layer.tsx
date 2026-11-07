@@ -15,7 +15,6 @@ import {
 import { useEffect, useMemo } from 'react';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { getMoonIllumination } from './weather-scene';
 import {
   createStarField,
   getShootingStarProgress,
@@ -23,7 +22,8 @@ import {
   getShootingStarWindow,
   hashToUnit,
   placeSprite,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import { getMoonIllumination } from '../../utils/weather-scene.view-model';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,

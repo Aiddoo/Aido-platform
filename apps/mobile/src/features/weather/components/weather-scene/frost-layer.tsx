@@ -15,7 +15,6 @@ import { range } from 'es-toolkit';
 import { useEffect, useMemo } from 'react';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { GustStreaks } from './gust-layer';
 import {
   createParticleSeeds,
   createSeededRandom,
@@ -25,7 +24,8 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import { GustStreaks } from './gust-layer';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const SPINDRIFT_SEED = 0x5d1f;

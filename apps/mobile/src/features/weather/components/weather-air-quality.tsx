@@ -39,7 +39,7 @@ export function WeatherAirQuality() {
         {POLLUTANTS.map((pollutant) => {
           const value = airQuality[pollutant];
           const grade = WeatherReportPolicy.getAirQualityGrade(
-            WeatherDetailPolicy.pickPollutant(airQuality, pollutant),
+            WeatherDetailPolicy.getPollutant(airQuality, pollutant),
           );
           const label = t(`airQuality.${pollutant}`);
           const gradeLabel = grade == null ? t('details.noValue') : t(AIR_GRADE_LABEL_KEYS[grade]);

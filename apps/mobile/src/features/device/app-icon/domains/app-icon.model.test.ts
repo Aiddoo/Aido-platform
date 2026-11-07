@@ -13,8 +13,8 @@ describe('AppIconPolicy', () => {
 
   it('기본 아이콘만 누구나 쓰고 네이티브에는 이름 없이 전달한다', () => {
     // Given / When / Then
-    expect(AppIconPolicy.requiresPremium('default')).toBe(false);
-    expect(AppIconPolicy.requiresPremium('cream_cat')).toBe(true);
+    expect(AppIconPolicy.isPremiumIcon('default')).toBe(false);
+    expect(AppIconPolicy.isPremiumIcon('cream_cat')).toBe(true);
     expect(AppIconPolicy.getNativeAppIconName('default')).toBeNull();
     expect(AppIconPolicy.getNativeAppIconName('cream_cat')).toBe('cream_cat');
   });

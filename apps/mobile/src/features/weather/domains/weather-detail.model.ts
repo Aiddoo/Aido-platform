@@ -8,9 +8,9 @@ import type {
   DailyForecastEntry,
   HourlyForecastEntry,
 } from '../schemas/weather-report.schema';
-import { type AirPollutant, selectUpcomingHours } from './weather-report.model';
+import { type AirPollutant, getUpcomingHours } from './weather-report.model';
 
-function pickPollutant(
+function getPollutant(
   airQuality: Pick<AirQuality, 'pm10' | 'pm25'>,
   pollutant: AirPollutant,
 ): Pick<AirQuality, 'pm10' | 'pm25'> {
@@ -73,7 +73,7 @@ function getSunscreenWindow(
   timeZone: string,
 ): TimeWindow | null {
   const todayKey = toDateKey(now, timeZone);
-  const strongHours = selectUpcomingHours(hourly, now).filter(
+  const strongHours = getUpcomingHours(hourly, now).filter(
     (hour) => toDateKey(hour.startsAt, timeZone) === todayKey && hour.uvIndex >= SUNSCREEN_UV_INDEX,
   );
   const first = strongHours[0];
@@ -91,7 +91,7 @@ function sumNextDayPrecipitation(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): number | null {
-  const hours = selectUpcomingHours(hourly, now).slice(0, NEXT_DAY_HOURS);
+  const hours = getUpcomingHours(hourly, now).slice(0, NEXT_DAY_HOURS);
   if (hours.length === 0) {
     return null;
   }
@@ -167,7 +167,7 @@ function getWindLevel(windSpeed: number): WindLevel {
 }
 
 export const WeatherDetailPolicy = {
-  pickPollutant,
+  getPollutant,
   getVisibilityLevel,
   getCloudCoverLevel,
   getCloudCoverNote,

@@ -1,13 +1,13 @@
 import { getNowInstant } from '@src/shared/date/instant';
 import { useQuery } from '@tanstack/react-query';
 
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
   toWeatherScene,
   type WeatherScene,
   type WeatherSceneInput,
-} from '../components/weather-scene/weather-scene';
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+} from '../utils/weather-scene.view-model';
 import { useWeatherLocation } from './use-weather-location';
 
 /** 리포트를 받기 전·권한 안내 중에는 맑은 낮 하늘을 바탕으로 둔다. */

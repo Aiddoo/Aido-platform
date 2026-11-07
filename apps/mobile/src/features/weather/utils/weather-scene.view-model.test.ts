@@ -8,7 +8,7 @@ import {
   getMoonPhase,
   toWeatherScene,
   type WeatherSceneInput,
-} from './weather-scene';
+} from './weather-scene.view-model';
 
 const unit = z.number().min(0).max(1);
 const weatherSceneRangeSchema = z.object({

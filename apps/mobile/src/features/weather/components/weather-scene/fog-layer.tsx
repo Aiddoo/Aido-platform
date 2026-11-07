@@ -3,7 +3,7 @@ import { clamp } from 'es-toolkit';
 import { interpolate, type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
-import type { WeatherSceneSky } from './weather-scene';
+import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 
 /** 시안 wxHaze: 6초 주기로 12px 떠오르며 0.3→0.55로 짙어지는 띠 */
 const HAZE_PERIOD_SECONDS = 6;

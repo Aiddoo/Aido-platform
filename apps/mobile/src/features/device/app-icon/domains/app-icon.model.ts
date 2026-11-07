@@ -13,8 +13,8 @@ function getNativeAppIconName(key: AppIconKey): AppIconKey | null {
 }
 
 /** 기본 아이콘만 누구나 쓸 수 있고 나머지는 구독 기능이다 */
-function requiresPremium(key: AppIconKey) {
+function isPremiumIcon(key: AppIconKey) {
   return key !== 'default';
 }
 
-export const AppIconPolicy = { resolveAppIconKey, getNativeAppIconName, requiresPremium } as const;
+export const AppIconPolicy = { resolveAppIconKey, getNativeAppIconName, isPremiumIcon } as const;

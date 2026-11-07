@@ -143,7 +143,7 @@ function RescheduleTodoList({
       {reason === 'rain' && (
         <>
           <WeatherRescheduleTimeline
-            hours={WeatherReportPolicy.selectUpcomingHours(report.hourly, now)}
+            hours={WeatherReportPolicy.getUpcomingHours(report.hourly, now)}
           />
           <Spacing size={16} />
         </>

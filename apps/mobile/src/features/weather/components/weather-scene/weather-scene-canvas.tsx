@@ -17,6 +17,8 @@ import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
 import { useWeatherSceneClock } from '../../hooks/use-weather-scene-clock';
+import { getCelestialCenter } from '../../utils/weather-scene-particles';
+import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
 import { FogBandLayer } from './fog-band-layer';
 import { FogLayer } from './fog-layer';
@@ -34,8 +36,6 @@ import { BelowHeader, HeroScrimLayer, ScrimLayer } from './scrim-layer';
 import { SkyGradientLayer } from './sky-gradient-layer';
 import { SnowLayer } from './snow-layer';
 import { SunLayer } from './sun-layer';
-import type { WeatherScene } from './weather-scene';
-import { getCelestialCenter } from './weather-scene-particles';
 
 const LOW_END_MEMORY_BYTES = 3 * 1024 ** 3;
 const IS_LOW_END_DEVICE =

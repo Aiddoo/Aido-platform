@@ -211,7 +211,7 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
   });
 });
 
-describe('WeatherReportPolicy.selectUpcomingHours', () => {
+describe('WeatherReportPolicy.getUpcomingHours', () => {
   it('지금이 속한 시간부터 남기고 이미 지난 시간은 뺀다', () => {
     // Given
     const report = createWeatherReport({
@@ -219,7 +219,7 @@ describe('WeatherReportPolicy.selectUpcomingHours', () => {
     });
 
     // When
-    const hours = WeatherReportPolicy.selectUpcomingHours(report.hourly, NOW);
+    const hours = WeatherReportPolicy.getUpcomingHours(report.hourly, NOW);
 
     // Then
     expect(hours.map((hour) => hour.startsAt)).toEqual([
@@ -290,7 +290,7 @@ describe('WeatherReportPolicy.isReportStale', () => {
   });
 });
 
-describe('WeatherReportPolicy.selectActiveAlerts', () => {
+describe('WeatherReportPolicy.getActiveAlerts', () => {
   it('만료된 특보만 빼고 서버가 정한 심각도 순서는 바꾸지 않는다', () => {
     // Given
     const report = createWeatherReport({
@@ -302,7 +302,7 @@ describe('WeatherReportPolicy.selectActiveAlerts', () => {
     });
 
     // When
-    const alerts = WeatherReportPolicy.selectActiveAlerts(report.alerts, NOW);
+    const alerts = WeatherReportPolicy.getActiveAlerts(report.alerts, NOW);
 
     // Then
     expect(alerts.map((alert) => alert.id)).toEqual(['severe', 'minor']);
@@ -315,7 +315,7 @@ describe('WeatherReportPolicy.selectActiveAlerts', () => {
     });
 
     // When
-    const [alert] = WeatherReportPolicy.selectActiveAlerts(report.alerts, NOW);
+    const [alert] = WeatherReportPolicy.getActiveAlerts(report.alerts, NOW);
 
     // Then
     expect(alert?.id).toBe('upcoming');
@@ -450,7 +450,7 @@ describe('지역별 리포트 프리셋', () => {
 
     // When
     const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
-    const alerts = WeatherReportPolicy.selectActiveAlerts(report.alerts, NOW);
+    const alerts = WeatherReportPolicy.getActiveAlerts(report.alerts, NOW);
 
     // Then
     expect(window).toEqual({
@@ -474,7 +474,7 @@ describe('지역별 리포트 프리셋', () => {
 
     // Then
     expect(window).toMatchObject({ kind: 'upcoming', precision: 'minute', endsOnLaterDay: false });
-    expect(WeatherReportPolicy.selectActiveAlerts(report.alerts, NOW)).toHaveLength(1);
+    expect(WeatherReportPolicy.getActiveAlerts(report.alerts, NOW)).toHaveLength(1);
   });
 
   it('하노이처럼 대기질이 없으면 대기질 등급을 계산하지 않는다', () => {
@@ -559,7 +559,7 @@ describe('오프라인에서 저장한 리포트를 실제 지금 기준으로 �
 
   it('받은 시각이 아니라 지금 이후 시간만 남겨 지난 시간 칸을 보이지 않는다', () => {
     // Given 06:00~13:00 시간별 예보 When 13:10 기준으로 고르면 Then 13시 칸만 남는다
-    const hours = WeatherReportPolicy.selectUpcomingHours(restored.hourly, now);
+    const hours = WeatherReportPolicy.getUpcomingHours(restored.hourly, now);
 
     expect(hours.map((hour) => hour.startsAt)).toEqual(['2026-11-02T13:00:00.000Z']);
   });

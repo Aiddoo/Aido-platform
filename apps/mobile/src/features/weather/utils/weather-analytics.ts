@@ -69,3 +69,18 @@ export function toWeatherReportFailedCause(error: unknown): WeatherReportFailedC
     .with(P.when(isConnectionError), () => 'offline')
     .otherwise(() => 'other');
 }
+
+export type WeatherPermissionResult = 'granted' | 'needs_permission' | 'denied';
+
+/** 권한 요청 자체가 실패하면(null) 다시 물을 수 있는 상태로 본다. */
+export function toPermissionResult(
+  permission: { isGranted: boolean; canAskAgain: boolean } | null,
+): WeatherPermissionResult {
+  if (permission == null) {
+    return 'needs_permission';
+  }
+  if (permission.isGranted) {
+    return 'granted';
+  }
+  return permission.canAskAgain ? 'needs_permission' : 'denied';
+}

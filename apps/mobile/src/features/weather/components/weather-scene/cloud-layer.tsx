@@ -11,7 +11,6 @@ import { range } from 'es-toolkit';
 import { type SharedValue, useAnimatedReaction } from 'react-native-reanimated';
 
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
-import type { WeatherSceneSky } from './weather-scene';
 import {
   CLOUD_DEPTH_LAYERS,
   createParticleSeeds,
@@ -20,7 +19,8 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import {
   CLOUD_SPAN_RATIO,
   CLOUD_SPRITE,

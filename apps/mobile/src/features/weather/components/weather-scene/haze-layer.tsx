@@ -16,7 +16,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const DUST_SEED = 0xd057;

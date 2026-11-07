@@ -2,6 +2,7 @@ import { ApiError } from '@src/core/errors/api-error';
 import { NetworkError, ParseError, ServerError } from '@src/shared/errors/infra-error';
 
 import {
+  toPermissionResult,
   toWeatherBriefingKind,
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
@@ -40,5 +41,20 @@ describe('날씨 분석 값', () => {
   ])('리포트 실패 %p를 원인 %p로 묶는다', (error, expected) => {
     // Given 리포트 실패 / When 원인을 정하면 / Then 오류 메시지 없이 원인 enum만 남는다
     expect(toWeatherReportFailedCause(error)).toBe(expected);
+  });
+});
+
+describe('toPermissionResult', () => {
+  it.each([
+    [{ isGranted: true, canAskAgain: true }, 'granted'],
+    [{ isGranted: false, canAskAgain: true }, 'needs_permission'],
+    [{ isGranted: false, canAskAgain: false }, 'denied'],
+    [null, 'needs_permission'],
+  ] as const)('권한 요청 결과 %o는 %s로 기록한다', (permission, expected) => {
+    // When
+    const result = toPermissionResult(permission);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

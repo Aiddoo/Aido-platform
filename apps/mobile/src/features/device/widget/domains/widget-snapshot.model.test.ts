@@ -4,13 +4,13 @@ import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot.schema';
 import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
-describe('WidgetSnapshotPolicy.selectDay', () => {
+describe('WidgetSnapshotPolicy.getDay', () => {
   it('오늘 key와 같은 day의 상태를 그대로 표시한다', () => {
     // Given
     const snapshot = buildWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
 
     // When
-    const { day, renderState } = WidgetSnapshotPolicy.selectDay(snapshot, '2026-07-12');
+    const { day, renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-12');
 
     // Then
     expect(day.date).toBe('2026-07-12');
@@ -24,8 +24,8 @@ describe('WidgetSnapshotPolicy.selectDay', () => {
     const atMidnight = toDateKey(new Date('2026-07-12T15:00:00.000Z'), 'Asia/Seoul');
 
     // When
-    const before = WidgetSnapshotPolicy.selectDay(snapshot, beforeMidnight);
-    const after = WidgetSnapshotPolicy.selectDay(snapshot, atMidnight);
+    const before = WidgetSnapshotPolicy.getDay(snapshot, beforeMidnight);
+    const after = WidgetSnapshotPolicy.getDay(snapshot, atMidnight);
 
     // Then
     expect([before.day.date, before.renderState]).toEqual(['2026-07-12', 'data']);
@@ -37,7 +37,7 @@ describe('WidgetSnapshotPolicy.selectDay', () => {
     const snapshot = buildWidgetSnapshot({}, {});
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.selectDay(snapshot, '2026-07-14');
+    const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-14');
 
     // Then
     expect(renderState).toBe('stale');
@@ -48,20 +48,20 @@ describe('WidgetSnapshotPolicy.selectDay', () => {
     const snapshot = buildWidgetSnapshot({ state: 'loggedOut', date: '2026-07-01' });
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.selectDay(snapshot, '2026-07-12');
+    const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-12');
 
     // Then
     expect(renderState).toBe('loggedOut');
   });
 });
 
-describe('WidgetSnapshotPolicy.selectDayForOwner', () => {
+describe('WidgetSnapshotPolicy.getDayForOwner', () => {
   it('소유자를 모르는 개인 목록은 오늘 day가 있어도 stale을 표시한다', () => {
     // Given
     const snapshot = buildWidgetSnapshot({});
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.selectDayForOwner(snapshot, '2026-07-12', null);
+    const { renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, '2026-07-12', null);
 
     // Then
     expect(renderState).toBe('stale');
@@ -72,7 +72,7 @@ describe('WidgetSnapshotPolicy.selectDayForOwner', () => {
     const snapshot = buildWidgetSnapshot({ state: 'loggedOut' });
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.selectDayForOwner(snapshot, '2026-07-12', null);
+    const { renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, '2026-07-12', null);
 
     // Then
     expect(renderState).toBe('loggedOut');
@@ -83,7 +83,7 @@ describe('WidgetSnapshotPolicy.selectDayForOwner', () => {
     const snapshot = buildWidgetSnapshot({});
 
     // When
-    const { day, renderState } = WidgetSnapshotPolicy.selectDayForOwner(
+    const { day, renderState } = WidgetSnapshotPolicy.getDayForOwner(
       snapshot,
       '2026-07-12',
       'user-1',

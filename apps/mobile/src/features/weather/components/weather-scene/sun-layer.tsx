@@ -2,8 +2,8 @@ import { Circle, Group, Image, RadialGradient, vec } from '@shopify/react-native
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import type { WeatherSceneSun } from './weather-scene';
-import { getSceneReferenceWidth } from './weather-scene-particles';
+import { getSceneReferenceWidth } from '../../utils/weather-scene-particles';
+import type { WeatherSceneSun } from '../../utils/weather-scene.view-model';
 import { useSunRaysTexture } from './weather-scene-textures';
 
 /** 다크 모드에서는 빛무리를 조금 낮춘다. */

@@ -10,7 +10,7 @@ import {
   hideSprite,
   PARTICLE_SEED_STRIDE,
   placeSprite,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const PELLET_SEED = 0x5ee7;

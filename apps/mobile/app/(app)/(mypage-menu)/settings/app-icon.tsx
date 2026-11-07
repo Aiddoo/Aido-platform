@@ -43,7 +43,7 @@ function AppIconScreen() {
       return;
     }
 
-    if (AppIconPolicy.requiresPremium(key) && !gate.guard()) {
+    if (AppIconPolicy.isPremiumIcon(key) && !gate.guard()) {
       return;
     }
 
@@ -92,7 +92,7 @@ function AppIconScreen() {
               value={currentIcon}
               onChange={handleIconPress}
               isDisabled={isChanging}
-              isLocked={(key) => isIconLocked && AppIconPolicy.requiresPremium(key)}
+              isLocked={(key) => isIconLocked && AppIconPolicy.isPremiumIcon(key)}
             />
           </SettingsCard.Content>
         </SettingsCard>

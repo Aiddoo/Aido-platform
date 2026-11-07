@@ -4,7 +4,6 @@ import {
   useWeatherService,
 } from '@src/bootstrap/providers/di-context';
 import { type Logger } from '@src/core/ports/logger';
-import { type WeatherService } from '@src/features/weather/apis/weather.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { getErrorMessage, isBusinessError, unwrap } from '@src/shared/errors';
 import {
@@ -16,7 +15,7 @@ import {
 } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
-import { type WeatherSceneInput } from '../components/weather-scene/weather-scene';
+import { type WeatherService } from '../apis/weather.service';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
@@ -24,6 +23,7 @@ import { isLocationNotRegisteredError } from '../domains/weather.error';
 import { applyDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type LocationReading } from '../schemas/weather-location.schema';
 import { type WeatherReport } from '../schemas/weather-report.schema';
+import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import { removeOutdatedWeatherReports } from './weather-cache';
 
 const LOCATION_STALE_TIME_MS = 30 * 60_000;
@@ -160,23 +160,48 @@ export function useGetWeatherReportQueryOptions() {
   });
 }
 
-/**
- * 블록마다 필요한 조각만 구독해 다른 조각이 바뀌어도 다시 그리지 않는다.
- * 모듈 수준 함수라 참조가 바뀌지 않아 TanStack이 select 결과를 재사용한다.
- */
-export const WeatherReportSelect = {
-  hero: (report: WeatherReport) => pick(report, ['location', 'current', 'daily', 'fetchedAt']),
-  alerts: (report: WeatherReport) => pick(report, ['location', 'alerts']),
-  precipitation: (report: WeatherReport) =>
-    pick(report, ['location', 'nextHour', 'hourly', 'fetchedAt']),
-  hourly: (report: WeatherReport) => pick(report, ['location', 'current', 'hourly', 'daily']),
-  briefing: (report: WeatherReport) => pick(report, ['location', 'hourly', 'daily', 'fetchedAt']),
-  daily: (report: WeatherReport) => pick(report, ['location', 'daily', 'current']),
-  details: (report: WeatherReport) => pick(report, ['location', 'current', 'hourly']),
-  sunMoon: (report: WeatherReport) => pick(report, ['location', 'current', 'daily']),
-  airQuality: (report: WeatherReport) => report.airQuality,
-  attribution: (report: WeatherReport) => pick(report, ['location', 'attribution', 'fetchedAt']),
-  scene: (report: WeatherReport): WeatherSceneInput => ({
+function selectHero(report: WeatherReport) {
+  return pick(report, ['location', 'current', 'daily', 'fetchedAt']);
+}
+
+function selectAlerts(report: WeatherReport) {
+  return pick(report, ['location', 'alerts']);
+}
+
+function selectPrecipitation(report: WeatherReport) {
+  return pick(report, ['location', 'nextHour', 'hourly', 'fetchedAt']);
+}
+
+function selectHourly(report: WeatherReport) {
+  return pick(report, ['location', 'current', 'hourly', 'daily']);
+}
+
+function selectBriefing(report: WeatherReport) {
+  return pick(report, ['location', 'hourly', 'daily', 'fetchedAt']);
+}
+
+function selectDaily(report: WeatherReport) {
+  return pick(report, ['location', 'daily', 'current']);
+}
+
+function selectDetails(report: WeatherReport) {
+  return pick(report, ['location', 'current', 'hourly']);
+}
+
+function selectSunMoon(report: WeatherReport) {
+  return pick(report, ['location', 'current', 'daily']);
+}
+
+function selectAirQuality(report: WeatherReport) {
+  return report.airQuality;
+}
+
+function selectAttribution(report: WeatherReport) {
+  return pick(report, ['location', 'attribution', 'fetchedAt']);
+}
+
+function selectScene(report: WeatherReport): WeatherSceneInput {
+  return {
     ...pick(report.current, [
       'condition',
       'isDaylight',
@@ -186,5 +211,23 @@ export const WeatherReportSelect = {
     ]),
     observedAt: report.fetchedAt,
     latitude: report.location.latitude,
-  }),
+  };
+}
+
+/**
+ * 블록마다 필요한 조각만 구독해 다른 조각이 바뀌어도 다시 그리지 않는다.
+ * 모듈 수준 함수라 참조가 바뀌지 않아 TanStack이 select 결과를 재사용한다.
+ */
+export const WeatherReportSelect = {
+  hero: selectHero,
+  alerts: selectAlerts,
+  precipitation: selectPrecipitation,
+  hourly: selectHourly,
+  briefing: selectBriefing,
+  daily: selectDaily,
+  details: selectDetails,
+  sunMoon: selectSunMoon,
+  airQuality: selectAirQuality,
+  attribution: selectAttribution,
+  scene: selectScene,
 } as const;

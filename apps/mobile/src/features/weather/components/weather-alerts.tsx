@@ -32,7 +32,7 @@ export function WeatherAlerts() {
     ],
   });
   const now = useMinuteNow();
-  const [mostSevere, ...rest] = WeatherReportPolicy.selectActiveAlerts(data.alerts, now);
+  const [mostSevere, ...rest] = WeatherReportPolicy.getActiveAlerts(data.alerts, now);
 
   if (mostSevere == null) {
     return <WeatherAlerts.Empty />;

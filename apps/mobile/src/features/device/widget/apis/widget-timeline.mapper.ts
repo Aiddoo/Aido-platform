@@ -24,7 +24,7 @@ export function toWidgetTimelineEntries(
   snapshot: WidgetSnapshot,
   { now, timeZone, appScheme }: WidgetTimelineContext,
 ): WidgetTimelineEntry<WidgetProps>[] {
-  const current = WidgetSnapshotPolicy.selectDay(snapshot, toDateKey(now, timeZone));
+  const current = WidgetSnapshotPolicy.getDay(snapshot, toDateKey(now, timeZone));
   const entries: WidgetTimelineEntry<WidgetProps>[] = [
     { date: now, props: toWidgetProps(current.day, current.renderState, appScheme) },
   ];

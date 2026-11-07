@@ -52,10 +52,6 @@ function toStoredWidgetProps(
   appScheme: string,
   localDateKey: string,
 ) {
-  const { day, renderState } = WidgetSnapshotPolicy.selectDayForOwner(
-    snapshot,
-    localDateKey,
-    userId,
-  );
+  const { day, renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, localDateKey, userId);
   return toWidgetProps(day, renderState, appScheme);
 }

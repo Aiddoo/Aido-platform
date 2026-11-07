@@ -14,7 +14,7 @@ interface WidgetDaySelection {
 }
 
 /** 렌더 시점의 오늘 key와 같은 day를 고른다. 없으면 날짜가 지난 것으로 보고 stale을 표시한다. */
-function selectDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
+function getDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
   const [firstDay] = snapshot.days;
   if (isLoggedOut(snapshot)) {
     return { day: firstDay, renderState: 'loggedOut' };
@@ -28,7 +28,7 @@ function selectDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDayS
 }
 
 /** 소유자를 모르는 개인 목록은 추측해 보여주지 않고 stale로 표시한다. */
-function selectDayForOwner(
+function getDayForOwner(
   snapshot: WidgetSnapshot,
   todayLocalDate: string,
   ownerId: string | null,
@@ -36,11 +36,11 @@ function selectDayForOwner(
   if (ownerId == null && !isLoggedOut(snapshot)) {
     return { day: snapshot.days[0], renderState: 'stale' };
   }
-  return selectDay(snapshot, todayLocalDate);
+  return getDay(snapshot, todayLocalDate);
 }
 
 export const WidgetSnapshotPolicy = {
   isLoggedOut,
-  selectDay,
-  selectDayForOwner,
+  getDay,
+  getDayForOwner,
 } as const;

@@ -14,15 +14,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
-import {
-  toMovedScheduleInput,
-  toOriginalScheduleInput,
-  toRescheduleOutcome,
-  toRescheduleTargets,
-} from '../../domains/weather-reschedule.model';
+import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
 import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
 import { useRescheduleTodoMutationOptions } from '../../queries/weather.mutations';
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
+import { toRescheduleOutcome, toScheduleChanges } from '../../utils/weather-reschedule-form';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
 export function WeatherRescheduleSubmitButton({
@@ -46,7 +42,10 @@ export function WeatherRescheduleSubmitButton({
   const todayTodos = todoList?.todos ?? [];
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
   const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
-  const targetCount = toRescheduleTargets({ selections }, todoIds, todayTodos).length;
+  const targetCount = WeatherReschedulePolicy.getRescheduleTargets(
+    toScheduleChanges({ selections }, todoIds),
+    todayTodos,
+  ).length;
 
   const settle = (failures: unknown[]) => {
     invalidateTodos(queryClient);
@@ -59,7 +58,10 @@ export function WeatherRescheduleSubmitButton({
   const handleUndo = async (todos: Todo[]) => {
     const results = await Promise.allSettled(
       todos.map((todo) =>
-        updateSchedule.mutateAsync({ todoId: todo.id, input: toOriginalScheduleInput(todo) }),
+        updateSchedule.mutateAsync({
+          todoId: todo.id,
+          input: WeatherReschedulePolicy.getOriginalScheduleInput(todo),
+        }),
       ),
     );
     const { moved: restored, failures } = toRescheduleOutcome(
@@ -74,12 +76,15 @@ export function WeatherRescheduleSubmitButton({
   };
 
   const handleApply = form.handleSubmit(async (values) => {
-    const targets = toRescheduleTargets(values, todoIds, todayTodos);
+    const targets = WeatherReschedulePolicy.getRescheduleTargets(
+      toScheduleChanges(values, todoIds),
+      todayTodos,
+    );
     const results = await Promise.allSettled(
       targets.map(({ todo, startsAt }) =>
         updateSchedule.mutateAsync({
           todoId: todo.id,
-          input: toMovedScheduleInput(todo, startsAt, timeZone),
+          input: WeatherReschedulePolicy.getMovedScheduleInput(todo, startsAt, timeZone),
         }),
       ),
     );
