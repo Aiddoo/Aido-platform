@@ -1,4 +1,8 @@
-import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createAnalyticsStub,
+  createHapticsStub,
+  createHttpClientStub,
+} from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -6,6 +10,7 @@ import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
+import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import type { TodoCategoriesResult } from '../schemas/todo-category.schema';
 import {
@@ -19,6 +24,7 @@ const CATEGORIES: TodoCategoriesResult = {
 
 async function renderMutations() {
   const httpClient = createHttpClientStub();
+  const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), CATEGORIES);
   const actions: {
@@ -38,14 +44,16 @@ async function renderMutations() {
   }
   await renderUi(<Capture />, {
     queryClient,
-    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+    di: createTestDi({ httpClient, analytics, haptics: createHapticsStub() }),
   });
 
   return {
     httpClient,
+    analytics,
     cached: () => queryClient.getQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list()),
     create: (input: { name: string; color: string }) => actions.create?.mutateAsync(input),
-    update: (id: number, input: { name: string }) => actions.update?.mutateAsync({ id, input }),
+    update: (id: number, input: { name: string; color?: string }) =>
+      actions.update?.mutateAsync({ id, input }),
   };
 }
 
@@ -83,5 +91,37 @@ describe('카테고리 저장', () => {
     // Then
     await expect(result).rejects.toBeInstanceOf(NetworkError);
     expect(cached()).toEqual(CATEGORIES);
+  });
+});
+
+describe('카테고리 고치기 지표', () => {
+  it('이름만 바꾸면 바뀐 칸을 name으로 남긴다', async () => {
+    // Given
+    const { httpClient, analytics, update } = await renderMutations();
+    httpClient.patch.mockResolvedValue({
+      ok: true,
+      value: { message: '수정', category: createTodoCategoryDto({ name: '새 이름' }) },
+    });
+
+    // When
+    await update(1, { name: '새 이름', color: '#3B82F6' });
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('category_updated', { field: 'name' });
+  });
+
+  it('색을 바꾸면 바뀐 칸을 color로 남긴다', async () => {
+    // Given
+    const { httpClient, analytics, update } = await renderMutations();
+    httpClient.patch.mockResolvedValue({
+      ok: true,
+      value: { message: '수정', category: createTodoCategoryDto({ color: '#51CF66' }) },
+    });
+
+    // When
+    await update(1, { name: '기본', color: '#51CF66' });
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('category_updated', { field: 'color' });
   });
 });

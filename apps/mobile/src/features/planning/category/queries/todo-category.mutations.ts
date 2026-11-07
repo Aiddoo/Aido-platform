@@ -15,6 +15,7 @@ import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   OptimisticTodoCategoryWithCount,
@@ -121,12 +122,16 @@ export function useUpdateTodoCategoryMutationOptions() {
 
       return { previousData };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (_data, variables, context) => {
       invalidateTodoCategories(queryClient);
       invalidateFeedTodos(queryClient);
       toast.success(t('todo:toast.categoryUpdated'));
+      const previous = TodoCategoryPolicy.findCategory(
+        context?.previousData?.categories ?? [],
+        variables.id,
+      );
       trackEvent('category_updated', {
-        field: variables.input.color ? 'color' : 'name',
+        field: TodoCategoryPolicy.getChangedField(previous, variables.input),
       });
     },
     onError: (error, _variables, context) => {
