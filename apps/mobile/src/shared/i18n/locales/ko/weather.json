@@ -282,6 +282,7 @@
     "loadFailed": "날씨 정보를\n불러올 수 없어요",
     "retryLater": "잠시 후 다시 시도해주세요",
     "providerUnavailable": "날씨를 잠시\n불러올 수 없어요",
+    "timeout": "응답이 늦어지고\n있어요",
     "offline": "인터넷 연결을\n확인해주세요",
     "offlineDescription": "연결되면 자동으로 다시 불러와요"
   },

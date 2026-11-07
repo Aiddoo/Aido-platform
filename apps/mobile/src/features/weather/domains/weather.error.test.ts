@@ -8,6 +8,8 @@ import {
 
 import {
   isConnectionError,
+  isOfflineError,
+  isTimeoutError,
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
 } from './weather.error';
@@ -35,5 +37,13 @@ describe('날씨 오류 판별', () => {
     expect(isConnectionError(new TimeoutError())).toBe(true);
     expect(isConnectionError(new ParseError('invalid'))).toBe(false);
     expect(isWeatherProviderUnavailableError(new ParseError('invalid'))).toBe(false);
+  });
+
+  it('시간 초과는 연결 끊김 안내가 아니라 따로 분류한다', () => {
+    // Then
+    expect(isOfflineError(new NetworkError())).toBe(true);
+    expect(isOfflineError(new TimeoutError())).toBe(false);
+    expect(isTimeoutError(new TimeoutError())).toBe(true);
+    expect(isTimeoutError(new NetworkError())).toBe(false);
   });
 });

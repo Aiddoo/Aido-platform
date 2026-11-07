@@ -17,5 +17,10 @@ export const isWeatherProviderUnavailableError = (error: unknown): boolean =>
   (error instanceof ServerError && error.statusCode === SERVICE_UNAVAILABLE_STATUS) ||
   (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901));
 
+/** 연결이 정말 끊긴 경우만이다. 응답이 늦은 시간 초과는 연결 문제로 안내하지 않는다. */
+export const isOfflineError = (error: unknown): boolean => error instanceof NetworkError;
+
+export const isTimeoutError = (error: unknown): boolean => error instanceof TimeoutError;
+
 export const isConnectionError = (error: unknown): boolean =>
   error instanceof NetworkError || error instanceof TimeoutError;

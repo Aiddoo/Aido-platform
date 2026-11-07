@@ -24,7 +24,8 @@ import { match, P } from 'ts-pattern';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import {
-  isConnectionError,
+  isOfflineError,
+  isTimeoutError,
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
 } from '../domains/weather.error';
@@ -379,7 +380,16 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
         {retryButton}
       </WeatherResult>
     ))
-    .with(P.when(isConnectionError), () => (
+    .with(P.when(isTimeoutError), () => (
+      <WeatherResult
+        image={catAnchorImage}
+        title={t('weather:screen.timeout')}
+        description={t('weather:screen.retryLater')}
+      >
+        {retryButton}
+      </WeatherResult>
+    ))
+    .with(P.when(isOfflineError), () => (
       <WeatherResult
         image={catAnchorImage}
         title={t('weather:screen.offline')}

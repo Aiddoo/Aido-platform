@@ -286,6 +286,7 @@
     "loadFailed": "Couldn't load the weather",
     "retryLater": "Please try again in a moment",
     "providerUnavailable": "Weather is temporarily unavailable",
+    "timeout": "Taking longer than expected",
     "offline": "Check your internet connection",
     "offlineDescription": "We'll reload once you're back online"
   },
