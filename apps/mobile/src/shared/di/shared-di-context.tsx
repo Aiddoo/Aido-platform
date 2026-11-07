@@ -5,6 +5,7 @@ import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
 import type { IncomingLinkGateway } from '@src/core/ports/incoming-link-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import type { DraftService } from '@src/shared/draft/draft.service';
@@ -21,7 +22,8 @@ export interface SharedDependencies {
   externalLink: ExternalLinkGateway;
   incomingLink: IncomingLinkGateway;
   systemShare: SystemShareGateway;
-  syncStorage: ObservableSyncStorage;
+  /** 앱과 위젯이 함께 읽는 기기 저장소. 키별 구독과 키 목록을 준다 */
+  syncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'>;
 }
 
 export const SharedDIContext = createContext<SharedDependencies | null>(null);

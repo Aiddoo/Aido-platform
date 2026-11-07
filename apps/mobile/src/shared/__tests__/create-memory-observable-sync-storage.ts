@@ -1,22 +1,34 @@
-import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import type { DIContainer } from '@src/bootstrap/providers/di-context';
 
-/** 메모리에 두고 바뀔 때 구독자에게 알리는 기기 저장소 */
-export function createMemoryObservableSyncStorage(): ObservableSyncStorage {
+/** 어댑터(`device-sync-storage`)처럼 구독한 키가 바뀔 때만 그 구독자에게 알리고 키 목록도 주는 메모리 저장소 */
+export function createMemoryObservableSyncStorage(): DIContainer['syncStorage'] {
   const values = new Map<string, string>();
-  const listeners = new Set<() => void>();
+  const listenersByKey = new Map<string, Set<() => void>>();
+
+  const notify = (key: string) => {
+    for (const listener of [...(listenersByKey.get(key) ?? [])]) {
+      listener();
+    }
+  };
+
   return {
     get: (key) => values.get(key),
+    keys: () => [...values.keys()],
     set: (key, value) => {
       values.set(key, value);
-      listeners.forEach((listener) => listener());
+      notify(key);
     },
     remove: (key) => {
       values.delete(key);
-      listeners.forEach((listener) => listener());
+      notify(key);
     },
-    subscribe: (_key, listener) => {
+    subscribe: (key, listener) => {
+      const listeners = listenersByKey.get(key) ?? new Set<() => void>();
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      listenersByKey.set(key, listeners);
+      return () => {
+        listeners.delete(listener);
+      };
     },
   };
 }
