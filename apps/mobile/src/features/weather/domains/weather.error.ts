@@ -29,7 +29,3 @@ export function isOfflineError(error: unknown): boolean {
 export function isTimeoutError(error: unknown): boolean {
   return error instanceof TimeoutError;
 }
-
-export function isConnectionError(error: unknown): boolean {
-  return error instanceof NetworkError || error instanceof TimeoutError;
-}

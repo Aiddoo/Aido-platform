@@ -2,7 +2,7 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { uniq } from 'es-toolkit';
 
 import { STORE_REVIEW_MIN_ACTIVE_DAYS } from '../constants/store-review.constants';
-import { createEmptyStoreReviewState } from '../domains/store-review.model';
+import { StoreReviewPolicy } from '../domains/store-review.model';
 import {
   type LegacyStoreReviewState,
   legacyStoreReviewStateSchema,
@@ -42,7 +42,7 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
   const read = (accountId: string): StoreReviewState => {
     const saved = storage.get(storageKey(accountId));
     if (saved == null) {
-      return createEmptyStoreReviewState();
+      return StoreReviewPolicy.createEmptyState();
     }
     try {
       const json: unknown = JSON.parse(saved);
@@ -52,13 +52,13 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
       }
       const legacy = legacyStoreReviewStateSchema.safeParse(json);
       if (!legacy.success) {
-        return createEmptyStoreReviewState();
+        return StoreReviewPolicy.createEmptyState();
       }
       const migrated = fromLegacy(legacy.data);
       write(accountId, migrated);
       return migrated;
     } catch {
-      return createEmptyStoreReviewState();
+      return StoreReviewPolicy.createEmptyState();
     }
   };
 

@@ -1,9 +1,9 @@
+import { isConnectivityError } from '@src/shared/errors/infra-error';
 import { match, P } from 'ts-pattern';
 
 import type { BriefingResult } from '../domains/weather-briefing.model';
 import type { WeatherLocationStatus } from '../domains/weather-location.model';
 import {
-  isConnectionError,
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
 } from '../domains/weather.error';
@@ -66,7 +66,7 @@ export function toWeatherReportFailedCause(error: unknown): WeatherReportFailedC
     .returnType<WeatherReportFailedCause>()
     .with(P.when(isLocationNotRegisteredError), () => 'no_location')
     .with(P.when(isWeatherProviderUnavailableError), () => 'provider_unavailable')
-    .with(P.when(isConnectionError), () => 'offline')
+    .with(P.when(isConnectivityError), () => 'offline')
     .otherwise(() => 'other');
 }
 

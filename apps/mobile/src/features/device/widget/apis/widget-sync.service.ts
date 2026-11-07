@@ -1,4 +1,5 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { toError } from '@src/shared/errors';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
@@ -85,10 +86,7 @@ export class WidgetSyncService {
 
   #report = (error: unknown, method: string): void => {
     try {
-      this.#errorReporter.captureException(
-        error instanceof Error ? error : new Error(String(error)),
-        { feature: 'widget', method },
-      );
+      this.#errorReporter.captureException(toError(error), { feature: 'widget', method });
     } catch {
       // Widget and observability failures must not reject the app's auth lifecycle.
     }

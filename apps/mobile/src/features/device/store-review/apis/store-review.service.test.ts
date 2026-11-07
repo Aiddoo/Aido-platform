@@ -2,7 +2,7 @@ import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
-import { recordRequest } from '../domains/store-review.model';
+import { StoreReviewPolicy } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
 import { StoreReviewService, type WaitUntilPresentable } from './store-review.service';
 
@@ -151,7 +151,7 @@ describe('StoreReviewService', () => {
     const { becomeEngaged, gateway, repository, service } = createFixture();
     becomeEngaged();
     repository.update(ACCOUNT, (state) =>
-      recordRequest(state, toInstant('2026-08-12T00:00:00.000Z')),
+      StoreReviewPolicy.withRequest(state, toInstant('2026-08-12T00:00:00.000Z')),
     );
 
     // When

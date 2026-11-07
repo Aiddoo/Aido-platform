@@ -1,5 +1,5 @@
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
-import { fromEpochMs, type Instant } from '@src/shared/date/instant';
+import { getNowInstant, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { CoachmarkInput } from '../schemas/coachmark.schema';
@@ -40,7 +40,7 @@ export function coachmarkStorageKey({ accountId, kind }: CoachmarkInput): string
 
 export function createCoachmarkRepository(
   storage: SyncStorage & Pick<EnumerableSyncStorage, 'keys'>,
-  now: () => Instant = () => fromEpochMs(Date.now()),
+  now: () => Instant = getNowInstant,
 ): CoachmarkRepository {
   return {
     isSeen: (input) => {

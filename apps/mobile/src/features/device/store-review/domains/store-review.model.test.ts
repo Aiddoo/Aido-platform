@@ -8,34 +8,29 @@ import {
   STORE_REVIEW_REQUEST_WINDOW_DAYS,
 } from '../constants/store-review.constants';
 import type { StoreReviewState } from '../schemas/store-review.schema';
-import {
-  createEmptyStoreReviewState,
-  recordActiveDay,
-  recordRequest,
-  StoreReviewPolicy,
-} from './store-review.model';
+import { StoreReviewPolicy } from './store-review.model';
 
 const NOW = toInstant('2026-10-27T12:00:00.000Z');
 const daysBefore = (days: number, msLater = 0) =>
   toInstant(new Date(toEpochMs(NOW) - days * DAY_MS + msLater).toISOString());
 
 const withActiveDays = (...localDates: string[]): StoreReviewState =>
-  localDates.reduce(recordActiveDay, createEmptyStoreReviewState());
+  localDates.reduce(StoreReviewPolicy.withActiveDay, StoreReviewPolicy.createEmptyState());
 
 const ENGAGED: StoreReviewState = withActiveDays('2026-10-20', '2026-10-24', '2026-10-27');
 
-describe('StoreReviewPolicy.evaluate', () => {
+describe('StoreReviewPolicy.getEligibility', () => {
   it('하루 한 개씩 세 날 할 일을 끝낸 가벼운 사용자는 셋째 날에 요청 대상이 된다', () => {
     // Given 하루에 할 일 하나씩만 끝낸 기록
     const twoDays = withActiveDays('2026-10-25', '2026-10-26');
 
     // When 셋째 날 할 일을 끝낸다
-    const threeDays = recordActiveDay(twoDays, '2026-10-27');
+    const threeDays = StoreReviewPolicy.withActiveDay(twoDays, '2026-10-27');
 
     // Then
     expect(STORE_REVIEW_MIN_ACTIVE_DAYS).toBe(3);
-    expect(StoreReviewPolicy.evaluate(twoDays, NOW)).toBe('not_engaged');
-    expect(StoreReviewPolicy.evaluate(threeDays, NOW)).toBe('eligible');
+    expect(StoreReviewPolicy.getEligibility(twoDays, NOW)).toBe('not_engaged');
+    expect(StoreReviewPolicy.getEligibility(threeDays, NOW)).toBe('eligible');
   });
 
   it('같은 날 여러 번 끝내도 하루로만 센다', () => {
@@ -43,7 +38,7 @@ describe('StoreReviewPolicy.evaluate', () => {
     const sameDay = withActiveDays('2026-10-27', '2026-10-27', '2026-10-27', '2026-10-26');
 
     // When
-    const eligibility = StoreReviewPolicy.evaluate(sameDay, NOW);
+    const eligibility = StoreReviewPolicy.getEligibility(sameDay, NOW);
 
     // Then
     expect(sameDay.activeDays).toEqual(['2026-10-27', '2026-10-26']);
@@ -62,8 +57,8 @@ describe('StoreReviewPolicy.evaluate', () => {
     };
 
     // When / Then
-    expect(StoreReviewPolicy.evaluate(justBefore, NOW)).toBe('cooling_down');
-    expect(StoreReviewPolicy.evaluate(elapsed, NOW)).toBe('eligible');
+    expect(StoreReviewPolicy.getEligibility(justBefore, NOW)).toBe('cooling_down');
+    expect(StoreReviewPolicy.getEligibility(elapsed, NOW)).toBe('eligible');
   });
 
   it('최근 365일 안에 세 번 요청했으면 쿨다운이 지나도 요청하지 않는다', () => {
@@ -79,18 +74,18 @@ describe('StoreReviewPolicy.evaluate', () => {
 
     // When / Then
     expect(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW).toBe(3);
-    expect(StoreReviewPolicy.evaluate(threeInWindow, NOW)).toBe('window_limit_reached');
-    expect(StoreReviewPolicy.evaluate(oldestLeftWindow, NOW)).toBe('eligible');
+    expect(StoreReviewPolicy.getEligibility(threeInWindow, NOW)).toBe('window_limit_reached');
+    expect(StoreReviewPolicy.getEligibility(oldestLeftWindow, NOW)).toBe('eligible');
   });
 });
 
-describe('recordRequest', () => {
+describe('StoreReviewPolicy.withRequest', () => {
   it('요청 시각을 쌓고 365일 창 밖의 기록은 지운다', () => {
     // Given
     const state: StoreReviewState = { ...ENGAGED, requestedAt: [daysBefore(400), daysBefore(130)] };
 
     // When
-    const next = recordRequest(state, NOW);
+    const next = StoreReviewPolicy.withRequest(state, NOW);
 
     // Then
     expect(next.requestedAt).toEqual([daysBefore(130), NOW]);
@@ -110,6 +105,8 @@ describe('시간대가 다른 저장 값', () => {
     };
 
     // When / Then
-    expect(StoreReviewPolicy.evaluate(seoul, NOW)).toBe(StoreReviewPolicy.evaluate(utc, NOW));
+    expect(StoreReviewPolicy.getEligibility(seoul, NOW)).toBe(
+      StoreReviewPolicy.getEligibility(utc, NOW),
+    );
   });
 });

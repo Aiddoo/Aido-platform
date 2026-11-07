@@ -15,7 +15,7 @@ interface WeatherRescheduleTimeInputProps extends Omit<
   'value' | 'onValueChange' | 'children'
 > {
   value: string;
-  onChange: (startsAt: string) => void;
+  onValueChange: (startsAt: string) => void;
   options: RescheduleOption[];
   reason: WeatherRescheduleReason;
   timeFormat: TimeFormat;
@@ -24,14 +24,14 @@ interface WeatherRescheduleTimeInputProps extends Omit<
 /** 옮길 시각 후보. 값은 후보 정시의 ISO 문자열이고 첫 후보가 추천이다. */
 export function WeatherRescheduleTimeInput({
   value,
-  onChange,
+  onValueChange,
   options,
   reason,
   timeFormat,
   ...props
 }: WeatherRescheduleTimeInputProps) {
   return (
-    <RadioGroup value={value} onValueChange={onChange} className="gap-0" {...props}>
+    <RadioGroup value={value} onValueChange={onValueChange} className="gap-0" {...props}>
       {options.map((option) => (
         <RescheduleTimeOption
           key={option.startsAt}

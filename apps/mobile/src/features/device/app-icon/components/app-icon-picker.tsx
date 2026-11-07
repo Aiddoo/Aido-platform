@@ -25,18 +25,18 @@ interface AppIconPickerProps extends Omit<
 > {
   /** 아이콘 키가 아닌 값(프로필 사진 주소 등)이면 아무것도 선택되지 않는다 */
   value: string | null;
-  onChange: (value: AppIconKey) => void;
+  onValueChange: (value: AppIconKey) => void;
   isLocked?: (key: AppIconKey) => boolean;
 }
 
-export function AppIconPicker({ value, onChange, isLocked, ...props }: AppIconPickerProps) {
+export function AppIconPicker({ value, onValueChange, isLocked, ...props }: AppIconPickerProps) {
   return (
     <RadioGroup
       value={value ?? 'default'}
       onValueChange={(next) => {
         const icon = APP_ICONS.find(({ key }) => key === next);
         if (icon != null) {
-          onChange(icon.key);
+          onValueChange(icon.key);
         }
       }}
       {...props}
@@ -87,7 +87,7 @@ AppIconPicker.Item = function Item({ icon, isLocked, ...props }: AppIconPickerIt
             size="b4"
             weight={isSelected ? 'semibold' : 'normal'}
             shade={isSelected ? 9 : 6}
-            numberOfLines={1}
+            maxLines={1}
           >
             {label}
           </Text>
@@ -112,7 +112,7 @@ AppIconPicker.Loading = function Loading() {
   );
 };
 
-AppIconPicker.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+AppIconPicker.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['appIcon', 'common']);
   return (
     <Result

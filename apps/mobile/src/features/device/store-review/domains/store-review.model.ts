@@ -16,7 +16,7 @@ export type StoreReviewEligibility =
   | 'cooling_down'
   | 'window_limit_reached';
 
-export function createEmptyStoreReviewState(): StoreReviewState {
+function createEmptyState(): StoreReviewState {
   return { activeDays: [], requestedAt: [] };
 }
 
@@ -25,7 +25,7 @@ function isWithinRequestWindow(requestedAt: Instant, now: Instant) {
 }
 
 /** 할 일을 하나라도 끝낸 날을 남긴다. 같은 날은 한 번만 센다 */
-export function recordActiveDay(state: StoreReviewState, localDate: string): StoreReviewState {
+function withActiveDay(state: StoreReviewState, localDate: string): StoreReviewState {
   return state.activeDays.includes(localDate)
     ? state
     : {
@@ -35,7 +35,7 @@ export function recordActiveDay(state: StoreReviewState, localDate: string): Sto
 }
 
 /** 창 밖으로 나간 요청은 한도 계산에 쓰이지 않으므로 지운다 */
-export function recordRequest(state: StoreReviewState, at: Instant): StoreReviewState {
+function withRequest(state: StoreReviewState, at: Instant): StoreReviewState {
   return {
     ...state,
     requestedAt: [
@@ -67,7 +67,7 @@ function hasReachedWindowLimit(state: Pick<StoreReviewState, 'requestedAt'>, now
 }
 
 /** 지금 OS 리뷰 창을 요청해도 되는지. 끝낸 날, 365일 한도, 120일 쿨다운 순으로 막는다 */
-function evaluate(state: StoreReviewState, now: Instant): StoreReviewEligibility {
+function getEligibility(state: StoreReviewState, now: Instant): StoreReviewEligibility {
   if (!hasEnoughActiveDays(state)) {
     return 'not_engaged';
   }
@@ -80,4 +80,9 @@ function evaluate(state: StoreReviewState, now: Instant): StoreReviewEligibility
   return 'eligible';
 }
 
-export const StoreReviewPolicy = { evaluate } as const;
+export const StoreReviewPolicy = {
+  createEmptyState,
+  withActiveDay,
+  withRequest,
+  getEligibility,
+} as const;

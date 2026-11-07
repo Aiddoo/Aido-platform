@@ -1,5 +1,6 @@
 import { ApiError } from '@src/core/errors/api-error';
 import {
+  isConnectivityError,
   NetworkError,
   ParseError,
   ServerError,
@@ -7,7 +8,6 @@ import {
 } from '@src/shared/errors/infra-error';
 
 import {
-  isConnectionError,
   isOfflineError,
   isTimeoutError,
   isLocationNotRegisteredError,
@@ -33,9 +33,9 @@ describe('날씨 오류 판별', () => {
 
   it('네트워크 끊김과 시간 초과는 연결 오류로, 응답 파싱 실패는 일반 오류로 분류한다', () => {
     // Then
-    expect(isConnectionError(new NetworkError())).toBe(true);
-    expect(isConnectionError(new TimeoutError())).toBe(true);
-    expect(isConnectionError(new ParseError('invalid'))).toBe(false);
+    expect(isConnectivityError(new NetworkError())).toBe(true);
+    expect(isConnectivityError(new TimeoutError())).toBe(true);
+    expect(isConnectivityError(new ParseError('invalid'))).toBe(false);
     expect(isWeatherProviderUnavailableError(new ParseError('invalid'))).toBe(false);
   });
 

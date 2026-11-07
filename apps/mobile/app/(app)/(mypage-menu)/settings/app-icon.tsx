@@ -90,7 +90,7 @@ function AppIconScreen() {
           <SettingsCard.Content>
             <AppIconPicker
               value={currentIcon}
-              onChange={handleIconPress}
+              onValueChange={handleIconPress}
               isDisabled={isChanging}
               isLocked={(key) => isIconLocked && AppIconPolicy.isPremiumIcon(key)}
             />

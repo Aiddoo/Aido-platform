@@ -80,7 +80,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
         </VStack>
         <AppIconPicker
           value={selectedIcon}
-          onChange={setChosenIcon}
+          onValueChange={setChosenIcon}
           isDisabled={updateProfileMutation.isPending}
         />
       </VStack>

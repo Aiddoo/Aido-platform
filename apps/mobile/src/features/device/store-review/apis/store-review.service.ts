@@ -1,12 +1,7 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
 import type { Instant } from '@src/shared/date/instant';
 
-import {
-  recordActiveDay,
-  recordRequest,
-  type StoreReviewEligibility,
-  StoreReviewPolicy,
-} from '../domains/store-review.model';
+import { type StoreReviewEligibility, StoreReviewPolicy } from '../domains/store-review.model';
 import type { StoreReviewMoment } from '../schemas/store-review.schema';
 import type { StoreReviewRepository } from './store-review.repository';
 
@@ -56,7 +51,9 @@ export class StoreReviewService {
 
   /** 할 일을 하나라도 끝낸 날을 남긴다. 하루에 몇 개를 끝냈는지는 세지 않는다 */
   recordActiveDay = (accountId: string, localDate: string): void => {
-    this.#repository.update(accountId, (state) => recordActiveDay(state, localDate));
+    this.#repository.update(accountId, (state) =>
+      StoreReviewPolicy.withActiveDay(state, localDate),
+    );
   };
 
   requestReviewAt = async (
@@ -69,7 +66,10 @@ export class StoreReviewService {
     if (this.#inFlightAccounts.has(accountId)) {
       return 'in_flight';
     }
-    const eligibility = StoreReviewPolicy.evaluate(this.#repository.read(accountId), this.#now());
+    const eligibility = StoreReviewPolicy.getEligibility(
+      this.#repository.read(accountId),
+      this.#now(),
+    );
     if (eligibility !== 'eligible') {
       return eligibility;
     }
@@ -87,7 +87,9 @@ export class StoreReviewService {
         return 'already_requested_this_session';
       }
       // OS가 창을 띄우는지는 알 수 없다. 앱이 도중에 종료돼도 다시 묻지 않도록 요청 전에 기록한다
-      this.#repository.update(accountId, (state) => recordRequest(state, this.#now()));
+      this.#repository.update(accountId, (state) =>
+        StoreReviewPolicy.withRequest(state, this.#now()),
+      );
       this.#hasRequestedThisSession = true;
       await this.#gateway.requestReview();
       return 'requested';

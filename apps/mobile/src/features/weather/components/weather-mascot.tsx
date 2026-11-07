@@ -1,16 +1,14 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
-import { Box } from '@src/shared/ui';
-import { Image, type ImageSource } from 'expo-image';
+import { Box, Image } from '@src/shared/ui';
+import type { ImageSource } from 'expo-image';
 import { type ComponentProps, useState } from 'react';
-import { withUniwind } from 'uniwind';
 
 import { WeatherIcon } from './weather-icon';
 
-const StyledImage = withUniwind(Image);
 const FALLBACK_ICON_SIZE = 40;
 
 interface WeatherMascotProps extends Omit<
-  ComponentProps<typeof StyledImage>,
+  ComponentProps<typeof Image>,
   'source' | 'onError' | 'accessible'
 > {
   source: ImageSource | number;
@@ -47,7 +45,7 @@ export function WeatherMascot({
     );
   }
   return (
-    <StyledImage
+    <Image
       source={source}
       className={className}
       contentFit="contain"

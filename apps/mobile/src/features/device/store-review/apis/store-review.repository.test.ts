@@ -1,7 +1,7 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
-import { recordActiveDay, recordRequest } from '../domains/store-review.model';
+import { StoreReviewPolicy } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
 
 const KEY = 'aido_store_review_prompt_v1:account-a';
@@ -18,9 +18,9 @@ describe('StoreReviewRepository', () => {
     const repository = createStoreReviewRepository(storage);
 
     // When
-    repository.update('account-a', (state) => recordActiveDay(state, '2026-10-27'));
+    repository.update('account-a', (state) => StoreReviewPolicy.withActiveDay(state, '2026-10-27'));
     repository.update('account-a', (state) =>
-      recordRequest(state, toInstant('2026-10-27T12:00:00.000Z')),
+      StoreReviewPolicy.withRequest(state, toInstant('2026-10-27T12:00:00.000Z')),
     );
 
     // Then
