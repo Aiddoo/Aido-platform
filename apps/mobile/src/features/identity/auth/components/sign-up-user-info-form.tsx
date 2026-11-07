@@ -35,7 +35,9 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
   const { t } = useTranslation(['auth']);
   const { control } = form;
   const [email, name] = useWatch({ control, name: ['email', 'name'] });
-  const [step, setStep] = useState<UserInfoStep>('name');
+  const [step, setStep] = useState<UserInfoStep>(() =>
+    form.formState.errors.name == null && form.formState.errors.email != null ? 'email' : 'name',
+  );
   const focusEmailInput = useCallback(() => {
     form.setFocus('email');
   }, [form]);
@@ -65,7 +67,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
             <Controller
               control={control}
               name="email"
-              render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
+              render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <Input
                     ref={ref}
@@ -73,6 +75,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
                     placeholder="example@email.com"
                     value={value}
                     onChange={onChange}
+                    onBlur={onBlur}
                     keyboardType="email-address"
                     textContentType="emailAddress"
                     autoComplete="email"
@@ -86,7 +89,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
                       byType: { too_big: 'email.tooLong' },
                     })}
                     onSubmitEditing={() => {
-                      if (isEmailValid) {
+                      if (isNextButtonEnabled) {
                         handleNext();
                       }
                     }}
@@ -103,13 +106,14 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
           <Controller
             control={control}
             name="name"
-            render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
+            render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
               <Input
                 ref={ref}
                 label={t('auth:signUp.nicknameLabel')}
                 placeholder={t('auth:signUp.nicknamePlaceholder')}
                 value={value}
                 onChange={onChange}
+                onBlur={onBlur}
                 autoCapitalize="none"
                 submitBehavior="submit"
                 autoFocus={step === 'name'}
@@ -120,7 +124,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
                   byType: { too_big: 'nickname.tooLong' },
                 })}
                 onSubmitEditing={() => {
-                  if (isNameValid) {
+                  if (isNextButtonEnabled) {
                     handleNext();
                   }
                 }}

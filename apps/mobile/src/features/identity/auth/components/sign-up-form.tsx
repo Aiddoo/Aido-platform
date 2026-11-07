@@ -46,18 +46,37 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
 
-  const submitRegister = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...input }) => {
-    if (!termsAgreed || !privacyAgreed) {
-      return;
+  const submitValidRegister = form.handleSubmit(
+    async ({ termsAgreed, privacyAgreed, ...input }) => {
+      if (!termsAgreed || !privacyAgreed) {
+        return;
+      }
+
+      try {
+        await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
+        stepper.history.replace('verification', { email: input.email });
+      } catch (error) {
+        reportUnexpectedError(error);
+      }
+    },
+  );
+
+  const submitRegister = async () => {
+    const isUserInfoValid = await form.trigger(['name', 'email']);
+    if (!isUserInfoValid) {
+      stepper.history.go(-stepper.index);
+      return false;
+    }
+    const isPasswordValid = await form.trigger(['password', 'passwordConfirm'], {
+      shouldFocus: true,
+    });
+    if (!isPasswordValid) {
+      return false;
     }
 
-    try {
-      await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
-      stepper.history.replace('verification', { email: input.email });
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
-  });
+    await submitValidRegister();
+    return true;
+  };
 
   return stepper.Render({
     userInfo: ({ history }) => (

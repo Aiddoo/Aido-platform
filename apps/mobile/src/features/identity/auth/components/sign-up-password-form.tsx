@@ -21,7 +21,7 @@ type PasswordStep = (typeof PASSWORD_STEPS)[number];
 interface SignUpPasswordFormProps {
   form: UseFormReturn<SignUpFormInput>;
   /** 약관 동의 후 호출하는 회원가입 제출 함수 */
-  onSubmit: () => Promise<unknown>;
+  onSubmit: () => Promise<boolean>;
 }
 
 export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) {
@@ -36,6 +36,16 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
 
   const isPasswordValid = signUpPasswordSchema.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
+
+  const handleSubmit = async () => {
+    const isSubmitted = await onSubmit();
+    if (!isSubmitted) {
+      const nextStep = isPasswordValid ? 'passwordConfirm' : 'password';
+      setStep(nextStep);
+      form.setFocus(nextStep);
+    }
+    return isSubmitted;
+  };
 
   const handleNext = () => {
     match(step)
@@ -64,13 +74,14 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
                 <Controller
                   control={control}
                   name="passwordConfirm"
-                  render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
+                  render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
                     <PasswordInput
                       ref={ref}
                       label={t('signUp.passwordConfirmLabel')}
                       placeholder={t('signUp.passwordConfirmPlaceholder')}
                       value={value}
                       onChange={onChange}
+                      onBlur={onBlur}
                       textContentType="newPassword"
                       autoComplete="new-password"
                       returnKeyType="done"
@@ -79,7 +90,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
                         default: 'password.mismatch',
                       })}
                       onSubmitEditing={() => {
-                        if (isPasswordConfirmValid) {
+                        if (isNextEnabled) {
                           handleNext();
                         }
                       }}
@@ -94,7 +105,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
             <Controller
               control={control}
               name="password"
-              render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
+              render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <PasswordInput
                     ref={ref}
@@ -102,6 +113,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
                     placeholder={t('signUp.passwordPlaceholder')}
                     value={value}
                     onChange={onChange}
+                    onBlur={onBlur}
                     textContentType="newPassword"
                     autoComplete="new-password"
                     autoFocus={step === 'password'}
@@ -114,7 +126,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
                     })}
                     renderErrorMessage={false}
                     onSubmitEditing={() => {
-                      if (isPasswordValid) {
+                      if (isNextEnabled) {
                         handleNext();
                       }
                     }}
@@ -141,7 +153,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
         form={form}
         isOpen={isTermsOpen}
         onOpenChange={setIsTermsOpen}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
       />
     </>
   );
