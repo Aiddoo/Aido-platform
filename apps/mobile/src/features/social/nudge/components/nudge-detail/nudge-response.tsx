@@ -23,13 +23,13 @@ import { match, P } from 'ts-pattern';
 
 import { NUDGE_REPLY_LABEL_KEYS } from '../../constants/nudge-labels';
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { useNudgeParams } from '../../hooks/use-nudge-params';
+import { useNudgeId } from '../../hooks/use-nudge-params';
 import { useReplyToNudgeMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 import { ThanksSummaryRow } from '../nudge-interactions/thanks-summary-row';
 
 export function NudgeResponse() {
-  const nudgeId = useNudgeParams();
+  const [nudgeId] = useNudgeId();
   const { t } = useTranslation('todo');
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
@@ -73,7 +73,7 @@ export function NudgeResponse() {
 }
 
 function ReplyPanel({ selectedKind }: { selectedKind: NudgeReplyKind | null }) {
-  const nudgeId = useNudgeParams();
+  const [nudgeId] = useNudgeId();
   const { t } = useTranslation('todo');
   const reply = useMutation(useReplyToNudgeMutationOptions());
 

@@ -2,6 +2,7 @@ import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -18,12 +19,12 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
-import { useRemindNudgeParams } from '../hooks/use-remind-nudge-params';
 import {
   useSendRemindNudgeMutationOptions,
   useSendTodoNudgeMutationOptions,
 } from '../queries/nudge.mutations';
 import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
+import { remindNudgeParamsSchema } from '../schemas/nudge-params.schema';
 
 export interface NudgeReceiver {
   id: string;
@@ -80,7 +81,7 @@ export function RemindNudgeBottomSheet({
 
 /** route(`/users/[userId]/nudge`)로 띄운 독촉 콕 시트. 받는 사람은 route에서 읽는다 */
 RemindNudgeBottomSheet.Route = function Route() {
-  const { userId, name } = useRemindNudgeParams();
+  const [{ userId, name }] = useRouteParams(remindNudgeParamsSchema);
   const sheet = useSheetRoute('/feed');
 
   return (

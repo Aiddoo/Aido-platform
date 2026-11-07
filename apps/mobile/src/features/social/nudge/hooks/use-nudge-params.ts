@@ -1,8 +1,10 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 
 import { nudgeParamsSchema } from '../schemas/nudge-params.schema';
 
-/** 콕 상세 route의 nudgeId. 읽기만 하는 값 하나라 값 그대로 돌려준다 */
-export function useNudgeParams() {
-  return nudgeParamsSchema.parse(useLocalSearchParams()).nudgeId;
+/** `/nudges/[nudgeId]` 경로의 콕. 잘못된 값은 route가 먼저 돌려보낸다 */
+export function useNudgeId() {
+  const [{ nudgeId }] = useRouteParams(nudgeParamsSchema);
+
+  return [nudgeId] as const;
 }
