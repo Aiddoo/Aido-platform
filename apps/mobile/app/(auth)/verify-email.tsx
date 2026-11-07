@@ -1,5 +1,5 @@
 import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
-import { useVerifyEmailParams } from '@src/features/identity/auth/hooks/use-verify-email-params';
+import { useVerifyEmailParam } from '@src/features/identity/auth/hooks/use-verify-email-param';
 import {
   useResendVerificationMutationOptions,
   useVerifyEmailMutationOptions,
@@ -13,7 +13,7 @@ import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 /** 로그인 중 미인증(EMAIL_0503) 계정이 이메일 인증을 마치는 화면 */
 function VerifyEmailScreen() {
   const { t } = useTranslation('auth');
-  const { email } = useVerifyEmailParams();
+  const email = useVerifyEmailParam();
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
 

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useMemoParams } from '@src/features/notes/memo/hooks/use-memo-params';
+import { useMemoParam } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
 import { memoParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
@@ -32,7 +32,7 @@ function AiReviewScreen() {
   const navigate = useSingleTap(router.navigate);
   const toast = useAppToast();
   const refreshMemos = useRefreshMemos();
-  const { memoId } = useMemoParams();
+  const memoId = useMemoParam();
   const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
       useGetMemoQueryOptions({ memoId }),
