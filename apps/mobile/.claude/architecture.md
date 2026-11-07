@@ -171,6 +171,8 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                   |
 | 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                     |
 | 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                 |
+| 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                    |
+| 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                   |
 
 **이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`)만 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
 

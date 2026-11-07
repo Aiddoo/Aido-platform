@@ -268,6 +268,10 @@ test('공용 renderUi로 그리는 댓글 컴포넌트 테스트는 허용한다
         import { renderUi } from '@src/shared/__tests__/render-ui';
         test('답글을 올려도 숨기기를 보이지 않는다', async () => {});
       `,
+      'apps/mobile/src/features/engagement/comment/components/todo-comment-list.test.tsx': `
+        import { createHttpClientStub, renderUi } from '@src/shared/__tests__';
+        test('목록을 그린다', async () => {});
+      `,
     },
     (errors) => {
       assert.deepEqual(errors, []);
@@ -1223,6 +1227,116 @@ test('shared/ui 밖에서는 공용 부품과 같은 이름을 heroui-native에�
     (errors) => {
       assert.equal(errors.length, 1);
       assert.match(errors[0], /bad\.tsx/u);
+    },
+  );
+});
+
+test('범위 비교는 min <= x && x <= max 순서만 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/utils/ok.ts': `
+        export function ok(x: number, y: number, min: number, max: number, isOn: boolean) {
+          return [
+            min <= x && x <= max,
+            min < x && x < max,
+            isOn && min <= x && x <= max,
+            x >= min && y <= max,
+            x < min && x < max,
+            x >= 0 && y <= 0,
+            0 <= x && 0 >= y,
+            x > 0 && max >= x,
+          ];
+        }
+      `,
+      'apps/mobile/src/features/weather/utils/bad.ts': `
+        export function bad(x: number, min: number, max: number, isOn: boolean) {
+          return [
+            x >= min && x <= max,
+            x <= max && x >= min,
+            x > min && x < max,
+            isOn && x >= min && x <= max,
+            max >= x && min <= x,
+          ];
+        }
+      `,
+      'apps/mobile/app/(app)/bad-screen.tsx': `
+        export default function BadScreen({ hour }: { hour: number }) {
+          return hour >= 6 && hour <= 18 ? null : null;
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 6);
+      assert.ok(errors.every((error) => /bad(?:-screen)?\.tsx?:/u.test(error)));
+      assert.match(errors[0], /min <= x && x <= max/u);
+    },
+  );
+});
+
+test('부정과 허용을 묻는 판별 이름을 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/domains/bad.model.ts': `
+        function isNotExpired() { return true; }
+        const hasNoItems = false;
+        const isEligible = true;
+        const isPlanAllowed = true;
+        interface Options { isUserEligible: boolean; hasNoAccess(): boolean }
+        export const flags = { isNotReady: () => false, isAllowed: true };
+      `,
+    },
+    (errors) => {
+      const names = errors.map((error) => /(?:\d+:\d+) (\w+):/u.exec(error)?.[1]);
+      assert.deepEqual(names, [
+        'isNotExpired',
+        'hasNoItems',
+        'isEligible',
+        'isPlanAllowed',
+        'isUserEligible',
+        'hasNoAccess',
+        'isNotReady',
+        'isAllowed',
+      ]);
+    },
+  );
+});
+
+test('라이브러리와 서버 계약 이름, OS 상태 isNotDetermined, 비슷한 긍정 이름은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/domains/ok.model.ts': `
+        import { isNotNil } from 'es-toolkit';
+        export function isNotDetermined() { return false; }
+        const canUseFeature = true;
+        const isNotice = true;
+        const hasNotes = true;
+        const hasNothing = false;
+        const { isNotModified, isAllowed } = response;
+        export const OkPolicy = { isNotDetermined, canUseFeature, isNotice, hasNotes, hasNothing };
+        export const values = [isNotNil, response.isEligible, isNotModified, isAllowed];
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('댓글 model 테스트는 공용 도구 index에서도 renderUi를 가져오지 못한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/engagement/comment/domains/todo-comment.model.test.ts': `
+        import { renderUi } from '@src/shared/__tests__';
+        test('policy를 계산한다', () => {});
+      `,
+      'apps/mobile/src/features/engagement/comment/domains/todo-comment.error.test.ts': `
+        import { createLoggerStub } from '@src/shared/__tests__';
+        test('오류를 분류한다', () => {});
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /todo-comment\.model\.test\.ts/u);
     },
   );
 });

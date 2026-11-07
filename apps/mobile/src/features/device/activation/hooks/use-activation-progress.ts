@@ -54,7 +54,7 @@ export function useActivationChecklist() {
   // React Compiler가 인자 없는 new Date()를 렌더 사이에 붙잡아 두므로, 날짜가 바뀔 때 다시 읽는다
   const todayKey = useTodayKey();
   const now = useMemo(() => getNowInstant(), [todayKey]);
-  const isEligible =
+  const shouldOfferChecklist =
     activation.isReady &&
     ActivationPolicy.shouldOfferChecklist({
       config: activation.config,
@@ -65,7 +65,7 @@ export function useActivationChecklist() {
   // 재설치·다른 기기에서도 같은 진행을 보이도록 서버의 할 일 기록을 함께 본다. 대상 사용자에게만 부른다
   const todoExistenceQuery = useQuery({
     ...useGetTodoExistenceQueryOptions(),
-    enabled: isEligible,
+    enabled: shouldOfferChecklist,
     throwOnError: false,
   });
   const steps = ActivationPolicy.getChecklistSteps(activation.progress, todoExistenceQuery.data);
@@ -76,7 +76,7 @@ export function useActivationChecklist() {
   return {
     steps,
     isVisible:
-      isEligible &&
+      shouldOfferChecklist &&
       hasSettledTodoExistence &&
       ActivationPolicy.shouldShowChecklist({
         config: activation.config,

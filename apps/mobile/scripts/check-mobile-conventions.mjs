@@ -53,6 +53,7 @@ const TODO_COMMENT_TEST_ROOTS = [
 // 화면 동작 회귀(답글 아래 줄처럼 여러 Provider가 함께 정하는 것)만 공용 renderUi + 포트 stub으로 컴포넌트 옆에서 확인한다.
 const TODO_COMMENT_COMPONENT_TEST_ROOT = `${TODO_COMMENT_ROOT}/components/`;
 const RENDER_UI_MODULE = '@src/shared/__tests__/render-ui';
+const TEST_TOOLS_MODULE = '@src/shared/__tests__';
 const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
   '@src/shared/ui',
@@ -660,12 +661,19 @@ function checkTodoCheckboxProps(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
-function importsModule(sourceFile, moduleName) {
-  return sourceFile.statements.some(
-    (statement) =>
-      ts.isImportDeclaration(statement) &&
-      ts.isStringLiteral(statement.moduleSpecifier) &&
-      statement.moduleSpecifier.text === moduleName,
+function isRenderUiImport(statement) {
+  if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+    return false;
+  }
+  if (statement.moduleSpecifier.text === RENDER_UI_MODULE) {
+    return true;
+  }
+  const namedBindings = statement.importClause?.namedBindings;
+  return (
+    statement.moduleSpecifier.text === TEST_TOOLS_MODULE &&
+    namedBindings !== undefined &&
+    ts.isNamedImports(namedBindings) &&
+    namedBindings.elements.some((element) => element.name.text.startsWith('renderUi'))
   );
 }
 
@@ -679,7 +687,7 @@ function checkTodoCommentTestLocation(sourceFile, repositoryRoot, errors) {
   }
   if (
     relativePath.startsWith(TODO_COMMENT_COMPONENT_TEST_ROOT) &&
-    importsModule(sourceFile, RENDER_UI_MODULE)
+    sourceFile.statements.some(isRenderUiImport)
   ) {
     return;
   }
@@ -722,7 +730,7 @@ function checkTestQueryClientFactory(sourceFile, repositoryRoot, errors) {
       node.expression.text === 'QueryClient'
     ) {
       errors.push(
-        `${getLocation(sourceFile, node, repositoryRoot)} 테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__/query-client의 createTestQueryClient를 쓰세요.`,
+        `${getLocation(sourceFile, node, repositoryRoot)} 테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__의 createTestQueryClient를 쓰세요.`,
       );
     }
     ts.forEachChild(node, visit);
@@ -743,7 +751,7 @@ function checkTodoCommentTestPurity(sourceFile, repositoryRoot, errors) {
     (statement) =>
       ts.isImportDeclaration(statement) &&
       ts.isStringLiteral(statement.moduleSpecifier) &&
-      isTodoCommentUiTestModule(statement.moduleSpecifier.text),
+      (isTodoCommentUiTestModule(statement.moduleSpecifier.text) || isRenderUiImport(statement)),
   );
   if (!relativePath.endsWith('x') && uiImport === undefined) {
     return;
@@ -898,14 +906,9 @@ function checkOwnFeatureAbsoluteImports(sourceFile, repositoryRoot, errors) {
   }
 }
 
-// 다음 묶음이 지울 임시 목록이다. 코드 판별이 아니라 서버 응답인지만 가르는 곳이어서,
-// 이름 있는 판별로 옮기면 어떤 오류를 알릴지가 함께 정해져 통합에서 고치지 않았다.
-const PENDING_SERVER_ERROR_READING_PATHS = new Set([]);
-
 function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName);
   if (
-    PENDING_SERVER_ERROR_READING_PATHS.has(relativePath) ||
     !relativePath.startsWith('apps/mobile/src/features/') ||
     relativePath.endsWith('.error.ts') ||
     isTestSource(relativePath)
@@ -928,10 +931,6 @@ function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
   }
   visit(sourceFile);
 }
-
-// 다음 묶음이 지울 임시 목록이다. 카드 모양을 직접 그려 Card로 바꾸면 화면이 달라질 수 있어
-// 기기 확인 없이 고치지 않았다.
-const PENDING_CARD_NAME_PATHS = new Set([]);
 
 // 공용 부품 이름(Avatar, BottomSheet, Button, Input, Text, TextArea)은 앱 안에서 하나의 뜻만 갖는다.
 // shared/ui가 heroui-native 원본을 감싸므로, 그 밖에서 같은 이름을 heroui-native에서 가져오면 막는다.
@@ -976,7 +975,6 @@ function checkHerouiSharedNameImports(sourceFile, repositoryRoot, errors) {
 function checkCardComponentUsesCard(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName);
   if (
-    PENDING_CARD_NAME_PATHS.has(relativePath) ||
     !/^apps\/mobile\/src\/(?:features|shared\/ui)\/.+-card\.tsx$/u.test(relativePath) ||
     isTestSource(relativePath)
   ) {
@@ -1273,6 +1271,127 @@ const HERMES_MISSING_METHODS = new Map([
   ['toSorted', 'es-toolkit의 sortBy'],
   ['fromAsync', 'for await'],
 ]);
+
+// 수직선 순서로 읽히게 범위 비교는 `min <= x && x <= max`로 쓴다.
+const LOWER_THAN_OPERATORS = new Set([
+  ts.SyntaxKind.LessThanToken,
+  ts.SyntaxKind.LessThanEqualsToken,
+]);
+const GREATER_THAN_OPERATORS = new Set([
+  ts.SyntaxKind.GreaterThanToken,
+  ts.SyntaxKind.GreaterThanEqualsToken,
+]);
+
+function isOrderComparison(node) {
+  return (
+    ts.isBinaryExpression(node) &&
+    (LOWER_THAN_OPERATORS.has(node.operatorToken.kind) ||
+      GREATER_THAN_OPERATORS.has(node.operatorToken.kind))
+  );
+}
+
+function getAndOperands(node) {
+  if (ts.isParenthesizedExpression(node)) {
+    return getAndOperands(node.expression);
+  }
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+  ) {
+    return [...getAndOperands(node.left), ...getAndOperands(node.right)];
+  }
+  return [node];
+}
+
+function isBoundOnRight(comparison) {
+  return LOWER_THAN_OPERATORS.has(comparison.operatorToken.kind);
+}
+
+function isRangeInWrongOrder(sourceFile, first, second) {
+  if (isBoundOnRight(first) === isBoundOnRight(second)) {
+    return false;
+  }
+  // `x >= a && x <= b`, `x <= b && x >= a`: 같은 값을 왼쪽에 두고 양쪽 경계를 잰다
+  if (first.left.getText(sourceFile) === second.left.getText(sourceFile)) {
+    return !ts.isNumericLiteral(first.left);
+  }
+  // `b >= x && a <= x`: 같은 값을 오른쪽에 두고 양쪽 경계를 잰다
+  return (
+    first.right.getText(sourceFile) === second.right.getText(sourceFile) &&
+    !ts.isNumericLiteral(first.right)
+  );
+}
+
+function checkRangeComparisonOrder(sourceFile, repositoryRoot, errors) {
+  function visit(node) {
+    const isAndChainRoot =
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
+      !(
+        ts.isBinaryExpression(node.parent) &&
+        node.parent.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+      );
+    if (isAndChainRoot) {
+      const operands = getAndOperands(node);
+      for (const [index, operand] of operands.entries()) {
+        const next = operands[index + 1];
+        if (
+          next !== undefined &&
+          isOrderComparison(operand) &&
+          isOrderComparison(next) &&
+          isRangeInWrongOrder(sourceFile, operand, next)
+        ) {
+          errors.push(
+            `${getLocation(sourceFile, operand, repositoryRoot)} 범위 비교는 왼쪽에서 오른쪽으로 읽히게 \`min <= x && x <= max\`로 쓰세요.`,
+          );
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
+// 판별 이름은 긍정으로 짓고 허용을 묻는 판별은 can*으로 쓴다(.claude/architecture.md의 이름 절).
+// 호출부가 `!`를 붙일지 헷갈리게 하는 이름을 막는다. 가져온 이름과 구조 분해는 라이브러리와
+// 서버 계약이 정한 이름이라 선언만 검사한다.
+const FORBIDDEN_PREDICATE_NAME = /^(?:isNot[A-Z]|hasNo[A-Z]|is(?:[A-Z]\w*)?(?:Allowed|Eligible)$)/u;
+// OS 권한 상태의 이름 그대로다
+const OS_STATE_PREDICATE_NAMES = new Set(['isNotDetermined']);
+
+function getDeclaredName(node) {
+  const isNamedDeclaration =
+    ts.isFunctionDeclaration(node) ||
+    ts.isVariableDeclaration(node) ||
+    ts.isParameter(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isMethodSignature(node) ||
+    ts.isPropertySignature(node) ||
+    ts.isPropertyDeclaration(node) ||
+    ts.isPropertyAssignment(node);
+  return isNamedDeclaration && node.name !== undefined && ts.isIdentifier(node.name)
+    ? node.name
+    : null;
+}
+
+function checkPredicateNames(sourceFile, repositoryRoot, errors) {
+  function visit(node) {
+    const name = getDeclaredName(node);
+    if (
+      name != null &&
+      FORBIDDEN_PREDICATE_NAME.test(name.text) &&
+      !OS_STATE_PREDICATE_NAMES.has(name.text)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, name, repositoryRoot)} ${name.text}: 판별 이름은 긍정으로 짓고(isNot*, hasNo* 금지), 허용을 묻는 판별은 can*으로 쓰세요(is*Allowed, is*Eligible 금지). 값이 뒤집히면 호출부를 하나씩 확인하세요.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
 
 function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
   function visit(node) {
@@ -1932,6 +2051,8 @@ export function checkMobileConventions(
     checkJestModuleMocks(sourceFile, repositoryRoot, errors);
     checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors);
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);
+    checkRangeComparisonOrder(sourceFile, repositoryRoot, errors);
+    checkPredicateNames(sourceFile, repositoryRoot, errors);
   }
 
   applyAllowlist(collectArchitectureFindings(repositoryRoot, errors), allowlist, errors);

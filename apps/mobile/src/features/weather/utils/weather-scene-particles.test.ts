@@ -43,7 +43,7 @@ describe('날씨 장면 난수', () => {
     // Then
     expect(rain).toHaveLength(count * PARTICLE_SEED_STRIDE);
     expect(rain).not.toEqual(snow);
-    expect([...(rain ?? []), ...(snow ?? [])].every((value) => value >= 0 && value < 1)).toBe(true);
+    expect([...(rain ?? []), ...(snow ?? [])].every((value) => 0 <= value && value < 1)).toBe(true);
   });
 
   test('화면 밖으로 나간 위치는 반대편으로 감싼다', () => {
@@ -143,7 +143,7 @@ describe('번개', () => {
     const starts = flashStarts(times);
 
     // Then
-    expect(intensities.every((value) => value >= 0 && value <= 1)).toBe(true);
+    expect(intensities.every((value) => 0 <= value && value <= 1)).toBe(true);
     expect(starts.length).toBeGreaterThan(20);
     expect(intensities.filter((value) => value > 0).length / intensities.length).toBeLessThan(0.1);
   });
@@ -155,7 +155,7 @@ describe('번개', () => {
     // When
     const maxFlashesPerSecond = Math.max(
       ...starts.map(
-        (start) => starts.filter((other) => other >= start && other < start + 1).length,
+        (start) => starts.filter((other) => start <= other && other < start + 1).length,
       ),
     );
 

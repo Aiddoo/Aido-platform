@@ -10,12 +10,12 @@ describe('isLocationNotRegisteredError', () => {
     const other = new ApiError('SYS_0001', '오류', 400);
 
     // When
-    const isNotRegistered = isLocationNotRegisteredError(notRegistered);
-    const isOtherNotRegistered = isLocationNotRegisteredError(other);
+    const isRegistrationMissing = isLocationNotRegisteredError(notRegistered);
+    const isOtherRegistrationMissing = isLocationNotRegisteredError(other);
 
     // Then
-    expect(isNotRegistered).toBe(true);
-    expect(isOtherNotRegistered).toBe(false);
+    expect(isRegistrationMissing).toBe(true);
+    expect(isOtherRegistrationMissing).toBe(false);
   });
 });
 
