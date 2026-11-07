@@ -77,7 +77,7 @@ export function createLocalFileSystemFake(): LocalFileSystemFake {
       ];
     },
     findFileUri: (directory, name) =>
-      directories.get(toKey(directory))?.has(name) === true ? toUri(directory, name) : undefined,
+      directories.get(toKey(directory))?.has(name) === true ? toUri(directory, name) : null,
     moveFile: async (sourceUri, directory, name) => {
       if (pendingMoveError != null) {
         const error = pendingMoveError;

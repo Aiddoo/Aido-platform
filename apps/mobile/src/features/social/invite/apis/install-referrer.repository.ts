@@ -17,6 +17,6 @@ export function createInstallReferrerRepository(
   return {
     hasChecked: () => storage.get(INSTALL_REFERRER_CHECKED_KEY) != null,
     markChecked: () => storage.set(INSTALL_REFERRER_CHECKED_KEY, '1'),
-    read: () => gateway.read(),
+    read: () => gateway.get(),
   };
 }

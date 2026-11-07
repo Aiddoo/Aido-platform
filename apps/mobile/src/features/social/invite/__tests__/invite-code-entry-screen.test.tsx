@@ -30,7 +30,7 @@ function createInviteService() {
     authHttpClient: createHttpClientStub(),
     pendingRedemptionRepository: createPendingRedemptionRepository(storage),
     installReferrerRepository: createInstallReferrerRepository(storage, {
-      read: () => Promise.resolve(null),
+      get: () => Promise.resolve(null),
     }),
     installationIdGateway: { get: () => Promise.resolve(null) },
     logger: { warn: () => undefined },

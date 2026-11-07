@@ -16,7 +16,7 @@ export interface LocalFileSystem {
   ensureDirectory(directory: readonly string[]): string;
   listFiles(directory: readonly string[]): readonly LocalFileEntry[];
   listDirectoryNames(directory: readonly string[]): readonly string[];
-  findFileUri(directory: readonly string[], name: string): string | undefined;
+  findFileUri(directory: readonly string[], name: string): string | null;
   /** 같은 이름이 있으면 덮어쓰고 새 URI를 돌려준다 */
   moveFile(sourceUri: string, directory: readonly string[], name: string): Promise<string>;
   removeFile(directory: readonly string[], name: string): void;

@@ -26,7 +26,7 @@ export function createStubInviteService({
     authHttpClient,
     pendingRedemptionRepository: createPendingRedemptionRepository(storage),
     installReferrerRepository: createInstallReferrerRepository(storage, {
-      read: async () => null,
+      get: async () => null,
     }),
     installationIdGateway: { get: async () => null },
     logger: createLoggerStub(),

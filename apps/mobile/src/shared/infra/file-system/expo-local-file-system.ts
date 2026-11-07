@@ -47,7 +47,7 @@ export const expoLocalFileSystem: LocalFileSystem = {
 
   findFileUri: (directory, name) => {
     const file = new File(openDirectory(directory), name);
-    return file.exists ? file.uri : undefined;
+    return file.exists ? file.uri : null;
   },
 
   moveFile: async (sourceUri, directory, name) => {

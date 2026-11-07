@@ -5,7 +5,7 @@ import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 /** 값을 읽을 수 없는 기기가 기본값이다 */
 export function createInstallReferrerGatewayStub(): jest.Mocked<InstallReferrerGateway> {
   return {
-    read: jest.fn(async () => null),
+    get: jest.fn(async () => null),
   };
 }
 

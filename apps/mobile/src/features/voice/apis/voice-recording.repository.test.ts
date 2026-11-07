@@ -30,7 +30,7 @@ describe('VoiceRecordingRepository', () => {
 
     // Then
     expect(fileName).toBe('draft-1-0.wav');
-    expect(repository.findUri('user-1', 'draft-1-0.wav')).toBeDefined();
+    expect(repository.findUri('user-1', 'draft-1-0.wav')).not.toBeNull();
     expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
   });
 

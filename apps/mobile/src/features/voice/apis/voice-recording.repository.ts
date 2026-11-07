@@ -22,7 +22,7 @@ export interface VoiceRecordingRepository {
   prepareDirectory(accountId: string): string | null;
   /** 인식기가 쓴 파일을 초안 이름으로 옮기고 파일 이름을 돌려준다. 실패하면 null이다 */
   save(input: SaveRecordingInput): Promise<string | null>;
-  findUri(accountId: string, fileName: string): string | undefined;
+  findUri(accountId: string, fileName: string): string | null;
   remove(accountId: string, fileName: string): void;
   /** 초안으로 옮기기 전의 파일을 지운다. 이미 지운 초안의 늦은 파일이 정리 때까지 남지 않게 한다 */
   removeSource(sourceUri: string): void;
@@ -103,7 +103,7 @@ export function createVoiceRecordingRepository(
         logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),
         });
-        return undefined;
+        return null;
       }
     },
 
