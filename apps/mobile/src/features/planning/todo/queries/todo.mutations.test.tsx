@@ -1,207 +1,246 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderHook } from '@testing-library/react-native';
+import '@src/shared/i18n/init';
+import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
+import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import {
+  createAnalyticsStub,
+  createErrorReporterStub,
+  createHttpClientStub,
+  createMemorySyncStorage,
+  createPendingResponse,
+} from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { err, ok } from '@src/shared/errors/result';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { useMutation } from '@tanstack/react-query';
+import { act } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import type { Todo } from '../schemas/todo.schema';
+import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import type { Todo, TodoListResult } from '../schemas/todo.schema';
 import { useToggleTodoMutationOptions } from './todo.mutations';
 
 const TODAY = '2026-10-27';
 const YESTERDAY = '2026-10-26';
-const mockRecordActiveDay = jest.fn();
-const mockRequestReviewAt = jest.fn();
-const mockRecordTodoCompletionForActivation = jest.fn();
-const mockTrackEvent = jest.fn();
-const mockQueryClient = {
-  cancelQueries: jest.fn(),
-  getQueryData: jest.fn(),
-  setQueryData: jest.fn(),
-  setQueriesData: jest.fn(),
-  invalidateQueries: jest.fn(),
-  isMutating: jest.fn(),
-};
+const DEVICE_CALENDAR = { timeZone: 'Asia/Seoul' };
 
-jest.mock('@src/bootstrap/providers/di-context', () => ({
-  useHaptics: () => ({ selection: jest.fn(), impact: jest.fn(), notify: jest.fn() }),
-  useTodoService: () => ({ toggleTodoComplete: jest.fn() }),
-  useActivationService: () => ({ recordTodoCompletion: jest.fn() }),
-}));
+beforeEach(() => {
+  jest.useFakeTimers({ now: new Date('2026-10-27T03:00:00.000Z'), doNotFake: ['nextTick'] });
+});
 
-jest.mock('@src/features/device/activation/queries/activation-cache', () => ({
-  recordTodoCompletionForActivation: (...args: unknown[]) =>
-    mockRecordTodoCompletionForActivation(...args),
-}));
+afterEach(() => {
+  jest.useRealTimers();
+});
 
-jest.mock('@src/shared/analytics', () => ({
-  useTrack: () => ({ trackEvent: mockTrackEvent }),
-}));
-
-jest.mock('@src/shared/hooks/use-today', () => ({
-  useTodayKey: () => TODAY,
-}));
-
-jest.mock('@tanstack/react-query', () => ({
-  ...jest.requireActual('@tanstack/react-query'),
-  mutationOptions: (options: unknown) => options,
-  useQueryClient: () => mockQueryClient,
-}));
-
-jest.mock('@src/features/device/store-review/hooks/use-store-review-moment', () => ({
-  useStoreReviewMoment: () => ({
-    recordActiveDay: mockRecordActiveDay,
-    requestReviewAt: mockRequestReviewAt,
-  }),
-}));
-
-const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
-
-const givenTodayTodos = (todos: Todo[]) => {
-  mockQueryClient.getQueryData.mockReturnValue({ todos, hasNext: false, nextCursor: null });
-};
-
-const completeTodo = async (todoId: number, completed = true, date = TODAY) => {
-  const { result } = await renderHook(() => useToggleTodoMutationOptions());
-  await result.current.onSuccess?.(
-    createParentTodo({ id: todoId }),
-    { todoId, body: { completed }, date },
-    undefined,
-    MUTATION_CONTEXT,
+async function renderToggle() {
+  const httpClient = createHttpClientStub();
+  const storeReviewService = new StoreReviewService(
+    createStoreReviewRepository(createMemorySyncStorage()),
+    { isAvailable: async () => false, requestReview: async () => undefined },
   );
-};
+  const recordActiveDay = jest.spyOn(storeReviewService, 'recordActiveDay');
+  const requestReviewAt = jest.spyOn(storeReviewService, 'requestReviewAt');
+  const current: { value: ReturnType<typeof useToggle> | null } = { value: null };
+
+  function useToggle() {
+    return useMutation(useToggleTodoMutationOptions());
+  }
+
+  function Probe() {
+    current.value = useToggle();
+    return null;
+  }
+
+  const { queryClient } = await renderUi(
+    <LocalDateProvider useDeviceCalendar={() => DEVICE_CALENDAR}>
+      <Probe />
+    </LocalDateProvider>,
+    {
+      di: {
+        ...createTestDi({ httpClient }),
+        analytics: createAnalyticsStub(),
+        errorReporter: createErrorReporterStub(),
+        activationService: new ActivationService(
+          createActivationProgressRepository(createMemorySyncStorage()),
+        ),
+        storeReviewService,
+      },
+    },
+  );
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+  const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+
+  const toggle = async (todoId: number, completed: boolean, date: string) => {
+    if (current.value == null) {
+      throw new Error('Probe가 렌더되지 않았다');
+    }
+    const toggled = current.value;
+    await act(async () => {
+      await toggled.mutateAsync({ todoId, body: { completed }, date }).catch(() => undefined);
+    });
+  };
+  const startToggle = async (todoId: number, completed: boolean, date: string) => {
+    if (current.value == null) {
+      throw new Error('Probe가 렌더되지 않았다');
+    }
+    const toggled = current.value;
+    await act(async () => {
+      toggled.mutate({ todoId, body: { completed }, date });
+    });
+  };
+  const givenList = (date: string, todos: Todo[]) =>
+    queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date }), toList(todos));
+  const invalidatedKeys = () => invalidateQueries.mock.calls.map(([filters]) => filters?.queryKey);
+
+  return {
+    httpClient,
+    queryClient,
+    recordActiveDay,
+    requestReviewAt,
+    toggle,
+    startToggle,
+    givenList,
+    invalidatedKeys,
+    clearCalls: () => {
+      recordActiveDay.mockClear();
+      requestReviewAt.mockClear();
+      invalidateQueries.mockClear();
+    },
+  };
+}
+
+const toList = (todos: Todo[]): TodoListResult => ({ todos, hasNext: false, nextCursor: null });
+const respondWithTodo = (id: number) => ok({ message: 'ok', todo: createTodoDto({ id }) });
 
 describe('useToggleTodoMutationOptions store review wiring', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockRecordTodoCompletionForActivation.mockReturnValue(null);
-  });
-
   it('오늘의 마지막 할 일을 끝낸 순간 끝낸 날을 남기고 리뷰 순간을 알린다', async () => {
-    // Given 낙관적 갱신으로 오늘 목록이 모두 완료로 보인다
-    givenTodayTodos([
+    // Given
+    const { httpClient, givenList, toggle, recordActiveDay, requestReviewAt } =
+      await renderToggle();
+    givenList(TODAY, [
       createParentTodo({ id: 41, completed: true }),
-      createParentTodo({ id: 42, completed: true }),
+      createParentTodo({ id: 42, completed: false }),
     ]);
+    httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
     // When
-    await completeTodo(42);
+    await toggle(42, true, TODAY);
 
     // Then
-    expect(mockRecordActiveDay).toHaveBeenCalledTimes(1);
-    expect(mockRequestReviewAt).toHaveBeenCalledWith('all_todos_done');
+    expect(recordActiveDay).toHaveBeenCalledWith('account-1', TODAY);
+    expect(requestReviewAt).toHaveBeenCalledWith(
+      { accountId: 'account-1', moment: 'all_todos_done' },
+      expect.any(Function),
+    );
   });
 
-  it('어제 목록에서 여러 날 할 일을 끝내 오늘 할 일이 모두 끝나면 리뷰 순간을 알리고 남은 할 일이 있으면 알리지 않는다', async () => {
+  it('어제 목록에서 여러 날 할 일을 끝내 오늘 할 일이 모두 끝나면 리뷰 순간을 알린다', async () => {
     // Given 낙관적 갱신은 보고 있는 어제 목록에만 반영돼 오늘 목록에는 아직 미완료다
+    const { httpClient, givenList, toggle, requestReviewAt } = await renderToggle();
     const multiDay = createParentTodo({
       id: 7,
       startDate: YESTERDAY,
       endDate: TODAY,
       completed: false,
     });
-    givenTodayTodos([createParentTodo({ id: 41, completed: true }), multiDay]);
+    givenList(YESTERDAY, [multiDay]);
+    givenList(TODAY, [createParentTodo({ id: 41, completed: true }), multiDay]);
+    httpClient.patch.mockResolvedValue(respondWithTodo(7));
 
     // When
-    await completeTodo(7, true, YESTERDAY);
+    await toggle(7, true, YESTERDAY);
 
     // Then
-    expect(mockRequestReviewAt).toHaveBeenCalledWith('all_todos_done');
-
-    // Given 오늘 남은 할 일이 하나 더 있다
-    jest.clearAllMocks();
-    givenTodayTodos([createParentTodo({ id: 41, completed: false }), multiDay]);
-
-    // When
-    await completeTodo(7, true, YESTERDAY);
-
-    // Then
-    expect(mockRequestReviewAt).not.toHaveBeenCalled();
+    expect(requestReviewAt).toHaveBeenCalledTimes(1);
   });
 
-  it('남은 할 일이 있으면 끝낸 날만 남기고 리뷰 순간은 알리지 않는다', async () => {
+  it('오늘 남은 할 일이 있으면 어제 목록의 여러 날 할 일을 끝내도 리뷰 순간을 알리지 않는다', async () => {
     // Given
-    givenTodayTodos([
-      createParentTodo({ id: 41, completed: false }),
-      createParentTodo({ id: 42, completed: true }),
-    ]);
+    const { httpClient, givenList, toggle, recordActiveDay, requestReviewAt } =
+      await renderToggle();
+    const multiDay = createParentTodo({
+      id: 7,
+      startDate: YESTERDAY,
+      endDate: TODAY,
+      completed: false,
+    });
+    givenList(YESTERDAY, [multiDay]);
+    givenList(TODAY, [createParentTodo({ id: 41, completed: false }), multiDay]);
+    httpClient.patch.mockResolvedValue(respondWithTodo(7));
 
     // When
-    await completeTodo(42);
+    await toggle(7, true, YESTERDAY);
 
     // Then
-    expect(mockRecordActiveDay).toHaveBeenCalledTimes(1);
-    expect(mockRequestReviewAt).not.toHaveBeenCalled();
+    expect(recordActiveDay).toHaveBeenCalledTimes(1);
+    expect(requestReviewAt).not.toHaveBeenCalled();
   });
 
   it('미완료로 되돌리거나 요청이 실패하면 아무것도 남기지 않는다', async () => {
     // Given
-    givenTodayTodos([createParentTodo({ id: 42, completed: false })]);
-    const { result } = await renderHook(() => useToggleTodoMutationOptions());
+    const { httpClient, givenList, toggle, recordActiveDay, requestReviewAt } =
+      await renderToggle();
+    givenList(TODAY, [createParentTodo({ id: 42, completed: true })]);
+    httpClient.patch.mockResolvedValueOnce(respondWithTodo(42));
 
     // When
-    await completeTodo(42, false);
-    await result.current.onError?.(
-      new Error('request failed'),
-      { todoId: 42, body: { completed: true }, date: TODAY },
-      undefined,
-      MUTATION_CONTEXT,
-    );
+    await toggle(42, false, TODAY);
+    httpClient.patch.mockResolvedValueOnce(err(createTodoApiError()));
+    await toggle(42, true, TODAY);
 
     // Then
-    expect(mockRecordActiveDay).not.toHaveBeenCalled();
-    expect(mockRequestReviewAt).not.toHaveBeenCalled();
+    expect(recordActiveDay).not.toHaveBeenCalled();
+    expect(requestReviewAt).not.toHaveBeenCalled();
   });
 });
 
 describe('useToggleTodoMutationOptions settle', () => {
-  const settle = async (date = TODAY) => {
-    const { result } = await renderHook(() => useToggleTodoMutationOptions());
-    await result.current.onSettled?.(
-      createParentTodo({ id: 42 }),
-      null,
-      { todoId: 42, body: { completed: true }, date },
-      undefined,
-      MUTATION_CONTEXT,
-    );
-  };
-  const invalidatedKeys = () =>
-    mockQueryClient.invalidateQueries.mock.calls.map(([filters]) => filters.queryKey);
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('다른 체크가 아직 진행 중이면 목록을 다시 부르지 않아 낙관적 값이 깜빡이지 않는다', async () => {
+  it('다른 체크가 아직 진행 중이면 완료 기록을 다시 부르지 않아 낙관적 값이 깜빡이지 않는다', async () => {
     // Given
-    mockQueryClient.isMutating.mockReturnValue(2);
+    const { httpClient, givenList, toggle, startToggle, invalidatedKeys } = await renderToggle();
+    givenList(TODAY, [
+      createParentTodo({ id: 41, completed: false }),
+      createParentTodo({ id: 42, completed: false }),
+    ]);
+    const first = createPendingResponse(respondWithTodo(42));
+    httpClient.patch.mockReturnValueOnce(first.response).mockResolvedValueOnce(respondWithTodo(41));
 
     // When
-    await settle();
+    await startToggle(42, true, TODAY);
+    await toggle(41, true, TODAY);
 
     // Then
-    expect(invalidatedKeys()).not.toContainEqual(['todo', 'list']);
+    expect(invalidatedKeys()).not.toContainEqual(TODO_QUERY_KEYS.completions());
+    await act(async () => first.settle());
   });
 
   it('마지막 체크가 끝나면 목록과 완료 기록을 다시 부른다', async () => {
     // Given
-    mockQueryClient.isMutating.mockReturnValue(1);
+    const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
+    givenList(TODAY, [createParentTodo({ id: 42, completed: false })]);
+    httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
     // When
-    await settle();
+    await toggle(42, true, TODAY);
 
     // Then
     expect(invalidatedKeys()).toEqual(
-      expect.arrayContaining([
-        ['todo', 'list'],
-        ['todo', 'completion'],
-      ]),
+      expect.arrayContaining([TODO_QUERY_KEYS.lists(), TODO_QUERY_KEYS.completions()]),
     );
   });
 
   it('지난 날짜를 체크하면 그 해의 주간 달성 목록을 다시 부른다', async () => {
     // Given
-    mockQueryClient.isMutating.mockReturnValue(1);
+    const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
+    givenList(YESTERDAY, [createParentTodo({ id: 42, completed: false })]);
+    httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
     // When
-    await settle(YESTERDAY);
+    await toggle(42, true, YESTERDAY);
 
     // Then
     expect(invalidatedKeys()).toContainEqual(['achievement', 'weekly-list', { year: 2026 }]);

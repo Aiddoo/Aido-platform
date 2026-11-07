@@ -1,48 +1,47 @@
 import '@src/shared/i18n/init';
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { useUpdateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import {
-  createHapticsStub,
   createAnalyticsStub,
-  createTestDiContainer,
+  createHapticsStub,
   createHttpClientStub,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError } from '@src/shared/errors/api-error';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
-
-import { TodoService } from '../apis/todo.service';
-
-const mockToastError = jest.fn();
-
-jest.mock('@src/shared/hooks/use-app-toast', () => ({
-  useAppToast: () => ({ success: jest.fn(), error: mockToastError }),
-}));
+import { useMutation } from '@tanstack/react-query';
+import { act, screen } from '@testing-library/react-native';
 
 /** 이후 회차까지 고치는 PATCH가 거절되는 상황. 함께 보낸 칸도 저장되지 않으므로 목록을 건드리지 않는다 */
 async function updateFollowing(error: ApiError) {
-  const client = createTestQueryClient();
-  const invalidateQueries = jest.spyOn(client, 'invalidateQueries');
   const httpClient = createHttpClientStub();
   httpClient.patch.mockResolvedValue({ ok: false, error });
-  const container = createTestDiContainer({
-    todoService: new TodoService(httpClient),
-    analytics: createAnalyticsStub(),
-    haptics: createHapticsStub(),
+  const current: { value: ReturnType<typeof useUpdate> | null } = { value: null };
+
+  function useUpdate() {
+    return useMutation(useUpdateTodoMutationOptions());
+  }
+
+  function Probe() {
+    current.value = useUpdate();
+    return null;
+  }
+
+  const { queryClient } = await renderUi(<Probe />, {
+    di: {
+      ...createTestDi({ httpClient }),
+      analytics: createAnalyticsStub(),
+      haptics: createHapticsStub(),
+    },
+    withOverlay: true,
   });
-  const { result } = await renderHook(() => useUpdateTodoMutationOptions(), {
-    wrapper: ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={container}>
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-      </StaticDIProvider>
-    ),
-  });
-  const mutation = client.getMutationCache().build(client, result.current);
+  const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+  const update = current.value;
+  if (update == null) {
+    throw new Error('Probe가 렌더되지 않았다');
+  }
   await act(async () => {
-    await mutation
-      .execute({
+    await update
+      .mutateAsync({
         todoId: 1,
         input: { title: '고친 제목', categoryId: 2 },
         options: { scope: 'THIS_AND_FOLLOWING' },
@@ -66,7 +65,7 @@ describe('이후 회차까지 고치다 거절됐을 때', () => {
     ],
     [
       new ApiError('TODO_0842', '서버 문구', 403, { limit: 100, activeCount: 100 }),
-      expect.stringContaining('반복 할 일은 최대'),
+      /반복 할 일은 최대/,
       '쓰지 않는 반복을 끝내거나 삭제한 뒤 다시 추가해주세요.',
     ],
   ])('%s은 맞는 안내를 하고 목록을 다시 읽지 않는다', async (error, title, description) => {
@@ -77,7 +76,8 @@ describe('이후 회차까지 고치다 거절됐을 때', () => {
     const { invalidateQueries } = await updateFollowing(rejected);
 
     // Then
-    expect(mockToastError).toHaveBeenCalledWith(title, { description });
+    expect((await screen.findAllByText(title)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(description).length).toBeGreaterThan(0);
     expect(invalidateQueries).not.toHaveBeenCalled();
   });
 });
