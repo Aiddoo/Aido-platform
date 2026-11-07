@@ -3,6 +3,7 @@ import { createAppIconGatewayStub, createErrorReporterStub } from '@src/shared/_
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { screen } from '@testing-library/react-native';
 
 import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
 import type { AppIconKey } from '../schemas/app-icon.schema';
@@ -45,7 +46,7 @@ describe('앱 아이콘 바꾸기', () => {
     expect(cached()).toBe('cream_cat');
   });
 
-  it('네이티브가 거절하면 현재 아이콘을 그대로 두고 오류를 app_icon으로 보고한다', async () => {
+  it('네이티브가 거절하면 현재 아이콘을 그대로 두고 알린 뒤 오류를 app_icon으로 보고한다', async () => {
     // Given
     const gateway = createAppIconGatewayStub();
     const failure = new Error('아이콘 변경 거절');
@@ -59,6 +60,7 @@ describe('앱 아이콘 바꾸기', () => {
     await expect(result).rejects.toBe(failure);
     expect(cached()).toBe('default');
     expect(errorReporter.captureException).toHaveBeenCalledWith(failure, { feature: 'app_icon' });
+    expect(await screen.findAllByText(/아이콘을 변경하지 못했어요/)).not.toHaveLength(0);
   });
 });
 

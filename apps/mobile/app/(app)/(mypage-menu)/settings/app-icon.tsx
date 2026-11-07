@@ -27,12 +27,9 @@ function AppIconScreen() {
   const { data: currentIconKey, isPending: isCurrentIconPending } = useQuery(
     useGetCurrentAppIconQueryOptions(),
   );
-  const {
-    mutate: changeIcon,
-    isPending: isChanging,
-    error: changeError,
-    reset: resetChangeError,
-  } = useMutation(useChangeAppIconMutationOptions());
+  const { mutate: changeIcon, isPending: isChanging } = useMutation(
+    useChangeAppIconMutationOptions(),
+  );
   const currentIcon = currentIconKey ?? 'default';
   const isSupported = appIconService.isSupported();
   const isLoading = isSupported && isCurrentIconPending;
@@ -84,32 +81,22 @@ function AppIconScreen() {
     ))
     .with({ isSupported: true, isLoading: true }, () => <AppIconScreen.Loading />)
     .with({ isSupported: true, isLoading: false }, () => (
-      <>
-        <SettingsScreenLayout gap={8}>
-          <Text size="b4" shade={6} className="px-2">
-            {t('screen.chooseIcon')}
-          </Text>
+      <SettingsScreenLayout gap={8}>
+        <Text size="b4" shade={6} className="px-2">
+          {t('screen.chooseIcon')}
+        </Text>
 
-          <SettingsCard>
-            <SettingsCard.Content>
-              <AppIconPicker
-                value={currentIcon}
-                onChange={handleIconPress}
-                isDisabled={isChanging}
-                isLocked={(key) => isIconLocked && AppIconPolicy.requiresPremium(key)}
-              />
-            </SettingsCard.Content>
-          </SettingsCard>
-        </SettingsScreenLayout>
-        <AppIconErrorDialog
-          isOpen={changeError != null}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) {
-              resetChangeError();
-            }
-          }}
-        />
-      </>
+        <SettingsCard>
+          <SettingsCard.Content>
+            <AppIconPicker
+              value={currentIcon}
+              onChange={handleIconPress}
+              isDisabled={isChanging}
+              isLocked={(key) => isIconLocked && AppIconPolicy.requiresPremium(key)}
+            />
+          </SettingsCard.Content>
+        </SettingsCard>
+      </SettingsScreenLayout>
     ))
     .exhaustive();
 }
@@ -155,30 +142,6 @@ function AppIconRestartDialog({ isOpen, onOpenChange, onConfirm }: AppIconRestar
       confirmButton={
         <ConfirmDialog.ConfirmButton onPress={onConfirm}>
           {t('restartDialog.confirm')}
-        </ConfirmDialog.ConfirmButton>
-      }
-    />
-  );
-}
-
-interface AppIconErrorDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-function AppIconErrorDialog({ isOpen, onOpenChange }: AppIconErrorDialogProps) {
-  const { t } = useTranslation('appIcon');
-  return (
-    <ConfirmDialog
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>{t('errorDialog.title')}</ConfirmDialog.Title>}
-      description={
-        <ConfirmDialog.Description>{t('errorDialog.description')}</ConfirmDialog.Description>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={() => onOpenChange(false)}>
-          {tGlobal('common:actions.confirm')}
         </ConfirmDialog.ConfirmButton>
       }
     />
