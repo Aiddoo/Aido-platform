@@ -937,9 +937,9 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 
 - **SDK는 `shared/infra`에서만 import한다.** 한 줄짜리 호출이어도 어댑터를 거치고, 쓰는 쪽은 `use{X}` 훅으로 받는다. 다른 개발자가 헷갈리지 않게 일관성을 우선한다.
 - **예외는 두 가지뿐이다.**
-  - 라이브러리 자체가 React 훅이면 `shared/infra` 안의 경계 훅 파일 하나에서만 import한다(`expo-audio`는 `shared/infra/audio/use-audio-part-playlist.ts`, `expo-keep-awake`는 `shared/infra/keep-awake/use-keep-screen-awake.ts`).
+  - 라이브러리 자체가 React 훅이면 `shared/infra` 안의 경계 훅 파일 하나에서만 import한다(`expo-audio`는 `shared/infra/audio/use-audio-part-playlist.ts`, `expo-keep-awake`는 `shared/infra/keep-awake/use-keep-screen-awake.ts`, `expo-localization`은 `shared/infra/localization/device-locale.ts`, `useLinkingURL`은 `shared/infra/linking/use-linking-url.ts`).
   - React 밖 코드(시작 시 값, 위젯 진입점, 부트스트랩)는 DI 훅을 부를 수 없으니 `shared/infra`의 함수를 직접 import한다.
-- **`check:conventions`가 강제한다.** 규칙 전부터 있던 파일은 `SDK_IMPORT_ALLOWLIST`에 있고 출시 후 첫 스택에서 비운다. 새 위반을 더하지 않는다.
+- **`check:conventions`가 강제한다.** 예외 목록은 없다. 검사 대상이 아닌 라이브러리(`expo-router`, UI 라이브러리, 위젯 자기 조립, `expo-constants`, `expo-splash-screen`)와 이유는 `SDK_MODULES` 위 주석에 있다.
 - **포트 이름은 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setFirebaseAppInstanceId` → `setAnalyticsId`, `setString` → `copy`).
 - **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
 - **조립은 `di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
@@ -956,6 +956,9 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/mmkv-storage.ts`                        |
 | `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/mmkv-draft-storage.ts`                  |
 | `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard.gateway.ts`            |
+| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `linking/expo-linking.gateway.ts`                |
+| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `linking/expo-linking.gateway.ts`                |
+| `SystemShareGateway`      | `share`·`canShareImage`·`shareImage`                                        | `share/system-share.gateway.ts`                  |
 | `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location.gateway.ts`              |
 | `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases.gateway.ts`      |
 | `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                       | `speech/expo-speech-recognizer.gateway.ts`       |

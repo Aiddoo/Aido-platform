@@ -303,8 +303,20 @@ const STRICT_EQUALITY_OPERATORS = new Set([
   ts.SyntaxKind.ExclamationEqualsEqualsToken,
 ]);
 
-// 네이티브·외부 SDK는 shared/infra에서만 import한다(.claude/architecture.md#portadapterdi).
+// 네이티브·외부 SDK는 shared/infra에서만 import한다(.claude/architecture.md#portadapterdi). 예외 목록은 두지 않는다.
+// 이 목록에 넣지 않은 라이브러리와 이유:
+// - expo-router: 라우트 파일과 화면의 앱 뼈대다. 라우터 교체는 route 전체를 바꾸는 일이라 포트로 숨기지 않는다.
+// - UI 라이브러리(heroui-native, reanimated, gesture-handler, gorhom, expo-image, datetimepicker 등): 화면 그 자체다.
+// - expo-widgets, @expo/ui, react-native-android-widget: 위젯은 네이티브가 직접 부르는 자기 조립 진입점이다.
+// - expo-constants: 위젯 headless 진입이 scheme을 읽고 env.ts가 빌드 값을 읽는다. Provider 밖 시작 값이다.
+// - expo-splash-screen: Provider가 뜨기 전부터 쓰는 부트스트랩 전용이다.
 const SDK_MODULES = [
+  'ky',
+  'expo-auth-session',
+  'expo-quick-actions',
+  'expo-store-review',
+  '@react-native-kakao/core',
+  '@react-native-kakao/share',
   'expo-linking',
   'expo-application',
   'expo-device',
@@ -331,12 +343,6 @@ const SDK_MODULES = [
   '@react-native-firebase/analytics',
 ];
 const SDK_INFRA_ROOT = 'apps/mobile/src/shared/infra/';
-// 규칙을 넣기 전부터 있던 위반. 출시 후 첫 스택에서 모두 옮겨 비운다. 새 위반을 여기 더하지 않는다.
-const SDK_IMPORT_ALLOWLIST = new Map([
-  ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
-  ['apps/mobile/src/shared/hooks/use-share-view.ts', ['expo-sharing']],
-]);
-
 // es-toolkit/compat은 lodash 호환 계층이라 메인 패키지보다 무겁다. 메인에 없는 기능만 이유와 함께 허용한다.
 const ES_TOOLKIT_COMPAT_ALLOWLIST = new Set([
   // 메인 debounce에는 maxWait이 없어 입력이 계속돼도 초안이 저장되도록 compat을 쓴다.
@@ -397,7 +403,6 @@ function checkSdkImports(sourceFile, repositoryRoot, errors) {
   if (relativePath.startsWith(SDK_INFRA_ROOT) || isTestSource(relativePath)) {
     return;
   }
-  const allowed = SDK_IMPORT_ALLOWLIST.get(relativePath) ?? [];
   for (const statement of sourceFile.statements) {
     if (
       !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
@@ -407,7 +412,7 @@ function checkSdkImports(sourceFile, repositoryRoot, errors) {
       continue;
     }
     const sdk = getSdkModule(statement.moduleSpecifier.text);
-    if (sdk !== undefined && !allowed.includes(sdk)) {
+    if (sdk !== undefined) {
       errors.push(
         `${getLocation(sourceFile, statement, repositoryRoot)} ${sdk}는 shared/infra에서만 import합니다. 포트와 어댑터를 거쳐 DI 훅으로 받으세요. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둡니다(.claude/architecture.md#portadapterdi).`,
       );

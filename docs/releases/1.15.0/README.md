@@ -158,7 +158,6 @@
 ### 코드 규칙
 
 - **모델 계약 import**: `CLIENT_OWNED_MODEL_PATHS`에 없는 모델은 아직 `@aido/api` 계약을 import한다.
-- **DI 허용 목록**: `SDK_IMPORT_ALLOWLIST`의 28개 파일을 포트로 옮겨 비운다.
 - **큰 파일 분해**: 앱 코드에 500줄 이상인 파일이 12개다. 가장 큰 파일은 `add-todo-bottom-sheet.tsx`(870줄)다.
 - **Facade 별칭**: `XPolicy`의 키와 함수 이름이 다른 곳 80곳(`isStale: isReportStale`).
 - **RN `Image`**: `react-native`의 `Image`를 import하는 앱 파일 15개.
