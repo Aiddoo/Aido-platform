@@ -11,13 +11,6 @@ const createWrapper =
     <ThemeProvider syncStorage={syncStorage}>{children}</ThemeProvider>
   );
 
-jest.mock('expo-router', () => ({
-  ...jest.requireActual('@src/shared/__tests__/mocks/expo-router'),
-  DarkTheme: { colors: { background: 'black' } },
-  DefaultTheme: { colors: { background: 'white' } },
-  ThemeProvider: ({ children }: PropsWithChildren) => children,
-}));
-
 describe('useTheme', () => {
   it('저장된 값이 없으면 system 모드로 시작한다', async () => {
     // Given

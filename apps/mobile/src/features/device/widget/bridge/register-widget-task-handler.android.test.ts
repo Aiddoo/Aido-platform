@@ -1,23 +1,11 @@
-import * as Sentry from '@sentry/react-native';
+import { captureException, init } from '@sentry/react-native';
+import { resetSentryClient } from '@src/shared/__tests__/mocks/sentry-react-native';
 import { ENV } from '@src/shared/config/env';
+import { initErrorReporting } from '@src/shared/infra/observability/error-reporting';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 import type { WidgetTaskHandler, WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import { registerWidgetTaskHandler } from './register-widget-task-handler.android';
-
-let mockSentryClient: object | undefined;
-
-jest.mock('@sentry/react-native', () => ({
-  init: jest.fn(() => {
-    mockSentryClient = {};
-  }),
-  getClient: jest.fn(() => mockSentryClient),
-  mobileReplayIntegration: jest.fn(),
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  setUser: jest.fn(),
-}));
 
 function createFailingRenderTask(): WidgetTaskHandlerProps {
   return {
@@ -43,7 +31,7 @@ function createFailingRenderTask(): WidgetTaskHandlerProps {
 
 describe('registerWidgetTaskHandler', () => {
   beforeEach(() => {
-    mockSentryClient = undefined;
+    resetSentryClient();
   });
 
   it('앱 화면 없이 위젯만 깨어난 프로세스의 오류도 운영에서는 Sentry로 보고한다', async () => {
@@ -59,7 +47,7 @@ describe('registerWidgetTaskHandler', () => {
     await handler?.(createFailingRenderTask());
 
     // Then
-    expect(Sentry.captureException).toHaveBeenCalledWith(
+    expect(captureException).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'widget render failed' }),
       expect.objectContaining({ tags: expect.objectContaining({ feature: 'widget' }) }),
     );
@@ -73,18 +61,19 @@ describe('registerWidgetTaskHandler', () => {
     registerWidgetTaskHandler();
 
     // Then
-    expect(Sentry.init).toHaveBeenCalledTimes(1);
+    expect(init).toHaveBeenCalledTimes(1);
   });
 
   it('앱 루트가 이미 초기화한 프로세스에서는 다시 초기화하지 않는다', () => {
     // Given
     jest.replaceProperty(ENV, 'IS_PRODUCTION', true);
-    mockSentryClient = {};
+    initErrorReporting();
+    jest.mocked(init).mockClear();
 
     // When
     registerWidgetTaskHandler();
 
     // Then
-    expect(Sentry.init).not.toHaveBeenCalled();
+    expect(init).not.toHaveBeenCalled();
   });
 });

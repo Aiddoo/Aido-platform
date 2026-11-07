@@ -1,5 +1,5 @@
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
-import { useAnalytics, useFeatureAttribution } from '@src/shared/di/shared-di-context';
+import { useAnalytics, useFeatureAttribution, useLogger } from '@src/shared/di/shared-di-context';
 import { useCallback } from 'react';
 
 import type { AppEventMap } from './event-map';
@@ -10,6 +10,7 @@ import type { FeatureKey } from './feature-key';
 export function useTrack() {
   const analytics = useAnalytics();
   const featureAttribution = useFeatureAttribution();
+  const logger = useLogger();
 
   const trackEvent = useCallback(
     <E extends keyof AppEventMap & string>(
@@ -26,8 +27,11 @@ export function useTrack() {
 
   const trackAttributedFeatureSuccess = useCallback(
     ({ accountId, feature }: { accountId: string; feature: FeatureKey }): boolean =>
-      emitAttributedFeatureSuccess(analytics, featureAttribution, { accountId, feature }),
-    [analytics, featureAttribution],
+      emitAttributedFeatureSuccess(
+        { analytics, attribution: featureAttribution, logger },
+        { accountId, feature },
+      ),
+    [analytics, featureAttribution, logger],
   );
 
   const clearUser = useCallback(() => {

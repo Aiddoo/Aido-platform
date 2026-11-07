@@ -1,5 +1,6 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { createAnalyticsStub } from '@src/shared/__tests__/create-analytics-stub';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 
 import {
   createFeatureAttributionStore,
@@ -56,10 +57,13 @@ describe('FeatureAttributionStore', () => {
 
     // When
     const emit = () =>
-      trackAttributedFeatureSuccess(analytics, attribution, {
-        accountId: 'account-1',
-        feature: 'todo_creation',
-      });
+      trackAttributedFeatureSuccess(
+        { analytics, attribution, logger: createLoggerStub() },
+        {
+          accountId: 'account-1',
+          feature: 'todo_creation',
+        },
+      );
 
     // Then
     expect(emit).not.toThrow();
@@ -83,10 +87,13 @@ describe('FeatureAttributionStore', () => {
 
     // When
     const emit = () =>
-      trackAttributedFeatureSuccess(analytics, attribution, {
-        accountId: 'account-1',
-        feature: 'todo_reorder',
-      });
+      trackAttributedFeatureSuccess(
+        { analytics, attribution, logger: createLoggerStub() },
+        {
+          accountId: 'account-1',
+          feature: 'todo_reorder',
+        },
+      );
 
     // Then
     expect(emit).not.toThrow();
@@ -173,14 +180,20 @@ describe('FeatureAttributionStore', () => {
     });
 
     // When
-    const first = trackAttributedFeatureSuccess(analytics, attribution, {
-      accountId: 'raw-account-id',
-      feature: 'category_reorder',
-    });
-    const second = trackAttributedFeatureSuccess(analytics, attribution, {
-      accountId: 'raw-account-id',
-      feature: 'category_reorder',
-    });
+    const first = trackAttributedFeatureSuccess(
+      { analytics, attribution, logger: createLoggerStub() },
+      {
+        accountId: 'raw-account-id',
+        feature: 'category_reorder',
+      },
+    );
+    const second = trackAttributedFeatureSuccess(
+      { analytics, attribution, logger: createLoggerStub() },
+      {
+        accountId: 'raw-account-id',
+        feature: 'category_reorder',
+      },
+    );
 
     // Then
     expect(first).toBe(true);

@@ -117,3 +117,10 @@ export function useNavigation() {
 export function Redirect() {
   return null;
 }
+
+// ThemeProvider는 내비게이션 컨텍스트에 테마만 전한다. 테스트는 배경색이 정해지는지만 읽는다
+export const DarkTheme = { colors: { background: 'black' } };
+export const DefaultTheme = { colors: { background: 'white' } };
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  return children;
+}

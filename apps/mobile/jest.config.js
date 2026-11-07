@@ -44,6 +44,8 @@ const base = {
     '^@expo/ui/swift-ui$': '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui.ts',
     '^@expo/ui/swift-ui/modifiers$':
       '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui-modifiers.ts',
+    // SDK가 ESM이라 jest가 읽지 못한다. 보고는 목 호출로 확인한다
+    '^@sentry/react-native$': '<rootDir>/src/shared/__tests__/mocks/sentry-react-native.ts',
     '^expo-widgets$': '<rootDir>/src/shared/__tests__/mocks/expo-widgets.ts',
   },
 };

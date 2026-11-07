@@ -1,8 +1,8 @@
 import type { Analytics } from '@src/core/ports/analytics';
+import type { Logger } from '@src/core/ports/logger';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors';
-import { logger } from '@src/shared/infra/logger/global-logger';
 import { z } from 'zod';
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
@@ -90,9 +90,14 @@ export function createFeatureAttributionStore(
   };
 }
 
+interface AttributedFeatureSuccessPorts {
+  analytics: Analytics;
+  attribution: FeatureAttributionStore;
+  logger: Pick<Logger, 'warn'>;
+}
+
 export function trackAttributedFeatureSuccess(
-  analytics: Analytics,
-  attribution: FeatureAttributionStore,
+  { analytics, attribution, logger }: AttributedFeatureSuccessPorts,
   input: ConsumeAttributionInput,
 ): boolean {
   try {
