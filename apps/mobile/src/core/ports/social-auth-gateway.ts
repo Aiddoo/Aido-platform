@@ -24,4 +24,6 @@ export type AppleSignInResult =
 export interface SocialAuthGateway {
   openOAuthSession(request: OAuthSessionRequest): Promise<OAuthSessionResult>;
   signInWithApple(): Promise<AppleSignInResult>;
+  /** 브라우저 세션이 딥링크로 돌아왔을 때 세션을 끝낸다. 해당 세션이 없으면 아무것도 하지 않는다 */
+  completeOAuthSession(): void;
 }

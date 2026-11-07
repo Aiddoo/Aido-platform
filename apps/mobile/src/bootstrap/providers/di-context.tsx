@@ -6,6 +6,7 @@ import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-ap
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
+import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
@@ -68,6 +69,7 @@ export interface DIContainer extends SharedDependencies {
   locationGateway: LocationGateway;
   clipboard: ClipboardGateway;
   applicationMetadata: NativeApplicationMetadataGateway;
+  socialAuthGateway: SocialAuthGateway;
   appStoreListing: AppStoreListingGateway;
   networkStatus: NetworkStatusGateway;
   idGenerator: IdGenerator;
@@ -161,6 +163,7 @@ export {
   useErrorReporter,
   useExternalLink,
   useIncomingLink,
+  useSystemShare,
   useFeatureAttribution,
   useHaptics,
   useLogger,
@@ -178,6 +181,9 @@ function useDI(): DIContainer {
 
 export function useLocationGateway() {
   return useDI().locationGateway;
+}
+export function useSocialAuthGateway() {
+  return useDI().socialAuthGateway;
 }
 export function useApplicationMetadata() {
   return useDI().applicationMetadata;

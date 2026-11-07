@@ -9,7 +9,7 @@ import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
 interface InviteShareServicePorts {
   socialShare: SocialShareGateway;
-  systemShare: SystemShareGateway;
+  systemShare: Pick<SystemShareGateway, 'share'>;
   clipboard: ClipboardGateway;
   errorReporter: ErrorReporter;
 }
@@ -20,7 +20,7 @@ interface InviteShareServicePorts {
  */
 export class InviteShareService {
   readonly #socialShare: SocialShareGateway;
-  readonly #systemShare: SystemShareGateway;
+  readonly #systemShare: Pick<SystemShareGateway, 'share'>;
   readonly #clipboard: ClipboardGateway;
   readonly #errorReporter: ErrorReporter;
 

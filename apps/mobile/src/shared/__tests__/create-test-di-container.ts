@@ -46,6 +46,12 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     // 링크를 여는 훅은 화면마다 렌더 때 읽으니 여는 동작을 보는 테스트만 override한다
     externalLink: createExternalLinkGatewayStub(),
     incomingLink: createIncomingLinkGatewayStub(),
+    // 공유 훅을 렌더 때 읽는 화면이 있어 공유를 보는 테스트만 override한다
+    systemShare: {
+      share: jest.fn().mockResolvedValue(true),
+      canShareImage: jest.fn().mockResolvedValue(true),
+      shareImage: jest.fn().mockResolvedValue(undefined),
+    },
     // 초안 id·멱등 키는 쓰는 화면이 많아 호출마다 다른 값을 주는 stub을 기본으로 둔다
     idGenerator: createIdGeneratorStub(),
     // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
@@ -72,6 +78,9 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get locationGateway() {
       return dependency('locationGateway');
     },
+    get socialAuthGateway() {
+      return dependency('socialAuthGateway');
+    },
     get applicationMetadata() {
       return dependency('applicationMetadata');
     },
@@ -83,6 +92,9 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get externalLink() {
       return dependency('externalLink');
+    },
+    get systemShare() {
+      return dependency('systemShare');
     },
     get incomingLink() {
       return dependency('incomingLink');

@@ -10,6 +10,7 @@ export function createSocialAuthGatewayStub(): jest.Mocked<SocialAuthGateway> {
     openOAuthSession: jest.fn<Promise<OAuthSessionResult>, [OAuthSessionRequest]>(async () => ({
       type: 'cancelled',
     })),
+    completeOAuthSession: jest.fn(),
     signInWithApple: jest.fn<Promise<AppleSignInResult>, []>(async () => ({
       type: 'success',
       identityToken: 'apple-id-token',

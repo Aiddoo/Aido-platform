@@ -28,6 +28,9 @@ function readErrorCode(error: unknown): unknown {
 }
 
 export const expoSocialAuthGateway: SocialAuthGateway = {
+  completeOAuthSession: () => {
+    WebBrowser.maybeCompleteAuthSession();
+  },
   openOAuthSession: async ({ startPath, callbackPath, params }) => {
     const redirectUri = makeRedirectUri({ scheme: ENV.SCHEME, path: callbackPath });
     const query = new URLSearchParams({ redirect_uri: redirectUri, ...params });

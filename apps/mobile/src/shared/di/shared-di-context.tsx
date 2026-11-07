@@ -3,6 +3,7 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway, IncomingLinkGateway } from '@src/core/ports/external-link';
 import type { HapticsGateway } from '@src/core/ports/haptics';
 import type { Logger } from '@src/core/ports/logger';
+import type { SystemShareGateway } from '@src/core/ports/system-share';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { createContext, use } from 'react';
@@ -17,6 +18,7 @@ export interface SharedDependencies {
   draftService: DraftService;
   externalLink: ExternalLinkGateway;
   incomingLink: IncomingLinkGateway;
+  systemShare: SystemShareGateway;
 }
 
 export const SharedDIContext = createContext<SharedDependencies | null>(null);
@@ -57,6 +59,10 @@ export function useDraftService() {
 
 export function useExternalLink() {
   return useSharedDI().externalLink;
+}
+
+export function useSystemShare() {
+  return useSharedDI().systemShare;
 }
 
 export function useIncomingLink() {

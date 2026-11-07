@@ -106,7 +106,7 @@ import {
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
 import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases.gateway';
-import { rnSystemShareGateway } from '@src/shared/infra/share/rn-system-share.gateway';
+import { systemShareGateway } from '@src/shared/infra/share/system-share.gateway';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
 import { expoSpeechRecognizerGateway } from '@src/shared/infra/speech/expo-speech-recognizer.gateway';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
@@ -245,7 +245,7 @@ export function DIProvider({
     });
     const inviteShareService = new InviteShareService({
       socialShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),
-      systemShare: rnSystemShareGateway,
+      systemShare: systemShareGateway,
       clipboard: expoClipboardGateway,
       errorReporter,
     });
@@ -427,8 +427,10 @@ export function DIProvider({
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
       applicationMetadata: expoApplicationMetadataGateway,
+      socialAuthGateway: expoSocialAuthGateway,
       appStoreListing: expoAppStoreGateway,
       externalLink: expoExternalLinkGateway,
+      systemShare: systemShareGateway,
       incomingLink: expoIncomingLinkGateway,
       networkStatus: expoNetworkStatusGateway,
       widgetSyncService,

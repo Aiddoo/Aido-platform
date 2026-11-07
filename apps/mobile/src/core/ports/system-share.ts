@@ -9,4 +9,7 @@ interface SystemShareContent {
 export interface SystemShareGateway {
   /** OS 공유 시트를 연다. iOS는 사용자가 닫으면 false이고, Android는 닫아도 true다(OS 한계) */
   share(content: SystemShareContent): Promise<boolean>;
+  canShareImage(): Promise<boolean>;
+  /** 기기에 저장된 PNG를 OS 공유 시트로 보낸다 */
+  shareImage(fileUri: string): Promise<void>;
 }

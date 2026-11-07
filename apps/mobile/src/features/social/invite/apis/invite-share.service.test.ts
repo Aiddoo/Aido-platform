@@ -30,7 +30,7 @@ function createService({
     isAvailable: () => isKakaoAvailable,
     shareFeed: kakaoShareFeed,
   };
-  const systemShareGateway: SystemShareGateway = { share: systemShare };
+  const systemShareGateway: Pick<SystemShareGateway, 'share'> = { share: systemShare };
   const copy = jest.fn().mockResolvedValue(undefined);
   const clipboard: ClipboardGateway = {
     hasContent: jest.fn(),

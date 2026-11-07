@@ -1,10 +1,11 @@
+import { useSystemShare } from '@src/shared/di/shared-di-context';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import * as Sharing from 'expo-sharing';
 import { type RefObject, useCallback, useState } from 'react';
 import type { ViewShotRef } from 'react-native-view-shot';
 
 export function useShareView(viewShotRef: RefObject<ViewShotRef | null>) {
+  const systemShare = useSystemShare();
   const { warning, error } = useAppToast();
   const [isSharing, setIsSharing] = useState(false);
 
@@ -14,7 +15,7 @@ export function useShareView(viewShotRef: RefObject<ViewShotRef | null>) {
     }
     setIsSharing(true);
     try {
-      const isAvailable = await Sharing.isAvailableAsync();
+      const isAvailable = await systemShare.canShareImage();
       if (!isAvailable) {
         warning(t('common:share.unsupported'));
         return;
@@ -26,13 +27,13 @@ export function useShareView(viewShotRef: RefObject<ViewShotRef | null>) {
         return;
       }
 
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
+      await systemShare.shareImage(uri);
     } catch {
       error(t('common:share.failed'));
     } finally {
       setIsSharing(false);
     }
-  }, [isSharing, viewShotRef, warning, error]);
+  }, [isSharing, systemShare, viewShotRef, warning, error]);
 
   return { shareCapture, isSharing };
 }
