@@ -1,0 +1,268 @@
+import '@src/shared/i18n/init';
+import { createAnalyticsStub, createHapticsStub } from '@src/shared/__tests__';
+import { NetworkError } from '@src/shared/errors';
+import { err, ok } from '@src/shared/errors/result';
+import { i18n } from '@src/shared/i18n';
+import { useMutation } from '@tanstack/react-query';
+import { act, screen } from '@testing-library/react-native';
+
+import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
+import {
+  createAuthApiError,
+  createAuthTokensDto,
+  createRegisterDto,
+} from '../__tests__/auth.fixtures';
+import { useAuthStatus } from '../hooks/use-auth-status';
+import {
+  useChangePasswordMutationOptions,
+  useExchangeCodeMutationOptions,
+  useLinkAccountMutationOptions,
+  useOpenAppleLoginMutationOptions,
+  useRegisterMutationOptions,
+} from './auth.mutations';
+
+// 마운트된 조회의 캐시를 비우면 떨어져 나간 쿼리에 24시간 gc 타이머가 남아 Jest 종료를 붙잡는다
+beforeEach(() => {
+  jest.useFakeTimers();
+});
+
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});
+
+describe('구글·카카오·네이버 코드 교환', () => {
+  async function exchangeCode(
+    provider: 'google' | 'kakao',
+    dto: ReturnType<typeof createAuthTokensDto>,
+  ) {
+    const analytics = createAnalyticsStub();
+    const session = createAuthSession({ di: { analytics } });
+    session.publicHttp.post.mockResolvedValue(ok(dto));
+    const { result } = await session.renderSession(
+      () => ({ status: useAuthStatus(), exchange: useMutation(useExchangeCodeMutationOptions()) }),
+      'unauthenticated',
+    );
+
+    await act(async () => {
+      await result.current.exchange.mutateAsync({ code: 'exchange-code', provider });
+    });
+    return { status: result.current.status, analytics };
+  }
+
+  it('OAuth 성공은 인증 상태로 바꾼다', async () => {
+    // Given·When
+    const { status } = await exchangeCode('google', createAuthTokensDto());
+
+    // Then
+    expect(status).toBe('authenticated');
+  });
+
+  it('기존 계정 로그인은 auth_login만 보낸다', async () => {
+    // Given·When
+    const { analytics } = await exchangeCode('google', createAuthTokensDto({ isNewUser: false }));
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_login', { method: 'google' });
+  });
+
+  it('신규 가입은 auth_signup만 보낸다', async () => {
+    // Given·When
+    const { analytics } = await exchangeCode('kakao', createAuthTokensDto({ isNewUser: true }));
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_signup', { method: 'kakao' });
+  });
+});
+
+describe('Apple 로그인', () => {
+  async function loginWithApple(dto: ReturnType<typeof createAuthTokensDto>) {
+    const analytics = createAnalyticsStub();
+    const session = createAuthSession({ di: { analytics } });
+    session.publicHttp.post.mockResolvedValue(ok(dto));
+    const { result } = await session.renderSession(
+      () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),
+      'unauthenticated',
+    );
+
+    await act(async () => {
+      await result.current.login.mutateAsync();
+    });
+    return { status: result.current.status, analytics };
+  }
+
+  it('기존 계정 로그인은 인증 상태로 바꾸고 auth_login만 보낸다', async () => {
+    // Given·When
+    const { status, analytics } = await loginWithApple(createAuthTokensDto({ isNewUser: false }));
+
+    // Then
+    expect(status).toBe('authenticated');
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_login', { method: 'apple' });
+  });
+
+  it('신규 가입은 auth_signup만 보낸다', async () => {
+    // Given·When
+    const { analytics } = await loginWithApple(createAuthTokensDto({ isNewUser: true }));
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_signup', { method: 'apple' });
+  });
+
+  it('창을 닫으면 인증 상태로 바뀌지 않고 서버에 보내지 않는다', async () => {
+    // Given
+    const session = createAuthSession();
+    session.socialAuthGateway.signInWithApple.mockResolvedValue({ type: 'cancelled' });
+    const { result } = await session.renderSession(
+      () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),
+      'unauthenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.login.mutateAsync().catch(() => undefined);
+    });
+
+    // Then
+    expect(result.current.status).toBe('unauthenticated');
+    expect(session.publicHttp.post).not.toHaveBeenCalled();
+  });
+});
+
+describe('회원가입 인증 메일', () => {
+  async function register(dto: ReturnType<typeof createRegisterDto>) {
+    const session = createAuthSession();
+    session.publicHttp.post.mockResolvedValue(ok(dto));
+    const { result } = await session.renderSession(
+      () => useMutation(useRegisterMutationOptions()),
+      'unauthenticated',
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: 'test@example.com',
+        password: 'pass1234!',
+        passwordConfirm: 'pass1234!',
+        name: '테스트',
+        termsAgreed: true,
+        privacyAgreed: true,
+        marketingAgreed: false,
+      });
+    });
+  }
+
+  const NOT_SENT_MESSAGE =
+    '가입은 됐지만 인증 메일을 보내지 못했어요. 잠시 후 다시 보내기를 눌러주세요';
+
+  it('메일을 보내지 못했으면 가입은 성공이고 재발송을 안내한다', async () => {
+    // Given·When
+    await register(createRegisterDto({ emailSent: false }));
+
+    // Then
+    expect(await screen.findAllByText(NOT_SENT_MESSAGE)).not.toHaveLength(0);
+  });
+
+  it('메일을 보냈으면 따로 알리지 않는다', async () => {
+    // Given·When
+    await register(createRegisterDto({ emailSent: true }));
+
+    // Then
+    expect(screen.queryByText(NOT_SENT_MESSAGE)).toBeNull();
+  });
+});
+
+describe('비밀번호 변경 실패 안내', () => {
+  const INPUT = {
+    currentPassword: 'current-pass1!',
+    newPassword: 'new-pass1234!',
+    newPasswordConfirm: 'new-pass1234!',
+  };
+
+  async function changePassword(session: ReturnType<typeof createAuthSession>) {
+    const { result } = await session.renderSession(
+      () => useMutation(useChangePasswordMutationOptions()),
+      'authenticated',
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync(INPUT).catch(() => undefined);
+    });
+  }
+
+  it('서버가 거절한 변경은 토스트로 이유를 알린다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.patch.mockResolvedValue(
+      err(createAuthApiError({ status: 400, message: '서버가 거절한 이유' })),
+    );
+
+    // When
+    await changePassword(session);
+
+    // Then
+    expect(await screen.findAllByText('서버가 거절한 이유')).not.toHaveLength(0);
+  });
+
+  it('네트워크 오류도 오류 화면으로 바꾸지 않고 토스트 한 번으로 알린다', async () => {
+    // Given
+    const haptics = createHapticsStub();
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, di: { haptics } });
+    const error = new NetworkError();
+    session.authHttp.patch.mockRejectedValue(error);
+
+    // When
+    await changePassword(session);
+
+    // Then
+    expect(await screen.findAllByText(error.message)).not.toHaveLength(0);
+    expect(haptics.notify).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('계정 연결 실패 안내', () => {
+  const LINK_FAILED_MESSAGE = i18n.t('auth:toasts.linkFailed');
+
+  async function link(session: ReturnType<typeof createAuthSession>) {
+    const { result } = await session.renderSession(
+      () => useMutation(useLinkAccountMutationOptions()),
+      'authenticated',
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync('kakao').catch(() => undefined);
+    });
+  }
+
+  it('창을 닫으면 아무 안내도 하지 않는다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.socialAuthGateway.openOAuthSession.mockResolvedValue({ type: 'cancelled' });
+
+    // When
+    await link(session);
+
+    // Then
+    expect(screen.queryByText('로그인이 취소되었어요')).toBeNull();
+    expect(screen.queryByText(LINK_FAILED_MESSAGE)).toBeNull();
+  });
+
+  it('모르는 오류 코드면 연결하지 않고 연결 실패 안내를 보인다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.socialAuthGateway.openOAuthSession.mockResolvedValue({
+      type: 'success',
+      url: 'aido://auth/kakao?error=authentication_failed',
+      queryParams: { error: 'authentication_failed' },
+    });
+
+    // When
+    await link(session);
+
+    // Then
+    expect(session.authHttp.post).not.toHaveBeenCalled();
+    expect(await screen.findAllByText(LINK_FAILED_MESSAGE)).not.toHaveLength(0);
+  });
+});

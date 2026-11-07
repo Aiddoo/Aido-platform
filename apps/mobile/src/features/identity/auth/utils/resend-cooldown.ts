@@ -1,5 +1,5 @@
-import { VERIFICATION_CODE } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
+import { VERIFICATION_CODE } from '@aido/api/vocabulary';
 import { isApiError } from '@src/shared/errors';
 
 /** 재발송 성공 뒤 다음 재발송까지 기다릴 초. 서버가 알려 주지 않으면 기본 쿨다운을 쓴다. */

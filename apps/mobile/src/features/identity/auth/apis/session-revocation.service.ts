@@ -1,13 +1,14 @@
-import { refreshTokensSchema } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors';
 import type { RefreshTokensRequest } from '@src/shared/infra/http/token-refresher';
-import { z } from 'zod';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
-import type { PendingRevocation } from '../schemas/pending-revocation.schema';
+import {
+  type PendingRevocation,
+  refreshEnvelopeSchema,
+} from '../schemas/pending-revocation.schema';
 import type { PendingRevocationRepository } from './pending-revocation.repository';
 
 /**
@@ -21,8 +22,6 @@ import type { PendingRevocationRepository } from './pending-revocation.repositor
 export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
 
 const LOGOUT_TIMEOUT_MS = 5_000;
-
-const refreshEnvelopeSchema = z.object({ data: refreshTokensSchema });
 
 interface SessionRevocationPorts {
   repository: PendingRevocationRepository;

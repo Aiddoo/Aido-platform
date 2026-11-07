@@ -24,7 +24,7 @@ AuthService.openKakaoLogin()                  # openGoogleLogin·openNaverLogin�
 - `redirectUri`는 `makeRedirectUri({ scheme: ENV.SCHEME, path: 'auth/{provider}' })`다. scheme은 환경별로 다르다(`app.config.ts`). 서버가 `start-oauth-authorization.use-case.ts`의 허용 패턴으로 검사하므로 scheme을 바꾸면 거기도 고친다.
 - Android는 `app.config.ts`의 `intentFilters`(`auth/kakao`·`auth/naver`·`auth/google`)로 콜백을 받는다. `app/auth/[provider].tsx`가 `maybeCompleteAuthSession()`을 불러 `openAuthSessionAsync`가 URL을 받게 한다.
 - 화면은 `useOpen{Kakao,Google,Naver}LoginMutationOptions`로 code를 받고 `useExchangeCodeMutationOptions`에 `{ code, provider }`를 넘긴다(`app/(auth)/login.tsx`).
-- 콜백 URL에 code가 없고 `error`가 있으면 `AuthErrors.providerError`, 없으면 `AuthErrors.noCodeReceived`다. 창을 닫으면 `AuthErrors.loginCancelled`다.
+- 콜백 URL에 code가 없고 `error`가 있으면 그 코드의 `BusinessError`(카탈로그에 없으면 호출부 폴백 문구), 없으면 `AUTH_NO_CODE_RECEIVED`다. 창을 닫으면 `AUTH_LOGIN_CANCELLED`다.
 
 ## Apple: 네이티브
 
@@ -38,7 +38,7 @@ AuthService.openAppleLogin()
 ```
 
 - Apple은 이름을 최초 로그인에만 준다. `userName`은 `fullName.givenName`이고 없으면 보내지 않는다.
-- SDK 오류는 `AuthErrors.fromExpoAppleError`로 바꾼다.
+- SDK 호출과 오류 변환은 `SocialAuthGateway`(`shared/infra/social-auth`)가 맡고, `AuthService`가 결과를 `AUTH_ERROR_CODE`로 옮긴다.
 
 ## 계정 연결
 

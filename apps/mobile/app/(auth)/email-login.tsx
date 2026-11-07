@@ -1,7 +1,7 @@
 import idoCatHiImage from '@assets/images/ido_cat_hi.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PasswordInput } from '@src/features/identity/auth/components/password-input';
-import { useEmailLoginMutationOptions } from '@src/features/identity/auth/queries/use-email-login-mutation-options';
+import { useEmailLoginMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { emailLoginFormSchema } from '@src/features/identity/auth/schemas/email-login-form.schema';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -41,12 +41,12 @@ export default function EmailLoginScreen() {
   const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
 
-  const formMethods = useForm({
+  const form = useForm({
     resolver: zodResolver(emailLoginFormSchema),
     defaultValues: { email: '', password: '' },
     mode: 'onTouched',
   });
-  const { control, handleSubmit } = formMethods;
+  const { control, handleSubmit } = form;
   const { isSubmitting } = useFormState({ control });
 
   const emailLoginMutation = useMutation(useEmailLoginMutationOptions());
@@ -60,7 +60,7 @@ export default function EmailLoginScreen() {
   });
 
   return (
-    <FormProvider {...formMethods}>
+    <FormProvider {...form}>
       <Box className="flex-1 overflow-hidden bg-white">
         <Image
           source={idoCatHiImage}

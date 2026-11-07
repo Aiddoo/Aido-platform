@@ -1,4 +1,4 @@
-import { VERIFICATION_CODE } from '@aido/api';
+import { VERIFICATION_CODE } from '@aido/api/vocabulary';
 import { range } from 'es-toolkit';
 import { InputOTP } from 'heroui-native';
 import type { ComponentProps } from 'react';

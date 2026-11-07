@@ -1,3 +1,4 @@
+import { refreshTokensSchema } from '@aido/api';
 import { z } from 'zod';
 
 export const pendingRevocationSchema = z.object({
@@ -6,3 +7,5 @@ export const pendingRevocationSchema = z.object({
 });
 
 export type PendingRevocation = z.infer<typeof pendingRevocationSchema>;
+
+export const refreshEnvelopeSchema = z.object({ data: refreshTokensSchema });

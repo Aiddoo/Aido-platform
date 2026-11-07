@@ -1,6 +1,8 @@
-import { useGetLinkedAccountsQueryOptions } from '@src/features/identity/auth/queries/get-linked-accounts-query-options';
-import { useLinkAccountMutationOptions } from '@src/features/identity/auth/queries/use-link-account-mutation-options';
-import { useUnlinkAccountMutationOptions } from '@src/features/identity/auth/queries/use-unlink-account-mutation-options';
+import {
+  useLinkAccountMutationOptions,
+  useUnlinkAccountMutationOptions,
+} from '@src/features/identity/auth/queries/auth.mutations';
+import { useGetLinkedAccountsQueryOptions } from '@src/features/identity/auth/queries/auth.queries';
 import type {
   OAuthProvider,
   OAuthProviderSlug,

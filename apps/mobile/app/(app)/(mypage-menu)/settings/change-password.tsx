@@ -2,7 +2,7 @@ import { type ChangePasswordInput, changePasswordSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NewPasswordStep } from '@src/features/identity/auth/components/new-password-step';
 import { PasswordInput } from '@src/features/identity/auth/components/password-input';
-import { useChangePasswordMutationOptions } from '@src/features/identity/auth/queries/use-change-password-mutation-options';
+import { useChangePasswordMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useStepper } from '@src/shared/hooks/use-stepper';

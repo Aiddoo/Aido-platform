@@ -131,7 +131,7 @@ mutationOptions({
 });
 ```
 
-SDK 오류 변환은 어댑터·Service 경계에서만 한다(`AuthErrors.fromExpoAppleError`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
+SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth.gateway.ts`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
 
 ### 조회에서 예상한 상태
 

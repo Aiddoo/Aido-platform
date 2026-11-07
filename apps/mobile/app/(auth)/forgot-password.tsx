@@ -2,8 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
 import { NewPasswordStep } from '@src/features/identity/auth/components/new-password-step';
 import { SuggestedEmailDomainList } from '@src/features/identity/auth/components/suggested-email-domain-list';
-import { useForgotPasswordMutationOptions } from '@src/features/identity/auth/queries/use-forgot-password-mutation-options';
-import { useResetPasswordMutationOptions } from '@src/features/identity/auth/queries/use-reset-password-mutation-options';
+import {
+  useForgotPasswordMutationOptions,
+  useResetPasswordMutationOptions,
+} from '@src/features/identity/auth/queries/auth.mutations';
 import {
   type ForgotPasswordFormInput,
   forgotPasswordFormSchema,

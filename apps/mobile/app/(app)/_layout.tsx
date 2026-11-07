@@ -1,7 +1,7 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { ActivationPushPermissionDialog } from '@src/features/device/activation/components/activation-push-permission-dialog';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/use-logout-mutation-options';
+import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { MyPagePaneLayoutProvider } from '@src/features/identity/user/hooks/use-mypage-pane-layout';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';

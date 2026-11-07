@@ -1,4 +1,3 @@
-import { passwordSchema } from '@aido/api';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -13,6 +12,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import type { SignUpFormInput } from '../schemas/sign-up-form.schema';
+import { signUpPasswordSchema } from '../schemas/sign-up-form.schema';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { TermsBottomSheet } from './terms-bottom-sheet';
@@ -36,7 +36,7 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
     passwordConfirmInputRef.current?.focus();
   }, []);
 
-  const isPasswordValid = passwordSchema.safeParse(password).success;
+  const isPasswordValid = signUpPasswordSchema.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
 
   const handleNext = () => {

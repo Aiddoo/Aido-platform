@@ -3,9 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
 import { SignUpPasswordForm } from '@src/features/identity/auth/components/sign-up-password-form';
 import { SignUpUserInfoForm } from '@src/features/identity/auth/components/sign-up-user-info-form';
-import { useRegisterMutationOptions } from '@src/features/identity/auth/queries/use-register-mutation-options';
-import { useResendVerificationMutationOptions } from '@src/features/identity/auth/queries/use-resend-verification-mutation-options';
-import { useVerifyEmailMutationOptions } from '@src/features/identity/auth/queries/use-verify-email-mutation-options';
+import {
+  useRegisterMutationOptions,
+  useResendVerificationMutationOptions,
+  useVerifyEmailMutationOptions,
+} from '@src/features/identity/auth/queries/auth.mutations';
 import { signUpFormSchema } from '@src/features/identity/auth/schemas/sign-up-form.schema';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

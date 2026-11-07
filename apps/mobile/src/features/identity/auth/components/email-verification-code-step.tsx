@@ -1,4 +1,3 @@
-import { verifyEmailSchema } from '@aido/api';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
@@ -6,6 +5,7 @@ import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 
 import { useCooldown } from '../hooks/use-cooldown';
+import { verificationCodeSchema } from '../schemas/verify-email-params.schema';
 import { maskEmail } from '../utils/mask-email';
 import {
   getResendCooldownAfterError,
@@ -46,7 +46,7 @@ export function EmailVerificationCodeStep({
   };
 
   const handleComplete = async (completedCode: string) => {
-    if (!verifyEmailSchema.shape.code.safeParse(completedCode).success) {
+    if (!verificationCodeSchema.safeParse(completedCode).success) {
       setIsInvalid(true);
       clearCode();
       return;

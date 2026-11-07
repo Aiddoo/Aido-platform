@@ -1,9 +1,11 @@
 import appIconImage from '@assets/images/profile-icons/default.webp';
-import { useExchangeCodeMutationOptions } from '@src/features/identity/auth/queries/use-exchange-code-mutation-options';
-import { useOpenAppleLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-apple-login-mutation-options';
-import { useOpenGoogleLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-google-login-mutation-options';
-import { useOpenKakaoLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-kakao-login-mutation-options';
-import { useOpenNaverLoginMutationOptions } from '@src/features/identity/auth/queries/use-open-naver-login-mutation-options';
+import {
+  useExchangeCodeMutationOptions,
+  useOpenAppleLoginMutationOptions,
+  useOpenGoogleLoginMutationOptions,
+  useOpenKakaoLoginMutationOptions,
+  useOpenNaverLoginMutationOptions,
+} from '@src/features/identity/auth/queries/auth.mutations';
 import type { OAuthStartProvider } from '@src/features/identity/auth/schemas/oauth.schema';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

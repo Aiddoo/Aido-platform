@@ -1,5 +1,16 @@
 import { z } from 'zod';
 
+export type {
+  ChangePasswordInput,
+  DeleteAccountInput,
+  ExchangeCodeInput,
+  ForgotPasswordInput,
+  RegisterInput,
+  ResendVerificationInput,
+  ResetPasswordInput,
+  VerifyEmailInput,
+} from '@aido/api';
+
 const authTokensSchema = z.object({
   userId: z.string(),
   accessToken: z.string(),

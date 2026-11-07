@@ -39,12 +39,14 @@ import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.f
 import { AuthService } from '../apis/auth.service';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from '../utils/log-out-device';
-import { useDeleteAccountMutationOptions } from './use-delete-account-mutation-options';
-import { useEmailLoginMutationOptions } from './use-email-login-mutation-options';
-import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
-import { useLogoutMutationOptions } from './use-logout-mutation-options';
-import { useOpenAppleLoginMutationOptions } from './use-open-apple-login-mutation-options';
-import { useVerifyEmailMutationOptions } from './use-verify-email-mutation-options';
+import {
+  useDeleteAccountMutationOptions,
+  useEmailLoginMutationOptions,
+  useExchangeCodeMutationOptions,
+  useLogoutMutationOptions,
+  useOpenAppleLoginMutationOptions,
+  useVerifyEmailMutationOptions,
+} from './auth.mutations';
 
 const memoDraftKey = createDraftKey({
   ownerId: 'user-1',

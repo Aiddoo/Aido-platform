@@ -1,7 +1,9 @@
 import { AppVersionCheck } from '@src/features/app-config/app-version/components/app-version-check';
 import { QuotaSummary } from '@src/features/billing/subscription/components/quota-summary';
-import { useDeleteAccountMutationOptions } from '@src/features/identity/auth/queries/use-delete-account-mutation-options';
-import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/use-logout-mutation-options';
+import {
+  useDeleteAccountMutationOptions,
+  useLogoutMutationOptions,
+} from '@src/features/identity/auth/queries/auth.mutations';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
