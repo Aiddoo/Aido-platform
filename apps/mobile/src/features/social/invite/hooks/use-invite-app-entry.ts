@@ -2,6 +2,7 @@ import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
+import { fromDate } from '@src/shared/date/instant';
 import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
@@ -33,12 +34,12 @@ export function useInviteAppEntry() {
 
     // 첫 화면이 그려진 다음 프레임에 이동해야 탭 화면이 아래에 남는다
     const frameId = requestAnimationFrame(() => {
-      const pending = inviteService.findPendingRedemption(new Date());
+      const pending = inviteService.findPendingRedemption(fromDate(new Date()));
       if (pending == null) {
         return;
       }
 
-      const pendingKey = `${userId}:${pending.inviteCode}:${pending.savedAt.getTime()}`;
+      const pendingKey = `${userId}:${pending.inviteCode}:${pending.savedAt}`;
       if (openedPendingKeyRef.current === pendingKey) {
         return;
       }

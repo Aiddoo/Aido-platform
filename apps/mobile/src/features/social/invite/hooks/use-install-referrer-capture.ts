@@ -1,5 +1,6 @@
 import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
+import { fromDate } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useEffect } from 'react';
 
@@ -13,7 +14,7 @@ export function useInstallReferrerCapture() {
 
   useEffect(() => {
     inviteService
-      .captureInstallReferrer(new Date())
+      .captureInstallReferrer(fromDate(new Date()))
       .then((pending) => {
         if (pending != null) {
           trackEvent('invite_link_opened', { source: pending.source });

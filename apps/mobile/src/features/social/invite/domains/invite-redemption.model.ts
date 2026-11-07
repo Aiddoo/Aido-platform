@@ -6,16 +6,17 @@ import {
 } from '@aido/api/vocabulary';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
 import { DAY_MS } from '@src/shared/constants/time.constants';
+import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { PendingRedemption, RedemptionResult } from '../schemas/invite-redemption.schema';
 import { InviteRewardPolicy } from './invite-reward.model';
 
-export function isWithinDays(from: Date, now: Date, days: number) {
-  return now.getTime() - from.getTime() < days * DAY_MS;
+export function isWithinDays(from: Instant, now: Instant, days: number) {
+  return diffMs(now, from) < days * DAY_MS;
 }
 
-export function isFresh(pending: Pick<PendingRedemption, 'savedAt'>, now: Date) {
+export function isFresh(pending: Pick<PendingRedemption, 'savedAt'>, now: Instant) {
   return isWithinDays(pending.savedAt, now, INVITE_REDEEM_WINDOW_DAYS);
 }
 
@@ -98,7 +99,7 @@ export function getRewardStart(premiumAccess: Pick<PremiumAccess, 'source' | 'ba
 }
 
 /** 가입한 지 며칠 안 된 계정만 초대 보상을 기대할 수 있다(서버가 최종 판정한다) */
-export function isRewardExpected(accountCreatedAt: Date, now: Date) {
+export function isRewardExpected(accountCreatedAt: Instant, now: Instant) {
   return isWithinDays(accountCreatedAt, now, INVITE_REDEEM_WINDOW_DAYS);
 }
 

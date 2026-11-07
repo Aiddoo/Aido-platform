@@ -1,4 +1,5 @@
 import { inviteCodeSchema, inviteMilestoneSchema, myInviteResponseSchema } from '@aido/api';
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 import { InviteRewardSchema } from './invite-reward.schema';
@@ -17,7 +18,7 @@ const inviteMilestoneWithRewardsSchema = inviteMilestoneSchema.extend({
 export const InviteSchema = myInviteResponseSchema.extend({
   nextMilestone: inviteMilestoneWithRewardsSchema.nullable(),
   rewardsEarned: z.array(InviteRewardSchema),
-  createdAt: z.coerce.date(),
+  createdAt: instantSchema,
 });
 
 export type Invite = z.output<typeof InviteSchema>;

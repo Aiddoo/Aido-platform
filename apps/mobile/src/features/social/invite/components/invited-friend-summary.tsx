@@ -25,7 +25,7 @@ export function InvitedFriendSummary({ className, ...props }: ComponentProps<typ
   );
 
   return (
-    <InvitedFriendSummaryFrame className={className} {...props}>
+    <VStack gap={8} className={className} {...props}>
       <HStack align="center" justify="between" className="min-h-8 px-4">
         <H4>{t('friendList.title')}</H4>
         {data.hasMore && (
@@ -49,20 +49,20 @@ export function InvitedFriendSummary({ className, ...props }: ComponentProps<typ
           ))}
         </VStack>
       )}
-    </InvitedFriendSummaryFrame>
+    </VStack>
   );
 }
 
 InvitedFriendSummary.Loading = function Loading() {
   return (
-    <InvitedFriendSummaryFrame accessibilityState={{ busy: true }}>
+    <VStack gap={8} accessibilityState={{ busy: true }}>
       <Box className="min-h-8 justify-center px-4">
         <TextSkeleton size="t3" className="w-28" />
       </Box>
       {range(3).map((index) => (
         <InvitedFriendRow.Loading key={index} />
       ))}
-    </InvitedFriendSummaryFrame>
+    </VStack>
   );
 };
 
@@ -70,9 +70,9 @@ InvitedFriendSummary.Unavailable = function Unavailable() {
   const { t } = useTranslation('invite');
 
   return (
-    <InvitedFriendSummaryFrame className="min-h-[200px] justify-center">
+    <VStack gap={8} className="min-h-[200px] justify-center">
       <Result title={t('friendList.unavailable')} />
-    </InvitedFriendSummaryFrame>
+    </VStack>
   );
 };
 
@@ -89,8 +89,3 @@ InvitedFriendSummary.Empty = function Empty() {
     </Box>
   );
 };
-
-/** 친구 행이 화면 끝까지 닿도록 Screen이 바깥 여백을 걷어 내고 둔다. 제목·빈 상태는 행과 같은 안쪽 여백을 쓴다 */
-function InvitedFriendSummaryFrame(props: ComponentProps<typeof VStack>) {
-  return <VStack gap={8} {...props} />;
-}

@@ -42,7 +42,7 @@ import { match } from 'ts-pattern';
 
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { useInviteWelcomeParams } from '../hooks/use-invite-welcome-params';
-import { getRedemptionResultQueryOptions } from '../queries/invite.queries';
+import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { type RedemptionResult } from '../schemas/invite-redemption.schema';
 
 type InviteWelcomeBottomSheetProps = Omit<
@@ -55,7 +55,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   const { t } = useTranslation('common');
   const { friendId } = useInviteWelcomeParams();
   const sheet = useSheetRoute('/feed');
-  const { data: result } = useQuery(getRedemptionResultQueryOptions({ inviterId: friendId }));
+  const { data: result } = useQuery(useGetRedemptionResultQueryOptions({ inviterId: friendId }));
 
   // 수락 응답 없이 열리면(앱을 다시 켠 뒤, 형식이 틀린 링크 등) 보여 줄 내용이 없어 바로 닫는다
   useEffect(() => {

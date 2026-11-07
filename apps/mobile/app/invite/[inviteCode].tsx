@@ -11,7 +11,7 @@ import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-
 import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import type { InviteCode } from '@src/features/social/invite/schemas/invite.schema';
-import { toDate } from '@src/shared/date/instant';
+import { fromDate } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,
@@ -35,7 +35,7 @@ import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/rea
 import { range } from 'es-toolkit';
 import { router, useFocusEffect } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function InviteCardScreen() {
@@ -212,7 +212,7 @@ function InviteCardActions() {
   }
 
   const handleContinueAsGuest = (pathname: '/sign-up' | '/login') => {
-    inviteService.savePendingRedemption({ inviteCode, source }, new Date());
+    inviteService.savePendingRedemption({ inviteCode, source }, fromDate(new Date()));
     router.push(pathname);
   };
 
@@ -250,11 +250,9 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
     queries: [useGetInvitePreviewQueryOptions({ inviteCode }), useGetMeQueryOptions()],
   });
   const redeem = useMutation(useRedeemInviteMutationOptions());
+  const [now] = useState(() => fromDate(new Date()));
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
-  const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(
-    toDate(me.createdAt),
-    new Date(),
-  );
+  const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, now);
 
   // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다.
   // 로그인 화면 아래에 남은 카드는 로그인 순간 보이지 않으므로 지우지 않고, 로그인 뒤 이어서 연 카드가 지운다

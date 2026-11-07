@@ -1,4 +1,5 @@
 import { createMemorySyncStorage, createHttpClientStub } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 
 import {
@@ -241,7 +242,7 @@ describe('InviteService', () => {
   });
 
   describe('getInvite', () => {
-    it('발급 시각을 Date로 바꾼 내 초대 요약을 반환한다', async () => {
+    it('발급 시각을 순간으로 바꾼 내 초대 요약을 반환한다', async () => {
       // Given
       const { service, authHttpClient } = createService();
       authHttpClient.get.mockResolvedValue({ ok: true, value: createInviteDto() });
@@ -251,7 +252,7 @@ describe('InviteService', () => {
 
       // Then
       expect(authHttpClient.get).toHaveBeenCalledWith('v1/invites/me', { signal: undefined });
-      expect(result.ok && result.value.createdAt).toEqual(new Date('2026-11-01T09:00:00.000Z'));
+      expect(result.ok && result.value.createdAt).toEqual(toInstant('2026-11-01T09:00:00.000Z'));
     });
 
     it('모르는 보상 종류가 오면 UNKNOWN으로 바꿔 반환한다', async () => {
@@ -336,7 +337,7 @@ describe('InviteService', () => {
   });
 
   describe('getInvitedFriends', () => {
-    it('cursor로 다음 페이지를 불러와 날짜를 Date로 바꾼 목록을 반환한다', async () => {
+    it('cursor로 다음 페이지를 불러와 날짜를 순간으로 바꾼 목록을 반환한다', async () => {
       // Given
       const { service, authHttpClient } = createService();
       authHttpClient.get.mockResolvedValue({
@@ -353,7 +354,7 @@ describe('InviteService', () => {
         params: { cursor: 'clz7x5p8k0004qz0z8z8z8z8z', limit: undefined, status: undefined },
       });
       expect(result.ok && result.value.items[0]?.joinedAt).toEqual(
-        new Date('2026-11-02T10:30:00.000Z'),
+        toInstant('2026-11-02T10:30:00.000Z'),
       );
       expect(result.ok && result.value.hasMore).toBe(true);
     });
@@ -363,11 +364,11 @@ describe('InviteService', () => {
     it('7일 안에 저장한 초대면 지우지 않고 반환한다', () => {
       // Given
       const { service, pendingRedemptionRepository } = createService();
-      const pending = createPendingRedemption({ savedAt: new Date('2026-10-20T00:00:00Z') });
+      const pending = createPendingRedemption({ savedAt: toInstant('2026-10-20T00:00:00Z') });
       pendingRedemptionRepository.save(pending);
 
       // When
-      const result = service.findPendingRedemption(new Date('2026-10-25T00:00:00Z'));
+      const result = service.findPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
 
       // Then 10-20 → 10-25 = 5일 ≤ 7일
       expect(result).toEqual(pending);
@@ -378,11 +379,11 @@ describe('InviteService', () => {
       // Given
       const { service, pendingRedemptionRepository } = createService();
       pendingRedemptionRepository.save(
-        createPendingRedemption({ savedAt: new Date('2026-10-10T00:00:00Z') }),
+        createPendingRedemption({ savedAt: toInstant('2026-10-10T00:00:00Z') }),
       );
 
       // When
-      const result = service.findPendingRedemption(new Date('2026-10-25T00:00:00Z'));
+      const result = service.findPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
 
       // Then 10-10 → 10-25 = 15일 > 7일
       expect(result).toBeNull();
@@ -410,7 +411,7 @@ describe('InviteService', () => {
       const { service, pendingRedemptionRepository } = createService({
         referrer: 'inviteCode=K7M2QX&utm_source=aido_landing',
       });
-      const now = new Date('2026-10-25T00:00:00Z');
+      const now = toInstant('2026-10-25T00:00:00Z');
 
       // When
       const result = await service.captureInstallReferrer(now);
@@ -424,10 +425,10 @@ describe('InviteService', () => {
     it('이미 한 번 확인했으면 referrer를 다시 읽지 않는다', async () => {
       // Given
       const { service, readReferrer } = createService({ referrer: 'inviteCode=K7M2QX' });
-      await service.captureInstallReferrer(new Date('2026-10-25T00:00:00Z'));
+      await service.captureInstallReferrer(toInstant('2026-10-25T00:00:00Z'));
 
       // When
-      const result = await service.captureInstallReferrer(new Date('2026-10-26T00:00:00Z'));
+      const result = await service.captureInstallReferrer(toInstant('2026-10-26T00:00:00Z'));
 
       // Then
       expect(result).toBeNull();

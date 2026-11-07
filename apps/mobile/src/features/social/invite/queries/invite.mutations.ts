@@ -17,12 +17,29 @@ import { router } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
+import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { type InviteShareContent } from '../domains/invite-share.model';
 import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
 import { type InviteShareChannel } from '../schemas/invite-share.schema';
 import { type InviteCode } from '../schemas/invite.schema';
 import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
+
+/** 코드 입력에서 없는 코드를 바로 알리고, 받은 미리보기는 초대 카드가 다시 부르지 않게 캐시에 둔다 */
+export function useCheckInvitePreviewMutationOptions() {
+  const inviteService = useInviteService();
+  const queryClient = useQueryClient();
+
+  return mutationOptions({
+    // 보내는 사이 연결이 끊겨도 멈추지 않고 실패해 호출한 쪽이 알린다
+    networkMode: 'always',
+    mutationFn: async (inviteCode: InviteCode) =>
+      unwrap(await inviteService.getPreview(inviteCode)),
+    onSuccess: (preview, inviteCode) => {
+      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode }), preview);
+    },
+  });
+}
 
 export function useRedeemInviteMutationOptions() {
   const haptics = useHaptics();

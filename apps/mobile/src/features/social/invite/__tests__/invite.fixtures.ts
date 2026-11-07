@@ -5,6 +5,7 @@ import {
   type MyInviteResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
+import { toInstant } from '@src/shared/date/instant';
 
 import type { RedemptionResult } from '../schemas/invite-redemption.schema';
 import type { PendingRedemption } from '../schemas/invite-redemption.schema';
@@ -16,7 +17,7 @@ export const createPendingRedemption = (
 ): PendingRedemption => ({
   inviteCode: 'K7M2QX',
   source: 'universal_link',
-  savedAt: new Date('2028-02-23T00:00:00Z'),
+  savedAt: toInstant('2028-02-23T00:00:00Z'),
   ...overrides,
 });
 
@@ -75,7 +76,7 @@ export const createInvite = (overrides?: Partial<Invite>): Invite => ({
     ],
   },
   rewardsEarned: [],
-  createdAt: new Date('2026-11-01T09:00:00.000Z'),
+  createdAt: toInstant('2026-11-01T09:00:00.000Z'),
   ...overrides,
 });
 
@@ -101,7 +102,7 @@ export const createInvitedFriend = (overrides?: Partial<InvitedFriend>): Invited
   status: 'JOINED',
   activeDayCount: 1,
   rejectionReason: null,
-  joinedAt: new Date('2026-11-02T10:30:00.000Z'),
+  joinedAt: toInstant('2026-11-02T10:30:00.000Z'),
   qualifiedAt: null,
   ...overrides,
 });

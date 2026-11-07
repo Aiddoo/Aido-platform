@@ -24,6 +24,7 @@ import {
   createPendingResponse,
   createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
@@ -293,7 +294,7 @@ describe('대기 중인 초대', () => {
   const PENDING_INVITE = {
     inviteCode: 'K7M2QX',
     source: 'universal_link',
-    savedAt: new Date('2026-11-07T00:00:00.000Z'),
+    savedAt: toInstant('2026-11-07T00:00:00.000Z'),
   } as const;
 
   it('로그아웃하면 지워 다음 계정이 앞사람의 초대를 받지 않는다', async () => {

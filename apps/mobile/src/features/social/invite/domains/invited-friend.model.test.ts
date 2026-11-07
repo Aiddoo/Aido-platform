@@ -1,3 +1,4 @@
+import { toInstant } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 
 import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.fixtures';
@@ -14,11 +15,11 @@ describe('orderByJoinedAtDesc', () => {
     // Given
     const earlier = createInvitedFriend({
       userId: 'earlier',
-      joinedAt: new Date('2026-11-01T00:00:00Z'),
+      joinedAt: toInstant('2026-11-01T00:00:00Z'),
     });
     const later = createInvitedFriend({
       userId: 'later',
-      joinedAt: new Date('2026-11-03T00:00:00Z'),
+      joinedAt: toInstant('2026-11-03T00:00:00Z'),
     });
 
     // When
@@ -87,17 +88,17 @@ describe('orderByWaitingFirst', () => {
     const rewardedLater = createInvitedFriend({
       userId: 'rewarded-later',
       status: 'REWARDED',
-      joinedAt: new Date('2026-11-05T00:00:00Z'),
+      joinedAt: toInstant('2026-11-05T00:00:00Z'),
     });
     const waitingEarlier = createInvitedFriend({
       userId: 'waiting-earlier',
       status: 'JOINED',
-      joinedAt: new Date('2026-11-01T00:00:00Z'),
+      joinedAt: toInstant('2026-11-01T00:00:00Z'),
     });
     const waitingLater = createInvitedFriend({
       userId: 'waiting-later',
       status: 'JOINED',
-      joinedAt: new Date('2026-11-03T00:00:00Z'),
+      joinedAt: toInstant('2026-11-03T00:00:00Z'),
     });
 
     // When

@@ -1,4 +1,4 @@
-import { useClipboard, useInviteService } from '@src/bootstrap/providers/di-context';
+import { useClipboard } from '@src/bootstrap/providers/di-context';
 import { isBusinessError } from '@src/core/errors/result';
 import { InviteCodeInput } from '@src/features/social/invite/components/invite-code-input';
 import {
@@ -9,8 +9,8 @@ import {
   toInviteCodeDraft,
 } from '@src/features/social/invite/domains/invite.model';
 import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
+import { useCheckInvitePreviewMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/invite.queries';
-import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
@@ -26,7 +26,7 @@ import {
   StyledSafeAreaView,
   Text,
 } from '@src/shared/ui';
-import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type PropsWithChildren, useRef, useState } from 'react';
@@ -40,8 +40,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const showFailure = useMutationFailure();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const inviteService = useInviteService();
-  const queryClient = useQueryClient();
+  const checkPreview = useMutation(useCheckInvitePreviewMutationOptions());
   const navigation = useNavigation();
   const form = useForm({ defaultValues: { inviteCode: '' } });
   const { errors, submitCount, isSubmitting } = useFormState({ control: form.control });
@@ -97,11 +96,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
 
     try {
       // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
-      await queryClient.fetchQuery({
-        ...getInvitePreviewQueryOptions(inviteService, { inviteCode }),
-        // 보내는 사이 연결이 끊겨도 멈추지 않고 실패해 토스트로 알린다
-        networkMode: 'always',
-      });
+      await checkPreview.mutateAsync(inviteCode);
       // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않는다
       if (!navigation.isFocused()) {
         return;

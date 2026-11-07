@@ -8,6 +8,7 @@ import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id';
 import type { Logger } from '@src/core/ports/logger';
+import type { Instant } from '@src/shared/date/instant';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { getErrorMessage } from '@src/shared/errors/to-error';
@@ -193,7 +194,7 @@ export class InviteService {
     this.#pawPrintCelebrationRepository.setCelebratedCount(userId, pawPrintedCount);
   };
 
-  savePendingRedemption = (input: SavePendingRedemptionInput, now: Date) => {
+  savePendingRedemption = (input: SavePendingRedemptionInput, now: Instant) => {
     this.#pendingRedemptionRepository.save({ ...input, savedAt: now });
   };
 
@@ -201,7 +202,7 @@ export class InviteService {
    * 로그인 전에 남긴 초대를 찾는다. 지났으면 지우고 null이다. 로그인 전에만 남기므로 처음 로그인한
    * 계정이 이어서 연다. 찾기만 하고 지우지 않아 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다.
    */
-  findPendingRedemption = (now: Date): PendingRedemption | null => {
+  findPendingRedemption = (now: Instant): PendingRedemption | null => {
     const pending = this.#pendingRedemptionRepository.get();
     if (pending == null) {
       return null;
@@ -221,7 +222,7 @@ export class InviteService {
   };
 
   /** 처음 실행 때 Play 설치 referrer의 초대 코드를 이어서 열 초대로 남긴다 */
-  captureInstallReferrer = async (now: Date): Promise<PendingRedemption | null> => {
+  captureInstallReferrer = async (now: Instant): Promise<PendingRedemption | null> => {
     if (this.#installReferrerRepository.hasChecked()) {
       return null;
     }

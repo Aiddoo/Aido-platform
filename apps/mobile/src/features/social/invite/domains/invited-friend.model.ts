@@ -3,12 +3,13 @@ import {
   REDEMPTION_STATUS,
   REDEMPTION_STATUS_UNKNOWN,
 } from '@aido/api/vocabulary';
+import { toEpochMs } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { InvitedFriend } from '../schemas/invited-friend.schema';
 
 export function orderByJoinedAtDesc(friend: InvitedFriend) {
-  return -friend.joinedAt.getTime();
+  return -toEpochMs(friend.joinedAt);
 }
 
 // 발자국을 기다리는 친구가 먼저 보이게 한다. orderByJoinedAtDesc와 함께 쓴다

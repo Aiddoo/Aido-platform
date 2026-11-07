@@ -1,4 +1,5 @@
 import { redeemInviteResponseSchema } from '@aido/api';
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 import { InviteRewardSchema } from './invite-reward.schema';
@@ -18,7 +19,7 @@ export type InviteLinkSource = z.output<typeof InviteLinkSourceSchema>;
 export const PendingRedemptionSchema = z.strictObject({
   inviteCode: InviteCodeSchema,
   source: InviteLinkSourceSchema,
-  savedAt: z.coerce.date(),
+  savedAt: instantSchema,
 });
 
 export type PendingRedemption = z.output<typeof PendingRedemptionSchema>;

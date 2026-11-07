@@ -1,8 +1,6 @@
 import { type RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { type ClipboardGateway } from '@src/core/ports/clipboard';
-import { type Logger } from '@src/core/ports/logger';
 import { getErrorMessage } from '@src/shared/errors';
 import { type Page } from '@src/shared/types/page.types';
 import {
@@ -13,7 +11,6 @@ import {
 } from '@tanstack/react-query';
 import { orderBy as orderByFn } from 'es-toolkit';
 
-import { type InviteService } from '../apis/invite.service';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
@@ -25,7 +22,9 @@ import { type InvitedFriend } from '../schemas/invited-friend.schema';
 import { invalidateInviteAvailability } from './invite-cache';
 
 // 화면에 들어올 때마다 다시 확인하고, 떠나면 남기지 않는다
-function getClipboardPresenceQueryOptions(clipboard: ClipboardGateway) {
+export function useGetClipboardPresenceQueryOptions() {
+  const clipboard = useClipboard();
+
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.clipboardPresence(),
     queryFn: () => clipboard.hasContent(),
@@ -37,14 +36,12 @@ function getClipboardPresenceQueryOptions(clipboard: ClipboardGateway) {
   });
 }
 
-export function useGetClipboardPresenceQueryOptions() {
-  return getClipboardPresenceQueryOptions(useClipboard());
-}
-
 // 운영 플래그라 자주 바뀌지 않는다. 진입점이 여러 곳이어도 한 번만 묻는다
 const AVAILABILITY_STALE_TIME_MS = 5 * 60 * 1000;
 
-function getInviteAvailabilityQueryOptions(inviteService: InviteService) {
+export function useGetInviteAvailabilityQueryOptions() {
+  const inviteService = useInviteService();
+
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.availability(),
     queryFn: async ({ signal }) => unwrap(await inviteService.getAvailability(signal)),
@@ -52,17 +49,12 @@ function getInviteAvailabilityQueryOptions(inviteService: InviteService) {
   });
 }
 
-export function useGetInviteAvailabilityQueryOptions() {
-  return getInviteAvailabilityQueryOptions(useInviteService());
-}
-
 // 코드 입력에서 확인한 미리보기를 초대 카드가 다시 부르지 않게 잠깐 둔다
 const INVITE_PREVIEW_STALE_TIME_MS = 60 * 1000;
 
-export function getInvitePreviewQueryOptions(
-  inviteService: InviteService,
-  { inviteCode }: { inviteCode: InviteCode },
-) {
+export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: InviteCode }) {
+  const inviteService = useInviteService();
+
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.preview({ inviteCode }),
     queryFn: async ({ signal }) => unwrap(await inviteService.getPreview(inviteCode, signal)),
@@ -70,14 +62,13 @@ export function getInvitePreviewQueryOptions(
   });
 }
 
-export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: InviteCode }) {
-  return getInvitePreviewQueryOptions(useInviteService(), { inviteCode });
-}
-
 // 발자국은 친구가 할 일을 끝낼 때 바뀌어서 짧게만 재사용한다
 const INVITE_STALE_TIME_MS = 30 * 1000;
 
-function getInviteQueryOptions(inviteService: InviteService, logger: Logger) {
+export function useGetInviteQueryOptions() {
+  const inviteService = useInviteService();
+  const logger = useLogger();
+
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.invite(),
     queryFn: async ({ signal, client }) => {
@@ -96,10 +87,6 @@ function getInviteQueryOptions(inviteService: InviteService, logger: Logger) {
   });
 }
 
-export function useGetInviteQueryOptions() {
-  return getInviteQueryOptions(useInviteService(), useLogger());
-}
-
 const FIRST_PAGE_CURSOR: string | null = null;
 const INVITED_FRIENDS_PAGE_SIZE = 20;
 
@@ -109,10 +96,9 @@ interface InviteesFilter {
 }
 
 /** 상태마다 다른 캐시를 둔다. 서버가 상태로 거르고 totalCount도 그 조건으로 센다 */
-function getInvitedFriendsInfiniteQueryOptions(
-  inviteService: InviteService,
-  { status }: InviteesFilter = {},
-) {
+export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFilter) {
+  const inviteService = useInviteService();
+
   return infiniteQueryOptions({
     queryKey: INVITE_QUERY_KEYS.invitees({ status }),
     queryFn: async ({ pageParam, signal }) =>
@@ -129,6 +115,7 @@ function getInvitedFriendsInfiniteQueryOptions(
     initialPageParam: FIRST_PAGE_CURSOR,
     // 친구 목록과 같이 마지막 userId가 다음 cursor다
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.items.at(-1)?.userId : undefined),
+    select: selectInvitedFriends,
   });
 }
 
@@ -137,13 +124,6 @@ function selectInvitedFriends(
   invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
 ) {
   return invitedFriendPages.pages.flatMap((page) => page.items);
-}
-
-export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFilter) {
-  return infiniteQueryOptions({
-    ...getInvitedFriendsInfiniteQueryOptions(useInviteService(), { status }),
-    select: selectInvitedFriends,
-  });
 }
 
 /**
@@ -169,7 +149,7 @@ function selectInvitedFriendSummary(
 
 export function useGetInvitedFriendSummaryInfiniteQueryOptions() {
   return infiniteQueryOptions({
-    ...getInvitedFriendsInfiniteQueryOptions(useInviteService()),
+    ...useGetInvitedFriendsInfiniteQueryOptions({}),
     select: selectInvitedFriendSummary,
   });
 }
@@ -183,7 +163,7 @@ function selectInvitedFriendTotalCount(
 /** 전체 탭 숫자. 전체 목록 첫 페이지의 totalCount만 읽는다 */
 export function useGetInvitedFriendCountInfiniteQueryOptions() {
   return infiniteQueryOptions({
-    ...getInvitedFriendsInfiniteQueryOptions(useInviteService()),
+    ...useGetInvitedFriendsInfiniteQueryOptions({}),
     select: selectInvitedFriendTotalCount,
   });
 }
@@ -193,7 +173,7 @@ export function useGetInvitedFriendCountInfiniteQueryOptions() {
 const REDEMPTION_RESULT_GC_TIME_MS = 10 * 60 * 1000;
 
 /** inviterId가 null이면(형식이 틀린 링크) 넣어 둔 값이 없어 늘 비어 있다 */
-export function getRedemptionResultQueryOptions({ inviterId }: { inviterId: string | null }) {
+export function useGetRedemptionResultQueryOptions({ inviterId }: { inviterId: string | null }) {
   return queryOptions<RedemptionResult>({
     queryKey: INVITE_QUERY_KEYS.redemption({ inviterId }),
     queryFn: skipToken,
