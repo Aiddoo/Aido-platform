@@ -193,6 +193,7 @@ export function DIProvider({
       requestRefresh,
       publicHttpClient,
       logger,
+      now: Date.now,
     });
 
     const authKyInstance = createAuthClient({

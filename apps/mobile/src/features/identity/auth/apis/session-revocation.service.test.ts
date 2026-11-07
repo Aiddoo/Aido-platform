@@ -312,6 +312,7 @@ describe('SessionRevocationService', () => {
       requestRefresh,
       publicHttpClient: new KyHttpClient(createPublicClient()),
       logger: { info: jest.fn(), warn: jest.fn() },
+      now: Date.now,
     });
     await service.record(REFRESH_A);
 

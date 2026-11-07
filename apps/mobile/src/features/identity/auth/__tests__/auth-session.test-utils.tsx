@@ -88,6 +88,7 @@ export function createAuthSession({
     requestRefresh,
     publicHttpClient: publicHttp,
     logger: silentLogger,
+    now: Date.now,
   });
   const sessionCleanupService = new SessionCleanupService({
     accountGuides,

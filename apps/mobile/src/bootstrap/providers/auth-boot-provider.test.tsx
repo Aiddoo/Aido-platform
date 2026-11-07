@@ -139,6 +139,7 @@ describe('AuthBootProvider', () => {
             requestRefresh,
             publicHttpClient: createHttpClientStub(),
             logger: { info: jest.fn(), warn: jest.fn() },
+            now: Date.now,
           }),
         })}
       >

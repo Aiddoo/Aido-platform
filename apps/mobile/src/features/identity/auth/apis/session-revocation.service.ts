@@ -32,7 +32,7 @@ interface SessionRevocationPorts {
    */
   publicHttpClient: Pick<HttpClient, 'post'>;
   logger: Pick<Logger, 'info' | 'warn'>;
-  now?: () => number;
+  now: () => number;
 }
 
 /**
@@ -60,7 +60,7 @@ export class SessionRevocationService {
     this.#requestRefresh = requestRefresh;
     this.#publicHttpClient = publicHttpClient;
     this.#logger = logger;
-    this.#now = now ?? Date.now;
+    this.#now = now;
   }
 
   record = (refreshToken: string): Promise<void> =>
@@ -86,7 +86,7 @@ export class SessionRevocationService {
     return this.#inFlight;
   };
 
-  async #revoke(): Promise<void> {
+  #revoke = async (): Promise<void> => {
     const pending = await this.#repository.get();
     if (pending == null) {
       return;
@@ -111,10 +111,10 @@ export class SessionRevocationService {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, { code: result.error.code });
     }
     await this.#repository.clear();
-  }
+  };
 
   /** 세션이 이미 끝났으면 null. 일시 실패는 던져 기록을 남긴다 */
-  async #issueAccessToken(pending: PendingRevocation): Promise<string | null> {
+  #issueAccessToken = async (pending: PendingRevocation): Promise<string | null> => {
     const response = await this.#requestRefresh(pending.refreshToken);
 
     if (response.status === 429 || response.status >= 500) {
@@ -138,5 +138,5 @@ export class SessionRevocationService {
     // 서버가 회전했다. 로그아웃이 실패해도 다음 시도가 재사용 감지에 걸리지 않게 새 토큰을 남긴다
     await this.#repository.save({ ...pending, refreshToken: parsed.data.data.refreshToken });
     return parsed.data.data.accessToken;
-  }
+  };
 }
