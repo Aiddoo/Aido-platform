@@ -28,6 +28,8 @@ import { AiReportPolicy } from '../domains/ai-report.model';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
 
+/** 활동이 많았던 시간대를 몇 개까지 보여 줄지 */
+const TOP_HOUR_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
 
 interface ActivityReportProps {
@@ -244,14 +246,14 @@ function TimePatternSummary({
 }) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
-  const top3 = orderBy(items, ['count'], ['desc']).slice(0, 3);
+  const topHours = orderBy(items, ['count'], ['desc']).slice(0, TOP_HOUR_COUNT);
 
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
         {t('report.detail.activeHours')}
       </Text>
-      {top3.map((item, index) => (
+      {topHours.map((item, index) => (
         <HStack key={item.hour} align="center" gap={8}>
           <Text size="b4" weight="bold" tone="brand">
             {index + 1}
