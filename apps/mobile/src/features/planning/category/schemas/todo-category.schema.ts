@@ -17,7 +17,7 @@ const todoCategoryWithCountSchema = todoCategorySchema.extend({
 });
 export type TodoCategoryWithCount = z.infer<typeof todoCategoryWithCountSchema>;
 
-const todoCategoriesResultSchema = z.object({
+export const todoCategoriesResultSchema = z.object({
   categories: z.array(todoCategoryWithCountSchema),
 });
 export type TodoCategoriesResult = z.infer<typeof todoCategoriesResultSchema>;

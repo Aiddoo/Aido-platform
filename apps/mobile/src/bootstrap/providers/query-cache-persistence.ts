@@ -1,8 +1,20 @@
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
+import { logger } from '@src/shared/infra/logger/global-logger';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { defaultShouldDehydrateQuery, type Query } from '@tanstack/react-query';
-import type { PersistQueryClientOptions } from '@tanstack/react-query-persist-client';
+import {
+  defaultShouldDehydrateQuery,
+  partialMatchKey,
+  type Query,
+  type QueryKey,
+} from '@tanstack/react-query';
+import type {
+  PersistedClient,
+  PersistQueryClientOptions,
+} from '@tanstack/react-query-persist-client';
+import type { z } from 'zod';
+
+import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
 
 // ⚠️ 영속 계약: 이미 저장된 캐시를 가리키므로 이름을 바꾸면 기존 캐시를 한 번 잃는다
 export const QUERY_CACHE_STORAGE_KEY = 'aido.query-cache';
@@ -90,6 +102,43 @@ export function shouldPersistQuery(query: Query): boolean {
   return defaultShouldDehydrateQuery(query) && query.meta?.persist === true;
 }
 
+export interface PersistedQuerySchema {
+  /** 앞부분이 같은 키를 모두 이 스키마로 검증한다 */
+  queryKey: QueryKey;
+  schema: z.ZodType;
+}
+
+/**
+ * 복원한 값의 모양을 믿지 않는다. 버전이 같아도 저장값이 깨졌으면 화면이 죽으므로 그 조회만 버리고
+ * 서버에서 다시 받는다. 값은 바꾸지 않는다. 표에 없는 조회도 검증할 수 없어 버린다.
+ */
+function keepValidPersistedQueries(
+  client: PersistedClient,
+  schemas: readonly PersistedQuerySchema[],
+): PersistedClient {
+  const { queries } = client.clientState;
+  const droppedQueries = queries.filter((query) => {
+    const entry = schemas.find(({ queryKey }) => partialMatchKey(query.queryKey, queryKey));
+    return entry?.schema.safeParse(query.state.data).success !== true;
+  });
+  if (droppedQueries.length === 0) {
+    return client;
+  }
+
+  logger.warn(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
+    droppedCount: droppedQueries.length,
+    totalCount: queries.length,
+    droppedRoots: [...new Set(droppedQueries.map(({ queryKey }) => String(queryKey[0])))],
+  });
+  return {
+    ...client,
+    clientState: {
+      ...client.clientState,
+      queries: queries.filter((query) => !droppedQueries.includes(query)),
+    },
+  };
+}
+
 /**
  * 앱 버전이 바뀌면 모델 모양이 달라질 수 있어 캐시를 버린다.
  * 날씨·알림·AI 결과처럼 서버가 표시 언어로 만든 값도 담겨, 다른 언어로 저장한 캐시도 복원하지 않는다
@@ -107,14 +156,17 @@ export function createQueryCacheBuster({
 export function createQueryPersistOptions({
   storage,
   buster,
+  schemas,
 }: {
   storage: QueryCacheStorage;
   buster: string;
+  schemas: readonly PersistedQuerySchema[];
 }): Omit<PersistQueryClientOptions, 'queryClient'> {
   return {
     persister: createAsyncStoragePersister({
       storage,
       key: QUERY_CACHE_STORAGE_KEY,
+      deserialize: (text) => keepValidPersistedQueries(JSON.parse(text), schemas),
     }),
     maxAge: QUERY_CACHE_MAX_AGE_MS,
     buster,

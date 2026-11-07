@@ -9,6 +9,7 @@ import { type PropsWithChildren, useEffect, useState } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState } from 'react-native';
 
+import { PERSISTED_QUERY_SCHEMAS } from './persisted-query-schemas';
 import {
   createQueryCacheBuster,
   createQueryPersistOptions,
@@ -88,6 +89,7 @@ export function QueryProvider({ children, cacheStorage }: QueryProviderProps) {
       : createQueryPersistOptions({
           storage: cacheStorage,
           buster: createQueryCacheBuster({ appVersion, language: resolvedLanguage }),
+          schemas: PERSISTED_QUERY_SCHEMAS,
         });
   });
 

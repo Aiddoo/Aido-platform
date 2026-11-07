@@ -17,7 +17,7 @@ const revisionSchema = z.int().nonnegative();
 const placeNameSchema = z.object({ city: z.string(), district: z.string().nullable() });
 export type PlaceName = z.infer<typeof placeNameSchema>;
 
-const locationReadingSchema = z.discriminatedUnion('status', [
+export const locationReadingSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('needsPermission') }),
   z.object({ status: z.literal('denied') }),
   z.object({ status: z.literal('unavailable'), revision: revisionSchema }),

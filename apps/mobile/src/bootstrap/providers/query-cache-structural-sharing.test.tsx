@@ -10,6 +10,7 @@ import {
 import { act, render } from '@testing-library/react-native';
 import { memo, Suspense } from 'react';
 import { Text } from 'react-native';
+import { z } from 'zod';
 
 import { createQueryCacheStorage, createQueryPersistOptions } from './query-cache-persistence';
 
@@ -20,6 +21,7 @@ interface MemoItem {
 
 const QUERY_KEY = ['memos'] as const;
 const MEMO_COUNT = 18;
+const TEST_SCHEMAS = [{ queryKey: QUERY_KEY, schema: z.unknown() }];
 
 function createMemos(): MemoItem[] {
   return Array.from({ length: MEMO_COUNT }, (_, index) => ({
@@ -41,7 +43,11 @@ describe('복원한 캐시를 다시 조회할 때의 구조 공유', () => {
     // Given 저장했다가 복원한 캐시
     const storage = createQueryCacheStorage(createMemorySyncStorage());
     storage.setOwner('user-1');
-    const options = createQueryPersistOptions({ storage, buster: '5:1.15.0:ko' });
+    const options = createQueryPersistOptions({
+      storage,
+      buster: '5:1.15.0:ko',
+      schemas: TEST_SCHEMAS,
+    });
     const source = createTestQueryClient();
     source.getQueryCache().build(source, { queryKey: QUERY_KEY, ...PERSISTED_QUERY_OPTIONS });
     source.setQueryData(QUERY_KEY, createMemos());

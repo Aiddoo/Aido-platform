@@ -15,6 +15,19 @@ import { z } from 'zod';
 const friendUserSchema = friendUserContractSchema.extend({ friendsSince: instantSchema });
 export type FriendUser = z.infer<typeof friendUserSchema>;
 
+/** 친구 목록 캐시(무한 조회)의 모양. 영속 캐시 복원 값을 검증할 때 쓴다 */
+export const friendUserPagesSchema = z.object({
+  pages: z.array(
+    z.object({
+      items: z.array(friendUserSchema),
+      totalCount: z.number(),
+      hasMore: z.boolean(),
+      nextCursor: z.string().nullable().optional(),
+    }),
+  ),
+  pageParams: z.array(z.unknown()),
+});
+
 const friendRequestSchema = friendRequestUserContractSchema.extend({
   requestedAt: instantSchema,
 });

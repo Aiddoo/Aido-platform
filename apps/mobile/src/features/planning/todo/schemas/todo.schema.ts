@@ -33,7 +33,7 @@ export type Todo = z.infer<typeof todoSchema>;
 const optimisticTodoSchema = todoSchema.extend({ optimistic: z.literal(true).readonly() });
 export type OptimisticTodo = z.infer<typeof optimisticTodoSchema>;
 
-const todoListResultSchema = z.object({
+export const todoListResultSchema = z.object({
   todos: z.array(todoSchema),
   hasNext: z.boolean(),
   nextCursor: z.number().nullable(),
@@ -57,7 +57,7 @@ const dailyCompletionSummarySchema = z.object({
 });
 export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema>;
 
-const dailyCompletionsResultSchema = z.object({
+export const dailyCompletionsResultSchema = z.object({
   completions: z.array(dailyCompletionSummarySchema),
   totalCompleteDays: z.int().min(0),
   dateRange: z.object({ startDate: z.string(), endDate: z.string() }),

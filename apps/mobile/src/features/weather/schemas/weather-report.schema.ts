@@ -51,7 +51,7 @@ export type WeatherAlert = z.infer<typeof weatherAlertModelSchema>;
 const airQualitySchema = weatherAirQualitySchema;
 export type AirQuality = z.infer<typeof airQualitySchema>;
 
-const weatherReportSchema = z.object({
+export const weatherReportSchema = z.object({
   location: weatherLocationSchema,
   current: currentWeatherSchema,
   nextHour: nextHourForecastSchema.nullable(),

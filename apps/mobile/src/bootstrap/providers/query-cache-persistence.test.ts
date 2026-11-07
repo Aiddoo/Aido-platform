@@ -13,7 +13,9 @@ import {
   persistQueryClientRestore,
   persistQueryClientSave,
 } from '@tanstack/react-query-persist-client';
+import { z } from 'zod';
 
+import { PERSISTED_QUERY_SCHEMAS } from './persisted-query-schemas';
 import {
   createQueryCacheBuster,
   createQueryCacheStorage,
@@ -24,6 +26,8 @@ import {
 } from './query-cache-persistence';
 
 const createClient = () => createTestQueryClient();
+
+const TEST_SCHEMAS = [{ queryKey: ['opted'], schema: z.unknown() }];
 
 const queryOf = (client: QueryClient, queryKey: readonly unknown[]) => {
   const query = client.getQueryCache().find({ queryKey, exact: true });
@@ -154,14 +158,14 @@ describe('createQueryPersistOptions', () => {
     source.setQueryData(['opted'], { savedAt: '2026-11-02T00:00:00.000Z' });
     await persistQueryClientSave({
       queryClient: source,
-      ...createQueryPersistOptions({ storage, buster: savedBuster }),
+      ...createQueryPersistOptions({ storage, buster: savedBuster, schemas: TEST_SCHEMAS }),
     });
     await jest.runAllTimersAsync();
 
     const target = createClient();
     await persistQueryClientRestore({
       queryClient: target,
-      ...createQueryPersistOptions({ storage, buster: restoringBuster }),
+      ...createQueryPersistOptions({ storage, buster: restoringBuster, schemas: TEST_SCHEMAS }),
     });
     return target.getQueryData(['opted']);
   };
@@ -198,7 +202,11 @@ describe('createQueryPersistOptions', () => {
     });
     const storage = createQueryCacheStorage(createMemorySyncStorage());
     storage.setOwner('user-1');
-    const options = createQueryPersistOptions({ storage, buster: '3:1.15.0:ko' });
+    const options = createQueryPersistOptions({
+      storage,
+      buster: '3:1.15.0:ko',
+      schemas: PERSISTED_QUERY_SCHEMAS,
+    });
     const source = createClient();
     source.getQueryCache().build(source, { queryKey: listKey, ...PERSISTED_QUERY_OPTIONS });
     source.getQueryCache().build(source, { queryKey: rangeKey, ...PERSISTED_QUERY_OPTIONS });
