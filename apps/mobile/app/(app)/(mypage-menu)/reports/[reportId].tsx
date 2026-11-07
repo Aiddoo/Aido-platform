@@ -47,7 +47,7 @@ export default function ReportDetailScreen() {
                     {t('report.lockedDetail.description')}
                   </Text>
                   <Spacing size={4} />
-                  <Button size="medium" onPress={() => gate.checkAccessOrPrompt()}>
+                  <Button size="medium" onPress={() => gate.promptIfBlocked()}>
                     {t('report.lockedDetail.subscribe')}
                   </Button>
                 </VStack>

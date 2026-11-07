@@ -36,7 +36,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
       await createCategory.mutateAsync(values, {
         onSuccess: () => sheet.close(),
         // 시트 route 안의 Overlay에 띄워 시트 위에 보인다. 구독하러 가면 시트를 바로 떠난다
-        onError: (error) => gate.promptIfLimited(error, { onSubscribe: sheet.exit }),
+        onError: (error) => gate.promptIfBlockedError(error, { onSubscribe: sheet.exit }),
       });
     } catch (error) {
       reportUnexpectedError(error);

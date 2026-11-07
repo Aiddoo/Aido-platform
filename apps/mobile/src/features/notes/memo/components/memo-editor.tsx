@@ -667,7 +667,7 @@ function useMemoAiParse() {
 
       return;
     }
-    if (defaultCategoryId == null || !gate.checkAccessOrPrompt()) {
+    if (defaultCategoryId == null || !gate.promptIfBlocked()) {
       return;
     }
     const consent = await aiConsent.ensureAgreed();

@@ -55,7 +55,7 @@ export function useActOnSuggestionMutationOptions() {
       );
     },
     onError: (error) => {
-      if (gate.promptIfLimited(error)) {
+      if (gate.promptIfBlockedError(error)) {
         haptics.notify('error');
         return;
       }

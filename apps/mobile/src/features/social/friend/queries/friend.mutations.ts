@@ -212,7 +212,7 @@ export function useSendRequestByTagMutationOptions({
         haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
-        gate.promptIfLimited(
+        gate.promptIfBlockedError(
           err,
           match(
             FriendPolicy.getFriendLimitOffer({

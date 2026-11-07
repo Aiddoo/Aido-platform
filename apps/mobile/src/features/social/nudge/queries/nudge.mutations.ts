@@ -126,7 +126,7 @@ export function useSendTodoNudgeMutationOptions() {
       trackEvent('nudge_sent');
     },
     onError: (error) => {
-      if (gate.promptIfLimited(error)) {
+      if (gate.promptIfBlockedError(error)) {
         haptics.notify('error');
         return;
       }
