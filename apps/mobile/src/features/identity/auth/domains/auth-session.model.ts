@@ -2,7 +2,7 @@ import type { ResolvedAuthStatus } from '@src/core/session/auth-status';
 import { match, P } from 'ts-pattern';
 
 /** 미인증인 이유. 초안을 지울지는 이 값으로 갈린다. 사용자가 나간 경우만 지운다 */
-export type SignedOutReason = 'none' | 'signed-out' | 'expired' | 'boot-failed';
+type SignedOutReason = 'none' | 'signed-out' | 'expired' | 'boot-failed';
 
 export type AuthSessionState =
   | { status: 'loading' }

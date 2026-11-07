@@ -3,7 +3,7 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { type AuthSessionStore, createAuthSessionStore } from '../apis/auth-session.store';
 import type { AuthSessionState } from '../domains/auth-session.model';
 
-export function createAuthSessionState(status: AuthStatus): AuthSessionState {
+function createAuthSessionState(status: AuthStatus): AuthSessionState {
   return status === 'unauthenticated' ? { status, reason: 'none' } : { status };
 }
 
