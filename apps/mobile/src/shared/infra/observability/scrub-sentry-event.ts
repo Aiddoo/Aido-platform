@@ -1,4 +1,5 @@
 import type { Breadcrumb, Event } from '@sentry/react-native';
+import { isNil, mapValues, omitBy, pickBy } from 'es-toolkit';
 
 const MAX_TEXT_LENGTH = 500;
 
@@ -88,11 +89,11 @@ export function scrubContext(
   if (context == null) {
     return undefined;
   }
-  const entries = Object.entries(context).flatMap(([key, value]) => {
-    const scrubbed = ALLOWED_CONTEXT_KEYS.has(key) ? scrubValue(key, value) : undefined;
-    return scrubbed == null ? [] : [[key, scrubbed] as const];
-  });
-  return Object.fromEntries(entries);
+  const allowed = pickBy(context, (_value, key) => ALLOWED_CONTEXT_KEYS.has(key));
+  return omitBy(
+    mapValues(allowed, (value, key) => scrubValue(key, value)),
+    isNil,
+  );
 }
 
 /** 콘솔 출력(로거 context가 그대로 담긴다)은 breadcrumb로 남기지 않는다 */

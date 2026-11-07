@@ -113,6 +113,18 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     // Then
     expect(result).toEqual(new Date(2026, 1, 28));
   });
+
+  test('윤년 2월 29일을 평년 2월로 옮기면 2월 28일이 된다', () => {
+    // Given
+    const leapDay = new Date(2028, 1, 29, 12);
+    const commonFebruary = new Date(2029, 1, 1);
+
+    // When
+    const result = moveToLocalMonth(leapDay, commonFebruary, SEOUL);
+
+    // Then
+    expect(result).toEqual(new Date(2029, 1, 28));
+  });
 });
 
 describe('diffLocalMonths', () => {

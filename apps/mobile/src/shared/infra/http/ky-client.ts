@@ -3,6 +3,7 @@ import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { isNil, mapValues, omitBy } from 'es-toolkit';
 import { HTTPError, type KyInstance, type Options } from 'ky';
 
 import { toApiError, toTransportError } from './ky-error';
@@ -109,11 +110,7 @@ export class KyHttpClient implements HttpClient {
     }
 
     if (config.params) {
-      options.searchParams = Object.fromEntries(
-        Object.entries(config.params)
-          .filter((entry): entry is [string, string | number | boolean] => entry[1] != null)
-          .map(([key, value]) => [key, String(value)]),
-      );
+      options.searchParams = mapValues(omitBy(config.params, isNil), String);
     }
 
     return options;

@@ -67,8 +67,7 @@ export function diffMs(instant: Instant, other: Instant): number {
 }
 
 export function toDate(date: Date | string | number): Date {
-  const parsed = dayjs(date);
-  return parsed.isValid() ? parsed.toDate() : new Date(date);
+  return dayjs(date).toDate();
 }
 
 /** 그 시간대의 날짜(YYYY-MM-DD)와 벽시계(HH:mm)가 가리키는 순간 */

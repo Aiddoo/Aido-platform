@@ -4,8 +4,6 @@ import {
   addDaysToDateKey,
   addMonthsToDateKey,
   diffDateKeysInMonths,
-  getDayOfMonth,
-  getDaysInDateKeyMonth,
   getMonthStartDateKey,
 } from './date-key';
 import { toDateKey } from './instant';
@@ -36,13 +34,7 @@ export function startOfLocalMonth(date: Date, timeZone: string): Date {
 
 /** 달만 옮기고 일은 기준 날짜의 일을 쓴다. 그 달에 없는 일은 마지막 날이다 */
 export function moveToLocalMonth(date: Date, monthSource: Date, timeZone: string): Date {
-  const monthStartKey = getMonthStartDateKey(toDateKey(monthSource, timeZone));
-  const day = Math.min(
-    getDayOfMonth(toDateKey(date, timeZone)),
-    getDaysInDateKeyMonth(monthStartKey),
-  );
-
-  return toLocalDay(addDaysToDateKey(monthStartKey, day - 1));
+  return addLocalMonths(date, diffLocalMonths(monthSource, date, timeZone), timeZone);
 }
 
 /** 두 날짜의 달 차이 (first - second) */
