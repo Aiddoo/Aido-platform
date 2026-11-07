@@ -7,7 +7,7 @@ interface SocialFeedShare {
   imageHeight: number;
   webUrl: string;
   buttonTitle: string;
-  executionParams: Record<string, string>;
+  appLinkParams: Record<string, string>;
 }
 
 export interface SocialShareGateway {

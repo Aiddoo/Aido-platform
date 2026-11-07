@@ -57,7 +57,7 @@ export class InviteShareService {
         imageHeight: INVITE_SHARE_IMAGE.height,
         webUrl: content.link,
         buttonTitle: content.copy.kakaoButton,
-        executionParams: { inviteCode: content.inviteCode },
+        appLinkParams: { inviteCode: content.inviteCode },
       });
       return { channel: 'kakao', outcome: 'shared' };
     } catch (error) {

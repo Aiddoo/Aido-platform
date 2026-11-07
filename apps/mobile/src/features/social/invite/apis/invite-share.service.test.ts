@@ -74,7 +74,7 @@ describe('InviteShareService', () => {
           webUrl: 'https://aido.kr/i/K7M2QX',
           imageWidth: 1600,
           imageHeight: 800,
-          executionParams: { inviteCode: 'K7M2QX' },
+          appLinkParams: { inviteCode: 'K7M2QX' },
         }),
       );
       expect(result).toEqual({ channel: 'kakao', outcome: 'shared' });

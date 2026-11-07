@@ -42,8 +42,8 @@ export function createKakaoShareGateway(nativeAppKey: string | undefined): Socia
               link: {
                 webUrl: feed.webUrl,
                 mobileWebUrl: feed.webUrl,
-                iosExecutionParams: feed.executionParams,
-                androidExecutionParams: feed.executionParams,
+                iosExecutionParams: feed.appLinkParams,
+                androidExecutionParams: feed.appLinkParams,
               },
             },
           ],
