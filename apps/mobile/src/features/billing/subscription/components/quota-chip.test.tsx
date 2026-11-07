@@ -27,6 +27,11 @@ async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFea
 }
 
 describe('QuotaChip', () => {
+  beforeEach(() => {
+    // 고정 초기화 시각이 지난 스냅샷으로 보이지 않게 시계를 맞춘다
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-04T00:00:00.000Z'));
+  });
+
   it('무료 사용자에게 이번 달 남은 횟수를 보여 준다', async () => {
     // Given
     const snapshot = createEntitlementSnapshot({ used: { AI_PARSE: 3 } });

@@ -1,5 +1,6 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import { AiIcon, Button, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -21,7 +22,7 @@ export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigest
   const status =
     snapshot == null
       ? { type: 'untracked' as const }
-      : EntitlementPolicy.getQuotaStatus(snapshot, 'VOICE_NOTE');
+      : EntitlementPolicy.getQuotaStatus(snapshot, 'VOICE_NOTE', getNowInstant());
   const cost = match(status)
     .with({ type: 'untracked' }, () => null)
     .with({ type: 'remaining' }, ({ count }) => t('digest.cost', { amount: count }))

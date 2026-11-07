@@ -1,4 +1,5 @@
 import { toDateFormatLocale } from '@src/shared/date/date-format';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { formatCount } from '@src/shared/utils/number-format';
@@ -16,7 +17,7 @@ export function useQuotaStatus(feature: EntitlementFeature) {
   const status =
     snapshot == null
       ? { type: 'untracked' as const }
-      : EntitlementPolicy.getQuotaStatus(snapshot, feature);
+      : EntitlementPolicy.getQuotaStatus(snapshot, feature, getNowInstant());
   const label = match(status)
     .with({ type: 'untracked' }, () => null)
     .with({ type: 'remaining' }, ({ count }) =>

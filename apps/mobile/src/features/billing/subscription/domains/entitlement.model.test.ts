@@ -153,10 +153,25 @@ describe('getQuotaStatus', () => {
     const snapshot = createEntitlementSnapshot({ tier, used: { AI_PARSE: used } });
 
     // When
-    const status = EntitlementPolicy.getQuotaStatus(snapshot, 'AI_PARSE');
+    const status = EntitlementPolicy.getQuotaStatus(snapshot, 'AI_PARSE', NOW);
 
     // Then
     expect(status).toEqual(expected);
+  });
+
+  it('다 쓴 상태라도 초기화 시각이 이미 지났으면 소진으로 보이지 않는다', () => {
+    // Given
+    const usedUp = createEntitlementSnapshot({ used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free } });
+    const snapshot = EntitlementPolicy.withFeatureQuota(usedUp, {
+      ...toFeatureQuota(createFeatureQuotaDto('AI_PARSE', { used: PLAN_CATALOG.AI_PARSE.free })),
+      resetsAt: toInstant('2026-11-01T00:00:00.000Z'),
+    });
+
+    // When
+    const status = EntitlementPolicy.getQuotaStatus(snapshot, 'AI_PARSE', NOW);
+
+    // Then
+    expect(status).toEqual({ type: 'untracked' });
   });
 
   it('하루 횟수를 다 쓰면 오늘 다 쓴 상태다', () => {
@@ -164,7 +179,11 @@ describe('getQuotaStatus', () => {
     const snapshot = createEntitlementSnapshot({ used: { NUDGE: PLAN_CATALOG.NUDGE.free } });
 
     // When
-    const status = EntitlementPolicy.getQuotaStatus(snapshot, 'NUDGE');
+    const status = EntitlementPolicy.getQuotaStatus(
+      snapshot,
+      'NUDGE',
+      toInstant('2026-11-04T00:00:00.000Z'),
+    );
 
     // Then
     expect(status).toEqual({ type: 'used-up', period: 'day' });
@@ -175,7 +194,7 @@ describe('getQuotaStatus', () => {
     const snapshot = createEntitlementSnapshot();
 
     // When
-    const status = EntitlementPolicy.getQuotaStatus(snapshot, 'FRIEND');
+    const status = EntitlementPolicy.getQuotaStatus(snapshot, 'FRIEND', NOW);
 
     // Then
     expect(status).toEqual({ type: 'untracked' });

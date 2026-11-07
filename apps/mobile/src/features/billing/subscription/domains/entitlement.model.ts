@@ -74,7 +74,12 @@ function getMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeatur
   return findFeatureQuota(snapshot, feature)?.perUse?.maxSeconds ?? null;
 }
 
-function getQuotaStatus(snapshot: EntitlementSnapshot, feature: EntitlementFeature): QuotaStatus {
+/** 다 쓴 상태라도 초기화 시각이 이미 지난 스냅샷은 믿지 않는다(실제로는 다시 쓸 수 있다) */
+function getQuotaStatus(
+  snapshot: EntitlementSnapshot,
+  feature: EntitlementFeature,
+  now: Instant,
+): QuotaStatus {
   const quota = findFeatureQuota(snapshot, feature);
   if (
     quota == null ||
@@ -83,6 +88,9 @@ function getQuotaStatus(snapshot: EntitlementSnapshot, feature: EntitlementFeatu
     quota.remaining == null ||
     quota.period == null
   ) {
+    return { type: 'untracked' };
+  }
+  if (quota.remaining === 0 && quota.resetsAt != null && hasPassed(quota.resetsAt, now)) {
     return { type: 'untracked' };
   }
   return quota.remaining === 0
