@@ -317,7 +317,7 @@ test('utils 폴더로 옮긴 TSX와 React Native UI 테스트도 거부한다', 
 test('다른 피처를 상대경로로 import하면 거부하고 절대경로는 통과한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/social/nudge/components/nudge-card.tsx': `
+      'apps/mobile/src/features/social/nudge/components/nudge-row.tsx': `
         import { TodoRow } from '../../../planning/todo/components/todo-row';
         import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
         import { NudgeRow } from './nudge-row';
@@ -333,12 +333,12 @@ test('다른 피처를 상대경로로 import하면 거부하고 절대경로는
 test('업무 영역 아래 피처는 영역/피처를 경계로 보고 다른 피처의 상대경로 import를 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/social/nudge/components/nudge-card.tsx': `
+      'apps/mobile/src/features/social/nudge/components/nudge-row.tsx': `
         import { FriendRow } from '../../friend/components/friend-row';
         import { TodoRow } from '../../../planning/todo/components/todo-row';
         import { NUDGE_LIMIT } from '../constants/nudge.constants';
       `,
-      'apps/mobile/src/features/voice/components/voice-card.tsx': `
+      'apps/mobile/src/features/voice/components/voice-row.tsx': `
         import { VoiceIcon } from './voice-icon';
       `,
     },
@@ -657,8 +657,8 @@ test('react-native의 Image import를 거부하고 공용 Image는 통과한다'
   );
 });
 
-const FEED_TODO = 'apps/mobile/src/features/planning/todo/components/todo-card.tsx';
-const NUDGE_CARD = 'apps/mobile/src/features/social/nudge/components/nudge-card.tsx';
+const FEED_TODO = 'apps/mobile/src/features/planning/todo/components/todo-row.tsx';
+const NUDGE_CARD = 'apps/mobile/src/features/social/nudge/components/nudge-row.tsx';
 
 test('shared가 feature나 bootstrap을 import하면 거부하고 테스트 도구는 통과한다', () => {
   withFixture(
@@ -706,7 +706,7 @@ test('위층 코드 import를 거부하고 타입, 모델, cache는 통과한다
     },
     (errors) => {
       assert.equal(errors.length, 1);
-      assert.match(errors[0], /todo-card\.tsx:2/u);
+      assert.match(errors[0], /todo-row\.tsx:2/u);
       assert.match(errors[0], /위층 social\/nudge/u);
     },
   );
@@ -824,8 +824,8 @@ test('모듈 수준 화살표를 거부하고 function 선언과 지역 화살�
     },
     (errors) => {
       assert.equal(errors.length, 2);
-      assert.match(errors.join('\n'), /todo-card\.tsx:2/u);
-      assert.match(errors.join('\n'), /todo-card\.tsx:3/u);
+      assert.match(errors.join('\n'), /todo-row\.tsx:2/u);
+      assert.match(errors.join('\n'), /todo-row\.tsx:3/u);
     },
   );
 });
@@ -843,8 +843,8 @@ test('memo와 forwardRef에 넘긴 화살표 컴포넌트를 거부하고 functi
     },
     (errors) => {
       assert.equal(errors.length, 2);
-      assert.match(errors.join('\n'), /todo-card\.tsx:2/u);
-      assert.match(errors.join('\n'), /todo-card\.tsx:3/u);
+      assert.match(errors.join('\n'), /todo-row\.tsx:2/u);
+      assert.match(errors.join('\n'), /todo-row\.tsx:3/u);
     },
   );
 });
@@ -1140,6 +1140,64 @@ test('worklet 함수의 매개변수 기본값을 거부하고 호출부가 넘�
       const messages = errors.filter((error) => /매개변수 기본값/u.test(error));
       assert.equal(messages.length, 3);
       assert.match(messages.join('\n'), /bad-worklet/u);
+    },
+  );
+});
+
+test('자기 피처를 @src/features 절대 경로로 import하면 막는다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/components/a.tsx': `
+        import { b } from '@src/features/weather/utils/b';
+        import { c } from '@src/features/planning/todo/utils/c';
+        export const a = [b, c];
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /자기 피처\(weather\)/u);
+    },
+  );
+});
+
+test('*.error.ts 밖에서 isApiError와 hasCode를 직접 쓰면 막는다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/queries/a.ts': `
+        import { isApiError } from '@src/shared/errors';
+        export function read(error: unknown) {
+          return isApiError(error) && error.hasCode('X');
+        }
+      `,
+      'apps/mobile/src/features/weather/domains/weather.error.ts': `
+        import { isApiError } from '@src/shared/errors';
+        export function isX(error: unknown) {
+          return isApiError(error) && error.hasCode('X');
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.ok(errors.every((error) => /queries\/a\.ts/u.test(error)));
+    },
+  );
+});
+
+test('이름이 -card인 컴포넌트는 heroui Card를 써야 한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/components/ok-card.tsx': `
+        import { Card } from 'heroui-native';
+        export function OkCard() { return <Card />; }
+      `,
+      'apps/mobile/src/features/weather/components/bad-card.tsx': `
+        import { View } from 'react-native';
+        export function BadCard() { return <View />; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /bad-card\.tsx/u);
     },
   );
 });

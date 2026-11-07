@@ -875,6 +875,81 @@ function checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors) {
   }
 }
 
+function checkOwnFeatureAbsoluteImports(sourceFile, repositoryRoot, errors) {
+  const owner = getFeatureName(sourceFile.fileName);
+  if (owner === null) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
+      statement.moduleSpecifier === undefined ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      !statement.moduleSpecifier.text.startsWith('@src/features/')
+    ) {
+      continue;
+    }
+    const target = getFeatureName(`/${statement.moduleSpecifier.text.slice('@'.length)}/`);
+    if (target === owner) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} 자기 피처(${owner})는 @src/features 절대 경로가 아니라 상대 경로로 import하세요.`,
+      );
+    }
+  }
+}
+
+function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName);
+  if (
+    !relativePath.startsWith('apps/mobile/src/features/') ||
+    relativePath.endsWith('.error.ts') ||
+    isTestSource(relativePath)
+  ) {
+    return;
+  }
+  function visit(node) {
+    const isApiErrorImport =
+      ts.isImportSpecifier(node) && (node.propertyName ?? node.name).text === 'isApiError';
+    const isHasCodeCall =
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'hasCode';
+    if (isApiErrorImport || isHasCodeCall) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} 서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+}
+
+function checkCardComponentUsesCard(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName);
+  if (
+    !/^apps\/mobile\/src\/(?:features|shared\/ui)\/.+-card\.tsx$/u.test(relativePath) ||
+    isTestSource(relativePath)
+  ) {
+    return;
+  }
+  const importsCard = sourceFile.statements.some(
+    (statement) =>
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === 'heroui-native' &&
+      statement.importClause?.namedBindings !== undefined &&
+      ts.isNamedImports(statement.importClause.namedBindings) &&
+      statement.importClause.namedBindings.elements.some(
+        (element) => (element.propertyName ?? element.name).text === 'Card',
+      ),
+  );
+  if (!importsCard) {
+    errors.push(
+      `${relativePath} 이름이 -card인 컴포넌트는 heroui-native Card를 써야 합니다. 목록 행이면 -row로, 다른 원본이면 그 원본 이름으로 바꾸세요.`,
+    );
+  }
+}
+
 function isWireContractModule(moduleName) {
   return (
     moduleName === SHARED_CONTRACT_MODULE || moduleName.startsWith(SHARED_CONTRACT_CONTRACTS_PREFIX)
@@ -1779,6 +1854,9 @@ export function checkMobileConventions(
     );
     checkTodoCheckboxProps(sourceFile, repositoryRoot, errors);
     checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
+    checkOwnFeatureAbsoluteImports(sourceFile, repositoryRoot, errors);
+    checkServerErrorReading(sourceFile, repositoryRoot, errors);
+    checkCardComponentUsesCard(sourceFile, repositoryRoot, errors);
     checkTestQueryClientFactory(sourceFile, repositoryRoot, errors);
     checkClientOwnedModelImports(sourceFile, repositoryRoot, errors);
     checkSchemaFolderImports(sourceFile, repositoryRoot, errors);
