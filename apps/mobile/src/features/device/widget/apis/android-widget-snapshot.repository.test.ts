@@ -1,23 +1,15 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 
-import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
+import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';
 import { createAndroidWidgetSnapshotRepository } from './android-widget-snapshot.repository';
 
-function createStorage(): SyncStorage {
-  const values = new Map<string, string>();
-  return {
-    get: (key) => values.get(key),
-    set: (key, value) => values.set(key, value),
-    remove: (key) => values.delete(key),
-  };
-}
-
 describe('Android 위젯 스냅샷 저장소', () => {
   it('같은 저장 키에 이미 저장된 v1 payload를 하루짜리 v2로 읽는다', () => {
-    // Given - 1.12.x 앱이 남긴 v1 snapshot
-    const storage = createStorage();
-    const { days, updatedAtIso } = buildWidgetSnapshot();
+    // Given
+    // 1.12.x 앱이 남긴 v1 snapshot
+    const storage = createMemorySyncStorage();
+    const { days, updatedAtIso } = createWidgetSnapshot();
     storage.set(
       'aido_widget_snapshot_v1',
       JSON.stringify({ version: 1, updatedAtIso, ...days[0] }),
@@ -33,8 +25,8 @@ describe('Android 위젯 스냅샷 저장소', () => {
 
   it('오늘과 내일을 담은 v2 snapshot을 같은 저장 키로 쓰고 그대로 읽는다', () => {
     // Given
-    const storage = createStorage();
-    const snapshot = buildWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
+    const storage = createMemorySyncStorage();
+    const snapshot = createWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
     const repository = createAndroidWidgetSnapshotRepository(storage);
 
     // When
@@ -47,11 +39,11 @@ describe('Android 위젯 스냅샷 저장소', () => {
 
   it('로그아웃은 이전 계정 식별자를 지우고 공개 안내만 남긴다', () => {
     // Given
-    const repository = createAndroidWidgetSnapshotRepository(createStorage());
-    repository.writeSnapshot(buildWidgetSnapshot(), 'previous-user');
+    const repository = createAndroidWidgetSnapshotRepository(createMemorySyncStorage());
+    repository.writeSnapshot(createWidgetSnapshot(), 'previous-user');
 
     // When
-    repository.writeSnapshot(buildWidgetSnapshot({ state: 'loggedOut' }), 'previous-user');
+    repository.writeSnapshot(createWidgetSnapshot({ state: 'loggedOut' }), 'previous-user');
 
     // Then
     expect(repository.getSnapshot()?.days[0].state).toBe('loggedOut');
@@ -60,7 +52,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
 
   it.each(['{broken', '{}', '{"version":2}'])('손상된 저장값 %s는 렌더하지 않는다', (raw) => {
     // Given
-    const storage = createStorage();
+    const storage = createMemorySyncStorage();
     storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshot, raw);
 
     // When

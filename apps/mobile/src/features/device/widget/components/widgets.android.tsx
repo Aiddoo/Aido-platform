@@ -16,8 +16,10 @@ import {
 } from 'react-native-android-widget';
 import { match } from 'ts-pattern';
 
-import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
-import { WIDGET_BRAND_COLOR } from '../constants/widget.constants';
+import {
+  ANDROID_WIDGET_NAVIGATION_ACTION,
+  WIDGET_BRAND_COLOR,
+} from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 import { isHexColor } from '../utils/is-hex-color';
 

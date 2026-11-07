@@ -6,9 +6,15 @@ iOS는 `expo-widgets`, Android는 `react-native-android-widget`의 공식 Expo c
 HeadlessJS API를 사용한다. 앱에서 Kotlin·Swift source나 dependency patch를 생성하지 않는다.
 두 플랫폼은 `WidgetSnapshot` v2(오늘·내일 day), mapper, Policy, `WidgetSyncService`, `WidgetBridge`를 공유한다.
 
-Android를 `expo-widgets`로 옮기지 않는 이유: SDK 58 `expo-widgets`의 Android 구현에는 timeline이 없어
-자정 전환을 미리 예약할 수 없고, AppWidget provider class가 바뀌면 사용자가 홈 화면에 둔 위젯이
-사라진다. 그래서 기존 provider 이름을 유지하는 `react-native-android-widget`을 계속 사용한다.
+Android를 `expo-widgets`로 옮기지 않는 이유(SDK 58 기준 확인):
+
+- 주기 갱신이 없다. timeline이 없어 자정 전환을 미리 예약할 수 없다.
+- 위젯을 탭해 앱을 여는 방법을 찾지 못했다.
+- AppWidget provider class(제공자) 이름이 바뀌면 사용자가 홈 화면에 둔 위젯이 사라진다. 기존 이름을 유지해야 한다.
+- 쓸 수 있는 부품이 제한적이라 지금 위젯의 카드 구성을 그리기 어렵다.
+
+그래서 기존 provider 이름을 유지하는 `react-native-android-widget`을 쓰고, `app.config.ts`의 `expo-widgets`에는
+`enableAndroid: false`를 명시한다.
 
 ## 데이터 흐름과 소유권
 
@@ -29,6 +35,8 @@ useWidgetSnapshotSync(authState)
   거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`get-todo-summary-query-options.ts`).
 - 렌더러는 전달받은 props만 사용한다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
+- 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 `aido_widget_headless_failure_v1`에
+  남겼다가, 다음 앱 시작 때 `WidgetSyncService.reportHeadlessFailure`가 `ErrorReporter`로 보낸다.
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다.
   실제 화면의 갱신은 native QA에서 확인한다.
 
@@ -76,7 +84,7 @@ LocalDateProvider가 자정 timer, foreground, `useCalendars()`(시간대·signi
 
 - iOS: `toWidgetTimelineEntries`가 [지금: 오늘] → [다음 자정: 내일] → [그다음 자정: stale]을
   `updateTimeline`에 넣는다. 내일 day가 없으면 다음 자정부터 stale이다.
-- Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다(`WidgetSnapshotPolicy.selectDay`).
+- Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다(`WidgetSnapshotPolicy.getDay`).
   세 provider는 공식 plugin의 `updatePeriodMillis: 1800000`을 사용한다. Doze·launcher 갱신 정책 때문에
   정확한 자정 또는 최대 30분 이내의 갱신을 보장하지 않는다.
 
@@ -90,7 +98,8 @@ LocalDateProvider가 자정 timer, foreground, `useCalendars()`(시간대·signi
 - Android는 공식 FlexWidget / TextWidget / SvgWidget을 사용한다. 기존 paw SVG path를 재사용한다.
 - 완성된 카드 한 개를 공식 ListWidget의 단일 항목으로 감싼다. 모든 날짜·할 일·생성 버튼은
   collection의 안정적인 PendingIntent template / fill-in 경로로 전달한다. 라이브러리의 clock 기반
-  direct 클릭 충돌을 피하기 위해 native source나 vendor patch를 수정하지 않는다.
+  direct 클릭 충돌을 피하기 위해서이고, native source나 vendor patch는 수정하지 않는다.
+  ListWidget을 걷어내는 일은 기기 비교 뒤로 미뤘다.
 - Android renderer는 hooks 없이 props로만 tree를 만든다. library의 tree collector와 맞추기 위해
   `use no memo`를 선언한다.
 - 실제 WidgetInfo.width/height로 카드 비율 small 1, medium 2.05, large .97을 맞추고 launcher의

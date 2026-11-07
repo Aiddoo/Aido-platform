@@ -11,8 +11,6 @@ export function createInitialWidgetProps(locale: ResolvedLanguage): WidgetProps 
 
   return {
     state: 'loggedOut',
-    date: '',
-    opensApp: true,
     maxRows: 4,
     totalTodos: 0,
     completedTodos: 0,
@@ -24,14 +22,11 @@ export function createInitialWidgetProps(locale: ResolvedLanguage): WidgetProps 
     openTodoLabel: strings.actions.openTodo,
     progressTitle: '',
     percentLabel: '',
-    streakLabel: '',
     compactStreakLabel: '',
     allDoneLabel: '',
     moreLabelTemplate: '',
     stateTitle: strings.state.loggedOutTitle,
     stateCta: strings.state.loggedOutCta,
-    staleTitle: strings.state.staleTitle,
-    staleCta: strings.state.staleCta,
   };
 }
 

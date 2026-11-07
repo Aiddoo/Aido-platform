@@ -11,7 +11,7 @@ interface WidgetTimelineContext {
   now: Date;
   /** LocalDateProvider와 같은 기기 시간대 — 자정 경계를 이 시간대로 계산한다 */
   timeZone: string;
-  appScheme?: string;
+  appScheme: string;
 }
 
 /**

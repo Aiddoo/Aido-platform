@@ -28,6 +28,7 @@ import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/c
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { createWidgetHeadlessFailureRepository } from '@src/features/device/widget/apis/widget-headless-failure.repository';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
@@ -347,7 +348,11 @@ export function createTestDi({
     incomingLink: createIncomingLinkGatewayStub(),
     syncStorage,
     networkStatus: createNetworkStatusGatewayStub(),
-    widgetSyncService: new WidgetSyncService(widgetBridge, errorReporter),
+    widgetSyncService: new WidgetSyncService(
+      widgetBridge,
+      errorReporter,
+      createWidgetHeadlessFailureRepository(widgetStorage),
+    ),
     widgetNavigationRepository: createWidgetNavigationRepository(widgetStorage),
     logOutDeviceService: new LogOutDeviceService({
       authService,

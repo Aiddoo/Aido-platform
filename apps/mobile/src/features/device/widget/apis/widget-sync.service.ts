@@ -3,6 +3,7 @@ import { toError } from '@src/shared/errors';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import type { WidgetHeadlessFailureRepository } from './widget-headless-failure.repository';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
@@ -13,14 +14,35 @@ import {
 export class WidgetSyncService {
   readonly #bridge: WidgetBridge;
   readonly #errorReporter: ErrorReporter;
+  readonly #headlessFailureRepository: WidgetHeadlessFailureRepository;
   #pendingWrite: Promise<void> = Promise.resolve();
   #generation = 0;
   #lastSnapshotKey: string | null = null;
 
-  constructor(bridge: WidgetBridge, errorReporter: ErrorReporter) {
+  constructor(
+    bridge: WidgetBridge,
+    errorReporter: ErrorReporter,
+    headlessFailureRepository: WidgetHeadlessFailureRepository,
+  ) {
     this.#bridge = bridge;
     this.#errorReporter = errorReporter;
+    this.#headlessFailureRepository = headlessFailureRepository;
   }
+
+  /** 앱 없이 깨어난 위젯이 남긴 실패를 오류 보고기로 보낸다. 앱 시작을 막지 않는다 */
+  reportHeadlessFailure = (): void => {
+    try {
+      const failure = this.#headlessFailureRepository.take();
+      if (failure == null) {
+        return;
+      }
+      const error = new Error(failure.message);
+      error.name = failure.name;
+      this.#report(error, failure.method);
+    } catch {
+      // Widget storage failures must not reject the app's startup.
+    }
+  };
 
   syncSummary = (summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> =>
     this.#scheduleWrite(

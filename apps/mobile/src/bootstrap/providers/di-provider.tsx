@@ -16,6 +16,7 @@ import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/c
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import { createWidgetHeadlessFailureRepository } from '@src/features/device/widget/apis/widget-headless-failure.repository';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
@@ -342,7 +343,11 @@ export function DIProvider({
 
     // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
     const widgetBridge = createWidgetBridge();
-    const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
+    const widgetSyncService = new WidgetSyncService(
+      widgetBridge,
+      errorReporter,
+      createWidgetHeadlessFailureRepository(widgetStorage),
+    );
     const widgetNavigationRepository = createWidgetNavigationRepository(widgetStorage);
 
     const sessionCleanupService = new SessionCleanupService({

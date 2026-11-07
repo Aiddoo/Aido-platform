@@ -1,7 +1,6 @@
 import { ok } from '@src/core/errors/result';
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
@@ -108,7 +107,6 @@ describe('AuthBootProvider', () => {
     const userHttpClient = createHttpClientStub();
     userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const userService = new UserService(userHttpClient);
-    const widgetSyncService = new WidgetSyncService({ writeSnapshot }, errorReporter);
 
     const mountedProvider = await render(
       <StaticDIProvider
@@ -118,7 +116,7 @@ describe('AuthBootProvider', () => {
           analytics,
           todoService,
           userService,
-          widgetSyncService,
+          widgetBridge: { writeSnapshot },
           sessionCleanupService: new SessionCleanupService({
             accountGuides: [],
             queryCache: createSessionQueryCache(queryClient),

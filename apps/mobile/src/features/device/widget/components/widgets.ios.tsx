@@ -173,8 +173,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
     );
   }
 
-  const isLargeWidget =
-    environment.widgetFamily === 'systemLarge' || environment.widgetFamily === 'systemExtraLarge';
+  const isLargeWidget = environment.widgetFamily === 'systemLarge';
   const visibleTodos = props.topTodos.slice(0, isLargeWidget ? 4 : 2);
   const hiddenTodoCount = Math.max(0, props.totalTodos - visibleTodos.length);
   const renderAppLink = (destination: string | undefined, children: ReactElement) => (

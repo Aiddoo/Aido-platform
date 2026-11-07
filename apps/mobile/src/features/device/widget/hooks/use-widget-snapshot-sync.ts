@@ -79,7 +79,7 @@ function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSn
 
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
-  const { currentLocalDateKey: date, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
+  const { currentLocalDateKey: date, currentTimeZone } = useLocalDate();
   const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeek(date);
   const { data: user } = useQuery({
     ...useGetMeQueryOptions(),
@@ -107,6 +107,10 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   });
 
   useEffect(() => {
+    widgetSyncService.reportHeadlessFailure();
+  }, [widgetSyncService]);
+
+  useEffect(() => {
     syncLatest(widgetSyncService, {
       authState,
       userId,
@@ -125,7 +129,6 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     date,
     tomorrowDate,
     currentTimeZone,
-    currentUtcOffsetMinutes,
     userId,
     widgetSyncService,
   ]);

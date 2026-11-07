@@ -9,7 +9,6 @@ import {
 import { ok } from '@src/core/errors/result';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
-import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
@@ -136,7 +135,7 @@ export function createAuthSession({
     }),
     userService: new UserService(userHttp),
     todoService: new TodoService(createHttpClientStub()),
-    widgetSyncService: new WidgetSyncService({ writeSnapshot }, errorReporter),
+    widgetBridge: { writeSnapshot },
     draftService,
     queryCacheStorage,
     sessionCleanupService,

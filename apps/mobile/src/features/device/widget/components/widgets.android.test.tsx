@@ -43,7 +43,7 @@ function collect(node: ReactNode, result: WidgetNode[] = []): WidgetNode[] {
   return result;
 }
 
-function buildWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): WidgetInfo {
+function createWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): WidgetInfo {
   return {
     widgetName:
       maxRows === 0 ? 'AidoTodaySummary' : maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList',
@@ -61,11 +61,10 @@ function buildWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): 
   };
 }
 
-function buildProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
+function createProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
   return {
     ...createInitialWidgetProps(locale),
     state: 'data',
-    date: '2026-10-02',
     maxRows,
     totalTodos: 8,
     completedTodos: 3,
@@ -106,7 +105,7 @@ function buildProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
 function render(
   props: WidgetProps,
   mode: 'light' | 'dark' = 'light',
-  info = buildWidgetInfo(props.maxRows),
+  info = createWidgetInfo(props.maxRows),
   userId: string | null = 'user-42',
 ) {
   const representation = renderAndroidWidget(props, info, userId);
@@ -123,7 +122,7 @@ function texts(nodes: WidgetNode[]) {
 describe('Android 위젯 표시 계약', () => {
   it.each([0, 2, 4])('크기 %i의 모든 클릭을 하나의 collection 항목 안에 둔다', (maxRows) => {
     // Given
-    const props = buildProps(maxRows);
+    const props = createProps(maxRows);
 
     // When
     const nodes = render(props);
@@ -147,9 +146,11 @@ describe('Android 위젯 표시 계약', () => {
     [8, 4],
   ])('현재·이전 크기 %i에서 할 일을 %i행까지 표시한다', (maxRows, rows) => {
     // Given
-    const props = buildProps(maxRows);
+    const props = createProps(maxRows);
+
     // When
     const nodes = render(props);
+
     // Then
     expect(texts(nodes).filter((text) => text?.startsWith('Widget QA '))).toEqual(
       props.topTodos.slice(0, rows).map((todo) => todo.title),
@@ -176,10 +177,12 @@ describe('Android 위젯 표시 계약', () => {
     '%s 대형 위젯의 할 일·7개 날짜·작성 클릭에 정확한 계정과 목적지를 붙인다',
     (locale) => {
       // Given
-      const props = buildProps(4, locale);
+      const props = createProps(4, locale);
+
       // When
       const nodes = render(props);
       const clicks = nodes.filter((node) => node.props.clickAction);
+
       // Then
       expect(clicks).toHaveLength(13);
       expect(clicks.every((node) => node.props.clickAction === 'AIDO_WIDGET_NAVIGATE')).toBe(true);
@@ -198,14 +201,16 @@ describe('Android 위젯 표시 계약', () => {
     (maxRows) => {
       // Given
       const props = {
-        ...buildProps(maxRows),
+        ...createProps(maxRows),
         state: 'empty' as const,
         totalTodos: 0,
         stateTitle: 'No to-dos for today yet',
         stateCta: 'Add your first to-do',
       };
+
       // When
       const nodes = render(props);
+
       // Then
       expect(texts(nodes)).toContain(props.stateTitle);
       expect(texts(nodes).some((text) => text?.startsWith('Widget QA '))).toBe(false);
@@ -220,13 +225,15 @@ describe('Android 위젯 표시 계약', () => {
     (state) => {
       // Given
       const props = {
-        ...buildProps(4, 'en'),
+        ...createProps(4, 'en'),
         state,
         stateTitle: state === 'stale' ? 'A fresh day is here' : 'Sign in to get started',
         stateCta: state === 'stale' ? 'Open Aido for today’s plans' : 'Tap to sign in',
       };
+
       // When
-      const nodes = render(props, 'light', buildWidgetInfo(4), null);
+      const nodes = render(props, 'light', createWidgetInfo(4), null);
+
       // Then
       expect(texts(nodes)).toEqual([props.stateTitle, props.stateCta]);
       expect(
@@ -239,11 +246,13 @@ describe('Android 위젯 표시 계약', () => {
 
   it('유효하지 않은 슬롯 치수는 기본 카드로 복구한다', () => {
     // Given
-    const props = buildProps(0);
+    const props = createProps(0);
+
     // When
-    const nodes = render(props, 'light', buildWidgetInfo(0, { width: NaN, height: 0 }));
+    const nodes = render(props, 'light', createWidgetInfo(0, { width: NaN, height: 0 }));
     const card = nodes.find((node) => node.props.style?.backgroundColor);
     const slot = nodes.find((node) => node.props.style?.justifyContent === 'center');
+
     // Then
     expect(slot?.props.style).toMatchObject({ width: 160, height: 160 });
     expect(card?.props.style).toMatchObject({ width: 160, height: 160 });

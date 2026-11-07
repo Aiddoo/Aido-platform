@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
@@ -15,19 +16,11 @@ export function createAndroidWidgetSnapshotRepository(
   storage: SyncStorage,
 ): AndroidWidgetSnapshotRepository {
   return {
-    getSnapshot: () => {
-      const raw = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot);
-      if (raw == null) {
-        return null;
-      }
-
-      try {
-        const result = storedWidgetSnapshotSchema.safeParse(JSON.parse(raw));
-        return result.success ? result.data : null;
-      } catch {
-        return null;
-      }
-    },
+    getSnapshot: () =>
+      parseStoredJson(
+        storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot),
+        storedWidgetSnapshotSchema,
+      ),
     getUserId: () => {
       const userId = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
       return userId && userId.trim().length > 0 ? userId : null;

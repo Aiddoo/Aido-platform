@@ -1,28 +1,21 @@
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import { createErrorReporterStub } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
+import { createWidgetHeadlessFailureRepository } from '../apis/widget-headless-failure.repository';
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 
 function createHandler(isAppActive = false) {
-  const values = new Map<string, string>();
-  const storage: ObservableSyncStorage = {
-    get: (key) => values.get(key),
-    set: (key, value) => values.set(key, value),
-    remove: (key) => values.delete(key),
-    subscribe: () => () => {},
-  };
+  const storage = createMemoryObservableSyncStorage();
   const navigationRepository = createWidgetNavigationRepository(storage);
   const openApp = jest.fn(async () => {});
   const renderStoredWidget = jest.fn();
-  const errorReporter: jest.Mocked<ErrorReporter> = createErrorReporterStub();
+  const failureRepository = createWidgetHeadlessFailureRepository(storage);
   return {
     navigationRepository,
     openApp,
-    errorReporter,
+    failureRepository,
     renderStoredWidget,
     handler: createAndroidWidgetTaskHandler({
       navigationRepository,
@@ -30,7 +23,7 @@ function createHandler(isAppActive = false) {
       isAppActive: () => isAppActive,
       now: () => 1000,
       createCommandId: () => 'widget-tap',
-      errorReporter,
+      failureRepository,
       renderStoredWidget,
     }),
   };
@@ -169,19 +162,20 @@ describe('Android 위젯 작업 처리', () => {
     expect(task.renderWidget).toHaveBeenCalledTimes(1);
   });
 
-  it('앱 열기와 오류 관측이 함께 실패해도 headless 작업을 크래시시키지 않는다', async () => {
+  it('앱 열기가 실패하면 작업을 크래시시키지 않고 실패를 저장소에 남긴다', async () => {
     // Given
-    const { handler, openApp, errorReporter } = createHandler();
+    const { handler, openApp, failureRepository } = createHandler();
     openApp.mockRejectedValue(new Error('activity unavailable'));
-    errorReporter.captureException.mockImplementation(() => {
-      throw new Error('report failed');
-    });
 
-    // When / Then
-    await expect(handler(createTask())).resolves.toBeUndefined();
-    expect(errorReporter.captureException).toHaveBeenCalledWith(expect.any(Error), {
-      feature: 'widget',
+    // When
+    const result = handler(createTask());
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
+    expect(failureRepository.take()).toEqual({
       method: 'handleWidgetTask',
+      name: 'Error',
+      message: 'activity unavailable',
     });
   });
 });

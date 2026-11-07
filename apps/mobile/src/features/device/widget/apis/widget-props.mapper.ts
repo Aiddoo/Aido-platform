@@ -8,15 +8,13 @@ import { isHexColor } from '../utils/is-hex-color';
 export function toWidgetProps(
   snapshot: WidgetDaySnapshot,
   state: WidgetRenderState,
-  appScheme = 'aido',
+  appScheme: string,
 ): WidgetProps {
   const stateScreen = getWidgetStateScreenStrings(snapshot, state);
   const openAppUrl = `${appScheme}://feed?date=today`;
 
   return {
     state,
-    date: snapshot.date,
-    opensApp: true,
     maxRows: 4,
     totalTodos: snapshot.totalTodos,
     completedTodos: snapshot.completedTodos,
@@ -43,14 +41,11 @@ export function toWidgetProps(
     openTodoLabel: snapshot.strings.openTodoLabel,
     progressTitle: snapshot.strings.progressTitle,
     percentLabel: snapshot.strings.percentLabel,
-    streakLabel: snapshot.strings.streakLabel,
     compactStreakLabel: snapshot.strings.compactStreakLabel ?? snapshot.strings.streakLabel,
     allDoneLabel: snapshot.strings.allDoneLabel,
     moreLabelTemplate: snapshot.strings.moreLabelTemplate,
     stateTitle: stateScreen.title,
     stateCta: stateScreen.cta,
-    staleTitle: snapshot.strings.staleTitle,
-    staleCta: snapshot.strings.staleCta,
   };
 }
 

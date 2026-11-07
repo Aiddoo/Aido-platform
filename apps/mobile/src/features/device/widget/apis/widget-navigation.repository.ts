@@ -1,4 +1,5 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { WidgetNavigationPolicy } from '../domains/widget-navigation.model';
 import {
@@ -11,7 +12,7 @@ export const WIDGET_NAVIGATION_COMMAND_KEY = 'aido_widget_pending_navigation_v1'
 export interface WidgetNavigationRepository {
   getPendingCommand(): WidgetNavigationCommand | null;
   subscribe(listener: () => void): () => void;
-  store(command: WidgetNavigationCommand): boolean;
+  save(command: WidgetNavigationCommand): boolean;
   clearIfCurrent(command: WidgetNavigationCommand | null): boolean;
 }
 
@@ -28,25 +29,14 @@ export function createWidgetNavigationRepository(
     }
 
     cachedRaw = raw;
-    cachedCommand = null;
-    if (raw == null) {
-      return null;
-    }
-
-    try {
-      const value: unknown = JSON.parse(raw);
-      const result = widgetNavigationCommandSchema.safeParse(value);
-      cachedCommand = result.success ? result.data : null;
-    } catch {
-      // 오래되거나 손상된 저장 값은 탐색 명령으로 취급하지 않는다.
-    }
+    cachedCommand = parseStoredJson(raw, widgetNavigationCommandSchema);
     return cachedCommand;
   };
 
   return {
     getPendingCommand,
     subscribe: (listener) => storage.subscribe(WIDGET_NAVIGATION_COMMAND_KEY, listener),
-    store: (command) => {
+    save: (command) => {
       const result = widgetNavigationCommandSchema.safeParse(command);
       if (!result.success) {
         return false;

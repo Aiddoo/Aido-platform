@@ -453,6 +453,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           bundleIdentifier: `${envConfig.bundleIdentifier}.ExpoWidgetsTarget`,
           groupIdentifier: appGroupIdentifier,
+          // Android 위젯은 아래 react-native-android-widget이 맡는다. 기본값이 false여도 이유를 남겨 둔다
+          enableAndroid: false,
           // displayName·description은 위젯 확장의 Localizable.strings 키다.
           // 번역은 native-locales/{ko,en}.json의 ios["Localizable.strings"]에 둔다.
           widgets: [

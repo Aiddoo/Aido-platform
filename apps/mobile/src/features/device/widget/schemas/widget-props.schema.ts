@@ -4,8 +4,6 @@ import { widgetRenderStateSchema } from './widget-snapshot.schema';
 
 const widgetPropsSchema = z.object({
   state: widgetRenderStateSchema,
-  date: z.string(),
-  opensApp: z.boolean(),
   maxRows: z.number(),
   totalTodos: z.number(),
   completedTodos: z.number(),
@@ -42,7 +40,6 @@ const widgetPropsSchema = z.object({
   addTodoUrl: z.string().optional(),
   progressTitle: z.string(),
   percentLabel: z.string(),
-  streakLabel: z.string(),
   compactStreakLabel: z.string(),
   allDoneLabel: z.string(),
   moreLabelTemplate: z.string(),
@@ -50,7 +47,5 @@ const widgetPropsSchema = z.object({
   stateCta: z.string(),
   // iOS 첫 동기화 전: stateTitle·stateCta가 위젯 번들 Localizable.strings의 영어 키다
   localizeStateCopy: z.boolean().optional(),
-  staleTitle: z.string(),
-  staleCta: z.string(),
 });
 export type WidgetProps = z.infer<typeof widgetPropsSchema>;

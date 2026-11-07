@@ -7,8 +7,8 @@ import { createWidget } from 'expo-widgets';
 import { Children, createElement, isValidElement, type ReactNode } from 'react';
 
 import {
-  buildWidgetSnapshotContext,
-  buildWidgetSummary,
+  createWidgetSnapshotContext,
+  createWidgetSummary,
 } from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetProps } from '../apis/widget-props.mapper';
 import { toWidgetSnapshot } from '../apis/widget-snapshot.mapper';
@@ -74,7 +74,7 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
         days: [snapshot],
       } = toWidgetSnapshot(
         {
-          today: buildWidgetSummary({
+          today: createWidgetSummary({
             topTodos: range(8).map((index) => ({
               id: index + 1,
               title: `QA 할 일 ${index + 1}`,
@@ -83,7 +83,7 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
             })),
           }),
         },
-        buildWidgetSnapshotContext(),
+        createWidgetSnapshotContext(),
       );
       const props = toWidgetProps(snapshot, 'data', 'aido-dev');
       const jsx = (type: string, elementProps: object) => createElement(type, elementProps);
@@ -100,6 +100,7 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
         destinations: string[] = [],
         widgetUrls: string[] = [],
         pawColors: string[] = [];
+
       // When
       inspectLayout(
         render(props, { colorScheme: 'dark', widgetFamily }),
@@ -108,6 +109,7 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
         widgetUrls,
         pawColors,
       );
+
       // Then
       expect(titles.filter((title) => title.startsWith('QA 할 일 '))).toHaveLength(visibleRows);
       expect(widgetUrls).toEqual(['aido-dev://feed?date=today']);

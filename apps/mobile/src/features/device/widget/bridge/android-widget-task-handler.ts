@@ -1,7 +1,6 @@
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { toError } from '@src/shared/errors';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
+import type { WidgetHeadlessFailureRepository } from '../apis/widget-headless-failure.repository';
 import type { WidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import {
   ANDROID_WIDGET_DEFINITIONS,
@@ -16,7 +15,7 @@ type WidgetTaskDependencies = {
   isAppActive: () => boolean;
   now: () => number;
   createCommandId: () => string;
-  errorReporter: ErrorReporter;
+  failureRepository: Pick<WidgetHeadlessFailureRepository, 'save'>;
   renderStoredWidget: typeof renderStoredAndroidWidget;
 };
 
@@ -26,7 +25,7 @@ export function createAndroidWidgetTaskHandler({
   isAppActive,
   now,
   createCommandId,
-  errorReporter,
+  failureRepository,
   renderStoredWidget,
 }: WidgetTaskDependencies) {
   return async (task: WidgetTaskHandlerProps): Promise<void> => {
@@ -54,7 +53,7 @@ export function createAndroidWidgetTaskHandler({
         const hasOwner = typeof userId === 'string' && userId.length > 0;
 
         if (hasOwner) {
-          const stored = navigationRepository.store({
+          const stored = navigationRepository.save({
             id: createCommandId(),
             uri,
             userId,
@@ -76,10 +75,7 @@ export function createAndroidWidgetTaskHandler({
       task.renderWidget(renderStoredWidget(task.widgetInfo));
     } catch (error) {
       try {
-        errorReporter.captureException(toError(error), {
-          feature: 'widget',
-          method: 'handleWidgetTask',
-        });
+        failureRepository.save({ method: 'handleWidgetTask', error });
       } catch {
         return;
       }

@@ -1,30 +1,10 @@
-import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 
 import type { WidgetNavigationCommand } from '../schemas/widget-navigation.schema';
 import {
   createWidgetNavigationRepository,
   WIDGET_NAVIGATION_COMMAND_KEY,
 } from './widget-navigation.repository';
-
-function createStorage(): ObservableSyncStorage {
-  const values = new Map<string, string>();
-  const listeners = new Set<() => void>();
-  return {
-    get: (key) => values.get(key),
-    set: (key, value) => {
-      values.set(key, value);
-      listeners.forEach((listener) => listener());
-    },
-    remove: (key) => {
-      values.delete(key);
-      listeners.forEach((listener) => listener());
-    },
-    subscribe: (_key, listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-}
 
 const command: WidgetNavigationCommand = {
   id: 'first-tap',
@@ -36,8 +16,8 @@ const command: WidgetNavigationCommand = {
 describe('위젯 탐색 명령 저장소', () => {
   it('headless 실행이 저장한 명령을 새 앱 인스턴스가 같은 값으로 읽는다', () => {
     // Given
-    const storage = createStorage();
-    createWidgetNavigationRepository(storage).store(command);
+    const storage = createMemoryObservableSyncStorage();
+    createWidgetNavigationRepository(storage).save(command);
     const repository = createWidgetNavigationRepository(storage);
 
     // When
@@ -50,11 +30,11 @@ describe('위젯 탐색 명령 저장소', () => {
 
   it('이전 명령을 소비하는 동안 도착한 최신 명령은 삭제하지 않는다', () => {
     // Given
-    const repository = createWidgetNavigationRepository(createStorage());
-    repository.store(command);
+    const repository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
+    repository.save(command);
     const first = repository.getPendingCommand();
     const latest = { ...command, id: 'latest-tap', uri: 'aido://todo/13' };
-    repository.store(latest);
+    repository.save(latest);
 
     // When
     const cleared = repository.clearIfCurrent(first);
@@ -68,25 +48,31 @@ describe('위젯 탐색 명령 저장소', () => {
 
   it('손상된 저장 값과 잘못된 URI는 명령으로 실행하지 않는다', () => {
     // Given
-    const storage = createStorage();
+    const storage = createMemoryObservableSyncStorage();
     const repository = createWidgetNavigationRepository(storage);
     storage.set(WIDGET_NAVIGATION_COMMAND_KEY, '{broken');
 
-    // When / Then
-    expect(repository.getPendingCommand()).toBeNull();
-    expect(repository.clearIfCurrent(null)).toBe(true);
-    expect(repository.store({ ...command, uri: 'https://example.com' })).toBe(false);
-    expect(repository.getPendingCommand()).toBeNull();
+    // When
+    const before = repository.getPendingCommand();
+    const cleared = repository.clearIfCurrent(null);
+    const saved = repository.save({ ...command, uri: 'https://example.com' });
+    const after = repository.getPendingCommand();
+
+    // Then
+    expect(before).toBeNull();
+    expect(cleared).toBe(true);
+    expect(saved).toBe(false);
+    expect(after).toBeNull();
   });
 
   it('늦게 도착한 오래된 터치가 아직 대기 중인 최신 터치를 덮지 않는다', () => {
     // Given
-    const repository = createWidgetNavigationRepository(createStorage());
+    const repository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
     const latest = { ...command, id: 'latest-tap', createdAt: 2000 };
-    repository.store(latest);
+    repository.save(latest);
 
     // When
-    const stored = repository.store(command);
+    const stored = repository.save(command);
 
     // Then
     expect(stored).toBe(false);
@@ -95,14 +81,14 @@ describe('위젯 탐색 명령 저장소', () => {
 
   it('구독을 해제한 화면에는 다음 위젯 명령을 알리지 않는다', () => {
     // Given
-    const repository = createWidgetNavigationRepository(createStorage());
+    const repository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
     const listener = jest.fn();
     const unsubscribe = repository.subscribe(listener);
-    repository.store(command);
+    repository.save(command);
 
     // When
     unsubscribe();
-    repository.store({ ...command, id: 'second-tap' });
+    repository.save({ ...command, id: 'second-tap' });
 
     // Then
     expect(listener).toHaveBeenCalledTimes(1);

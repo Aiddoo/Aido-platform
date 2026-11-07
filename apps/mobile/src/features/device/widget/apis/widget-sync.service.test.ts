@@ -1,7 +1,8 @@
-import { createErrorReporterStub } from '@src/shared/__tests__';
+import { createErrorReporterStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
+import { createWidgetHeadlessFailureRepository } from './widget-headless-failure.repository';
 import type { WidgetSnapshotContext, WidgetSummaryInput } from './widget-snapshot.mapper';
 import { WidgetSyncService } from './widget-sync.service';
 
@@ -26,12 +27,22 @@ const summary: WidgetSummaryInput = {
   topTodos: [],
 };
 
+function createService(bridge: WidgetBridge, errorReporter = createErrorReporterStub()) {
+  const headlessFailureRepository =
+    createWidgetHeadlessFailureRepository(createMemorySyncStorage());
+
+  return {
+    errorReporter,
+    headlessFailureRepository,
+    service: new WidgetSyncService(bridge, errorReporter, headlessFailureRepository),
+  };
+}
+
 describe('WidgetSyncService', () => {
   it('요약을 스냅샷으로 변환해 브리지에 기록한다', async () => {
     // Given
     const bridge = createWidgetBridgeStub();
-    const errorReporter = createErrorReporterStub();
-    const service = new WidgetSyncService(bridge, errorReporter);
+    const { service, errorReporter } = createService(bridge);
 
     // When
     await service.syncSummary({ today: summary }, context);
@@ -50,11 +61,13 @@ describe('WidgetSyncService', () => {
     // Given
     const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockRejectedValue(new Error('native failure'));
-    const errorReporter = createErrorReporterStub();
-    const service = new WidgetSyncService(bridge, errorReporter);
+    const { service, errorReporter } = createService(bridge);
 
-    // When / Then
-    await expect(service.syncSummary({ today: summary }, context)).resolves.toBeUndefined();
+    // When
+    const result = service.syncSummary({ today: summary }, context);
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ feature: 'widget', method: 'syncSummary' }),
@@ -64,8 +77,7 @@ describe('WidgetSyncService', () => {
   it('로그아웃 시 loggedOut 스냅샷을 기록한다', async () => {
     // Given
     const bridge = createWidgetBridgeStub();
-    const errorReporter = createErrorReporterStub();
-    const service = new WidgetSyncService(bridge, errorReporter);
+    const { service } = createService(bridge);
 
     // When
     await service.syncLoggedOut('2026-07-12', context);
@@ -83,11 +95,13 @@ describe('WidgetSyncService', () => {
     // Given
     const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockRejectedValue(new Error('native failure'));
-    const errorReporter = createErrorReporterStub();
-    const service = new WidgetSyncService(bridge, errorReporter);
+    const { service, errorReporter } = createService(bridge);
 
-    // When / Then
-    await expect(service.syncLoggedOut('2026-07-12', context)).resolves.toBeUndefined();
+    // When
+    const result = service.syncLoggedOut('2026-07-12', context);
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ feature: 'widget', method: 'syncLoggedOut' }),
@@ -109,7 +123,7 @@ describe('WidgetSyncService', () => {
       announceWrite();
       await firstWrite;
     });
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
 
     // When
     const summaryWrite = service.syncSummary({ today: summary }, context);
@@ -128,7 +142,7 @@ describe('WidgetSyncService', () => {
   it('대기 중인 오래된 요약은 로그아웃보다 나중에 기록하지 않는다', async () => {
     // Given
     const bridge = createWidgetBridgeStub();
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
 
     // When
     await Promise.all([
@@ -147,7 +161,7 @@ describe('WidgetSyncService', () => {
   it('표시 내용이 같으면 기록 시각만 달라져도 다시 쓰지 않는다', async () => {
     // Given
     const bridge = createWidgetBridgeStub();
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
 
     // When
     await service.syncSummary({ today: summary }, context);
@@ -161,15 +175,18 @@ describe('WidgetSyncService', () => {
   });
 
   it('표시 내용이 같아도 기기 시간대가 바뀌면 자정 경계를 다시 계산하도록 다시 쓴다', async () => {
-    // Given: 서울에서 같은 날짜의 요약을 이미 기록했다
+    // Given
+    // 서울에서 같은 날짜의 요약을 이미 기록했다
     const bridge = createWidgetBridgeStub();
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
     await service.syncSummary({ today: summary }, context);
 
-    // When: 같은 날짜 그대로 런던 시간대로 바뀐다
+    // When
+    // 같은 날짜 그대로 런던 시간대로 바뀐다
     await service.syncSummary({ today: summary }, { ...context, timeZone: 'Europe/London' });
 
-    // Then: iOS timeline의 다음 자정이 새 시간대 기준이 되도록 다시 기록한다
+    // Then
+    // iOS timeline의 다음 자정이 새 시간대 기준이 되도록 다시 기록한다
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
   });
 
@@ -177,11 +194,10 @@ describe('WidgetSyncService', () => {
     // Given
     const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockRejectedValueOnce(new Error('native failure'));
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
 
     // When
     await service.syncSummary({ today: summary }, context);
-    // When
     await service.syncSummary({ today: summary }, context);
 
     // Then
@@ -190,28 +206,28 @@ describe('WidgetSyncService', () => {
 
   it('번역 변환 실패도 인증 흐름으로 throw하지 않는다', async () => {
     // Given
-    const errorReporter = createErrorReporterStub();
-    const service = new WidgetSyncService(createWidgetBridgeStub(), errorReporter);
+    const { service, errorReporter } = createService(createWidgetBridgeStub());
 
-    // When / Then
-    await expect(
-      service.syncSummary(
-        { today: summary },
-        {
-          ...context,
-          t: () => {
-            throw new Error('translation failure');
-          },
+    // When
+    const result = service.syncSummary(
+      { today: summary },
+      {
+        ...context,
+        t: () => {
+          throw new Error('translation failure');
         },
-      ),
-    ).resolves.toBeUndefined();
+      },
+    );
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalled();
   });
 
   it('같은 표시 내용이어도 계정이 바뀌면 소유자와 함께 다시 기록한다', async () => {
     // Given
     const bridge = createWidgetBridgeStub();
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
 
     // When
     await service.syncSummary({ today: summary }, { ...context, userId: 'previous-user' });
@@ -228,7 +244,7 @@ describe('WidgetSyncService', () => {
   it('로그아웃은 이전 컨텍스트의 계정 식별자를 위젯으로 전달하지 않는다', async () => {
     // Given
     const bridge = createWidgetBridgeStub();
-    const service = new WidgetSyncService(bridge, createErrorReporterStub());
+    const { service } = createService(bridge);
 
     // When
     await service.syncLoggedOut(summary.date, { ...context, userId: 'previous-user' });
@@ -238,5 +254,37 @@ describe('WidgetSyncService', () => {
       expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
+  });
+
+  it('앱 없이 깨어난 위젯이 남긴 실패를 다음 시작에 한 번만 보고한다', () => {
+    // Given
+    const { service, errorReporter, headlessFailureRepository } =
+      createService(createWidgetBridgeStub());
+    headlessFailureRepository.save({
+      method: 'handleWidgetTask',
+      error: new TypeError('activity unavailable'),
+    });
+
+    // When
+    service.reportHeadlessFailure();
+    service.reportHeadlessFailure();
+
+    // Then
+    expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
+    expect(errorReporter.captureException).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'TypeError', message: 'activity unavailable' }),
+      { feature: 'widget', method: 'handleWidgetTask' },
+    );
+  });
+
+  it('남긴 실패가 없으면 보고하지 않는다', () => {
+    // Given
+    const { service, errorReporter } = createService(createWidgetBridgeStub());
+
+    // When
+    service.reportHeadlessFailure();
+
+    // Then
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
   });
 });

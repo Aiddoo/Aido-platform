@@ -1,7 +1,6 @@
 import { captureException, init } from '@sentry/react-native';
 import { resetSentryClient } from '@src/shared/__tests__/mocks/sentry-react-native';
 import { ENV } from '@src/shared/config/env';
-import { initErrorReporting } from '@src/shared/infra/observability/error-reporting';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 import type { WidgetTaskHandler, WidgetTaskHandlerProps } from 'react-native-android-widget';
 
@@ -34,7 +33,7 @@ describe('registerWidgetTaskHandler', () => {
     resetSentryClient();
   });
 
-  it('앱 화면 없이 위젯만 깨어난 프로세스의 오류도 운영에서는 Sentry로 보고한다', async () => {
+  it('앱 화면 없이 위젯만 깨어난 프로세스는 오류를 Sentry로 보내지 않고 작업을 끝낸다', async () => {
     // Given
     jest.replaceProperty(ENV, 'IS_PRODUCTION', true);
     let handler: WidgetTaskHandler | undefined;
@@ -44,36 +43,11 @@ describe('registerWidgetTaskHandler', () => {
     registerWidgetTaskHandler();
 
     // When
-    await handler?.(createFailingRenderTask());
+    const result = handler?.(createFailingRenderTask());
 
     // Then
-    expect(captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'widget render failed' }),
-      expect.objectContaining({ tags: expect.objectContaining({ feature: 'widget' }) }),
-    );
-  });
-
-  it('위젯만 깨어난 프로세스에서도 오류 보고기를 초기화한다', () => {
-    // Given
-    jest.replaceProperty(ENV, 'IS_PRODUCTION', true);
-
-    // When
-    registerWidgetTaskHandler();
-
-    // Then
-    expect(init).toHaveBeenCalledTimes(1);
-  });
-
-  it('앱 루트가 이미 초기화한 프로세스에서는 다시 초기화하지 않는다', () => {
-    // Given
-    jest.replaceProperty(ENV, 'IS_PRODUCTION', true);
-    initErrorReporting();
-    jest.mocked(init).mockClear();
-
-    // When
-    registerWidgetTaskHandler();
-
-    // Then
+    await expect(result).resolves.toBeUndefined();
     expect(init).not.toHaveBeenCalled();
+    expect(captureException).not.toHaveBeenCalled();
   });
 });

@@ -3,8 +3,9 @@
 iOS는 Expo SDK 58의 `expo-widgets`, Android는 `react-native-android-widget`으로 구현한다.
 [플랫폼 설정·제약·native QA](../../../.claude/widgets.md)를 따른다.
 
-Android를 `expo-widgets`로 옮기지 않는다. SDK 58의 Android 구현에는 timeline이 없고, AppWidget
-provider class가 바뀌면 사용자가 홈 화면에 둔 위젯이 사라지기 때문이다.
+Android를 `expo-widgets`로 옮기지 않는다. 주기 갱신이 없고, 탭으로 앱을 여는 경로를 찾지 못했고, provider
+class 이름이 바뀌면 홈 화면의 위젯이 사라지고, 쓸 수 있는 부품이 제한적이기 때문이다. 자세한 근거는
+[widgets.md](../../../../.claude/widgets.md)에 있다.
 
 ## 구조
 

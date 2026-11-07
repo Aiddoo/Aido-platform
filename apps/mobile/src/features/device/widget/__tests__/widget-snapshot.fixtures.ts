@@ -7,7 +7,7 @@ import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapsh
 export const echoTranslate: WidgetSnapshotContext['t'] = (key, params) =>
   params ? `${key}(${JSON.stringify(params)})` : key;
 
-export function buildWidgetSnapshotContext(
+export function createWidgetSnapshotContext(
   overrides: Partial<WidgetSnapshotContext> = {},
 ): WidgetSnapshotContext {
   return {
@@ -19,7 +19,7 @@ export function buildWidgetSnapshotContext(
   };
 }
 
-export function buildWidgetSummary(
+export function createWidgetSummary(
   overrides: Partial<WidgetSummaryInput> = {},
 ): WidgetSummaryInput {
   return {
@@ -37,7 +37,7 @@ export function buildWidgetSummary(
   };
 }
 
-export function buildWidgetDaySnapshot(
+export function createWidgetDaySnapshot(
   overrides: Partial<WidgetDaySnapshot> = {},
 ): WidgetDaySnapshot {
   return {
@@ -69,17 +69,17 @@ export function buildWidgetDaySnapshot(
 }
 
 /** 인자 하나가 day 하나다. 생략하면 2026-07-12 하루짜리 v2 snapshot을 만든다. */
-export function buildWidgetSnapshot(
+export function createWidgetSnapshot(
   todayOverrides: Partial<WidgetDaySnapshot> = {},
   tomorrowOverrides?: Partial<WidgetDaySnapshot>,
 ): WidgetSnapshot {
-  const today = buildWidgetDaySnapshot(todayOverrides);
+  const today = createWidgetDaySnapshot(todayOverrides);
   return {
     version: 2,
     updatedAtIso: '2026-07-12T09:00:00.000Z',
     days:
       tomorrowOverrides == null
         ? [today]
-        : [today, buildWidgetDaySnapshot({ date: '2026-07-13', ...tomorrowOverrides })],
+        : [today, createWidgetDaySnapshot({ date: '2026-07-13', ...tomorrowOverrides })],
   };
 }

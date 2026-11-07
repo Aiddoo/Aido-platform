@@ -85,7 +85,10 @@ export function useWidgetAppEntry() {
           message: 'initial widget destination restored',
         });
       } catch (error) {
-        errorReporter.captureException(toError(error), { feature: 'widget' });
+        errorReporter.captureException(toError(error), {
+          feature: 'widget',
+          method: 'useWidgetAppEntry',
+        });
       }
     },
   );
