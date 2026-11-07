@@ -4,14 +4,20 @@
 
 공통 규칙(범위, `// Given`·`// When`·`// Then`, 한국어 제목, stub 우선, 외부 API 금지, 일괄 교체 금지)은 [루트 공통 코드 규칙](../../../AGENTS.md#공통-코드-규칙)에 있다. 이 문서는 앱에만 해당하는 내용을 담는다. 왜 이 범위인지는 [테스트 전략](../docs/testing-strategy.md)을 본다.
 
-## 무엇을 테스트하나
+## 테스트 범위
 
-| 대상                           | 검증하는 것                                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
-| Model·Policy                   | 상태 조합의 허용·거부, 입력 정규화, 날짜·수치 경계                                      |
-| Service·Mapper                 | method·path·query·body, 응답 스키마 검증, DTO→모델 변환, `AbortSignal` 전달, 오류 전달  |
-| 순수 util·view-model·공용 유틸 | 경계값과 분기별 입출력, 캐시 변환의 identity, 정렬·중복 제거·평탄화                     |
-| 화면 동작(예외적으로)          | 저장 성공·실패·연결 끊김처럼 계약이 사용자 결과로 이어지는 흐름(`memo-editor.test.tsx`) |
+클라이언트 테스트는 유저 엣지 케이스와 중요한 비즈니스 로직만 둔다. 테스트가 줄어도 좋다. 단 규칙을 지키던 테스트를 형식 때문에 지우지 않는다.
+
+- **쓴다:** Policy와 업무 순수 함수의 규칙·경계값, 돈·권한·한도·시간대·자정·서머타임, 초안과 입력값 보존, 오프라인·서버 500·토큰 만료, 두 번 누름, 삭제된 대상, 다른 계정 섞임, 저장 값·공개 링크 호환, 재현된 버그.
+- **쓰지 않는다:** 단순 세터, 필드 그대로 옮기는 mapper, 표시만 하는 컴포넌트, 라이브러리 동작, 스타일과 스냅샷, 구현 세부(호출 횟수만 보는 테스트), 커버리지를 채우려는 테스트, hook·Provider·Query Options의 단순 배선.
+- 기존 테스트가 "쓰지 않는다"에 들면 사유를 적어 지워도 된다. 판단이 애매하면 남긴다.
+
+| 대상                           | 검증하는 것                                                                            |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| Model·Policy                   | 상태 조합의 허용·거부, 입력 정규화, 날짜·수치 경계                                     |
+| Service·Mapper                 | method·path·query·body, 응답 스키마 검증, DTO→모델 변환, `AbortSignal` 전달, 오류 전달 |
+| 순수 util·view-model·공용 유틸 | 경계값과 분기별 입출력, 캐시 변환의 identity, 정렬·중복 제거·평탄화                    |
+| 화면·훅 동작(유저 엣지 케이스) | 저장 실패·오프라인·두 번 누름처럼 계약이 사용자 결과로 이어지는 흐름                   |
 
 경계(오늘·자정·DST·언어, 라우트·푸시·위젯 URI 해석, 저장 JSON 버전)는 순수 함수 테스트로 고정한다([날짜 경계](../../../docs/conventions/dates.md#4-테스트할-경계)).
 
@@ -44,15 +50,24 @@
 
 ## 작성 규칙
 
-- `// When / Then` 합본이나 `// Given - 설명` 꼬리 설명을 쓰지 않는다.
+- 새 테스트는 `it`을 쓰고 `// Given`·`// When`·`// Then` 블록과 한국어 제목을 둔다. `// When / Then` 합본이나 `// Given - 설명` 꼬리 설명을 쓰지 않는다. 같은 입력 표는 `it.each`다.
 - 의미 있는 성공·실패·경계 분기만 남긴다. 줄을 실행하기 위한 케이스를 만들지 않는다.
 - `jest.fn()`·spy는 호출 자체가 계약일 때(요청 path, 토큰 해제 순서)와 시간·UUID 같은 실제 경계에만 둔다.
-- 모듈 `jest.mock`은 `shared/infra` 어댑터 테스트의 SDK에만 쓴다. 네이티브 모듈은 `jest.setup.ts`나 `jest.config.js`의 `moduleNameMapper`에 둔다. `check:conventions`가 허용 목록 없이 막는다. 실제 라우터를 쓰는 테스트의 `jest.unmock('expo-router')`는 mock이 아니라 허용한다.
+- 모듈 `jest.mock`은 `shared/infra` 어댑터 테스트의 SDK에만 쓴다(현재 20개 파일, `@src` 대상 0). `@src/…` 모듈은 mock하지 않고 포트 stub을 넣는다. 네이티브 모듈은 `jest.setup.ts`나 `jest.config.js`의 `moduleNameMapper`에 둔다. `check:conventions`가 허용 목록 없이 막는다. 실제 라우터를 쓰는 테스트의 `jest.unmock('expo-router')`는 mock이 아니라 허용한다.
 - 여러 프레임워크 mock을 조립하기 시작하면 순수 로직 추출을 먼저 검토한다.
 - `env.ts`를 파일별로 mock하지 않는다. `jest.setup.ts`가 앱 시작과 같은 경로(`expo-constants`)로 값을 준다.
-- 실제 타이머를 기다리지 않는다. 시간 값을 인자로 주거나 fake timer를 쓴다.
-- 테스트끼리 QueryClient, mock, 전역 상태를 공유하지 않는다.
+- 실제 타이머를 기다리지 않는다. 시간 값을 인자로 주거나 fake timer를 쓴다. 비동기가 섞이면 `await jest.advanceTimersByTimeAsync(ms)`를 쓴다(Jest 30).
 - 타임존 테스트는 윤년과 다른 국가(서울·LA) 경계 정도만 본다.
+
+## 테스트 격리
+
+설정이 이미 `clearMocks`와 `restoreMocks`를 켠다. `clearMocks`는 호출 기록만, `restoreMocks`는 `jest.spyOn`으로 만든 spy만 되돌린다. `jest.fn()`에 정한 `mockReturnValue`·`mockImplementation`은 지우지 않는다(`resetMocks`는 공용 stub의 구현까지 지워 켜지 않는다). 그래서 다음을 지킨다.
+
+- 상태를 가진 stub·fake, `QueryClient`, 저장소는 테스트마다 새로 만든다. 모듈 수준 `const logger = createLoggerStub()`처럼 공유 인스턴스를 두지 않는다.
+- 모듈 수준 `let`은 `beforeEach`에서 다시 만든다. `jest.mock` factory가 참조해야 하는 `mock*` 변수만 예외로 두고 `beforeEach`에서 초기화한다.
+- `jest.useFakeTimers`는 `beforeEach`에서 켜고 `afterEach`에서 `jest.useRealTimers()`로 되돌린다. 모듈 수준에서 켜지 않는다.
+- 이미 `jest.fn()`인 대상(RN의 `View.prototype.measure` 등)에 `jest.spyOn(...).mockImplementation`을 걸면 `restoreMocks`가 되돌리지 못한다. `afterEach`에서 `mockReset()`한다.
+- 순서를 바꿔도 통과해야 한다. `pnpm --filter @aido/mobile test:random`(`jest --randomize`)로 확인하고, 실패하면 `--seed`로 재현해 순서 의존을 고친다.
 
 ## Fixture
 
@@ -102,41 +117,111 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | 실행되는 코드                       | 가로챈 만큼 가짜다          | 포트 안쪽의 서비스·모델·화면은 실제 코드다 |
 | 파일을 옮기거나 라이브러리를 바꾸면 | 테스트가 깨진다             | 그대로다                                   |
 
-| 도구                                                                        | 용도                                                                                     |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`                        | 모델 fixture(`createX(overrides)`)                                                       |
-| `createTestDi({ httpClient, …overrides })`                                  | 실제 Service를 포트 stub 위에 조립한 `di`. 응답은 `httpClient`에 정한다                  |
-| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })`             | 실제 provider 위에 `di` 필드만 덮어써 렌더. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다 |
-| `createTestDiContainer(overrides)` + `StaticDIProvider`                     | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패                             |
-| `createMemorySyncStorage()`                                                 | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                                              |
-| `createMemoryStorage()`                                                     | 키체인(`Storage` 포트) 대신 메모리 저장소                                                |
-| `createMemoryTokenStore(tokens)`                                            | 저장·삭제가 다음 읽기에 반영되는 토큰 저장소 fake                                        |
-| `createHttpClientStub()`                                                    | HTTP 포트 stub                                                                           |
-| `createObservableSyncStorageFake()`                                         | 위젯 이동 명령 저장소 fake. 바뀔 때 구독자에게 알린다                                    |
-| `OverlayStateContext.Provider`                                              | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다   |
-| `createAnalyticsStub()`, `createStorageStub()`, `createMemorySyncStorage()` | Analytics·저장소 포트 stub                                                               |
-| `createLoggerStub()`                                                        | Logger 포트 stub. `jest.fn()` 네 개를 파일마다 만들지 않는다                             |
-| `createTestQueryClient()`                                                   | 테스트용 QueryClient                                                                     |
-| `createPurchasesGatewayStub()`                                              | 결제 포트 stub                                                                           |
-| `createSpeechRecognizerStub()`                                              | 음성 인식 포트 stub                                                                      |
-| `createLocalFileSystemFake()`                                               | 파일 시스템 fake                                                                         |
-| `createHapticsStub()`, `createErrorReporterStub()`                          | 햅틱·오류 보고 stub                                                                      |
+### 공용 도구 (`src/shared/__tests__`, `index.ts`로 공개)
 
-```tsx
-// Given
-const gateway = createPushNotificationGatewayStub({
-  requestPermission: jest.fn(async () => createPushPermissionResponse({ status: 'granted' })),
-});
-const pushPromptRepository = createPushPromptRepository(createMemorySyncStorage());
+포트 하나에 도구 하나다. 이름은 `create{Port}Stub`(`jest.fn`으로 호출을 기록하는 빈 구현), `create{Port}Fake`(동작을 흉내 냄), `createMemory{X}`(메모리에 저장하는 구현)다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 
-// When
-await renderUi(<PushPermissionNotice />, {
-  di: { pushPromptRepository, pushDeviceService: new PushDeviceService(gateway /* … */) },
-  queryClient,
+| 포트                               | 도구                                                                        |
+| ---------------------------------- | --------------------------------------------------------------------------- |
+| `Logger`                           | `createLoggerStub()`                                                        |
+| `Analytics`                        | `createAnalyticsStub()`                                                     |
+| `ErrorReporter`                    | `createErrorReporterStub()`                                                 |
+| `HapticsGateway`                   | `createHapticsStub()`                                                       |
+| `IdGenerator`                      | `createIdGeneratorStub()` (호출마다 다른 id)                                |
+| `HttpClient`                       | `createHttpClientStub()`                                                    |
+| `Storage`                          | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)             |
+| `SyncStorage`                      | `createMemorySyncStorage()`                                                 |
+| `ObservableSyncStorage`            | `createMemoryObservableSyncStorage()`                                       |
+| `TokenStore`                       | `createMemoryTokenStore(tokens)`                                            |
+| `DeviceIdStore`                    | `createMemoryDeviceIdStore(initial)`                                        |
+| `LocalFileSystem`                  | `createLocalFileSystemFake()`                                               |
+| `ExternalLinkGateway`              | `createExternalLinkGatewayStub()`                                           |
+| `IncomingLinkGateway`              | `createIncomingLinkGatewayStub()`                                           |
+| `ClipboardGateway`                 | `createClipboardGatewayStub()`                                              |
+| `SystemShareGateway`               | `createSystemShareGatewayStub()`                                            |
+| `SocialShareGateway`               | `createSocialShareGatewayStub()`                                            |
+| `LocationGateway`                  | `createLocationGatewayStub()`                                               |
+| `NetworkStatusGateway`             | `createNetworkStatusGatewayStub()`                                          |
+| `AppStoreReviewGateway`            | `createAppStoreReviewGatewayStub()`                                         |
+| `AppStoreListingGateway`           | `createAppStoreListingGatewayStub()`                                        |
+| `AppIconGateway`                   | `createAppIconGatewayStub()`                                                |
+| `InstallReferrerGateway`           | `createInstallReferrerGatewayStub()`                                        |
+| `InstallationIdGateway`            | `createInstallationIdGatewayStub()`                                         |
+| `VendorIdGateway`                  | `createVendorIdGatewayStub()`                                               |
+| `JsonFetcher`                      | `createJsonFetcherStub()`                                                   |
+| `NativeApplicationMetadataGateway` | `createNativeApplicationMetadataGatewayStub(installation)`                  |
+| `PurchasesGateway`                 | `createPurchasesGatewayStub()`                                              |
+| `PushNotificationGateway`          | `createPushNotificationGatewayStub(overrides)` (수신·응답을 `emit*`로 흘림) |
+| `SocialAuthGateway`                | `createSocialAuthGatewayStub()`                                             |
+| `SpeechRecognizer`                 | `createSpeechRecognizerStub()`                                              |
+| `TokenRefresher`                   | `createTokenRefresherStub()`                                                |
+| `AudioPartPlaylist`                | `createAudioPartPlaylistStub(status)`                                       |
+
+| 도구                                                            | 용도                                                                                                            |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `createTestDi({ httpClient, …overrides })`                      | 실제 Service를 포트 stub 위에 조립한 DI. 응답은 `httpClient`에 정한다. 넣지 않은 포트에 손대면 이름을 대며 실패 |
+| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })` | 실제 provider 위에 `di`를 얹어 렌더. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다                               |
+| `createTestQueryClient()`                                       | 테스트용 QueryClient                                                                                            |
+| `createPendingResponse()`                                       | 끝나는 시점을 테스트가 정하는 응답(두 번 누름, 늦은 응답)                                                       |
+| `stubWindowDimensions(width)`                                   | 창 폭·글꼴 배율. spy라 테스트가 끝나면 되돌아간다                                                               |
+| `OverlayStateContext.Provider`                                  | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다                          |
+| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`            | 모델 fixture(`createX(overrides)`)                                                                              |
+
+`mocks/`는 `jest.config.js`의 `moduleNameMapper`와 `jest.setup.ts`가 가리키는 SDK 모듈 대체(expo-router, MMKV, Skia 등)다. 포트 stub이 아니라 jest가 모듈을 바꿔 끼우는 층이고, 테스트 파일이 직접 import하지 않는다.
+
+### 서비스 단위 테스트
+
+실제 Service에 포트 stub을 끼운다. `jest.mock`으로 모듈을 가로채지 않는다.
+
+```ts
+// features/device/store-review/apis/store-review.service.test.ts
+const createFixture = () => {
+  const gateway = createAppStoreReviewGatewayStub();
+  const repository = createStoreReviewRepository(createMemorySyncStorage());
+  const service = new StoreReviewService(repository, gateway, () => NOW);
+  return { gateway, service };
+};
+
+it('끝낸 날이 모자라면 기다리지도 요청하지도 않는다', async () => {
+  // Given
+  const { gateway, service } = createFixture();
+  service.recordActiveDay(ACCOUNT, '2026-10-27');
+
+  // When
+  const outcome = await service.requestReviewAt(ALL_DONE, presentable);
+
+  // Then
+  expect(outcome).toBe('not_engaged');
+  expect(gateway.requestReview).not.toHaveBeenCalled();
 });
 ```
 
-예시: `push-permission-card.test.tsx`(홈 안내 단계별 동작), `use-push-device-sync.test.tsx`(보고 시점·debounce), `memo-editor.test.tsx`(저장 실패·연결 끊김). 계약이 사용자 결과로 이어지는 흐름이라 둔 것이다. 이 방식을 기본으로 늘리지 않는다.
+### 화면 테스트
+
+`renderUi` + `createTestDi` + `createHttpClientStub`이다. 서비스를 mock하지 않고 HTTP 응답만 정한다.
+
+```tsx
+// features/support/inquiry/__tests__/inquiry-screen.test.tsx
+it('연결이 끊겨 실패해도 입력값을 지키고 화면에 머문다', async () => {
+  // Given
+  const httpClient = createHttpClientStub();
+  httpClient.post.mockRejectedValue(new NetworkError());
+  await renderUi(<InquiryRoute />, {
+    withOverlay: true,
+    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+  });
+  await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
+
+  // When
+  await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+  // Then
+  expect(screen.getByTestId('inquiry-content-input').props.value).toBe(CONTENT);
+  expect(router.back).not.toHaveBeenCalled();
+});
+```
+
+`di`에는 이 테스트가 바꾸는 포트만 더한다(`createTestDi({ httpClient, analytics })`). `di: { xService: new XService(httpClient) }`처럼 Service를 직접 조립하지 않는다. 쓰는 Service가 `createTestDi`에 없으면 거기에 더한다.
 
 ## expo-router 공용 mock
 
@@ -215,8 +300,11 @@ pnpm --filter @aido/mobile test --runInBand
 # 특정 파일
 pnpm --filter @aido/mobile test --runInBand todo-comment.service.test.ts
 
-# 재현 순서·종료 핸들
-pnpm --filter @aido/mobile test --runInBand --randomize --seed <number> --showSeed
+# 순서 의존 확인(수동). 실패하면 같은 --seed로 재현한다
+pnpm --filter @aido/mobile test:random
+pnpm --filter @aido/mobile test --randomize --seed <number> --showSeed
+
+# 종료 핸들
 pnpm --filter @aido/mobile test --runInBand --detectOpenHandles
 
 # 정적 검증

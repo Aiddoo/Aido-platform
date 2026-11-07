@@ -11,11 +11,18 @@
 
 ## 자동 테스트
 
-1. Model·Policy의 제품 규칙
-2. Service·Mapper의 HTTP·Zod·모델 변환 경계
-3. 자체 분기와 경계값이 있는 순수 util·view-model·공용 유틸
+클라이언트 테스트는 유저 엣지 케이스와 중요한 비즈니스 로직만 둔다.
 
-컴포넌트 렌더, hook·Provider, Query Options 배선은 기본 범위가 아니다. 기존 테스트가 있다는 이유로 같은 종류를 늘리지 않는다.
+- **쓴다:** Policy와 업무 순수 함수의 규칙·경계값, 돈·권한·한도·시간대·자정·서머타임, 초안과 입력값 보존, 오프라인·서버 500·토큰 만료, 두 번 누름, 삭제된 대상, 다른 계정 섞임, 저장 값·공개 링크 호환, 재현된 버그.
+- **쓰지 않는다:** 단순 세터, 필드 그대로 옮기는 mapper, 표시만 하는 컴포넌트, 라이브러리 동작, 스타일과 스냅샷, 구현 세부(호출 횟수만 보는 테스트), 커버리지를 채우려는 테스트, hook·Provider·Query Options의 단순 배선.
+
+기존 테스트가 "쓰지 않는다"에 들면 사유를 적어 지워도 된다. 테스트가 줄어도 좋다. 단 규칙을 지키던 테스트를 형식 때문에 지우지 않는다. 기존 테스트가 있다는 이유로 같은 종류를 늘리지 않는다.
+
+## 테스트 구조
+
+- 서비스 단위는 실제 Service에 포트 stub을 끼운다. 화면은 `renderUi` + `createTestDi` + `createHttpClientStub`이다. 공용 도구는 `src/shared/__tests__`에 포트마다 하나씩 있다(이름은 `create{Port}Stub`, `create{Port}Fake`, `createMemory{X}`).
+- `jest.mock`은 `shared/infra` 어댑터 테스트의 SDK에만 쓴다.
+- 테스트끼리 상태를 나누지 않는다. stub, fake, `QueryClient`, 저장소는 테스트마다 새로 만들고 fake timer는 되돌린다. `test:random`(`jest --randomize`)을 통과해야 한다.
 
 ## 실제 앱 확인
 
