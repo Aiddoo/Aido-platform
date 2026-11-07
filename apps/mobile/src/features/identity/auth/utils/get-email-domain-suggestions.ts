@@ -15,7 +15,7 @@ export function getEmailDomainSuggestions(email: string) {
 
   const localPart = email.slice(0, atIndex);
   const domainPart = email.slice(atIndex + 1).toLowerCase();
-  if (EMAIL_DOMAINS.some((domain) => domain === domainPart)) {
+  if (EMAIL_DOMAINS.includes(domainPart)) {
     return [];
   }
 

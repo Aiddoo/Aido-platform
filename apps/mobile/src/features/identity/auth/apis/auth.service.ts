@@ -91,9 +91,6 @@ export class AuthService {
     return result;
   };
 
-  /** 명시적 로그아웃/탈퇴 — 세션 만료(SessionManager.end)와 더불어 토큰을 지우는 유일한 경로. */
-  #clearTokens = (): Promise<void> => this.#tokenStore.clear();
-
   #openOAuth = async (
     provider: OAuthStartProvider,
     mode: OAuthStartMode,
@@ -181,7 +178,8 @@ export class AuthService {
     return result.ok ? ok(undefined) : result;
   };
 
-  clearLocalSession = (): Promise<void> => this.#clearTokens();
+  /** 명시적 로그아웃/탈퇴 — 세션 만료(SessionManager.end)와 더불어 토큰을 지우는 유일한 경로. */
+  clearLocalSession = (): Promise<void> => this.#tokenStore.clear();
 
   verifyEmail = async (input: VerifyEmailInput) =>
     this.#saveTokens(await this.#publicHttpClient.post('v1/auth/verify-email', input));
@@ -295,7 +293,7 @@ export class AuthService {
       '[AuthService] Invalid deleteAccount response',
     );
     if (result.ok) {
-      await this.#clearTokens();
+      await this.clearLocalSession();
     }
     return result;
   };
