@@ -1,11 +1,11 @@
-import { toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, getNowInstant, toInstant } from '@src/shared/date/instant';
 
 import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherDetailPolicy } from './weather-detail.model';
 
-const SUNRISE = new Date('2026-11-01T21:51:00.000Z');
-const SUNSET = new Date('2026-11-02T08:28:00.000Z');
-const DAY = { sunrise: toInstant(SUNRISE.toISOString()), sunset: toInstant(SUNSET.toISOString()) };
+const SUNRISE = toInstant('2026-11-01T21:51:00.000Z');
+const SUNSET = toInstant('2026-11-02T08:28:00.000Z');
+const DAY = { sunrise: SUNRISE, sunset: SUNSET };
 
 describe('WeatherDetailPolicy 단계 분류', () => {
   it.each([
@@ -28,13 +28,11 @@ describe('WeatherDetailPolicy 단계 분류', () => {
 });
 
 describe('WeatherDetailPolicy.getSunscreenWindow', () => {
-  const now = new Date('2026-11-02T02:30:00.000Z');
+  const now = toInstant('2026-11-02T02:30:00.000Z');
   const hourly = createWeatherReport({
     hourly: [1, 4, 5, 3, 2, 6].map((uvIndex, index) =>
       createHourlyForecastDto({
-        startsAt: new Date(
-          Date.parse('2026-11-02T02:00:00.000Z') + index * 3_600_000,
-        ).toISOString(),
+        startsAt: fromEpochMs(Date.parse('2026-11-02T02:00:00.000Z') + index * 3_600_000),
         uvIndex,
       }),
     ),
@@ -64,22 +62,20 @@ describe('WeatherDetailPolicy.sumNextDayPrecipitation', () => {
     const hourly = createWeatherReport({
       hourly: [0.4, 1.25, 2].map((amount, index) =>
         createHourlyForecastDto({
-          startsAt: new Date(
-            Date.parse('2026-11-02T06:00:00.000Z') + index * 3_600_000,
-          ).toISOString(),
+          startsAt: fromEpochMs(Date.parse('2026-11-02T06:00:00.000Z') + index * 3_600_000),
           precipitationAmount: amount,
         }),
       ),
     }).hourly;
 
     expect(
-      WeatherDetailPolicy.sumNextDayPrecipitation(hourly, new Date('2026-11-02T07:10:00.000Z')),
+      WeatherDetailPolicy.sumNextDayPrecipitation(hourly, toInstant('2026-11-02T07:10:00.000Z')),
     ).toBe(3.3);
   });
 
   it('시간별 예보가 없으면 null이다', () => {
     // Given 빈 시간별 예보 When 합하면 Then 값을 모른다
-    expect(WeatherDetailPolicy.sumNextDayPrecipitation([], new Date())).toBeNull();
+    expect(WeatherDetailPolicy.sumNextDayPrecipitation([], getNowInstant())).toBeNull();
   });
 });
 
@@ -92,13 +88,13 @@ describe('WeatherDetailPolicy.getNextSunEvent', () => {
     ['2026-11-02T10:00:00.000Z', 'sunriseTomorrow'],
   ] as const)('%s에는 다음 해 일정이 %s다', (now, kind) => {
     // Given 하루 중 시각 When 다음 해 일정을 구하면 Then 아직 오지 않은 가장 가까운 일정이다
-    expect(WeatherDetailPolicy.getNextSunEvent(DAY, tomorrow, new Date(now))?.kind).toBe(kind);
+    expect(WeatherDetailPolicy.getNextSunEvent(DAY, tomorrow, toInstant(now))?.kind).toBe(kind);
   });
 
   it('일몰 뒤 내일 예보가 없으면 null이다', () => {
     // Given 마지막 예보일 밤 When 다음 해 일정을 구하면 Then 없다
     expect(
-      WeatherDetailPolicy.getNextSunEvent(DAY, null, new Date('2026-11-02T10:00:00.000Z')),
+      WeatherDetailPolicy.getNextSunEvent(DAY, null, toInstant('2026-11-02T10:00:00.000Z')),
     ).toBeNull();
   });
 });

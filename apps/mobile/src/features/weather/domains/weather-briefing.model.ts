@@ -131,11 +131,11 @@ type BriefingSource = {
 
 /** 할 일 날짜는 기기 시간대로 저장되므로 오늘·내일도 기기 시간대로 가른다. */
 interface BriefingClock {
-  now: Date;
+  now: Instant;
   timeZone: string;
 }
 
-function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant | Date): number {
+function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
   const time = toDate(at).getTime();
   return hourly.findIndex(
     (hour) => toEpochMs(hour.startsAt) <= time && time < toEpochMs(hour.startsAt) + HOUR_MS,
@@ -188,10 +188,10 @@ function toHourRange(
 function getForecastTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
-  now: Date,
+  now: Instant,
 ): ForecastTodo[] {
   return todos.flatMap((todo) => {
-    if (todo.scheduledAt == null || toEpochMs(todo.scheduledAt) < now.getTime()) {
+    if (todo.scheduledAt == null || toEpochMs(todo.scheduledAt) < toEpochMs(now)) {
       return [];
     }
     const hour = hourly[findHourIndexAt(hourly, todo.scheduledAt)];
@@ -215,7 +215,7 @@ function getForecastTodos(
 function getRainyTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
-  now: Date,
+  now: Instant,
 ): ForecastTodo[] {
   return getForecastTodos(hourly, todos, now).filter(
     (todo) => !todo.completed && isWetHour(todo.hour),
@@ -226,7 +226,7 @@ function getRainyTodos(
 function getHotTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
-  now: Date,
+  now: Instant,
 ): ForecastTodo[] {
   return getForecastTodos(hourly, todos, now).filter((todo) => !todo.completed && isHot(todo.hour));
 }
@@ -234,7 +234,7 @@ function getHotTodos(
 function getAffectedTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
-  { now, reason }: { now: Date; reason: WeatherRescheduleReason },
+  { now, reason }: { now: Instant; reason: WeatherRescheduleReason },
 ): ForecastTodo[] {
   return match(reason)
     .with('rain', () => getRainyTodos(hourly, todos, now))
@@ -341,7 +341,7 @@ function toClearBriefing(
   const todayKey = toDateKey(now, timeZone);
   const daylightHours = hourly.filter(
     (hour) =>
-      toEpochMs(hour.startsAt) + HOUR_MS > now.getTime() &&
+      toEpochMs(hour.startsAt) + HOUR_MS > toEpochMs(now) &&
       hour.isDaylight &&
       toDateKey(hour.startsAt, timeZone) === todayKey,
   );
@@ -429,14 +429,14 @@ function getRescheduleOptions(
     now,
     timeZone,
     reason = 'rain',
-  }: { now: Date; timeZone: string; reason?: WeatherRescheduleReason },
+  }: { now: Instant; timeZone: string; reason?: WeatherRescheduleReason },
 ): RescheduleOption[] {
   const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
   const distance = (hour: HourlyForecastEntry) =>
     Math.abs(toEpochMs(hour.startsAt) - toEpochMs(todo.scheduledAt));
   const sameDayHours = hourly.filter(
     (hour) =>
-      toEpochMs(hour.startsAt) > now.getTime() &&
+      toEpochMs(hour.startsAt) > toEpochMs(now) &&
       toDateKey(hour.startsAt, timeZone) === todoDateKey,
   );
   const ordered = match(reason)
@@ -464,8 +464,8 @@ function getRescheduleOptions(
 }
 
 /** 추천 시간대 안에서 아직 시작하지 않은 첫 정시. 이미 모두 지났으면 제안하지 않는다. */
-function getSuggestedStartAt(range: HourRange, now: Date): Instant | null {
-  const nextHour = Math.ceil(now.getTime() / HOUR_MS) * HOUR_MS;
+function getSuggestedStartAt(range: HourRange, now: Instant): Instant | null {
+  const nextHour = Math.ceil(toEpochMs(now) / HOUR_MS) * HOUR_MS;
   const startsAt = Math.max(toEpochMs(range.startsAt), nextHour);
   return startsAt < toEpochMs(range.endsAt) ? fromEpochMs(startsAt) : null;
 }

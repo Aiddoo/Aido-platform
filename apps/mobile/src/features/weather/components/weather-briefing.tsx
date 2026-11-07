@@ -9,7 +9,7 @@ import { useToggleTodoMutationOptions } from '@src/features/planning/todo/querie
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
-import { toHHmm } from '@src/shared/date/instant';
+import { type Instant, toHHmm } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -131,7 +131,7 @@ WeatherBriefing.Content = function Content({
 }: {
   briefing: BriefingResult;
   hourly: readonly HourlyForecastEntry[];
-  now: Date;
+  now: Instant;
   timeFormat: TimeFormat;
 }) {
   const { t } = useTranslation('weather');

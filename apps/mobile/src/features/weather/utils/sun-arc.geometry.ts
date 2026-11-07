@@ -1,5 +1,5 @@
 import { DAY_MS } from '@src/shared/constants/time.constants';
-import { toEpochMs } from '@src/shared/date/instant';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { round } from 'es-toolkit';
 
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
@@ -50,7 +50,7 @@ function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
  */
 export function getSunArcPosition(
   day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
-  now: Date,
+  now: Instant,
 ): DialPoint | null {
   const { sunrise, sunset } = day;
   if (sunrise == null || sunset == null) {
@@ -58,7 +58,7 @@ export function getSunArcPosition(
   }
   const rise = toEpochMs(sunrise);
   const set = toEpochMs(sunset);
-  const current = now.getTime();
+  const current = toEpochMs(now);
   const halfNight = (DAY_MS - (set - rise)) / 2;
   if (current < rise) {
     return pointOnCurve(NIGHT_BEFORE_SUNRISE, toUnitPosition(current, rise - halfNight, rise));
@@ -75,10 +75,10 @@ export function getSunArcPosition(
 /** 일출 전이나 일몰 뒤면 해 점을 밤처럼 흐리게 그린다. 일출·일몰을 모르면 낮으로 본다. */
 export function isSunBelowHorizon(
   day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
-  now: Date,
+  now: Instant,
 ): boolean {
   if (day.sunrise == null || day.sunset == null) {
     return false;
   }
-  return now.getTime() < toEpochMs(day.sunrise) || now.getTime() > toEpochMs(day.sunset);
+  return toEpochMs(now) < toEpochMs(day.sunrise) || toEpochMs(now) > toEpochMs(day.sunset);
 }

@@ -16,7 +16,7 @@ function getTimelineTime(item: HourlyTimelineItem): number {
 /** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
 export function toHourlyTimeline(
   report: Pick<WeatherReport, 'hourly' | 'daily'>,
-  now: Date,
+  now: Instant,
 ): HourlyTimelineItem[] {
   const hours = WeatherReportPolicy.selectUpcomingHours(report.hourly, now);
   const last = hours.at(-1);
@@ -25,7 +25,7 @@ export function toHourlyTimeline(
   }
   const rangeEnd = toEpochMs(last.startsAt) + HOUR_MS;
   const isInRange = (date: Instant) =>
-    toEpochMs(date) > now.getTime() && toEpochMs(date) < rangeEnd;
+    toEpochMs(date) > toEpochMs(now) && toEpochMs(date) < rangeEnd;
 
   const hourItems = hours.map((hour, index): HourlyTimelineItem => ({
     kind: 'hour',

@@ -138,7 +138,7 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
  */
 function summarizeHourly(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
-  now: Date,
+  now: Instant,
 ): HourlySummary | null {
   const hours = selectUpcomingHours(report.hourly, now).slice(0, PRECIPITATION_RANGE_HOURS);
   const [first] = hours;

@@ -70,7 +70,7 @@ function useValueType() {
 interface TimelineContext {
   dateFormat: DateFormatContext;
   timeFormat: TimeFormat;
-  now: Date;
+  now: Instant;
 }
 
 function timelineKey(item: HourlyTimelineItem): string {

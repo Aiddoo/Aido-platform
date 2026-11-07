@@ -1,7 +1,7 @@
 import catAnchorImage from '@assets/images/cat_weather_anchor.png';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import { toDate, type Instant } from '@src/shared/date/instant';
+import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -315,13 +315,13 @@ WeatherHero.StaleNotice = function StaleNotice({
   now,
 }: {
   fetchedAt: Instant;
-  now: Date;
+  now: Instant;
 }) {
   const { t } = useTranslation('weather');
   const dateFormat = useDateFormatContext();
   return (
     <Text size="b4" align="center" className="mt-1 text-on-sky/[0.78]" style={HERO_TEXT_SHADOW}>
-      {t('hero.stale', { relative: formatRelativeTimeLabel(toDate(fetchedAt), now, dateFormat) })}
+      {t('hero.stale', { relative: formatRelativeTimeLabel(fetchedAt, now, dateFormat) })}
     </Text>
   );
 };

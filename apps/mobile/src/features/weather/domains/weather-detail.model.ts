@@ -57,7 +57,7 @@ interface TimeWindow {
 /** 오늘(위치 시간대) 남은 시간 중 자외선 차단이 필요한 첫 시각~마지막 시각. 없으면 null이다. */
 function getSunscreenWindow(
   hourly: readonly HourlyForecastEntry[],
-  now: Date,
+  now: Instant,
   timeZone: string,
 ): TimeWindow | null {
   const todayKey = toDateKey(now, timeZone);
@@ -75,7 +75,10 @@ function getSunscreenWindow(
 const NEXT_DAY_HOURS = 24;
 
 /** 지금 시간부터 24시간 동안의 예상 강수량(mm). 시간별 예보가 없으면 null이다. */
-function sumNextDayPrecipitation(hourly: readonly HourlyForecastEntry[], now: Date): number | null {
+function sumNextDayPrecipitation(
+  hourly: readonly HourlyForecastEntry[],
+  now: Instant,
+): number | null {
   const hours = selectUpcomingHours(hourly, now).slice(0, NEXT_DAY_HOURS);
   if (hours.length === 0) {
     return null;
@@ -95,12 +98,12 @@ export type NextSunEvent =
 function getNextSunEvent(
   today: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
   tomorrow: Pick<DailyForecastEntry, 'sunrise'> | null,
-  now: Date,
+  now: Instant,
 ): NextSunEvent | null {
-  if (today.sunrise != null && now.getTime() < toEpochMs(today.sunrise)) {
+  if (today.sunrise != null && toEpochMs(now) < toEpochMs(today.sunrise)) {
     return { kind: 'sunrise', at: today.sunrise };
   }
-  if (today.sunset != null && now.getTime() < toEpochMs(today.sunset)) {
+  if (today.sunset != null && toEpochMs(now) < toEpochMs(today.sunset)) {
     return { kind: 'sunset', at: today.sunset };
   }
   if (tomorrow?.sunrise != null) {

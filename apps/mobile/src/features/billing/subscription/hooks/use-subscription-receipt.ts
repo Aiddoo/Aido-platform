@@ -1,6 +1,5 @@
 import { usePurchasesSdkManager } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { toInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -16,11 +15,11 @@ export function useSubscriptionReceipt() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const sdkManager = usePurchasesSdkManager();
   const { currentTimeZone } = useLocalDate();
-  const minuteNow = useMinuteNow();
+  const now = useMinuteNow();
 
   return toSubscriptionReceiptViewModel(user, {
     isStoreConfigured: sdkManager.isConfigured(),
-    now: toInstant(minuteNow.toISOString()),
+    now,
     timeZone: currentTimeZone,
   });
 }

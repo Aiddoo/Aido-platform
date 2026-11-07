@@ -1,4 +1,5 @@
 import type { DateFormatContext } from '@src/shared/date/date-format';
+import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 
@@ -13,7 +14,7 @@ export function useLocationDateFormat(timeZone: string): DateFormatContext {
  * 위치 벽시계가 기기와 다를 때만 시각 앞에 '현지'를 붙인다. 오프셋이 같으면(서울·도쿄) 붙이지 않는다.
  * 날씨 화면의 문장·출처 표기가 한 규칙을 따른다.
  */
-export function useLocalTimeLabel(timeZone: string, now: Date): (time: string) => string {
+export function useLocalTimeLabel(timeZone: string, now: Instant): (time: string) => string {
   const { t } = useTranslation('weather');
   const { timeZone: deviceTimeZone } = useDateFormatContext();
   const isDifferent = WeatherReportPolicy.isDifferentWallClock(

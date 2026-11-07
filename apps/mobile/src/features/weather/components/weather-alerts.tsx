@@ -55,7 +55,7 @@ interface WeatherAlertItemProps {
   otherCount: number;
   timeZone: string;
   timeFormat: TimeFormat;
-  now: Date;
+  now: Instant;
 }
 
 WeatherAlerts.Item = function Item({

@@ -1,17 +1,17 @@
-import { toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { toHourlyTimeline } from './hourly-timeline.view-model';
 
 const HOUR_MS = 60 * 60_000;
 /** 서울 오후 3시 26분 */
-const NOW = new Date('2026-11-02T06:26:00.000Z');
+const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const START = '2026-11-02T06:00:00.000Z';
 
 function createHours(rows: readonly { condition: 'CLOUDY'; precipitationChance: number }[]) {
   return rows.map((row, index) =>
     createHourlyForecastDto({
-      startsAt: new Date(Date.parse(START) + index * HOUR_MS).toISOString(),
+      startsAt: fromEpochMs(Date.parse(START) + index * HOUR_MS),
       ...row,
     }),
   );

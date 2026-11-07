@@ -2,7 +2,7 @@ import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { getNowInstant, toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
@@ -41,7 +41,7 @@ export function useWhatsNewFeed({
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const appVersion = useMemo(getNativeAppVersion, []);
   const repository = useWhatsNewRepository();
-  const now = toInstant(useMinuteNow().toISOString());
+  const now = useMinuteNow();
   const push = useSingleTap(router.push);
 
   const campaignRelease = config?.enabled

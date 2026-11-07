@@ -29,7 +29,7 @@ export function usePrecipitationMessage({
 }: {
   timeZone: string;
   timeFormat: TimeFormat;
-  now: Date;
+  now: Instant;
 }) {
   const { t } = useTranslation('weather');
   const dateFormat = useLocationDateFormat(timeZone);

@@ -1,7 +1,6 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import { toDate } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -35,7 +34,7 @@ export function NudgeSummary({ nudgeId }: { nudgeId: number }) {
             })}
           </Text>
           <Text size="e1" shade={5}>
-            {formatRelativeTimeLabel(toDate(nudge.createdAt), now, dateFormatContext)}
+            {formatRelativeTimeLabel(nudge.createdAt, now, dateFormatContext)}
           </Text>
         </VStack>
       </HStack>

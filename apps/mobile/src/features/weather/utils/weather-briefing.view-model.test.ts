@@ -1,4 +1,4 @@
-import { toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
@@ -9,7 +9,7 @@ import {
 } from './weather-briefing.view-model';
 
 /** 서울 15:26. 16~17시(07:00Z~09:00Z) 비, 나머지는 맑다. */
-const NOW = new Date('2026-11-02T06:26:00.000Z');
+const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const report = createWeatherReport({
   fetchedAt: '2026-11-02T06:20:00.000Z',
   hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),
@@ -52,7 +52,7 @@ describe('toBriefingState', () => {
 
   it('6시간 넘게 갱신되지 않은 리포트로는 브리핑하지 않는다', () => {
     // Given 7시간 지난 리포트 When 상태를 고르면 Then 숨긴다
-    const later = new Date(NOW.getTime() + 7 * 60 * 60_000);
+    const later = fromEpochMs(toEpochMs(NOW) + 7 * 60 * 60_000);
 
     expect(toBriefingState(report, { now: later, deviceTimeZone: 'Asia/Seoul' })).toBe('hidden');
   });

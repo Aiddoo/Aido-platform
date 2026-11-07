@@ -61,7 +61,7 @@ export interface BriefingView {
 /** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 시각은 할 일과 같은 기기 시간대다. */
 export interface BriefingViewDeps {
   hourly: readonly HourlyForecastEntry[];
-  now: Date;
+  now: Instant;
   timeZone: string;
   formatClock: (date: Instant) => string;
   formatHour: (date: Instant) => string;
@@ -77,7 +77,7 @@ export type BriefingState = 'loading' | 'hidden' | 'visible';
  */
 export function toBriefingState(
   report: { location: { timezone: string }; fetchedAt: Instant } | undefined,
-  { now, deviceTimeZone }: { now: Date; deviceTimeZone: string },
+  { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
 ): BriefingState {
   if (report == null) {
     return 'loading';

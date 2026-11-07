@@ -4,7 +4,7 @@ import type { ResolvedLanguage } from '@src/shared/preferences/language.preferen
 import { match } from 'ts-pattern';
 
 import { isSameMonthDateKey, isSameYearDateKey } from './date-key';
-import { getZonedHour, type Instant, toDate, toDateKey } from './instant';
+import { diffMs, getZonedHour, type Instant, toDate, toDateKey } from './instant';
 import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
 import { isValidHHmm, parseHour, parseMinute } from './time-of-day';
 
@@ -195,15 +195,15 @@ export interface RelativeTimeLabels {
  * 그 이후는 같은 해면 "1월 5일", 다른 해면 "2025. 1. 5." (연도는 context 시간대 기준).
  */
 export function formatRelativeTime(
-  date: Date,
-  now: Date,
+  date: Instant,
+  now: Instant,
   labels: RelativeTimeLabels,
   context: DateFormatContext,
 ): string {
-  if (!isValidDate(date) || !isValidDate(now)) {
+  const elapsedMs = diffMs(now, date);
+  if (Number.isNaN(elapsedMs)) {
     return '';
   }
-  const elapsedMs = now.getTime() - date.getTime();
   if (elapsedMs < MINUTE_MS) {
     return labels.justNow;
   }

@@ -11,6 +11,7 @@ import {
   formatTimeDisplay,
   formatTimeOfDay,
 } from './date-format';
+import { fromEpochMs, toEpochMs, toInstant } from './instant';
 
 const date = new Date('2026-10-01T00:05:00Z');
 const KO_SEOUL: DateFormatContext = { locale: 'ko-KR', timeZone: 'Asia/Seoul' };
@@ -178,8 +179,8 @@ describe('formatDateKeyCompactRange', () => {
 });
 
 describe('formatRelativeTime', () => {
-  const now = new Date('2026-10-25T03:00:00Z');
-  const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
+  const now = toInstant('2026-10-25T03:00:00Z');
+  const minutesAgo = (minutes: number) => fromEpochMs(toEpochMs(now) - minutes * 60_000);
   const labels = {
     justNow: 'justNow',
     minutesAgo: (count: number) => `minutes:${count}`,
@@ -195,18 +196,18 @@ describe('formatRelativeTime', () => {
   });
 
   it('7일 이상은 같은 해면 월·일, 다른 해면 연도를 포함한 날짜로 표시한다', () => {
-    expect(formatRelativeTime(new Date('2026-01-05T03:00:00Z'), now, labels, KO_SEOUL)).toBe(
+    expect(formatRelativeTime(toInstant('2026-01-05T03:00:00Z'), now, labels, KO_SEOUL)).toBe(
       '1월 5일',
     );
-    expect(formatRelativeTime(new Date('2025-01-05T03:00:00Z'), now, labels, EN_SEOUL)).toBe(
+    expect(formatRelativeTime(toInstant('2025-01-05T03:00:00Z'), now, labels, EN_SEOUL)).toBe(
       '1/5/2025',
     );
   });
 
   it('연도 경계는 context 시간대 기준으로 판단한다', () => {
     // Given: UTC로는 2025년이지만 서울로는 2026년 1월 1일
-    const seoulNewYear = new Date('2025-12-31T16:00:00Z');
-    const later = new Date('2026-02-01T00:00:00Z');
+    const seoulNewYear = toInstant('2025-12-31T16:00:00Z');
+    const later = toInstant('2026-02-01T00:00:00Z');
 
     // When
     const result = formatRelativeTime(seoulNewYear, later, labels, KO_SEOUL);
@@ -218,7 +219,7 @@ describe('formatRelativeTime', () => {
 
 describe('formatDateLabel monthDay 윤일 경계', () => {
   // 2028-02-29T15:00Z = 서울 3월 1일 00:00, LA 2월 29일 07:00
-  const LEAP_DAY_BOUNDARY = new Date('2028-02-29T15:00:00Z');
+  const LEAP_DAY_BOUNDARY = toInstant('2028-02-29T15:00:00Z');
 
   it.each([
     ['ko-KR', 'Asia/Seoul', '3월 1일'],

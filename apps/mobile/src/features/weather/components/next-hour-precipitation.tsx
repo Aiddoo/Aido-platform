@@ -1,5 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
+import type { Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
@@ -118,7 +119,7 @@ NextHourPrecipitation.HourlyFallback = function HourlyFallback({
   outlook: HourlyPrecipitationOutlook;
   timeZone: string;
   timeFormat: TimeFormat;
-  now: Date;
+  now: Instant;
 }) {
   const { t } = useTranslation('weather');
   const dateFormat = useLocationDateFormat(timeZone);

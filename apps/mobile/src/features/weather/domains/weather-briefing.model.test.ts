@@ -11,7 +11,7 @@ import {
 import { type BriefingTodo, WeatherBriefingPolicy } from './weather-briefing.model';
 
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
-const NOW = new Date('2026-11-02T06:26:00.000Z');
+const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const CLOCK = { now: NOW, timeZone: 'Asia/Seoul' };
 const report = createWeatherReport({
   hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),
@@ -24,7 +24,7 @@ function createReport(hours: readonly Partial<WeatherHourlyForecast>[]) {
   return createWeatherReport({
     hourly: hours.map((hour, index) =>
       createHourlyForecastDto({
-        startsAt: new Date(start + index * 60 * 60_000).toISOString(),
+        startsAt: fromEpochMs(start + index * 60 * 60_000),
         ...hour,
       }),
     ),
@@ -256,7 +256,7 @@ describe('WeatherBriefingPolicy.toWeatherBriefing', () => {
           : [today, { ...today, date: '2026-11-03', temperatureMin: 3, temperatureMax: 16 }],
     });
     const briefing = WeatherBriefingPolicy.toWeatherBriefing(nightReport, [], {
-      now: new Date('2026-11-02T13:04:00.000Z'),
+      now: toInstant('2026-11-02T13:04:00.000Z'),
       timeZone: 'Asia/Seoul',
     });
 
@@ -315,7 +315,7 @@ describe('WeatherBriefingPolicy.getRescheduleOptions', () => {
     const options = WeatherBriefingPolicy.getRescheduleOptions(
       lateHours,
       { scheduledAt: toInstant('2026-11-02T13:30:00.000Z') },
-      { now: new Date('2026-11-02T13:10:00.000Z'), timeZone: 'Asia/Seoul' },
+      { now: toInstant('2026-11-02T13:10:00.000Z'), timeZone: 'Asia/Seoul' },
     );
 
     // Then
@@ -445,7 +445,7 @@ describe('WeatherBriefingPolicy.getSuggestedStartAt', () => {
   it('추천 시간대의 정시가 모두 지났으면 제안하지 않는다', () => {
     // Given 15~17시 추천 When 16:10에 고르면 Then 남은 정시가 없다
     expect(
-      WeatherBriefingPolicy.getSuggestedStartAt(RANGE, new Date('2026-11-02T07:10:00.000Z')),
+      WeatherBriefingPolicy.getSuggestedStartAt(RANGE, toInstant('2026-11-02T07:10:00.000Z')),
     ).toBeNull();
   });
 });

@@ -25,7 +25,7 @@ export type DateSectionedListItem<TEntry> =
   | { type: 'header'; section: DateSectionKey }
   | { type: 'item'; entry: TEntry };
 
-export function toDateSectionedListItems<TEntry extends { createdAt: Date | Instant }>(
+export function toDateSectionedListItems<TEntry extends { createdAt: Instant }>(
   entries: readonly TEntry[],
   todayDateKey: string,
   timeZone: string,

@@ -1,7 +1,7 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import { type Instant, toDate } from '@src/shared/date/instant';
+import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -311,7 +311,7 @@ function LastThankedAt({ lastThankedAt }: { lastThankedAt: Instant | null }) {
 
   return (
     <CardDescription>
-      {formatRelativeTimeLabel(toDate(lastThankedAt), now, dateFormatContext)}
+      {formatRelativeTimeLabel(lastThankedAt, now, dateFormatContext)}
     </CardDescription>
   );
 }

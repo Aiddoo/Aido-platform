@@ -42,9 +42,9 @@ function hourEndsAt(hour: HourlyForecastEntry): number {
 
 export function selectUpcomingHours(
   hourly: readonly HourlyForecastEntry[],
-  now: Date,
+  now: Instant,
 ): HourlyForecastEntry[] {
-  return hourly.filter((hour) => hourEndsAt(hour) > now.getTime());
+  return hourly.filter((hour) => hourEndsAt(hour) > toEpochMs(now));
 }
 
 type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
@@ -71,10 +71,10 @@ export type PrecipitationWindow =
       endsOnLaterDay: boolean;
     };
 
-function getNextHourHorizon(nextHour: NextHourForecast, now: Date): number {
+function getNextHourHorizon(nextHour: NextHourForecast, now: Instant): number {
   const lastMinute = nextHour.minutes.at(-1);
   return lastMinute == null
-    ? now.getTime() + NEXT_HOUR_RANGE_MS
+    ? toEpochMs(now) + NEXT_HOUR_RANGE_MS
     : toEpochMs(lastMinute.startsAt) + MINUTE_MS;
 }
 
@@ -86,13 +86,13 @@ function findFirstDryHourStart(
   return dryHour?.startsAt ?? null;
 }
 
-function isLaterDay(endsAt: Instant | null, now: Date, timeZone: string): boolean {
+function isLaterDay(endsAt: Instant | null, now: Instant, timeZone: string): boolean {
   return endsAt != null && toDateKey(endsAt, timeZone) !== toDateKey(now, timeZone);
 }
 
 function toWindow(
   report: PrecipitationSource,
-  now: Date,
+  now: Instant,
   wet: {
     startsAt: Instant;
     endsAt: Instant | null;
@@ -102,7 +102,7 @@ function toWindow(
   },
 ): PrecipitationWindow {
   const endsOnLaterDay = isLaterDay(wet.endsAt, now, report.location.timezone);
-  if (toEpochMs(wet.startsAt) <= now.getTime()) {
+  if (toEpochMs(wet.startsAt) <= toEpochMs(now)) {
     return {
       kind: 'ongoing',
       precipitationType: wet.precipitationType,
@@ -118,8 +118,8 @@ function toWindow(
  * 분 단위 예보가 있으면 그 구간을 먼저 믿고, 예보 범위 끝까지 이어지는 비는 시간별 예보에서 그치는 시각을 찾는다.
  * 분 단위 예보가 없는 지역(nextHour == null)은 시간별 예보만으로 시작·그침을 정한다.
  */
-function getPrecipitationWindow(report: PrecipitationSource, now: Date): PrecipitationWindow {
-  const nowMs = now.getTime();
+function getPrecipitationWindow(report: PrecipitationSource, now: Instant): PrecipitationWindow {
+  const nowMs = toEpochMs(now);
   const { nextHour, hourly } = report;
 
   if (nextHour != null) {
@@ -153,27 +153,27 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Date): Precipi
   });
 }
 
-function getMinutesUntil(target: Instant, now: Date): number {
-  return Math.max(0, Math.ceil((toEpochMs(target) - now.getTime()) / MINUTE_MS));
+function getMinutesUntil(target: Instant, now: Instant): number {
+  return Math.max(0, Math.ceil((toEpochMs(target) - toEpochMs(now)) / MINUTE_MS));
 }
 
-function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
-  return now.getTime() - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
+function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+  return toEpochMs(now) - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */
-function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
-  return now.getTime() - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
+function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+  return toEpochMs(now) - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
 }
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
-function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Date): string {
+function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
   return toDateKey(now, report.location.timezone);
 }
 
 function findTodayForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
-  now: Date,
+  now: Instant,
 ): DailyForecastEntry | null {
   const todayKey = getTodayKey(report, now);
   return report.daily.find((day) => day.date === todayKey) ?? report.daily[0] ?? null;
@@ -183,12 +183,12 @@ function findTodayForecast(
  * 서버가 심각도 순으로 정렬해 보내므로 순서는 그대로 두고, 화면을 켜 둔 사이 만료된 특보만 뺀다.
  * 아직 발효 전인 특보는 미리 알 수 있도록 남긴다.
  */
-function selectActiveAlerts(alerts: readonly WeatherAlert[], now: Date): WeatherAlert[] {
-  return alerts.filter((alert) => toEpochMs(alert.expiresAt) > now.getTime());
+function selectActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
+  return alerts.filter((alert) => toEpochMs(alert.expiresAt) > toEpochMs(now));
 }
 
-function isAlertInEffect(alert: WeatherAlert, now: Date): boolean {
-  return toEpochMs(alert.effectiveAt) <= now.getTime();
+function isAlertInEffect(alert: WeatherAlert, now: Instant): boolean {
+  return toEpochMs(alert.effectiveAt) <= toEpochMs(now);
 }
 
 export type AirPollutant = 'pm10' | 'pm25';
@@ -287,7 +287,7 @@ function compareFeelsLike(current: CurrentWeather): FeelsLikeComparison {
 function isDifferentWallClock(
   report: { location: Pick<WeatherReport['location'], 'timezone'> },
   deviceTimeZone: string,
-  now: Date,
+  now: Instant,
 ): boolean {
   return !hasSameWallClock(now, report.location.timezone, deviceTimeZone);
 }

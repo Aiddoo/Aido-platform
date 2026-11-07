@@ -1,4 +1,5 @@
 import type { DayOfWeek } from '@aido/api';
+import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 
 import {
@@ -142,10 +143,10 @@ describe('로케일 인지 포맷 (i18n)', () => {
 
   it('상대 시간을 context의 언어와 복수형에 맞춰 포맷한다', () => {
     // Given
-    const now = new Date('2026-10-25T03:00:00Z');
-    const oneMinuteAgo = new Date(now.getTime() - 61_000);
-    const twoHoursAgo = new Date(now.getTime() - 2 * 3600_000);
-    const twoDaysAgo = new Date(now.getTime() - 2 * 86_400_000);
+    const now = toInstant('2026-10-25T03:00:00Z');
+    const oneMinuteAgo = fromEpochMs(toEpochMs(now) - 61_000);
+    const twoHoursAgo = fromEpochMs(toEpochMs(now) - 2 * 3600_000);
+    const twoDaysAgo = fromEpochMs(toEpochMs(now) - 2 * 86_400_000);
 
     // Then (ko)
     expect(formatRelativeTimeLabel(now, now, KO_SEOUL)).toBe('방금 전');

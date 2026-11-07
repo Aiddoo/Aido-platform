@@ -3,6 +3,7 @@ import { t } from '@src/shared/i18n';
 
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';
 import { getCalendarWeek, isSameYearDateKey } from './date-key';
+import type { Instant } from './instant';
 
 function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
   return context.locale === 'ko-KR' ? 'ko' : 'en';
@@ -53,7 +54,11 @@ export function formatWeekOfMonthLabel(
 }
 
 /** 상대 시간 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025. 1. 5.") */
-export function formatRelativeTimeLabel(date: Date, now: Date, context: DateFormatContext): string {
+export function formatRelativeTimeLabel(
+  date: Instant,
+  now: Instant,
+  context: DateFormatContext,
+): string {
   const lng = toCatalogLanguage(context);
   return formatRelativeTime(
     date,

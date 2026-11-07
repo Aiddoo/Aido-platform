@@ -1,5 +1,5 @@
 import type { WeatherHourlyForecast } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
@@ -7,13 +7,13 @@ import { WeatherHourlyPolicy } from './weather-hourly.model';
 
 const HOUR_MS = 60 * 60_000;
 /** 서울 오후 3시 26분 */
-const NOW = new Date('2026-11-02T06:26:00.000Z');
+const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const START = '2026-11-02T06:00:00.000Z';
 
 function createHours(rows: readonly Partial<WeatherHourlyForecast>[]) {
   return rows.map((row, index) =>
     createHourlyForecastDto({
-      startsAt: new Date(Date.parse(START) + index * HOUR_MS).toISOString(),
+      startsAt: fromEpochMs(Date.parse(START) + index * HOUR_MS),
       ...row,
     }),
   );
@@ -143,7 +143,7 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
     const report = createWeatherReport({ hourly: createHours([DRY_CLOUDY]) });
 
     expect(
-      WeatherHourlyPolicy.summarizeHourly(report, new Date('2026-11-02T08:00:00.000Z')),
+      WeatherHourlyPolicy.summarizeHourly(report, toInstant('2026-11-02T08:00:00.000Z')),
     ).toBeNull();
   });
 });

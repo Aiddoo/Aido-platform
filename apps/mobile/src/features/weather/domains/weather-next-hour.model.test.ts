@@ -1,8 +1,10 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherNextHourPolicy } from './weather-next-hour.model';
 
 describe('WeatherNextHourPolicy.getHourlyPrecipitationOutlook', () => {
-  const NOW = new Date('2026-11-02T06:26:00.000Z');
+  const NOW = toInstant('2026-11-02T06:26:00.000Z');
 
   it('6시간 안에 비 오는 시간이 있으면 그 첫 시간과 확률을 돌려준다', () => {
     // Given 15시 10%, 16시 70%, 17시 60% When 고르면 Then 16시가 나온다

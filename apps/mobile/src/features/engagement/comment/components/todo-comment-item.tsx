@@ -4,7 +4,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import { toDate } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -144,7 +143,7 @@ function useCommentTimeLabel(comment: TodoComment) {
   const dateFormatContext = useDateFormatContext();
 
   return compact([
-    formatRelativeTimeLabel(toDate(comment.createdAt), now, dateFormatContext),
+    formatRelativeTimeLabel(comment.createdAt, now, dateFormatContext),
     comment.isEdited ? t('list.edited') : null,
   ]).join(' · ');
 }
