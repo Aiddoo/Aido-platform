@@ -85,6 +85,8 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           <AccountActionButtons />
         </Suspense>
       </QueryErrorBoundary>
+
+      <Spacing size={40} />
     </MyPagePaneLayout>
   );
 }

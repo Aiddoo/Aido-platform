@@ -50,7 +50,7 @@ export function AccountActionButtons() {
   };
 
   return (
-    <HStack justify="center" align="center" gap={8} pb={40}>
+    <HStack justify="center" align="center" gap={8}>
       <TextButton size="medium" onPress={handleLogoutPress}>
         {t('logout.action')}
       </TextButton>
@@ -64,7 +64,7 @@ export function AccountActionButtons() {
 
 AccountActionButtons.Loading = function Loading() {
   return (
-    <Box accessibilityState={{ busy: true }} className="items-center pb-10">
+    <Box accessibilityState={{ busy: true }} className="items-center">
       <TextSkeleton size="b4" className="w-40" />
     </Box>
   );
