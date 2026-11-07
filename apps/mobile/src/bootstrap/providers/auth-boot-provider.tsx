@@ -4,10 +4,11 @@ import {
 } from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { usePendingRevocationFlush } from '@src/features/identity/auth/hooks/use-pending-revocation-flush';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { useAuthBoot } from '../hooks/use-auth-boot';
+import { useWidgetSyncService } from './di-context';
 
 /**
  * 인증 상태를 보는 앱 전역 동작을 오류 경계 위에서 연다. 값을 내려보내지 않는다.
@@ -20,6 +21,12 @@ export function AuthBootProvider({ children }: PropsWithChildren) {
     .with('authenticated', 'unauthenticated', (resolved) => resolved)
     .with('loading', 'locked', () => 'resolving')
     .exhaustive();
+
+  const widgetSyncService = useWidgetSyncService();
+
+  useEffect(() => {
+    widgetSyncService.reportHeadlessFailure();
+  }, [widgetSyncService]);
 
   usePendingRevocationFlush();
   useWidgetSnapshotSync(widgetSyncAuthState);

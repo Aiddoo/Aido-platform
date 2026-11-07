@@ -106,33 +106,6 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     throwOnError: false,
   });
 
-  useEffect(() => {
-    widgetSyncService.reportHeadlessFailure();
-  }, [widgetSyncService]);
-
-  useEffect(() => {
-    syncLatest(widgetSyncService, {
-      authState,
-      userId,
-      date,
-      timeZone: currentTimeZone,
-      tomorrowDate,
-      data,
-      tomorrowData,
-      completions,
-    });
-  }, [
-    authState,
-    data,
-    tomorrowData,
-    completions,
-    date,
-    tomorrowDate,
-    currentTimeZone,
-    userId,
-    widgetSyncService,
-  ]);
-
   const syncCurrent = useEffectEvent(() => {
     syncLatest(widgetSyncService, {
       authState,
@@ -145,6 +118,10 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       completions,
     });
   });
+
+  useEffect(() => {
+    syncCurrent();
+  }, [authState, data, tomorrowData, completions, date, tomorrowDate, currentTimeZone, userId]);
 
   useEffect(() => {
     const handleLanguageChanged = () => {
