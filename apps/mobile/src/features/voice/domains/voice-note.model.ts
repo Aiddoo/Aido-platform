@@ -19,9 +19,9 @@ import {
   type VoiceNoteSentence,
   voiceNoteDraftIdSchema,
 } from '../schemas/voice-note.schema';
-import type { PlannedMemo } from '../schemas/voice-plan.schema';
+import type { PlannedMemo, VoiceNoteDigestResult } from '../schemas/voice-plan.schema';
 import type { VoiceCaptureSeed } from './voice-capture.model';
-import { isTodoAction, type VoiceNoteDigestResult } from './voice-plan.model';
+import { isTodoAction } from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
 
 interface CreateVoiceNoteInput {

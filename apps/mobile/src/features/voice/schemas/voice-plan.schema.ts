@@ -1,4 +1,5 @@
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { todoRepeatSchema } from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import { z } from 'zod';
 
@@ -61,3 +62,28 @@ export const voicePlanSchema = z.object({
   omittedTodoCount: z.int().nonnegative(),
 });
 export type VoicePlan = z.infer<typeof voicePlanSchema>;
+
+export interface CreateQuickPlanInput {
+  text: string;
+  source: 'voice' | 'text';
+}
+
+export interface QuickPlanResult {
+  plan: VoicePlan;
+  /** 서버가 한도를 싣지 못했으면 null. 결과는 그대로 보여 주고 한도는 다시 묻는다 */
+  featureQuota: FeatureQuota | null;
+  /** 이 요청으로 횟수를 썼는지. false면 "횟수는 차감되지 않아요" */
+  charged: boolean;
+}
+
+export interface VoiceNoteDigestResult extends Omit<QuickPlanResult, 'plan'> {
+  plan: VoicePlan;
+  title: string;
+  summary: string;
+  keyPoints: { text: string; startMs: number | null }[];
+}
+
+export interface AppliedPlanResult {
+  todoCount: number;
+  hasMemo: boolean;
+}
