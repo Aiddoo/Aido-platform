@@ -3,7 +3,9 @@ import type { QueryMeta } from '@tanstack/react-query';
 import './query-meta';
 
 // 인덱스 시그니처가 있거나 interface로 선언하면 QueryMeta가 조용히 Record<string, unknown>으로 돌아가 오타가 통과한다
-const metaIsClosed: [keyof QueryMeta] extends ['persist' | 'refreshOnPremiumChange']
+const metaIsClosed: [keyof QueryMeta] extends [
+  'persist' | 'refreshOnPremiumChange' | 'refreshOnTodoChange',
+]
   ? true
   : false = true;
 

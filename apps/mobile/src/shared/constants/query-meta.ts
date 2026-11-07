@@ -5,6 +5,8 @@ export type AppQueryMeta = {
   persist?: boolean;
   /** 프리미엄 여부에 따라 서버가 한도·사용량·접근을 다르게 주는 조회. 프리미엄이 바뀌면 다시 불러온다 */
   refreshOnPremiumChange?: boolean;
+  /** 할 일이 바뀌면 보이는 값이 달라지는 조회(콕 상태 등). 할 일을 바꾼 뒤 다시 불러온다 */
+  refreshOnTodoChange?: boolean;
 };
 
 declare module '@tanstack/react-query' {

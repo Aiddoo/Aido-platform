@@ -1,5 +1,5 @@
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
-import type { QueryClient } from '@tanstack/react-query';
+import type { Query, QueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -151,11 +151,22 @@ export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
   );
 }
 
+/** 조회 옵션이 `meta.refreshOnTodoChange`로 할 일에 따라 보이는 값이 달라진다고 밝힌 쿼리 */
+function isTodoDependentQuery(query: Pick<Query, 'meta'>) {
+  return query.meta?.refreshOnTodoChange === true;
+}
+
+/** 할 일이 바뀌면 보이는 값이 달라지는 다른 피처의 조회(콕 상태 등)를 다시 불러온다. */
+export function invalidateTodoDependentQueries(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ predicate: isTodoDependentQuery });
+}
+
 /** 다른 피처가 할 일을 만들거나 바꾼 뒤 할 일·카테고리 화면을 다시 불러온다. */
 export function invalidateTodos(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
     invalidateTodoCategories(queryClient),
+    invalidateTodoDependentQueries(queryClient),
   ]);
 }
 

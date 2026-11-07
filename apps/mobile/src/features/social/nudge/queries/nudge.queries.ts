@@ -37,6 +37,7 @@ export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: numbe
     queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId }),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getInteraction(nudgeId, signal)),
     staleTime: 30_000,
+    meta: { refreshOnTodoChange: true },
   });
 }
 
@@ -61,6 +62,7 @@ export function useGetNudgeInteractionsInfiniteQueryOptions({
       page.hasNext && page.nextCursor != null ? { cursor: page.nextCursor } : undefined,
     select: selectNudgeInteractions,
     staleTime: 30_000,
+    meta: { refreshOnTodoChange: true },
   });
 }
 
@@ -83,6 +85,7 @@ export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoI
         ? { cursor: lastPage.nextCursor, throughNudgeId: lastPage.throughNudgeId }
         : undefined,
     staleTime: 30_000,
+    meta: { refreshOnTodoChange: true },
   });
 }
 

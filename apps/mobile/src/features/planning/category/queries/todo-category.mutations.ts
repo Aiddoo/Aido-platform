@@ -7,7 +7,6 @@ import {
   invalidateTodos,
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
-import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -175,7 +174,6 @@ export function useDeleteTodoCategoryMutationOptions() {
     onSuccess: () => {
       trackEvent('category_deleted');
       invalidateTodos(queryClient);
-      invalidateNudgeInteractions(queryClient);
       toast.success(t('todo:toast.categoryDeleted'));
     },
     onError: (error, _variables, context) => {

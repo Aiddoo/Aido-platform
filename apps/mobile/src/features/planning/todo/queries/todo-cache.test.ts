@@ -3,7 +3,12 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { invalidateFeedTodos, invalidateTodos, syncDailyCompletionWithList } from './todo-cache';
+import {
+  invalidateFeedTodos,
+  invalidateTodoDependentQueries,
+  invalidateTodos,
+  syncDailyCompletionWithList,
+} from './todo-cache';
 
 describe('todo cache invalidation', () => {
   let client: QueryClient;
@@ -26,6 +31,28 @@ describe('todo cache invalidation', () => {
     expect(client.getQueryState(listKey)?.isInvalidated).toBe(true);
     expect(client.getQueryState(friendKey)?.isInvalidated).toBe(true);
     expect(client.getQueryState(categoryKey)?.isInvalidated).toBe(true);
+  });
+
+  it('할 일이 바뀌면 refreshOnTodoChange로 밝힌 다른 피처의 조회만 무효화한다', async () => {
+    // Given
+    const dependentKey = ['other-feature', 'depends-on-todo'];
+    const independentKey = ['other-feature', 'independent'];
+    client.setQueryData(dependentKey, 1);
+    client.setQueryData(independentKey, 1);
+    client
+      .getQueryCache()
+      .find({ queryKey: dependentKey })
+      ?.setOptions({
+        meta: { refreshOnTodoChange: true },
+      });
+
+    // When
+    await invalidateTodoDependentQueries(client);
+
+    // Then
+    expect(client.getQueryState(dependentKey)?.isInvalidated).toBe(true);
+    expect(client.getQueryState(independentKey)?.isInvalidated).toBe(false);
+    expect(client.getQueryState(listKey)?.isInvalidated).toBe(false);
   });
 
   it('Given 피드 캐시, When invalidateFeedTodos를 호출하면, Then 목록·완료 통계만 무효화한다', async () => {

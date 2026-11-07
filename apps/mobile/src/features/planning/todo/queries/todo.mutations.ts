@@ -14,7 +14,6 @@ import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/us
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
-import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { toDate } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors';
@@ -37,6 +36,7 @@ import {
   removeTodoFromList,
   restoreTodo,
   snapshotTodo,
+  invalidateTodoDependentQueries,
   invalidateWidgetSummary,
   settleTodoListWrite,
 } from './todo-cache';
@@ -108,7 +108,7 @@ export function useToggleTodoMutationOptions() {
       if (date < todayKey) {
         invalidateWeeklyAchievements(queryClient, { year: toDate(date).getFullYear() });
       }
-      invalidateNudgeInteractions(queryClient);
+      invalidateTodoDependentQueries(queryClient);
       settleTodoCompletionWrite(queryClient);
     },
   });
@@ -214,7 +214,7 @@ export function useDeleteTodoMutationOptions() {
     },
     onSettled: () => {
       invalidateTodoCategories(queryClient);
-      invalidateNudgeInteractions(queryClient);
+      invalidateTodoDependentQueries(queryClient);
       settleTodoCompletionWrite(queryClient);
     },
   });
@@ -277,7 +277,6 @@ export function useUpdateTodoScheduleMutationOptions() {
     },
     onSuccess: (_data, { changedField, scope }) => {
       invalidateTodos(queryClient);
-      invalidateNudgeInteractions(queryClient);
       toast.success(
         changedField === 'time' ? t('todo:toast.timeChanged') : t('todo:toast.dateChanged'),
       );

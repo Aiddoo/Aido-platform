@@ -33,7 +33,6 @@ import {
   settleTodoListWrite,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTodoSeriesFailureHandler } from '@src/features/planning/todo/queries/todo-series.mutations';
-import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -351,7 +350,6 @@ export function useUpdateTodoMutationOptions() {
     },
     onSuccess: (_data, variables) => {
       invalidateTodos(queryClient);
-      invalidateNudgeInteractions(queryClient);
       toast.success(t('todo:toast.todoUpdated'));
       const field = Object.keys(variables.input).join(',');
       trackEvent('todo_edited', { todo_id: variables.todoId, field });

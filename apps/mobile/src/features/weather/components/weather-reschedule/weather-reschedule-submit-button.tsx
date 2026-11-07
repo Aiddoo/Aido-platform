@@ -2,7 +2,6 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -46,7 +45,6 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
 
   const settle = (failures: unknown[]) => {
     invalidateTodos(queryClient);
-    invalidateNudgeInteractions(queryClient);
     const [firstFailure] = failures;
     if (failures.length > 0) {
       showFailure(firstFailure);
