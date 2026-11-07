@@ -45,7 +45,7 @@ export function NudgeResponse() {
         description={t('interaction.unavailableDescription')}
       />
     ))
-    .with('reply', () => <ReplyPanel selectedKind={nudge.replyKind} />)
+    .with('reply', () => <ReplyActions selectedKind={nudge.replyKind} />)
     .with('thanksPrompt', () => (
       <VStack gap={12}>
         <Text size="b3" shade={6}>
@@ -73,7 +73,7 @@ export function NudgeResponse() {
     .exhaustive();
 }
 
-function ReplyPanel({ selectedKind }: { selectedKind: NudgeReplyKind | null }) {
+function ReplyActions({ selectedKind }: { selectedKind: NudgeReplyKind | null }) {
   const [nudgeId] = useNudgeId();
   const { t } = useTranslation('todo');
   const reply = useMutation(useReplyToNudgeMutationOptions());

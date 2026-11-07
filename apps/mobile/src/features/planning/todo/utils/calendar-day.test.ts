@@ -1,8 +1,8 @@
 import { range } from 'es-toolkit';
 
 import {
-  getDatePickerDayStyle,
-  getMonthViewDayStyle,
+  getDatePickerDayType,
+  getMonthViewDayType,
   getRepeatWeekDays,
   getWeekRangeBand,
   isTodayHighlighted,
@@ -21,7 +21,7 @@ const input = (date: Date, isSelected: boolean, today: Date = OTHER_DAY) => ({
   timeZone: TIME_ZONE,
 });
 
-describe('getDatePickerDayStyle', () => {
+describe('getDatePickerDayType', () => {
   it.each([
     ['선택된 날짜는 항상 selected', input(SUNDAY, true, SUNDAY), 'selected'],
     ['오늘이고 선택되지 않은 날짜는 today', input(MONDAY, false, MONDAY), 'today'],
@@ -31,7 +31,7 @@ describe('getDatePickerDayStyle', () => {
     ['오늘이 일요일이면 today가 sunday보다 우선', input(SUNDAY, false, SUNDAY), 'today'],
   ])('%s', (_title, params, expected) => {
     // When
-    const result = getDatePickerDayStyle(params);
+    const result = getDatePickerDayType(params);
 
     // Then
     expect(result).toBe(expected);
@@ -43,8 +43,8 @@ describe('getDatePickerDayStyle', () => {
     const params = input(justAfterMidnightInSeoul, false);
 
     // When
-    const seoul = getDatePickerDayStyle(params);
-    const newYork = getDatePickerDayStyle({ ...params, timeZone: 'America/New_York' });
+    const seoul = getDatePickerDayType(params);
+    const newYork = getDatePickerDayType({ ...params, timeZone: 'America/New_York' });
 
     // Then
     expect(seoul).toBe('default');
@@ -52,7 +52,7 @@ describe('getDatePickerDayStyle', () => {
   });
 });
 
-describe('getMonthViewDayStyle', () => {
+describe('getMonthViewDayType', () => {
   it.each([
     ['선택된 날짜는 항상 selected', input(SUNDAY, true), 'selected'],
     ['일요일이고 선택되지 않으면 sunday', input(SUNDAY, false), 'sunday'],
@@ -71,7 +71,7 @@ describe('getMonthViewDayStyle', () => {
     ],
   ])('%s', (_title, params, expected) => {
     // When
-    const result = getMonthViewDayStyle(params);
+    const result = getMonthViewDayType(params);
 
     // Then
     expect(result).toBe(expected);

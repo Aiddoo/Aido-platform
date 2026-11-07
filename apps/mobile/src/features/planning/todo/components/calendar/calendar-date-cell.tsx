@@ -6,7 +6,7 @@ import { PressableFeedback } from 'heroui-native';
 import { memo, type ReactNode } from 'react';
 
 import { useFeedDate } from '../../hooks/use-feed-params';
-import { DAY_TYPE_TONE, getMonthViewDayStyle, isTodayHighlighted } from '../../utils/calendar-day';
+import { DAY_TYPE_TONE, getMonthViewDayType, isTodayHighlighted } from '../../utils/calendar-day';
 import { isSameDay } from '../../utils/calendar-day-comparison';
 
 export const CALENDAR_DATE_CELL_HEIGHT = 56;
@@ -26,7 +26,7 @@ export const CalendarDateCell = memo(function CalendarDateCell({
   const today = useToday();
   const { timeZone } = useDateFormatContext();
   const isSelected = isSameDay(date, value, timeZone);
-  const dayStyle = getMonthViewDayStyle({ date, isSelected, today, timeZone });
+  const dayType = getMonthViewDayType({ date, isSelected, today, timeZone });
   const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
@@ -42,7 +42,7 @@ export const CalendarDateCell = memo(function CalendarDateCell({
           highlightToday && 'bg-main/10 dark:bg-main/20',
         )}
       >
-        <Text size="b4" weight="medium" tone={DAY_TYPE_TONE[dayStyle]} shade={7}>
+        <Text size="b4" weight="medium" tone={DAY_TYPE_TONE[dayType]} shade={7}>
           {date.getDate()}
         </Text>
       </Box>

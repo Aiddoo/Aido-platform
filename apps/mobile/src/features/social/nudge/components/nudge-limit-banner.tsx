@@ -19,7 +19,7 @@ import { match, P } from 'ts-pattern';
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/nudge.queries';
 
-export function PokeBanner() {
+export function NudgeLimitBanner() {
   const { t } = useTranslation('todo');
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
@@ -94,7 +94,7 @@ export function PokeBanner() {
   );
 }
 
-PokeBanner.Loading = function Loading() {
+NudgeLimitBanner.Loading = function Loading() {
   return (
     <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
       <Skeleton className="size-[72px] rounded-xl" />
@@ -106,7 +106,7 @@ PokeBanner.Loading = function Loading() {
   );
 };
 
-PokeBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+NudgeLimitBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
     <HStack p={12} gap={8} align="center" className="rounded-xl bg-gray-1">

@@ -38,7 +38,7 @@ import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-i
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
-import { PokeBanner } from '@src/features/social/nudge/components/poke-banner';
+import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
 import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
@@ -258,9 +258,9 @@ function FriendFeedTodos() {
           <Spacing size={8} />
 
           <Box px={16}>
-            <QueryErrorBoundary fallback={PokeBanner.Error}>
-              <Suspense fallback={<PokeBanner.Loading />}>
-                <PokeBanner />
+            <QueryErrorBoundary fallback={NudgeLimitBanner.Error}>
+              <Suspense fallback={<NudgeLimitBanner.Loading />}>
+                <NudgeLimitBanner />
               </Suspense>
             </QueryErrorBoundary>
           </Box>
@@ -301,7 +301,7 @@ FriendFeedTodos.Loading = function Loading() {
         <Spacing size={8} />
 
         <Box px={16}>
-          <PokeBanner.Loading />
+          <NudgeLimitBanner.Loading />
         </Box>
 
         <Spacing size={16} />

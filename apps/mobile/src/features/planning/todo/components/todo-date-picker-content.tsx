@@ -10,7 +10,7 @@ import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
-import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
+import { DAY_TYPE_TONE, getDatePickerDayType, isTodayHighlighted } from '../utils/calendar-day';
 import { isSameDay, isSameMonth } from '../utils/calendar-day-comparison';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
@@ -173,7 +173,7 @@ function DatePickerDateCell({ date, startDate, onPress }: DatePickerDateCellProp
   const today = useToday();
   const { timeZone } = useDateFormatContext();
   const isSelected = isSameDay(date, startDate, timeZone);
-  const dayStyle = getDatePickerDayStyle({ date, isSelected, today, timeZone });
+  const dayType = getDatePickerDayType({ date, isSelected, today, timeZone });
   const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
@@ -191,7 +191,7 @@ function DatePickerDateCell({ date, startDate, onPress }: DatePickerDateCellProp
         <Text
           size="b3"
           weight="medium"
-          tone={DAY_TYPE_TONE[dayStyle]}
+          tone={DAY_TYPE_TONE[dayType]}
           shade={isSelected ? undefined : 7}
         >
           {dayOfMonth}

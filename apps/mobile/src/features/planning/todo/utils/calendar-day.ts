@@ -17,7 +17,7 @@ interface CalendarDayInput {
   timeZone: string;
 }
 
-export function getDatePickerDayStyle({
+export function getDatePickerDayType({
   date,
   isSelected,
   today,
@@ -38,7 +38,7 @@ export function getDatePickerDayStyle({
   return 'default';
 }
 
-export function getMonthViewDayStyle({
+export function getMonthViewDayType({
   date,
   isSelected,
   today,

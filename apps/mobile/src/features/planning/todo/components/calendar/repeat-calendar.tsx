@@ -9,7 +9,7 @@ import { match } from 'ts-pattern';
 import type { DatePicker } from '../../hooks/use-date-picker';
 import {
   DAY_TYPE_TONE,
-  getDatePickerDayStyle,
+  getDatePickerDayType,
   getRepeatWeekDays,
   getWeekRangeBand,
   isTodayHighlighted,
@@ -127,7 +127,7 @@ const RepeatDateCell = memo(function RepeatDateCell({
   const { timeZone } = useDateFormatContext();
   const isDisabled = isBeforeDay(date, today, timeZone);
   const isSelected = isStart || isEnd;
-  const dayStyle = getDatePickerDayStyle({ date, isSelected, today, timeZone });
+  const dayType = getDatePickerDayType({ date, isSelected, today, timeZone });
   const shouldHighlightToday =
     !isDisabled && isTodayHighlighted({ date, isSelected, today, timeZone });
 
@@ -150,7 +150,7 @@ const RepeatDateCell = memo(function RepeatDateCell({
         <Text
           size="b3"
           weight="medium"
-          tone={isDisabled || isDimmed ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
+          tone={isDisabled || isDimmed ? 'neutral' : DAY_TYPE_TONE[dayType]}
           shade={match({ isSelected, isDimmed })
             .with({ isSelected: true }, () => undefined)
             .with({ isDimmed: true }, () => 5 as const)
