@@ -7,7 +7,7 @@ import { match } from 'ts-pattern';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
 import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports';
-import { useReportTypeParam } from '../hooks/use-report-type-param';
+import { useReportType } from '../hooks/use-report-type-param';
 import {
   useGetReportsQueryOptions,
   useGetReportStatusQueryOptions,
@@ -17,7 +17,7 @@ import { ReportRow } from './report-row';
 export function FreeReportPreview() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
-  const [reportType] = useReportTypeParam();
+  const [reportType] = useReportType();
   const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
 
   return (
@@ -34,7 +34,7 @@ export function FreeReportPreview() {
 }
 
 export function ReportList() {
-  const [reportType] = useReportTypeParam();
+  const [reportType] = useReportType();
   usePrefetchQuery(useGetReportStatusQueryOptions());
   const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type: reportType }));
 
@@ -53,7 +53,7 @@ export function ReportList() {
 
 function PremiumPendingPreview() {
   const { t } = useTranslation('ai');
-  const [reportType] = useReportTypeParam();
+  const [reportType] = useReportType();
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
   const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
   const daysUntil = match(reportType)

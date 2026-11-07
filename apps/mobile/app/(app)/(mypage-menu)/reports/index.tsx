@@ -9,8 +9,9 @@ import { ReportRow } from '@src/features/insights/report/components/report-row';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
 import { ReportsLoading } from '@src/features/insights/report/components/reports-loading';
 import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report-labels';
-import { useReportTypeParam } from '@src/features/insights/report/hooks/use-report-type-param';
+import { useReportType } from '@src/features/insights/report/hooks/use-report-type-param';
 import { invalidateAiReports } from '@src/features/insights/report/queries/report-cache';
+import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -23,6 +24,7 @@ import {
   Spacing,
   StyledSafeAreaView,
   Text,
+  ViewTabs,
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
@@ -37,7 +39,7 @@ function ReportsScreen() {
   const queryClient = useQueryClient();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const canViewReports = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_REPORT');
-  const [reportType, setReportType] = useReportTypeParam();
+  const [reportType, setReportType] = useReportType();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiReports(queryClient));
   const { color: refreshTint } = useResolveClassNames('text-main');
 
@@ -92,7 +94,12 @@ function ReportsScreen() {
             <Spacing size={12} />
 
             <Box className="px-4">
-              <Tabs value={reportType} onValueChange={setReportType} variant="primary">
+              <ViewTabs
+                schema={reportListTypeSchema}
+                value={reportType}
+                onValueChange={setReportType}
+                variant="primary"
+              >
                 <Tabs.List>
                   <Tabs.Indicator />
                   <SegmentTabTrigger value="WEEKLY">
@@ -102,7 +109,7 @@ function ReportsScreen() {
                     {t(REPORT_TYPE_LABEL_KEYS.MONTHLY)}
                   </SegmentTabTrigger>
                 </Tabs.List>
-              </Tabs>
+              </ViewTabs>
             </Box>
 
             <Spacing size={8} />

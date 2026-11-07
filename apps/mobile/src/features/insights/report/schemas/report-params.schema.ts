@@ -19,6 +19,4 @@ export const reportParamsSchema = z.object({
 });
 
 /** 리포트 목록의 주간·월간 탭. `?type=` */
-export const reportListParamsSchema = z.object({
-  type: reportTypeSchema.catch('WEEKLY'),
-});
+export const reportListTypeSchema = reportTypeSchema.catch('WEEKLY');

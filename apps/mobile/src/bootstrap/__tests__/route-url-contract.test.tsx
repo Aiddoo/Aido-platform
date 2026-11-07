@@ -1,6 +1,6 @@
 import { useSubscriptionViewParam } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
-import { useReportTypeParam } from '@src/features/insights/report/hooks/use-report-type-param';
+import { useReportType } from '@src/features/insights/report/hooks/use-report-type-param';
 import { useSelectedMemo } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
 import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
@@ -213,7 +213,7 @@ describe('공개 URL 계약', () => {
 
   it('리포트 종류', async () => {
     // Given
-    const route = await renderRouteHook(() => useReportTypeParam(), { url: '/reports' });
+    const route = await renderRouteHook(() => useReportType(), { url: '/reports' });
 
     // When
     await route.run(([_type, setType]) => setType('MONTHLY'));
