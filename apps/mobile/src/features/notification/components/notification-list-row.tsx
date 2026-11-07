@@ -31,6 +31,7 @@ export function NotificationListRow({
 }: NotificationListRowProps) {
   const dateFormatContext = useDateFormatContext();
   const now = useMinuteNow();
+
   return (
     <PressableFeedback {...props}>
       <HStack className={isUnread ? 'bg-highlight' : 'bg-white'}>
@@ -111,6 +112,7 @@ NotificationListRow.SectionHeader = function SectionHeader({
   section: DateSectionKey;
 }) {
   const { t } = useTranslation('common');
+
   return (
     <Box px={16} py={8} className="bg-white">
       <Text size="b3" shade={5} weight="semibold">

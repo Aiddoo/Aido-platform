@@ -82,6 +82,7 @@ NotificationList.Loading = NotificationListRow.Loading;
 
 NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
+
   return (
     <VStack flex={1} p={24}>
       <Result
@@ -94,6 +95,7 @@ NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
 
 NotificationList.Empty = function Empty() {
   const { t } = useTranslation('notification');
+
   return (
     <VStack flex={1} p={24}>
       <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />

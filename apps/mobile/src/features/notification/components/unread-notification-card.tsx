@@ -2,11 +2,14 @@ import { useTranslation } from '@src/shared/i18n';
 import { BellFilledIcon, HStack, Text, TextButton, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Skeleton } from 'heroui-native';
+import type { ComponentProps } from 'react';
 
 import { useMarkAllAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
-export function UnreadNotificationCard() {
+type UnreadNotificationCardProps = Omit<ComponentProps<typeof Card>, 'children'>;
+
+export function UnreadNotificationCard(props: UnreadNotificationCardProps) {
   const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
   const { t } = useTranslation('notification');
@@ -16,7 +19,7 @@ export function UnreadNotificationCard() {
   }
 
   return (
-    <Card className="mx-4 my-2">
+    <Card {...props}>
       <HStack align="center" justify="between">
         <HStack align="center" gap={8}>
           <BellFilledIcon width={18} height={18} colorClassName="text-main" />
@@ -43,9 +46,9 @@ export function UnreadNotificationCard() {
   );
 }
 
-UnreadNotificationCard.Loading = function Loading() {
+UnreadNotificationCard.Loading = function Loading(props: UnreadNotificationCardProps) {
   return (
-    <Card className="mx-4 my-2">
+    <Card {...props}>
       <HStack align="center" justify="between">
         <HStack align="center" gap={8}>
           <Skeleton className="size-[18px] rounded" />

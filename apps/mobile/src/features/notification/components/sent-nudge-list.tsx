@@ -67,6 +67,7 @@ SentNudgeList.Loading = NotificationListRow.Loading;
 SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
   const isDisabled = isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
+
   return (
     <VStack flex={1} p={24}>
       <Result
@@ -81,6 +82,7 @@ SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackPr
 
 SentNudgeList.Empty = function Empty() {
   const { t } = useTranslation('notification');
+
   return (
     <VStack flex={1} p={24}>
       <Result icon={<NotiIcon width={72} height={72} />} title={t('sentNudges.empty')} />

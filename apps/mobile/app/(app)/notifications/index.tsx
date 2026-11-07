@@ -75,8 +75,8 @@ export default function NotificationsScreen() {
             .with('received', () => (
               <>
                 <QueryErrorBoundary>
-                  <Suspense fallback={<UnreadNotificationCard.Loading />}>
-                    <UnreadNotificationCard />
+                  <Suspense fallback={<UnreadNotificationCard.Loading className="mx-4 my-2" />}>
+                    <UnreadNotificationCard className="mx-4 my-2" />
                   </Suspense>
                 </QueryErrorBoundary>
 

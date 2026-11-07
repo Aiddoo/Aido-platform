@@ -37,18 +37,18 @@ export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
     ],
   });
   const [promptState] = useState(() => marketingPushPromptRepository.get());
-  const [dismissed, setDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const now = useMinuteNow();
 
   // 기기 권한이나 앱 푸시 설정이 꺼져 있으면 알림 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
   const isVisible =
-    !dismissed &&
+    !isDismissed &&
     PushPermissionPolicy.getNextStep(permission, preference) === PUSH_PERMISSION_STEP.NONE &&
     MarketingPushPromptPolicy.shouldPrompt(consent, promptState, now);
 
   const dismiss = () => {
     marketingPushPromptRepository.record(getNowInstant());
-    setDismissed(true);
+    setIsDismissed(true);
     trackEvent('marketing_push_prompt_dismissed', { source: 'feed_banner' });
   };
 

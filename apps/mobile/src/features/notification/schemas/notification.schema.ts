@@ -95,7 +95,7 @@ const todoTargetShape = {
 export const notificationDestinationRoutingSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('TODO_SHARED'),
-    todoId: z.number().int().positive(),
+    todoId: z.int().positive(),
     commentId: z.cuid().optional().catch(undefined),
     ...todoTargetShape,
   }),
@@ -106,21 +106,21 @@ export const notificationDestinationRoutingSchema = z.discriminatedUnion('type',
   z.object({
     type: z.literal('NUDGE_RECEIVED'),
     friendId: z.string().min(1).optional(),
-    todoId: z.number().int().positive().optional(),
-    nudgeId: z.number().int().positive().optional(),
+    todoId: z.int().positive().optional(),
+    nudgeId: z.int().positive().optional(),
     ...todoTargetShape,
   }),
   z.object({
     type: z.literal('NUDGE_REPLIED'),
-    nudgeId: z.number().int().positive().optional(),
+    nudgeId: z.int().positive().optional(),
   }),
   z.object({
     type: z.literal('NUDGE_THANKED'),
-    nudgeId: z.number().int().positive().optional(),
+    nudgeId: z.int().positive().optional(),
   }),
   z.object({
     type: z.literal('TODO_REMINDER'),
-    todoId: z.number().int().positive().optional(),
+    todoId: z.int().positive().optional(),
     ...todoTargetShape,
   }),
   z.object({ type: z.literal('WEATHER_MORNING') }),

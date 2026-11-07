@@ -31,12 +31,12 @@ export function PushPermissionDialog({
     }
   }, [props.isOpen, source, trackEvent]);
 
-  const later = () => {
+  const handleLater = () => {
     trackEvent('push_permission_prompt_dismissed', { source, step: PUSH_PERMISSION_STEP.ASK });
     onOpenChange(false);
   };
 
-  const allow = () => {
+  const handleAllow = () => {
     requestPermission.mutate(undefined, {
       onSuccess: (permission) => {
         trackEvent('push_permission_requested', { source, status: permission.status });
@@ -54,7 +54,7 @@ export function PushPermissionDialog({
         <ConfirmDialog.Description>{t('permission.dialog.description')}</ConfirmDialog.Description>
       }
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={later}>
+        <ConfirmDialog.CancelButton onPress={handleLater}>
           {t('permission.dialog.later')}
         </ConfirmDialog.CancelButton>
       }
@@ -62,7 +62,7 @@ export function PushPermissionDialog({
         <ConfirmDialog.ConfirmButton
           testID="push-permission-continue"
           isLoading={requestPermission.isPending}
-          onPress={allow}
+          onPress={handleAllow}
         >
           {t('permission.dialog.continue')}
         </ConfirmDialog.ConfirmButton>

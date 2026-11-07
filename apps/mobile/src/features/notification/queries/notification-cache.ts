@@ -23,12 +23,10 @@ function markPagesRead(
     ...cachedPages,
     pages: cachedPages.pages.map((page) => ({
       ...page,
-      unreadCount:
-        notificationId == null
-          ? 0
-          : shouldDecrement
-            ? Math.max(0, page.unreadCount - 1)
-            : page.unreadCount,
+      unreadCount: match({ notificationId, shouldDecrement })
+        .with({ notificationId: P.nullish }, () => 0)
+        .with({ shouldDecrement: true }, () => Math.max(0, page.unreadCount - 1))
+        .otherwise(() => page.unreadCount),
       notifications: page.notifications
         .map((notification) =>
           (notificationId == null || notification.id === notificationId) && !notification.isRead
