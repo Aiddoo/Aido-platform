@@ -23,6 +23,7 @@ import {
   QueryErrorFallback,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
+import { noop } from 'es-toolkit';
 import { usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { type PropsWithChildren, useEffect, useState } from 'react';
@@ -37,7 +38,7 @@ interface AppProvidersProps extends PropsWithChildren {
 /** 이 경계가 그리면 AuthGateLayout이 내려가 있어 스플래시를 내릴 곳이 여기뿐이다 */
 function BootQueryErrorFallback({ reset }: Pick<QueryErrorFallbackProps, 'reset'>) {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    SplashScreen.hideAsync().catch(noop);
   }, []);
 
   return <QueryErrorFallback reset={reset} onInquiry={openSupportMail} />;

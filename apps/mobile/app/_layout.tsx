@@ -15,6 +15,7 @@ import { openSupportMail } from '@src/shared/ui';
 
 import '../global.css';
 import '@src/shared/i18n/init';
+import { noop } from 'es-toolkit';
 import type { ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -22,7 +23,7 @@ import { Pressable, Text, View } from 'react-native';
 
 initErrorReporting();
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(noop);
 
 // 루트 경계는 DI 밖에서 그려질 수 있어 같은 규칙(Sentry/console)으로 직접 만든다
 const rootErrorReporter = createEnvironmentErrorReporter();
@@ -57,7 +58,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { t } = useTranslation('common');
 
   useEffect(() => {
-    SplashScreen.hideAsync();
+    SplashScreen.hideAsync().catch(noop);
     rootErrorReporter.captureException(error, { feature: 'error_boundary' });
   }, [error]);
 

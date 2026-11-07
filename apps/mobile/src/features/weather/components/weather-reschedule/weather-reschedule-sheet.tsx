@@ -181,6 +181,7 @@ function RescheduleFooter({
 
   return (
     <VStack gap={8}>
+      {/* 출처 표기는 보조 정보라 불러오지 못하면 시트를 막지 않고 자리를 비운다. */}
       <QueryErrorBoundary fallback={() => null}>
         <Suspense fallback={<WeatherAttribution.Loading />}>
           <WeatherAttribution background={resolvedTheme} />
