@@ -1,6 +1,7 @@
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/date-format';
 import { formatDaysOfWeek } from '@src/shared/date/date-labels';
 import { t } from '@src/shared/i18n';
+import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
@@ -41,7 +42,7 @@ function formatEnd(end: TodoRepeatEnd, context: DateFormatContext): string | nul
 }
 
 export function formatRepeatSummary(repeat: TodoRepeat, context: DateFormatContext): string {
-  return [formatRepeatCadence(repeat), formatEnd(repeat.end, context)]
-    .filter((part) => part != null && part !== '')
-    .join(SUMMARY_SEPARATOR);
+  return compact([formatRepeatCadence(repeat), formatEnd(repeat.end, context)]).join(
+    SUMMARY_SEPARATOR,
+  );
 }
