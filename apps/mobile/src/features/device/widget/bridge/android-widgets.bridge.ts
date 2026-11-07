@@ -1,7 +1,7 @@
+import { getAppScheme } from '@src/shared/config/app-scheme';
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
 import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
-import Constants from 'expo-constants';
 import { requestWidgetUpdate } from 'react-native-android-widget';
 
 import { createAndroidWidgetSnapshotRepository } from '../apis/android-widget-snapshot.repository';
@@ -19,10 +19,7 @@ export const renderStoredAndroidWidget = createStoredAndroidWidgetRenderer({
   snapshotRepository,
   readLocalDateKey: () => readDeviceLocalDateState().currentLocalDateKey,
   readDeviceLanguage: getDeviceLanguage,
-  readAppScheme: () => {
-    const scheme = Constants.expoConfig?.scheme;
-    return typeof scheme === 'string' ? scheme : (scheme?.[0] ?? 'aido');
-  },
+  readAppScheme: getAppScheme,
   renderWidget: renderAndroidWidget,
 });
 

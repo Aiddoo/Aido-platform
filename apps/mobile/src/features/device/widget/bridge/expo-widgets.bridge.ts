@@ -1,5 +1,5 @@
+import { getAppScheme } from '@src/shared/config/app-scheme';
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
-import Constants from 'expo-constants';
 
 import { toWidgetTimelineEntries } from '../apis/widget-timeline.mapper';
 import { AIDO_WIDGETS } from '../components/widgets';
@@ -7,8 +7,7 @@ import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 import type { WidgetBridge } from './widget-bridge';
 
 export function createExpoWidgetsBridge(): WidgetBridge {
-  const scheme = Constants.expoConfig?.scheme;
-  const appScheme = typeof scheme === 'string' ? scheme : (scheme?.[0] ?? 'aido');
+  const appScheme = getAppScheme();
   return {
     async writeSnapshot(snapshot: WidgetSnapshot): Promise<void> {
       const { currentLocalDate, currentTimeZone } = readDeviceLocalDateState();

@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+import { getAppScheme } from './app-scheme';
 import { ENV_LOG_EVENT } from './env-log-events';
 
 const AppEnvSchema = z.enum(['development', 'preview', 'production']);
@@ -119,11 +120,6 @@ function resolveApiUrl(): string {
   return resolvedUrl;
 }
 
-function resolveScheme(): string {
-  const scheme = Constants.expoConfig?.scheme;
-  return Array.isArray(scheme) ? (scheme[0] ?? 'aido') : (scheme ?? 'aido');
-}
-
 export const ENV = {
   APP_VERSION: Constants.expoConfig?.version,
   APP_ENV: extra.env,
@@ -135,7 +131,7 @@ export const ENV = {
   IS_IOS: process.env.EXPO_OS === 'ios',
 
   API_URL: resolveApiUrl(),
-  SCHEME: resolveScheme(),
+  SCHEME: getAppScheme(),
   PURCHASES_API_KEY: resolveRevenueCatApiKey({
     isDebugBuild: __DEV__,
     isDevelopmentEnvironment: extra.isDevelopment,
