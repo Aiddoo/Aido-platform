@@ -1,7 +1,7 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useQuery } from '@tanstack/react-query';
 
-import type { CoachmarkKind } from '../apis/coachmark.repository';
+import type { CoachmarkKind } from '../schemas/coachmark.schema';
 import { usePendingCoachmark } from './use-pending-coachmark';
 
 export function useMyPendingCoachmark(kind: CoachmarkKind) {

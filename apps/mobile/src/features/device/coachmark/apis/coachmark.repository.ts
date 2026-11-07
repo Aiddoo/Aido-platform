@@ -1,22 +1,8 @@
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import { fromEpochMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
-export type CoachmarkKind =
-  | 'todo-reorder'
-  | 'category-reorder'
-  | 'comment-double-tap'
-  | 'voice-quick-start'
-  | 'voice-note-start'
-  | 'voice-note-mark'
-  | 'voice-key-point'
-  | 'repeat-horizon'
-  | 'ai-consent-renewal'
-  | 'friend-strip';
-
-export interface CoachmarkInput {
-  accountId: string;
-  kind: CoachmarkKind;
-}
+import type { CoachmarkInput } from '../schemas/coachmark.schema';
 
 export interface CoachmarkRepository {
   isSeen(input: CoachmarkInput): boolean;
@@ -54,7 +40,7 @@ export function coachmarkStorageKey({ accountId, kind }: CoachmarkInput): string
 
 export function createCoachmarkRepository(
   storage: SyncStorage & Pick<EnumerableSyncStorage, 'keys'>,
-  now: () => Date = () => new Date(),
+  now: () => Instant = () => fromEpochMs(Date.now()),
 ): CoachmarkRepository {
   return {
     isSeen(input) {
@@ -66,7 +52,7 @@ export function createCoachmarkRepository(
     },
     markSeen(input) {
       try {
-        storage.set(coachmarkStorageKey(input), now().toISOString());
+        storage.set(coachmarkStorageKey(input), now());
       } catch {
         // 저장하지 못하면 다음에 한 번 더 보일 뿐이다.
       }

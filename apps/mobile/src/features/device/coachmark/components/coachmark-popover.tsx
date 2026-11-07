@@ -6,10 +6,10 @@ import { useIsFocused } from 'expo-router';
 import { Popover } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef } from 'react';
 
-import type { CoachmarkKind } from '../apis/coachmark.repository';
 import { CoachmarkPolicy } from '../domains/coachmark.model';
 import { useCoachmarkSettle } from '../hooks/use-coachmark-settle';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
+import type { CoachmarkKind } from '../schemas/coachmark.schema';
 
 interface CoachmarkPopoverProps
   extends

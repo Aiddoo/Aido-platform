@@ -1,4 +1,5 @@
-import type { CoachmarkInput, CoachmarkRepository } from './coachmark.repository';
+import type { CoachmarkInput } from '../schemas/coachmark.schema';
+import type { CoachmarkRepository } from './coachmark.repository';
 
 /**
  * 계정당 한 번만 보이는 안내 줄. 보이는 순간 끝나는 안내는 claim, 쓰거나 닫아야 끝나는 안내는 isPending·complete를 쓴다.
