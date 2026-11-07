@@ -57,11 +57,11 @@ HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `co
 
 ### isSelected 동작
 
-| 값          | border      | 체크 배지 | 용도                             |
-| ----------- | ----------- | --------- | -------------------------------- |
-| `undefined` | 없음        | 없음      | 비선택 컨텍스트 (ProfileCard 등) |
-| `false`     | gray border | 없음      | 선택 가능하지만 미선택           |
-| `true`      | main border | 표시      | 선택됨                           |
+| 값          | border      | 체크 배지 | 용도                            |
+| ----------- | ----------- | --------- | ------------------------------- |
+| `undefined` | 없음        | 없음      | 비선택 컨텍스트 (ProfileRow 등) |
+| `false`     | gray border | 없음      | 선택 가능하지만 미선택          |
+| `true`      | main border | 표시      | 선택됨                          |
 
 ### Sub-components
 

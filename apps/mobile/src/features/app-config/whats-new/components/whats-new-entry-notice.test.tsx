@@ -2,12 +2,12 @@ import '@src/shared/i18n/init';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import { WhatsNewEntryCard } from './whats-new-entry-card';
+import { WhatsNewEntryNotice } from './whats-new-entry-notice';
 
-describe('WhatsNewEntryCard', () => {
+describe('WhatsNewEntryNotice', () => {
   it('제목과 다시 볼 수 있는 기간을 보여 준다', async () => {
     // When
-    await renderUi(<WhatsNewEntryCard onPress={jest.fn()} onClose={jest.fn()} />);
+    await renderUi(<WhatsNewEntryNotice onPress={jest.fn()} onClose={jest.fn()} />);
 
     // Then
     expect(screen.getByText('새로운 기능을 만나보세요')).toBeTruthy();
@@ -18,7 +18,7 @@ describe('WhatsNewEntryCard', () => {
     // Given
     const onPress = jest.fn();
     const onClose = jest.fn();
-    await renderUi(<WhatsNewEntryCard onPress={onPress} onClose={onClose} />);
+    await renderUi(<WhatsNewEntryNotice onPress={onPress} onClose={onClose} />);
 
     // When
     await fireEvent.press(screen.getByLabelText('새로운 기능 카드 닫기'));

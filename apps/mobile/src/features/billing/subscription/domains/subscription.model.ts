@@ -1,3 +1,4 @@
+import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import {
@@ -15,7 +16,7 @@ function getAnnualDiscountPercent(
 }
 
 function getMonthlyEquivalent(annualPlan: Pick<SubscriptionPlan, 'price'>) {
-  return Math.round((annualPlan.price / 12) * 100) / 100;
+  return round(annualPlan.price / 12, 2);
 }
 
 function getSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {

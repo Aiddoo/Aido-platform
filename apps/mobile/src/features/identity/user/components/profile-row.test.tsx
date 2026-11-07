@@ -9,22 +9,22 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { createCurrentUserDto } from '../__tests__/user.fixtures';
 import { toUser } from '../apis/user.mapper';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
-import { ProfileCard } from './profile-card';
+import { ProfileRow } from './profile-row';
 
 function createClipboardStub(copy: ClipboardGateway['copy']): ClipboardGateway {
   return { copy, hasContent: jest.fn(), paste: jest.fn() };
 }
 
-async function renderProfileCard(clipboard: ClipboardGateway) {
+async function renderProfileRow(clipboard: ClipboardGateway) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(createCurrentUserDto()));
-  await renderUi(<ProfileCard tierChip={null} />, { queryClient, di: createTestDi({ clipboard }) });
+  await renderUi(<ProfileRow tierChip={null} />, { queryClient, di: createTestDi({ clipboard }) });
 }
 
 describe('해시태그 복사', () => {
   it('복사하면 완료를 알린다', async () => {
     // Given
-    await renderProfileCard(createClipboardStub(jest.fn().mockResolvedValue(undefined)));
+    await renderProfileRow(createClipboardStub(jest.fn().mockResolvedValue(undefined)));
 
     // When
     await fireEvent.press(screen.getByLabelText(i18n.t('user:profile.copyTag')));
@@ -35,7 +35,7 @@ describe('해시태그 복사', () => {
 
   it('복사에 실패하면 실패를 알린다', async () => {
     // Given
-    await renderProfileCard(createClipboardStub(jest.fn().mockRejectedValue(new Error('denied'))));
+    await renderProfileRow(createClipboardStub(jest.fn().mockRejectedValue(new Error('denied'))));
 
     // When
     await fireEvent.press(screen.getByLabelText(i18n.t('user:profile.copyTag')));

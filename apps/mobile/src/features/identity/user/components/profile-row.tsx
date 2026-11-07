@@ -22,12 +22,12 @@ import { useGetMeQueryOptions } from '../queries/user.queries';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
 
-interface ProfileCardProps {
+interface ProfileRowProps {
   /** 구독 기능을 모르도록 route가 조립해 넘긴다. 같은 경계 안이라 함께 로딩하고 함께 실패한다 */
   tierChip: ReactNode;
 }
 
-export function ProfileCard({ tierChip }: ProfileCardProps) {
+export function ProfileRow({ tierChip }: ProfileRowProps) {
   const fontScaledSize = useFontScaledSize();
   const { navigate, isSelected } = useMyPageMenuNavigation();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -94,7 +94,7 @@ export function ProfileCard({ tierChip }: ProfileCardProps) {
   );
 }
 
-ProfileCard.Loading = function Loading() {
+ProfileRow.Loading = function Loading() {
   return (
     <HStack gap={12} align="center" className="rounded-2xl px-4 py-3">
       <Skeleton className="size-12 rounded-full" />

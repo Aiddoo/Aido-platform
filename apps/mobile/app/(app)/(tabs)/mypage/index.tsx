@@ -5,7 +5,7 @@ import { QuotaSummary } from '@src/features/billing/subscription/components/quot
 import { AccountActionButtons } from '@src/features/identity/user/components/account-action-buttons';
 import { MyPageMenu } from '@src/features/identity/user/components/mypage-menu/mypage-menu';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/mypage-pane/mypage-pane-layout';
-import { ProfileCard } from '@src/features/identity/user/components/profile-card';
+import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { MyPageInviteCard } from '@src/features/social/invite/components/invite-reward-button';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -58,8 +58,8 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
 
       <VStack gap={12}>
         <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-          <Suspense fallback={<ProfileCard.Loading />}>
-            <ProfileCard tierChip={<AccessTierChip />} />
+          <Suspense fallback={<ProfileRow.Loading />}>
+            <ProfileRow tierChip={<AccessTierChip />} />
           </Suspense>
         </QueryErrorBoundary>
 

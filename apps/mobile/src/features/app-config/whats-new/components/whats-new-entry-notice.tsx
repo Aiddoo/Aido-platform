@@ -2,10 +2,13 @@ import { useTranslation } from '@src/shared/i18n';
 import { InlineAlert, RobotPixelIcon } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 
-type WhatsNewEntryCardProps = Pick<ComponentProps<typeof InlineAlert>, 'onPress' | 'onClose'>;
+type WhatsNewEntryNoticeProps = Omit<
+  ComponentProps<typeof InlineAlert>,
+  'image' | 'title' | 'description' | 'pressLabel' | 'closeLabel'
+>;
 
 /** 새로운 기능을 다시 여는 피드 카드 */
-export function WhatsNewEntryCard(props: WhatsNewEntryCardProps) {
+export function WhatsNewEntryNotice(props: WhatsNewEntryNoticeProps) {
   const { t } = useTranslation('whatsNew');
 
   return (
