@@ -105,8 +105,7 @@ function getQuotaStatus(
 function getResetNotice(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
-  now: Instant,
-  timeZone: string,
+  { now, timeZone }: { now: Instant; timeZone: string },
 ): QuotaResetNotice | null {
   const quota = findFeatureQuota(snapshot, feature);
   if (quota?.limit == null || quota.resetsAt == null || hasPassed(quota.resetsAt, now)) {

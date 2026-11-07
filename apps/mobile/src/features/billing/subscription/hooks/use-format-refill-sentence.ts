@@ -19,12 +19,10 @@ export function useFormatRefillSentence() {
         return null;
       }
       const limit = EntitlementPolicy.getLimit(snapshot, feature);
-      const notice = EntitlementPolicy.getResetNotice(
-        snapshot,
-        feature,
-        getNowInstant(),
-        dateFormatContext.timeZone,
-      );
+      const notice = EntitlementPolicy.getResetNotice(snapshot, feature, {
+        now: getNowInstant(),
+        timeZone: dateFormatContext.timeZone,
+      });
       if (limit == null || notice == null) {
         return null;
       }

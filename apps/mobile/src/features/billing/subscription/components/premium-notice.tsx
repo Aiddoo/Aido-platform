@@ -12,9 +12,9 @@ import { match } from 'ts-pattern';
 
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 
-/** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
 type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 
+/** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
 function Ending({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const receipt = useSubscriptionReceipt();

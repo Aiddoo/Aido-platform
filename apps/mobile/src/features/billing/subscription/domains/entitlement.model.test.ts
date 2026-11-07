@@ -224,7 +224,7 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-11-05T14:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, 'NUDGE', now, SEOUL);
+    const notice = EntitlementPolicy.getResetNotice(snapshot, 'NUDGE', { now, timeZone: SEOUL });
 
     // Then
     expect(notice).toEqual({ type: 'tomorrow' });
@@ -236,7 +236,7 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-11-10T03:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, 'AI_PARSE', now, SEOUL);
+    const notice = EntitlementPolicy.getResetNotice(snapshot, 'AI_PARSE', { now, timeZone: SEOUL });
 
     // Then
     expect(notice).toEqual({ type: 'date', date: toInstant('2026-11-30T15:00:00.000Z') });
@@ -248,7 +248,10 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-11-30T09:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, 'AI_PARSE', now, LOS_ANGELES);
+    const notice = EntitlementPolicy.getResetNotice(snapshot, 'AI_PARSE', {
+      now,
+      timeZone: LOS_ANGELES,
+    });
 
     // Then
     expect(notice).toEqual({ type: 'today' });
@@ -263,7 +266,7 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-12-02T00:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, feature, now, SEOUL);
+    const notice = EntitlementPolicy.getResetNotice(snapshot, feature, { now, timeZone: SEOUL });
 
     // Then
     expect(notice).toBeNull();

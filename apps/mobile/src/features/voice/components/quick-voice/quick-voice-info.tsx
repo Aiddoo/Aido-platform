@@ -18,7 +18,7 @@ export function QuickVoiceInfo() {
   const [isOpen, setIsOpen] = useState(false);
   // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
-  const getRefillSentence = useFormatRefillSentence();
+  const formatRefillSentence = useFormatRefillSentence();
 
   return (
     <HStack gap={8} align="center">
@@ -53,7 +53,7 @@ export function QuickVoiceInfo() {
             remaining={
               snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')
             }
-            refill={getRefillSentence(snapshot, 'AI_PARSE')}
+            refill={formatRefillSentence(snapshot, 'AI_PARSE')}
           />
         </HintPopoverContent>
       </Popover>

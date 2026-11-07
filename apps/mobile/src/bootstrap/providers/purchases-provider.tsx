@@ -1,4 +1,4 @@
-import { WEBHOOK_SYNC_DELAY } from '@src/features/billing/subscription/constants/webhook-sync';
+import { WEBHOOK_SYNC_DELAY } from '@src/features/billing/subscription/constants/subscription.constants';
 import { CustomerInfoPolicy } from '@src/features/billing/subscription/domains/customer-info.model';
 import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';

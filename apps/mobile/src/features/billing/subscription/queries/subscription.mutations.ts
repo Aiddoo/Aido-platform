@@ -12,6 +12,7 @@ import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
@@ -64,7 +65,7 @@ export function usePurchaseMutationOptions() {
           toast.success(t('subscription:toast.paymentPending')),
         )
         // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
-        .with({ type: 'contactSupport' }, async (failure) => {
+        .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
           const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
           if (reason != null) {
@@ -75,15 +76,20 @@ export function usePurchaseMutationOptions() {
             severity: 'warning',
             errorCode: failure.diagnosticCode,
           });
-          const shouldContactSupport = await confirmDialog.openAsync({
-            title: t(failure.titleKey),
-            description: t(failure.descriptionKey),
-            cancelLabel: t('common:actions.close'),
-            confirmLabel: t('subscription:failure.contactSupport'),
-          });
-          if (shouldContactSupport) {
-            openInquiry(failure);
-          }
+          // 다이얼로그가 닫힐 때까지 구매 버튼이 돌지 않게 기다리지 않는다
+          confirmDialog
+            .openAsync({
+              title: t(failure.titleKey),
+              description: t(failure.descriptionKey),
+              cancelLabel: t('common:actions.close'),
+              confirmLabel: t('subscription:failure.contactSupport'),
+            })
+            .then((shouldContactSupport) => {
+              if (shouldContactSupport) {
+                openInquiry(failure);
+              }
+            })
+            .catch(noop);
         })
         .exhaustive(),
   });

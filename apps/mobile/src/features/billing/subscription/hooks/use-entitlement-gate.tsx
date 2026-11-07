@@ -39,7 +39,7 @@ export function useEntitlementGate(
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
-  const getRefill = useFormatRefillSentence();
+  const formatRefillSentence = useFormatRefillSentence();
 
   return useMemo(() => {
     const open = (
@@ -52,7 +52,7 @@ export function useEntitlementGate(
       const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
       const premium = getPremiumBenefitAmounts();
       const withRefill = (premiumBenefit: string) => {
-        const refill = getRefill(latest, target);
+        const refill = formatRefillSentence(latest, target);
         return {
           description: refill == null ? premiumBenefit : `${refill} ${premiumBenefit}`,
           refill,
@@ -199,6 +199,6 @@ export function useEntitlementGate(
     queryClient,
     t,
     dateFormatContext,
-    getRefill,
+    formatRefillSentence,
   ]);
 }

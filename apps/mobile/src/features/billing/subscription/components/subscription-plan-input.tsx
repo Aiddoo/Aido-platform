@@ -5,6 +5,7 @@ import { formatPrice } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
+import { match } from 'ts-pattern';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
@@ -24,7 +25,7 @@ export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
 
   return (
     <RadioGroup className="gap-3" {...props}>
-      {monthlyPlan && <PlanOption plan={monthlyPlan} discountPercent={0} />}
+      {monthlyPlan && <PlanOption plan={monthlyPlan} />}
       {annualPlan && <PlanOption plan={annualPlan} discountPercent={annualDiscountPercent} />}
     </RadioGroup>
   );
@@ -32,17 +33,24 @@ export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
 
 interface PlanOptionProps {
   plan: SubscriptionPlan;
-  discountPercent: number;
+  /** 연간 요금제가 월간보다 싼 정도(%) */
+  discountPercent?: number;
 }
 
-function PlanOption({ plan, discountPercent }: PlanOptionProps) {
+function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   const { t } = useTranslation('subscription');
-  const isAnnual = plan.planType === 'annual';
-
-  const label = isAnnual ? t('plan.annual') : t('plan.monthly');
-  const periodLabel = isAnnual ? t('plan.perYear') : t('plan.perMonth');
-
-  const monthlyEquivalent = isAnnual ? SubscriptionPolicy.getMonthlyEquivalent(plan) : null;
+  const { label, periodLabel, monthlyEquivalent } = match(plan.planType)
+    .with('annual', () => ({
+      label: t('plan.annual'),
+      periodLabel: t('plan.perYear'),
+      monthlyEquivalent: SubscriptionPolicy.getMonthlyEquivalent(plan),
+    }))
+    .with('monthly', () => ({
+      label: t('plan.monthly'),
+      periodLabel: t('plan.perMonth'),
+      monthlyEquivalent: null,
+    }))
+    .exhaustive();
 
   return (
     <RadioGroup.Item value={plan.identifier} className="rounded-2xl">
@@ -59,7 +67,7 @@ function PlanOption({ plan, discountPercent }: PlanOptionProps) {
                 <Text size="b3" weight="bold" className="text-gray-9">
                   {label}
                 </Text>
-                {isAnnual && discountPercent > 0 && (
+                {discountPercent > 0 && (
                   <Chip variant="soft" className="self-center rounded-full bg-main/10 px-2 py-0.5">
                     <Text size="e2" weight="bold" className="text-main">
                       {t('plan.discount', { percent: discountPercent })}

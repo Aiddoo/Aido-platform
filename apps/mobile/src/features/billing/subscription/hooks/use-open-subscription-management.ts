@@ -32,12 +32,7 @@ export function useOpenSubscriptionManagement() {
       applicationId: applicationMetadata.getInstallation()?.applicationId ?? null,
     });
 
-    try {
-      if (url == null) {
-        throw new Error('Subscription management URL is unavailable');
-      }
-      await externalLink.open(url);
-    } catch (error) {
+    const handleOpenFailed = (message: string) => {
       errorReporter.addBreadcrumb({
         category: 'ui',
         level: 'warning',
@@ -45,7 +40,7 @@ export function useOpenSubscriptionManagement() {
         data: {
           platform: process.env.EXPO_OS,
           hasProductId: productId != null,
-          error: getErrorMessage(error),
+          error: message,
         },
       });
       toast.error(t('subscription:subscriber.manageOpenFailed'), {
@@ -54,6 +49,16 @@ export function useOpenSubscriptionManagement() {
           onPress: () => openInquiry(SUBSCRIPTION_MANAGE_OPEN_FAILURE),
         },
       });
+    };
+
+    if (url == null) {
+      handleOpenFailed('Subscription management URL is unavailable');
+      return;
+    }
+    try {
+      await externalLink.open(url);
+    } catch (error) {
+      handleOpenFailed(getErrorMessage(error));
     }
   });
 }
