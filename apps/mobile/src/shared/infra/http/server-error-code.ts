@@ -1,7 +1,13 @@
 import type { ErrorCodeType } from '@aido/api/errors';
 import { isErrorCode } from '@aido/api/errors';
+import { z } from 'zod';
 
 import { errorEnvelopeSchema } from './error-envelope';
+
+/** 리프레시 거부 판정은 다른 필드가 빠져도 코드만 있으면 읽어야 한다 */
+const errorCodeEnvelopeSchema = z.object({
+  error: errorEnvelopeSchema.shape.error.pick({ code: true }),
+});
 
 /**
  * 서버 에러 응답 본문에서 `ErrorCode`를 뽑는다.
@@ -13,7 +19,7 @@ import { errorEnvelopeSchema } from './error-envelope';
  * 알 수 없는 코드/비-JSON 본문이면 `undefined`.
  */
 export function toServerErrorCode(body: unknown): ErrorCodeType | undefined {
-  const parsed = errorEnvelopeSchema.safeParse(body);
+  const parsed = errorCodeEnvelopeSchema.safeParse(body);
   if (!parsed.success) {
     return undefined;
   }
