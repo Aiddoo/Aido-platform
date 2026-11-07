@@ -1,5 +1,26 @@
-import { type Instant, toHHmm } from '@src/shared/date/instant';
-import { keyBy } from 'es-toolkit';
+import { type WeatherRescheduleReason } from '@aido/api/vocabulary';
+import { type Instant, toDateKey, toEpochMs, toHHmm } from '@src/shared/date/instant';
+import { keyBy, orderBy } from 'es-toolkit';
+import { match } from 'ts-pattern';
+
+import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
+import {
+  type BriefingTodo,
+  type ForecastTodo,
+  getForecastTodos,
+  isHot,
+} from './weather-briefing.model';
+import { isWetHour } from './weather-report.model';
+
+/** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
+const RESCHEDULE_OPTION_LIMIT = 4;
+
+export interface RescheduleOption {
+  startsAt: Instant;
+  precipitationChance: number;
+  apparentTemperature: number;
+  isRecommended: boolean;
+}
 
 export interface ScheduleChange {
   todoId: number;
@@ -67,7 +88,86 @@ function getRescheduleTargets<TTodo extends { id: number; completed: boolean }>(
   });
 }
 
+/** 아직 하지 않은 할 일 중 지금 이후 시각이 비 오는 시간에 걸린 것만 고른다. 종일·시간 없는 할 일은 뺀다. */
+function getRainyTodos(
+  hourly: readonly HourlyForecastEntry[],
+  todos: readonly BriefingTodo[],
+  now: Instant,
+): ForecastTodo[] {
+  return getForecastTodos(hourly, todos, now).filter(
+    (todo) => !todo.completed && isWetHour(todo.hour),
+  );
+}
+
+/** 아직 하지 않은 할 일 중 체감 온도가 위험한 낮 시간에 걸린 것만 고른다. */
+function getHotTodos(
+  hourly: readonly HourlyForecastEntry[],
+  todos: readonly BriefingTodo[],
+  now: Instant,
+): ForecastTodo[] {
+  return getForecastTodos(hourly, todos, now).filter((todo) => !todo.completed && isHot(todo.hour));
+}
+
+function getAffectedTodos(
+  hourly: readonly HourlyForecastEntry[],
+  todos: readonly BriefingTodo[],
+  { now, reason }: { now: Instant; reason: WeatherRescheduleReason },
+): ForecastTodo[] {
+  return match(reason)
+    .with('rain', () => getRainyTodos(hourly, todos, now))
+    .with('heat', () => getHotTodos(hourly, todos, now))
+    .exhaustive();
+}
+
+/**
+ * 같은 날(기기 시간대) 안에서 지금 이후의 정시를 옮길 후보로 고른다. 할 일 날짜는 기기 시간대로 저장되므로
+ * 위치 시간대가 아니라 기기 시간대로 날짜를 맞춘다.
+ * 비는 비 안 오는 시간을 강수 확률이 낮은 순으로, 더위는 덥지 않은 시간을 원래 시각과 가까운 순으로 고른다.
+ */
+function getRescheduleOptions(
+  hourly: readonly HourlyForecastEntry[],
+  todo: Pick<ForecastTodo, 'scheduledAt'>,
+  {
+    now,
+    timeZone,
+    reason = 'rain',
+  }: { now: Instant; timeZone: string; reason?: WeatherRescheduleReason },
+): RescheduleOption[] {
+  const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
+  const distance = (hour: HourlyForecastEntry) =>
+    Math.abs(toEpochMs(hour.startsAt) - toEpochMs(todo.scheduledAt));
+  const sameDayHours = hourly.filter(
+    (hour) =>
+      toEpochMs(hour.startsAt) > toEpochMs(now) &&
+      toDateKey(hour.startsAt, timeZone) === todoDateKey,
+  );
+  const ordered = match(reason)
+    .with('rain', () =>
+      orderBy(
+        sameDayHours.filter((hour) => !isWetHour(hour)),
+        [(hour) => hour.precipitationChance, distance],
+        ['asc', 'asc'],
+      ),
+    )
+    .with('heat', () =>
+      orderBy(
+        sameDayHours.filter((hour) => !isWetHour(hour) && !isHot(hour)),
+        [distance, (hour) => hour.apparentTemperature],
+        ['asc', 'asc'],
+      ),
+    )
+    .exhaustive();
+  return ordered.slice(0, RESCHEDULE_OPTION_LIMIT).map((hour, index) => ({
+    startsAt: hour.startsAt,
+    precipitationChance: hour.precipitationChance,
+    apparentTemperature: hour.apparentTemperature,
+    isRecommended: index === 0,
+  }));
+}
+
 export const WeatherReschedulePolicy = {
+  getAffectedTodos,
+  getRescheduleOptions,
   getMovedScheduleInput,
   getOriginalScheduleInput,
   getRescheduleTargets,

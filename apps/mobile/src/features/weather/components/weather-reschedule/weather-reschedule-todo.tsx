@@ -6,7 +6,8 @@ import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
-import type { ForecastTodo, RescheduleOption } from '../../domains/weather-briefing.model';
+import type { ForecastTodo } from '../../domains/weather-briefing.model';
+import type { RescheduleOption } from '../../domains/weather-reschedule.model';
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 import { toSelectionKey } from '../../utils/weather-reschedule-form';
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';

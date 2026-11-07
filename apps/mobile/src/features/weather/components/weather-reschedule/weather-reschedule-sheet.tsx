@@ -28,6 +28,7 @@ import { useForm, type UseFormReturn } from 'react-hook-form';
 import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
 import { WeatherBriefingPolicy } from '../../domains/weather-briefing.model';
 import { WeatherReportPolicy } from '../../domains/weather-report.model';
+import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
 import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
 import {
   useGetWeatherReportQueryOptions,
@@ -102,7 +103,7 @@ function RescheduleTodoList({
   const now = useMinuteNow();
   const copy = RESCHEDULE_COPY_KEYS[reason];
   const todosById = keyBy(todoList.todos, (todo) => todo.id);
-  const affectedTodos = WeatherBriefingPolicy.getAffectedTodos(
+  const affectedTodos = WeatherReschedulePolicy.getAffectedTodos(
     report.hourly,
     todoIds.flatMap((todoId) => {
       const todo = todosById[todoId];
@@ -154,7 +155,7 @@ function RescheduleTodoList({
           <WeatherRescheduleTodo
             form={form}
             todo={todo}
-            options={WeatherBriefingPolicy.getRescheduleOptions(report.hourly, todo, {
+            options={WeatherReschedulePolicy.getRescheduleOptions(report.hourly, todo, {
               now,
               timeZone,
               reason,

@@ -1,8 +1,4 @@
-import {
-  WEATHER_BRIEFING_RULES,
-  type WeatherCondition,
-  type WeatherRescheduleReason,
-} from '@aido/api/vocabulary';
+import { WEATHER_BRIEFING_RULES, type WeatherCondition } from '@aido/api/vocabulary';
 import { HOUR_MS } from '@src/shared/constants/time.constants';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {
@@ -14,14 +10,12 @@ import {
   toDateKey,
   toEpochMs,
 } from '@src/shared/date/instant';
-import { maxBy, orderBy } from 'es-toolkit';
+import { maxBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { isFrozenPrecipitation, isWetHour } from './weather-report.model';
 
-/** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
-const RESCHEDULE_OPTION_LIMIT = 4;
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */
 const HEAT_APPARENT_TEMPERATURE = WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE;
 /** 내일 아침 최저 기온이 이 값(°C) 이하면 쌀쌀하다고 알린다. 서버 날씨 알림과 같은 기준이다. */
@@ -31,7 +25,12 @@ const BEST_TIME_TOLERANCE = 1;
 /** 이 시각(위치 시간대) 이후 남은 할 일이 없으면 내일 아침 날씨를 알려 준다. */
 const EVENING_HOUR = WEATHER_BRIEFING_RULES.EVENING_HOUR;
 const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 'PARTLY_CLOUDY'];
-const GRAY_CONDITIONS: readonly WeatherCondition[] = ['CLOUDY', 'MOSTLY_CLOUDY', 'FOGGY', 'HAZY'];
+const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
+  'CLOUDY',
+  'MOSTLY_CLOUDY',
+  'FOGGY',
+  'HAZY',
+];
 
 /** 하위 할 일 진행. 하위 할 일이 없으면 null이다. */
 type BriefingSubTodoProgress = { completed: number; total: number } | null;
@@ -84,13 +83,6 @@ export interface ForecastTodo {
   hour: HourlyForecastEntry;
 }
 
-export interface RescheduleOption {
-  startsAt: Instant;
-  precipitationChance: number;
-  apparentTemperature: number;
-  isRecommended: boolean;
-}
-
 export interface HourRange {
   startsAt: Instant;
   endsAt: Instant;
@@ -111,7 +103,7 @@ export type BriefingResult =
       day: BriefingDay;
       dayPart: DayPart;
       isSnow: boolean;
-      isGray: boolean;
+      isOvercast: boolean;
     }
   | { kind: 'clear'; todos: ForecastTodo[]; range: HourRange }
   | { kind: 'tomorrowMorning'; temperatureMin: number; temperatureMax: number; isChilly: boolean }
@@ -137,7 +129,7 @@ function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): n
   );
 }
 
-function isHot(hour: HourlyForecastEntry): boolean {
+export function isHot(hour: HourlyForecastEntry): boolean {
   return hour.isDaylight && hour.apparentTemperature >= HEAT_APPARENT_TEMPERATURE;
 }
 
@@ -180,7 +172,7 @@ function toHourRange(
 }
 
 /** 지금 이후로 시각이 정해진 할 일을 그 시각의 예보와 묶는다. 완료 여부는 남기고, 예보 범위 밖이면 뺀다. */
-function getForecastTodos(
+export function getForecastTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
   now: Instant,
@@ -204,37 +196,6 @@ function getForecastTodos(
       },
     ];
   });
-}
-
-/** 아직 하지 않은 할 일 중 지금 이후 시각이 비 오는 시간에 걸린 것만 고른다. 종일·시간 없는 할 일은 뺀다. */
-function getRainyTodos(
-  hourly: readonly HourlyForecastEntry[],
-  todos: readonly BriefingTodo[],
-  now: Instant,
-): ForecastTodo[] {
-  return getForecastTodos(hourly, todos, now).filter(
-    (todo) => !todo.completed && isWetHour(todo.hour),
-  );
-}
-
-/** 아직 하지 않은 할 일 중 체감 온도가 위험한 낮 시간에 걸린 것만 고른다. */
-function getHotTodos(
-  hourly: readonly HourlyForecastEntry[],
-  todos: readonly BriefingTodo[],
-  now: Instant,
-): ForecastTodo[] {
-  return getForecastTodos(hourly, todos, now).filter((todo) => !todo.completed && isHot(todo.hour));
-}
-
-function getAffectedTodos(
-  hourly: readonly HourlyForecastEntry[],
-  todos: readonly BriefingTodo[],
-  { now, reason }: { now: Instant; reason: WeatherRescheduleReason },
-): ForecastTodo[] {
-  return match(reason)
-    .with('rain', () => getRainyTodos(hourly, todos, now))
-    .with('heat', () => getHotTodos(hourly, todos, now))
-    .exhaustive();
 }
 
 function toDayPart(hour: number): DayPart {
@@ -323,7 +284,7 @@ function toRainLaterBriefing(
     day,
     dayPart: toDayPart(getZonedHour(wetHour.startsAt, timeZone)),
     isSnow: isFrozenHour(wetHour),
-    isGray: GRAY_CONDITIONS.includes(current.condition),
+    isOvercast: OVERCAST_CONDITIONS.includes(current.condition),
   };
 }
 
@@ -388,7 +349,7 @@ function toTomorrowMorningBriefing(
  * 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저 알리고, 없으면 곧 올 비, 맑은 날, 내일 아침 순으로 알려 준다.
  * 위 어디에도 해당하지 않으면 남은 할 일이 비를 피했는지만 알린다.
  */
-function toWeatherBriefing(
+function getWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],
   clock: BriefingClock,
@@ -412,52 +373,6 @@ function toWeatherBriefing(
   );
 }
 
-/**
- * 같은 날(기기 시간대) 안에서 지금 이후의 정시를 옮길 후보로 고른다. 할 일 날짜는 기기 시간대로 저장되므로
- * 위치 시간대가 아니라 기기 시간대로 날짜를 맞춘다.
- * 비는 비 안 오는 시간을 강수 확률이 낮은 순으로, 더위는 덥지 않은 시간을 원래 시각과 가까운 순으로 고른다.
- */
-function getRescheduleOptions(
-  hourly: readonly HourlyForecastEntry[],
-  todo: Pick<ForecastTodo, 'scheduledAt'>,
-  {
-    now,
-    timeZone,
-    reason = 'rain',
-  }: { now: Instant; timeZone: string; reason?: WeatherRescheduleReason },
-): RescheduleOption[] {
-  const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
-  const distance = (hour: HourlyForecastEntry) =>
-    Math.abs(toEpochMs(hour.startsAt) - toEpochMs(todo.scheduledAt));
-  const sameDayHours = hourly.filter(
-    (hour) =>
-      toEpochMs(hour.startsAt) > toEpochMs(now) &&
-      toDateKey(hour.startsAt, timeZone) === todoDateKey,
-  );
-  const ordered = match(reason)
-    .with('rain', () =>
-      orderBy(
-        sameDayHours.filter((hour) => !isWetHour(hour)),
-        [(hour) => hour.precipitationChance, distance],
-        ['asc', 'asc'],
-      ),
-    )
-    .with('heat', () =>
-      orderBy(
-        sameDayHours.filter((hour) => !isWetHour(hour) && !isHot(hour)),
-        [distance, (hour) => hour.apparentTemperature],
-        ['asc', 'asc'],
-      ),
-    )
-    .exhaustive();
-  return ordered.slice(0, RESCHEDULE_OPTION_LIMIT).map((hour, index) => ({
-    startsAt: hour.startsAt,
-    precipitationChance: hour.precipitationChance,
-    apparentTemperature: hour.apparentTemperature,
-    isRecommended: index === 0,
-  }));
-}
-
 /** 추천 시간대 안에서 아직 시작하지 않은 첫 정시. 이미 모두 지났으면 제안하지 않는다. */
 function getSuggestedStartAt(range: HourRange, now: Instant): Instant | null {
   const nextHour = Math.ceil(toEpochMs(now) / HOUR_MS) * HOUR_MS;
@@ -467,8 +382,6 @@ function getSuggestedStartAt(range: HourRange, now: Instant): Instant | null {
 
 export const WeatherBriefingPolicy = {
   toBriefingTodo,
-  toWeatherBriefing,
-  getAffectedTodos,
-  getRescheduleOptions,
+  getWeatherBriefing,
   getSuggestedStartAt,
 } as const;

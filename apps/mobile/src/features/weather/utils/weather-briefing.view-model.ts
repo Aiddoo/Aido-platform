@@ -13,6 +13,7 @@ import {
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
 import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 
 /** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
@@ -100,7 +101,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
   });
   const chance = (todo: ForecastTodo) => formatChance(todo.hour.precipitationChance);
   const firstOption = (todo: ForecastTodo, reason: WeatherRescheduleReason) =>
-    WeatherBriefingPolicy.getRescheduleOptions(hourly, todo, { now, timeZone, reason })[0]
+    WeatherReschedulePolicy.getRescheduleOptions(hourly, todo, { now, timeZone, reason })[0]
       ?.startsAt ?? null;
   /** 완료한 할 일은 옮기지 않는다. 모두 완료했으면 옮길 버튼을 감춘다. */
   const reschedule = (
@@ -206,10 +207,12 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     })
     .with(
       { kind: 'rainLater' },
-      ({ todos, startsAt, day, dayPart, isSnow, isGray }): BriefingView => {
+      ({ todos, startsAt, day, dayPart, isSnow, isOvercast }): BriefingView => {
         const dayPartLabel: BriefingCopy = { key: `briefing.dayPart.${dayPart}` };
         return {
-          headline: { key: isGray ? 'briefing.rainLater.titleGray' : 'briefing.rainLater.title' },
+          headline: {
+            key: isOvercast ? 'briefing.rainLater.titleGray' : 'briefing.rainLater.title',
+          },
           body: match({ day, isSnow })
             .returnType<BriefingCopy>()
             .with({ day: 'today' }, () => ({

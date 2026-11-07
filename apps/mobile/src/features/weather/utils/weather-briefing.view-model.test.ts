@@ -37,7 +37,7 @@ function createTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
 }
 
 function viewFor(todos: BriefingTodo[]) {
-  const briefing = WeatherBriefingPolicy.toWeatherBriefing(report, todos, {
+  const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, todos, {
     now: NOW,
     timeZone: 'Asia/Seoul',
   });

@@ -105,7 +105,7 @@ export function WeatherBriefing() {
     return <WeatherBriefing.Empty />;
   }
 
-  const briefing = WeatherBriefingPolicy.toWeatherBriefing(
+  const briefing = WeatherBriefingPolicy.getWeatherBriefing(
     report,
     todoList.todos.map((todo) =>
       WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
