@@ -18,6 +18,8 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Dialog, Radio, RadioGroup } from 'heroui-native';
 import { useState } from 'react';
 
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
+
 interface CategoryDeleteDialogProps {
   categoryId: number;
   isOpen: boolean;
@@ -54,7 +56,7 @@ export function CategoryDeleteDialog({
     });
   };
 
-  if (category.todoCount > 0) {
+  if (TodoCategoryPolicy.requiresTodoMove(category)) {
     return (
       <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
         <Dialog.Portal {...portalTarget}>

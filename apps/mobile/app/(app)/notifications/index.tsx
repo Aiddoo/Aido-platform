@@ -2,6 +2,7 @@ import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
+import { NotificationPolicy } from '@src/features/notification/domains/notification.model';
 import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
 import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
 import { notificationCategorySchema } from '@src/features/notification/schemas/notification.schema';
@@ -31,8 +32,10 @@ export default function NotificationsScreen() {
   const { data: isNudgeInteractionAvailable = false } = useQuery(
     useGetNudgeInteractionAvailabilityQueryOptions(),
   );
-  const isDirectionSelectable =
-    category === NOTIFICATION_CATEGORY.SOCIAL && isNudgeInteractionAvailable;
+  const isDirectionSelectable = NotificationPolicy.canSelectDirection(
+    category,
+    isNudgeInteractionAvailable,
+  );
   const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
 
   return (

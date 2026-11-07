@@ -10,7 +10,7 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { isApiError, isConnectivityError } from '@src/shared/errors';
+import { isConnectivityError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -64,6 +64,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { MEMO_MUTATION_KEYS } from '../constants/memo-query-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
+import { isMemoUnavailableError } from '../domains/memo.error';
 import { useMemoParam, useSelectedMemo } from '../hooks/use-memo-params';
 import {
   useDeleteMemoMutationOptions,
@@ -78,7 +79,6 @@ import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
 const MEMO_MORE_MENU_WIDTH = 220;
-const MEMO_NOT_FOUND_STATUS = 404;
 
 interface MemoEditorToolbarProps {
   control: Control<MemoFormValues>;
@@ -397,10 +397,6 @@ MemoEditor.Empty = function Empty() {
     </StyledSafeAreaView>
   );
 };
-
-function isMemoUnavailableError(error: unknown) {
-  return isApiError(error) && error.status === MEMO_NOT_FOUND_STATUS;
-}
 
 function MemoUnavailableResult({
   error,

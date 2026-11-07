@@ -1,10 +1,11 @@
-import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
+import { NOTIFICATION_CATEGORY, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { match } from 'ts-pattern';
 
 import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 import type {
   Notification,
+  NotificationCategory,
   NotificationCategoryKey,
   NotificationType,
   PendingNotificationResponse,
@@ -103,7 +104,16 @@ function getResponseAction(
     .exhaustive();
 }
 
+/** 받은 콕과 보낸 콕을 나눠 보는 것은 소셜 알림뿐이고 콕 상호작용을 쓸 수 있어야 한다 */
+function canSelectDirection(
+  category: NotificationCategory,
+  isNudgeInteractionAvailable: boolean,
+): boolean {
+  return category === NOTIFICATION_CATEGORY.SOCIAL && isNudgeInteractionAvailable;
+}
+
 export const NotificationPolicy = {
+  canSelectDirection,
   isAiFeature,
   findReceivedCheer,
   getCategoryKey,

@@ -21,6 +21,7 @@ import { orderBy } from 'es-toolkit';
 import { Separator, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
+import { AiReportPolicy } from '../domains/ai-report.model';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
 
@@ -108,8 +109,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
 function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   const { stats } = report;
-  const rateDiff =
-    stats.prevCompletionRate != null ? stats.completionRate - stats.prevCompletionRate : null;
+  const rateDiff = AiReportPolicy.getCompletionRateChange(stats);
 
   return (
     <VStack gap={16}>

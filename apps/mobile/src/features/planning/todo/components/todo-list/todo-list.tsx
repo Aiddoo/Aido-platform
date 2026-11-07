@@ -73,7 +73,7 @@ export function TodoList() {
     () => groupTodosByCategory(todosByDate.todos, categoriesResult.categories),
     [todosByDate.todos, categoriesResult.categories],
   );
-  const canReorderTodos = categoryGroups.some((group) => group.todos.length >= 2);
+  const canReorderTodos = categoryGroups.some((group) => TodoPolicy.canReorderTodos(group.todos));
 
   return (
     <Box gap={16}>

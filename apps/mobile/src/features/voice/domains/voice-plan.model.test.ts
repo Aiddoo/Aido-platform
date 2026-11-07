@@ -13,6 +13,7 @@ import {
   sortPlanActionsByGroup,
   withRepeat,
   withStartDate,
+  VoicePlanPolicy,
 } from './voice-plan.model';
 
 const todo = (overrides: Partial<PlannedTodo> = {}): PlannedTodo => ({
@@ -206,4 +207,18 @@ describe('카드 고치기', () => {
       expect(result).toMatchObject({ startDate: movedTo, endDate: expected });
     },
   );
+});
+
+describe('VoicePlanPolicy.withVisibilityToggled', () => {
+  it.each([
+    ['PRIVATE', 'PUBLIC'],
+    ['PUBLIC', 'PRIVATE'],
+    [null, 'PRIVATE'],
+  ] as const)('공개 범위가 %s이면 %s로 바꾼다', (visibility, expected) => {
+    // When
+    const toggled = VoicePlanPolicy.withVisibilityToggled({ visibility });
+
+    // Then
+    expect(toggled.visibility).toBe(expected);
+  });
 });

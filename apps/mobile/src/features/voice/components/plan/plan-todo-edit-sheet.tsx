@@ -294,12 +294,7 @@ function VisibilityChip({ form }: PlanTodoChipProps) {
         )
       }
       label={isPrivate ? t('chip.private') : t('chip.public')}
-      onPress={() =>
-        updateTodo(form, (current) => ({
-          ...current,
-          visibility: isPrivate ? 'PUBLIC' : 'PRIVATE',
-        }))
-      }
+      onPress={() => updateTodo(form, VoicePlanPolicy.withVisibilityToggled)}
     />
   );
 }
@@ -314,7 +309,7 @@ function CategoryChip({
   const {
     data: { categories },
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const categoryId = VoicePlanPolicy.getCategoryId(todo, fallbackCategoryId);
+  const categoryId = todo.categoryId ?? fallbackCategoryId;
   const category = categories.find(({ id }) => id === categoryId);
 
   const handlePress = () => {

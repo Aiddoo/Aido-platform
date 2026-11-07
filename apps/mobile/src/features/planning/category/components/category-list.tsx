@@ -25,6 +25,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { useResolveClassNames } from 'uniwind';
 
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import type { TodoCategoryWithCount } from '../schemas/todo-category.schema';
@@ -68,7 +69,7 @@ CategoryList.Reorder = function Reorder() {
       {...reorderableList}
       shouldUpdateActiveItem
       ListHeaderComponent={
-        reorderableList.data.length >= 2 ? (
+        TodoCategoryPolicy.canReorderCategories(reorderableList.data) ? (
           <Box className="pb-2">
             <ReorderCoachmark kind="category" />
           </Box>

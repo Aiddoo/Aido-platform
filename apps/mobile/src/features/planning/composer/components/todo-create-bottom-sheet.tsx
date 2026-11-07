@@ -212,7 +212,7 @@ function TodoCreateForm({
     }
   });
 
-  const isFormStep = voice.state.status === 'idle' || voice.state.status === 'failed';
+  const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
   const isSubmitDisabled = title.trim().length === 0 || isSubmitting;
 
   const confirmDiscardPlan = async () => {
@@ -249,11 +249,7 @@ function TodoCreateForm({
       backgroundDecoration={
         voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
       }
-      isContentPanEnabled={
-        !VoiceCapturePolicy.isActive(voice.state) &&
-        voice.state.status !== 'planning' &&
-        voice.state.status !== 'review'
-      }
+      isContentPanEnabled={isFormStep}
       onDismissRequest={handleVoiceDismissRequest}
       footer={
         isFormStep ? (

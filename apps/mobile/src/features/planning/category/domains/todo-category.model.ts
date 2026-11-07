@@ -1,5 +1,7 @@
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
-import type { TodoCategory } from '../schemas/todo-category.schema';
+import type { TodoCategory, TodoCategoryWithCount } from '../schemas/todo-category.schema';
+
+const MIN_REORDERABLE_COUNT = 2;
 
 /** 시트 route가 가리키는 카테고리. 목록에서 사라졌으면(삭제된 뒤) null */
 function findCategory<T extends Pick<TodoCategory, 'id'>>(
@@ -29,7 +31,18 @@ function hasChanges(category: Pick<TodoCategory, 'name' | 'color'>, form: TodoCa
   return category.name !== form.name || category.color !== form.color;
 }
 
+/** 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다 */
+function requiresTodoMove(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
+  return category.todoCount > 0;
+}
+
+function canReorderCategories(categories: readonly unknown[]) {
+  return categories.length >= MIN_REORDERABLE_COUNT;
+}
+
 export const TodoCategoryPolicy = {
+  requiresTodoMove,
+  canReorderCategories,
   findCategory,
   getInitialCategoryId,
   hasChanges,

@@ -118,7 +118,7 @@ export function PlanReview({
       values.map((action) => ({
         actionId: action.actionId,
         isSelected: action.isSelected,
-        ...(action.type === 'create-todo'
+        ...(VoicePlanPolicy.isTodoAction(action)
           ? { type: action.type, categoryId: action.categoryId }
           : { type: action.type }),
       })),
@@ -317,7 +317,7 @@ PlanReview.TodoRow = function PlanTodoRow({
   const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
 
-  if (todo.type !== 'create-todo') {
+  if (!VoicePlanPolicy.isTodoAction(todo)) {
     return null;
   }
 
@@ -457,7 +457,7 @@ PlanReview.MemoRow = function PlanMemoRow({
   const { t } = useTranslation('voicePlan');
   const memo = useWatch({ control: form.control, name: `actions.${index}` });
 
-  if (memo.type !== 'create-memo') {
+  if (VoicePlanPolicy.isTodoAction(memo)) {
     return null;
   }
 
