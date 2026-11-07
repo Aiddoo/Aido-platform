@@ -53,9 +53,8 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
       if (!legacy.success) {
         return StoreReviewPolicy.createEmptyState();
       }
-      const migrated = fromLegacy(legacy.data);
-      write(accountId, migrated);
-      return migrated;
+      // 읽기만 한다. 옛 모양은 다음 update가 새 모양으로 저장한다
+      return fromLegacy(legacy.data);
     } catch {
       return StoreReviewPolicy.createEmptyState();
     }

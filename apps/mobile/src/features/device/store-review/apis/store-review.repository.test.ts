@@ -27,7 +27,7 @@ describe('StoreReviewRepository', () => {
     expect(storage.keys()).toEqual([KEY]);
   });
 
-  it('이전 저장 모양은 읽을 때 새 모양으로 옮기고 지난 요청을 한 번의 요청으로 이어받는다', () => {
+  it('이전 저장 모양은 읽기만 하고 다음 갱신에서 새 모양으로 저장하며 지난 요청을 한 번의 요청으로 이어받는다', () => {
     // Given
     // 앱 안 확인 창을 쓰던 버전의 저장값
     const storage = createMemorySyncStorage();
@@ -53,9 +53,18 @@ describe('StoreReviewRepository', () => {
       activeDays: ['2026-08-10', '2026-08-11'],
       requestedAt: [toInstant('2026-08-12T00:00:00.000Z')],
     });
+    expect(JSON.parse(storage.get(KEY) ?? 'null')).not.toHaveProperty('version');
+
+    // When
+    repository.update('account-a', (current) => ({
+      ...current,
+      activeDays: [...current.activeDays, '2026-08-12'],
+    }));
+
+    // Then
     expect(JSON.parse(storage.get(KEY) ?? 'null')).toEqual({
       version: 2,
-      activeDays: ['2026-08-10', '2026-08-11'],
+      activeDays: ['2026-08-10', '2026-08-11', '2026-08-12'],
       requestedAt: ['2026-08-12T00:00:00.000Z'],
     });
   });

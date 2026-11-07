@@ -4,13 +4,13 @@ import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 
-import { useUpdatePushEnabledMutationOptions } from '../queries/activation.mutations';
+import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../queries/activation.mutations';
 
 export function PushDeliverySettings() {
   const { t } = useTranslation(['notification', 'auth']);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const pushEnabledMutation = useMutation(useUpdatePushEnabledMutationOptions());
+  const pushEnabledMutation = useMutation(useUpdatePushEnabledAndAskPermissionMutationOptions());
 
   return (
     <SettingsListGroup>

@@ -46,6 +46,7 @@ ReorderCoachmark.Contents = function Contents({
 }) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
+  // 기기 안에 저장된 값을 렌더 중에 동기로 읽는다(네트워크 조회가 없어 로딩 상태가 필요 없다)
   const service = useCoachmarkService();
   const coachmarkKind = match(kind)
     .with('todo', () => 'todo-reorder' as const)

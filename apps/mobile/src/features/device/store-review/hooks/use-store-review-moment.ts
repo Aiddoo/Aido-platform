@@ -42,7 +42,10 @@ export function useStoreReviewMoment() {
     try {
       storeReviewService.recordActiveDay(accountId, todayKey);
     } catch (error) {
-      logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, { error: getErrorMessage(error) });
+      logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, {
+        step: 'record_active_day',
+        error: getErrorMessage(error),
+      });
     }
   }, [todayKey, logger, queryClient, storeReviewService]);
 
