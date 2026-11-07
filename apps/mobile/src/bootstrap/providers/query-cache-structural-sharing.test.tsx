@@ -12,7 +12,10 @@ import { memo, Suspense } from 'react';
 import { Text } from 'react-native';
 import { z } from 'zod';
 
-import { createQueryCacheStorage, createQueryPersistOptions } from './query-cache-persistence';
+import {
+  createQueryCacheStorage,
+  createQueryPersistOptions,
+} from '../query/query-cache-persistence';
 
 interface MemoItem {
   id: string;

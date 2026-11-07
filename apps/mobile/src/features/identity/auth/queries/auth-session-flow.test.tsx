@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
+import { resolveInitialAuthStatus } from '@src/bootstrap/auth/auth-boot';
 import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
-import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { emitSessionExpired } from '@src/core/events/session-expired';

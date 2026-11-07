@@ -3,7 +3,7 @@ import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-stor
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
-import { ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget';
+import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 
 function createHandler(isAppActive = false) {

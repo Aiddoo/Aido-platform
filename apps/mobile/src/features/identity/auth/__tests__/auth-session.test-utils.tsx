@@ -5,7 +5,7 @@ import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import {
   createQueryCacheStorage,
   type QueryCacheStorage,
-} from '@src/bootstrap/providers/query-cache-persistence';
+} from '@src/bootstrap/query/query-cache-persistence';
 import { ok } from '@src/core/errors/result';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch } from '@src/core/session/session-epoch';

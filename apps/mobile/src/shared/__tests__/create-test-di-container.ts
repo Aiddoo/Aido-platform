@@ -1,5 +1,5 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
-import { disabledQueryCacheStorage } from '@src/bootstrap/providers/query-cache-persistence';
+import { disabledQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';

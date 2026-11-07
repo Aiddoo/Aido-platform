@@ -22,7 +22,7 @@ Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이�
 ```
 app/                              # Expo Router 화면. 화면 구성이 여기서 읽힌다
 src/
-├── bootstrap/                    # 앱 조립 (hooks/, navigation/, providers/)
+├── bootstrap/                    # 앱 조립 (auth/, hooks/, navigation/, providers/, query/)
 │   └── providers/
 │       ├── di-provider.tsx       # 서비스·어댑터 조립 (한 곳)
 │       └── di-context.tsx        # DIContainer 타입과 use{X} 훅
@@ -441,7 +441,14 @@ MemoList.Loading = function Loading() {
 
 **UI 내부 Context의 예, 댓글 폼:** 작성 바, 댓글 행, 뒤로 가기가 한 입력값을 읽고 바꾸고, 세션이 폼을 소유한다. 폼은 props로 내리면 작성 바와 행 사이의 여러 층을 거쳐야 하고, 이 Context는 `UseFormReturn` 하나만 나눠 주며 서버 값이나 앱 상태를 담지 않는다. 폼의 값 변화는 `useWatch`가 구독하므로 Context 값(폼 객체)은 바뀌지 않아 소비자가 다시 그려지지 않는다.
 
-**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`.
+**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다):
+
+| Context                                                      | 판단                                      | 근거                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `theme-provider`, `font-scale-provider`, `language-provider` | 유지. `useStoredString`으로 바꾸지 않는다 | 셋 모두 `useState` 초기값을 MMKV에서 한 번 읽고 쓰기는 `persist…`가 둘 다 갱신한다. 이 키(`aido_theme_mode`, `aido_font_scale`, `aido_language`)를 쓰는 곳은 `shared/preferences/*`뿐이라 두 사본이 어긋날 길이 없다. 반면 `useStoredString`은 전역 MMKV 인스턴스에 묶여 `syncStorage` 주입(테스트 5곳이 메모리 저장소를 넣는다)이 사라진다. 바꾸려면 구독 가능한 저장소 포트가 먼저 필요하다. 이득은 적고 테스트 격리와 첫 프레임 읽기 시점을 건드린다 |
+| `local-date-provider`                                        | 유지                                      | 저장 값이 아니라 자정 타이머·AppState·기기 달력에서 파생한 상태의 단일 소유자다. 원천이 MMKV가 아니다                                                                                                                                                                                                                                                                                                                                                   |
+| `keyboard-bottom-gap-provider`                               | 유지                                      | 하위 트리마다 `measureInWindow`로 잰 레이아웃 값이다. 저장소가 아니라 서브트리 범위 값이다                                                                                                                                                                                                                                                                                                                                                              |
+| `todo-comment-expansion`, `todo-comment-reveal`              | 아직 판단하지 않음                        |                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ### 함수 형태
 

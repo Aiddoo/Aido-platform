@@ -20,7 +20,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 `auth-boot.test.ts`가 회귀 테스트다.
 
-## 부팅 흐름 (`bootstrap/providers/auth-boot.ts`)
+## 부팅 흐름 (`bootstrap/auth/auth-boot.ts`)
 
 부팅은 읽기 전용이다. 토큰을 지우지도, 저장하지도, 네트워크를 타지도 않는다.
 

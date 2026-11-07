@@ -2,11 +2,11 @@ import { toResolvedLanguage } from '@src/shared/preferences/language.preference'
 import type { WidgetInfo } from 'react-native-android-widget';
 
 import { toWidgetProps } from '../apis/widget-props.mapper';
+import { ANDROID_WIDGET_DEFINITIONS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 import { createInitialWidgetProps } from '../utils/widget-initial-props';
-import { ANDROID_WIDGET_DEFINITIONS } from './android-widget';
 
 interface StoredAndroidWidgetRendererDependencies<Rendered> {
   snapshotRepository: {

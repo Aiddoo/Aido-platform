@@ -1,4 +1,4 @@
-import { runStartupKeyCleanup } from '@src/bootstrap/startup-key-cleanup';
+import { cleanStartupKeys } from '@src/bootstrap/startup-key-cleanup';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
@@ -118,9 +118,9 @@ import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
+import { QUERY_CACHE_LOG_EVENT } from '../query/query-cache-log-events';
+import type { QueryCacheStorage } from '../query/query-cache-persistence';
 import { type DIContainer, StaticDIProvider } from './di-context';
-import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
-import type { QueryCacheStorage } from './query-cache-persistence';
 
 interface DIProviderProps extends PropsWithChildren {
   /** 암호화 키 조회가 끝난 초안·조회 캐시 저장소. 비동기 준비는 앱 부트스트랩에서 마친다. */
@@ -289,7 +289,7 @@ export function DIProvider({
     const todoNudgeService = new TodoNudgeService(authHttpClient);
     const coachmarkRepository = createCoachmarkRepository(deviceSyncStorage);
     const coachmarkService = new CoachmarkService(coachmarkRepository);
-    runStartupKeyCleanup(
+    cleanStartupKeys(
       {
         'whats-new': () =>
           whatsNewRepository.removeRetiredKeys({

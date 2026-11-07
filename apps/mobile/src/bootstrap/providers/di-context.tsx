@@ -62,7 +62,7 @@ import type { WeatherService } from '@src/features/weather/apis/weather.service'
 import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
 import { createContext, type PropsWithChildren, use } from 'react';
 
-import type { QueryCacheStorage } from './query-cache-persistence';
+import type { QueryCacheStorage } from '../query/query-cache-persistence';
 
 export interface DIContainer extends SharedDependencies {
   storage: Storage;

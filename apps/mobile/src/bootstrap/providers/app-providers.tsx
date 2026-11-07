@@ -5,11 +5,11 @@ import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
 import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
+import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import {
   createQueryCacheStorage,
   disabledQueryCacheStorage,
-} from '@src/bootstrap/providers/query-cache-persistence';
-import { QueryProvider } from '@src/bootstrap/providers/query-provider';
+} from '@src/bootstrap/query/query-cache-persistence';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';

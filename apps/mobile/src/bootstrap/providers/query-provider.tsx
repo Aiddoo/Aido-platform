@@ -9,14 +9,14 @@ import { type PropsWithChildren, useEffect, useState } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState } from 'react-native';
 
-import { PERSISTED_QUERY_SCHEMAS } from './persisted-query-schemas';
+import { PERSISTED_QUERY_SCHEMAS } from '../query/persisted-query-schemas';
 import {
   createQueryCacheBuster,
   createQueryPersistOptions,
   type QueryCacheStorage,
   removePlaintextQueryCache,
-} from './query-cache-persistence';
-import { shouldRetryQuery } from './query-retry';
+} from '../query/query-cache-persistence';
+import { shouldRetryQuery } from '../query/query-retry';
 
 /**
  * React Native에서는 브라우저의 `visibilitychange` 이벤트가 없으므로,

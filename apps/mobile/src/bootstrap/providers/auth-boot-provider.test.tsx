@@ -35,13 +35,13 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, type AppStateStatus, Text } from 'react-native';
 import { z } from 'zod';
 
-import { AuthBootProvider } from './auth-boot-provider';
-import { StaticDIProvider } from './di-context';
 import {
   createQueryCacheStorage,
   QUERY_CACHE_STORAGE_KEY,
   type QueryCacheStorage,
-} from './query-cache-persistence';
+} from '../query/query-cache-persistence';
+import { AuthBootProvider } from './auth-boot-provider';
+import { StaticDIProvider } from './di-context';
 
 const SEOUL_TIMEZONE = { timeZone: 'Asia/Seoul', offsetMinutes: 540 };
 const NEW_YORK_TIMEZONE = { timeZone: 'America/New_York', offsetMinutes: -240 };

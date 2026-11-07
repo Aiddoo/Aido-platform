@@ -1,4 +1,4 @@
-import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
+import { resolveInitialAuthStatus } from '@src/bootstrap/auth/auth-boot';
 import { ok } from '@src/core/errors/result';
 import {
   ACCOUNT_A_TOKENS,

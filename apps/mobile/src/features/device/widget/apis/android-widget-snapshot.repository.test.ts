@@ -1,7 +1,7 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
 import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
-import { ANDROID_WIDGET_STORAGE_KEYS } from '../bridge/android-widget';
+import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';
 import { createAndroidWidgetSnapshotRepository } from './android-widget-snapshot.repository';
 
 function createStorage(): SyncStorage {

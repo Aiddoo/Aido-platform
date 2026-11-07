@@ -14,7 +14,7 @@ import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
 
-import { invalidateOnNotificationReceived } from './notification-received-invalidation';
+import { invalidateOnNotificationReceived } from '../query/notification-received-invalidation';
 
 registerForegroundNotificationPresentation();
 

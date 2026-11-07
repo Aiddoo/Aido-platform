@@ -16,7 +16,7 @@ import {
 } from 'react-native-android-widget';
 import { match } from 'ts-pattern';
 
-import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../bridge/android-widget';
+import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 
 // SvgWidget needs inline SVG; Metro otherwise transforms ic_paw.svg into a React component.

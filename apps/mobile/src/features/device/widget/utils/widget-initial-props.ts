@@ -1,3 +1,5 @@
+// iOS 위젯 번들은 expo-widgets의 별도 Metro 설정(projectRoot가 expo-widgets)으로 빌드되어 앱의 `@src` 별칭이 풀리지 않는다.
+// 이 파일과 widgets.ios.tsx가 부르는 모듈은 상대 경로만 쓴다.
 import en from '../../../../shared/i18n/locales/en/widget.json';
 import ko from '../../../../shared/i18n/locales/ko/widget.json';
 import type { ResolvedLanguage } from '../../../../shared/preferences/language.preference';

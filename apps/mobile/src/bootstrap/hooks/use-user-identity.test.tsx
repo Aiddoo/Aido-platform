@@ -3,7 +3,7 @@ import {
   createQueryCacheStorage,
   QUERY_CACHE_STORAGE_KEY,
   type QueryCacheStorage,
-} from '@src/bootstrap/providers/query-cache-persistence';
+} from '@src/bootstrap/query/query-cache-persistence';
 import { ok } from '@src/core/errors/result';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
