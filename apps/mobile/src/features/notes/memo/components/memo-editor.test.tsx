@@ -19,6 +19,7 @@ import { NetworkError } from '@src/shared/errors/infra-error';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
+import { Keyboard } from 'react-native';
 
 import { createMemo } from '../__tests__/memo.fixtures';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
@@ -217,5 +218,107 @@ describe('MemoEditor', () => {
 
     // Then
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+  });
+
+  describe('저장 버튼과 뒤로 가기의 차이', () => {
+    let dismissKeyboard: jest.SpyInstance;
+
+    beforeEach(() => {
+      dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
+    });
+
+    afterEach(() => {
+      dismissKeyboard.mockRestore();
+    });
+
+    it('저장 버튼은 화면에 남은 채 키보드를 내리고 편집을 끝낸다', async () => {
+      // Given
+      const { httpClient, onLeave } = await renderEditor('pane');
+      httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      await editContent('고친 메모');
+
+      // When
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+
+      // Then
+      await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
+      expect(dismissKeyboard).toHaveBeenCalledTimes(1);
+      expect(onLeave).not.toHaveBeenCalled();
+    });
+
+    it('저장 버튼으로 저장한 뒤에는 바뀐 글자가 없어 뒤로 가기가 다시 보내지 않는다', async () => {
+      // Given
+      const { httpClient, onLeave } = await renderEditor('stack');
+      httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      await editContent('고친 메모');
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+      await waitFor(() => expect(dismissKeyboard).toHaveBeenCalledTimes(1));
+
+      // When
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      });
+
+      // Then
+      await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    });
+
+    it('저장 버튼이 거절되면 글자와 편집 상태를 그대로 두고 키보드도 내리지 않는다', async () => {
+      // Given
+      const { httpClient, onLeave } = await renderEditor('pane');
+      httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+      await editContent('고친 메모');
+
+      // When
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+
+      // Then
+      await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
+      expect(screen.getByLabelText('저장')).toBeTruthy();
+      expect(screen.getByDisplayValue('고친 메모')).toBeTruthy();
+      expect(dismissKeyboard).not.toHaveBeenCalled();
+      expect(onLeave).not.toHaveBeenCalled();
+    });
+
+    it('저장 버튼은 연결 문제여도 떠나지 않고 편집을 이어 가게 한다', async () => {
+      // Given
+      const { httpClient, onLeave } = await renderEditor('pane');
+      httpClient.patch.mockRejectedValue(new NetworkError());
+      await editContent('고친 메모');
+
+      // When
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+
+      // Then
+      await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
+      expect(screen.getByLabelText('저장')).toBeTruthy();
+      expect(dismissKeyboard).not.toHaveBeenCalled();
+      expect(onLeave).not.toHaveBeenCalled();
+    });
+
+    it('뒤로 가기로 저장하면 키보드를 직접 내리지 않고 떠난다', async () => {
+      // Given
+      const { httpClient, onLeave } = await renderEditor('stack');
+      httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      await editContent('고친 메모');
+
+      // When
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      });
+
+      // Then
+      await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+      expect(dismissKeyboard).not.toHaveBeenCalled();
+    });
   });
 });
