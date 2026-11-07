@@ -161,7 +161,7 @@ function MyFeed() {
     isWeatherIntroductionPending: weatherIntroduction.isPending,
     isInviteAvailable,
   });
-  const [refreshing, onRefresh] = useRefresh(() =>
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );
 
@@ -169,7 +169,7 @@ function MyFeed() {
     <ScrollViewContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
     >
       <StyledSafeAreaView edges={['left', 'right']}>
         <AddTodoRequestEntry />
@@ -232,7 +232,7 @@ function FriendFeedTodos() {
     error,
     fetchNextPage,
   } = useRouteFriendQuery();
-  const [refreshing, onRefresh] = useRefresh(() =>
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
   );
 
@@ -250,7 +250,7 @@ function FriendFeedTodos() {
         contentInsetAdjustmentBehavior="automatic"
         className="flex-1"
         contentContainerClassName="grow"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
           <FriendCalendar friendId={friend.id} />

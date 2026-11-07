@@ -86,18 +86,28 @@ NudgeDetailScreen.Loading = function Loading() {
 
 NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const isUnavailable = isNudgeUnavailableError(error);
+
+  if (isNudgeUnavailableError(error)) {
+    return (
+      <VStack flex={1} p={24}>
+        <Result
+          title={t('todo:interaction.unavailable')}
+          description={t('todo:interaction.unavailableDescription')}
+          button={
+            <Result.Button onPress={() => router.replace('/notifications')}>
+              {t('common:actions.goBack')}
+            </Result.Button>
+          }
+        />
+      </VStack>
+    );
+  }
 
   return (
     <VStack flex={1} p={24}>
       <Result
-        title={t(isUnavailable ? 'todo:interaction.unavailable' : 'todo:interaction.loadError')}
-        description={isUnavailable ? t('todo:interaction.unavailableDescription') : undefined}
-        button={
-          <Result.Button onPress={isUnavailable ? () => router.replace('/notifications') : reset}>
-            {t(isUnavailable ? 'common:actions.goBack' : 'common:actions.retry')}
-          </Result.Button>
-        }
+        title={t('todo:interaction.loadError')}
+        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
       />
     </VStack>
   );

@@ -10,22 +10,22 @@ import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queri
 const LOADING_ROW_COUNT = 3;
 
 interface CategorySelectInputProps {
-  /** 처음 선택된 카테고리. 시트 안에서 고른 값은 제출할 때 onChange로 전달한다. */
-  value: number;
-  onChange: (categoryId: number) => Promise<unknown> | void;
+  /** 처음 선택된 카테고리. 시트 안에서 고른 값은 제출할 때 onSubmit으로 전달한다. */
+  defaultValue: number;
+  onSubmit: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
   isLoading?: boolean;
 }
 
 export function CategorySelectInput({
-  value,
-  onChange,
+  defaultValue,
+  onSubmit,
   submitLabel,
   isLoading = false,
 }: CategorySelectInputProps) {
   const { t } = useTranslation('todo');
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const [localCategoryId, setLocalCategoryId] = useState(value);
+  const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
 
   return (
     <VStack gap={20}>
@@ -65,7 +65,7 @@ export function CategorySelectInput({
         })}
       </VStack>
 
-      <Button size="large" onPress={() => onChange(localCategoryId)} isLoading={isLoading}>
+      <Button size="large" onPress={() => onSubmit(localCategoryId)} isLoading={isLoading}>
         {submitLabel}
       </Button>
     </VStack>

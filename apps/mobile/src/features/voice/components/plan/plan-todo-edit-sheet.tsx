@@ -319,8 +319,8 @@ function CategoryChip({
         <QueryErrorBoundary>
           <Suspense fallback={<CategorySelectInput.Loading />}>
             <CategorySelectInput
-              value={categoryId}
-              onChange={(nextCategoryId) => {
+              defaultValue={categoryId}
+              onSubmit={(nextCategoryId) => {
                 updateTodo(form, (current) => ({ ...current, categoryId: nextCategoryId }));
                 close();
               }}

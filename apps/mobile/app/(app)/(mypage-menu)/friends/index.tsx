@@ -83,14 +83,8 @@ export default function FriendsScreen() {
                 <QueryErrorBoundary resetKeys={[view]} fallback={FriendList.Error}>
                   <Suspense fallback={<FriendList.Loading />}>
                     <FriendList
-                      invite={
-                        isInviteAvailable
-                          ? {
-                              welcomeDays: InviteRewardPolicy.getWelcomePremiumDays(),
-                              open: () => openMyInvite('friends_empty'),
-                            }
-                          : undefined
-                      }
+                      onInvite={isInviteAvailable ? () => openMyInvite('friends_empty') : undefined}
+                      inviteWelcomeDays={InviteRewardPolicy.getWelcomePremiumDays()}
                     />
                   </Suspense>
                 </QueryErrorBoundary>

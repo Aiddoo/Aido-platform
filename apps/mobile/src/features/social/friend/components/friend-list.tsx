@@ -57,18 +57,14 @@ import type { FriendUser } from '../schemas/friend.schema';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
 import { UserList } from './user-list';
 
-interface FriendListInvite {
-  /** 초대받은 사람이 받는 프리미엄 일수. 빈 목록 안내 문구에 쓴다 */
-  welcomeDays: number;
-  open: () => void;
-}
-
 interface FriendListProps {
   /** 초대를 쓸 수 있으면 빈 목록에서 링크로 데려오는 길을 먼저 보인다. 없으면 태그 찾기만 안내한다 */
-  invite?: FriendListInvite;
+  onInvite?: () => void;
+  /** 초대받은 사람이 받는 프리미엄 일수. 빈 목록 안내 문구에 쓴다 */
+  inviteWelcomeDays?: number;
 }
 
-export function FriendList({ invite }: FriendListProps) {
+export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const { t } = useTranslation('friend');
   const {
     data,
@@ -117,7 +113,9 @@ export function FriendList({ invite }: FriendListProps) {
         </HStack>
       }
       renderItem={({ item }) => <FriendList.Item friend={item} />}
-      ListEmptyComponent={<FriendList.Empty invite={invite} />}
+      ListEmptyComponent={
+        <FriendList.Empty onInvite={onInvite} inviteWelcomeDays={inviteWelcomeDays} />
+      }
       ListFooterComponent={
         <InfiniteListFooter
           isFetchingNextPage={isFetchingNextPage}
@@ -309,12 +307,12 @@ FriendList.Loading = function Loading() {
 
 FriendList.Error = UserList.Error;
 
-FriendList.Empty = function Empty({ invite }: FriendListProps) {
+FriendList.Empty = function Empty({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const { t } = useTranslation(['friend', 'invite']);
   const push = useSingleTap(router.push);
 
   // 초대를 쓸 수 있으면 링크로 데려오는 길을 먼저, 태그 찾기를 다음으로 보여 준다
-  if (invite != null) {
+  if (onInvite != null) {
     return (
       <UserList.Empty
         icon={
@@ -327,11 +325,11 @@ FriendList.Empty = function Empty({ invite }: FriendListProps) {
         }
         title={t('invite:entry.friendsEmptyTitle')}
         description={t('invite:entry.friendsEmptyDescription', {
-          days: invite.welcomeDays,
+          days: inviteWelcomeDays,
         })}
         button={
           <VStack align="center" gap={4}>
-            <Result.Button testID="friends-empty-invite" color="primary" onPress={invite.open}>
+            <Result.Button testID="friends-empty-invite" color="primary" onPress={onInvite}>
               {t('invite:entry.inviteFriends')}
             </Result.Button>
             <TextButton size="small" variant="underline" onPress={() => push('/friends/add')}>

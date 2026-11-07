@@ -373,8 +373,8 @@ function CategoryChip({ form }: { form: ComposerForm }) {
                   <QueryErrorBoundary>
                     <Suspense fallback={<CategorySelectInput.Loading />}>
                       <CategorySelectInput
-                        value={categoryId}
-                        onChange={(nextCategoryId) => {
+                        defaultValue={categoryId}
+                        onSubmit={(nextCategoryId) => {
                           onChange(nextCategoryId);
                           close();
                         }}

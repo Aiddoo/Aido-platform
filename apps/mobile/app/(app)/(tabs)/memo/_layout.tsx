@@ -1,4 +1,5 @@
 import { WeatherForecastBadge } from '@src/features/weather/components/weather-forecast-badge';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
@@ -13,7 +14,7 @@ export default function MemoLayout() {
         headerShown: false,
         contentStyle: { backgroundColor },
         animation: 'fade',
-        animationDuration: 200,
+        animationDuration: ANIMATION.duration.normal,
       }}
     >
       <Stack.Screen name="index" options={{ ...indexScreenOptions, title: '' }}>

@@ -75,10 +75,10 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
   return (
     <TodoScopeStep step={scopeSelector}>
       <CategorySelectInput
-        value={todo.category.id}
+        defaultValue={todo.category.id}
         submitLabel={t('actions.changeSubmit')}
         isLoading={changeCategory.isPending}
-        onChange={async (categoryId) => {
+        onSubmit={async (categoryId) => {
           if (categoryId === todo.category.id) {
             onClose();
 

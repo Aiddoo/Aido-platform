@@ -30,10 +30,10 @@ import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 interface FriendSearchListProps {
   query: string;
   /** 친구 한도 안내에 덧붙일 초대 길. 초대를 쓸 수 없으면 없다 */
-  openFriendLimitInvite?: () => void;
+  onFriendLimitReached?: () => void;
 }
 
-export function FriendSearchList({ query, openFriendLimitInvite }: FriendSearchListProps) {
+export function FriendSearchList({ query, onFriendLimitReached }: FriendSearchListProps) {
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
@@ -60,7 +60,7 @@ export function FriendSearchList({ query, openFriendLimitInvite }: FriendSearchL
       data={search.data ?? []}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <FriendSearchList.Item user={item} openFriendLimitInvite={openFriendLimitInvite} />
+        <FriendSearchList.Item user={item} onFriendLimitReached={onFriendLimitReached} />
       )}
       ListEmptyComponent={<FriendSearchList.Empty query={normalizedQuery} />}
       contentContainerStyle={USER_LIST_CONTENT_STYLE}
@@ -74,10 +74,10 @@ export function FriendSearchList({ query, openFriendLimitInvite }: FriendSearchL
 
 FriendSearchList.Item = function Item({
   user,
-  openFriendLimitInvite,
+  onFriendLimitReached,
 }: {
   user: SearchedUser;
-  openFriendLimitInvite?: () => void;
+  onFriendLimitReached?: () => void;
 }) {
   const { t } = useTranslation('friend');
 
@@ -90,7 +90,7 @@ FriendSearchList.Item = function Item({
         <FriendSearchList.Action
           key={user.id}
           user={user}
-          openFriendLimitInvite={openFriendLimitInvite}
+          onFriendLimitReached={onFriendLimitReached}
         />
       }
     />
@@ -100,13 +100,13 @@ FriendSearchList.Item = function Item({
 /** 목록이 행을 재활용해도 처리 중 상태가 다른 사용자로 넘어가지 않게 사용자마다 새로 만든다 */
 FriendSearchList.Action = function Action({
   user,
-  openFriendLimitInvite,
+  onFriendLimitReached,
 }: {
   user: SearchedUser;
-  openFriendLimitInvite?: () => void;
+  onFriendLimitReached?: () => void;
 }) {
   const { t } = useTranslation('friend');
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ openFriendLimitInvite }));
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ onFriendLimitReached }));
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
   const isProcessing = sendRequest.isPending || cancelRequest.isPending;
 

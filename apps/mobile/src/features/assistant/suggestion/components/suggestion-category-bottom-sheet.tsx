@@ -81,8 +81,8 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
 
   return (
     <CategorySelectInput
-      value={defaultCategoryId}
-      onChange={(categoryId) =>
+      defaultValue={defaultCategoryId}
+      onSubmit={(categoryId) =>
         actOnSuggestionMutation.mutate(
           { suggestionId: suggestion.id, input: { action: 'accept', categoryId } },
           { onSuccess: () => onClose({ type: 'back-then-replace', href: '/feed' }) },

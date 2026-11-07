@@ -182,10 +182,10 @@ export function useReorderFriendMutationOptions() {
   });
 }
 
-/** `openFriendLimitInvite`는 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길이다. 초대를 쓸 수 없으면 넘기지 않는다 */
+/** `onFriendLimitReached`는 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길이다. 초대를 쓸 수 없으면 넘기지 않는다 */
 export function useSendRequestByTagMutationOptions({
-  openFriendLimitInvite,
-}: { openFriendLimitInvite?: () => void } = {}) {
+  onFriendLimitReached,
+}: { onFriendLimitReached?: () => void } = {}) {
   const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -229,13 +229,13 @@ export function useSendRequestByTagMutationOptions({
           err,
           match(
             FriendPolicy.getFriendLimitOffer({
-              isInviteAvailable: openFriendLimitInvite != null,
+              isInviteAvailable: onFriendLimitReached != null,
               serverLimit: getFriendLimitFromError(err),
               knownLimit,
             }),
           )
             .with({ type: 'invite' }, ({ limit }) =>
-              openFriendLimitInvite == null
+              onFriendLimitReached == null
                 ? {}
                 : {
                     description: t('invite:entry.friendLimitDescription', {
@@ -244,7 +244,7 @@ export function useSendRequestByTagMutationOptions({
                     }),
                     alternativeAction: {
                       label: t('invite:entry.growFriendLimit'),
-                      onPress: openFriendLimitInvite,
+                      onPress: onFriendLimitReached,
                     },
                   },
             )
