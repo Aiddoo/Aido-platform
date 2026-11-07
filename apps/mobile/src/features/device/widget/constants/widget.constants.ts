@@ -10,3 +10,5 @@ export const ANDROID_WIDGET_STORAGE_KEYS = {
 } as const;
 
 export const ANDROID_WIDGET_NAVIGATION_ACTION = 'AIDO_WIDGET_NAVIGATE';
+
+export const WIDGET_BRAND_COLOR = '#FF6B43';

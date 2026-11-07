@@ -1,7 +1,9 @@
 import { match } from 'ts-pattern';
 
+import { WIDGET_BRAND_COLOR } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 import type { WidgetDaySnapshot, WidgetRenderState } from '../schemas/widget-snapshot.schema';
+import { isHexColor } from '../utils/is-hex-color';
 
 export function toWidgetProps(
   snapshot: WidgetDaySnapshot,
@@ -25,7 +27,7 @@ export function toWidgetProps(
       id: todo.id,
       title: todo.title,
       completed: todo.completed,
-      color: /^#[0-9a-f]{6}$/i.test(todo.categoryColor) ? todo.categoryColor : '#FF6B43',
+      color: isHexColor(todo.categoryColor) ? todo.categoryColor : WIDGET_BRAND_COLOR,
       destination: `${appScheme}://todo/${todo.id}`,
     })),
     openAppUrl,
