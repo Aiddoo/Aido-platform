@@ -86,7 +86,7 @@ export function createTokenRefreshHook(deps: TokenRefreshHookDeps): AfterRespons
     }
 
     // 읽기 실패는 "토큰 없음"이 아니다 — 아래 갱신 경로가 처리하게 넘긴다.
-    const storedAccessToken = await tokenStore.readAccessToken().catch((error: unknown) => {
+    const storedAccessToken = await tokenStore.getAccessToken().catch((error: unknown) => {
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.ACCESS_TOKEN_READ_FAILED, {
         error: getErrorMessage(error),
       });

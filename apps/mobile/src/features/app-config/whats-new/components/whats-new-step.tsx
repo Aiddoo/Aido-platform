@@ -1,5 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -33,7 +33,7 @@ export function WhatsNewStep({
   actionLabel,
   onAction,
 }: WhatsNewStepProps) {
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const handleAction = useSingleTap(() => onAction?.());
 
   return (

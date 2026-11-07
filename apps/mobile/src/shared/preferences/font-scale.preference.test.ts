@@ -1,4 +1,4 @@
-import { FONT_SCALE_STORAGE_KEY, isFontScale, parseFontScale } from './font-scale.preference';
+import { FONT_SCALE_STORAGE_KEY, isFontScale, toFontScale } from './font-scale.preference';
 
 describe('isFontScale', () => {
   it.each(['xsmall', 'small', 'medium', 'large', 'xlarge'] as const)(
@@ -16,10 +16,10 @@ describe('isFontScale', () => {
   );
 });
 
-describe('parseFontScale', () => {
+describe('toFontScale', () => {
   it('저장된 값이 없으면 medium을 반환한다', () => {
     // When
-    const result = parseFontScale(undefined);
+    const result = toFontScale(undefined);
 
     // Then
     expect(result).toBe('medium');
@@ -29,7 +29,7 @@ describe('parseFontScale', () => {
     '%s가 저장되어 있으면 그대로 반환한다',
     (saved) => {
       // When
-      const result = parseFontScale(saved);
+      const result = toFontScale(saved);
 
       // Then
       expect(result).toBe(saved);
@@ -38,7 +38,7 @@ describe('parseFontScale', () => {
 
   it('유효하지 않은 값이 저장되어 있으면 medium을 반환한다', () => {
     // When
-    const result = parseFontScale('invalid');
+    const result = toFontScale('invalid');
 
     // Then
     expect(result).toBe('medium');

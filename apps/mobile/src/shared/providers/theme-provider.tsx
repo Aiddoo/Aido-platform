@@ -2,7 +2,7 @@ import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-stor
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
-  parseThemeMode,
+  toThemeMode,
   THEME_MODE_STORAGE_KEY,
   type ThemeMode,
 } from '@src/shared/preferences/theme-mode.preference';
@@ -30,7 +30,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
   const [savedMode, setMode] = useSyncStorageString(syncStorage, THEME_MODE_STORAGE_KEY);
-  const mode = parseThemeMode(savedMode);
+  const mode = toThemeMode(savedMode);
 
   const resolvedTheme = match<ThemeMode, ResolvedTheme>(mode)
     .with('system', () => (systemColorScheme === 'dark' ? 'dark' : 'light'))

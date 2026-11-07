@@ -1,4 +1,4 @@
-import { getDateWithTime, isValidHHmm, parseHour, parseMinute, getTodayAt } from './time-of-day';
+import { getDateWithTime, isValidHHmm, getHour, getMinute, getTodayAt } from './time-of-day';
 
 const FALLBACK_TIME = '09:00';
 
@@ -13,15 +13,15 @@ describe('time utils', () => {
     });
   });
 
-  describe('parseHour / parseMinute', () => {
+  describe('getHour / getMinute', () => {
     it("'18:30'에서 시와 분을 분리한다", () => {
-      expect(parseHour('18:30')).toBe(18);
-      expect(parseMinute('18:30')).toBe(30);
+      expect(getHour('18:30')).toBe(18);
+      expect(getMinute('18:30')).toBe(30);
     });
 
     it("'00:05' 경계값을 처리한다", () => {
-      expect(parseHour('00:05')).toBe(0);
-      expect(parseMinute('00:05')).toBe(5);
+      expect(getHour('00:05')).toBe(0);
+      expect(getMinute('00:05')).toBe(5);
     });
   });
 

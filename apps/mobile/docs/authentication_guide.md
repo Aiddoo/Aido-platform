@@ -24,11 +24,11 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 부팅은 읽기 전용이다. 토큰을 지우지도, 저장하지도, 네트워크를 타지도 않는다.
 
-| `readRefreshToken()` | 상태                                              |
-| -------------------- | ------------------------------------------------- |
-| 값 있음              | `authenticated`                                   |
-| `null`               | `unauthenticated`                                 |
-| throw (기기 잠김)    | `locked`: 판정을 미루고 `AppState` 복귀 시 재판정 |
+| `getRefreshToken()` | 상태                                              |
+| ------------------- | ------------------------------------------------- |
+| 값 있음             | `authenticated`                                   |
+| `null`              | `unauthenticated`                                 |
+| throw (기기 잠김)   | `locked`: 판정을 미루고 `AppState` 복귀 시 재판정 |
 
 - 잠금이 아닌 읽기 실패는 그대로 던진다. `useAuthBoot`가 관측하고 미인증으로 폴백한다. 토큰은 지우지 않으므로 다음 실행에 회복할 수 있다. `locked`로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다.
 - `locked`를 `unauthenticated`로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. iOS `getItemAsync`는 잠금 중 `null`이 아니라 throw한다.

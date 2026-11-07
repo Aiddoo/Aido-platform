@@ -10,7 +10,7 @@ export function isLanguageMode(value: unknown): value is LanguageMode {
   return LANGUAGE_MODES.some((candidate) => candidate === value);
 }
 
-export function parseLanguageMode(saved: string | undefined): LanguageMode {
+export function toLanguageMode(saved: string | undefined): LanguageMode {
   return isLanguageMode(saved) ? saved : 'system';
 }
 

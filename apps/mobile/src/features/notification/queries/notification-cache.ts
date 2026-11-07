@@ -1,5 +1,5 @@
 import { getNowInstant } from '@src/shared/date/instant';
-import { readQueryKeyParams } from '@src/shared/utils/read-query-key-params';
+import { getQueryKeyParams } from '@src/shared/utils/get-query-key-params';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
@@ -52,7 +52,7 @@ function containsUnreadNotification(
 }
 
 function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
-  return readQueryKeyParams(queryKey, notificationListQueryKeySchema)?.unreadOnly === true;
+  return getQueryKeyParams(queryKey, notificationListQueryKeySchema)?.unreadOnly === true;
 }
 
 export async function optimisticallyMarkNotificationsRead(

@@ -20,7 +20,7 @@ import { SECURE_STORE_OPTIONS } from './secure-store-options';
  */
 const IOS_LOCKED_KEYCHAIN_MESSAGE = 'User interaction is not allowed.';
 
-function isLockedKeychain(error: unknown): boolean {
+function hasLockedKeychainMessage(error: unknown): boolean {
   return getErrorMessage(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
 }
 
@@ -31,7 +31,7 @@ export class SecureStorage implements Storage {
       item = await ExpoSecureStore.getItemAsync(key, SECURE_STORE_OPTIONS);
     } catch (error) {
       // 일시적(잠김)만 타입으로 승격한다. 나머지는 원본 그대로 — 상위에서 리포팅 후 폴백한다.
-      if (isLockedKeychain(error)) {
+      if (hasLockedKeychainMessage(error)) {
         throw new KeychainLockedError(error);
       }
       throw error;

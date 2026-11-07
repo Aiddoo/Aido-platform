@@ -4,7 +4,7 @@ import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage
 import {
   FONT_SCALE_STORAGE_KEY,
   type FontScale,
-  parseFontScale,
+  toFontScale,
 } from '@src/shared/preferences/font-scale.preference';
 import type { TextSize } from '@src/shared/ui/text/text.types';
 import { noop } from 'es-toolkit';
@@ -84,7 +84,7 @@ export function FontScaleProvider({
   syncStorage = deviceSyncStorage,
 }: FontScaleProviderProps) {
   const [savedScale, setFontScale] = useSyncStorageString(syncStorage, FONT_SCALE_STORAGE_KEY);
-  const fontScale = parseFontScale(savedScale);
+  const fontScale = toFontScale(savedScale);
 
   const resolveSize = useCallback(
     (size: TextSize): TextSize => {

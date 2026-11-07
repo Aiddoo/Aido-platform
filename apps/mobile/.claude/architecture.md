@@ -978,7 +978,7 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 | `device-info`(`DEVICE_TOTAL_MEMORY_BYTES`, `IS_PHYSICAL_DEVICE`)                                                                                                                                         | 시작 때 정해지는 상수라 렌더 중 호출이 아니다. 날씨 장면 품질과 개발 API 주소만 쓴다                                                 |
 | `new SecureStorage`(`di-provider`, `use-encrypted-storage-bootstrap`)                                                                                                                                    | 암호화 초안 저장소는 키체인에서 키를 읽어 열린 뒤에야 DI가 만들어진다. 부트스트랩이 같은 어댑터를 따로 연다                          |
 | `new VoiceRecordingIntake`(`use-voice-note-recording`)                                                                                                                                                   | 초안마다 하나씩 만들어 화면이 내려간 뒤에도 파일을 받는 수명 객체다. 상태를 갖지 않는 Service가 아니라 DI에 두지 않는다              |
-| 모듈 수준 전역 `logger`: `env.ts`, `use-reduce-motion`, `use-reduce-transparency`, `query-cache-persistence`, `openSupportMail`                                                                          | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다 |
+| 모듈 수준 전역 `logger`: `env.ts`, `use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`, `query-cache-persistence`, `openSupportMail`                                                    | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다 |
 
 기기 동기 값을 렌더에서 읽는 Service는 컴포넌트가 `useXService()`로 직접 부른다(저장소 읽기라 Suspense·쿼리가 필요 없다). 서버 비동기는 쿼리 옵션 훅으로만 부른다.
 
@@ -996,7 +996,7 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 | `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard-gateway.ts`            |
 | `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `X                                               |
 | `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `X                                               |
-| `SystemShareGateway`      | `share`·`canShareImage`·`shareImage`                                        | `share/expo-system-share-gateway.ts`             |
+| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                | `share/expo-system-share-gateway.ts`             |
 | `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location-gateway.ts`              |
 | `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases-gateway.ts`      |
 | `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                       | `speech/expo-speech-recognizer.ts`               |

@@ -1,5 +1,5 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import {
   useExclusiveGestures,
   useLongPressGesture,
@@ -37,7 +37,7 @@ export function useCommentDoubleTap({
   onLongPress,
 }: CommentDoubleTapOptions) {
   const haptics = useHaptics();
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const lightImpact = () => haptics.impact('light');
 
   const doubleTap = useTapGesture({

@@ -7,8 +7,8 @@ import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -279,7 +279,7 @@ function Placeholder({ state }: { state: 'deleted' | 'blockedAuthor' }) {
 function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedValue<number> }) {
   const { t } = useTranslation('todoComment');
   const [todoId] = useTodoId();
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
   );

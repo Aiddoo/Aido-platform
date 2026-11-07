@@ -10,9 +10,9 @@ import { z } from 'zod';
  */
 export function createSecureTokenStore(storage: Storage): TokenStore {
   return {
-    readAccessToken: () => storage.get(STORAGE_KEYS.ACCESS_TOKEN, z.string()),
+    getAccessToken: () => storage.get(STORAGE_KEYS.ACCESS_TOKEN, z.string()),
 
-    readRefreshToken: () => storage.get(STORAGE_KEYS.REFRESH_TOKEN, z.string()),
+    getRefreshToken: () => storage.get(STORAGE_KEYS.REFRESH_TOKEN, z.string()),
 
     /**
      * 리프레시 토큰을 먼저 쓴다.

@@ -83,8 +83,8 @@ describe('부팅', () => {
     expect(session.authHttp.post).not.toHaveBeenCalled();
     expect(session.authHttp.delete).not.toHaveBeenCalled();
     expect(session.requestRefresh).not.toHaveBeenCalled();
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBe(tokens?.refreshToken ?? null);
-    await expect(session.tokenStore.readAccessToken()).resolves.toBe(tokens?.accessToken ?? null);
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBe(tokens?.refreshToken ?? null);
+    await expect(session.tokenStore.getAccessToken()).resolves.toBe(tokens?.accessToken ?? null);
   });
 });
 
@@ -119,7 +119,7 @@ describe('로그아웃', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
     await expect(resolveInitialAuthStatus(session.tokenStore)).resolves.toBe('unauthenticated');
     expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
   });
@@ -162,7 +162,7 @@ describe('로그아웃', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
     expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
     expect(session.authHttp.post).not.toHaveBeenCalled();
   });
@@ -211,8 +211,8 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     const { session } = await logOutOffline();
 
     // Then
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
-    await expect(session.tokenStore.readAccessToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getAccessToken()).resolves.toBeNull();
     await expect(session.pendingRevocation.get()).resolves.toMatchObject({
       refreshToken: ACCOUNT_A_TOKENS.refreshToken,
     });
@@ -244,7 +244,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
       await jest.advanceTimersByTimeAsync(0);
     });
     await expect(session.pendingRevocation.get()).resolves.toBeNull();
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
   });
 
   it('복귀해도 세션을 되살리지 않고 로그아웃 상태를 유지한다', async () => {
@@ -263,7 +263,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
 
     // Then
     expect(result.current.status).toBe('unauthenticated');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
   });
 
   it('다른 계정으로 로그인한 뒤 해제가 실패해도 그 계정을 로그아웃시키지 않는다', async () => {
@@ -287,7 +287,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     // Then
     expect(session.requestRefresh).toHaveBeenCalledWith(ACCOUNT_A_TOKENS.refreshToken);
     expect(result.current.status).toBe('authenticated');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBe('refresh-b');
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBe('refresh-b');
   });
 });
 
@@ -460,7 +460,7 @@ describe('탈퇴', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
     expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
   });
 
@@ -566,9 +566,7 @@ describe('탈퇴', () => {
 
     // Then
     expect(result.current.status).toBe('authenticated');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBe(
-      ACCOUNT_A_TOKENS.refreshToken,
-    );
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBe(ACCOUNT_A_TOKENS.refreshToken);
     expect(session.draftService.restore(memoDraftKey)).toEqual({
       status: 'restored',
       value: { content: '작성 중' },
@@ -611,8 +609,8 @@ describe('로그인', () => {
     status: () => string,
   ) {
     await waitFor(() => expect(status()).toBe('authenticated'));
-    await expect(session.tokenStore.readAccessToken()).resolves.toBe('access-new');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBe('refresh-new');
+    await expect(session.tokenStore.getAccessToken()).resolves.toBe('access-new');
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBe('refresh-new');
   }
 
   it('이메일 로그인은 토큰을 저장하고 인증 상태가 된다', async () => {
@@ -750,15 +748,15 @@ describe('로그아웃과 늦은 갱신', () => {
       await jest.advanceTimersByTimeAsync(LOGOUT_REQUEST_TIMEOUT_MS);
     });
     await logout;
-    await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
     lateRefresh.settle();
     await act(async () => {
       await jest.advanceTimersByTimeAsync(1000);
     });
 
     // Then
-    await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
-    await expect(tokenStore.readAccessToken()).resolves.toBeNull();
+    await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
+    await expect(tokenStore.getAccessToken()).resolves.toBeNull();
     await todosRequest;
   });
 });
@@ -1001,9 +999,7 @@ describe('토큰 만료', () => {
 
     // Then
     expect(result.current).toBe('authenticated');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBe(
-      ACCOUNT_A_TOKENS.refreshToken,
-    );
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBe(ACCOUNT_A_TOKENS.refreshToken);
   });
 
   it('동시에 만료된 요청은 갱신 한 번으로 모두 재시도하고 로그인을 유지한다', async () => {
@@ -1046,7 +1042,7 @@ describe('토큰 만료', () => {
     expect(results.map(({ ok: isOk }) => isOk)).toEqual([true, true, true]);
     expect(requestRefresh).toHaveBeenCalledTimes(1);
     expect(result.current).toBe('authenticated');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBe(ROTATED_TOKENS.refreshToken);
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBe(ROTATED_TOKENS.refreshToken);
   });
 
   it('갱신이 401이면 세션을 끝내고 원인을 한 번만 알린다', async () => {
@@ -1110,7 +1106,7 @@ describe('토큰 만료', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
   });
 
   it('로그아웃 진행 중 세션 만료가 먼저 반영돼도 초안을 지우고 로그아웃 이벤트를 남긴다', async () => {
@@ -1147,7 +1143,7 @@ describe('토큰 만료', () => {
     );
     expect(analytics.trackEvent).toHaveBeenCalledWith('auth_logout', undefined);
     expect(result.current.status).toBe('unauthenticated');
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
   });
 
   describe('로그아웃 응답을 기다리는 사이 세션이 만료될 때', () => {
@@ -1203,7 +1199,7 @@ describe('토큰 만료', () => {
       });
 
       // Then
-      await expect(tokenStore.readRefreshToken()).resolves.toBe(ACCOUNT_B_TOKENS.refreshToken);
+      await expect(tokenStore.getRefreshToken()).resolves.toBe(ACCOUNT_B_TOKENS.refreshToken);
       expect(result.current.status).toBe('authenticated');
       expect(session.draftService.restore(memoDraftKey)).toEqual({
         status: 'restored',
@@ -1246,7 +1242,7 @@ describe('토큰 만료', () => {
         undefined,
         expect.anything(),
       );
-      await expect(tokenStore.readRefreshToken()).resolves.toBe(ACCOUNT_B_TOKENS.refreshToken);
+      await expect(tokenStore.getRefreshToken()).resolves.toBe(ACCOUNT_B_TOKENS.refreshToken);
       expect(result.current.status).toBe('authenticated');
     });
 
@@ -1279,7 +1275,7 @@ describe('토큰 만료', () => {
       );
       expect(analytics.trackEvent).toHaveBeenCalledWith('auth_logout', undefined);
       expect(analytics.clearUser).toHaveBeenCalledTimes(1);
-      await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
+      await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
     });
   });
 
@@ -1292,7 +1288,7 @@ describe('토큰 만료', () => {
     await session.renderSession(useStatusProbe, 'unauthenticated');
 
     // Then
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
     expect(session.draftService.restore(memoDraftKey)).toEqual({
       status: 'restored',
       value: { content: '작성 중' },

@@ -18,8 +18,8 @@ describe('createSecureTokenStore', () => {
     const tokenStore = createSecureTokenStore(storage);
 
     // When
-    const accessToken = await tokenStore.readAccessToken();
-    const refreshToken = await tokenStore.readRefreshToken();
+    const accessToken = await tokenStore.getAccessToken();
+    const refreshToken = await tokenStore.getRefreshToken();
 
     // Then
     expect(accessToken).toBe('access');
@@ -47,7 +47,7 @@ describe('createSecureTokenStore', () => {
     const tokenStore = createSecureTokenStore(storage);
 
     // When & Then
-    await expect(tokenStore.readRefreshToken()).rejects.toThrow('User interaction is not allowed.');
+    await expect(tokenStore.getRefreshToken()).rejects.toThrow('User interaction is not allowed.');
   });
 
   it('저장 시 리프레시 토큰을 먼저 쓴다', async () => {

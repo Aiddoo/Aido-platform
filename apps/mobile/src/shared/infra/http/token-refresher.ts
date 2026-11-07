@@ -46,7 +46,7 @@ export function createTokenRefresher({
 
     let refreshToken: string | null;
     try {
-      refreshToken = await tokenStore.readRefreshToken();
+      refreshToken = await tokenStore.getRefreshToken();
     } catch (error) {
       // 키체인 접근 실패(기기 잠김 등)는 "토큰 없음"이 아니다. 세션을 끝내면 안 된다.
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_READ_FAILED, { error: getErrorMessage(error) });

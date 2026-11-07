@@ -1,5 +1,5 @@
 import { Canvas, Group, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { type ComponentProps, useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'child
 }
 
 export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
-  const reduceMotion = useReduceMotion();
+  const reduceMotion = useIsReduceMotionEnabled();
   const beamColor = useSkiaColor('text-main');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const offset = useSharedValue(-BEAM.height);

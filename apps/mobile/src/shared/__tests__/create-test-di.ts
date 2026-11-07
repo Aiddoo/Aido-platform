@@ -139,7 +139,7 @@ export function createTestDi({
     // 공유 훅을 렌더 때 읽는 화면이 있어 공유를 보는 테스트만 override한다
     systemShare: {
       share: jest.fn().mockResolvedValue(true),
-      canShareImage: jest.fn().mockResolvedValue(true),
+      isImageShareAvailable: jest.fn().mockResolvedValue(true),
       shareImage: jest.fn().mockResolvedValue(undefined),
     },
     // 초안 id·멱등 키는 쓰는 화면이 많아 호출마다 다른 값을 주는 stub을 기본으로 둔다

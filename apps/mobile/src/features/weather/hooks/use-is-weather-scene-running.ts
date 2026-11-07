@@ -1,4 +1,4 @@
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useIsFocused } from 'expo-router';
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
@@ -15,6 +15,6 @@ function getIsAppActive() {
 export function useIsWeatherSceneRunning(): boolean {
   const isFocused = useIsFocused();
   const isAppActive = useSyncExternalStore(subscribeAppState, getIsAppActive);
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   return isFocused && isAppActive && !isReducedMotion;
 }

@@ -158,7 +158,7 @@ describe('AuthBootProvider', () => {
   describe('부팅 판정', () => {
     it('리프레시 토큰이 있으면 인증 상태로 시작한다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
 
       // When
       await renderProvider();
@@ -169,7 +169,7 @@ describe('AuthBootProvider', () => {
 
     it('기기 잠금으로 읽지 못하면 locked이며 로그인 화면으로 내려보내지 않는다', async () => {
       // Given — 기기 잠금 중 콜드 스타트
-      tokenStore.readRefreshToken.mockRejectedValue(
+      tokenStore.getRefreshToken.mockRejectedValue(
         new KeychainLockedError(new Error('User interaction is not allowed.')),
       );
 
@@ -183,7 +183,7 @@ describe('AuthBootProvider', () => {
 
     it('locked 상태에서는 리포팅하지 않는다 (잠금은 오류가 아니라 대기다)', async () => {
       // Given
-      tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+      tokenStore.getRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
 
       // When
       await renderProvider();
@@ -195,7 +195,7 @@ describe('AuthBootProvider', () => {
 
     it('잠금이 아닌 판정 실패는 리포팅하고 미인증으로 폴백한다 (무한 로딩 금지)', async () => {
       // Given — 키체인 손상 등 영구 오류. locked로 두면 재판정도 실패해 앱이 조용히 갇힌다.
-      tokenStore.readRefreshToken.mockRejectedValue(new Error('Could not decrypt the value'));
+      tokenStore.getRefreshToken.mockRejectedValue(new Error('Could not decrypt the value'));
 
       // When
       await renderProvider();
@@ -211,7 +211,7 @@ describe('AuthBootProvider', () => {
 
     it('Error가 아닌 값이 던져져도 메시지를 잃지 않고 리포팅한다', async () => {
       // Given — String(value)로 감싸면 "[object Object]"가 되어 원인을 알 수 없다
-      tokenStore.readRefreshToken.mockRejectedValue({ message: 'native bridge failure' });
+      tokenStore.getRefreshToken.mockRejectedValue({ message: 'native bridge failure' });
 
       // When
       await renderProvider();
@@ -226,7 +226,7 @@ describe('AuthBootProvider', () => {
 
     it('판정 실패로 폴백해도 토큰을 지우지 않는다', async () => {
       // Given — 원인이 해소되면 다음 실행에 회복되어야 한다
-      tokenStore.readRefreshToken.mockRejectedValue(new Error('boom'));
+      tokenStore.getRefreshToken.mockRejectedValue(new Error('boom'));
 
       // When
       await renderProvider();
@@ -248,7 +248,7 @@ describe('AuthBootProvider', () => {
       });
       draftService.save(draftKey, { content: '작성 중' });
       const clearSpy = jest.spyOn(queryClient, 'clear');
-      tokenStore.readRefreshToken.mockResolvedValue(null);
+      tokenStore.getRefreshToken.mockResolvedValue(null);
 
       // When
       await renderProvider();
@@ -264,7 +264,7 @@ describe('AuthBootProvider', () => {
 
     it('어떤 판정이든 토큰을 쓰거나 지우지 않는다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
 
       // When
       await renderProvider();
@@ -277,7 +277,7 @@ describe('AuthBootProvider', () => {
 
     it('해제할 세션이 없으면 시작할 때 갱신 요청을 보내지 않는다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
 
       // When
       await renderProvider();
@@ -291,7 +291,7 @@ describe('AuthBootProvider', () => {
   describe('위젯 상태', () => {
     it('잠금으로 판정을 미룬 동안에는 위젯을 로그아웃으로 덮어쓰지 않는다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+      tokenStore.getRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
 
       // When
       await renderProvider();
@@ -306,7 +306,7 @@ describe('AuthBootProvider', () => {
 
     it('판정이 끝나기 전에는 위젯을 로그아웃으로 덮어쓰지 않는다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockReturnValue(new Promise(() => undefined));
+      tokenStore.getRefreshToken.mockReturnValue(new Promise(() => undefined));
 
       // When
       await renderProvider();
@@ -321,7 +321,7 @@ describe('AuthBootProvider', () => {
 
     it('미인증으로 확정되면 위젯을 로그아웃 상태로 쓴다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue(null);
+      tokenStore.getRefreshToken.mockResolvedValue(null);
 
       // When
       await renderProvider();
@@ -354,7 +354,7 @@ describe('AuthBootProvider', () => {
     ])('포그라운드로 돌아와 %s 그 결과로 판정한다', async (_name, refreshToken, expected) => {
       // Given
       const changeAppState = captureAppStateListeners();
-      tokenStore.readRefreshToken
+      tokenStore.getRefreshToken
         .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
         .mockResolvedValueOnce(refreshToken);
       await renderProvider();
@@ -371,7 +371,7 @@ describe('AuthBootProvider', () => {
     it('포그라운드가 아닌 상태 변화에서는 다시 읽지 않는다', async () => {
       // Given
       const changeAppState = captureAppStateListeners();
-      tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+      tokenStore.getRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
       await renderProvider();
       await expectStatus('locked');
 
@@ -380,14 +380,14 @@ describe('AuthBootProvider', () => {
       await changeAppState('inactive');
 
       // Then
-      expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(1);
+      expect(tokenStore.getRefreshToken).toHaveBeenCalledTimes(1);
       await expectStatus('locked');
     });
 
     it('돌아왔는데 아직 잠겨 있으면 locked로 남고 다음 복귀에 다시 판정한다', async () => {
       // Given
       const changeAppState = captureAppStateListeners();
-      tokenStore.readRefreshToken
+      tokenStore.getRefreshToken
         .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
         .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
         .mockResolvedValueOnce('valid-refresh-token');
@@ -407,7 +407,7 @@ describe('AuthBootProvider', () => {
     it('재판정이 영구 오류면 리포팅하고 미인증으로 내려가되 토큰은 지우지 않는다', async () => {
       // Given
       const changeAppState = captureAppStateListeners();
-      tokenStore.readRefreshToken
+      tokenStore.getRefreshToken
         .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
         .mockRejectedValueOnce(new Error('Could not decrypt the value'));
       await renderProvider();
@@ -425,7 +425,7 @@ describe('AuthBootProvider', () => {
     it('이미 판정이 끝난 뒤의 포그라운드 복귀는 토큰을 다시 읽지 않는다', async () => {
       // Given
       const changeAppState = captureAppStateListeners();
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
 
@@ -433,7 +433,7 @@ describe('AuthBootProvider', () => {
       await changeAppState('active');
 
       // Then
-      expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(1);
+      expect(tokenStore.getRefreshToken).toHaveBeenCalledTimes(1);
     });
 
     it.each(['success', 'failure'] as const)(
@@ -454,7 +454,7 @@ describe('AuthBootProvider', () => {
           resolveRead = resolve;
           rejectRead = reject;
         });
-        tokenStore.readRefreshToken
+        tokenStore.getRefreshToken
           .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
           .mockReturnValueOnce(pendingRead);
         await renderProvider();
@@ -465,7 +465,7 @@ describe('AuthBootProvider', () => {
             listener('active');
           }
         });
-        expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(2);
+        expect(tokenStore.getRefreshToken).toHaveBeenCalledTimes(2);
         await fireEvent.press(screen.getByTestId('logout'));
         await expectStatus('unauthenticated');
 
@@ -486,7 +486,7 @@ describe('AuthBootProvider', () => {
   describe('세션 만료 처리', () => {
     it('인증 상태에서 만료되면 미인증으로 내려가고 1회 리포팅한다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
 
@@ -511,7 +511,7 @@ describe('AuthBootProvider', () => {
 
     it('이미 로그아웃된 상태의 만료 이벤트는 잡음이므로 리포팅하지 않는다', async () => {
       // Given — 로그인 화면에서도 인증 요청은 나가고 401을 받는다
-      tokenStore.readRefreshToken.mockResolvedValue(null);
+      tokenStore.getRefreshToken.mockResolvedValue(null);
       await renderProvider();
       await expectStatus('unauthenticated');
 
@@ -525,7 +525,7 @@ describe('AuthBootProvider', () => {
 
     it('만료 이벤트가 연달아 와도 한 번만 리포팅한다', async () => {
       // Given — 세션 종료 후 도착한 다른 요청들이 각자 401 → 만료를 발행한다
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
 
@@ -547,7 +547,7 @@ describe('AuthBootProvider', () => {
       // Given — 리스너에서 곧바로 clear()하면 아직 마운트된 인증 화면의 suspense 쿼리가
       // 즉시 재요청 → 401 → 다시 만료 → ErrorBoundary("재시도/로그아웃") 루프를 돈다.
       const clearSpy = jest.spyOn(queryClient, 'clear');
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
 
@@ -577,7 +577,7 @@ describe('AuthBootProvider', () => {
         target: ['create'],
         schema: z.object({ content: z.string() }),
       });
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
       draftService.save(draftKey, { content: '작성 중' });
@@ -592,7 +592,7 @@ describe('AuthBootProvider', () => {
 
     it('로그아웃하면 마지막 기기 시간대를 지운다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
       deviceTimezoneService.record('user-1', SEOUL_TIMEZONE);
@@ -607,7 +607,7 @@ describe('AuthBootProvider', () => {
 
     it('세션이 만료되면 마지막 기기 시간대를 남겨 같은 사용자가 다시 로그인해도 변경을 알아챈다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
       deviceTimezoneService.record('user-1', SEOUL_TIMEZONE);
@@ -622,7 +622,7 @@ describe('AuthBootProvider', () => {
 
     it('로그아웃하면 기기에 저장한 조회 캐시를 지워 다음 사용자에게 복원되지 않게 한다', async () => {
       // Given
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
       queryCacheStorage.setOwner('user-1');
@@ -646,7 +646,7 @@ describe('AuthBootProvider', () => {
         target: ['create'],
         schema: z.object({ content: z.string() }),
       });
-      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
       draftService.save(draftKey, { content: '작성 중' });

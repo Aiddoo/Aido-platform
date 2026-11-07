@@ -25,7 +25,7 @@ function stringify(value: unknown): string {
 }
 
 /** `{ message: '...' }` 형태에서 메시지를 꺼낸다. */
-function readMessage(value: unknown): string | undefined {
+function getMessage(value: unknown): string | undefined {
   if (typeof value !== 'object' || value == null || !('message' in value)) {
     return undefined;
   }
@@ -46,7 +46,7 @@ export function getErrorMessage(value: unknown): string {
   if (typeof value === 'string') {
     return value;
   }
-  return readMessage(value) ?? stringify(value);
+  return getMessage(value) ?? stringify(value);
 }
 
 /**

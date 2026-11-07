@@ -1,5 +1,5 @@
 import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -42,7 +42,7 @@ interface LiveWaveform {
 
 /** 듣는 동안 UI 스레드에서 음량을 칸으로 모은다. JS가 바빠도 파형이 멈추지 않고 React가 다시 그리지 않는다 */
 function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWaveform {
-  const reduceMotion = useReduceMotion();
+  const reduceMotion = useIsReduceMotionEnabled();
   const bars = useSharedValue<readonly number[]>([]);
   const barCount = useSharedValue(0);
   const shift = useSharedValue(0);

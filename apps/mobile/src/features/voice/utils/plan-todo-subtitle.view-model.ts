@@ -6,7 +6,7 @@ import {
   formatTimeOfDay,
   type TimeFormat,
 } from '@src/shared/date/date-format';
-import { parseHour, parseMinute } from '@src/shared/date/time-of-day';
+import { getHour, getMinute } from '@src/shared/date/time-of-day';
 import { compact } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
@@ -37,7 +37,7 @@ export function getPlanTodoSubtitle(
     todo.scheduledTime == null
       ? null
       : formatTimeOfDay(
-          { hour: parseHour(todo.scheduledTime), minute: parseMinute(todo.scheduledTime) },
+          { hour: getHour(todo.scheduledTime), minute: getMinute(todo.scheduledTime) },
           timeFormat,
           dateFormatContext,
         );

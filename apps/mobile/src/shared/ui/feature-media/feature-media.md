@@ -31,7 +31,7 @@ import { FeatureMedia } from '@src/shared/ui';
 
 ## 동작
 
-- 로딩 중: 같은 자리에 heroui `Skeleton`. 움직임 줄이기(`useReduceMotion`)면 멈추고 이미지 페이드도 없다.
+- 로딩 중: 같은 자리에 heroui `Skeleton`. 움직임 줄이기(`useIsReduceMotionEnabled`)면 멈추고 이미지 페이드도 없다.
 - 실패: 스켈레톤을 거두고 `fallback`(없으면 빈 표면)을 그린다. 자리는 그대로다.
 - 메모리: `cachePolicy="memory-disk"`, 표시 크기로 줄여 디코딩(expo-image 기본).
 - 색은 토큰이라 다크에서도 같다.

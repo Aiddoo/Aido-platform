@@ -6,7 +6,7 @@ import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage
 import {
   LANGUAGE_MODE_STORAGE_KEY,
   type LanguageMode,
-  parseLanguageMode,
+  toLanguageMode,
   type ResolvedLanguage,
   resolveLanguage,
 } from '@src/shared/preferences/language.preference';
@@ -37,7 +37,7 @@ export function LanguageProvider({
   useDeviceLanguage = useSystemLanguage,
 }: LanguageProviderProps) {
   const [savedMode, setLanguageMode] = useSyncStorageString(syncStorage, LANGUAGE_MODE_STORAGE_KEY);
-  const languageMode = parseLanguageMode(savedMode);
+  const languageMode = toLanguageMode(savedMode);
   const deviceLanguage = useDeviceLanguage();
 
   const resolvedLanguage = useMemo(

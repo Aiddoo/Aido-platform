@@ -15,9 +15,9 @@ export interface AuthTokenPair {
  */
 export interface TokenStore {
   /** @throws 키체인 접근 실패 시 */
-  readAccessToken(): Promise<string | null>;
+  getAccessToken(): Promise<string | null>;
   /** 세션 존재의 근거. 액세스 토큰은 만료돼도 이것으로 재발급된다. @throws 키체인 접근 실패 시 */
-  readRefreshToken(): Promise<string | null>;
+  getRefreshToken(): Promise<string | null>;
   save(tokens: AuthTokenPair): Promise<void>;
   clear(): Promise<void>;
 }

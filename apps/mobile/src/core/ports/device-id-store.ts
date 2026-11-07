@@ -2,5 +2,5 @@
 export interface DeviceIdStore {
   get(): Promise<string | null>;
   save(deviceId: string): Promise<void>;
-  remove(): Promise<void>;
+  clear(): Promise<void>;
 }

@@ -13,7 +13,7 @@ export const expoSystemShareGateway: SystemShareGateway = {
     // "공유 시트를 열었다"까지만 뜻하고, 실제로 보냈는지는 iOS 값만 믿을 수 있다
     return result.action === Share.sharedAction;
   },
-  canShareImage: () => Sharing.isAvailableAsync(),
+  isImageShareAvailable: () => Sharing.isAvailableAsync(),
   shareImage: (fileUri) =>
     Sharing.shareAsync(fileUri, { mimeType: 'image/png', UTI: 'public.png' }),
 };

@@ -42,7 +42,7 @@ const createStubServices = ({
         calls.clearLocalSession += 1;
       },
     },
-    tokenStore: { readRefreshToken: async () => 'refresh-a' },
+    tokenStore: { getRefreshToken: async () => 'refresh-a' },
     sessionRevocationService: {
       record: async (refreshToken: string) => {
         calls.recorded.push(refreshToken);
@@ -164,7 +164,7 @@ describe('LogOutDeviceService.logOut', () => {
     await new LogOutDeviceService({
       ...stub,
       tokenStore: {
-        readRefreshToken: async () => {
+        getRefreshToken: async () => {
           throw new Error('keychain read failed');
         },
       },
@@ -207,7 +207,7 @@ describe('LogOutDeviceService.logOut', () => {
         return ok(undefined);
       },
     };
-    const readRefreshToken = jest
+    const getRefreshToken = jest
       .fn<Promise<string | null>, []>()
       .mockResolvedValueOnce('refresh-a')
       .mockResolvedValueOnce('refresh-b');
@@ -216,7 +216,7 @@ describe('LogOutDeviceService.logOut', () => {
     const outcome = await new LogOutDeviceService({
       ...stub,
       authService,
-      tokenStore: { readRefreshToken },
+      tokenStore: { getRefreshToken },
       logger: createLoggerStub(),
     }).logOut(true);
 
@@ -236,7 +236,7 @@ describe('LogOutDeviceService.logOut', () => {
         return ok(undefined);
       },
     };
-    const readRefreshToken = jest
+    const getRefreshToken = jest
       .fn<Promise<string | null>, []>()
       .mockResolvedValueOnce('refresh-a')
       .mockResolvedValueOnce(null);
@@ -245,7 +245,7 @@ describe('LogOutDeviceService.logOut', () => {
     const outcome = await new LogOutDeviceService({
       ...stub,
       authService,
-      tokenStore: { readRefreshToken },
+      tokenStore: { getRefreshToken },
       logger: createLoggerStub(),
     }).logOut(true);
 

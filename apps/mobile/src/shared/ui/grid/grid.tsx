@@ -17,7 +17,7 @@ export function useGridCell() {
   return use(GridCellContext);
 }
 
-function readColSpan(child: unknown) {
+function getColSpan(child: unknown) {
   return isValidElement<{ colSpan?: number }>(child) ? (child.props.colSpan ?? 1) : 1;
 }
 
@@ -34,7 +34,7 @@ export function Grid({
   const resolvedColumnGap = columnGap ?? gap ?? 0;
   const resolvedRowGap = rowGap ?? gap;
   const cells = Children.toArray(children);
-  const startColumns = gridStartColumns(cells.map(readColSpan), columns);
+  const startColumns = gridStartColumns(cells.map(getColSpan), columns);
 
   return (
     <GridContext.Provider value={columns}>

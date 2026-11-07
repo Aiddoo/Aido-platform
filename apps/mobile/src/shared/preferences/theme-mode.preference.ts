@@ -6,6 +6,6 @@ export function isThemeMode(value: unknown): value is ThemeMode {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
-export function parseThemeMode(saved: string | undefined): ThemeMode {
+export function toThemeMode(saved: string | undefined): ThemeMode {
   return isThemeMode(saved) ? saved : 'system';
 }

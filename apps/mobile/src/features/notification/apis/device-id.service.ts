@@ -26,5 +26,5 @@ export class DeviceIdService {
     return deviceId;
   };
 
-  clear = (): Promise<void> => this.#store.remove();
+  clear = (): Promise<void> => this.#store.clear();
 }

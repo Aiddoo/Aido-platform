@@ -54,7 +54,7 @@ export function createAuthClient({
           // 토큰보다 먼저 읽는다. 사이에 세션이 끝나도 지난 세대로 표시되어 재시도를 막는다
           markRequestEpoch(options.context, sessionEpoch.current());
 
-          const accessToken = await tokenStore.readAccessToken();
+          const accessToken = await tokenStore.getAccessToken();
           if (accessToken) {
             request.headers.set('Authorization', `Bearer ${accessToken}`);
           }

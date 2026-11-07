@@ -26,7 +26,7 @@ export function useTrack() {
   );
 
   const trackAttributedFeatureSuccess = useCallback(
-    ({ accountId, feature }: { accountId: string; feature: FeatureKey }): boolean =>
+    ({ accountId, feature }: { accountId: string; feature: FeatureKey }): void =>
       emitAttributedFeatureSuccess(
         { analytics, attribution: featureAttribution, logger },
         { accountId, feature },

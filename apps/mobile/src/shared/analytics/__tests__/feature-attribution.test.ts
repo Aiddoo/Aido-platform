@@ -67,7 +67,7 @@ describe('FeatureAttributionStore', () => {
 
     // Then
     expect(emit).not.toThrow();
-    expect(emit()).toBe(false);
+    emit();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
@@ -97,7 +97,6 @@ describe('FeatureAttributionStore', () => {
 
     // Then
     expect(emit).not.toThrow();
-    expect(emit()).toBe(false);
   });
 
   it('다른 계정이나 다른 기능의 실제 행동은 attribution을 소비하지 않는다', () => {
@@ -180,14 +179,14 @@ describe('FeatureAttributionStore', () => {
     });
 
     // When
-    const first = trackAttributedFeatureSuccess(
+    trackAttributedFeatureSuccess(
       { analytics, attribution, logger: createLoggerStub() },
       {
         accountId: 'raw-account-id',
         feature: 'category_reorder',
       },
     );
-    const second = trackAttributedFeatureSuccess(
+    trackAttributedFeatureSuccess(
       { analytics, attribution, logger: createLoggerStub() },
       {
         accountId: 'raw-account-id',
@@ -196,8 +195,6 @@ describe('FeatureAttributionStore', () => {
     );
 
     // Then
-    expect(first).toBe(true);
-    expect(second).toBe(false);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_action_success', {
       campaign_id: 'feature-discovery-2026-08',

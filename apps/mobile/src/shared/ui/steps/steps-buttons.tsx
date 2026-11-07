@@ -1,4 +1,4 @@
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -42,7 +42,7 @@ export function StepsButtons({
   onBack,
   onNext,
 }: StepsButtonsProps) {
-  const isReduced = useReduceMotion();
+  const isReduced = useIsReduceMotionEnabled();
   const containerWidth = useSharedValue(0);
   const canGoBack = index > 0;
   const handleBack = useSingleTap(onBack);

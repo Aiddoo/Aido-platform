@@ -15,7 +15,7 @@ export function useShareViewCapture(viewShotRef: RefObject<ViewShotRef | null>) 
     }
     setIsSharing(true);
     try {
-      const isAvailable = await systemShare.canShareImage();
+      const isAvailable = await systemShare.isImageShareAvailable();
       if (!isAvailable) {
         warning(t('common:share.unsupported'));
         return;

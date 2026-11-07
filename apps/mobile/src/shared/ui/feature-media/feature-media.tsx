@@ -1,5 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { cn } from '@src/shared/utils/cn';
 import { Image, type ImageProps } from 'expo-image';
 import { Skeleton } from 'heroui-native';
@@ -36,7 +36,7 @@ export function FeatureMedia({
   ...props
 }: FeatureMediaProps) {
   const [status, setStatus] = useState<MediaStatus>('loading');
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
 
   return (
     <AspectRatio className={cn('overflow-hidden bg-gray-2', className)} {...props}>

@@ -1,9 +1,9 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherRainIcon } from '@src/shared/ui/icon';
@@ -180,7 +180,7 @@ NextHourPrecipitation.Chart = function Chart({
   summary: string;
 }) {
   const { t } = useTranslation('weather');
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const chart = toNextHourChart(minutes);
   const guideColor = useOnSkyColor('text-on-sky/22');
   const guideLabelColor = useOnSkyColor('text-on-sky/50');

@@ -11,7 +11,7 @@ export function createMemoryDeviceIdStore(
     save: jest.fn(async (deviceId: string) => {
       stored = deviceId;
     }),
-    remove: jest.fn(async () => {
+    clear: jest.fn(async () => {
       stored = null;
     }),
   };

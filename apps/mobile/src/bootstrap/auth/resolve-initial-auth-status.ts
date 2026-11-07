@@ -23,7 +23,7 @@ export async function resolveInitialAuthStatus(
   tokenStore: TokenStore,
 ): Promise<ResolvedAuthStatus> {
   try {
-    const refreshToken = await tokenStore.readRefreshToken();
+    const refreshToken = await tokenStore.getRefreshToken();
     return refreshToken ? 'authenticated' : 'unauthenticated';
   } catch (error) {
     if (isKeychainLockedError(error)) {

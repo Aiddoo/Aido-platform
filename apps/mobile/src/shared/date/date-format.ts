@@ -6,7 +6,7 @@ import { match } from 'ts-pattern';
 import { isSameMonthDateKey, isSameYearDateKey } from './date-key';
 import { diffMs, getZonedHour, type Instant, toDate, toDateKey } from './instant';
 import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
-import { isValidHHmm, parseHour, parseMinute } from './time-of-day';
+import { isValidHHmm, getHour, getMinute } from './time-of-day';
 
 /** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
@@ -232,5 +232,5 @@ export function formatHHmmTime(
   if (!isValidHHmm(time)) {
     return time;
   }
-  return formatTimeOfDay({ hour: parseHour(time), minute: parseMinute(time) }, timeFormat, context);
+  return formatTimeOfDay({ hour: getHour(time), minute: getMinute(time) }, timeFormat, context);
 }

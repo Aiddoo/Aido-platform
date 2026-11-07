@@ -1,4 +1,4 @@
-import { readQueryKeyParams } from '@src/shared/utils/read-query-key-params';
+import { getQueryKeyParams } from '@src/shared/utils/get-query-key-params';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
@@ -41,7 +41,7 @@ export function removeOutdatedWeatherReports(
   queryClient.removeQueries({
     queryKey: WEATHER_QUERY_KEYS.reports(),
     predicate: (query) => {
-      const params = readQueryKeyParams(query.queryKey, weatherReportQueryKeySchema);
+      const params = getQueryKeyParams(query.queryKey, weatherReportQueryKeySchema);
       return params != null && params.locationRevision < locationRevision;
     },
   });

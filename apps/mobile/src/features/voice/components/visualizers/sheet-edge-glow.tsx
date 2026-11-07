@@ -6,7 +6,7 @@ import {
   SweepGradient,
   vec,
 } from '@shopify/react-native-skia';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { SHEET_RADIUS } from '@src/shared/ui';
 import { useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -32,7 +32,7 @@ interface SheetEdgeGlowProps {
 }
 
 export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const mainColor = useSkiaColor('text-main');
   const densityScale = useSkiaDensityScale();
   const [size, setSize] = useState({ width: 0, height: 0 });

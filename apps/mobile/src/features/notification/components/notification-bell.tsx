@@ -1,7 +1,7 @@
 import NotificationsUnreadFill from '@assets/icons/material/notifications_unread_fill.xml';
 import Notifications from '@expo/material-symbols/notifications.xml';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -46,7 +46,7 @@ const BELL_SWING_STYLE = {
 export function NotificationBell() {
   const navigate = useSingleTap(router.navigate);
   const { t } = useTranslation('notification');
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const { data: unreadCount } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const hasUnread = NotificationBadgePolicy.hasUnread(unreadCount);
   const swingCount = useSwingCountOnNewUnread(unreadCount);

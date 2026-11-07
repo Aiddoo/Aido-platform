@@ -44,7 +44,7 @@ describe('앱 오류 화면의 로그아웃', () => {
 
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('unauthenticated'));
-    await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
+    await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
     await expect(resolveInitialAuthStatus(session.tokenStore)).resolves.toBe('unauthenticated');
     expect(session.authHttp.post).toHaveBeenCalledWith(
       'v1/auth/logout',

@@ -10,7 +10,7 @@ import {
   Skia,
   vec,
 } from '@shopify/react-native-skia';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
 import { useEffect, useState } from 'react';
@@ -92,7 +92,7 @@ interface VoiceVisualProps {
 }
 
 export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const { theme } = useUniwind();
   const mainColor = useSkiaColor('text-main');
   const densityScale = useSkiaDensityScale();

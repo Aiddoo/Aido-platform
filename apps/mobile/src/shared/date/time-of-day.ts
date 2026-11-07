@@ -7,11 +7,11 @@ export function isValidHHmm(time: string): boolean {
   return timeOfDaySchema.safeParse(time).success;
 }
 
-export function parseHour(time: string): number {
+export function getHour(time: string): number {
   return Number(time.split(':')[0]);
 }
 
-export function parseMinute(time: string): number {
+export function getMinute(time: string): number {
   return Number(time.split(':')[1]);
 }
 
@@ -22,7 +22,7 @@ function withTime(date: Date, hour: number, minute: number): Date {
 /** 시간 문자열이 없거나 유효하지 않으면 fallbackTime을 쓴다(fallbackTime은 항상 유효한 상수라고 가정) */
 export function getDateWithTime(date: Date, time: string | undefined, fallbackTime: string): Date {
   const safe = time != null && isValidHHmm(time) ? time : fallbackTime;
-  return withTime(date, parseHour(safe), parseMinute(safe));
+  return withTime(date, getHour(safe), getMinute(safe));
 }
 
 /** 시간+분 정수를 오늘 날짜의 Date 객체로 변환 (DatePicker용) */

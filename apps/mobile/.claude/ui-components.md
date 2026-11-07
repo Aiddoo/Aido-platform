@@ -449,7 +449,7 @@ Expo 공식 스킬(expo-animation·native-ui·data-fetching·router·ui)을 따�
   `cubicBezier(0.23, 1, 0.32, 1)`.
 - **등장·전환**: layout animation(`FadeIn`·`FadeOut`·`LinearTransition`), 스프링은 `{ duration, dampingRatio }`로 쓴다.
 - **모션 줄이기**: 애니메이션과 같은 PR에 넣는다. Reanimated는 `reduceMotion: ReduceMotion.System`, 반복·강조 모션은
-  `useReduceMotion()`이 켜져 있으면 생략하고 색·투명도만 바꾼다.
+  `useIsReduceMotionEnabled()`이 켜져 있으면 생략하고 색·투명도만 바꾼다.
 - **햅틱**: DI의 `useHaptics()`로 행동 1회에 같은 프레임에서 한 번 울린다. `expo-haptics`를 직접 import하지 않는다.
   worklet에서는 기준점을 넘을 때만 `scheduleOnRN`으로 부른다.
 - **오디오**: 녹음·재생은 `expo-audio`를 쓴다(녹음 조각을 잇는 다시 듣기는 `useAudioPlaylist`). `expo-av`는 쓰지 않는다.

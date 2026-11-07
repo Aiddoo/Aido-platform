@@ -96,7 +96,7 @@ describe('createTokenRefreshHook', () => {
 
   it('보낸 토큰이 저장된 토큰과 다르면(이미 회전됨) 갱신 없이 강제 재시도를 지시한다', async () => {
     // Given — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다
-    tokenStore.readAccessToken.mockResolvedValue('fresh-token');
+    tokenStore.getAccessToken.mockResolvedValue('fresh-token');
     const request = createFakeRequest({ Authorization: 'Bearer stale-token' });
 
     // When
@@ -109,7 +109,7 @@ describe('createTokenRefreshHook', () => {
 
   it('갱신 성공 시 새 토큰과 마커를 달아 강제 재시도를 지시한다', async () => {
     // Given
-    tokenStore.readAccessToken.mockResolvedValue('current-token');
+    tokenStore.getAccessToken.mockResolvedValue('current-token');
     refresh.mockResolvedValue({ kind: 'refreshed', accessToken: 'new-token' });
     const request = createFakeRequest({ Authorization: 'Bearer current-token' });
 
@@ -123,7 +123,7 @@ describe('createTokenRefreshHook', () => {
 
   it('서버가 거부하면 서버의 판정(ErrorCode)을 실어 세션을 종료한다', async () => {
     // Given
-    tokenStore.readAccessToken.mockResolvedValue('current-token');
+    tokenStore.getAccessToken.mockResolvedValue('current-token');
     refresh.mockResolvedValue({
       kind: 'invalid',
       details: { reason: 'refresh-rejected', serverErrorCode: 'SESSION_0704' },
@@ -144,7 +144,7 @@ describe('createTokenRefreshHook', () => {
 
   it('로컬에 토큰이 없으면 tokens-missing으로 세션을 종료한다', async () => {
     // Given — 이미 로그아웃된 앱의 401. 잡음 여부 판단은 useAuthBoot의 몫이다.
-    tokenStore.readAccessToken.mockResolvedValue(null);
+    tokenStore.getAccessToken.mockResolvedValue(null);
     refresh.mockResolvedValue({ kind: 'invalid', details: { reason: 'tokens-missing' } });
     const response = createFakeResponse(401);
 
@@ -159,7 +159,7 @@ describe('createTokenRefreshHook', () => {
   it('갱신의 일시 실패(인프라 에러)는 그대로 전파되고 세션은 끝나지 않는다', async () => {
     // Given — 네트워크·5xx·잠긴 키체인. 갱신기가 재시도 가능한 에러를 던지면
     // 훅은 개입하지 않는다 — React Query가 5xx/네트워크와 동일하게 자동 재시도한다.
-    tokenStore.readAccessToken.mockResolvedValue('current-token');
+    tokenStore.getAccessToken.mockResolvedValue('current-token');
     refresh.mockRejectedValue(new NetworkError());
     const request = createFakeRequest({ Authorization: 'Bearer current-token' });
     const response = createFakeResponse(401);
@@ -172,7 +172,7 @@ describe('createTokenRefreshHook', () => {
   it('액세스 토큰 읽기가 실패해도 경고를 남기고 갱신 경로로 넘어간다 (세션 유지)', async () => {
     // Given — 잠긴 키체인. 읽기 실패를 "토큰 없음"으로 오판하면 안 된다.
     const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
-    tokenStore.readAccessToken.mockRejectedValue(new Error('User interaction is not allowed.'));
+    tokenStore.getAccessToken.mockRejectedValue(new Error('User interaction is not allowed.'));
     refresh.mockRejectedValue(new NetworkError());
     const response = createFakeResponse(401);
 
@@ -187,7 +187,7 @@ describe('createTokenRefreshHook', () => {
 
   it('갱신 도중 세션이 끝났으면(superseded) 세션을 끝내지 않고 원 응답을 돌려준다', async () => {
     // Given
-    tokenStore.readAccessToken.mockResolvedValue('current-token');
+    tokenStore.getAccessToken.mockResolvedValue('current-token');
     refresh.mockResolvedValue({ kind: 'superseded' });
     const response = createFakeResponse(401);
     const request = createFakeRequest({ Authorization: 'Bearer current-token' });

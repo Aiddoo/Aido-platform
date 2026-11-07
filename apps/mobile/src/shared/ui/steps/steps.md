@@ -24,7 +24,7 @@ import { Steps } from '@src/shared/ui';
 - 첫 단계는 다음 버튼이 전체 폭입니다. 둘째 단계부터 뒤로 버튼이 측정 폭의 25%(간격 10 제외)로 나타납니다(`duration 250`, `dampingRatio 1.5`).
 - 마지막 단계(`isLast`)에서는 다음 버튼에 체크 아이콘이 펴지고, 글자는 `nextLabel`이 정합니다.
 - 모든 움직임은 UI 스레드 worklet이라 프레임마다 React가 다시 그리지 않습니다. 단계가 바뀔 때만 props가 바뀝니다.
-- 움직임 줄이기가 켜져 있으면(`useReduceMotion`) 목표 값으로 바로 갑니다.
+- 움직임 줄이기가 켜져 있으면(`useIsReduceMotionEnabled`) 목표 값으로 바로 갑니다.
 - 첫 단계의 뒤로 버튼은 폭이 0이어도 눌리거나 스크린 리더에 읽히지 않게 막습니다.
 
 ## 데모와 다른 점
@@ -35,7 +35,7 @@ import { Steps } from '@src/shared/ui';
 | `useWindowDimensions` 폭     | 컨테이너 `onLayout` 측정 폭(폴드·분할 화면 대응)        |
 | 하드코딩 색·폰트             | 앱 토큰(`bg-main`, `bg-gray-*`)과 `<Text>`, 라이트·다크 |
 | `pressto`의 `PressableScale` | heroui-native `PressableFeedback`                       |
-| 움직임 줄이기 없음           | `useReduceMotion`                                       |
+| 움직임 줄이기 없음           | `useIsReduceMotionEnabled`                              |
 
 ## 출처
 

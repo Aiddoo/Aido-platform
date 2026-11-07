@@ -1,17 +1,17 @@
 import { z } from 'zod';
 
-import { readQueryKeyParams } from './read-query-key-params';
+import { getQueryKeyParams } from './get-query-key-params';
 
 const paramsSchema = z.object({ locationRevision: z.number() });
 
-describe('readQueryKeyParams', () => {
+describe('getQueryKeyParams', () => {
   it('키의 깊이와 무관하게 마지막 객체를 읽는다', () => {
     // Given
     const shallow = ['weather', { locationRevision: 1 }];
     const deep = ['weather', 'report', 'v2', { locationRevision: 2 }];
 
     // When
-    const results = [shallow, deep].map((key) => readQueryKeyParams(key, paramsSchema));
+    const results = [shallow, deep].map((key) => getQueryKeyParams(key, paramsSchema));
 
     // Then
     expect(results).toEqual([{ locationRevision: 1 }, { locationRevision: 2 }]);
@@ -22,7 +22,7 @@ describe('readQueryKeyParams', () => {
     const prefixKey = ['weather', 'report'];
 
     // When
-    const params = readQueryKeyParams(prefixKey, paramsSchema);
+    const params = getQueryKeyParams(prefixKey, paramsSchema);
 
     // Then
     expect(params).toBeNull();
@@ -33,7 +33,7 @@ describe('readQueryKeyParams', () => {
     const key = ['weather', 'report', { locationRevision: '1' }];
 
     // When
-    const params = readQueryKeyParams(key, paramsSchema);
+    const params = getQueryKeyParams(key, paramsSchema);
 
     // Then
     expect(params).toBeNull();
@@ -41,7 +41,7 @@ describe('readQueryKeyParams', () => {
 
   it('빈 키는 null이다', () => {
     // When
-    const params = readQueryKeyParams([], paramsSchema);
+    const params = getQueryKeyParams([], paramsSchema);
 
     // Then
     expect(params).toBeNull();

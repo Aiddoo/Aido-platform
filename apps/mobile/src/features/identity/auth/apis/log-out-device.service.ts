@@ -19,7 +19,7 @@ interface LogOutDeviceServicePorts {
   pushDeviceService: {
     unregister(config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>>;
   };
-  tokenStore: Pick<TokenStore, 'readRefreshToken'>;
+  tokenStore: Pick<TokenStore, 'getRefreshToken'>;
   sessionRevocationService: Pick<SessionRevocationService, 'record'>;
   sessionEpoch: Pick<SessionEpoch, 'current'>;
   logger: Logger;
@@ -63,7 +63,7 @@ export class LogOutDeviceService {
     const isSameSession = () => this.#sessionEpoch.current() === epoch;
 
     // 로그아웃이 토큰을 지우고 나면 읽을 수 없어 먼저 읽어 둔다
-    const refreshToken = await this.#tokenStore.readRefreshToken().catch((error: unknown) => {
+    const refreshToken = await this.#tokenStore.getRefreshToken().catch((error: unknown) => {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_NOT_RECORDED, {
         error: getErrorMessage(error),
       });
@@ -91,7 +91,7 @@ export class LogOutDeviceService {
         return 'ended';
       }
       // 만료가 토큰을 먼저 지웠다. 저장소에 토큰이 있으면 새 세션의 것이고, 읽지 못하면 새 세션일 수 있어 끝내지 않는다
-      return this.#tokenStore.readRefreshToken().then(
+      return this.#tokenStore.getRefreshToken().then(
         (nextRefreshToken) => (nextRefreshToken == null ? 'ended' : 'superseded'),
         () => 'superseded',
       );

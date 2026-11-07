@@ -25,7 +25,7 @@ describe('withSessionEpoch', () => {
 
     // Then
     expect(epoch.current()).toBe(0);
-    await expect(store.readRefreshToken()).resolves.toBe('r');
+    await expect(store.getRefreshToken()).resolves.toBe('r');
   });
 
   it('삭제가 실패해도 세대는 오른다', async () => {

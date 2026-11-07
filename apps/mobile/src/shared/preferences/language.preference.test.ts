@@ -1,6 +1,6 @@
 import {
   isLanguageMode,
-  parseLanguageMode,
+  toLanguageMode,
   LANGUAGE_MODE_STORAGE_KEY,
   resolveLanguage,
 } from './language.preference';
@@ -18,10 +18,10 @@ describe('isLanguageMode', () => {
   );
 });
 
-describe('parseLanguageMode', () => {
+describe('toLanguageMode', () => {
   it('저장된 값이 없으면 system을 반환한다', () => {
     // When
-    const result = parseLanguageMode(undefined);
+    const result = toLanguageMode(undefined);
 
     // Then
     expect(result).toBe('system');
@@ -29,7 +29,7 @@ describe('parseLanguageMode', () => {
 
   it.each(['system', 'ko', 'en'] as const)('%s가 저장되어 있으면 그대로 반환한다', (saved) => {
     // When
-    const result = parseLanguageMode(saved);
+    const result = toLanguageMode(saved);
 
     // Then
     expect(result).toBe(saved);
@@ -37,7 +37,7 @@ describe('parseLanguageMode', () => {
 
   it('유효하지 않은 값이 저장되어 있으면 system을 반환한다', () => {
     // When
-    const result = parseLanguageMode('invalid');
+    const result = toLanguageMode('invalid');
 
     // Then
     expect(result).toBe('system');

@@ -20,7 +20,7 @@ const reduceTransparency = createAccessibilitySettingStore({
 });
 
 /** 투명도 줄이기 설정(iOS). 첫 값은 비동기로만 읽을 수 있어 읽기 전에는 꺼진 것으로 본다. */
-export function useReduceTransparency(): boolean {
+export function useIsReduceTransparencyEnabled(): boolean {
   return (
     useSyncExternalStore(reduceTransparency.subscribe, reduceTransparency.getSnapshot) ?? false
   );

@@ -9,8 +9,8 @@ export function createMemoryTokenStore(initial?: AuthTokenPair): jest.Mocked<Tok
   let tokens: AuthTokenPair | null = initial ?? null;
 
   return {
-    readAccessToken: jest.fn(async () => tokens?.accessToken ?? null),
-    readRefreshToken: jest.fn(async () => tokens?.refreshToken ?? null),
+    getAccessToken: jest.fn(async () => tokens?.accessToken ?? null),
+    getRefreshToken: jest.fn(async () => tokens?.refreshToken ?? null),
     save: jest.fn(async (next: AuthTokenPair) => {
       tokens = next;
     }),

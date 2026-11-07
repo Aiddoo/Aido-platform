@@ -45,8 +45,8 @@ const errorBody = (status: number, code: string, message = 'error') =>
 const createStatefulTokenStore = (initial: AuthTokenPair): TokenStore => {
   let tokens: { accessToken: string | null; refreshToken: string | null } = { ...initial };
   return {
-    readAccessToken: async () => tokens.accessToken,
-    readRefreshToken: async () => tokens.refreshToken,
+    getAccessToken: async () => tokens.accessToken,
+    getRefreshToken: async () => tokens.refreshToken,
     save: async (next) => {
       tokens = next;
     },
@@ -158,7 +158,7 @@ describe('createAuthClient: 계정 전환과 늦은 응답', () => {
     expect(sent).toEqual(['Bearer access-a']);
     expect(requestRefresh).not.toHaveBeenCalled();
     expect(endSession).not.toHaveBeenCalled();
-    await expect(tokenStore.readRefreshToken()).resolves.toBe(TOKENS_B.refreshToken);
+    await expect(tokenStore.getRefreshToken()).resolves.toBe(TOKENS_B.refreshToken);
   });
 
   it('A의 늦은 401이 B의 토큰을 지우거나 B 세션을 끝내지 않는다', async () => {
@@ -178,7 +178,7 @@ describe('createAuthClient: 계정 전환과 늦은 응답', () => {
 
     // Then
     expect(endSession).not.toHaveBeenCalled();
-    await expect(tokenStore.readRefreshToken()).resolves.toBe(TOKENS_B.refreshToken);
+    await expect(tokenStore.getRefreshToken()).resolves.toBe(TOKENS_B.refreshToken);
   });
 
   it('같은 세션의 늦은 401은 지금처럼 저장된 최신 토큰으로 재시도한다', async () => {
@@ -225,7 +225,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
       hooks: {
         beforeRequest: [
           async ({ request }) => {
-            const accessToken = await tokenStore.readAccessToken();
+            const accessToken = await tokenStore.getAccessToken();
             if (accessToken) {
               request.headers.set('Authorization', `Bearer ${accessToken}`);
             }

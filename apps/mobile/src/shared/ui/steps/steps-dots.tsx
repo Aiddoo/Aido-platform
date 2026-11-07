@@ -1,4 +1,4 @@
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { range } from 'es-toolkit';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
@@ -41,7 +41,7 @@ function StepsDot({ dotIndex, index, passedColor, upcomingColor, isReduced }: St
 
 /** 점 뒤 막대가 현재 단계까지 늘어나고, 지난 점은 막대 위에서 밝아진다 */
 export function StepsDots({ index, count }: StepsDotsProps) {
-  const isReduced = useReduceMotion();
+  const isReduced = useIsReduceMotionEnabled();
   const passedColor = useBackgroundColor('bg-white dark:bg-gray-9');
   const upcomingColor = useBackgroundColor('bg-gray-4');
   const barColor = useBackgroundColor('bg-main');

@@ -8,6 +8,6 @@ export function isFontScale(value: unknown): value is FontScale {
   return FONT_SCALES.some((candidate) => candidate === value);
 }
 
-export function parseFontScale(saved: string | undefined): FontScale {
+export function toFontScale(saved: string | undefined): FontScale {
   return isFontScale(saved) ? saved : 'medium';
 }

@@ -246,7 +246,7 @@ describe('SessionRevocationService', () => {
     // Then
     expect(requestRefresh).toHaveBeenCalledWith(REFRESH_A);
     expect(expired).not.toHaveBeenCalled();
-    await expect(tokenStoreOfB.readRefreshToken()).resolves.toBe(tokensOfB.refreshToken);
+    await expect(tokenStoreOfB.getRefreshToken()).resolves.toBe(tokensOfB.refreshToken);
   });
 
   it('동시에 불러도 요청은 한 번이다', async () => {

@@ -1,4 +1,4 @@
-import { useReduceTransparency } from '@src/shared/hooks/use-reduce-transparency';
+import { useIsReduceTransparencyEnabled } from '@src/shared/hooks/use-is-reduce-transparency-enabled';
 import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
 
@@ -32,7 +32,7 @@ function selectSky(report: WeatherReport): WeatherSceneSky {
  */
 export function useWeatherSurface(): WeatherSurface {
   const { theme } = useUniwind();
-  const isOpaque = useReduceTransparency();
+  const isOpaque = useIsReduceTransparencyEnabled();
   const { data: sky = DEFAULT_SKY } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: selectSky,
