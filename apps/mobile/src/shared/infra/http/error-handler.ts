@@ -2,8 +2,8 @@ import { ErrorCode, isErrorCode } from '@aido/api/errors';
 import { t, tDynamic } from '@src/shared/i18n';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import type { AfterResponseState } from 'ky';
-import { z } from 'zod';
 
+import { errorEnvelopeSchema } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
 
 /**
@@ -16,14 +16,6 @@ import { REQUEST_ID_HEADER } from './request-headers';
  * 코드별 사용자 문구는 i18n 'errors' 네임스페이스에 있다
  * (locales/{ko,en}/errors.json — 키는 ErrorCode 그대로, 보안 마스킹 그룹은 동일 문구 유지).
  */
-
-/** 서버 에러 envelope은 신뢰할 수 없는 입력이라 런타임에 검증한다 */
-const errorEnvelopeSchema = z.object({
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-  }),
-});
 
 export function getPathname(url: string): string {
   try {

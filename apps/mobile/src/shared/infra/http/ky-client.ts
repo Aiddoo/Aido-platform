@@ -16,18 +16,10 @@ import {
   TimeoutError as KyTimeoutError,
   type Options,
 } from 'ky';
-import { z } from 'zod';
 
+import { errorEnvelopeSchema } from './error-envelope';
 import { resolveMessage } from './error-handler';
 import { REQUEST_ID_HEADER } from './request-headers';
-
-const errorEnvelopeSchema = z.object({
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    details: z.record(z.string(), z.unknown()).optional(),
-  }),
-});
 
 /**
  * RN의 전역 fetch(expo/fetch)는 연결 실패를 TypeError가 아니라 `fetch failed: …` 일반 Error로 던지고 클래스를

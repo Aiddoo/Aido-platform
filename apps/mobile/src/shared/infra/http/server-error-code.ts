@@ -1,11 +1,7 @@
 import type { ErrorCodeType } from '@aido/api/errors';
 import { isErrorCode } from '@aido/api/errors';
-import { z } from 'zod';
 
-/** 서버 에러 envelope은 신뢰할 수 없는 입력이라 런타임에 검증한다 */
-const errorEnvelopeSchema = z.object({
-  error: z.object({ code: z.string() }),
-});
+import { errorEnvelopeSchema } from './error-envelope';
 
 /**
  * 서버 에러 응답 본문에서 `ErrorCode`를 뽑는다.
