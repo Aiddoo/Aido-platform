@@ -56,7 +56,7 @@ import {
 } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
-import { type ComponentType, useLayoutEffect, useState } from 'react';
+import { type ComponentType, useLayoutEffect, useRef, useState } from 'react';
 import { type Control, Controller, useForm, useFormState } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -148,6 +148,8 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     return updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
   };
 
+  const isSavingChangesRef = useRef(false);
+
   const saveAndFinishEditing = form.handleSubmit(async ({ content }) => {
     try {
       const savedMemo = await updateChangedContent(content);
@@ -178,16 +180,27 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     if (!canSave) {
       return memo;
     }
+    // 저장마다 수정 시각이 바뀌어 먼저 시작한 AI 정리의 결과가 낡은 것이 된다. 두 번째 요청은 시작하지 않는다
+    if (isSavingChangesRef.current) {
+      return null;
+    }
+    isSavingChangesRef.current = true;
     try {
-      const savedMemo = await updateChangedContent(form.getValues('content'));
-      form.reset({ content: savedMemo.content });
-      discardDraft();
+      const content = form.getValues('content');
+      const savedMemo = await updateChangedContent(content);
+      // 응답을 기다리는 사이 더 친 글자는 지우지 않는다
+      if (form.getValues('content') === content) {
+        form.reset({ content: savedMemo.content });
+        discardDraft();
+      }
 
       return savedMemo;
     } catch (error) {
       reportUnexpectedError(error);
 
       return null;
+    } finally {
+      isSavingChangesRef.current = false;
     }
   };
 
@@ -679,6 +692,7 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
   const isParsing = useIsMutating({ mutationKey: MEMO_MUTATION_KEYS.parse({ memoId }) }) > 0;
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const aiConsent = useAiDataSharingConsentGate();
+  const isStartingRef = useRef(false);
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
@@ -734,11 +748,19 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
 
   // 정리는 입력칸의 글자가 아니라 저장된 메모로 하므로 고치던 글자를 먼저 저장한다
   const start = async () => {
-    const savedMemo = await onSaveChanges();
-    if (savedMemo == null) {
+    // 저장과 동의를 기다리는 동안에는 정리 중 표시가 아직 켜지지 않아 다시 누를 수 있다. 두 번 차감되지 않게 막는다
+    if (isStartingRef.current) {
       return;
     }
-    await parseSavedMemo(savedMemo);
+    isStartingRef.current = true;
+    try {
+      const savedMemo = await onSaveChanges();
+      if (savedMemo != null) {
+        await parseSavedMemo(savedMemo);
+      }
+    } finally {
+      isStartingRef.current = false;
+    }
   };
 
   return {

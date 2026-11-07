@@ -2,23 +2,27 @@ import type { Memo as MemoDto } from '@aido/api';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { voicePlanSchema } from '@src/features/voice/schemas/voice-plan.schema';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createLoggerStub,
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
 import { fromDate, toEpochMs } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors/infra-error';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
 import { toMemo } from '../apis/memo.mapper';
+import { MemoService } from '../apis/memo.service';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { Memo } from '../schemas/memo.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
-import { createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
+import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
 import {
   useConvertMemoToTodosMutationOptions,
   useDeleteMemoMutationOptions,
@@ -206,6 +210,65 @@ describe('메모 고정', () => {
     // Then
     await expect(result).rejects.toBeInstanceOf(NetworkError);
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AI 정리 중 메모 고정', () => {
+  it('정리하는 사이 고정해 수정 시각이 바뀌어도 결과를 낡았다고 버리지 않는다', async () => {
+    // Given
+    const client = createTestQueryClient();
+    client.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+    client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemo(originalMemo));
+    const logger = createLoggerStub();
+    const memoService = new MemoService(createHttpClientStub(), logger);
+    const plan = voicePlanSchema.parse({
+      planId: 'plan-1',
+      source: 'memo',
+      sourceMemoId: 5,
+      omittedTodoCount: 0,
+      actions: [],
+    });
+    jest.spyOn(memoService, 'parseMemo').mockImplementation(async () => {
+      client.setQueryData(
+        MEMO_QUERY_KEYS.detail({ memoId: 5 }),
+        toMemo({ ...originalMemo, isPinned: true, updatedAt: '2026-10-02T00:05:00.000Z' }),
+      );
+      return ok({ plan, featureQuota: null });
+    });
+    let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
+    let draftService: ReturnType<typeof useDraftService> | undefined;
+    let timeZone = '';
+    function useMutationCapture() {
+      return useMutation(useParseMemoMutationOptions({ memoId: 5 })).mutateAsync;
+    }
+    function Capture() {
+      mutateAsync = useMutationCapture();
+      draftService = useDraftService();
+      timeZone = useDateFormatContext().timeZone;
+      return null;
+    }
+    await renderUi(<Capture />, {
+      queryClient: client,
+      withLocalDate: true,
+      withOverlay: true,
+      di: { logger, memoService, haptics: createHapticsGatewayStub() },
+    });
+
+    // When
+    await act(async () => {
+      await mutateAsync?.({
+        content: originalMemo.content,
+        categoryId: 1,
+        sourceUpdatedAt: toEpochMs(toMemo(originalMemo).updatedAt),
+      });
+    });
+
+    // Then
+    const draft = draftService?.restore(
+      createMemoPlanDraftKey({ userId: 'account-1', memoId: 5, timeZone }),
+      { sourceUpdatedAt: Date.parse('2026-10-02T00:05:00.000Z') },
+    );
+    expect(draft?.status).toBe('restored');
   });
 });
 

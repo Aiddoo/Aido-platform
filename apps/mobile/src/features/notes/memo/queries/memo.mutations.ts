@@ -255,6 +255,16 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
     }
   };
 
+  // 정리하는 사이 고정하면 글은 같은데 수정 시각만 바뀐다. 옛 시각으로 저장하면 결과를 낡았다고 버려 다시 차감된다
+  const getCurrentSourceUpdatedAt = ({
+    content,
+    sourceUpdatedAt,
+  }: Pick<ParseMemoVariables, 'content' | 'sourceUpdatedAt'>) => {
+    const cachedMemo = queryClient.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId }));
+
+    return cachedMemo?.content === content ? toEpochMs(cachedMemo.updatedAt) : sourceUpdatedAt;
+  };
+
   return mutationOptions({
     ...planInProgressRetryOptions,
     // 오프라인에 멈춰 두면 정리 중 표시가 끝나지 않고, 연결되는 순간 나도 모르게 차감된다. 바로 실패해 안내한다
@@ -273,12 +283,12 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
               memoId,
               content,
               categoryId,
-              sourceUpdatedAt,
+              sourceUpdatedAt: getCurrentSourceUpdatedAt({ content, sourceUpdatedAt }),
               createIdempotencyKey: () => idGenerator.create(),
             });
       return unwrap(await memoService.parseMemo(content, categoryId, idempotencyKey));
     },
-    onSuccess: ({ plan, featureQuota }, { sourceUpdatedAt }) => {
+    onSuccess: ({ plan, featureQuota }, variables) => {
       forgetIdempotencyKey();
       trackEvent('ai_parse_used', { success: true });
       trackEvent('voice_plan_generated', {
@@ -290,7 +300,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
         draftService.save(
           createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
           createPlanReviewDraft(plan),
-          { sourceUpdatedAt },
+          { sourceUpdatedAt: getCurrentSourceUpdatedAt(variables) },
         );
       }
       // 서버가 한도를 읽지 못해 싣지 않았으면 다시 묻는다
