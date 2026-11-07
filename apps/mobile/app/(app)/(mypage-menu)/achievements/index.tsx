@@ -1,4 +1,4 @@
-import { AchievementSummaryCard } from '@src/features/insights/achievement/components/achievement-summary-card';
+import { AchievementSummary } from '@src/features/insights/achievement/components/achievement-summary';
 import { WeeklyAchievementList } from '@src/features/insights/achievement/components/weekly-achievement-list';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -15,7 +15,7 @@ export default function AchievementsScreen() {
           fallback={
             <Box className="px-4">
               <Spacing size={16} />
-              <AchievementSummaryCard.Loading />
+              <AchievementSummary.Loading />
               <Spacing size={24} />
               <HistoryTitle />
               <WeeklyAchievementList.Loading />
@@ -26,9 +26,9 @@ export default function AchievementsScreen() {
             ListHeaderComponent={
               <>
                 <Spacing size={16} />
-                <QueryErrorBoundary fallback={AchievementSummaryCard.Error}>
-                  <Suspense fallback={<AchievementSummaryCard.Loading />}>
-                    <AchievementSummaryCard />
+                <QueryErrorBoundary fallback={AchievementSummary.Error}>
+                  <Suspense fallback={<AchievementSummary.Loading />}>
+                    <AchievementSummary />
                   </Suspense>
                 </QueryErrorBoundary>
                 <Spacing size={24} />

@@ -9,7 +9,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage, isApiError, toError } from '@src/shared/errors';
+import { ApiError, getUserFacingMessage, toError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -60,7 +60,7 @@ export function useActOnSuggestionMutationOptions() {
 
       if (isSuggestionUnavailableError(error)) {
         invalidateAiSuggestions(queryClient);
-      } else if (!isApiError(error)) {
+      } else if (!(error instanceof ApiError)) {
         logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
       }
 

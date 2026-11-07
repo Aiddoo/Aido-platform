@@ -900,16 +900,7 @@ function checkOwnFeatureAbsoluteImports(sourceFile, repositoryRoot, errors) {
 
 // 다음 묶음이 지울 임시 목록이다. 코드 판별이 아니라 서버 응답인지만 가르는 곳이어서,
 // 이름 있는 판별로 옮기면 어떤 오류를 알릴지가 함께 정해져 통합에서 고치지 않았다.
-const PENDING_SERVER_ERROR_READING_PATHS = new Set([
-  // 서버 응답이 아닌 실패만 logger로 남긴다
-  'apps/mobile/src/features/assistant/suggestion/queries/suggestion.mutations.ts',
-  // 오류의 code와 details에서 한도 정보를 읽는다
-  'apps/mobile/src/features/billing/subscription/apis/entitlement.mapper.ts',
-  // 고객 문의용 진단 코드로 서버 코드를 그대로 쓴다
-  'apps/mobile/src/features/billing/subscription/utils/subscription-diagnostic-code.ts',
-  // 서버 응답이면 안내하고 아니면 Sentry로 보낸다
-  'apps/mobile/src/features/engagement/comment/hooks/use-todo-comment-mutation-error-handler.ts',
-]);
+const PENDING_SERVER_ERROR_READING_PATHS = new Set([]);
 
 function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName);
@@ -940,10 +931,7 @@ function checkServerErrorReading(sourceFile, repositoryRoot, errors) {
 
 // 다음 묶음이 지울 임시 목록이다. 카드 모양을 직접 그려 Card로 바꾸면 화면이 달라질 수 있어
 // 기기 확인 없이 고치지 않았다.
-const PENDING_CARD_NAME_PATHS = new Set([
-  // Box와 클래스로 그린 성취 요약이다
-  'apps/mobile/src/features/insights/achievement/components/achievement-summary-card.tsx',
-]);
+const PENDING_CARD_NAME_PATHS = new Set([]);
 
 // 공용 부품 이름(Avatar, BottomSheet, Button, Input, Text, TextArea)은 앱 안에서 하나의 뜻만 갖는다.
 // shared/ui가 heroui-native 원본을 감싸므로, 그 밖에서 같은 이름을 heroui-native에서 가져오면 막는다.

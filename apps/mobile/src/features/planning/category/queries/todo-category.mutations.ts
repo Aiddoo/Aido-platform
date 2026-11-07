@@ -1,6 +1,6 @@
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { findLimitedFeature } from '@src/features/billing/subscription/domains/entitlement.error';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
   invalidateFeedTodos,

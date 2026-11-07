@@ -4,11 +4,11 @@ import {
   useVoiceService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
 import {
   findErrorFeatureQuota,
   isFreeOfChargeError,
-} from '@src/features/billing/subscription/apis/entitlement.mapper';
-import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
+} from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import type { EntitlementFeature } from '@src/features/billing/subscription/schemas/entitlement.schema';

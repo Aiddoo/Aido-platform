@@ -1,5 +1,5 @@
 import { useErrorReporter, useHaptics } from '@src/bootstrap/providers/di-context';
-import { getUserFacingMessage, isApiError, isInfraError, toError } from '@src/shared/errors';
+import { ApiError, getUserFacingMessage, isInfraError, toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -48,7 +48,7 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
         toast.warning(t('toasts.alreadyDeleted'));
       })
       .when(isTodoCommentRateLimitedError, () => toast.warning(t('toasts.throttled')))
-      .with(P.when(isApiError), (apiError) => {
+      .with(P.instanceOf(ApiError), (apiError) => {
         haptics.notify('error');
         toast.error(getUserFacingMessage(apiError), { fallback });
       })

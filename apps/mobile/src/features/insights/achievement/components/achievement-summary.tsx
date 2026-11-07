@@ -44,7 +44,7 @@ import { Certificate } from './certificate';
 const CERTIFICATE_LINE_COUNT = 4;
 const LOADING_STAT_COUNT = 3;
 
-export function AchievementSummaryCard() {
+export function AchievementSummary() {
   const todayKey = useTodayKey();
   usePrefetchQuery(useGetMeQueryOptions());
   const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
@@ -74,7 +74,7 @@ export function AchievementSummaryCard() {
   }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekLabel]);
 
   if (latest == null || latestBadgeType == null || weeklyAchievements.summary == null) {
-    return <AchievementSummaryCard.Empty />;
+    return <AchievementSummary.Empty />;
   }
 
   const { summary } = weeklyAchievements;
@@ -180,7 +180,7 @@ export function AchievementSummaryCard() {
   );
 }
 
-AchievementSummaryCard.Empty = function Empty() {
+AchievementSummary.Empty = function Empty() {
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
@@ -235,7 +235,7 @@ AchievementSummaryCard.Empty = function Empty() {
   );
 };
 
-AchievementSummaryCard.Loading = function Loading() {
+AchievementSummary.Loading = function Loading() {
   return (
     <Box>
       <Certificate>
@@ -286,7 +286,7 @@ AchievementSummaryCard.Loading = function Loading() {
   );
 };
 
-AchievementSummaryCard.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+AchievementSummary.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
   return (

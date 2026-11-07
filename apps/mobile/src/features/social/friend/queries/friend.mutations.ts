@@ -1,7 +1,7 @@
 import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
 import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { findLimitedFeature } from '@src/features/billing/subscription/domains/entitlement.error';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';

@@ -10,8 +10,8 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
-import { findLimitedFeature } from '../apis/entitlement.mapper';
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
+import { findLimitedFeature } from '../domains/entitlement.error';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';

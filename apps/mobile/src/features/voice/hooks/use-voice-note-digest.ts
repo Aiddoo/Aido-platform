@@ -1,5 +1,5 @@
 import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
-import { isFreeOfChargeError } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
