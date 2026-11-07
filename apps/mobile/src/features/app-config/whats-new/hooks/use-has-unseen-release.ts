@@ -1,5 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
+import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
 import { useQuery } from '@tanstack/react-query';
 
 import { whatsNewSeenKey } from '../apis/whats-new.repository';

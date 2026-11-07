@@ -5,7 +5,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
+import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';

@@ -99,7 +99,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ### Session Replay
 
-`shared/infra/observability/sentry.ts` 값이다.
+`shared/infra/observability/error-reporting.ts` 값이다.
 
 | 설정                       | 값                                                         |
 | -------------------------- | ---------------------------------------------------------- |
@@ -214,7 +214,7 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | 포트              | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                      |
 | Sentry 어댑터     | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                             |
-| Sentry init·wrap  | `shared/infra/observability/sentry.ts`                                                                                                     |
+| Sentry init·wrap  | `shared/infra/observability/error-reporting.ts`                                                                                            |
 | 전송 입구·분류    | `shared/infra/observability/capture-error.ts`, `shared/errors/classify-error-report.ts`                                                    |
 | 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                         |
 | 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                  |

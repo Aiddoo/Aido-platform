@@ -1,7 +1,7 @@
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
 import { i18n } from '@src/shared/i18n';
 import { getAppBundleId } from '@src/shared/infra/application/app-bundle';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -84,7 +84,7 @@ interface QueryProviderProps extends PropsWithChildren {
 export function QueryProvider({ children, cacheStorage }: QueryProviderProps) {
   const { resolvedLanguage } = useLanguage();
   const [persistOptions] = useState(() => {
-    removePlaintextQueryCache(mmkvSyncStorage);
+    removePlaintextQueryCache(deviceSyncStorage);
     return cacheStorage == null
       ? null
       : createQueryPersistOptions({

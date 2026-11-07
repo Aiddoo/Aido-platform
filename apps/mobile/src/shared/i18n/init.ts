@@ -1,14 +1,14 @@
 // Hermes의 Intl.PluralRules 플랫폼 편차를 제거하기 위해 항상 폴리필을 로드한다
 import 'intl-pluralrules';
 import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import { readLanguageMode, resolveLanguage } from '@src/shared/preferences/language.preference';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { resources } from './resources';
 
-const initialLanguage = resolveLanguage(readLanguageMode(mmkvSyncStorage), getDeviceLanguage());
+const initialLanguage = resolveLanguage(readLanguageMode(deviceSyncStorage), getDeviceLanguage());
 
 i18n.use(initReactI18next).init({
   lng: initialLanguage,

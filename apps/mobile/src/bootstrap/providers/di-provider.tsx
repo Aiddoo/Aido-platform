@@ -109,8 +109,8 @@ import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuec
 import { systemShareGateway } from '@src/shared/infra/share/system-share.gateway';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
 import { expoSpeechRecognizerGateway } from '@src/shared/infra/speech/expo-speech-recognizer.gateway';
-import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { secureDeviceIdStore } from '@src/shared/infra/storage/secure-device-id-store';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
@@ -141,7 +141,7 @@ export function DIProvider({
     const tokenStore = withSessionEpoch(createSecureTokenStore(storage), sessionEpoch);
 
     // Observability — 크래시/에러/이벤트/로그는 Sentry로 일원화(네이티브 크래시 포함),
-    // Firebase는 Analytics(제품 지표)만 담당. Sentry init은 앱 루트(initSentry)에서 1회.
+    // Firebase는 Analytics(제품 지표)만 담당. Sentry init은 앱 루트(initErrorReporting)에서 1회.
     const consoleLogger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
 
     const logger = ENV.IS_PRODUCTION
@@ -151,7 +151,7 @@ export function DIProvider({
     setGlobalLogger(logger);
 
     const analytics = createEnvironmentAnalytics(logger);
-    const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
+    const featureAttribution = createFeatureAttributionStore(deviceSyncStorage);
     const draftService = new DraftService(
       createDraftRepository(encryptedStorageBootstrap.draftStorage),
     );
@@ -219,7 +219,7 @@ export function DIProvider({
     });
     const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(
-      createActivationProgressRepository(mmkvSyncStorage),
+      createActivationProgressRepository(deviceSyncStorage),
     );
 
     const friendService = new FriendService(authHttpClient);
@@ -227,20 +227,20 @@ export function DIProvider({
     // 소개 캠페인 설정: app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
     const featureCampaignService = new FeatureCampaignService(publicJsonFetcher);
     const appVersionService = new AppVersionService(publicJsonFetcher);
-    const whatsNewRepository = createWhatsNewRepository(mmkvSyncStorage);
+    const whatsNewRepository = createWhatsNewRepository(deviceSyncStorage);
 
-    const pendingRedemptionRepository = createPendingRedemptionRepository(mmkvSyncStorage);
+    const pendingRedemptionRepository = createPendingRedemptionRepository(deviceSyncStorage);
     const inviteService = new InviteService({
       publicHttpClient,
       authHttpClient,
       pendingRedemptionRepository,
       installReferrerRepository: createInstallReferrerRepository(
-        mmkvSyncStorage,
+        deviceSyncStorage,
         expoInstallReferrerGateway,
       ),
-      pawPrintCelebrationRepository: createPawPrintCelebrationRepository(mmkvSyncStorage),
+      pawPrintCelebrationRepository: createPawPrintCelebrationRepository(deviceSyncStorage),
       installationIdGateway: expoInstallationIdGateway,
-      allDoneBannerRepository: createAllDoneBannerRepository(mmkvSyncStorage),
+      allDoneBannerRepository: createAllDoneBannerRepository(deviceSyncStorage),
       logger,
     });
     const inviteShareService = new InviteShareService({
@@ -281,13 +281,13 @@ export function DIProvider({
       sessionEpoch,
     });
     const deviceTimezoneService = new DeviceTimezoneService(
-      createDeviceTimezoneRepository(mmkvSyncStorage),
+      createDeviceTimezoneRepository(deviceSyncStorage),
     );
-    const pushPromptRepository = createPushPromptRepository(mmkvSyncStorage);
-    const marketingPushPromptRepository = createMarketingPushPromptRepository(mmkvSyncStorage);
+    const pushPromptRepository = createPushPromptRepository(deviceSyncStorage);
+    const marketingPushPromptRepository = createMarketingPushPromptRepository(deviceSyncStorage);
 
     const todoNudgeService = new TodoNudgeService(authHttpClient);
-    const coachmarkRepository = createCoachmarkRepository(mmkvSyncStorage);
+    const coachmarkRepository = createCoachmarkRepository(deviceSyncStorage);
     const coachmarkService = new CoachmarkService(coachmarkRepository);
     runStartupKeyCleanup(
       {
@@ -302,7 +302,7 @@ export function DIProvider({
     );
 
     const storeReviewService = new StoreReviewService(
-      createStoreReviewRepository(mmkvSyncStorage),
+      createStoreReviewRepository(deviceSyncStorage),
       expoAppStoreGateway,
       getNowInstant,
     );
@@ -423,7 +423,7 @@ export function DIProvider({
         logger,
         errorReporter,
       }),
-      weatherIntroductionRepository: createWeatherIntroductionRepository(mmkvSyncStorage),
+      weatherIntroductionRepository: createWeatherIntroductionRepository(deviceSyncStorage),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
       applicationMetadata: expoApplicationMetadataGateway,

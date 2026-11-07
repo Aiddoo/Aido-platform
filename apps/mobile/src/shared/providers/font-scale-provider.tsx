@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
   type FontScale,
   readFontScale,
@@ -80,7 +80,7 @@ interface FontScaleProviderProps extends PropsWithChildren {
 
 export function FontScaleProvider({
   children,
-  syncStorage = mmkvSyncStorage,
+  syncStorage = deviceSyncStorage,
 }: FontScaleProviderProps) {
   const [fontScale, setFontScaleState] = useState<FontScale>(() => readFontScale(syncStorage));
 

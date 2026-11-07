@@ -1,7 +1,7 @@
 import { createStorageStub } from '@src/shared/__tests__';
 import { type createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
 
-import { disabledDraftStorage, openEncryptedMmkvStorage } from './mmkv-draft-storage';
+import { disabledDraftStorage, openEncryptedStorage } from './encrypted-draft-storage';
 
 type MmkvConfig = Parameters<typeof createMMKV>[0];
 
@@ -34,7 +34,7 @@ function createFakeMmkv(entries: Record<string, string> = {}) {
   };
 }
 
-describe('openEncryptedMmkvStorage', () => {
+describe('openEncryptedStorage', () => {
   beforeEach(() => {
     jest.mocked(existsMMKV).mockReturnValue(false);
     mockCreateMMKV.mockImplementation(() => createFakeMmkv());
@@ -44,7 +44,7 @@ describe('openEncryptedMmkvStorage', () => {
     const secureStorage = createStorageStub();
     secureStorage.get.mockResolvedValue(null);
 
-    const result = await openEncryptedMmkvStorage(secureStorage);
+    const result = await openEncryptedStorage(secureStorage);
 
     expect(result.failure).toBeUndefined();
     expect(result.queryCacheStorage).not.toBeNull();
@@ -64,7 +64,7 @@ describe('openEncryptedMmkvStorage', () => {
     const secureStorage = createStorageStub();
     secureStorage.get.mockResolvedValue('cd'.repeat(16));
 
-    await openEncryptedMmkvStorage(secureStorage);
+    await openEncryptedStorage(secureStorage);
 
     expect(secureStorage.set).not.toHaveBeenCalled();
     expect(deleteMMKV).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('openEncryptedMmkvStorage', () => {
       ),
     );
 
-    const { draftStorage } = await openEncryptedMmkvStorage(secureStorage);
+    const { draftStorage } = await openEncryptedStorage(secureStorage);
 
     expect(draftStorage.get('aido_draft_v1:user-1:memo:create')).toBe('{"v":1}');
     expect(deleteMMKV).toHaveBeenCalledWith('aido.drafts');
@@ -94,7 +94,7 @@ describe('openEncryptedMmkvStorage', () => {
     const failure = new Error('keychain unavailable');
     secureStorage.get.mockRejectedValue(failure);
 
-    const result = await openEncryptedMmkvStorage(secureStorage);
+    const result = await openEncryptedStorage(secureStorage);
 
     expect(result).toEqual({
       draftStorage: disabledDraftStorage,

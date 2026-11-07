@@ -62,7 +62,7 @@ eas env:create --name SENTRY_AUTH_TOKEN --value "sntrys_..." \
   --environment production --visibility sensitive
 ```
 
-> - `EXPO_PUBLIC_SENTRY_DSN`은 `app.config.ts`의 `extra.sentryDsn`으로 전달되어 `initSentry()`에서 사용.
+> - `EXPO_PUBLIC_SENTRY_DSN`은 `app.config.ts`의 `extra.sentryDsn`으로 전달되어 `initErrorReporting()`에서 사용.
 > - `SENTRY_AUTH_TOKEN`은 Sentry Expo 플러그인이 빌드 중 소스맵을 업로드할 때만 사용(런타임 미포함).
 > - dev에서 로컬 테스트 시에만 `EXPO_PUBLIC_SENTRY_DEBUG=true`로 활성화(평소 dev는 리포팅 off).
 

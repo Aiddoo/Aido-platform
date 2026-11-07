@@ -11,7 +11,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import {
@@ -49,7 +49,7 @@ async function renderCard(
 
   await renderUi(<PushPermissionCard />, {
     di: {
-      pushPromptRepository: createPushPromptRepository(mmkvSyncStorage),
+      pushPromptRepository: createPushPromptRepository(deviceSyncStorage),
       pushDeviceService: new PushDeviceService({
         gateway,
         deviceIdService: { get: async () => 'ios_device-123' },
@@ -70,7 +70,7 @@ async function renderCard(
 
 describe('PushPermissionCard — 홈 알림 안내', () => {
   afterEach(() => {
-    mmkvSyncStorage.keys().forEach((key) => mmkvSyncStorage.remove(key));
+    deviceSyncStorage.keys().forEach((key) => deviceSyncStorage.remove(key));
   });
 
   it('알림이 기기에서 허용되고 앱 설정도 켜져 있으면 보이지 않는다', async () => {

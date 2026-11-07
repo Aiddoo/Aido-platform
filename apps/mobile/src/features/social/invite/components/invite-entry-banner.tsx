@@ -5,7 +5,7 @@ import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
+import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
 import { Button, Image, InlineNotice, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';

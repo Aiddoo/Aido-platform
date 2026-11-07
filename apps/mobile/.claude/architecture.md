@@ -954,8 +954,8 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | ------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
 | `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                         | `http/ky-client.ts`                              |
 | `Storage`                 | `get`·`set`·`remove`·`clear`                                                | `storage/secure-storage.ts`                      |
-| `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/mmkv-storage.ts`                        |
-| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/mmkv-draft-storage.ts`                  |
+| `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/device-sync-storage.ts`                 |
+| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/encrypted-draft-storage.ts`             |
 | `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard.gateway.ts`            |
 | `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `linking/expo-linking.gateway.ts`                |
 | `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `linking/expo-linking.gateway.ts`                |

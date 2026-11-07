@@ -2,7 +2,7 @@ import { usePushPromptRepository } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
+import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { parsePushPromptDismissedAt, pushPromptStorageKey } from '../apis/push-prompt.repository';

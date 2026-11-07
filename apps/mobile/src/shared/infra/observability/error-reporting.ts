@@ -13,7 +13,7 @@ import { scrubBreadcrumb, scrubSentryEvent } from './scrub-sentry-event';
  * - `enabled`: 프로덕션이면 항상, dev/preview는 `EXPO_PUBLIC_SENTRY_DEBUG=true`일 때만 전송.
  * - Session Replay: 개인정보/투두 노출 방지를 위해 텍스트·이미지·벡터를 전부 마스킹.
  */
-export function initSentry(): void {
+export function initErrorReporting(): void {
   Sentry.init({
     dsn: ENV.SENTRY_DSN,
     enabled: ENV.SENTRY_ENABLED,

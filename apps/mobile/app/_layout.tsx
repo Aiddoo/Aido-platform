@@ -7,7 +7,10 @@ import { useTranslation } from '@src/shared/i18n';
 import { reloadApp } from '@src/shared/infra/application/app-bundle';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/observability-env';
-import { initSentry, wrapRootComponent } from '@src/shared/infra/observability/sentry';
+import {
+  initErrorReporting,
+  wrapRootComponent,
+} from '@src/shared/infra/observability/error-reporting';
 import { openSupportMail } from '@src/shared/ui';
 
 import '../global.css';
@@ -17,7 +20,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-initSentry();
+initErrorReporting();
 
 SplashScreen.preventAutoHideAsync();
 

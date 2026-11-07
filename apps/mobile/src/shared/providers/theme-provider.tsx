@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
   readThemeMode,
   type ThemeMode,
@@ -34,7 +34,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children, syncStorage = mmkvSyncStorage }: ThemeProviderProps) {
+export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
   const [mode, setMode] = useState<ThemeMode>(() => readThemeMode(syncStorage));
 

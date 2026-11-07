@@ -10,7 +10,7 @@ import {
   disabledQueryCacheStorage,
 } from '@src/bootstrap/providers/query-cache-persistence';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
-import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';

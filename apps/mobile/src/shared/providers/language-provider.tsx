@@ -1,7 +1,7 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { i18n } from '@src/shared/i18n';
 import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
   type LanguageMode,
   type ResolvedLanguage,
@@ -40,7 +40,7 @@ interface LanguageProviderProps extends PropsWithChildren {
 
 export function LanguageProvider({
   children,
-  syncStorage = mmkvSyncStorage,
+  syncStorage = deviceSyncStorage,
   useDeviceLanguage = useSystemLanguage,
 }: LanguageProviderProps) {
   const [languageMode, setLanguageModeState] = useState<LanguageMode>(() =>

@@ -1,4 +1,4 @@
-import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
+import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
 import {
   CALENDAR_VIEW_MODE_STORAGE_KEY,
   type CalendarViewMode,
