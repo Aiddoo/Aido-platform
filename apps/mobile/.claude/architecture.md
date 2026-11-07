@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 3.0.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
+**Version**: 3.1.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/notes/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
 
@@ -28,6 +28,8 @@ src/
 │       └── di-context.tsx        # DIContainer 타입과 use{X} 훅
 ├── core/
 │   ├── ports/                    # 포트 인터페이스
+│   ├── errors/                   # 포트가 돌려주는 Result, ApiError
+│   ├── observability/            # 포트가 쓰는 Sentry 키, breadcrumb, 사용자 속성
 │   ├── events/
 │   └── session/
 ├── features/{area}/{feature}/    # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능
@@ -40,7 +42,7 @@ src/
 │   ├── hooks/                    # 여러 파일이 쓰는 훅 (route 읽기, 상태 튜플)
 │   ├── utils/                    # {feature}-draft.ts, {name}.view-model.ts, 순수 계산
 │   └── __tests__/                # {entity}.fixtures.ts, {feature}.test-utils.ts
-└── shared/                       # analytics, config, constants, date, draft, errors, hooks, i18n,
+└── shared/                       # analytics, config, constants, date, di, draft, errors, hooks, i18n,
                                   # infra(어댑터), observability, preferences, providers, types, ui, utils
 ```
 
@@ -85,6 +87,41 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 의존성은 안쪽(Model)으로 향한다. Model은 Service·UI·SDK를 모른다.
 
+## 층과 의존
+
+아래 층이 위 층을 모르게 해서, 고칠 때 영향이 위로만 번지게 한다. 표는 `FEATURE_LAYERS`(`scripts/check-mobile-conventions.mjs`)와 같다.
+
+| 층  | 포함                                                                                                                                                                                            |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5   | `app/`, `bootstrap`                                                                                                                                                                             |
+| 4   | `planning/composer`, `notes/memo`, `weather`, `notification`, `social/invite`, `device/activation`                                                                                              |
+| 3   | `voice`, `engagement/comment`, `social/friend`, `social/nudge`, `social/moderation`, `assistant/suggestion`, `insights/achievement`, `insights/report`, `app-config/whats-new`, `device/widget` |
+| 2   | `planning/todo`, `planning/category`, `device/coachmark`, `device/store-review`                                                                                                                 |
+| 1   | `identity/*`, `billing/subscription`, `support/inquiry`, `app-config/app-version`, `app-config/feature-campaign`, `device/app-icon`                                                             |
+| 0   | `shared` → `core`. `core`는 아무것도 보지 않고, `shared`는 feature와 `bootstrap`을 보지 않는다                                                                                                  |
+
+| 가져오는 쪽에서 본 대상 | 가져와도 되는 것                                                          |
+| ----------------------- | ------------------------------------------------------------------------- |
+| 아래 층                 | 타입, 모델(Policy), `*-cache`, 쿼리 옵션, 훅, 컴포넌트, 스키마, 상수      |
+| 같은 층                 | 아래 층과 같다. 단 한 방향만이다. 서로 import하면 타입만이어도 양방향이다 |
+| 위 층                   | 타입, 모델(Policy), `*-cache`만                                           |
+
+**정해 둔 자리**
+
+- **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고, 아래에서는 `activation-cache`만 쓴다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
+- **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
+- **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
+- **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
+
+**끊는 방법**
+
+| 위층이 필요한 이유                      | 끊는 방법                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| 화면 조각을 함께 보여 줌                | `app/`이 조립해 슬롯(`ReactNode`)으로 넘긴다(`MyPagePane`의 `inviteCard`) |
+| 서로의 캐시를 갱신                      | 위층의 `*-cache` 무효화 함수를 쓴다                                       |
+| 받는 쪽이 여럿이거나 정해지지 않은 알림 | `core/events`(`notifications-changed`)                                    |
+| 판단에 위층 값이 필요                   | 호출한 쪽이 값을 인자로 넘긴다(`useStableFeedForeground`)                 |
+
 ## check:conventions가 막는 것
 
 `pnpm --filter @aido/mobile check:conventions`(`scripts/check-mobile-conventions.mjs`)가 다음을 실패시킨다.
@@ -93,37 +130,49 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                  |
 | 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                        |
-| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트 제외). 지금은 `memo`만 대상이다                                                                                    |
+| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트 제외). 옮긴 feature와 폴더만 대상이다                                                                              |
 | 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                      |
 | Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                  |
 | 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                  |
 | 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                                |
 | `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                               |
 | 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/engagement/comment`와 할 일 상세 route에만 걸린다 |
+| `core`·`shared` 층   | `core`가 `shared`·feature·`bootstrap`을, `shared`가 feature·`bootstrap`을 import(테스트 도구 제외). 허용 목록 없음                                                                            |
+| 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부                                                                                             |
+| 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                           |
+| 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                     |
+| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`                                                                                                                                          |
+| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름                                                                                                                                  |
+| 테스트 mock          | 테스트의 `jest.mock('@src/…')`                                                                                                                                                                |
+| RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
+| 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                     |
+| 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                 |
 
-아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: `xxxOf` 이름, Facade 별칭·인라인, 모듈 수준 화살표, 금지한 컴포넌트 이름, 메모 밖 feature의 계약 import, `shared` → feature import, `FormField` 사용, 쿼리·utils 파일 위치.
+**이미 있는 위반:** 위층 import부터 쿼리 키 자리까지는 `scripts/mobile-conventions-allowlist.json`에 규칙별 이유와 파일별 수로 적었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
+
+아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, `FormField` 사용, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import.
 
 ## 아직 옮기지 않은 것
 
-이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 작업 트리를 grep한 수치). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다.
+이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 `21d87823b` 기준 grep). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 이름, 함수 형태, 층처럼 검사가 세는 항목의 파일 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
 | 규칙                              | 지금 코드                                                                                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [쿼리 파일](#querymutation-파일)  | `*.queries.ts`·`*.mutations.ts`는 `memo`뿐이다. 20개 feature에 `get-*-query-options.ts` 51개, `use-*-mutation-options.ts` 75개가 있다. 이 파일들은 `getXQueryOptions`와 `useGetXQueryOptions`를 쌍으로 export한다              |
-| utils 폴더                        | `memo` 밖에는 `utils/navigation/`, `utils/view-models/`, `utils/analytics/`가 남아 있다. 평탄한 `*.view-model.ts`를 가진 feature는 아직 없다                                                                                   |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`는 `MemoService`만 쓴다. 나머지는 `safeParse(result.value)` 92곳이다                                                                                                                                         |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일이 131개다(`queries` 34, `domains` 32, `components` 20, `hooks` 18, `utils` 15, `shared` 6, `constants` 6). 메모는 없다                                  |
-| [스키마 폴더](#서버-응답과-모델)  | `schemas/`로 옮긴 feature는 `memo`뿐이다. 나머지는 `domains/`에 모델 스키마와 폼 스키마가 있다                                                                                                                                 |
-| [폼](#폼)                         | `FormField`를 쓰는 파일 21개. 폼 이름에 `formMethods`, `methods`, `composer`, 구조 분해가 섞여 있다. `useFormContext<T>` 36곳                                                                                                  |
-| [생성·수정](#생성수정)            | `AddTodoBottomSheet`(`mode`: `create`·`edit`), `AddSubTodoBottomSheet`(`mode`)가 분기로 처리한다                                                                                                                               |
-| [모델](#모델과-policy)            | Facade 별칭(`achievement.model.ts`의 `badgeType: getBadgeType`, `app-icon.model.ts`의 `resolveKey: resolveAppIconKey`)이 남아 있다                                                                                             |
-| [컴포넌트 이름](#이름)            | `ReportSection`, `TileFrame`, `InviteLinkCardFrame`, `InvitedFriendSummaryFrame`, `PawPrintBoardSection`                                                                                                                       |
-| [화면](#화면)                     | `app/(app)/voice-notes/record.tsx`의 `const waveform` JSX 상수                                                                                                                                                                 |
+| [쿼리 파일](#querymutation-파일)  | `*.queries.ts` 23개, `*.mutations.ts` 22개로 옮겼다. `identity/auth`만 옛 파일 17개(`use-*-mutation-options.ts` 16, `get-*-query-options.ts` 1)가 남았다                                                                       |
+| utils 폴더                        | `notification/utils/analytics/`, `weather/utils/analytics/`, `planning/todo/utils/view-models/`가 남았다. 평탄한 `*.view-model.ts`는 12개다                                                                                    |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 15개. `safeParse(result.value)` 49곳이 남았다(`planning/todo` 19, `identity/auth` 11, `social/nudge` 10, `social/invite` 4, `weather` 2, `billing/subscription`, `notes/memo`, `voice` 각 1)    |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 38개(`queries` 11, `components` 9, `domains` 8, `shared` 5, `utils` 3, `constants` 1, `hooks` 1)                                                        |
+| [스키마 폴더](#서버-응답과-모델)  | 28개 기능에 `schemas/`가 있다. `domains/`의 Zod가 `social/invite` 6, `voice` 5, `planning/todo` 3, `social/nudge` 3파일에 남았다                                                                                               |
+| [폼](#폼)                         | `FormField`를 쓰는 파일 4개(`planning/composer`, `social/nudge`, `voice`, `weather`). `formMethods`·`methods` 변수 4파일. `useFormContext<T>` 40곳                                                                             |
+| [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                                                                                                    |
+| [모델](#모델과-policy)            | Facade 별칭 10개(`device/widget` 8, `identity/auth` 1, `social/nudge` 1)                                                                                                                                                       |
+| [컴포넌트 이름](#이름)            | `AvatarFrame`, `RepeatCalendarSection`, `InvitedFriendSummaryFrame`, `PanelFrame`, `TileFrame`                                                                                                                                 |
 | [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                    |
-| [함수 형태](#함수-형태)           | `export const useX = () =>` 143개와 그 밖의 모듈 수준 화살표가 남아 있다(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                     |
+| [함수 형태](#함수-형태)           | 모듈 수준 화살표 139파일 296개(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                                                               |
+| [테스트](./testing-guide.md)      | `jest.mock('@src/…')` 18파일 46건                                                                                                                                                                                              |
 | [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
-| [feature 경계](#query와-mutation) | `voice/queries/use-apply-action-plan-mutation-options.ts`가 `MEMO_QUERY_KEYS`를 직접 쓴다                                                                                                                                      |
-| [Expo 권장](#라우팅)              | `useContext` 7개 파일(`use`로)                                                                                                                                                                                                 |
+| [층과 의존](#층과-의존)           | 양방향 12쌍, 위층 import 5간선 16줄                                                                                                                                                                                            |
+| [Expo 권장](#라우팅)              | `useContext` 5개 파일(`use`로)                                                                                                                                                                                                 |
 | 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                               |
 
 ---
@@ -297,13 +346,13 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 
 **래퍼는 역할이 있을 때만 만든다.** 참고 저장소의 `AmountInput`(단위 suffix·숫자 포맷), 앱의 `PushPermissionDialog`(도메인 문구·권한 요청)처럼 자기 일이 있어야 한다. 역할이 없으면 원본을 쓴다. 상세: [Wrapper Props 계약](./ui-components.md#wrapper-props-계약).
 
-**반복 UI는 나란히 쓴다.** 항목마다 기획이 따로 바뀔 수 있는 표시는 설정 배열을 `map`하지 않고 `CalculationResult`의 `<Record />`처럼 한 줄씩 적는다. 한 줄만 고치면 되게 한다. 서버 항목처럼 데이터로 오는 목록은 `map`·`FlashList`다. 상수로 개수가 정해지는 반복(스켈레톤, `InputOTP.Slot`)은 es-toolkit `times`다.
+**반복 UI는 나란히 쓴다.** 항목마다 기획이 따로 바뀔 수 있는 표시는 설정 배열을 `map`하지 않고 `CalculationResult`의 `<Record />`처럼 한 줄씩 적는다. 한 줄만 고치면 되게 한다. 서버 항목처럼 데이터로 오는 목록은 `map`·`FlashList`다. 상수로 개수가 정해지는 반복(스켈레톤, `InputOTP.Slot`)은 es-toolkit `range(n).map`이다.
 
 **네임스페이스는 응집도로 정한다.** `Item`·`Loading`·`Error`·`Empty`는 필수가 아니다. 쓰지 않는 static을 만들지 않는다. 부모에 강하게 결합된 조각(`DailyForecast.TemperatureBar`, `PushPermissionCard.Ask`)도 같은 방식으로 둔다. 파일 안 순서는 본체 → 구성 요소 → `.Loading` → `.Error` → `.Empty`다. 단계별 조각은 본체가 Policy의 step을 `match(step)….exhaustive()`로 고른다.
 
 **자리는 같고 구현이 갈리면 컴포넌트를 prop으로 넘긴다.** `MemoEditor`는 넓은 화면 pane과 Stack 화면에서 툴바만 다르다. `mode`로 분기하지 않고 인터페이스 하나를 받는다(`toolbar={MemoEditor.StackToolbar}`, `toolbar={MemoEditor.PaneToolbar}`).
 
-**변환은 es-toolkit으로 의도를 드러낸다.** `groupBy`, `keyBy`, `partition`, `sumBy`, `maxBy`, `orderBy`, `uniqBy`, `clamp`, `times`를 쓴다. 변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(`notification-list.view-model.ts`). 상호 배타적인 상태는 ts-pattern `match(…).exhaustive()`다. 단순 표시 여부나 두 가지 문구는 `&&`·삼항식이면 된다.
+**변환은 es-toolkit으로 의도를 드러낸다.** `groupBy`, `keyBy`, `partition`, `sumBy`, `maxBy`, `orderBy`, `uniqBy`, `clamp`, `range`를 쓴다. 변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(`notification-list.view-model.ts`). 상호 배타적인 상태는 ts-pattern `match(…).exhaustive()`다. 단순 표시 여부나 두 가지 문구는 `&&`·삼항식이면 된다.
 
 ### 이름
 
@@ -333,9 +382,9 @@ MemoList.Loading = function Loading() {
 
   return (
     <HStack gap={12} align="start">
-      {times(columnCount, (column) => (
+      {range(columnCount).map((column) => (
         <VStack key={column} flex={1} gap={12}>
-          {times(LOADING_ITEMS_PER_COLUMN, (row) => (
+          {range(LOADING_ITEMS_PER_COLUMN).map((row) => (
             <VStack key={row} gap={8} p={16} className="rounded-2xl bg-gray-1">
               <TextSkeleton size="b3" className="w-full" />
               <TextSkeleton size="b3" className="w-3/4" />
@@ -429,9 +478,9 @@ MemoList.Loading = function Loading() {
 
 - 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`다(`/todo/[todoId]`). `[id]`는 쓰지 않는다.
 - 같은 화면의 보기 상태(선택 항목, 필터, 날짜, 친구, 작성기)는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`).
-- query param은 nuqs처럼 쓴다. 값 하나면 `[value, setValue]`, 함께 쓰는 값이면 `[values, setValues]`다. 패키지는 넣지 않고 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`) 위에 훅을 만든다. 읽기와 쓰기가 `schemas/{name}-params.schema.ts`의 스키마 하나를 지난다. 스키마 이름은 `{name}ParamsSchema`이고 훅 파일에 두지 않는다.
+- 쓰는 query param은 nuqs처럼 쓴다. 값 하나면 `[value, setValue]`, 함께 쓰는 값이면 `[values, setValues]`다. 패키지는 넣지 않고 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`) 위에 훅을 만든다. 읽기와 쓰기가 `schemas/{name}-params.schema.ts`의 스키마 하나를 지난다. 스키마 이름은 `{name}ParamsSchema`이고 훅 파일에 두지 않는다.
 - 쓰는 필드의 URL 형식은 문자열이고 `z.codec`이다(`routeIdSchema`, `weatherRescheduleParamsSchema.todoIds`). `.transform`은 `z.encode`에서 터지고 `z.coerce`는 숫자로 남아 조용히 지워지므로 읽기 전용 필드(`routeIntegerStringSchema`, `openedAt`)에만 쓴다. 값 지우기는 `setParams({ date: undefined })`다. boolean은 `?isEditing=false`를 남기지 않도록 끌 때 `undefined`를 넘긴다. 없거나 잘못된 값은 `.catch`로 읽는다.
-- 호출하는 곳 없는 세터는 만들지 않는다. 쓰기가 없는 값은 튜플 없이 값 그대로 돌려준다(`useTodoSheetDateParam(): string`, `useInquiryParams()`). 경로 세그먼트(`/todo/[todoId]`)는 URL 상태가 아니라 화면의 정체성이라 객체를 돌려준다(`useTodoScreenParams()`, `useAchievementParams()`).
+- 세터를 부르는 곳이 있으면 `useRouteParams` 위의 튜플이고, 없으면 값 그대로다. 값 하나면 값(`useTodoSheetDateParam(): string`), 여럿이면 객체(`useInquiryParams(): { … }`)다. 경로 세그먼트(`/todo/[todoId]`)도 쓰기가 없는 값이라 같은 규칙이다(`useTodoScreenParams()`). 쓰기가 생기는 순간 튜플로 바꾼다.
 - 값을 바꿀 때 함께 지울 값이 있으면 그 규칙은 세터 안에 둔다. 호출부가 잊을 수 없다(`useFeedFriendParam`의 `selectFriend`, `useFeedSelectedTodo`의 세터, `CLEARED_TODO_SELECTION`). 공개 세터로 안 되는 넘김(접힌 화면의 상세 넘김)도 훅이 맡는다(`useFeedTodoDetailHandoff`, `useMemoDetailHandoff`). `router.setParams`, `useLocalSearchParams` 구조 분해, 파라미터 훅 파일의 `z.object`는 `check:conventions`가 막는다.
 - 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`). `as`로 건너뛰지 않는다.
 - `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
@@ -639,11 +688,11 @@ export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
 
 ```typescript
 // features/notes/memo/domains/memo.model.ts
-export function canCreateMemo(limit: MemoResourceLimit) {
+function canCreateMemo(limit: MemoResourceLimit) {
   return limit.currentCount < limit.maxPerUser;
 }
 
-export function getMemoPreview(memo: Pick<Memo, 'content'>) {
+function getMemoPreview(memo: Pick<Memo, 'content'>) {
   const [title = '', ...rest] = memo.content.trim().split('\n');
 
   return { title: title.trim(), body: rest.join('\n').trim() };

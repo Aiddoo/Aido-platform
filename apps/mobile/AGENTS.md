@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.7.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
+> **Version**: 1.8.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -48,7 +48,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 ├── queries/          # 조회·변경 옵션, {feature}-cache.ts
 ├── constants/        # Query Keys, feature 상수
 ├── components/       # UI 블록과 부모에 결합된 네임스페이스 조각
-├── hooks/            # route 읽기, useRouteParams 위의 [value, setValue] 튜플, 여러 파일이 쓰는 훅
+├── hooks/            # route 읽기(쓰기가 없으면 값 그대로), useRouteParams 위의 튜플, 여러 파일이 쓰는 훅
 ├── utils/            # 초안 키, view-model, 순수 계산
 └── __tests__/        # fixture, 테스트 DI
 ```
@@ -71,7 +71,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 | 표시 값        | `utils/{name}.view-model.ts`                                       |
 | 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                   |
 
-이 모양으로 옮긴 feature는 지금 `memo` 하나다. 나머지는 옛 패턴이다: `domains/`의 스키마, `queries/get-{resource}[-infinite]-query-options.ts`, `queries/use-{action}-mutation-options.ts`, `utils/navigation/`, `utils/view-models/`, `__tests__/{entity}.factories.ts`. 평탄한 `*.view-model.ts`는 아직 어느 feature에도 없다. 차이 목록: [아직 옮기지 않은 것](.claude/architecture.md#아직-옮기지-않은-것).
+대부분의 feature를 이 모양으로 옮겼다. 남은 옛 패턴은 `identity/auth`의 `queries/use-{action}-mutation-options.ts`, `planning/todo`·`social/*`·`voice`의 `domains/` 스키마, `planning/todo/utils/view-models/`, `utils/analytics/` 등이다. 차이 목록: [아직 옮기지 않은 것](.claude/architecture.md#아직-옮기지-않은-것). 층과 허용 import: [층과 의존](.claude/architecture.md#층과-의존).
 
 ---
 
