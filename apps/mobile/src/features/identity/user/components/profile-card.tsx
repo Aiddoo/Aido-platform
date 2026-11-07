@@ -100,27 +100,31 @@ const USER_TIER_CONFIG = {
     labelKey: 'profile.badges.admin',
     color: 'warning',
     className: 'self-center shrink-0',
+    textClassName: 'text-warning-soft-foreground',
   },
   PREMIUM: {
     labelKey: 'profile.badges.premium',
     color: 'accent',
     className: 'self-center shrink-0',
+    textClassName: 'text-accent-soft-foreground',
   },
   FREE: {
     labelKey: 'profile.badges.basic',
     color: 'default',
     className: 'self-center shrink-0 bg-gray-3',
+    textClassName: 'text-default-soft-foreground',
   },
 } as const satisfies Record<AccessTier, unknown>;
 
 function UserTierChip({ tier }: { tier: AccessTier }) {
   const { t } = useTranslation('user');
-  const { labelKey, color, className } = USER_TIER_CONFIG[tier];
-  const label = t(labelKey);
+  const { labelKey, color, className, textClassName } = USER_TIER_CONFIG[tier];
 
   return (
     <Chip size="sm" variant="soft" color={color} className={className}>
-      <Chip.Label>{label}</Chip.Label>
+      <Text size="e1" weight="medium" className={textClassName}>
+        {t(labelKey)}
+      </Text>
     </Chip>
   );
 }

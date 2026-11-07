@@ -1,5 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { HStack, type Input } from '@src/shared/ui';
+import { HStack, type Input, Text } from '@src/shared/ui';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -25,7 +25,9 @@ export function SuggestedEmailDomainList({ value = '', onChange }: SuggestedEmai
             size="md"
             onPress={() => onChange?.(suggestion.value)}
           >
-            <Chip.Label>@{suggestion.domain}</Chip.Label>
+            <Text size="b3" weight="medium" className="text-default-soft-foreground">
+              @{suggestion.domain}
+            </Text>
           </Chip>
         ))}
       </HStack>

@@ -288,9 +288,13 @@ const ProviderListRow = memo(function ProviderListRow({
             size="sm"
             className="self-start mt-0.5 px-2 rounded-lg"
           >
-            <Chip.Label className="text-e2">
+            <Text
+              size="e2"
+              weight="medium"
+              className={isLinked ? 'text-accent-soft-foreground' : 'text-default-soft-foreground'}
+            >
               {isLinked ? t('linkedAccounts.linked') : t('linkedAccounts.notLinked')}
-            </Chip.Label>
+            </Text>
           </Chip>
         </VStack>
       }
