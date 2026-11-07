@@ -39,31 +39,42 @@ function viewFor(todos: BriefingTodo[]) {
 
 describe('toBriefingState', () => {
   it('리포트를 받기 전이거나 받지 못했으면 자리만 잡고 실패는 리포트 경계에 맡긴다', () => {
-    // Given 리포트 없음 When 상태를 고르면 Then 로딩이다
-    expect(toBriefingState(undefined, { now: NOW, deviceTimeZone: 'Asia/Seoul' })).toBe('loading');
+    // When
+    const state = toBriefingState(undefined, { now: NOW, deviceTimeZone: 'Asia/Seoul' });
+
+    // Then
+    expect(state).toBe('loading');
   });
 
   it('6시간 넘게 갱신되지 않은 리포트로는 브리핑하지 않는다', () => {
-    // Given 7시간 지난 리포트 When 상태를 고르면 Then 숨긴다
+    // Given
     const later = fromEpochMs(toEpochMs(NOW) + 7 * 60 * 60_000);
 
-    expect(toBriefingState(report, { now: later, deviceTimeZone: 'Asia/Seoul' })).toBe('hidden');
+    // When
+    const state = toBriefingState(report, { now: later, deviceTimeZone: 'Asia/Seoul' });
+
+    // Then
+    expect(state).toBe('hidden');
   });
 
   it.each([
     ['Asia/Tokyo', 'visible'],
     ['America/Los_Angeles', 'hidden'],
   ] as const)('기기 시간대가 %s이면 서울 리포트 브리핑은 %s이다', (deviceTimeZone, expected) => {
-    // Given 서울 리포트 When 기기 벽시계와 비교하면 Then 벽시계가 다를 때만 숨긴다
-    expect(toBriefingState(report, { now: NOW, deviceTimeZone })).toBe(expected);
+    // When
+    const state = toBriefingState(report, { now: NOW, deviceTimeZone });
+
+    // Then
+    expect(state).toBe(expected);
   });
 });
 
 describe('toBriefingView', () => {
   it('비와 겹치는 할 일 하나는 제목을 넣어 알리고, 마른 시각과 강수 확률을 행에 보인다', () => {
-    // Given 16:30 산책(비 70%) When 화면 모델을 만들면 Then 제목 문구·마른 시각·옮기기 버튼이다
+    // When
     const view = viewFor([createBriefingTodo()]);
 
+    // Then
     expect(view.headline).toEqual({ key: 'briefing.rainyOne', values: { title: '산책' } });
     expect(view.rows[0]).toMatchObject({
       tone: 'warning',
@@ -75,17 +86,19 @@ describe('toBriefingView', () => {
   });
 
   it('비와 겹친 할 일을 모두 끝냈으면 옮기기 버튼을 감춘다', () => {
-    // Given 완료한 할 일 When 화면 모델을 만들면 Then 행은 남고 버튼은 없다
+    // When
     const view = viewFor([createBriefingTodo({ completed: true })]);
 
+    // Then
     expect(view.rows).toHaveLength(1);
     expect(view.action).toBeNull();
   });
 
   it('할 일이 없고 오늘 늦게 비가 오면 비 시작 시각만 알리고 할 일 제안은 하지 않는다', () => {
-    // Given 할 일 없음, 16시부터 비 When 화면 모델을 만들면 Then 오늘 비 문구에 시작 정시를 넣는다
+    // When
     const view = viewFor([]);
 
+    // Then
     expect(view.body).toEqual({
       key: 'briefing.rainLater.todayBody',
       values: { time: 'hour:2026-11-02T07:00:00.000Z' },

@@ -12,8 +12,11 @@ describe('막대 위치', () => {
     [4, 4 / 11],
     [15, 0.97],
   ])('자외선 %d은 막대의 %f 위치다', (uvIndex, expected) => {
-    // Given 자외선 지수 When 막대 위치를 구하면 Then 3%~97% 안에서 11 기준 비율이다
-    expect(toUvMeterPosition(uvIndex)).toBeCloseTo(expected);
+    // When
+    const position = toUvMeterPosition(uvIndex);
+
+    // Then
+    expect(position).toBeCloseTo(expected);
   });
 
   it.each([
@@ -22,8 +25,11 @@ describe('막대 위치', () => {
     ['pm25', 25, 0.375],
     ['pm25', 500, 0.97],
   ] as const)('%s %d은 막대의 %f 위치다', (pollutant, value, expected) => {
-    // Given 오염물질 농도 When 막대 위치를 구하면 Then 등급 칸 안에서 비례한 위치다
-    expect(toAirMeterPosition(value, pollutant)).toBeCloseTo(expected);
+    // When
+    const position = toAirMeterPosition(value, pollutant);
+
+    // Then
+    expect(position).toBeCloseTo(expected);
   });
 });
 
@@ -60,21 +66,32 @@ describe('toTemperatureBars', () => {
 
 describe('toTemperaturePosition', () => {
   it('예보 기간 최저~최고 사이에서 지금 기온의 위치를 0~1로 반환한다', () => {
-    // Given 최저 8° 최고 14° When 11°의 위치를 구하면 Then 가운데다
+    // Given
     const { daily } = createWeatherReport();
 
-    expect(toTemperaturePosition(daily, 11)).toBe(0.5);
+    // When
+    const position = toTemperaturePosition(daily, 11);
+
+    // Then
+    expect(position).toBe(0.5);
   });
 
   it('범위를 벗어난 기온은 양 끝에 붙인다', () => {
-    // Given 최저 8° 최고 14° When 20°의 위치를 구하면 Then 1이다
+    // Given
     const { daily } = createWeatherReport();
 
-    expect(toTemperaturePosition(daily, 20)).toBe(1);
+    // When
+    const position = toTemperaturePosition(daily, 20);
+
+    // Then
+    expect(position).toBe(1);
   });
 
   it('예보가 없으면 null을 반환한다', () => {
-    // Given 빈 예보 When 위치를 구하면 Then null이다
-    expect(toTemperaturePosition([], 11)).toBeNull();
+    // When
+    const position = toTemperaturePosition([], 11);
+
+    // Then
+    expect(position).toBeNull();
   });
 });
