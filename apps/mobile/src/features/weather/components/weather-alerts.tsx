@@ -128,11 +128,6 @@ WeatherAlerts.Item = function Item({
   );
 };
 
-/** 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */
-WeatherAlerts.Loading = function Loading() {
-  return null;
-};
-
 WeatherAlerts.Empty = function Empty() {
   return null;
 };

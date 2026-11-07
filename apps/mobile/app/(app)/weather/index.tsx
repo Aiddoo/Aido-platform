@@ -12,12 +12,26 @@ import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon';
+import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { useWeatherScreenTracking } from '@src/features/weather/hooks/use-weather-screen-tracking';
 import { useWeatherLocationRevision } from '@src/features/weather/queries/weather.queries';
+import { weatherEntryParamsSchema } from '@src/features/weather/schemas/weather-entry-params.schema';
+import {
+  toWeatherLocationRegisteredResult,
+  toWeatherOpenedEntry,
+} from '@src/features/weather/utils/weather-analytics';
+import { useTrack } from '@src/shared/analytics';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { AdaptivePane, Box, QueryErrorBoundary, Spacing, VStack } from '@src/shared/ui';
-import { type ComponentProps, type PropsWithChildren, Suspense } from 'react';
+import {
+  AdaptivePane,
+  Box,
+  QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  Spacing,
+  VStack,
+} from '@src/shared/ui';
+import { type PropsWithChildren, Suspense, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -49,7 +63,7 @@ export default function WeatherScreen() {
           </WeatherScrollView.Status>
         ))
         .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
-          <QueryErrorBoundary fallback={WeatherReportFallback} resetKeys={[locationRevision]}>
+          <QueryErrorBoundary fallback={WeatherScreen.Error} resetKeys={[locationRevision]}>
             <AdaptivePane
               primary={
                 <WeatherScrollView>
@@ -63,7 +77,8 @@ export default function WeatherScreen() {
                       </Suspense>
                     </Box>
                     <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
-                      <Suspense fallback={<WeatherAlerts.Loading />}>
+                      {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
+                      <Suspense fallback={null}>
                         <WeatherAlerts />
                       </Suspense>
                       <QueryErrorBoundary fallback={WeatherBriefing.Error}>
@@ -71,7 +86,8 @@ export default function WeatherScreen() {
                           <WeatherBriefing />
                         </Suspense>
                       </QueryErrorBoundary>
-                      <Suspense fallback={<NextHourPrecipitation.Loading />}>
+                      {/* 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
+                      <Suspense fallback={null}>
                         <NextHourPrecipitation />
                       </Suspense>
                       <Suspense fallback={<HourlyForecast.Loading />}>
@@ -135,10 +151,33 @@ function WeatherColumn({ children }: PropsWithChildren) {
 }
 
 /** 리포트 오류·위치 안내는 권한 안내와 같은 자리(가로 여백, 세로 가운데)에 둔다. */
-function WeatherReportFallback(props: ComponentProps<typeof WeatherHero.Error>) {
+WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <WeatherScrollView.Status>
       <WeatherHero.Error {...props} />
     </WeatherScrollView.Status>
   );
+};
+
+/**
+ * 날씨 화면이 열릴 때 진입점을, 위치 확인이 처음 끝났을 때 그 결과를 한 번씩 남긴다.
+ * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 화면에서는 더 세지 않는다.
+ */
+function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
+  const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
+  const { trackEvent } = useTrack();
+  const hasTrackedLocation = useRef(false);
+  const locationResult = toWeatherLocationRegisteredResult(locationStatus);
+
+  useEffect(() => {
+    trackEvent('weather_opened', { entry: toWeatherOpenedEntry(entry) });
+  }, [trackEvent, entry]);
+
+  useEffect(() => {
+    if (locationResult == null || hasTrackedLocation.current) {
+      return;
+    }
+    hasTrackedLocation.current = true;
+    trackEvent('weather_location_registered', { result: locationResult });
+  }, [trackEvent, locationResult]);
 }

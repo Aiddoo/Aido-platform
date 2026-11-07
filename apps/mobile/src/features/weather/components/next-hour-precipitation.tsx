@@ -285,11 +285,6 @@ NextHourPrecipitation.Chart = function Chart({
   );
 };
 
-/** 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */
-NextHourPrecipitation.Loading = function Loading() {
-  return null;
-};
-
 NextHourPrecipitation.Empty = function Empty() {
   return null;
 };

@@ -67,13 +67,13 @@ export function WeatherRescheduleSheet() {
       {sheet.isOpen && (
         <QueryErrorBoundary
           fallback={(fallbackProps) => (
-            <RescheduleErrorFallback
+            <WeatherRescheduleSheet.Error
               {...fallbackProps}
               onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
             />
           )}
         >
-          <Suspense fallback={<RescheduleLoading />}>
+          <Suspense fallback={<WeatherRescheduleSheet.Loading />}>
             <RescheduleTodoList form={form} onEmpty={() => sheet.close()} />
           </Suspense>
         </QueryErrorBoundary>
@@ -81,6 +81,31 @@ export function WeatherRescheduleSheet() {
     </BottomSheet>
   );
 }
+
+WeatherRescheduleSheet.Loading = function Loading() {
+  return (
+    <VStack px={20} gap={12} pb={8}>
+      <TextSkeleton size="t3" className="w-40" />
+      <TextSkeleton size="b3" className="w-56" />
+      {range(LOADING_TODO_COUNT).map((index) => (
+        <TextSkeleton key={index} size="b2" className="w-full" />
+      ))}
+    </VStack>
+  );
+};
+
+WeatherRescheduleSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
+  const { t } = useTranslation('common');
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
+    />
+  );
+};
 
 function RescheduleTodoList({
   form,
@@ -190,30 +215,5 @@ function RescheduleFooter({
       </QueryErrorBoundary>
       <WeatherRescheduleSubmitButton form={form} onDone={onDone} />
     </VStack>
-  );
-}
-
-function RescheduleLoading() {
-  return (
-    <VStack px={20} gap={12} pb={8}>
-      <TextSkeleton size="t3" className="w-40" />
-      <TextSkeleton size="b3" className="w-56" />
-      {range(LOADING_TODO_COUNT).map((index) => (
-        <TextSkeleton key={index} size="b2" className="w-full" />
-      ))}
-    </VStack>
-  );
-}
-
-function RescheduleErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
   );
 }
