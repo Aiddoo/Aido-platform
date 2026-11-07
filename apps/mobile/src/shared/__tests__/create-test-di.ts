@@ -1,8 +1,10 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import type { HttpClient } from '@src/core/ports/http';
+import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
@@ -12,6 +14,7 @@ import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
+import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import { createPushNotificationGatewayStub } from '@src/features/notification/__tests__/notification.fixtures';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
@@ -24,6 +27,7 @@ import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 
 import { createAnalyticsStub } from './create-analytics-stub';
+import { createAppIconGatewayStub } from './create-app-icon-gateway-stub';
 import { createErrorReporterStub } from './create-error-reporter-stub';
 import { createHttpClientStub } from './create-http-client-stub';
 import { createLoggerStub } from './create-logger-stub';
@@ -65,6 +69,13 @@ export function createTestDi({
       { isAvailable: jest.fn().mockResolvedValue(false), requestReview: jest.fn() },
     ),
     inquiryService: new InquiryService(httpClient),
+    achievementService: new AchievementService(httpClient),
+    appIconService: new AppIconService(createAppIconGatewayStub()),
+    appVersionService: new AppVersionService(
+      { get: jest.fn() },
+      { getInstallation: () => ({ platform: 'ios', currentVersion: '1.15.0' }) },
+      { openListing: jest.fn() },
+    ),
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
