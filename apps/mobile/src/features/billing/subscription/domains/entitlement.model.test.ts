@@ -143,8 +143,8 @@ describe('getQuotaStatus', () => {
   it.each([
     ['FREE 7번 남음', 'FREE', 3, { type: 'remaining', count: 7, period: 'month' }],
     ['FREE 다 씀', 'FREE', 10, { type: 'used-up', period: 'month' }],
-    ['PREMIUM 공정 사용', 'PREMIUM', 3, { type: 'hidden' }],
-    ['ADMIN 무제한', 'ADMIN', undefined, { type: 'hidden' }],
+    ['PREMIUM 공정 사용', 'PREMIUM', 3, { type: 'untracked' }],
+    ['ADMIN 무제한', 'ADMIN', undefined, { type: 'untracked' }],
   ] as const)('%s', (_case, tier, used, expected) => {
     // Given
     const snapshot = createEntitlementSnapshot({ tier, used: { AI_PARSE: used } });
@@ -175,7 +175,7 @@ describe('getQuotaStatus', () => {
     const status = EntitlementPolicy.getQuotaStatus(snapshot, 'FRIEND');
 
     // Then
-    expect(status).toEqual({ type: 'hidden' });
+    expect(status).toEqual({ type: 'untracked' });
   });
 });
 

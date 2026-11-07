@@ -15,9 +15,9 @@ import type {
 /** 기능을 지금 시작해도 되는지. 모르는 기능은 서버가 판단하도록 allow다 */
 type AccessDecision = 'allow' | 'limit-reached' | 'locked';
 
-/** 남은 횟수를 알릴지와 무엇을 알릴지. 무제한·공정 사용 한도·횟수가 없는 기능은 hidden이다 */
+/** 남은 횟수를 알릴지와 무엇을 알릴지. 무제한·공정 사용 한도·횟수가 없는 기능은 untracked다 */
 type QuotaStatus =
-  | { type: 'hidden' }
+  | { type: 'untracked' }
   | { type: 'remaining'; count: number; period: QuotaPeriod }
   | { type: 'used-up'; period: QuotaPeriod };
 
@@ -83,7 +83,7 @@ function getQuotaStatus(snapshot: EntitlementSnapshot, feature: EntitlementFeatu
     quota.remaining == null ||
     quota.period == null
   ) {
-    return { type: 'hidden' };
+    return { type: 'untracked' };
   }
   return quota.remaining === 0
     ? { type: 'used-up', period: quota.period }

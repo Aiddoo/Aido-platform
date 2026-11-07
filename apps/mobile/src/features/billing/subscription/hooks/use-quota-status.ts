@@ -15,10 +15,10 @@ export function useQuotaStatus(feature: EntitlementFeature) {
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const status =
     snapshot == null
-      ? { type: 'hidden' as const }
+      ? { type: 'untracked' as const }
       : EntitlementPolicy.getQuotaStatus(snapshot, feature);
   const label = match(status)
-    .with({ type: 'hidden' }, () => null)
+    .with({ type: 'untracked' }, () => null)
     .with({ type: 'remaining' }, ({ count }) =>
       t('quota.remaining', { amount: formatCount(count, locale) }),
     )

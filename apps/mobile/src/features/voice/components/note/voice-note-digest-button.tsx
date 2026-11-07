@@ -20,10 +20,10 @@ export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigest
   const { data: snapshot, isPending } = useQuery(useGetEntitlementsQueryOptions());
   const status =
     snapshot == null
-      ? { type: 'hidden' as const }
+      ? { type: 'untracked' as const }
       : EntitlementPolicy.getQuotaStatus(snapshot, 'VOICE_NOTE');
   const cost = match(status)
-    .with({ type: 'hidden' }, () => null)
+    .with({ type: 'untracked' }, () => null)
     .with({ type: 'remaining' }, ({ count }) => t('digest.cost', { amount: count }))
     .with({ type: 'used-up' }, () => t('digest.usedUp'))
     .exhaustive();
