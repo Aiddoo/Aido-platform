@@ -179,9 +179,9 @@ FriendStrip.Item = memo(function Item({
       <StripCell
         width={width}
         avatar={
-          <AvatarFrame isSelected={isSelected}>
+          <AvatarRing isSelected={isSelected}>
             <UserAvatar size="sm" alt={name} profileImage={profileImage} />
-          </AvatarFrame>
+          </AvatarRing>
         }
         label={
           <Text
@@ -416,7 +416,7 @@ function StripCell({
   );
 }
 
-function AvatarFrame({
+function AvatarRing({
   isSelected = false,
   children,
 }: {
@@ -443,9 +443,9 @@ function ActionCell({ icon, label }: { icon: ReactNode; label: string }) {
     <StripCell
       width={width}
       avatar={
-        <AvatarFrame>
+        <AvatarRing>
           <Box className="size-10 items-center justify-center rounded-full bg-gray-2">{icon}</Box>
-        </AvatarFrame>
+        </AvatarRing>
       }
       label={
         <Text size="e1" shade={6} align="center" maxLines={1} className="w-full">
@@ -463,9 +463,9 @@ function SkeletonCell() {
     <StripCell
       width={width}
       avatar={
-        <AvatarFrame>
+        <AvatarRing>
           <Skeleton className="size-10 rounded-full" />
-        </AvatarFrame>
+        </AvatarRing>
       }
       label={<TextSkeleton size="e1" className="w-8" />}
     />

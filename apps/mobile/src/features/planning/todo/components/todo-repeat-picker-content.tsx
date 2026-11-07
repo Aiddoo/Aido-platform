@@ -98,7 +98,7 @@ export function TodoRepeatPickerContent({
       >
         <VStack gap={20}>
           <TodoRepeatPickerContent.DayOfWeekSelector />
-          <TodoRepeatPickerContent.RepeatCalendarSection picker={picker} />
+          <TodoRepeatPickerContent.RepeatFormCalendar picker={picker} />
         </VStack>
       </SheetHeaderLayout>
     </FormProvider>
@@ -345,13 +345,13 @@ TodoRepeatPickerContent.RepeatPickerHeader = function RepeatPickerHeader({
   );
 };
 
-interface RepeatCalendarSectionProps {
+interface RepeatFormCalendarProps {
   picker: ReturnType<typeof useDatePicker>;
 }
 
-TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
+TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
   picker,
-}: RepeatCalendarSectionProps) {
+}: RepeatFormCalendarProps) {
   const { timeZone } = useDateFormatContext();
   const { control, getValues } = useFormContext<TodoRepeatFormValues>();
   const [startDate, endType, untilDate] = useWatch({
