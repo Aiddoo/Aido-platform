@@ -4,17 +4,21 @@ import {
   APP_STORE_SUBSCRIPTIONS_URL,
   PLAY_STORE_SUBSCRIPTIONS_URL,
 } from '../constants/subscription.constants';
-import type { SubscriptionOffering } from '../schemas/subscription.schema';
+import type { SubscriptionOffering, SubscriptionPlan } from '../schemas/subscription.schema';
 
-export function getAnnualDiscountPercent(monthlyPrice: number, annualPrice: number) {
-  return Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
+/** 월간 결제를 12번 한 값 대비 연간 결제가 얼마나 싼지(%) */
+function getAnnualDiscountPercent(
+  monthlyPlan: Pick<SubscriptionPlan, 'price'>,
+  annualPlan: Pick<SubscriptionPlan, 'price'>,
+) {
+  return Math.round((1 - annualPlan.price / (monthlyPlan.price * 12)) * 100);
 }
 
-export function getMonthlyEquivalent(annualPrice: number) {
-  return Math.round((annualPrice / 12) * 100) / 100;
+function getMonthlyEquivalent(annualPlan: Pick<SubscriptionPlan, 'price'>) {
+  return Math.round((annualPlan.price / 12) * 100) / 100;
 }
 
-export function getSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {
+function getSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {
   if (chosenPlanId != null) {
     return offering.plans.find((plan) => plan.identifier === chosenPlanId);
   }
@@ -49,5 +53,8 @@ function getManagementUrl(
 }
 
 export const SubscriptionPolicy = {
+  getAnnualDiscountPercent,
+  getMonthlyEquivalent,
+  getSelectedPlan,
   getManagementUrl,
 } as const;

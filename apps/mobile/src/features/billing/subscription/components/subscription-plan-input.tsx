@@ -6,7 +6,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { getAnnualDiscountPercent, getMonthlyEquivalent } from '../domains/subscription.model';
+import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { type SubscriptionPlan } from '../schemas/subscription.schema';
 
@@ -18,7 +18,9 @@ export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
   const monthlyPlan = plans.find((plan) => plan.planType === 'monthly');
   const annualPlan = plans.find((plan) => plan.planType === 'annual');
   const annualDiscountPercent =
-    monthlyPlan && annualPlan ? getAnnualDiscountPercent(monthlyPlan.price, annualPlan.price) : 0;
+    monthlyPlan && annualPlan
+      ? SubscriptionPolicy.getAnnualDiscountPercent(monthlyPlan, annualPlan)
+      : 0;
 
   return (
     <RadioGroup className="gap-3" {...props}>
@@ -40,7 +42,7 @@ function PlanOption({ plan, discountPercent }: PlanOptionProps) {
   const label = isAnnual ? t('plan.annual') : t('plan.monthly');
   const periodLabel = isAnnual ? t('plan.perYear') : t('plan.perMonth');
 
-  const monthlyEquivalent = isAnnual ? getMonthlyEquivalent(plan.price) : null;
+  const monthlyEquivalent = isAnnual ? SubscriptionPolicy.getMonthlyEquivalent(plan) : null;
 
   return (
     <RadioGroup.Item value={plan.identifier} className="rounded-2xl">

@@ -1,10 +1,5 @@
 import type { SubscriptionOffering, SubscriptionPlan } from '../schemas/subscription.schema';
-import {
-  getAnnualDiscountPercent,
-  getMonthlyEquivalent,
-  getSelectedPlan,
-  SubscriptionPolicy,
-} from './subscription.model';
+import { SubscriptionPolicy } from './subscription.model';
 
 function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
   return {
@@ -19,29 +14,29 @@ function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
   };
 }
 
-describe('getSelectedPlan', () => {
+describe('SubscriptionPolicy.getSelectedPlan', () => {
   const monthly = createPlan({ identifier: 'monthly', planType: 'monthly' });
   const annual = createPlan({ identifier: 'annual', planType: 'annual' });
   const offering: SubscriptionOffering = { identifier: 'default', plans: [monthly, annual] };
 
   test('고르지 않았으면 연간을 고른 것으로 본다', () => {
     // When
-    const result = getSelectedPlan(offering, undefined);
+    const result = SubscriptionPolicy.getSelectedPlan(offering, undefined);
     // Then
     expect(result).toBe(annual);
   });
 
   test('연간이 없으면 첫 요금제를 고른 것으로 본다', () => {
     // When
-    const result = getSelectedPlan({ ...offering, plans: [monthly] }, undefined);
+    const result = SubscriptionPolicy.getSelectedPlan({ ...offering, plans: [monthly] }, undefined);
     // Then
     expect(result).toBe(monthly);
   });
 
   test('고른 요금제가 있으면 그것을 돌려주고 판매에서 빠졌으면 없는 값을 돌려준다', () => {
     // When
-    const chosen = getSelectedPlan(offering, 'monthly');
-    const removed = getSelectedPlan(offering, 'old-plan');
+    const chosen = SubscriptionPolicy.getSelectedPlan(offering, 'monthly');
+    const removed = SubscriptionPolicy.getSelectedPlan(offering, 'old-plan');
     // Then
     expect(chosen).toBe(monthly);
     expect(removed).toBeUndefined();
@@ -56,7 +51,10 @@ describe('구독 가격 계산', () => {
     // Given
     const prices = { monthlyPrice, annualPrice };
     // When
-    const result = getAnnualDiscountPercent(prices.monthlyPrice, prices.annualPrice);
+    const result = SubscriptionPolicy.getAnnualDiscountPercent(
+      { price: prices.monthlyPrice },
+      { price: prices.annualPrice },
+    );
     // Then
     expect(result).toBe(expected);
   });
@@ -68,7 +66,7 @@ describe('구독 가격 계산', () => {
     // Given
     const price = annualPrice;
     // When
-    const result = getMonthlyEquivalent(price);
+    const result = SubscriptionPolicy.getMonthlyEquivalent({ price });
     // Then
     expect(result).toBeCloseTo(expected, 2);
   });

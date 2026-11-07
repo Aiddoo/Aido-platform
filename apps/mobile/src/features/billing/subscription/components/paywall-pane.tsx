@@ -20,7 +20,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { getSelectedPlan } from '../domains/subscription.model';
+import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSubscriptionViewParam } from '../hooks/use-subscription-view-param';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
@@ -117,7 +117,7 @@ PlanPicker.Plans = function Plans({
 
   return (
     <SubscriptionPlanInput
-      value={getSelectedPlan(offering, chosenPlanId)?.identifier}
+      value={SubscriptionPolicy.getSelectedPlan(offering, chosenPlanId)?.identifier}
       onValueChange={onChoose}
     />
   );
@@ -164,7 +164,7 @@ function PurchaseButton({ chosenPlanId }: PurchaseButtonProps) {
   });
   const selectedPlan =
     availability?.status === 'available'
-      ? getSelectedPlan(availability.offering, chosenPlanId)
+      ? SubscriptionPolicy.getSelectedPlan(availability.offering, chosenPlanId)
       : undefined;
 
   const handlePurchase = () => {
