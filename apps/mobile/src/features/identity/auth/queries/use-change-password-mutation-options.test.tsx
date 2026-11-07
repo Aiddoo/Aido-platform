@@ -3,6 +3,7 @@ import {
   createTestDiContainer,
   createHttpClientStub,
   createMockTokenStore,
+  createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { NetworkError } from '@src/shared/errors';
@@ -44,7 +45,12 @@ describe('비밀번호 변경 실패 안내', () => {
   });
 
   const changePassword = async () => {
-    const authService = new AuthService(createHttpClientStub(), authHttp, createMockTokenStore());
+    const authService = new AuthService(
+      createHttpClientStub(),
+      authHttp,
+      createMockTokenStore(),
+      createSocialAuthGatewayStub(),
+    );
     const container = createTestDiContainer({ authService });
     const rendered = await renderHook(() => useChangePasswordMutationOptions(), {
       wrapper: ({ children }: PropsWithChildren) => (

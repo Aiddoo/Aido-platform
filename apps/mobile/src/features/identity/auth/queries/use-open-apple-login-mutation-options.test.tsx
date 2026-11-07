@@ -2,29 +2,13 @@ import { createAnalyticsStub } from '@src/shared/__tests__';
 import { ok } from '@src/shared/errors/result';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { createAuthSession } from '../__tests__/auth-session.test-utils';
 import { createAuthTokensDto } from '../__tests__/auth.fixtures';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import { useOpenAppleLoginMutationOptions } from './use-open-apple-login-mutation-options';
 
-// 네이티브 SDK 경계만 바꾼다
-jest.mock('expo-apple-authentication', () => ({
-  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
-  signInAsync: jest.fn(),
-}));
-
 async function loginWithApple(dto: ReturnType<typeof createAuthTokensDto>) {
-  jest.mocked(AppleAuthentication.signInAsync).mockResolvedValue({
-    identityToken: 'apple-id-token',
-    user: 'apple-user',
-    state: null,
-    fullName: null,
-    email: null,
-    realUserStatus: 1,
-    authorizationCode: null,
-  });
   const analytics = createAnalyticsStub();
   const session = createAuthSession({ di: { analytics } });
   session.publicHttp.post.mockResolvedValue(ok(dto));

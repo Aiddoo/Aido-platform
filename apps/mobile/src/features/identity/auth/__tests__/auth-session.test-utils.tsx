@@ -22,6 +22,7 @@ import {
   createMemorySyncStorage,
   createMemoryTokenStore,
   createAnalyticsStub,
+  createSocialAuthGatewayStub,
   createTestDiContainer,
   createHttpClientStub,
   createVoiceNoteStorageServiceFake,
@@ -69,6 +70,7 @@ export function createAuthSession({
   const store = tokenStore ?? createMemoryTokenStore(tokens);
   const publicHttp = createHttpClientStub();
   const authHttp = createHttpClientStub();
+  const socialAuthGateway = createSocialAuthGatewayStub();
   const userHttp = createHttpClientStub();
   userHttp.get.mockResolvedValue(ok(createCurrentUserDto()));
   const queryClient = createTestQueryClient();
@@ -103,7 +105,7 @@ export function createAuthSession({
     logger: silentLogger,
     errorReporter,
     analytics: createAnalyticsStub(),
-    authService: new AuthService(publicHttp, authHttp, store),
+    authService: new AuthService(publicHttp, authHttp, store, socialAuthGateway),
     pushDeviceService: new PushDeviceService(
       createPushNotificationGatewayStub(),
       { get: async () => 'device-1' },
@@ -160,6 +162,7 @@ export function createAuthSession({
     tokenStore: store,
     publicHttp,
     authHttp,
+    socialAuthGateway,
     userHttp,
     queryClient,
     draftService,

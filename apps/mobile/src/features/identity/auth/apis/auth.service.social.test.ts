@@ -1,6 +1,9 @@
+import '@src/shared/i18n/init';
 import { createHttpClientStub, createMockTokenStore } from '@src/shared/__tests__';
 import { ENV } from '@src/shared/config/env';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
+import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -61,7 +64,7 @@ describe('소셜 로그인', () => {
     publicHttp = createHttpClientStub();
     authHttp = createHttpClientStub();
     tokenStore = createMockTokenStore();
-    service = new AuthService(publicHttp, authHttp, tokenStore);
+    service = new AuthService(publicHttp, authHttp, tokenStore, expoSocialAuthGateway);
   });
 
   describe('브라우저 로그인(카카오, 네이버, 구글)', () => {
@@ -136,6 +139,26 @@ describe('소셜 로그인', () => {
       // Then
       expect(result.ok).toBe(false);
       expect(!result.ok && isBusinessError(result.error, code)).toBe(true);
+    });
+
+    it('서버 오류 코드는 카탈로그 문구로, 모르는 코드는 호출부 폴백으로 보여 준다', async () => {
+      // Given
+      openAuthSession.mockResolvedValue({
+        type: 'success',
+        url: 'aido://auth/kakao?error=AUTH_0101&error_description=fail',
+      });
+
+      // When
+      const known = await service.openKakaoLogin();
+      openAuthSession.mockResolvedValue({
+        type: 'success',
+        url: 'aido://auth/kakao?error=authentication_failed',
+      });
+      const unknown = await service.openKakaoLogin();
+
+      // Then
+      expect(!known.ok && getUserFacingMessage(known.error)).toBeTruthy();
+      expect(!unknown.ok && getUserFacingMessage(unknown.error)).toBeUndefined();
     });
 
     it('코드도 오류도 없이 돌아오면 코드를 받지 못한 오류다', async () => {
@@ -220,6 +243,9 @@ describe('소셜 로그인', () => {
 
     it.each([
       ['ERR_REQUEST_CANCELED', 'AUTH_LOGIN_CANCELLED'],
+      ['ERR_REQUEST_FAILED', 'AUTH_APPLE_INVALID_RESPONSE'],
+      ['ERR_INVALID_RESPONSE', 'AUTH_APPLE_INVALID_RESPONSE'],
+      ['ERR_NOT_AVAILABLE', 'AUTH_APPLE_UNAVAILABLE'],
       ['ERR_SOMETHING_ELSE', 'AUTH_UNKNOWN'],
     ])('SDK가 %s로 실패하면 %s로 끝난다', async (sdkCode, code) => {
       // Given
@@ -230,6 +256,18 @@ describe('소셜 로그인', () => {
 
       // Then
       expect(!result.ok && isBusinessError(result.error, code)).toBe(true);
+      expect(publicHttp.post).not.toHaveBeenCalled();
+    });
+
+    it('토큰을 받지 못하면 서버에 보내지 않는다', async () => {
+      // Given
+      signInWithApple.mockResolvedValue({ ...APPLE_CREDENTIAL, identityToken: null });
+
+      // When
+      const result = await service.openAppleLogin();
+
+      // Then
+      expect(!result.ok && isBusinessError(result.error, 'AUTH_APPLE_NO_TOKEN')).toBe(true);
       expect(publicHttp.post).not.toHaveBeenCalled();
     });
 

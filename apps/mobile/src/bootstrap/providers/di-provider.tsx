@@ -103,6 +103,7 @@ import {
 } from '@src/shared/infra/observability-env';
 import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases.gateway';
 import { rnSystemShareGateway } from '@src/shared/infra/share/rn-system-share.gateway';
+import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
 import { expoSpeechRecognizerGateway } from '@src/shared/infra/speech/expo-speech-recognizer.gateway';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
@@ -209,7 +210,12 @@ export function DIProvider({
     const consentService = new ConsentService(authHttpClient);
 
     // Auth
-    const authService = new AuthService(publicHttpClient, authHttpClient, tokenStore);
+    const authService = new AuthService(
+      publicHttpClient,
+      authHttpClient,
+      tokenStore,
+      expoSocialAuthGateway,
+    );
     const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(
       createActivationProgressRepository(mmkvSyncStorage),

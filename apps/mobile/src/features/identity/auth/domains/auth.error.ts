@@ -1,91 +1,16 @@
-import type { CodedError } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-import { match } from 'ts-pattern';
+import { isBusinessError } from '@src/shared/errors/result';
 
-import type { OAuthProviderSlug } from '../schemas/oauth.schema';
-
-export interface ExpoCodedError extends Error {
-  code?: string;
-}
-
-const EXPO_APPLE_ERROR_CODES = {
-  REQUEST_CANCELED: 'ERR_REQUEST_CANCELED',
-  REQUEST_FAILED: 'ERR_REQUEST_FAILED',
-  INVALID_RESPONSE: 'ERR_INVALID_RESPONSE',
-  NOT_AVAILABLE: 'ERR_NOT_AVAILABLE',
-} as const;
-
-export const AuthErrorCode = {
+/** 앱이 직접 판단한 소셜 로그인 실패. 문구는 `errors` 카탈로그에 같은 키로 둔다 */
+export const AUTH_ERROR_CODE = {
   LOGIN_CANCELLED: 'AUTH_LOGIN_CANCELLED',
   PROVIDER_ERROR: 'AUTH_PROVIDER_ERROR',
-  VALIDATION_FAILED: 'AUTH_VALIDATION_FAILED',
   NO_CODE_RECEIVED: 'AUTH_NO_CODE_RECEIVED',
+  APPLE_NO_TOKEN: 'AUTH_APPLE_NO_TOKEN',
+  APPLE_INVALID_RESPONSE: 'AUTH_APPLE_INVALID_RESPONSE',
+  APPLE_UNAVAILABLE: 'AUTH_APPLE_UNAVAILABLE',
   UNKNOWN: 'AUTH_UNKNOWN',
 } as const;
 
-export type AuthErrorCode = (typeof AuthErrorCode)[keyof typeof AuthErrorCode];
-
-export class AuthError extends Error implements CodedError {
-  override readonly name = 'AuthError';
-
-  constructor(
-    public readonly code: AuthErrorCode | string,
-    message: string,
-  ) {
-    super(message);
-  }
+export function isLoginCancelledError(error: unknown) {
+  return isBusinessError(error, AUTH_ERROR_CODE.LOGIN_CANCELLED);
 }
-
-export const AuthErrors = {
-  loginCancelled: () =>
-    new AuthError(AuthErrorCode.LOGIN_CANCELLED, t('auth:errors.loginCancelled')),
-
-  providerError: (provider: OAuthProviderSlug, msg?: string) =>
-    new AuthError(
-      AuthErrorCode.PROVIDER_ERROR,
-      msg ?? t('auth:errors.providerFailed', { provider }),
-    ),
-
-  validationFailed: (endpoint?: string) =>
-    new AuthError(
-      AuthErrorCode.VALIDATION_FAILED,
-      endpoint
-        ? t('auth:errors.invalidResponseWithEndpoint', { endpoint })
-        : t('auth:errors.invalidResponse'),
-    ),
-
-  noCodeReceived: () =>
-    new AuthError(AuthErrorCode.NO_CODE_RECEIVED, t('auth:errors.noCodeReceived')),
-
-  unknown: (msg?: string) => new AuthError(AuthErrorCode.UNKNOWN, msg ?? t('auth:errors.unknown')),
-
-  fromExpoAppleError: (error: ExpoCodedError): AuthError => {
-    return match(error.code)
-      .with(EXPO_APPLE_ERROR_CODES.REQUEST_CANCELED, () => AuthErrors.loginCancelled())
-      .with(EXPO_APPLE_ERROR_CODES.REQUEST_FAILED, EXPO_APPLE_ERROR_CODES.INVALID_RESPONSE, () =>
-        AuthErrors.providerError('apple', t('auth:errors.appleInvalidResponse')),
-      )
-      .with(EXPO_APPLE_ERROR_CODES.NOT_AVAILABLE, () =>
-        AuthErrors.providerError('apple', t('auth:errors.appleUnavailable')),
-      )
-      .otherwise(() => AuthErrors.unknown(error.message));
-  },
-
-  fromUnknown: (error: unknown): AuthError => {
-    if (error instanceof AuthError) {
-      return error;
-    }
-    if (error instanceof Error) {
-      return AuthErrors.unknown(error.message);
-    }
-    return AuthErrors.unknown();
-  },
-} as const;
-
-export const isAuthError = (error: unknown): error is AuthError => error instanceof AuthError;
-
-export const isExpoCodedError = (error: unknown): error is ExpoCodedError =>
-  error instanceof Error && 'code' in error && typeof error.code === 'string';
-
-export const isCancelledError = (error: unknown): boolean =>
-  error instanceof AuthError && error.code === AuthErrorCode.LOGIN_CANCELLED;

@@ -21,3 +21,20 @@ const OAUTH_PROVIDER_SLUG = {
 export function toOAuthProviderSlug(provider: OAuthProvider): OAuthProviderSlug {
   return OAUTH_PROVIDER_SLUG[provider];
 }
+
+/** 돌아온 주소의 쿼리에 없으면 해시까지 본다. 서버와 업체마다 코드를 두는 자리가 다르다 */
+export function extractOAuthCode(url: string, queryParams: Record<string, string>): string | null {
+  if (queryParams.code) {
+    return queryParams.code;
+  }
+  try {
+    const parsedUrl = new URL(url);
+    return (
+      parsedUrl.searchParams.get('code') ||
+      new URLSearchParams(parsedUrl.hash.replace(/^#/, '')).get('code') ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}

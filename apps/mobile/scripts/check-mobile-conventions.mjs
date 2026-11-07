@@ -333,10 +333,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],
   ['apps/mobile/src/bootstrap/providers/query-provider.tsx', ['expo-application', 'expo-updates']],
   [
-    'apps/mobile/src/features/identity/auth/apis/auth.service.ts',
-    ['expo-linking', 'expo-web-browser', 'expo-apple-authentication', 'expo-crypto'],
-  ],
-  [
     'apps/mobile/src/features/app-config/whats-new/apis/native-app-version.ts',
     ['expo-application'],
   ],

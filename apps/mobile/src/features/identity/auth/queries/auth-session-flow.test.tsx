@@ -20,6 +20,7 @@ import {
   createHttpClientStub,
   createAnalyticsStub,
   createPendingResponse,
+  createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
@@ -31,7 +32,6 @@ import { RETRY_MARKER_HEADER } from '@src/shared/infra/http/token-refresh-hook';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { z } from 'zod';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
@@ -45,12 +45,6 @@ import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-opt
 import { useLogoutMutationOptions } from './use-logout-mutation-options';
 import { useOpenAppleLoginMutationOptions } from './use-open-apple-login-mutation-options';
 import { useVerifyEmailMutationOptions } from './use-verify-email-mutation-options';
-
-// auth.service가 직접 쓰는 네이티브 SDK 경계. 나머지는 실제 코드다.
-jest.mock('expo-apple-authentication', () => ({
-  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
-  signInAsync: jest.fn(),
-}));
 
 const memoDraftKey = createDraftKey({
   ownerId: 'user-1',
@@ -500,15 +494,6 @@ describe('로그인', () => {
     // Given
     const session = createAuthSession();
     session.publicHttp.post.mockResolvedValue(ok(dto));
-    jest.mocked(AppleAuthentication.signInAsync).mockResolvedValue({
-      identityToken: 'apple-id-token',
-      user: 'apple-user',
-      state: null,
-      fullName: null,
-      email: null,
-      realUserStatus: 1,
-      authorizationCode: null,
-    });
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),
       'unauthenticated',
@@ -598,7 +583,12 @@ describe('로그아웃과 늦은 갱신', () => {
         sessionEpoch,
       }),
     );
-    const authService = new AuthService(createHttpClientStub(), http, tokenStore);
+    const authService = new AuthService(
+      createHttpClientStub(),
+      http,
+      tokenStore,
+      createSocialAuthGatewayStub(),
+    );
     const todosRequest = http.get('v1/todos').catch(() => undefined);
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
@@ -954,7 +944,14 @@ describe('토큰 만료', () => {
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     const session = createAuthSession({
       tokenStore,
-      di: { authService: new AuthService(createHttpClientStub(), http, tokenStore) },
+      di: {
+        authService: new AuthService(
+          createHttpClientStub(),
+          http,
+          tokenStore,
+          createSocialAuthGatewayStub(),
+        ),
+      },
     });
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),

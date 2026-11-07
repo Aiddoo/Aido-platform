@@ -5,6 +5,7 @@ import {
   createTestDiContainer,
   createHttpClientStub,
   createMockTokenStore,
+  createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -37,7 +38,12 @@ async function register(dto: ReturnType<typeof createRegisterDto>) {
   const publicHttp = createHttpClientStub();
   publicHttp.post.mockResolvedValue({ ok: true, value: dto });
   const container = createTestDiContainer({
-    authService: new AuthService(publicHttp, createHttpClientStub(), createMockTokenStore()),
+    authService: new AuthService(
+      publicHttp,
+      createHttpClientStub(),
+      createMockTokenStore(),
+      createSocialAuthGatewayStub(),
+    ),
     analytics: createAnalyticsStub(),
   });
   const { result } = await renderHook(() => useRegisterMutationOptions(), {

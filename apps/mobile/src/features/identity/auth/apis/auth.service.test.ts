@@ -1,4 +1,8 @@
-import { createHttpClientStub, createMockTokenStore } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createMockTokenStore,
+  createSocialAuthGatewayStub,
+} from '@src/shared/__tests__';
 
 import {
   createAuthApiError,
@@ -24,7 +28,12 @@ describe('AuthService', () => {
     publicHttpClient = createHttpClientStub();
     authHttpClient = createHttpClientStub();
     tokenStore = createMockTokenStore();
-    service = new AuthService(publicHttpClient, authHttpClient, tokenStore);
+    service = new AuthService(
+      publicHttpClient,
+      authHttpClient,
+      tokenStore,
+      createSocialAuthGatewayStub(),
+    );
   });
 
   // ── emailLogin ─────────────────────────────

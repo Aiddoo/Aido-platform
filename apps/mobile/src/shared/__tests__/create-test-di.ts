@@ -29,6 +29,7 @@ import { createHttpClientStub } from './create-http-client-stub';
 import { createLoggerStub } from './create-logger-stub';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
 import { createMockTokenStore } from './create-mock-token-store';
+import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 
 type TestDiOverrides = Partial<DIContainer> & {
   /** 실제 Service들이 함께 쓰는 HTTP 포트. 응답은 테스트가 이 stub에 정한다 */
@@ -67,7 +68,12 @@ export function createTestDi({
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),
-    authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+    authService: new AuthService(
+      httpClient,
+      httpClient,
+      createMockTokenStore(),
+      createSocialAuthGatewayStub(),
+    ),
     consentService: new ConsentService(httpClient),
     coachmarkService: new CoachmarkService(createCoachmarkRepository(createMemorySyncStorage())),
     analytics: createAnalyticsStub(),

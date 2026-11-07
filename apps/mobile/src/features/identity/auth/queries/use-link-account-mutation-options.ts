@@ -1,14 +1,14 @@
 import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import { isAuthError, isCancelledError } from '../domains/auth.error';
+import { isLoginCancelledError } from '../domains/auth.error';
 import { toOAuthProvider } from '../domains/oauth.model';
 import { type OAuthProviderSlug } from '../schemas/oauth.schema';
 
@@ -18,6 +18,7 @@ export const useLinkAccountMutationOptions = () => {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('auth:toasts.linkFailed'));
 
   return mutationOptions<{ message: string }, Error, OAuthProviderSlug>({
     mutationFn: async (provider: OAuthProviderSlug) => {
@@ -34,16 +35,11 @@ export const useLinkAccountMutationOptions = () => {
       trackEvent('auth_social_linked', { provider });
     },
     onError: (error) => {
-      haptics.notify('error');
-
-      if (isCancelledError(error)) {
+      if (isLoginCancelledError(error)) {
+        haptics.notify('error');
         return;
       }
-      if (isApiError(error) || isAuthError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('auth:toasts.linkFailed') });
+      showFailure(error);
     },
   });
 };
