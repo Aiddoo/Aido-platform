@@ -13,9 +13,10 @@ import {
   startOfLocalMonth,
   toLocalDay,
 } from '@src/shared/date/local-day';
-import type { CalendarViewMode } from '@src/shared/preferences/calendar-view-mode.preference';
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
+
+import type { CalendarViewMode } from '../schemas/calendar-view-mode.schema';
 
 function getWeekOfDate(date: Date, timeZone: string): CalendarWeek {
   return getCalendarWeek(toDateKey(date, timeZone));

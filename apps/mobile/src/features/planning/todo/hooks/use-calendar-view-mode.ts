@@ -1,10 +1,9 @@
 import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
-import {
-  CALENDAR_VIEW_MODE_STORAGE_KEY,
-  type CalendarViewMode,
-  parseCalendarViewMode,
-} from '@src/shared/preferences/calendar-view-mode.preference';
+
+import { type CalendarViewMode, parseCalendarViewMode } from '../schemas/calendar-view-mode.schema';
+
+const CALENDAR_VIEW_MODE_STORAGE_KEY = 'aido_calendar_view_mode';
 
 export function useCalendarViewMode() {
   const syncStorage = useSyncStorage();

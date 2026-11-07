@@ -13,10 +13,6 @@ import {
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  type CalendarViewMode,
-  calendarViewModeSchema,
-} from '@src/shared/preferences/calendar-view-mode.preference';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Tabs } from 'heroui-native';
@@ -26,6 +22,10 @@ import { match } from 'ts-pattern';
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
+import {
+  type CalendarViewMode,
+  calendarViewModeSchema,
+} from '../../schemas/calendar-view-mode.schema';
 import type { DailyCompletionSummary } from '../../schemas/todo.schema';
 import { isSameMonth } from '../../utils/calendar-day-comparison';
 import {

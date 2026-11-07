@@ -1,4 +1,4 @@
-import { parseCalendarViewMode } from './calendar-view-mode.preference';
+import { parseCalendarViewMode } from './calendar-view-mode.schema';
 
 describe('parseCalendarViewMode', () => {
   it.each([
