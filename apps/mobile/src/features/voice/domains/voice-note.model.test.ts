@@ -10,7 +10,7 @@ import {
 } from '../__tests__/voice-note.fixtures';
 import { createVoiceNoteSchema } from '../schemas/voice-note.schema';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
-import { PlanReviewPolicy } from './plan-review.model';
+import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import {
   createDigestInput,
   createDigestMemo,
@@ -22,7 +22,7 @@ import {
 } from './voice-note.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
-  PlanReviewPolicy.createDraft(
+  createPlanReviewDraft(
     voicePlanSchema.parse({
       planId: 'draft-1',
       source: 'voice-note',
@@ -256,7 +256,7 @@ describe('voiceNoteSchema 저장과 복원', () => {
   test('고친 카드까지 저장했다가 달력 날짜를 그대로 되살린다', () => {
     // Given
     const note = createVoiceNoteFixture({
-      planDraft: PlanReviewPolicy.createDraft(plan),
+      planDraft: createPlanReviewDraft(plan),
     });
 
     // When
@@ -353,18 +353,22 @@ describe('withDigestResult', () => {
     });
 
     // When
-    const next = withDigestResult(note, {
-      plan: emptyPlan,
-      title: '제목',
-      summary: '요약',
-      keyPoints: [
-        { text: '깃발', startMs: 0 },
-        { text: '보통', startMs: 10_000 },
-        { text: '시각 모름', startMs: null },
-      ],
-      featureQuota: null,
-      charged: true,
-    });
+    const next = withDigestResult(
+      note,
+      {
+        plan: emptyPlan,
+        title: '제목',
+        summary: '요약',
+        keyPoints: [
+          { text: '깃발', startMs: 0 },
+          { text: '보통', startMs: 10_000 },
+          { text: '시각 모름', startMs: null },
+        ],
+        featureQuota: null,
+        charged: true,
+      },
+      createPlanReviewDraft(emptyPlan),
+    );
 
     // Then
     expect(next.digest?.keyPoints.map(({ isBookmarked }) => isBookmarked)).toEqual([
@@ -381,14 +385,18 @@ describe('withDigestResult', () => {
     const note = createVoiceNoteFixture();
 
     // When
-    const next = withDigestResult(note, {
-      plan: emptyPlan,
-      title: '',
-      summary: '요약',
-      keyPoints: [],
-      featureQuota: null,
-      charged: true,
-    });
+    const next = withDigestResult(
+      note,
+      {
+        plan: emptyPlan,
+        title: '',
+        summary: '요약',
+        keyPoints: [],
+        featureQuota: null,
+        charged: true,
+      },
+      createPlanReviewDraft(emptyPlan),
+    );
 
     // Then
     expect(VoiceNotePolicy.hasNoPlannedTodos(next)).toBe(true);
@@ -443,7 +451,7 @@ describe('VoiceNotePolicy.findRecordingIndexAt', () => {
       omittedTodoCount: 1,
       actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
     });
-    const note = withPlanDraft(createVoiceNoteFixture(), PlanReviewPolicy.createDraft(plan));
+    const note = withPlanDraft(createVoiceNoteFixture(), createPlanReviewDraft(plan));
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
     stored.planDraft.form.actions[0].title = '';
 

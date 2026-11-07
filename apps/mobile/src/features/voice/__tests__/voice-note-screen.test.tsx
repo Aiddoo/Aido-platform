@@ -36,15 +36,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
 import { VoiceService } from '../apis/voice.service';
-import { PlanReviewPolicy } from '../domains/plan-review.model';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
+import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
-const planDraftWithTodo = PlanReviewPolicy.createDraft(
+const planDraftWithTodo = createPlanReviewDraft(
   voicePlanSchema.parse({
     planId: DRAFT_ID,
     source: 'voice-note',
@@ -68,7 +68,7 @@ const planDraftWithTodo = PlanReviewPolicy.createDraft(
   }),
 );
 
-const emptyPlanDraft = PlanReviewPolicy.createDraft(
+const emptyPlanDraft = createPlanReviewDraft(
   voicePlanSchema.parse({
     planId: DRAFT_ID,
     source: 'voice-note',

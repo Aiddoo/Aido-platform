@@ -21,7 +21,6 @@ import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { VoiceService } from '../../apis/voice.service';
-import { PlanReviewPolicy } from '../../domains/plan-review.model';
 import {
   type PlanReviewFormValues,
   planReviewFormSchema,
@@ -31,6 +30,7 @@ import {
   type VoicePlan,
   voicePlanIdSchema,
 } from '../../schemas/voice-plan.schema';
+import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
 import { PlanReview } from './plan-review';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
@@ -74,7 +74,7 @@ function PlanReviewScreen({
 }) {
   const form = useForm<PlanReviewFormValues>({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: PlanReviewPolicy.createFormValues(plan),
+    defaultValues: createPlanReviewFormValues(plan),
     mode: 'onChange',
   });
   useEffect(() => {

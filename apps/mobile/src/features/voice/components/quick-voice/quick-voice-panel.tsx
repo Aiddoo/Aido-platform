@@ -30,13 +30,13 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
-import { PlanReviewPolicy } from '../../domains/plan-review.model';
 import { VoiceCapturePolicy } from '../../domains/voice-capture.model';
 import { isTranscriptEmpty } from '../../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { type CapturedPlan, type VoiceCaptureState } from '../../schemas/voice-capture.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
+import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
 import { VoiceVisual } from '../visualizers/voice-visual';
 import { LiveTranscript } from './live-transcript';
@@ -244,7 +244,7 @@ QuickVoicePanel.Review = function Review({
   const { t } = useTranslation('voice');
   const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: PlanReviewPolicy.createFormValues(plan),
+    defaultValues: createPlanReviewFormValues(plan),
     mode: 'onChange',
   });
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();

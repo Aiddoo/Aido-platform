@@ -20,7 +20,6 @@ import {
   voiceNoteDraftIdSchema,
 } from '../schemas/voice-note.schema';
 import type { PlannedMemo } from '../schemas/voice-plan.schema';
-import { PlanReviewPolicy } from './plan-review.model';
 import type { VoiceCaptureSeed } from './voice-capture.model';
 import { isTodoAction, type VoiceNoteDigestResult } from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
@@ -77,7 +76,11 @@ function isSentenceAtKeyPoint(sentence: VoiceNoteSentence, startMs: number) {
   return sentence.startMs <= startMs && startMs < sentence.endMs;
 }
 
-export function withDigestResult(note: VoiceNote, result: VoiceNoteDigestResult): VoiceNote {
+export function withDigestResult(
+  note: VoiceNote,
+  result: VoiceNoteDigestResult,
+  planDraft: PlanReviewDraft,
+): VoiceNote {
   const keyPoints = result.keyPoints.map(({ text, startMs }, index) => ({
     id: `key-point-${index + 1}`,
     text,
@@ -93,7 +96,7 @@ export function withDigestResult(note: VoiceNote, result: VoiceNoteDigestResult)
     ...note,
     digest: { title: result.title, summary: result.summary, keyPoints },
     digestRequest: null,
-    planDraft: PlanReviewPolicy.createDraft(result.plan),
+    planDraft,
   };
 }
 

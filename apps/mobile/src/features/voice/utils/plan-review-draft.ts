@@ -1,5 +1,6 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
+import { getDefaultSelection, type PlanSelection } from '../domains/voice-plan.model';
 import {
   createPlanReviewDraftSchema,
   type PlanReviewDraft,
@@ -10,9 +11,8 @@ import {
   type PlannedAction,
   type VoicePlan,
 } from '../schemas/voice-plan.schema';
-import { getDefaultSelection, type PlanSelection } from './voice-plan.model';
 
-function createFormValues(
+export function createPlanReviewFormValues(
   plan: VoicePlan,
   selection: PlanSelection = getDefaultSelection(plan),
 ): PlanReviewFormValues {
@@ -24,11 +24,11 @@ function createFormValues(
   };
 }
 
-function toPlannedActions({ actions }: PlanReviewFormValues): PlannedAction[] {
+export function toPlannedActions({ actions }: PlanReviewFormValues): PlannedAction[] {
   return actions.map(({ isSelected: _isSelected, ...action }) => plannedActionSchema.parse(action));
 }
 
-function toPlanSelection({
+export function toPlanSelection({
   actions,
 }: {
   actions: readonly { actionId: string; isSelected: boolean }[];
@@ -36,14 +36,14 @@ function toPlanSelection({
   return Object.fromEntries(actions.map((action) => [action.actionId, action.isSelected]));
 }
 
-function createDraft(
+export function createPlanReviewDraft(
   plan: VoicePlan,
-  form: PlanReviewFormValues = createFormValues(plan),
+  form: PlanReviewFormValues = createPlanReviewFormValues(plan),
 ): PlanReviewDraft {
   return { omittedTodoCount: plan.omittedTodoCount, form };
 }
 
-function toVoicePlanFromDraft(
+export function toVoicePlanFromDraft(
   { planId, source, sourceMemoId }: Pick<VoicePlan, 'planId' | 'source' | 'sourceMemoId'>,
   draft: PlanReviewDraft,
 ): VoicePlan {
@@ -56,7 +56,7 @@ function toVoicePlanFromDraft(
   };
 }
 
-function createDraftStorageKey({
+export function createPlanReviewDraftKey({
   userId,
   scope,
   target,
@@ -74,12 +74,3 @@ function createDraftStorageKey({
     schema: createPlanReviewDraftSchema(timeZone),
   });
 }
-
-export const PlanReviewPolicy = {
-  createFormValues,
-  toPlannedActions,
-  toPlanSelection,
-  createDraft,
-  toVoicePlanFromDraft,
-  createDraftStorageKey,
-} as const;

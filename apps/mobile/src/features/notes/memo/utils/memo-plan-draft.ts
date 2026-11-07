@@ -1,5 +1,5 @@
 import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
-import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
+import { createPlanReviewDraftKey } from '@src/features/voice/utils/plan-review-draft';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import type { DraftService } from '@src/shared/draft/draft.service';
 
@@ -14,7 +14,7 @@ export function createMemoPlanDraftKey({
   memoId: number;
   timeZone: string;
 }) {
-  return PlanReviewPolicy.createDraftStorageKey({
+  return createPlanReviewDraftKey({
     userId,
     scope: 'memo-plan',
     target: [memoId],

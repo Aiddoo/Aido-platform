@@ -14,13 +14,13 @@ import { markAiDataSharingConsentRequired } from '@src/features/identity/consent
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
-import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
 import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
 import { planInProgressRetryOptions } from '@src/features/voice/queries/plan-in-progress-retry';
 import { reflectFeatureQuota } from '@src/features/voice/queries/voice-plan-cache';
+import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import {
   summarizePlanForAnalytics,
   toAnalyticsSource,
@@ -228,7 +228,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       if (accountId != null) {
         draftService.save(
           createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
-          PlanReviewPolicy.createDraft(plan),
+          createPlanReviewDraft(plan),
           { sourceUpdatedAt },
         );
       }

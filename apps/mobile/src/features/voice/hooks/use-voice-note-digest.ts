@@ -10,6 +10,7 @@ import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-req
 import { type VoiceNoteDigestInput, VoiceNotePolicy } from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
+import { createPlanReviewDraft } from '../utils/plan-review-draft';
 
 export interface VoiceNoteDigestFailure {
   cause: VoicePlanFailureCause;
@@ -76,7 +77,10 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
       // 기다리는 사이 초안을 지웠거나 로그아웃했으면 늦은 응답으로 되살리지 않는다
       const latest = drafts.find(accountId, draftId);
       if (latest != null) {
-        drafts.save(accountId, VoiceNotePolicy.withDigestResult(latest, result));
+        drafts.save(
+          accountId,
+          VoiceNotePolicy.withDigestResult(latest, result, createPlanReviewDraft(result.plan)),
+        );
       }
     } catch (error) {
       if (abortController.signal.aborted) {
