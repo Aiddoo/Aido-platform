@@ -71,7 +71,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 | 표시 값        | `utils/{name}.view-model.ts`                                       |
 | 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                   |
 
-대부분의 feature를 이 모양으로 옮겼다. 남은 옛 패턴은 `identity/auth`의 `queries/use-{action}-mutation-options.ts`, `planning/todo`·`social/*`·`voice`의 `domains/` 스키마, `planning/todo/utils/view-models/`, `utils/analytics/` 등이다. 차이 목록: [아직 옮기지 않은 것](.claude/architecture.md#아직-옮기지-않은-것). 층과 허용 import: [층과 의존](.claude/architecture.md#층과-의존).
+대부분의 feature를 이 모양으로 옮겼다. 남은 옛 패턴은 `voice`의 `domains/` 스키마, `utils/analytics/` 등이다. 차이 목록: [아직 옮기지 않은 것](.claude/architecture.md#아직-옮기지-않은-것). 층과 허용 import: [층과 의존](.claude/architecture.md#층과-의존).
 
 ---
 

@@ -241,7 +241,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 친구 검색            | shared `Input`                                              | `SearchField`                                       | 아래 "그대로 둔 것"    |
 | `AppToast`           | `toastProps` 묶음                                           | `Toast.Title`, `.Description`, `.Action` 조합       | 위치·색                |
 | `HintPopoverContent` | 앱의 자리 계산                                              | `Popover`의 `avoidCollisions`, `insets`             | 뒤집기 동작            |
-| `FormField`          | 21개 파일이 사용                                            | RHF `Controller` 직접 사용 후 삭제                  |                        |
+| `FormField`          | 4개 파일이 사용                                             | RHF `Controller` 직접 사용 후 삭제                  |                        |
 | spacing prop         | `gap` 외 `p`, `pb` 등이 `className`과 섞임(`MemoList` 포함) | `className`                                         | 전후 간격              |
 | `Flex`               | 외부에서 직접 사용                                          | `HStack`·`VStack` 내부 구현                         |                        |
 
