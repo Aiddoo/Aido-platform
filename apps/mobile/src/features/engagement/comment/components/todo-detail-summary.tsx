@@ -113,7 +113,7 @@ TodoDetailSummary.Task = function Task() {
                   toggleTodo.mutate({
                     todoId,
                     body: { completed: !todo.completed },
-                    date: TodoPolicy.getDetailListDate(todo, todayKey),
+                    date: TodoPolicy.getOptimisticListDate(todo, todayKey),
                   })
               : undefined
           }
@@ -215,7 +215,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                           todoId,
                           subTodoId: subTodo.id,
                           isCompleted: !subTodo.completed,
-                          date: TodoPolicy.getDetailListDate(todo, todayKey),
+                          date: TodoPolicy.getOptimisticListDate(todo, todayKey),
                         })
                     : undefined
                 }
