@@ -59,7 +59,7 @@ describe('createDraftKey', () => {
 
 describe('resolveDraftRestore', () => {
   it('저장된 초안이 없으면 빈 상태다', () => {
-    expect(resolveDraftRestore(undefined, { schema: contentSchema, now: NOW })).toEqual({
+    expect(resolveDraftRestore(null, { schema: contentSchema, now: NOW })).toEqual({
       status: 'empty',
     });
   });

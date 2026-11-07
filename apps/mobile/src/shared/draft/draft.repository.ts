@@ -1,33 +1,21 @@
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { type DraftEntry, draftEntrySchema } from './draft.model';
 
 const KEY_PREFIX = 'aido_draft_v1:';
 
 export interface DraftRepository {
-  find(id: string): DraftEntry | undefined;
+  find(id: string): DraftEntry | null;
   save(id: string, entry: DraftEntry): void;
   remove(id: string): void;
   findAllIds(): string[];
   removeAll(): void;
 }
 
-function parseDraftEntry(raw: string | undefined): DraftEntry | undefined {
-  if (raw == null) {
-    return undefined;
-  }
-
-  try {
-    const parsed = draftEntrySchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export function createDraftRepository(storage: EnumerableSyncStorage): DraftRepository {
   return {
-    find: (id) => parseDraftEntry(storage.get(`${KEY_PREFIX}${id}`)),
+    find: (id) => parseStoredJson(storage.get(`${KEY_PREFIX}${id}`), draftEntrySchema),
     save: (id, entry) => storage.set(`${KEY_PREFIX}${id}`, JSON.stringify(entry)),
     remove: (id) => storage.remove(`${KEY_PREFIX}${id}`),
     findAllIds: () =>

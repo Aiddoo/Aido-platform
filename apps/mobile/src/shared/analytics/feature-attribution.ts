@@ -3,6 +3,7 @@ import type { Logger } from '@src/core/ports/logger';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import { z } from 'zod';
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
@@ -66,16 +67,8 @@ export function createFeatureAttributionStore(
         return null;
       }
 
-      let decoded: unknown;
-      try {
-        decoded = JSON.parse(raw);
-      } catch {
-        storage.remove(key);
-        return null;
-      }
-
-      const parsed = persistedAttributionSchema.safeParse(decoded);
-      if (!parsed.success || parsed.data.feature !== feature || parsed.data.expiresAt < now()) {
+      const persisted = parseStoredJson(raw, persistedAttributionSchema);
+      if (persisted == null || persisted.feature !== feature || persisted.expiresAt < now()) {
         storage.remove(key);
         return null;
       }
@@ -83,8 +76,8 @@ export function createFeatureAttributionStore(
       // 같은 JS 런루프에서 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다.
       storage.remove(key);
       return {
-        campaignId: parsed.data.campaignId,
-        feature: parsed.data.feature,
+        campaignId: persisted.campaignId,
+        feature: persisted.feature,
       };
     },
   };

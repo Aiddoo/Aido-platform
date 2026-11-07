@@ -78,7 +78,7 @@ export interface ResolveDraftRestoreInput<TValue> {
 }
 
 export function resolveDraftRestore<TValue>(
-  entry: DraftEntry | undefined,
+  entry: DraftEntry | null,
   { schema, now, sourceUpdatedAt }: ResolveDraftRestoreInput<TValue>,
 ): DraftRestoreResult<TValue> {
   if (entry == null) {
