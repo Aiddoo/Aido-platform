@@ -5,11 +5,20 @@ import type { DraftService } from '@src/shared/draft/draft.service';
 
 import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';
 
-export function createMemoPlanDraftKey({ userId, memoId }: { userId: string; memoId: number }) {
+export function createMemoPlanDraftKey({
+  userId,
+  memoId,
+  timeZone,
+}: {
+  userId: string;
+  memoId: number;
+  timeZone: string;
+}) {
   return PlanReviewPolicy.createDraftStorageKey({
     userId,
     scope: 'memo-plan',
     target: [memoId],
+    timeZone,
   });
 }
 

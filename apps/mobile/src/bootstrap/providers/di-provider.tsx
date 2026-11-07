@@ -333,6 +333,7 @@ export function DIProvider({
       createVoiceNoteDraftRepository({
         storage: encryptedStorageBootstrap.draftStorage,
         logger,
+        getTimeZone: getDeviceTimezone,
       }),
       createVoiceRecordingRepository(expoLocalFileSystemGateway, logger),
       getNowInstant,

@@ -8,7 +8,7 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
-import { voiceNoteSchema } from '../schemas/voice-note.schema';
+import { createVoiceNoteSchema } from '../schemas/voice-note.schema';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import { PlanReviewPolicy } from './plan-review.model';
 import {
@@ -212,6 +212,8 @@ describe('isRecordingFileExpired', () => {
     expect(result).toBe(true);
   });
 });
+
+const voiceNoteSchema = createVoiceNoteSchema('Asia/Seoul');
 
 describe('voiceNoteSchema', () => {
   test('저장한 순간은 ISO 문자열로 남고 읽으면 Date로 돌아온다', () => {

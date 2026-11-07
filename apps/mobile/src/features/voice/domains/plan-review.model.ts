@@ -1,9 +1,9 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
 import {
+  createPlanReviewDraftSchema,
   type PlanReviewDraft,
   type PlanReviewFormValues,
-  planReviewDraftSchema,
 } from '../schemas/plan-review-form.schema';
 import {
   plannedActionSchema,
@@ -60,12 +60,19 @@ function createDraftStorageKey({
   userId,
   scope,
   target,
+  timeZone,
 }: {
   userId: string;
   scope: 'memo-plan';
   target: readonly (string | number)[];
+  timeZone: string;
 }) {
-  return createDraftKey({ ownerId: userId, scope, target, schema: planReviewDraftSchema });
+  return createDraftKey({
+    ownerId: userId,
+    scope,
+    target,
+    schema: createPlanReviewDraftSchema(timeZone),
+  });
 }
 
 export const PlanReviewPolicy = {

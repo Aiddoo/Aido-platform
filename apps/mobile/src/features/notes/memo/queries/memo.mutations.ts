@@ -28,6 +28,7 @@ import {
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
@@ -184,6 +185,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
   const { trackEvent } = useTrack();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const toast = useAppToast();
+  const { timeZone } = useDateFormatContext();
 
   const forgetIdempotencyKey = () => {
     const accountId = getCachedMe(queryClient)?.id;
@@ -225,7 +227,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId != null) {
         draftService.save(
-          createMemoPlanDraftKey({ userId: accountId, memoId }),
+          createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
           PlanReviewPolicy.createDraft(plan),
           { sourceUpdatedAt },
         );

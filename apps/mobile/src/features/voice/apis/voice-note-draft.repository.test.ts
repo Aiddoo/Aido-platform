@@ -44,10 +44,15 @@ const STORED_NOTE = {
   memoSavedAt: null,
 };
 
-function createRepository() {
+function createRepository(timeZone = 'Asia/Seoul') {
   const storage = createMemorySyncStorage();
   const logger = { warn: jest.fn() };
-  const repository = createVoiceNoteDraftRepository({ storage, logger, debounceMs: DEBOUNCE_MS });
+  const repository = createVoiceNoteDraftRepository({
+    storage,
+    logger,
+    getTimeZone: () => timeZone,
+    debounceMs: DEBOUNCE_MS,
+  });
 
   return { storage, logger, repository };
 }
@@ -227,11 +232,34 @@ describe('VoiceNoteDraftRepository', () => {
     expect(JSON.parse(storage.get(key) ?? '')).toEqual(STORED_NOTE);
   });
 
+  test('달력 날짜를 ISO 순간으로 남긴 옛 초안은 지금 시간대의 날짜로 읽는다', () => {
+    // Given
+    const { storage, repository } = createRepository('America/Los_Angeles');
+    const [action] = STORED_NOTE.planDraft.form.actions;
+    storage.set(
+      'aido_voice_note_draft_v1:user-1:draft-1',
+      JSON.stringify({
+        ...STORED_NOTE,
+        planDraft: {
+          omittedTodoCount: 0,
+          form: { actions: [{ ...action, startDate: '2026-11-09T15:00:00.000Z' }] },
+        },
+      }),
+    );
+
+    // When
+    const note = repository.find('user-1', 'draft-1');
+
+    // Then
+    expect(note?.planDraft?.form.actions[0]).toMatchObject({ startDate: '2026-11-09' });
+  });
+
   test('바뀌기 전까지 같은 목록을 돌려주고 바뀌면 구독자에게 알린다', () => {
     // Given
     const repository = createVoiceNoteDraftRepository({
       storage: createMemorySyncStorage(),
       logger: { warn: jest.fn() },
+      getTimeZone: () => 'Asia/Seoul',
     });
     const listener = jest.fn();
     repository.subscribe(listener);

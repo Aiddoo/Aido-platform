@@ -10,6 +10,7 @@ import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Result } from '@src/shared/ui';
@@ -30,6 +31,7 @@ interface MemoPlanReviewProps {
 /** 메모를 나눈 결과의 검토 폼. 기기에 남긴 초안으로 시작하고 저장하면 피드로 간다 */
 export function MemoPlanReview({ className }: MemoPlanReviewProps) {
   const { t } = useTranslation('memo');
+  const { timeZone } = useDateFormatContext();
   const goBack = useSingleTap(router.back);
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
@@ -45,7 +47,7 @@ export function MemoPlanReview({ className }: MemoPlanReviewProps) {
     ],
   });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoPlanDraftKey({ userId: user.id, memoId }),
+    createMemoPlanDraftKey({ userId: user.id, memoId, timeZone }),
     { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
   const fallbackCategoryId = categoriesResult.categories[0]?.id;

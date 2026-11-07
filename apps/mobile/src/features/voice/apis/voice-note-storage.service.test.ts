@@ -14,7 +14,11 @@ function createService() {
   const logger = { warn: jest.fn() };
   const files = createLocalFileSystemFake();
   const service = new VoiceNoteStorageService(
-    createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
+    createVoiceNoteDraftRepository({
+      storage: createMemorySyncStorage(),
+      logger,
+      getTimeZone: () => 'Asia/Seoul',
+    }),
     createVoiceRecordingRepository(files, logger),
     () => NOW,
   );

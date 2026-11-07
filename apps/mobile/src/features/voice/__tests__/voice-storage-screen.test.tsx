@@ -32,7 +32,11 @@ async function renderScreen({
   const files = createLocalFileSystemFake();
   const logger = { warn: jest.fn() };
   const storage = new VoiceNoteStorageService(
-    createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
+    createVoiceNoteDraftRepository({
+      storage: createMemorySyncStorage(),
+      logger,
+      getTimeZone: () => 'Asia/Seoul',
+    }),
     createVoiceRecordingRepository(files, logger),
     getNowInstant,
   );

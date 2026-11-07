@@ -15,7 +15,11 @@ export const createVoiceNoteStorageServiceFake = (
   const logger = { warn: jest.fn() };
 
   return new VoiceNoteStorageService(
-    createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
+    createVoiceNoteDraftRepository({
+      storage: createMemorySyncStorage(),
+      logger,
+      getTimeZone: () => 'Asia/Seoul',
+    }),
     createVoiceRecordingRepository(files, logger),
     getNowInstant,
   );

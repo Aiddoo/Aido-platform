@@ -1,5 +1,4 @@
 import { toDateKey, toInstant } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { z } from 'zod';
 
 import { plannedMemoSchema, plannedTodoSchema } from './voice-plan.schema';
@@ -36,11 +35,10 @@ export function restoreDraftDateKey(value: unknown, timeZone: string) {
   return instant.success ? toDateKey(toInstant(instant.data), timeZone) : value;
 }
 
-function restoreActionDates(action: unknown) {
+function restoreActionDates(action: unknown, timeZone: string) {
   if (!isRecord(action) || action.type !== 'create-todo') {
     return action;
   }
-  const timeZone = getDeviceTimezone();
   return {
     ...action,
     startDate: restoreDraftDateKey(action.startDate, timeZone),
@@ -52,19 +50,21 @@ function restoreActionDates(action: unknown) {
  * 결과를 받은 뒤 고친 카드를 기기에 남겨 앱을 다시 켜도 이어 보는 초안.
  * 읽지 못한 카드가 있어도 나머지는 살리고, 못 살린 수를 `omittedTodoCount`에 더해 화면이 알리게 한다.
  */
-export const planReviewDraftSchema = z
-  .object({
-    omittedTodoCount: z.int().nonnegative(),
-    form: z.object({ actions: z.array(z.unknown()) }),
-  })
-  .transform(({ omittedTodoCount, form }) => {
-    const parsed = form.actions.map((action) =>
-      planActionFormSchema.safeParse(restoreActionDates(action)),
-    );
-    const actions = parsed.flatMap((result) => (result.success ? [result.data] : []));
-    return {
-      omittedTodoCount: omittedTodoCount + parsed.length - actions.length,
-      form: { actions },
-    };
-  });
-export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
+export function createPlanReviewDraftSchema(timeZone: string) {
+  return z
+    .object({
+      omittedTodoCount: z.int().nonnegative(),
+      form: z.object({ actions: z.array(z.unknown()) }),
+    })
+    .transform(({ omittedTodoCount, form }) => {
+      const parsed = form.actions.map((action) =>
+        planActionFormSchema.safeParse(restoreActionDates(action, timeZone)),
+      );
+      const actions = parsed.flatMap((result) => (result.success ? [result.data] : []));
+      return {
+        omittedTodoCount: omittedTodoCount + parsed.length - actions.length,
+        form: { actions },
+      };
+    });
+}
+export type PlanReviewDraft = z.infer<ReturnType<typeof createPlanReviewDraftSchema>>;

@@ -1,4 +1,4 @@
-import { planReviewDraftSchema, restoreDraftDateKey } from './plan-review-form.schema';
+import { createPlanReviewDraftSchema, restoreDraftDateKey } from './plan-review-form.schema';
 
 describe('restoreDraftDateKey 옛 초안의 달력 날짜 복원', () => {
   test.each([
@@ -64,7 +64,8 @@ describe('restoreDraftDateKey 옛 초안의 달력 날짜 복원', () => {
   );
 });
 
-describe('planReviewDraftSchema', () => {
+describe('createPlanReviewDraftSchema', () => {
+  const planReviewDraftSchema = createPlanReviewDraftSchema('Asia/Seoul');
   const action = {
     type: 'create-todo',
     actionId: 'a1',
@@ -92,7 +93,7 @@ describe('planReviewDraftSchema', () => {
     // Then
     expect(draft.omittedTodoCount).toBe(0);
     expect(draft.form.actions[0]).toMatchObject({
-      startDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      startDate: '2026-11-10',
     });
   });
 

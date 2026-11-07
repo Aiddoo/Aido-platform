@@ -12,6 +12,7 @@ import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
@@ -635,6 +636,7 @@ function useMemoAiParse() {
   const toast = useAppToast();
   const push = useSingleTap(router.push);
   const draftService = useDraftService();
+  const { timeZone } = useDateFormatContext();
   const memoId = useMemoParam();
   const [{ data: memo }, { data: me }] = useSuspenseQueries({
     queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
@@ -650,9 +652,12 @@ function useMemoAiParse() {
 
   const handlePress = async () => {
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
-    const draft = draftService.restore(createMemoPlanDraftKey({ userId: me.id, memoId }), {
-      sourceUpdatedAt,
-    });
+    const draft = draftService.restore(
+      createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
+      {
+        sourceUpdatedAt,
+      },
+    );
     if (draft.status === 'restored') {
       push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
 

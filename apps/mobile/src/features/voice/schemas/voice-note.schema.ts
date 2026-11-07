@@ -1,7 +1,8 @@
 import { instantSchema } from '@src/shared/date/instant';
+import { memoize } from 'es-toolkit';
 import { z } from 'zod';
 
-import { type PlanReviewDraft, planReviewDraftSchema } from './plan-review-form.schema';
+import { createPlanReviewDraftSchema, type PlanReviewDraft } from './plan-review-form.schema';
 import { speechLocaleSchema } from './speech-locale.schema';
 
 export const voiceNoteDraftIdSchema = z.string().min(1).brand<'VoiceNoteDraftId'>();
@@ -62,27 +63,36 @@ const voiceNoteMemoSaveRequestSchema = z.object({
 export type VoiceNoteMemoSaveRequest = z.infer<typeof voiceNoteMemoSaveRequestSchema>;
 
 /** 고친 카드까지 든 검토 초안. 통째로 읽지 못하면 글자와 요약은 살리고 이 칸만 비워 화면이 알리게 한다 */
-const storedPlanDraftSchema = z.codec(z.unknown(), z.custom<PlanReviewDraft | null>(), {
-  decode: (raw) => planReviewDraftSchema.safeParse(raw).data ?? null,
-  encode: (draft) => draft,
-});
+function createStoredPlanDraftSchema(timeZone: string) {
+  const planReviewDraftSchema = createPlanReviewDraftSchema(timeZone);
+
+  return z.codec(z.unknown(), z.custom<PlanReviewDraft | null>(), {
+    decode: (raw) => planReviewDraftSchema.safeParse(raw).data ?? null,
+    encode: (draft) => draft,
+  });
+}
 
 /** 기기 안 초안. 녹음 파일은 폴더를 바꿔도 찾도록 파일 이름만 가진다 */
-export const voiceNoteSchema = z.object({
-  draftId: voiceNoteDraftIdSchema,
-  locale: speechLocaleSchema,
-  createdAt: instantSchema,
-  durationMs: z.int().nonnegative(),
-  sentences: z.array(voiceNoteSentenceSchema),
-  recordings: z.array(voiceNoteRecordingSchema),
-  digest: voiceNoteDigestSchema.nullable(),
-  digestRequest: voiceNoteDigestRequestSchema.nullable(),
-  planDraft: storedPlanDraftSchema,
-  planApplyRequest: voiceNotePlanApplyRequestSchema.nullable().default(null),
-  appliedAt: instantSchema.nullable(),
-  /** 고른 카드로 저장한 할 일 수. 이 칸이 생기기 전에 저장한 초안은 null이다 */
-  appliedTodoCount: z.int().nonnegative().nullable().default(null),
-  memoSaveRequest: voiceNoteMemoSaveRequestSchema.nullable().default(null),
-  memoSavedAt: instantSchema.nullable(),
-});
-export type VoiceNote = z.infer<typeof voiceNoteSchema>;
+function buildVoiceNoteSchema(timeZone: string) {
+  return z.object({
+    draftId: voiceNoteDraftIdSchema,
+    locale: speechLocaleSchema,
+    createdAt: instantSchema,
+    durationMs: z.int().nonnegative(),
+    sentences: z.array(voiceNoteSentenceSchema),
+    recordings: z.array(voiceNoteRecordingSchema),
+    digest: voiceNoteDigestSchema.nullable(),
+    digestRequest: voiceNoteDigestRequestSchema.nullable(),
+    planDraft: createStoredPlanDraftSchema(timeZone),
+    planApplyRequest: voiceNotePlanApplyRequestSchema.nullable().default(null),
+    appliedAt: instantSchema.nullable(),
+    /** 고른 카드로 저장한 할 일 수. 이 칸이 생기기 전에 저장한 초안은 null이다 */
+    appliedTodoCount: z.int().nonnegative().nullable().default(null),
+    memoSaveRequest: voiceNoteMemoSaveRequestSchema.nullable().default(null),
+    memoSavedAt: instantSchema.nullable(),
+  });
+}
+
+/** 녹음 중 저장과 목록 복원마다 부르므로 시간대별로 한 번만 만든다 */
+export const createVoiceNoteSchema = memoize(buildVoiceNoteSchema);
+export type VoiceNote = z.infer<ReturnType<typeof buildVoiceNoteSchema>>;

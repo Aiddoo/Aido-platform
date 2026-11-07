@@ -8,7 +8,7 @@ import {
   VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
   VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
 } from '../constants/voice-note.constants';
-import { type VoiceNote, voiceNoteSchema } from '../schemas/voice-note.schema';
+import { createVoiceNoteSchema, type VoiceNote } from '../schemas/voice-note.schema';
 
 const KEY_PREFIX = 'aido_voice_note_draft_v1:';
 const KEY_SEPARATOR = ':';
@@ -31,6 +31,8 @@ export interface VoiceNoteDraftRepository {
 interface Dependencies {
   storage: EnumerableSyncStorage;
   logger: Pick<Logger, 'warn'>;
+  /** 옛 초안의 날짜를 읽을 시간대. 시스템 설정 변경이 반영되도록 읽을 때마다 부른다 */
+  getTimeZone: () => string;
   debounceMs?: number;
   maxWaitMs?: number;
 }
@@ -53,6 +55,7 @@ function createKey(accountId: string, draftId: string) {
 export function createVoiceNoteDraftRepository({
   storage,
   logger,
+  getTimeZone,
   debounceMs = VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
   maxWaitMs = VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
 }: Dependencies): VoiceNoteDraftRepository {
@@ -88,7 +91,7 @@ export function createVoiceNoteDraftRepository({
     }
 
     try {
-      const parsed = voiceNoteSchema.safeDecode(JSON.parse(raw));
+      const parsed = createVoiceNoteSchema(getTimeZone()).safeDecode(JSON.parse(raw));
       if (parsed.success) {
         return parsed.data;
       }
@@ -106,7 +109,10 @@ export function createVoiceNoteDraftRepository({
 
   const write = (accountId: string, note: VoiceNote) => {
     try {
-      storage.set(createKey(accountId, note.draftId), JSON.stringify(voiceNoteSchema.encode(note)));
+      storage.set(
+        createKey(accountId, note.draftId),
+        JSON.stringify(createVoiceNoteSchema(getTimeZone()).encode(note)),
+      );
       replaceInSnapshot(accountId, note);
       notifyListeners();
     } catch (error) {
