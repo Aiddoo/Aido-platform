@@ -2,8 +2,8 @@ import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -15,11 +15,11 @@ interface StopTodoSeriesMutationParams {
 }
 
 export function useStopTodoSeriesMutationOptions() {
-  const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
@@ -31,23 +31,18 @@ export function useStopTodoSeriesMutationOptions() {
       trackEvent('todo_series_stopped');
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (handleSeriesFailure(error)) {
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
+      showFailure(error);
     },
   });
 }
 
 /** 반복 할 일 오류(TODO_0841~0846)를 다음 행동과 함께 알린다. 처리했으면 true. 입력값은 건드리지 않는다 */
 export function useTodoSeriesFailureHandler() {
+  const haptics = useHaptics();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -56,6 +51,7 @@ export function useTodoSeriesFailureHandler() {
     if (failure == null) {
       return false;
     }
+    haptics.notify('error');
     if (shouldRefreshTodos(failure)) {
       invalidateTodos(queryClient);
     }

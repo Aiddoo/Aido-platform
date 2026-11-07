@@ -11,8 +11,8 @@ import { invalidateWeeklyAchievements } from '@src/features/insights/achievement
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
 import { toDate } from '@src/shared/date/instant';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -121,10 +121,10 @@ interface ChangeTodoCategoryMutationParams {
 }
 
 export function useChangeTodoCategoryMutationOptions() {
-  const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.changeFailedRetry'));
   const handleSeriesFailure = useTodoSeriesFailureHandler();
   const { trackEvent } = useTrack();
 
@@ -142,17 +142,11 @@ export function useChangeTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (handleSeriesFailure(error)) {
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.changeFailedRetry') });
+      showFailure(error);
     },
   });
 }
@@ -165,11 +159,11 @@ interface DeleteTodoMutationParams {
 }
 
 export function useDeleteTodoMutationOptions() {
-  const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.deleteFailedRetry'));
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
@@ -195,8 +189,6 @@ export function useDeleteTodoMutationOptions() {
       }
     },
     onError: (error, _variables, context) => {
-      haptics.notify('error');
-
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
@@ -206,11 +198,7 @@ export function useDeleteTodoMutationOptions() {
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.deleteFailedRetry') });
+      showFailure(error);
     },
     onSettled: () => {
       invalidateTodoCategories(queryClient);
@@ -263,10 +251,10 @@ export interface UpdateTodoScheduleMutationParams {
 }
 
 export function useUpdateTodoScheduleMutationOptions() {
-  const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
   const handleSeriesFailure = useTodoSeriesFailureHandler();
   const { trackEvent } = useTrack();
 
@@ -285,17 +273,11 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (handleSeriesFailure(error)) {
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
+      showFailure(error);
     },
   });
 }

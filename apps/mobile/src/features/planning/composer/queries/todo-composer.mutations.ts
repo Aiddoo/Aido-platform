@@ -39,6 +39,7 @@ import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.sc
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { createOptimisticId } from '@src/shared/utils/optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -55,6 +56,7 @@ export function useCreateTodoMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.addFailedRetry'));
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -125,23 +127,18 @@ export function useCreateTodoMutationOptions() {
       }
     },
     onError: (error, _variables, context) => {
-      haptics.notify('error');
-
       if (context?.optimisticId != null) {
         removeTodoFromList(queryClient, { date: context.startDate, todoId: context.optimisticId });
         syncDailyCompletionWithList(queryClient, { date: context.startDate });
       }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
+        haptics.notify('error');
         toast.error(t('todo:toast.categoryLimitReached'));
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
+      showFailure(error);
     },
     onSettled: () => {
       settleTodoCompletionWrite(queryClient);
@@ -157,11 +154,10 @@ interface AddSubTodoParams {
 }
 
 export function useAddSubTodoMutationOptions() {
-  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.subTodoAddFailed'));
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -194,13 +190,7 @@ export function useAddSubTodoMutationOptions() {
       trackEvent('todo_item_added', { todo_id: todoId });
     },
     onError: (error, { todoId, date }, context) => {
-      haptics.notify('error');
-
-      if (isApiError(error) && error.hasCode(ErrorCode.TODO_0821)) {
-        toast.error(error.message);
-      } else {
-        toast.error(undefined, { fallback: t('todo:toast.subTodoAddFailed') });
-      }
+      showFailure(error);
 
       if (context != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
@@ -228,6 +218,7 @@ export function useCreateRecurringTodoMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.addFailedRetry'));
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
@@ -258,22 +249,17 @@ export function useCreateRecurringTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (handleSeriesFailure(error)) {
         return;
       }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
+        haptics.notify('error');
         toast.error(t('todo:toast.recurringCategoryLimit'));
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
+      showFailure(error);
     },
   });
 }
@@ -287,11 +273,10 @@ interface UpdateSubTodoParams {
 }
 
 export function useUpdateSubTodoMutationOptions() {
-  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.subTodoUpdateFailed'));
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -315,9 +300,8 @@ export function useUpdateSubTodoMutationOptions() {
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
     },
-    onError: (_error, { todoId, subTodoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(undefined, { fallback: t('todo:toast.subTodoUpdateFailed') });
+    onError: (error, { todoId, subTodoId, date }, context) => {
+      showFailure(error);
       const previousTitle = context?.previousTitle;
       if (previousTitle != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -338,11 +322,11 @@ interface UpdateTodoMutationParams {
 }
 
 export function useUpdateTodoMutationOptions() {
-  const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
@@ -366,17 +350,11 @@ export function useUpdateTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      haptics.notify('error');
-
       if (handleSeriesFailure(error)) {
         return;
       }
 
-      if (isApiError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
+      showFailure(error);
     },
   });
 }

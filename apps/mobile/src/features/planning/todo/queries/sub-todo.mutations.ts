@@ -1,7 +1,7 @@
 import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -69,11 +69,10 @@ interface DeleteSubTodoParams {
 }
 
 export function useDeleteSubTodoMutationOptions() {
-  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('todo:toast.subTodoDeleteFailed'));
 
   return mutationOptions({
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
@@ -94,9 +93,8 @@ export function useDeleteSubTodoMutationOptions() {
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_deleted', { todo_id: todoId, item_id: subTodoId });
     },
-    onError: (_error, { todoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(undefined, { fallback: t('todo:toast.subTodoDeleteFailed') });
+    onError: (error, { todoId, date }, context) => {
+      showFailure(error);
       if (context?.removed != null) {
         const { removed, index } = context;
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
