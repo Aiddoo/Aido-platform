@@ -12,6 +12,9 @@
     "retry": "Try again",
     "goBack": "Go back"
   },
+  "bottomSheet": {
+    "label": "Bottom sheet"
+  },
   "daysOfWeek": {
     "MON": "Mon",
     "TUE": "Tue",

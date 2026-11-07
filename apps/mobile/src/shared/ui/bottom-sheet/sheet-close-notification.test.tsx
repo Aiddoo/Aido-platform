@@ -1,5 +1,6 @@
 import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { t } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
 import { act, render, screen } from '@testing-library/react-native';
 import { BackHandler } from 'react-native';
@@ -95,7 +96,9 @@ describe('KeyboardBottomSheet 시트 면', () => {
     await render(<SheetBackground pointerEvents="none" />);
 
     // Then
-    expect(screen.getByLabelText('Bottom Sheet').props.pointerEvents).toBeUndefined();
+    expect(
+      screen.getByLabelText(t('common:bottomSheet.label')).props.pointerEvents,
+    ).toBeUndefined();
   });
 
   it('닫기 요청 핸들러가 렌더마다 바뀌어도 최신 것을 부르고 backdrop을 다시 만들지 않는다', async () => {

@@ -7,6 +7,7 @@ import GorhomBottomSheet, {
   BottomSheetScrollView,
   useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
+import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import {
   type ComponentRef,
@@ -415,6 +416,7 @@ const SheetDecorationContext = createContext<ReactNode>(null);
  * 함께 불려 시트가 닫혔다(QA: 듣기 X). 이 면이 터치를 받아 backdrop까지 내려가지 않게 한다.
  */
 function DecoratedSheetBackground({ style }: BottomSheetBackgroundProps) {
+  const { t } = useTranslation('common');
   const decoration = use(SheetDecorationContext);
 
   return (
@@ -423,7 +425,7 @@ function DecoratedSheetBackground({ style }: BottomSheetBackgroundProps) {
       <View
         accessible
         accessibilityRole="adjustable"
-        accessibilityLabel="Bottom Sheet"
+        accessibilityLabel={t('bottomSheet.label')}
         style={style}
       />
     </>

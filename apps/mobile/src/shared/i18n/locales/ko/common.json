@@ -12,6 +12,9 @@
     "retry": "다시 시도",
     "goBack": "뒤로 가기"
   },
+  "bottomSheet": {
+    "label": "하단 시트"
+  },
   "daysOfWeek": {
     "MON": "월",
     "TUE": "화",
