@@ -7,8 +7,8 @@ import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
 import type { VoiceNoteSentence } from '../../domains/voice-note.model';
+import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { splitLowConfidenceText } from '../../utils/low-confidence-text.view-model';
 
 const AUTOSCROLL_THRESHOLD = 0.2;
 
@@ -145,13 +145,14 @@ function SentenceCard({
           {time}
         </Text>
         <WordWrapText size="b3" className="shrink flex-1">
-          {splitLowConfidenceText(sentence.text, sentence.lowConfidenceWords).map(
-            ({ text, isLowConfidence }) => ({
-              text,
-              isUnderlined: isLowConfidence,
-              testID: isLowConfidence ? 'caption-low-confidence-word' : undefined,
-            }),
-          )}
+          {VoiceTranscriptPolicy.splitLowConfidenceText(
+            sentence.text,
+            sentence.lowConfidenceWords,
+          ).map(({ text, isLowConfidence }) => ({
+            text,
+            isUnderlined: isLowConfidence,
+            testID: isLowConfidence ? 'caption-low-confidence-word' : undefined,
+          }))}
         </WordWrapText>
         {sentence.isBookmarked && (
           <FlagIcon

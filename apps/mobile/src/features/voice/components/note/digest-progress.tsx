@@ -7,8 +7,6 @@ import { formatCount } from '@src/shared/utils/format';
 import { Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { type DigestStepStatus, getDigestStepStatus } from '../../utils/digest-progress.view-model';
-
 interface DigestProgressProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
   characterCount: number;
   markCount: number;
@@ -18,11 +16,13 @@ export function DigestProgress({ characterCount, markCount, ...stackProps }: Dig
   const { t } = useTranslation('voiceNote');
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
 
+  // 글자는 기기에서 이미 끝났다. 핵심과 할 일은 서버가 한 요청으로 함께 만들어 어느 쪽이 끝났는지 알 수 없으니
+  // 모르는 진행을 지어내지 않고 둘 다 진행 중으로 둔다.
   return (
     <VStack gap={12} {...stackProps}>
       <DigestProgress.Step
         label={t('digest.steps.transcript')}
-        status={getDigestStepStatus('transcript')}
+        status="done"
         detail={t('digest.characters', {
           count: characterCount,
           amount: formatCount(characterCount, locale),
@@ -30,17 +30,17 @@ export function DigestProgress({ characterCount, markCount, ...stackProps }: Dig
       />
       <DigestProgress.Step
         label={t('digest.steps.keyPoints')}
-        status={getDigestStepStatus('key-points')}
+        status="doing"
         detail={markCount > 0 ? t('digest.marks', { count: markCount }) : undefined}
       />
-      <DigestProgress.Step label={t('digest.steps.todos')} status={getDigestStepStatus('to-dos')} />
+      <DigestProgress.Step label={t('digest.steps.todos')} status="doing" />
     </VStack>
   );
 }
 
 interface DigestStepProps {
   label: string;
-  status: DigestStepStatus;
+  status: 'done' | 'doing';
   detail?: string;
 }
 

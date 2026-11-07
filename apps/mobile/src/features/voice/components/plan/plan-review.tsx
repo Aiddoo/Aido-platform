@@ -18,6 +18,7 @@ import {
   formatDateKeyRange,
   formatTimeOfDay,
 } from '@src/shared/date/date-format';
+import { parseHour, parseMinute } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -38,7 +39,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { compact, range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
 import {
@@ -61,12 +62,6 @@ import {
 import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
 import { isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
-import {
-  getPlanMemoLabel,
-  getPlanTodoSubtitle,
-  parseScheduledTime,
-  shouldShowPlanDate,
-} from '../../utils/plan-todo.view-model';
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
 
 const LOADING_ROW_COUNT = 3;
@@ -334,26 +329,23 @@ PlanReview.TodoRow = function PlanTodoRow({
 
   const dateLabel =
     todo.endDate == null
-      ? shouldShowPlanDate({
-          hasRepeat: todo.repeat != null,
-          startDateKey: todo.startDate,
-          todayKey,
-        })
+      ? // 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨기고, 오늘 할 일도 날짜를 보이지 않는다
+        todo.repeat == null && todo.startDate !== todayKey
         ? formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext)
         : null
       : formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext);
-  const subtitle = getPlanTodoSubtitle({
-    dateLabel,
-    timeLabel:
-      todo.scheduledTime == null
-        ? null
-        : formatTimeOfDay(
-            parseScheduledTime(todo.scheduledTime),
-            preference.timeFormat,
-            dateFormatContext,
-          ),
-    repeatLabel: todo.repeat == null ? null : formatRepeatSummary(todo.repeat, dateFormatContext),
-  });
+  const timeLabel =
+    todo.scheduledTime == null
+      ? null
+      : formatTimeOfDay(
+          { hour: parseHour(todo.scheduledTime), minute: parseMinute(todo.scheduledTime) },
+          preference.timeFormat,
+          dateFormatContext,
+        );
+  const repeatLabel =
+    todo.repeat == null ? null : formatRepeatSummary(todo.repeat, dateFormatContext);
+  const subtitleParts = compact([dateLabel, timeLabel, repeatLabel]);
+  const subtitle = subtitleParts.length === 0 ? null : subtitleParts.join(' · ');
   const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
 
   const handlePress = () => {
@@ -470,7 +462,7 @@ PlanReview.MemoRow = function PlanMemoRow({ index }: { index: number }) {
     return null;
   }
 
-  const label = getPlanMemoLabel(memo);
+  const label = memo.title === '' ? memo.content : memo.title;
 
   return (
     <TodoRow
