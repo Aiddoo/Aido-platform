@@ -119,6 +119,17 @@ describe('notification cache optimistic update', () => {
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
 
+  it('읽지 않은 수를 모르면 한 건을 읽어도 수를 0으로 만들지 않는다', async () => {
+    // Given
+    client.setQueryData(NOTIFICATION_QUERY_KEYS.list({}), makeData(1, 2));
+
+    // When
+    await optimisticallyMarkNotificationsRead(client, 1);
+
+    // Then
+    expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBeUndefined();
+  });
+
   it('조회 취소를 기다리는 동안 계정이 바뀌면 새 계정 캐시를 수정하지 않는다', async () => {
     // Given
     const listKey = NOTIFICATION_QUERY_KEYS.list({});

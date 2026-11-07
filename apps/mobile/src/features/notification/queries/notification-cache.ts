@@ -90,12 +90,16 @@ export async function optimisticallyMarkNotificationsRead(
         }),
       );
     }
-    queryClient.setQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount(), (old = 0) =>
-      match({ notificationId, shouldDecrement })
-        .with({ notificationId: P.nullish }, () => 0)
-        .with({ shouldDecrement: true }, () => Math.max(0, old - 1))
-        .otherwise(() => old),
-    );
+    // 수를 아직 모르면 0으로 채우지 않는다. 성공 뒤 서버 값으로 맞춘다
+    queryClient.setQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) => {
+      if (notificationId == null) {
+        return 0;
+      }
+      if (old == null) {
+        return undefined;
+      }
+      return shouldDecrement ? Math.max(0, old - 1) : old;
+    });
   });
   return snapshot;
 }
