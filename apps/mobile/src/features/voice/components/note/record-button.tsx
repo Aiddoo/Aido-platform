@@ -10,6 +10,8 @@ export const RECORD_BUTTON_GAP = 8;
 const RECORD_BUTTON_SIDE_SIZE = 52;
 const RECORD_BUTTON_PRIMARY_SIZE = 64;
 export const RECORD_BUTTON_ICON_SIZE = 24;
+/** 큰 글자에서 라벨이 줄어드는 한계. 옆 칸 라벨과 기준선이 함께 바뀐다 */
+export const RECORD_BUTTON_LABEL_MIN_SCALE = 0.8;
 /** ui-components.md의 누름 기준 */
 const RECORD_BUTTON_PRESS = {
   scale: {
@@ -40,7 +42,13 @@ export function RecordButton({ label, children, ...buttonProps }: RecordButtonPr
   return (
     <RecordButton.Column
       label={
-        <Text size="e1" shade={7} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        <Text
+          size="e1"
+          shade={7}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={RECORD_BUTTON_LABEL_MIN_SCALE}
+        >
           {label}
         </Text>
       }
@@ -78,6 +86,7 @@ RecordButton.Button = function Button({
   label,
   isPrimary = false,
   isActive = false,
+  className,
   children,
   ...pressableProps
 }: RecordButtonProps) {
@@ -90,6 +99,7 @@ RecordButton.Button = function Button({
       accessibilityLabel={label}
       animation={RECORD_BUTTON_PRESS}
       style={{ width: size, height: size }}
+      {...pressableProps}
       className={cn(
         'items-center justify-center rounded-full',
         match({ isPrimary, isActive })
@@ -97,8 +107,8 @@ RecordButton.Button = function Button({
           .with({ isActive: true }, () => 'bg-main/10')
           .otherwise(() => 'bg-gray-2'),
         pressableProps.isDisabled === true && 'opacity-50',
+        className,
       )}
-      {...pressableProps}
     >
       {children}
     </PressableFeedback>

@@ -3,12 +3,12 @@ import { renderUi } from '@src/shared/__tests__';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { VoiceNoteDigest } from './voice-note-digest';
+import { VoiceNoteOffline } from './voice-note-offline';
 
-describe('VoiceNoteDigest.Offline', () => {
+describe('VoiceNoteOffline', () => {
   it('캐시 없이 오프라인이면 연결되면 이어진다고 안내하고 닫기로 이전 화면에 돌아간다', async () => {
     // Given
-    await renderUi(<VoiceNoteDigest.Offline />);
+    await renderUi(<VoiceNoteOffline />);
 
     // When
     await fireEvent.press(screen.getByText('닫기'));

@@ -1,5 +1,6 @@
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { VoiceNoteDigest } from '@src/features/voice/components/note/voice-note-digest';
+import { VoiceNoteOffline } from '@src/features/voice/components/note/voice-note-offline';
 import { VoiceNoteResult } from '@src/features/voice/components/note/voice-note-result';
 import { useCurrentVoiceNote } from '@src/features/voice/hooks/use-current-voice-note';
 import { voiceNoteParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
@@ -46,7 +47,7 @@ VoiceNoteScreen.Loading = function Loading() {
         ))}
       </VStack>
     ))
-    .with(false, () => <VoiceNoteDigest.Offline />)
+    .with(false, () => <VoiceNoteOffline />)
     .exhaustive();
 };
 

@@ -1,6 +1,5 @@
-import { toDateFormatLocale } from '@src/shared/date/date-format';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { useLanguage } from '@src/shared/providers/language-provider';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
@@ -14,7 +13,7 @@ interface DigestProgressProps extends Omit<ComponentProps<typeof VStack>, 'child
 
 export function DigestProgress({ characterCount, markCount, ...stackProps }: DigestProgressProps) {
   const { t } = useTranslation('voiceNote');
-  const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
+  const { locale } = useDateFormatContext();
 
   // 글자는 기기에서 이미 끝났다. 핵심과 할 일은 서버가 한 요청으로 함께 만들어 어느 쪽이 끝났는지 알 수 없으니
   // 모르는 진행을 지어내지 않고 둘 다 진행 중으로 둔다.
@@ -44,7 +43,7 @@ interface DigestStepProps {
   detail?: string;
 }
 
-function DigestStep({ label, status, detail }: DigestStepProps) {
+DigestProgress.Step = function Step({ label, status, detail }: DigestStepProps) {
   const { t } = useTranslation('voiceNote');
   const stateLabel = {
     done: t('digest.state.done'),
@@ -83,6 +82,4 @@ function DigestStep({ label, status, detail }: DigestStepProps) {
       )}
     </HStack>
   );
-}
-
-DigestProgress.Step = DigestStep;
+};

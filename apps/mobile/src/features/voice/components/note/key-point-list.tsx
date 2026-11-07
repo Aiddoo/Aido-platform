@@ -79,7 +79,29 @@ interface KeyPointItemProps extends Omit<
   hasTimeCoachmark: boolean;
 }
 
-function KeyPointItem({
+/** 칩이 터치를 받으면 포인트 재생이 막혀 안내는 자리만 재고 터치는 행으로 넘긴다 */
+function KeyPointTimeCoachmark({ children }: { children: ReactElement }) {
+  const { t } = useTranslation('voiceNote');
+
+  return (
+    <Box pointerEvents="none">
+      <CoachmarkPopover
+        kind="voice-key-point"
+        title={t('coach.keyPoint.title')}
+        description={t('coach.keyPoint.description')}
+        icon={PlayIcon}
+        // 아래로 띄우면 다음 포인트를 가린다. 위쪽 자리가 모자라면 말풍선이 알아서 뒤집는다
+        placement="top"
+        align="start"
+        avoidCollisions
+      >
+        {children}
+      </CoachmarkPopover>
+    </Box>
+  );
+}
+
+KeyPointList.Item = function Item({
   keyPoint,
   isSameTimeAsPrevious,
   isActive,
@@ -136,28 +158,4 @@ function KeyPointItem({
       </HStack>
     </PressableFeedback>
   );
-}
-
-/** 칩이 터치를 받으면 포인트 재생이 막혀 안내는 자리만 재고 터치는 행으로 넘긴다 */
-function KeyPointTimeCoachmark({ children }: { children: ReactElement }) {
-  const { t } = useTranslation('voiceNote');
-
-  return (
-    <Box pointerEvents="none">
-      <CoachmarkPopover
-        kind="voice-key-point"
-        title={t('coach.keyPoint.title')}
-        description={t('coach.keyPoint.description')}
-        icon={PlayIcon}
-        // 아래로 띄우면 다음 포인트를 가린다. 위쪽 자리가 모자라면 말풍선이 알아서 뒤집는다
-        placement="top"
-        align="start"
-        avoidCollisions
-      >
-        {children}
-      </CoachmarkPopover>
-    </Box>
-  );
-}
-
-KeyPointList.Item = KeyPointItem;
+};

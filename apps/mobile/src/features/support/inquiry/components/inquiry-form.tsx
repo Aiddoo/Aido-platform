@@ -4,7 +4,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   FormStepLayout,
@@ -22,7 +22,6 @@ import { router, useNavigation } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
-import { INQUIRY_CATEGORY_LABEL_KEYS } from '../constants/inquiry-labels';
 import { useCreateInquiryMutationOptions } from '../queries/inquiry.mutations';
 import { inquiryFormSchema } from '../schemas/inquiry-form.schema';
 import { inquiryParamsSchema } from '../schemas/inquiry-params.schema';
@@ -74,14 +73,26 @@ export function InquiryForm({ title }: InquiryFormProps) {
               onValueChange={onChange}
               className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
             >
-              {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                <IconRadioItem
-                  key={key}
-                  value={key}
-                  label={tGlobal(labelKey)}
-                  testID={`inquiry-category-${key}`}
-                />
-              ))}
+              <IconRadioItem
+                value="BUG_REPORT"
+                label={t('category.bugReport')}
+                testID="inquiry-category-BUG_REPORT"
+              />
+              <IconRadioItem
+                value="FEATURE_REQUEST"
+                label={t('category.featureRequest')}
+                testID="inquiry-category-FEATURE_REQUEST"
+              />
+              <IconRadioItem
+                value="PAYMENT"
+                label={t('category.payment')}
+                testID="inquiry-category-PAYMENT"
+              />
+              <IconRadioItem
+                value="OTHER"
+                label={t('category.other')}
+                testID="inquiry-category-OTHER"
+              />
             </RadioGroup>
           )}
         />

@@ -70,6 +70,7 @@ QuickVoiceInfo.Contents = function Contents({
   refill: string | null;
 }) {
   const { t } = useTranslation('voice');
+  // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
 
   return (

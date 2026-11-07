@@ -132,12 +132,19 @@ const APPLY_SOURCE = {
   memo: 'MEMO',
 } as const satisfies Record<VoicePlanSource, ApplyActionPlanRequest['source']>;
 
-export function toApplyActionPlanRequest(
-  source: VoicePlanSource,
-  actions: readonly PlannedAction[],
-  fallbackCategoryId: number,
-  sourceMemoId: number | null = null,
-): ApplyActionPlanRequest {
+interface ApplyActionPlanInput {
+  source: VoicePlanSource;
+  actions: readonly PlannedAction[];
+  fallbackCategoryId: number;
+  sourceMemoId: number | null;
+}
+
+export function toApplyActionPlanRequest({
+  source,
+  actions,
+  fallbackCategoryId,
+  sourceMemoId,
+}: ApplyActionPlanInput): ApplyActionPlanRequest {
   return {
     source: APPLY_SOURCE[source],
     ...(sourceMemoId != null && { sourceMemoId }),

@@ -1,11 +1,11 @@
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { RecognizerWaveform } from '@src/features/voice/components/note/recognizer-waveform';
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
-import { VoiceNoteDigest } from '@src/features/voice/components/note/voice-note-digest';
+import { VoiceNoteOffline } from '@src/features/voice/components/note/voice-note-offline';
 import { VoiceNoteRecordFooter } from '@src/features/voice/components/note/voice-note-record-footer';
 import { VoiceNoteRecordLanguageToggle } from '@src/features/voice/components/note/voice-note-record-language-toggle';
-import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
 import { useReadSpeechContext } from '@src/features/voice/hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
@@ -157,7 +157,7 @@ VoiceNoteRecordScreen.Loading = function Loading() {
         </HStack>
       ),
     )
-    .with(false, () => <VoiceNoteDigest.Offline />)
+    .with(false, () => <VoiceNoteOffline />)
     .exhaustive();
 };
 

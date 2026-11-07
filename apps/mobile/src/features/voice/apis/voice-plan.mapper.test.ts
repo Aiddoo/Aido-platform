@@ -54,7 +54,12 @@ describe('toApplyActionPlanRequest', () => {
     const plan = toVoicePlan('plan-1', 'quick-text', { actions: [todoDto], omittedTodoCount: 0 });
 
     // When
-    const request = toApplyActionPlanRequest('quick-text', plan.actions, 7);
+    const request = toApplyActionPlanRequest({
+      source: 'quick-text',
+      actions: plan.actions,
+      fallbackCategoryId: 7,
+      sourceMemoId: null,
+    });
 
     // Then
     expect(request).toMatchObject({

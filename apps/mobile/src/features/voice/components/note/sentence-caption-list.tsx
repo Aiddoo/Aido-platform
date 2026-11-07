@@ -16,6 +16,10 @@ type CaptionItem =
   | { type: 'sentence'; sentence: VoiceNoteSentence; index: number }
   | { type: 'interim'; text: string };
 
+function CaptionSeparator() {
+  return <Box className="h-2" />;
+}
+
 interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'children'> {
   sentences: readonly VoiceNoteSentence[];
   interimText?: string;
@@ -78,7 +82,7 @@ export function SentenceCaptionList({
                 }
               : undefined
           }
-          ItemSeparatorComponent={() => <Box className="h-2" />}
+          ItemSeparatorComponent={CaptionSeparator}
           ListEmptyComponent={
             <Text size="b3" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
               {t('captions.empty')}
@@ -116,7 +120,7 @@ interface SentenceCardProps extends Omit<
   isActive: boolean;
 }
 
-function SentenceCard({
+SentenceCaptionList.Card = function Card({
   sentence,
   isActive,
   onPress,
@@ -164,6 +168,4 @@ function SentenceCard({
       </HStack>
     </PressableFeedback>
   );
-}
-
-SentenceCaptionList.Card = SentenceCard;
+};

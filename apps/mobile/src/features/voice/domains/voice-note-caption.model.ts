@@ -152,13 +152,17 @@ export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): V
   return { ...captions, sentences: [...captions.sentences, ...committed], provisional: [] };
 }
 
+/** 다시 쌓인 interim이 이전보다 이 비율 아래로 짧고 앞 글자가 달라야 재시작으로 본다 */
+const INTERIM_RESTART_LENGTH_RATIO = 0.5;
+const INTERIM_RESTART_PREFIX_LENGTH = 8;
+
 /** iOS는 긴 침묵 뒤에 interim을 처음부터 다시 쌓기도 한다. 이때 앞 글자를 잃지 않게 먼저 확정한다 */
 function hasRestartedInterim(previous: readonly ProvisionalSentence[], next: string) {
   const previousText = previous.map(({ text }) => text).join(' ');
   return (
     previousText.length > 0 &&
-    next.length < previousText.length / 2 &&
-    !previousText.startsWith(next.slice(0, 8))
+    next.length < previousText.length * INTERIM_RESTART_LENGTH_RATIO &&
+    !previousText.startsWith(next.slice(0, INTERIM_RESTART_PREFIX_LENGTH))
   );
 }
 

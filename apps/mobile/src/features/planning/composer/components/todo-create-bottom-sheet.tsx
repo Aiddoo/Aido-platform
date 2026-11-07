@@ -9,7 +9,13 @@ import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-
 import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
-import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
+import {
+  QuickVoiceCardsLoading,
+  QuickVoiceFailed,
+  QuickVoiceListening,
+  QuickVoicePlanning,
+  QuickVoiceReview,
+} from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
@@ -287,7 +293,7 @@ function TodoCreateForm({
     >
       {match(voice.state)
         .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
-          <QuickVoicePanel
+          <QuickVoiceListening
             state={voice.state}
             level={voice.level}
             isQuiet={voice.isQuiet}
@@ -300,7 +306,7 @@ function TodoCreateForm({
           />
         ))
         .with({ status: 'planning' }, () => (
-          <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
+          <QuickVoicePlanning transcript={voice.state.transcript} onCancel={voice.cancelPlanning} />
         ))
         .with({ status: 'review' }, ({ plan, isCharged }) => (
           <TodoCreateVoiceReview
@@ -315,7 +321,7 @@ function TodoCreateForm({
         ))
         .otherwise(() => (
           <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
-            <QuickVoicePanel.Failed
+            <QuickVoiceFailed
               state={voice.state}
               isConsentRequired={voice.isConsentRequired}
               isTypedTextKept={voice.isTypedTextKept}
@@ -380,7 +386,7 @@ function TodoCreateForm({
 }
 
 type TodoCreateVoiceReviewProps = Omit<
-  ComponentProps<typeof QuickVoicePanel.Review>,
+  ComponentProps<typeof QuickVoiceReview>,
   'fallbackCategoryId'
 > & { form: UseFormReturn<AddTodoFormValues> };
 
@@ -390,8 +396,8 @@ function TodoCreateVoiceReview({ form, ...props }: TodoCreateVoiceReviewProps) {
 
   return (
     <QueryErrorBoundary>
-      <Suspense fallback={<QuickVoicePanel.CardsLoading />}>
-        <QuickVoicePanel.Review {...props} fallbackCategoryId={categoryId} />
+      <Suspense fallback={<QuickVoiceCardsLoading />}>
+        <QuickVoiceReview {...props} fallbackCategoryId={categoryId} />
       </Suspense>
     </QueryErrorBoundary>
   );

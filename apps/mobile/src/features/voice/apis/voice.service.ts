@@ -117,7 +117,7 @@ export class VoiceService {
     return parseApiResponse(
       await this.#httpClient.post(
         'v1/action-plans/apply',
-        toApplyActionPlanRequest(source, actions, fallbackCategoryId, sourceMemoId),
+        toApplyActionPlanRequest({ source, actions, fallbackCategoryId, sourceMemoId }),
         { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey } },
       ),
       applyActionPlanResponseSchema,

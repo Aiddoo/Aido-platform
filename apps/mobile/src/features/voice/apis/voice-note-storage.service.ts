@@ -30,9 +30,10 @@ export class VoiceNoteStorageService {
 
   /** 아직 쓰지 않은 대기 쓰기도 함께 취소해 지운 초안이 되살아나지 않게 한다 */
   discard = (accountId: string, draftId: string): void => {
-    this.#drafts
-      .find(accountId, draftId)
-      ?.recordings.forEach(({ fileName }) => this.#recordings.remove(accountId, fileName));
+    const note = this.#drafts.find(accountId, draftId);
+    if (note != null) {
+      this.#removeFiles(accountId, note);
+    }
     this.#drafts.remove(accountId, draftId);
   };
 
@@ -54,7 +55,7 @@ export class VoiceNoteStorageService {
     if (note == null) {
       return;
     }
-    note.recordings.forEach(({ fileName }) => this.#recordings.remove(accountId, fileName));
+    this.#removeFiles(accountId, note);
     this.#drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note));
   };
 
@@ -90,7 +91,11 @@ export class VoiceNoteStorageService {
   };
 
   #remove = (accountId: string, note: VoiceNote): void => {
-    note.recordings.forEach((recording) => this.#recordings.remove(accountId, recording.fileName));
+    this.#removeFiles(accountId, note);
     this.#drafts.remove(accountId, note.draftId);
+  };
+
+  #removeFiles = (accountId: string, note: VoiceNote): void => {
+    note.recordings.forEach(({ fileName }) => this.#recordings.remove(accountId, fileName));
   };
 }

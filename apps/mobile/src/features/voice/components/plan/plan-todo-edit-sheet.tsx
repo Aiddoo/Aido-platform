@@ -306,11 +306,11 @@ function CategoryChip({
 }: PlanTodoChipProps & { fallbackCategoryId: number }) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const todo = useWatch({ control: form.control, name: 'todo' });
+  const todoCategoryId = useWatch({ control: form.control, name: 'todo.categoryId' });
   const {
     data: { categories },
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const categoryId = todo.categoryId ?? fallbackCategoryId;
+  const categoryId = todoCategoryId ?? fallbackCategoryId;
   const category = TodoCategoryPolicy.findCategory(categories, categoryId);
 
   const handlePress = () => {

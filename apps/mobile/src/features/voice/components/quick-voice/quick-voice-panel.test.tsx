@@ -9,7 +9,7 @@ import { useSharedValue } from 'react-native-reanimated';
 
 import { createCaptureState, createTranscript } from '../../__tests__/voice.fixtures';
 import type { VoiceCaptureState } from '../../schemas/voice-capture.schema';
-import { QuickVoicePanel } from './quick-voice-panel';
+import { QuickVoiceFailed, QuickVoiceListening } from './quick-voice-panel';
 
 function Panel({
   state,
@@ -22,7 +22,7 @@ function Panel({
 }) {
   const level = useSharedValue(0);
   return (
-    <QuickVoicePanel
+    <QuickVoiceListening
       state={state}
       level={level}
       isQuiet={false}
@@ -46,7 +46,7 @@ async function renderPanel(state: VoiceCaptureState) {
   return { onContinueAsVoiceNote, onFinish };
 }
 
-describe('QuickVoicePanel 90초 제안', () => {
+describe('QuickVoiceListening 90초 제안', () => {
   const overLimit = createCaptureState({
     status: 'paused',
     cause: 'limit',
@@ -104,7 +104,7 @@ describe('QuickVoicePanel 90초 제안', () => {
   });
 });
 
-describe('QuickVoicePanel.Failed', () => {
+describe('QuickVoiceFailed', () => {
   const planningFailed = createCaptureState({
     status: 'failed',
     reason: 'planning-failed',
@@ -114,7 +114,7 @@ describe('QuickVoicePanel.Failed', () => {
   it('정리가 동의 때문에 막혔으면 들은 글자 안내 대신 동의가 필요하다고 보인다', async () => {
     // When
     await renderUi(
-      <QuickVoicePanel.Failed
+      <QuickVoiceFailed
         state={planningFailed}
         isConsentRequired
         onResume={jest.fn()}
@@ -132,11 +132,7 @@ describe('QuickVoicePanel.Failed', () => {
 
     // When
     await renderUi(
-      <QuickVoicePanel.Failed
-        state={nothingHeard}
-        onResume={jest.fn()}
-        onRetryPlanning={jest.fn()}
-      />,
+      <QuickVoiceFailed state={nothingHeard} onResume={jest.fn()} onRetryPlanning={jest.fn()} />,
     );
 
     // Then
@@ -147,11 +143,7 @@ describe('QuickVoicePanel.Failed', () => {
   it('다른 이유로 실패했으면 들은 글자를 남겼다고 보인다', async () => {
     // When
     await renderUi(
-      <QuickVoicePanel.Failed
-        state={planningFailed}
-        onResume={jest.fn()}
-        onRetryPlanning={jest.fn()}
-      />,
+      <QuickVoiceFailed state={planningFailed} onResume={jest.fn()} onRetryPlanning={jest.fn()} />,
     );
 
     // Then
@@ -161,7 +153,7 @@ describe('QuickVoicePanel.Failed', () => {
   it('입력 칸에 친 글자를 그대로 뒀으면 들은 글자가 칸에 있다고 말하지 않는다', async () => {
     // When
     await renderUi(
-      <QuickVoicePanel.Failed
+      <QuickVoiceFailed
         state={planningFailed}
         isTypedTextKept
         onResume={jest.fn()}

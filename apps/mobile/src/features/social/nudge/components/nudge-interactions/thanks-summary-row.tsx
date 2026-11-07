@@ -78,7 +78,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
     .with('NONE', () => null)
     .with('PENDING', () => (
       <ThanksSummaryCard
-        variant="pending"
+        tone="highlighted"
         left={<RecipientAvatars recipients={preview.recipients} />}
         title={
           <CardTitle>
@@ -108,7 +108,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
     ))
     .with('SENT', () => (
       <ThanksSummaryCard
-        variant="sent"
+        tone="neutral"
         left={<SentHeart style={heartStyle} />}
         title={
           <CardTitle>
@@ -120,7 +120,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
     ))
     .with('SENT_WITH_PENDING', () => (
       <ThanksSummaryCard
-        variant="sent"
+        tone="neutral"
         left={<SentHeart style={heartStyle} />}
         title={
           <CardTitle>
@@ -157,7 +157,7 @@ ThanksSummaryRow.Error = function ErrorFallback({ reset, onInquiry }: ThanksSumm
 
   return (
     <ThanksSummaryCard
-      variant="sent"
+      tone="neutral"
       left={null}
       title={<CardTitle>{t('todo:interaction.thanksLoadFailed')}</CardTitle>}
       description={
@@ -197,14 +197,14 @@ function useThanksCelebration(thankedRecipientCount: number) {
 }
 
 interface ThanksSummaryCardProps {
-  variant: 'pending' | 'sent';
+  tone: 'highlighted' | 'neutral';
   left: ReactNode;
   title: ReactNode;
   description: ReactNode;
   action?: ReactNode;
 }
 
-function ThanksSummaryCard({ variant, left, title, description, action }: ThanksSummaryCardProps) {
+function ThanksSummaryCard({ tone, left, title, description, action }: ThanksSummaryCardProps) {
   const { fontScale } = useFontScale();
   const isActionStacked = fontScale === 'xlarge';
 
@@ -215,7 +215,7 @@ function ThanksSummaryCard({ variant, left, title, description, action }: Thanks
       wrap={isActionStacked ? 'wrap' : 'nowrap'}
       className={cn(
         'min-h-16 rounded-2xl py-3 pl-4 pr-3',
-        variant === 'pending' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
+        tone === 'highlighted' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
       )}
     >
       {left}

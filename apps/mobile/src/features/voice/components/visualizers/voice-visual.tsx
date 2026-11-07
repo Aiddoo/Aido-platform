@@ -10,6 +10,7 @@ import {
   Skia,
   vec,
 } from '@shopify/react-native-skia';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
@@ -119,7 +120,7 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
     const elapsed = Math.min(VOICE_VISUAL.maxFrameMs, frameMs);
     const currentLevel = level.get();
     smoothed.set(followLevel(smoothed.get(), currentLevel, elapsed, VOICE_VISUAL));
-    time.set(time.get() + elapsed / 1_000);
+    time.set(time.get() + elapsed / SECOND_MS);
     pendingPeak.set(Math.max(pendingPeak.get(), currentLevel));
 
     const barElapsed = sinceLastBar.get() + elapsed;
@@ -187,8 +188,8 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   );
   const lightOrbHighlight = useDerivedValue(() =>
     vec(
-      centerX.get() - lightOrbRadius.get() * 0.35,
-      VOICE_VISUAL.height / 2 - lightOrbRadius.get() * 0.4,
+      centerX.get() - lightOrbRadius.get() * VOICE_LIGHT_ORB.highlightOffsetX,
+      VOICE_VISUAL.height / 2 - lightOrbRadius.get() * VOICE_LIGHT_ORB.highlightOffsetY,
     ),
   );
   // 프레임마다 생기는 네이티브 객체를 경로 하나로 줄이려고 막대를 도형 대신 선으로 그린다
@@ -247,9 +248,9 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
             <Circle c={center} r={lightOrbRadius}>
               <RadialGradient
                 c={lightOrbHighlight}
-                r={VOICE_LIGHT_ORB.radius * 1.8}
+                r={VOICE_LIGHT_ORB.radius * VOICE_LIGHT_ORB.highlightRadiusRatio}
                 colors={[VOICE_GRADIENT_COLORS.orbPeach, VOICE_GRADIENT_COLORS.orbCoral, mainColor]}
-                positions={[0, 0.55, 1]}
+                positions={VOICE_LIGHT_ORB.gradientStops}
               />
             </Circle>
           ) : (

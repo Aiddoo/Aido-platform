@@ -41,7 +41,7 @@ import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
 import { VoicePlanPolicy } from '../../domains/voice-plan.model';
-import { isSourceMemoMissingError } from '../../domains/voice.error';
+import { isPlanKeyConflictError, isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
 import { type VoicePlan } from '../../schemas/voice-plan.schema';
@@ -279,7 +279,7 @@ function usePlanApply({
         },
         // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
         onError: (error) => {
-          if (PlanRequestPolicy.getRequestToRetry(prepared, error) == null) {
+          if (isPlanKeyConflictError(error)) {
             rememberRequest(null);
           }
           if (isSourceMemoMissingError(error)) {

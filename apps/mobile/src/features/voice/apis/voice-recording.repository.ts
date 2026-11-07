@@ -29,11 +29,7 @@ export interface VoiceRecordingRepository {
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
   removeOwned(accountId: string): void;
-  removeExpired(
-    accountId: string,
-    now: Instant,
-    referencedFileNames: ReadonlySet<string>,
-  ): string[];
+  removeExpired(accountId: string, now: Instant, referencedFileNames: ReadonlySet<string>): void;
   removeAllExceptOwner(accountId: string): void;
   removeAll(): void;
 }
@@ -51,11 +47,15 @@ export function createVoiceRecordingRepository(
   files: LocalFileSystem,
   logger: Pick<Logger, 'warn'>,
 ): VoiceRecordingRepository {
+  const logRemoveFailed = (error: unknown) => {
+    logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
+  };
+
   const removeSafely = (directory: readonly string[], name: string) => {
     try {
       files.removeFile(directory, name);
     } catch (error) {
-      logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
+      logRemoveFailed(error);
     }
   };
 
@@ -63,7 +63,7 @@ export function createVoiceRecordingRepository(
     try {
       return files.listFiles(directory);
     } catch (error) {
-      logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: getErrorMessage(error) });
+      logger.warn(VOICE_LOG_EVENT.RECORDING_READ_FAILED, { error: getErrorMessage(error) });
       return [];
     }
   };
@@ -100,7 +100,7 @@ export function createVoiceRecordingRepository(
       try {
         return files.findFileUri(ownerDirectory(accountId), fileName);
       } catch (error) {
-        logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_READ_FAILED, {
           error: getErrorMessage(error),
         });
         return null;
@@ -113,9 +113,7 @@ export function createVoiceRecordingRepository(
       try {
         files.removeFileAt(sourceUri);
       } catch (error) {
-        logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
-          error: getErrorMessage(error),
-        });
+        logRemoveFailed(error);
       }
     },
 
@@ -128,7 +126,7 @@ export function createVoiceRecordingRepository(
       try {
         files.removeDirectory(ownerDirectory(accountId));
       } catch (error) {
-        logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),
         });
       }
@@ -142,7 +140,6 @@ export function createVoiceRecordingRepository(
           VoiceNotePolicy.isRecordingFileExpired(file.modifiedAt, now),
       );
       expired.forEach((file) => removeSafely(directory, file.name));
-      return expired.map((file) => file.name);
     },
 
     removeAllExceptOwner: (accountId) => {

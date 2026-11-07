@@ -93,13 +93,13 @@ function addLevelBars(
   target: SkPathBuilder,
   { width, height }: { width: number; height: number },
   levels: readonly number[],
-  isSpeech: boolean,
+  { kind }: { kind: 'speech' | 'quiet' },
 ) {
   'worklet';
   const sideCount = getSideCount(width);
   for (let slot = 0; slot <= sideCount * 2; slot += 1) {
     const level = getTimelineLevel(levels, slot, sideCount);
-    if (level != null && level >= SPEECH_LEVEL_THRESHOLD === isSpeech) {
+    if (level != null && level >= SPEECH_LEVEL_THRESHOLD === (kind === 'speech')) {
       const barHeight = Math.max(
         height * WAVEFORM_BAR.minHeightRatio,
         level * height * WAVEFORM_BAR.verticalShare,
@@ -142,13 +142,13 @@ function WaveformTimeline({
   // Reanimated 매퍼는 넘겨받은 콜백 안의 shared value를 입력으로 찾지 않아(`usePathValue`) 값을 직접 읽는 `useDerivedValue`로 만든다
   const speechPath = useDerivedValue(() => {
     const target = Skia.PathBuilder.Make();
-    addLevelBars(target, layout.get(), bars.get(), true);
+    addLevelBars(target, layout.get(), bars.get(), { kind: 'speech' });
     return target.build();
   });
 
   const quietPath = useDerivedValue(() => {
     const target = Skia.PathBuilder.Make();
-    addLevelBars(target, layout.get(), bars.get(), false);
+    addLevelBars(target, layout.get(), bars.get(), { kind: 'quiet' });
     return target.build();
   });
 

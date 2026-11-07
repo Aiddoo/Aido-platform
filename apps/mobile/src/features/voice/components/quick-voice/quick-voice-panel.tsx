@@ -35,6 +35,7 @@ import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { type CapturedPlan, type VoiceCaptureState } from '../../schemas/voice-capture.schema';
+import type { VoiceTranscript } from '../../schemas/voice-transcript.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
@@ -43,7 +44,7 @@ import { LiveTranscript } from './live-transcript';
 import { QuickVoiceHeader } from './quick-voice-header';
 import { RecognitionLanguageTabs } from './recognition-language-tabs';
 
-interface QuickVoicePanelProps {
+interface QuickVoiceListeningProps {
   state: VoiceCaptureState;
   level: SharedValue<number>;
   isQuiet: boolean;
@@ -55,7 +56,7 @@ interface QuickVoicePanelProps {
   onContinueAsVoiceNote: () => void;
 }
 
-export function QuickVoicePanel({
+export function QuickVoiceListening({
   state,
   level,
   isQuiet,
@@ -65,7 +66,7 @@ export function QuickVoicePanel({
   onCancel,
   onResume,
   onContinueAsVoiceNote,
-}: QuickVoicePanelProps) {
+}: QuickVoiceListeningProps) {
   const { t } = useTranslation('voice');
   const isPaused = state.status === 'paused';
   const isListening = state.status === 'listening';
@@ -92,41 +93,34 @@ export function QuickVoicePanel({
         </Box>
       )}
 
-      {match({ isOverLimit, isPaused })
-        .with({ isOverLimit: true }, () => (
+      {match({ isOverLimit, canFinish, isPaused })
+        .with({ isOverLimit: true, canFinish: true }, () => (
           <VStack gap={8} testID="quick-voice-limit">
-            <VStack gap={4}>
-              <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
-                {canFinish ? t('limit.title') : t('limit.titleEmpty')}
-              </Text>
-              <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-                {canFinish ? t('limit.description') : t('limit.descriptionEmpty')}
-              </Text>
-            </VStack>
-            {canFinish ? (
-              <Button size="large" onPress={onFinish} testID="quick-voice-finish">
-                {t('limit.finish')}
-              </Button>
-            ) : (
-              <Button
-                size="large"
-                onPress={onContinueAsVoiceNote}
-                testID="quick-voice-continue-as-note"
-              >
-                {t('limit.continueAsNote')}
-              </Button>
-            )}
-            {canFinish && (
-              <Button
-                size="large"
-                variant="weak"
-                color="dark"
-                onPress={onContinueAsVoiceNote}
-                testID="quick-voice-continue-as-note"
-              >
-                {t('limit.continueAsNote')}
-              </Button>
-            )}
+            <LimitMessage title={t('limit.title')} description={t('limit.description')} />
+            <Button size="large" onPress={onFinish} testID="quick-voice-finish">
+              {t('limit.finish')}
+            </Button>
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onContinueAsVoiceNote}
+              testID="quick-voice-continue-as-note"
+            >
+              {t('limit.continueAsNote')}
+            </Button>
+          </VStack>
+        ))
+        .with({ isOverLimit: true, canFinish: false }, () => (
+          <VStack gap={8} testID="quick-voice-limit">
+            <LimitMessage title={t('limit.titleEmpty')} description={t('limit.descriptionEmpty')} />
+            <Button
+              size="large"
+              onPress={onContinueAsVoiceNote}
+              testID="quick-voice-continue-as-note"
+            >
+              {t('limit.continueAsNote')}
+            </Button>
           </VStack>
         ))
         .with({ isPaused: true }, () => (
@@ -178,11 +172,11 @@ export function QuickVoicePanel({
   );
 }
 
-QuickVoicePanel.Planning = function Planning({
-  state,
+export function QuickVoicePlanning({
+  transcript,
   onCancel,
 }: {
-  state: VoiceCaptureState;
+  transcript: VoiceTranscript;
   onCancel: () => void;
 }) {
   const { t } = useTranslation('voice');
@@ -198,9 +192,9 @@ QuickVoicePanel.Planning = function Planning({
       testID="quick-voice-planning"
     >
       <Box flex={1}>
-        <LiveTranscript transcript={state.transcript} isWordFadeEnabled={false} />
+        <LiveTranscript transcript={transcript} isWordFadeEnabled={false} />
       </Box>
-      <QuickVoicePanel.CardsLoading />
+      <QuickVoiceCardsLoading />
       <TextButton
         size="small"
         className="self-center"
@@ -211,9 +205,9 @@ QuickVoicePanel.Planning = function Planning({
       </TextButton>
     </SheetPanel>
   );
-};
+}
 
-QuickVoicePanel.CardsLoading = function CardsLoading() {
+export function QuickVoiceCardsLoading() {
   return (
     <VStack gap={8}>
       <Skeleton className="h-12 w-full rounded-xl" />
@@ -221,7 +215,7 @@ QuickVoicePanel.CardsLoading = function CardsLoading() {
       <Skeleton className="h-12 w-full rounded-xl" />
     </VStack>
   );
-};
+}
 
 interface ReviewProps extends CapturedPlan {
   fallbackCategoryId: number;
@@ -232,7 +226,7 @@ interface ReviewProps extends CapturedPlan {
 }
 
 /** 계획을 고르는 단계. 이 단계가 떠 있는 동안 폼이 살아 있어 카드 시트를 오가거나 저장에 실패해도 고친 값이 남는다 */
-QuickVoicePanel.Review = function Review({
+export function QuickVoiceReview({
   plan,
   isCharged,
   fallbackCategoryId,
@@ -284,9 +278,9 @@ QuickVoicePanel.Review = function Review({
       />
     </Animated.View>
   );
-};
+}
 
-QuickVoicePanel.Failed = function Failed({
+export function QuickVoiceFailed({
   state,
   isConsentRequired = false,
   isTypedTextKept = false,
@@ -342,7 +336,7 @@ QuickVoicePanel.Failed = function Failed({
       )}
     </HStack>
   );
-};
+}
 
 interface SheetPanelProps {
   center: ReactNode;
@@ -353,6 +347,19 @@ interface SheetPanelProps {
 }
 
 /** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
+function LimitMessage({ title, description }: { title: string; description: string }) {
+  return (
+    <VStack gap={4}>
+      <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
+        {title}
+      </Text>
+      <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+        {description}
+      </Text>
+    </VStack>
+  );
+}
+
 function SheetPanel({ center, right, onClose, testID, children }: SheetPanelProps) {
   const { height: windowHeight } = useWindowDimensions();
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();

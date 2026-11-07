@@ -95,10 +95,10 @@ describe('VoiceRecordingRepository', () => {
     });
 
     // When
-    const removed = repository.removeExpired('user-1', NOW, new Set(['referenced-old.wav']));
+    repository.removeExpired('user-1', NOW, new Set(['referenced-old.wav']));
 
     // Then
-    expect(removed).toEqual(['orphan-old.wav']);
+    expect(files.hasFile(OWNER_DIRECTORY, 'orphan-old.wav')).toBe(false);
     expect(files.hasFile(OWNER_DIRECTORY, 'referenced-old.wav')).toBe(true);
     expect(files.hasFile(OWNER_DIRECTORY, 'orphan-new.wav')).toBe(true);
   });

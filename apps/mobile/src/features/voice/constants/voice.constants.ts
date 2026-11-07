@@ -90,7 +90,16 @@ export const VOICE_VISUAL_BARS = {
   edgeOpacity: 0.35,
 } as const;
 
-export const VOICE_LIGHT_ORB = { radius: 22, growRatio: 0.22 } as const;
+export const VOICE_LIGHT_ORB = {
+  radius: 22,
+  growRatio: 0.22,
+  /** 하이라이트 중심이 구 중심에서 왼쪽 위로 벗어나는 반지름 비율 */
+  highlightOffsetX: 0.35,
+  highlightOffsetY: 0.4,
+  /** 하이라이트 그라데이션이 퍼지는 반지름 배수와 색 경계 */
+  highlightRadiusRatio: 1.8,
+  gradientStops: [0, 0.55, 1],
+};
 
 export const VOICE_FRAME_BUDGET = {
   /** 30fps 아래 */
