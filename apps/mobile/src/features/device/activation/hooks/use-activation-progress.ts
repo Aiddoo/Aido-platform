@@ -7,15 +7,9 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { EMPTY_ACTIVATION_PROGRESS } from '../constants/activation.constants';
 import { ActivationPolicy } from '../domains/activation.model';
 import { useGetActivationProgressQueryOptions } from '../queries/activation.queries';
-import type { ActivationProgress } from '../schemas/activation.schema';
-
-const EMPTY_PROGRESS: ActivationProgress = {
-  todoCreatedAt: null,
-  activatedAt: null,
-  pushRegistrationUnlockedAt: null,
-};
 
 export function useActivationProgress() {
   const status = useAuthStatus();
@@ -45,7 +39,10 @@ export function useActivationProgress() {
   return {
     config: isAuthenticated ? configQuery.data : undefined,
     user: isAuthenticated ? userQuery.data : undefined,
-    progress: isAuthenticated && identity ? (progressQuery.data ?? EMPTY_PROGRESS) : EMPTY_PROGRESS,
+    progress:
+      isAuthenticated && identity
+        ? (progressQuery.data ?? EMPTY_ACTIVATION_PROGRESS)
+        : EMPTY_ACTIVATION_PROGRESS,
     isReady,
     isAuthenticated,
     hasUserError: isAuthenticated && userQuery.isError,

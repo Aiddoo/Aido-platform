@@ -1,16 +1,11 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { type Instant, toNullableInstant } from '@src/shared/date/instant';
 
+import { EMPTY_ACTIVATION_PROGRESS } from '../constants/activation.constants';
 import { persistedActivationProgressSchema } from '../schemas/activation-persisted.schema';
 import type { ActivationIdentity, ActivationProgress } from '../schemas/activation.schema';
 
 const KEY_PREFIX = 'aido_activation_v1';
-
-const EMPTY_PROGRESS: ActivationProgress = {
-  todoCreatedAt: null,
-  activatedAt: null,
-  pushRegistrationUnlockedAt: null,
-};
 
 interface ClaimActivationResult {
   isClaimed: boolean;
@@ -36,16 +31,16 @@ export function createActivationProgressRepository(
     try {
       const raw = storage.get(createActivationProgressKey(identity));
       if (!raw) {
-        return { ...EMPTY_PROGRESS };
+        return { ...EMPTY_ACTIVATION_PROGRESS };
       }
       decoded = JSON.parse(raw);
     } catch {
-      return { ...EMPTY_PROGRESS };
+      return { ...EMPTY_ACTIVATION_PROGRESS };
     }
 
     const parsed = persistedActivationProgressSchema.safeParse(decoded);
     if (!parsed.success) {
-      return { ...EMPTY_PROGRESS };
+      return { ...EMPTY_ACTIVATION_PROGRESS };
     }
     return {
       todoCreatedAt: toNullableInstant(parsed.data.todoCreatedAt),
