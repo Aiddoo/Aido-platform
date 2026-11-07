@@ -11,8 +11,8 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createPendingResponse,
+  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';

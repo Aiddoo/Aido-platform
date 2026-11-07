@@ -1,7 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
+import { createHapticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';

@@ -4,8 +4,8 @@ import {
   createAnalyticsStub,
   createHapticsStub,
   createHttpClientStub,
+  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError, ParseError } from '@src/shared/errors';
 import { useMutation } from '@tanstack/react-query';

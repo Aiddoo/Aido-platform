@@ -86,6 +86,19 @@ async function renderCoachmarkOnHiddenTab() {
 }
 
 describe('CoachmarkPopover', () => {
+  // RN의 measure는 이미 jest.fn이라 restoreMocks가 구현을 되돌리지 못한다. 쓰고 나면 직접 비운다
+  beforeEach(() => {
+    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
+      if (typeof callback === 'function') {
+        callback(0, 0, 44, 44, 16, 300);
+      }
+    });
+  });
+
+  afterEach(() => {
+    jest.mocked(View.prototype.measure).mockReset();
+  });
+
   it('내 정보를 읽은 뒤에도 대상을 다시 마운트하지 않아 누르던 탭을 잃지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
@@ -151,14 +164,6 @@ describe('CoachmarkPopover', () => {
   });
 
   describe('탭이나 화면의 포커스', () => {
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 44, 44, 16, 300);
-        }
-      });
-    });
-
     afterEach(() => {
       jest.mocked(useIsFocused).mockReturnValue(true);
     });

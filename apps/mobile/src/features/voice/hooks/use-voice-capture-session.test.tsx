@@ -543,7 +543,7 @@ describe('useVoiceCaptureSession', () => {
         await hearVolume(speechRecognizer, VOICE, 6_100);
 
         // When
-        await act(async () => jest.advanceTimersByTime(1_600));
+        await act(async () => jest.advanceTimersByTimeAsync(1_600));
         const startCountBeforeEnd = speechRecognizer.start.mock.calls.length;
         await emit(speechRecognizer, { type: 'end' });
 
@@ -562,7 +562,7 @@ describe('useVoiceCaptureSession', () => {
 
         // When
         await fireEvent.press(screen.getByTestId('finish'));
-        await act(async () => jest.advanceTimersByTime(1_000));
+        await act(async () => jest.advanceTimersByTimeAsync(1_000));
 
         // Then
         expect(speechRecognizer.abort).not.toHaveBeenCalled();
@@ -669,21 +669,21 @@ describe('useVoiceCaptureSession', () => {
       const { speechRecognizer } = await renderSession({ maxSeconds: 10, onLimitReached });
       await fireEvent.press(screen.getByTestId('begin'));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
-      await act(async () => jest.advanceTimersByTime(4_000));
+      await act(async () => jest.advanceTimersByTimeAsync(4_000));
       await fireEvent.press(screen.getByTestId('pause'));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await act(async () => jest.advanceTimersByTime(30_000));
+      await act(async () => jest.advanceTimersByTimeAsync(30_000));
 
       // When
       await fireEvent.press(screen.getByTestId('resume'));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
-      await act(async () => jest.advanceTimersByTime(5_500));
+      await act(async () => jest.advanceTimersByTimeAsync(5_500));
 
       // Then
       expect(onLimitReached).not.toHaveBeenCalled();
 
       // When
-      await act(async () => jest.advanceTimersByTime(700));
+      await act(async () => jest.advanceTimersByTimeAsync(700));
 
       // Then
       expect(onLimitReached).toHaveBeenCalledTimes(1);
@@ -700,7 +700,7 @@ describe('useVoiceCaptureSession', () => {
       );
 
       // When
-      await act(async () => jest.advanceTimersByTime(3_100));
+      await act(async () => jest.advanceTimersByTimeAsync(3_100));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
       // Then
@@ -750,7 +750,7 @@ describe('useVoiceCaptureSession', () => {
 
       // When
       for (let count = 0; count < 8; count += 1) {
-        await act(async () => jest.advanceTimersByTime(500));
+        await act(async () => jest.advanceTimersByTimeAsync(500));
         await act(async () => speechRecognizer.emit({ type: 'end' }));
       }
 

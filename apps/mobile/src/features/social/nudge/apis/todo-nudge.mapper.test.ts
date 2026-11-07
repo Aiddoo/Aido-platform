@@ -5,7 +5,13 @@ import {
 } from '../__tests__/todo-nudge.fixtures';
 import { toNudgeCooldownInfo, toNudgeLimitInfo, toSendNudgeResult } from './todo-nudge.mapper';
 
-jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
+beforeEach(() => {
+  jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 describe('toNudgeLimitInfo', () => {
   test('필드 매핑', () => {

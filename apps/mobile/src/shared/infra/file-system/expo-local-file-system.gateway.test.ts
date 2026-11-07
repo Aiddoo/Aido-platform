@@ -37,6 +37,10 @@ function createFile(fields: { name: string; size: number; modificationTime: numb
 }
 
 describe('expoLocalFileSystemGateway', () => {
+  beforeEach(() => {
+    mockList.mockReset();
+  });
+
   test('폴더는 문서 폴더 아래에 중간 폴더까지 만들고 이미 있어도 실패하지 않는다', () => {
     // Given
     const directory = ['voice-notes', 'user-1'];

@@ -39,7 +39,11 @@ import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 
 const ACCOUNT_ID = 'user-1';
 const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
-const logger = createLoggerStub();
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 const createQuickPlanDto = (actions: unknown[], charged = true) => ({
   plan: { actions, omittedTodoCount: 0 },
@@ -577,7 +581,7 @@ describe('useAddTodoQuickVoice', () => {
           segments: [],
         }),
       );
-      await act(async () => jest.advanceTimersByTime(90_100));
+      await act(async () => jest.advanceTimersByTimeAsync(90_100));
     }
 
     it('90초가 되면 자동으로 정리하지 않고 멈춰서 고르게 한다', async () => {

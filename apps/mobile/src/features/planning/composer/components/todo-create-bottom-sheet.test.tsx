@@ -8,14 +8,14 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
-  createLoggerStub,
   createHttpClientStub,
+  createLoggerStub,
+  createMemoryStorage,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createMemoryStorage,
+  createTestDi,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -24,7 +24,11 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { TodoCreateBottomSheet } from './todo-create-bottom-sheet';
 
-const logger = createLoggerStub();
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 const PLACEHOLDER = '무엇을 하고 싶나요?';
 
 async function renderCreateSheet() {

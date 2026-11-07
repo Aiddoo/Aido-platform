@@ -29,7 +29,11 @@ import { EditSubTodoBottomSheet } from './edit-sub-todo-bottom-sheet';
 const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
 
-const logger = createLoggerStub();
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 async function renderEditSheet() {
   const httpClient = createHttpClientStub();

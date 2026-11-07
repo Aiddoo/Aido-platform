@@ -70,7 +70,7 @@ describe('피드 날짜 선택', () => {
       jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
       const { result } = await setup(date);
       // When
-      await act(() => jest.advanceTimersByTime(200));
+      await act(() => jest.advanceTimersByTimeAsync(200));
       // Then
       expect(result.current.selectedDateKey).toBe('2026-07-15');
       expect(router.setParams).not.toHaveBeenCalled();
@@ -85,7 +85,7 @@ describe('피드 날짜 선택', () => {
       const { result } = await setup(date);
       const selectedDate = result.current.selectedDate;
       // When
-      await act(() => jest.advanceTimersByTime(200));
+      await act(() => jest.advanceTimersByTimeAsync(200));
       // Then
       expect(result.current.selectedDateKey).toBe(date);
       expect(result.current.selectedDate).toBe(selectedDate);
@@ -100,7 +100,7 @@ describe('피드 날짜 선택', () => {
     // When
     await act(() => result.current.setSelectedDate(new Date(2026, 6, 14)));
     await rerender({});
-    await act(() => jest.advanceTimersByTime(200));
+    await act(() => jest.advanceTimersByTimeAsync(200));
     // Then
     expect(readDate()).toBeUndefined();
     expect(result.current.selectedDateKey).toBe('2026-07-15');

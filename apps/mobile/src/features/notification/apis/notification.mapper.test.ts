@@ -6,7 +6,13 @@ import {
   toPushNotificationPayload,
 } from './notification.mapper';
 
-jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
+beforeEach(() => {
+  jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 

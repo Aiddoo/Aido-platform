@@ -5,7 +5,13 @@ import {
 } from '../__tests__/todo.fixtures';
 import { toDailyCompletionsResult, toTodo } from './todo.mapper';
 
-jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
+beforeEach(() => {
+  jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 describe('toTodo', () => {
   test('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {

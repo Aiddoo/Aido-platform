@@ -1,8 +1,7 @@
 import '@src/shared/i18n/init';
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { ok } from '@src/core/errors/result';
-import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
+import { createHapticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';

@@ -6,10 +6,10 @@ import { ActivationService } from '@src/features/device/activation/apis/activati
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import {
   createHapticsStub,
-  createMemorySyncStorage,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 

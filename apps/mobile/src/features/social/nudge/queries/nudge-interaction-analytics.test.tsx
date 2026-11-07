@@ -3,8 +3,8 @@ import {
   createAnalyticsStub,
   createHapticsStub,
   createHttpClientStub,
+  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { useMutation } from '@tanstack/react-query';

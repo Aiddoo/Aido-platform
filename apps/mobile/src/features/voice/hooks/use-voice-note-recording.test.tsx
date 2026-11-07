@@ -137,7 +137,7 @@ describe('useVoiceNoteRecording', () => {
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
     await act(async () => speechRecognizer.emit({ type: 'volume', level: 0 }));
-    await act(async () => jest.advanceTimersByTime(10_000));
+    await act(async () => jest.advanceTimersByTimeAsync(10_000));
 
     // Then
     expect(speechRecognizer.start).toHaveBeenCalledWith(
@@ -157,7 +157,7 @@ describe('useVoiceNoteRecording', () => {
 
     // When
     await say(speechRecognizer, '첫 문장.');
-    await act(async () => jest.advanceTimersByTime(2_000));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
     const draftId = screen.getByTestId('draft-id').props.children;
@@ -299,7 +299,7 @@ describe('useVoiceNoteRecording', () => {
     await fireEvent.press(screen.getByTestId('finish'));
 
     // When
-    await act(async () => jest.advanceTimersByTime(3_100));
+    await act(async () => jest.advanceTimersByTimeAsync(3_100));
 
     // Then
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
@@ -312,7 +312,7 @@ describe('useVoiceNoteRecording', () => {
     await say(speechRecognizer, '첫 문장.');
 
     // When
-    await act(async () => jest.advanceTimersByTime(3_100));
+    await act(async () => jest.advanceTimersByTimeAsync(3_100));
 
     // Then
     expect(onLimitReached).toHaveBeenCalledTimes(1);
@@ -372,7 +372,7 @@ describe('useVoiceNoteRecording', () => {
     // When
     await start(speechRecognizer);
     await say(speechRecognizer, '이어서 한 말.');
-    await act(async () => jest.advanceTimersByTime(2_000));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith(
@@ -593,7 +593,7 @@ describe('useVoiceNoteRecording', () => {
     // When
     await fireEvent.press(screen.getByTestId('discard'));
     await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
-    await act(async () => jest.advanceTimersByTime(2_000));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
@@ -628,7 +628,7 @@ describe('useVoiceNoteRecording', () => {
     await fireEvent.press(screen.getByTestId('resume'));
 
     // When
-    await act(async () => jest.advanceTimersByTime(2_000));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
     expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
@@ -644,7 +644,7 @@ describe('useVoiceNoteRecording', () => {
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: first }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     await say(speechRecognizer, '첫 문장.');
-    await act(async () => jest.advanceTimersByTime(5_000));
+    await act(async () => jest.advanceTimersByTimeAsync(5_000));
     await fireEvent.press(screen.getByTestId('pause'));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
     await fireEvent.press(screen.getByTestId('resume'));
@@ -701,7 +701,7 @@ describe('useVoiceNoteRecording', () => {
     await say(speechRecognizer, '첫 문장.');
     await fireEvent.press(screen.getByTestId('finish'));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
-    await act(async () => jest.advanceTimersByTime(3_100));
+    await act(async () => jest.advanceTimersByTimeAsync(3_100));
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
     const draftId = onFinished.mock.calls[0]?.[0];
 
@@ -877,7 +877,7 @@ describe('useVoiceNoteRecording', () => {
     await say(speechRecognizer, '첫 문장.');
     await fireEvent.press(screen.getByTestId('finish'));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
-    await act(async () => jest.advanceTimersByTime(3_100));
+    await act(async () => jest.advanceTimersByTimeAsync(3_100));
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
     const draftId = onFinished.mock.calls[0]?.[0];
     await act(async () => unmount());
@@ -980,7 +980,7 @@ describe('useVoiceNoteRecording', () => {
       await act(async () => unmount());
 
       // When
-      await act(async () => jest.advanceTimersByTime(30_100));
+      await act(async () => jest.advanceTimersByTimeAsync(30_100));
 
       // Then
       expect(speechRecognizer.getListenerCount()).toBe(0);
@@ -1035,7 +1035,7 @@ describe('useVoiceNoteRecording', () => {
 
     // When
     await act(async () => unmount());
-    await act(async () => jest.advanceTimersByTime(2_000));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
@@ -1084,7 +1084,7 @@ describe('useVoiceNoteRecording', () => {
     // When
     await start(speechRecognizer);
     await say(speechRecognizer, '이어 한 말.');
-    await act(async () => jest.advanceTimersByTime(2_000));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
     const saved = storage.drafts.find(ACCOUNT_ID, 'restored-1');

@@ -3,12 +3,12 @@ import { ok } from '@src/core/errors/result';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import {
-  createHapticsStub,
-  createMemorySyncStorage,
   createAnalyticsStub,
+  createHapticsStub,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
