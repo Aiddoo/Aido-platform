@@ -2,9 +2,12 @@
  * process.env.EXPO_OS는 babel-preset-expo가 transform 때 플랫폼 상수로 바꾼다.
  * 기본은 iOS이고, Android에서만 달라지는 로직은 `*.android.test.ts(x)`를 jest-expo/android로 돌린다.
  */
+/** @type {import('jest').Config} */
 const base = {
   resolver: '<rootDir>/jest.resolver.cjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  // 첫 렌더가 늦게 불러오는 모듈을 변환하는 시간이 변환 캐시가 비었거나 CI처럼 느린 곳에서 5초를 넘긴다
+  testTimeout: 15_000,
   clearMocks: true,
   restoreMocks: true,
   // d3-shape·d3-path는 ESM 전용(.mjs)으로 배포된다. preset의 [jt]sx? 변환에 .mjs만 더한다
@@ -13,6 +16,7 @@ const base = {
     'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation|@revenuecat|@shopify\/flash-list|d3-shape|d3-path))',
   ],
   moduleNameMapper: {
+    // packages/api 소스가 `./x/index.js`로 import해 TS 원본으로 풀어야 한다
     '^(\\.{1,2}/.*)\\.js$': '$1',
     // .svg는 별칭보다 먼저 잡아야 한다 — @assets/... 규칙이 먼저 걸리면 에셋으로 새어 나간다
     '\\.svg$': '<rootDir>/src/shared/__tests__/mocks/svg.tsx',
@@ -21,7 +25,6 @@ const base = {
 
     // Path aliases
     '^@src/(.*)$': '<rootDir>/src/$1',
-    '^@/(.*)$': '<rootDir>/app/$1',
     '^@assets/(.*)$': '<rootDir>/assets/$1',
 
     // Monorepo packages
@@ -43,23 +46,25 @@ const base = {
       '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui-modifiers.ts',
     '^expo-widgets$': '<rootDir>/src/shared/__tests__/mocks/expo-widgets.ts',
   },
-  watchman: false,
 };
 
+/** @type {import('jest').Config} */
 module.exports = {
+  // 워크트리마다 감시자를 띄우지 않고 파일 목록만 읽는다
+  watchman: false,
   projects: [
     {
       ...base,
       displayName: 'ios',
       preset: 'jest-expo/ios',
-      testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/*.(test|spec).[jt]s?(x)'],
+      testMatch: ['**/*.test.[jt]s?(x)'],
       testPathIgnorePatterns: ['/node_modules/', '\\.android\\.test\\.'],
     },
     {
       ...base,
       displayName: 'android',
       preset: 'jest-expo/android',
-      testMatch: ['**/*.android.(test|spec).[jt]s?(x)'],
+      testMatch: ['**/*.android.test.[jt]s?(x)'],
     },
   ],
   collectCoverageFrom: [
