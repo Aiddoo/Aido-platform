@@ -103,7 +103,7 @@ describe('usePushPermissionAskMoment', () => {
 
     // Then 시스템 창은 안내에서 허용을 눌렀을 때만 뜬다
     await waitFor(() => {
-      expect(result.current.isDue).toBe(true);
+      expect(result.current[0]).toBe(true);
     });
     expect(gateway.requestPermission).not.toHaveBeenCalled();
   });
@@ -113,14 +113,14 @@ describe('usePushPermissionAskMoment', () => {
     const { wrapper } = setup();
     const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
     await waitFor(() => {
-      expect(result.current.isDue).toBe(true);
+      expect(result.current[0]).toBe(true);
     });
 
     // When
-    await act(() => result.current.complete());
+    await act(() => result.current[1]());
 
     // Then
-    expect(result.current.isDue).toBe(false);
+    expect(result.current[0]).toBe(false);
   });
 
   it('이미 허용하거나 거절한 사용자에게는 묻지 않는다', async () => {
@@ -134,7 +134,7 @@ describe('usePushPermissionAskMoment', () => {
     await waitFor(() => {
       expect(gateway.getPermission).toHaveBeenCalled();
     });
-    expect(result.current.isDue).toBe(false);
+    expect(result.current[0]).toBe(false);
   });
 
   it('활성화 전 신규 사용자에게는 묻지 않고, 활성화하면 그때 안내한다', async () => {
@@ -146,14 +146,14 @@ describe('usePushPermissionAskMoment', () => {
     await waitFor(() => {
       expect(gateway.getPermission).toHaveBeenCalled();
     });
-    expect(result.current.isDue).toBe(false);
+    expect(result.current[0]).toBe(false);
 
     // When
     await act(() => activate());
 
     // Then
     await waitFor(() => {
-      expect(result.current.isDue).toBe(true);
+      expect(result.current[0]).toBe(true);
     });
   });
 
@@ -166,7 +166,7 @@ describe('usePushPermissionAskMoment', () => {
 
     // Then
     await waitFor(() => {
-      expect(result.current.isDue).toBe(true);
+      expect(result.current[0]).toBe(true);
     });
   });
 });

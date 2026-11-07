@@ -99,7 +99,7 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
 }
 
 function useVoiceNoteResultPlayer(note: VoiceNote) {
-  const { accountId } = useCurrentVoiceNote();
+  const [{ accountId }] = useCurrentVoiceNote();
   const recordingRepository = useVoiceRecordingRepository();
   const [parts] = useState(() =>
     note.recordings.flatMap(({ fileName, startMs }) => {

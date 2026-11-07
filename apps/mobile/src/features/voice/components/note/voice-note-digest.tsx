@@ -25,7 +25,7 @@ interface VoiceNoteDigestScreenProps extends VoiceNoteDigestProps {
 
 export function VoiceNoteDigest({ note, onMemoChanged }: VoiceNoteDigestScreenProps) {
   const { t } = useTranslation('voiceNote');
-  const { accountId, draftId } = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useCurrentVoiceNote();
   const { digest, isPending, failure } = useVoiceNoteDigest({ accountId, draftId });
 
   if (isPending) {

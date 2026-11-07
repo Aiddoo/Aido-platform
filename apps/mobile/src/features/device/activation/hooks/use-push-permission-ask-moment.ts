@@ -47,5 +47,5 @@ export function usePushPermissionAskMoment() {
     setCompletedKey(askKey);
   };
 
-  return { isDue, complete };
+  return [isDue, complete] as const;
 }

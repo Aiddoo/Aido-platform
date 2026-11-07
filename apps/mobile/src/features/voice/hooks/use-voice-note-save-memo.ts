@@ -19,7 +19,7 @@ export function useVoiceNoteSaveMemo(
   note: VoiceNote,
   { onMemoChanged }: UseVoiceNoteSaveMemoParams,
 ) {
-  const { accountId, draftId } = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useCurrentVoiceNote();
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const mutation = useMutation(

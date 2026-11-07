@@ -44,10 +44,10 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
   const { t } = useTranslation(['common', 'moderation', 'todo', 'todoComment']);
   const [todoId] = useTodoId();
   const moderation = useTodoModerationActions({ todoId });
-  const { result: backResult, handleBack } = useTodoCommentBack();
+  const { backAction, interceptBack } = useTodoCommentBack();
 
   const handleBackPress = useSingleTap(() => {
-    if (handleBack()) {
+    if (interceptBack()) {
       return;
     }
     router.back();
@@ -59,7 +59,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
         options={{
           ...screenOptions,
           // 작성기가 열려 있으면 swipe가 화면을 닫지 않고 뒤로가기가 작성기부터 닫는다
-          gestureEnabled: backResult === 'native',
+          gestureEnabled: backAction === 'native',
           title: t('todo:detail.pageTitle'),
         }}
       />
@@ -67,11 +67,11 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
         <Stack.Toolbar.Button
           icon={STACK_BACK_ICON}
           accessibilityLabel={
-            backResult === 'closeComposer'
+            backAction === 'closeComposer'
               ? t('todoComment:actions.closeComposer')
               : t('actions.goBack')
           }
-          disabled={backResult === 'blocked'}
+          disabled={backAction === 'blocked'}
           onPress={handleBackPress}
         />
       </Stack.Toolbar>

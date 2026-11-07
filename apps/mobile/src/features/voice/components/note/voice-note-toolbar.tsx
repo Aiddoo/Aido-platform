@@ -31,7 +31,7 @@ interface VoiceNoteToolbarProps {
 
 export function VoiceNoteToolbar({ note, onMemoChanged }: VoiceNoteToolbarProps) {
   const { t } = useTranslation('voiceNote');
-  const { accountId, draftId } = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useCurrentVoiceNote();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
   const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo(note, {

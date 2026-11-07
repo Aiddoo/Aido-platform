@@ -9,5 +9,7 @@ export function useCurrentVoiceNote() {
   const [{ draftId }] = useRouteParams(voiceNoteParamsSchema);
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
 
-  return { accountId: me.id, draftId, note: useVoiceNote(me.id, draftId) };
+  const note = useVoiceNote(me.id, draftId);
+
+  return [{ accountId: me.id, draftId, note }] as const;
 }

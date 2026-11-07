@@ -10,7 +10,7 @@ import { match } from 'ts-pattern';
 
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
-import { usePushPermissionPrompt } from '../hooks/use-push-permission-prompt';
+import { usePushPromptSnooze } from '../hooks/use-push-prompt-snooze';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
@@ -29,10 +29,10 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
   const [{ data: permission }, { data: preference }] = useSuspenseQueries({
     queries: [useGetPushPermissionQueryOptions(), useGetPreferenceQueryOptions()],
   });
-  const prompt = usePushPermissionPrompt();
+  const [isSnoozed, snooze] = usePushPromptSnooze();
   const { trackEvent } = useTrack();
   const step = PushPermissionPolicy.getNextStep(permission, preference);
-  const isVisible = !prompt.isSnoozed && step !== PUSH_PERMISSION_STEP.NONE;
+  const isVisible = !isSnoozed && step !== PUSH_PERMISSION_STEP.NONE;
 
   useEffect(() => {
     if (isVisible) {
@@ -46,7 +46,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
 
   const dismiss = () => {
     trackEvent('push_permission_prompt_dismissed', { source: SOURCE, step });
-    prompt.snooze();
+    snooze();
   };
 
   return match(step)

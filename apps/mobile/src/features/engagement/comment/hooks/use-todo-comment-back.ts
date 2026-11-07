@@ -17,11 +17,11 @@ export function useTodoCommentBack() {
   const { control, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });
   const isSubmitting = useIsTodoCommentSubmitting();
-  const result = getTodoCommentBackAction(mode, isSubmitting);
+  const backAction = getTodoCommentBackAction(mode, isSubmitting);
 
-  const handleBack = useCallback(
+  const interceptBack = useCallback(
     () =>
-      match(result)
+      match(backAction)
         .with('blocked', () => true)
         .with('native', () => false)
         .with('closeComposer', () => {
@@ -34,8 +34,8 @@ export function useTodoCommentBack() {
           return true;
         })
         .exhaustive(),
-    [logger, reset, result],
+    [logger, reset, backAction],
   );
 
-  return { result, handleBack };
+  return { backAction, interceptBack };
 }

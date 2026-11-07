@@ -4,15 +4,15 @@ import { usePushPermissionAskMoment } from '../hooks/use-push-permission-ask-mom
 
 /** 활성화 시점이 되면 시스템 권한 창 전에 앱 안 안내를 한 번 띄운다 */
 export function ActivationPushPermissionDialog() {
-  const askMoment = usePushPermissionAskMoment();
+  const [isDue, complete] = usePushPermissionAskMoment();
 
   return (
     <PushPermissionDialog
       source="activation"
-      isOpen={askMoment.isDue}
+      isOpen={isDue}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          askMoment.complete();
+          complete();
         }
       }}
     />

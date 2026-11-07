@@ -30,7 +30,7 @@ interface VoiceNotePlanTodosProps extends Pick<
 
 export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation('voiceNote');
-  const { accountId, draftId } = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useCurrentVoiceNote();
   const drafts = useVoiceNoteDraftRepository();
   const [{ data: categoriesResult }] = useSuspenseQueries({
     queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],

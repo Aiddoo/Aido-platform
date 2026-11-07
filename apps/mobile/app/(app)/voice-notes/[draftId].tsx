@@ -20,7 +20,7 @@ import { match, P } from 'ts-pattern';
 const LOADING_LINE_COUNT = 4;
 
 function VoiceNoteScreen() {
-  const { note } = useCurrentVoiceNote();
+  const [{ note }] = useCurrentVoiceNote();
   const refreshMemos = useRefreshMemos();
 
   return match(note)
