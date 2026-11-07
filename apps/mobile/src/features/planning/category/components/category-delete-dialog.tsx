@@ -99,6 +99,7 @@ export function CategoryDeleteDialog({
       }
       confirmButton={
         <ConfirmDialog.ConfirmButton
+          color="danger"
           onPress={() => handleDelete()}
           isLoading={deleteMutation.isPending}
         >
