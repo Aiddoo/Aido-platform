@@ -3,6 +3,7 @@ import { range } from 'es-toolkit';
 import {
   getDatePickerDayStyle,
   getMonthViewDayStyle,
+  getRepeatWeekDays,
   getWeekRangeBand,
   isTodayHighlighted,
 } from './calendar-day';
@@ -137,5 +138,66 @@ describe('getWeekRangeBand', () => {
 
     // Then
     expect(band).toBeNull();
+  });
+});
+
+describe('getRepeatWeekDays', () => {
+  const toSeoulDate = (day: number, month = 11) => new Date(Date.UTC(2026, month - 1, day, 3));
+  const WEEK = [toSeoulDate(1), toSeoulDate(2), toSeoulDate(3), toSeoulDate(4)];
+  const PERIOD = { displayMonth: toSeoulDate(1), timeZone: TIME_ZONE };
+
+  it('시작과 끝 사이의 날만 기간 띠에 넣는다', () => {
+    // Given & When
+    const days = getRepeatWeekDays(WEEK, {
+      ...PERIOD,
+      startDate: toSeoulDate(1),
+      endDate: toSeoulDate(3),
+      isOpenEnded: false,
+    });
+
+    // Then
+    expect(days.map(({ isInRange }) => isInRange)).toEqual([false, true, false, false]);
+    expect(days.map(({ isRangeStart }) => isRangeStart)).toEqual([true, false, false, false]);
+    expect(days.map(({ isRangeEnd }) => isRangeEnd)).toEqual([false, false, true, false]);
+  });
+
+  it('시작과 끝이 같은 날이면 띠를 그리지 않는다', () => {
+    // Given & When
+    const days = getRepeatWeekDays(WEEK, {
+      ...PERIOD,
+      startDate: toSeoulDate(2),
+      endDate: toSeoulDate(2),
+      isOpenEnded: false,
+    });
+
+    // Then
+    expect(days.some(({ isInRange, isRangeStart }) => isInRange || isRangeStart)).toBe(false);
+    expect(days[1]).toMatchObject({ isStart: true, isEnd: true });
+  });
+
+  it('계속 반복은 끝이 없어 시작 뒤 모든 날이 띠에 든다', () => {
+    // Given & When
+    const days = getRepeatWeekDays(WEEK, {
+      ...PERIOD,
+      startDate: toSeoulDate(2),
+      endDate: null,
+      isOpenEnded: true,
+    });
+
+    // Then
+    expect(days.map(({ isInRange }) => isInRange)).toEqual([false, false, true, true]);
+  });
+
+  it('보고 있는 달이 아닌 칸은 띠에 넣지 않는다', () => {
+    // Given & When
+    const [day] = getRepeatWeekDays([toSeoulDate(31, 10)], {
+      ...PERIOD,
+      startDate: toSeoulDate(1, 10),
+      endDate: null,
+      isOpenEnded: true,
+    });
+
+    // Then
+    expect(day).toMatchObject({ isVisible: false, isInRange: false });
   });
 });

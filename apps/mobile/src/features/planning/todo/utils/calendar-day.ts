@@ -1,4 +1,12 @@
-import { isDateToday, isSaturday, isSunday } from '@src/features/planning/todo/utils/calendar-date';
+import {
+  isAfterDay,
+  isBeforeDay,
+  isDateToday,
+  isSameDay,
+  isSameMonth,
+  isSaturday,
+  isSunday,
+} from '@src/features/planning/todo/utils/calendar-date';
 import type { TextTone } from '@src/shared/ui';
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';
@@ -91,4 +99,41 @@ export function getWeekRangeBand(
   }
 
   return { startRatio: (first[0] ?? 0) / days.length, endRatio: (last[1] ?? 0) / days.length };
+}
+
+interface RepeatWeekPeriod {
+  displayMonth: Date;
+  startDate: Date;
+  endDate: Date | null;
+  isOpenEnded: boolean;
+  timeZone: string;
+}
+
+/** 반복 달력 한 주의 칸마다 시작·끝과 기간 띠에 드는지 정한다. 다른 달의 칸은 띠에 넣지 않는다 */
+export function getRepeatWeekDays(
+  week: readonly Date[],
+  { displayMonth, startDate, endDate, isOpenEnded, timeZone }: RepeatWeekPeriod,
+) {
+  const hasDistinctRange =
+    isOpenEnded || (endDate != null && !isSameDay(startDate, endDate, timeZone));
+
+  return week.map((date) => {
+    const isVisible = isSameMonth(date, displayMonth, timeZone);
+    const isStart = isSameDay(date, startDate, timeZone);
+    const isEnd = endDate != null && isSameDay(date, endDate, timeZone);
+
+    return {
+      date,
+      isVisible,
+      isStart,
+      isEnd,
+      isInRange:
+        isVisible &&
+        hasDistinctRange &&
+        isAfterDay(date, startDate, timeZone) &&
+        (isOpenEnded || (endDate != null && isBeforeDay(date, endDate, timeZone))),
+      isRangeStart: isVisible && hasDistinctRange && isStart,
+      isRangeEnd: isVisible && !isOpenEnded && hasDistinctRange && isEnd,
+    };
+  });
 }

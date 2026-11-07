@@ -1,22 +1,16 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import {
-  isAfterDay,
-  isBeforeDay,
-  isSameDay,
-  isSameMonth,
-} from '@src/features/planning/todo/utils/calendar-date';
+import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
+import { Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
-import { memo } from 'react';
 import { useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
@@ -33,12 +27,6 @@ import {
 } from '../schemas/todo-repeat-form.schema';
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
 import {
-  DAY_TYPE_TONE,
-  getDatePickerDayStyle,
-  getWeekRangeBand,
-  isTodayHighlighted,
-} from '../utils/calendar-day';
-import {
   getTodoRepeatFormFirstOccurrenceKey,
   isTodoRepeatFormPreset,
   toTodoRepeatFormValues,
@@ -48,9 +36,8 @@ import {
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
 } from '../utils/todo-repeat-form-values';
-import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
+import { RepeatCalendar } from './calendar/repeat-calendar';
 import { PickerHeader } from './picker-header';
-import { PickerMonthHeader } from './picker-month-header';
 import { RepeatHintLine } from './repeat-hint-line';
 
 type RepeatForm = UseFormReturn<TodoRepeatFormValues>;
@@ -521,163 +508,3 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
     </VStack>
   );
 };
-
-interface RepeatCalendarProps {
-  picker: ReturnType<typeof useDatePicker>;
-  today: Date;
-  startDate: Date;
-  endDate: Date | null;
-  isOpenEnded: boolean;
-  /** 띠 안에서 실제로 반복되는 날(YYYY-MM-DD). null이면 흐리게 하지 않는다 */
-  occurrenceKeys: ReadonlySet<string> | null;
-  onDatePress: (date: Date) => void;
-}
-
-function RepeatCalendar({
-  picker,
-  today,
-  startDate,
-  endDate,
-  isOpenEnded,
-  occurrenceKeys,
-  onDatePress,
-}: RepeatCalendarProps) {
-  const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
-  const dateFormatContext = useDateFormatContext();
-  const { timeZone } = dateFormatContext;
-  const hasDistinctRange =
-    isOpenEnded || (endDate != null && !isSameDay(startDate, endDate, dateFormatContext.timeZone));
-
-  return (
-    <VStack gap={16}>
-      <PickerMonthHeader
-        displayMonth={displayMonth}
-        onPreviousPress={goToPrevMonth}
-        onNextPress={goToNextMonth}
-      />
-
-      <CalendarWeekdayHeader />
-
-      {/* 달마다 4~6주라 6주 높이(48 × 6)를 미리 잡아 달을 넘겨도 시트 높이가 변하지 않게 한다 */}
-      <VStack className="h-[288px]">
-        {weeks.map((week, weekIndex) => {
-          const days = week.map((date) => {
-            const isVisible = isSameMonth(date, displayMonth, timeZone);
-            const isStart = isSameDay(date, startDate, timeZone);
-            const isEnd = endDate != null && isSameDay(date, endDate, timeZone);
-
-            return {
-              date,
-              isVisible,
-              isStart,
-              isEnd,
-              isInRange:
-                isVisible &&
-                hasDistinctRange &&
-                isAfterDay(date, startDate, timeZone) &&
-                (isOpenEnded || (endDate != null && isBeforeDay(date, endDate, timeZone))),
-              isRangeStart: isVisible && hasDistinctRange && isStart,
-              isRangeEnd: isVisible && !isOpenEnded && hasDistinctRange && isEnd,
-            };
-          });
-          const band = getWeekRangeBand(days);
-
-          return (
-            // 주 순서는 고정되어 index가 안정적인 key다.
-            <Box key={weekIndex} px={8}>
-              <HStack className="relative">
-                {/* 칸마다 나눠 그리면 폭이 소수점인 칸 경계에 세로선이 생겨 한 주에 띠 하나로 그린다 */}
-                {band != null && (
-                  <Box
-                    className="absolute top-[8px] h-[32px] bg-main/8"
-                    style={{
-                      left: `${band.startRatio * 100}%`,
-                      right: `${(1 - band.endRatio) * 100}%`,
-                    }}
-                  />
-                )}
-                {days.map(({ date, isVisible, isStart, isEnd, isInRange }) =>
-                  isVisible ? (
-                    <RepeatDateCell
-                      key={date.toISOString()}
-                      date={date}
-                      today={today}
-                      isStart={isStart}
-                      isEnd={isEnd}
-                      isDimmed={
-                        occurrenceKeys != null &&
-                        isInRange &&
-                        !occurrenceKeys.has(toDateKey(date, dateFormatContext.timeZone))
-                      }
-                      onPress={onDatePress}
-                    />
-                  ) : (
-                    <Box key={date.toISOString()} className="h-[48px] flex-1" />
-                  ),
-                )}
-              </HStack>
-            </Box>
-          );
-        })}
-      </VStack>
-    </VStack>
-  );
-}
-
-interface RepeatDateCellProps {
-  date: Date;
-  today: Date;
-  isStart: boolean;
-  isEnd: boolean;
-  isDimmed: boolean;
-  onPress: (date: Date) => void;
-}
-
-/** 달력은 칸이 많아 입력 하나로 전부 다시 그리지 않도록 값이 바뀐 칸만 그린다 */
-const RepeatDateCell = memo(function RepeatDateCell({
-  date,
-  today,
-  isStart,
-  isEnd,
-  isDimmed,
-  onPress,
-}: RepeatDateCellProps) {
-  const dayOfMonth = date.getDate();
-  const { timeZone } = useDateFormatContext();
-  const isDisabled = isBeforeDay(date, today, timeZone);
-  const isSelected = isStart || isEnd;
-  const dayStyle = getDatePickerDayStyle({ date, isSelected, today, timeZone });
-  const shouldHighlightToday =
-    !isDisabled && isTodayHighlighted({ date, isSelected, today, timeZone });
-
-  return (
-    <PressableFeedback
-      onPress={() => onPress(date)}
-      isDisabled={isDisabled}
-      className={cn(
-        'relative h-[48px] flex-1 items-center justify-center',
-        isDisabled && 'opacity-30',
-      )}
-    >
-      <Box
-        className={cn(
-          'z-10 size-8 items-center justify-center rounded-[16px]',
-          isSelected && 'bg-main',
-          shouldHighlightToday && 'bg-main/10 dark:bg-main/20',
-        )}
-      >
-        <Text
-          size="b3"
-          weight="medium"
-          tone={isDisabled || isDimmed ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
-          shade={match({ isSelected, isDimmed })
-            .with({ isSelected: true }, () => undefined)
-            .with({ isDimmed: true }, () => 5 as const)
-            .otherwise(() => 7 as const)}
-        >
-          {dayOfMonth}
-        </Text>
-      </Box>
-    </PressableFeedback>
-  );
-});
