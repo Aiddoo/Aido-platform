@@ -2,7 +2,7 @@ import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
-import { chunk, sumBy } from 'es-toolkit';
+import { chunk, maxBy, sumBy } from 'es-toolkit';
 
 import {
   VOICE_NOTE_RETENTION_DAYS,
@@ -237,13 +237,11 @@ function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint 
     return undefined;
   }
 
-  return note.digest.keyPoints
-    .filter((keyPoint) => keyPoint.startMs != null && keyPoint.startMs <= positionMs)
-    .reduce<VoiceNoteKeyPoint | undefined>(
-      (latest, keyPoint) =>
-        latest == null || (keyPoint.startMs ?? 0) >= (latest.startMs ?? 0) ? keyPoint : latest,
-      undefined,
-    );
+  const passed = note.digest.keyPoints.filter(
+    (keyPoint) => keyPoint.startMs != null && keyPoint.startMs <= positionMs,
+  );
+
+  return maxBy(passed.toReversed(), (keyPoint) => keyPoint.startMs ?? 0);
 }
 
 /** 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다 */

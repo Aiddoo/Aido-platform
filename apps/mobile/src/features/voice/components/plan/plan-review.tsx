@@ -44,7 +44,7 @@ import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
 import { type UseFormReturn, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
 import { PlanReviewPolicy } from '../../domains/plan-review.model';
@@ -321,13 +321,16 @@ PlanReview.TodoRow = function PlanTodoRow({
     return null;
   }
 
-  const dateLabel =
-    todo.endDate == null
-      ? // 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨기고, 오늘 할 일도 날짜를 보이지 않는다
-        todo.repeat == null && todo.startDate !== todayKey
-        ? formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext)
-        : null
-      : formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext);
+  const dateLabel = match(todo)
+    .with({ endDate: P.nonNullable }, ({ startDate, endDate }) =>
+      formatDateKeyRange(startDate, endDate, dateFormatContext),
+    )
+    // 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨기고, 오늘 할 일도 날짜를 보이지 않는다
+    .when(
+      ({ repeat, startDate }) => repeat == null && startDate !== todayKey,
+      ({ startDate }) => formatDateKeyLabel(startDate, 'monthDay', dateFormatContext),
+    )
+    .otherwise(() => null);
   const timeLabel =
     todo.scheduledTime == null
       ? null

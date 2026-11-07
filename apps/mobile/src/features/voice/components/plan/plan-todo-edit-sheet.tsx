@@ -36,8 +36,8 @@ import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 
 import { ScrollView } from 'react-native-gesture-handler';
 
 import { VoicePlanPolicy } from '../../domains/voice-plan.model';
-import { type PlanTodoEditFormValues } from '../../schemas/plan-review-form.schema';
 import {
+  type PlanTodoEditFormValues,
   planTodoEditFormSchema,
   type PlanTodoFormValues,
 } from '../../schemas/plan-review-form.schema';
