@@ -4,11 +4,13 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
 import { useGetReportStatusQueryOptions } from '../queries/report.queries';
-import { formatDday } from '../utils/report-format';
 
 export function ReportStatusBanner() {
   const { t } = useTranslation('ai');
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
+
+  const formatDday = (days: number) =>
+    days === 0 ? t('report.dday.today') : t('report.dday.inDays', { count: days });
 
   return (
     <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-2 py-3">

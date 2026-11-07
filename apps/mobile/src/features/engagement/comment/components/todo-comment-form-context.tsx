@@ -1,7 +1,7 @@
 import { createContext, type PropsWithChildren, use } from 'react';
-import { type UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 
-import { type TodoCommentFormValues } from '../schemas/todo-comment-form.schema';
+import type { TodoCommentFormValues } from '../schemas/todo-comment-form.schema';
 
 type TodoCommentFormContextValue = UseFormReturn<TodoCommentFormValues>;
 

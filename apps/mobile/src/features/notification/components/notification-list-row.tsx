@@ -1,4 +1,3 @@
-import type { DateSectionKey } from '@src/features/notification/utils/date-section';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -9,6 +8,8 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
 import { ScrollView } from 'react-native';
+
+import type { DateSectionKey } from '../utils/date-section';
 
 interface NotificationListRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
