@@ -32,7 +32,6 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import { ReportService } from '@src/features/insights/report/apis/report.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
-import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
@@ -75,6 +74,7 @@ import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
 import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer.gateway';
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
+import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
@@ -107,6 +107,7 @@ import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social
 import { expoSpeechRecognizerGateway } from '@src/shared/infra/speech/expo-speech-recognizer.gateway';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { secureDeviceIdStore } from '@src/shared/infra/storage/secure-device-id-store';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
@@ -272,8 +273,11 @@ export function DIProvider({
     const todoCategoryService = new TodoCategoryService(authHttpClient);
 
     // Notification
-    const deviceIdRepository = new DeviceIdRepository();
-    const deviceIdService = new DeviceIdService(deviceIdRepository);
+    const deviceIdService = new DeviceIdService(
+      secureDeviceIdStore,
+      expoVendorIdGateway,
+      expoIdGenerator,
+    );
     const notificationService = new NotificationService(
       authHttpClient,
       expoPushNotificationGateway,

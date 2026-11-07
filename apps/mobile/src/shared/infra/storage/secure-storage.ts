@@ -4,7 +4,7 @@ import * as ExpoSecureStore from 'expo-secure-store';
 import type { z } from 'zod';
 
 // AFTER_FIRST_UNLOCK: 첫 잠금해제 후 접근 가능(잠금 중 백그라운드 접근 throw 방지), 재설치해도 유지.
-// DeviceIdRepository와 동일한 회복력 정책으로 정렬한다.
+// secure-device-id-store와 동일한 회복력 정책으로 정렬한다.
 //
 // ⚠️ 영속 계약: keychainAccessible(및 keychainService/accessGroup 미설정)은 이미 배포된
 // 설치의 키체인 항목 접근 조건이다. 옵션을 바꾸면 기존 항목을 읽지 못해 전체 강제
