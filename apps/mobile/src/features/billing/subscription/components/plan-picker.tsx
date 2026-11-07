@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
-import { useSubscriptionViewParam } from '../hooks/use-subscription-view-param';
+import { useSubscriptionView } from '../hooks/use-subscription-view-param';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { type SubscriptionOffering } from '../schemas/subscription.schema';
 import {
@@ -47,7 +47,7 @@ PlanPicker.Plans = function Plans({
   chosenPlanId,
   onChoose,
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
-  const view = useSubscriptionViewParam();
+  const [view] = useSubscriptionView();
   const { trackEvent } = useTrack();
 
   // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다

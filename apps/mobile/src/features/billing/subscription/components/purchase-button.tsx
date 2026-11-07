@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
-import { useSubscriptionViewParam } from '../hooks/use-subscription-view-param';
+import { useSubscriptionView } from '../hooks/use-subscription-view-param';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
@@ -17,7 +17,7 @@ interface PurchaseButtonProps {
 export function PurchaseButton({ chosenPlanId }: PurchaseButtonProps) {
   const { t } = useTranslation('subscription');
   const purchase = useMutation(usePurchaseMutationOptions());
-  const view = useSubscriptionViewParam();
+  const [view] = useSubscriptionView();
   const isOnline = useIsOnline();
   // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
   const { data: availability } = useQuery({

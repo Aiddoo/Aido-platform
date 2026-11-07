@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-const subscriptionViewSchema = z.enum(['status', 'plans']);
+export const subscriptionViewSchema = z.enum(['status', 'plans']).catch('status');
 
 export type SubscriptionView = z.output<typeof subscriptionViewSchema>;
-
-export const subscriptionParamsSchema = z.object({
-  view: subscriptionViewSchema.catch('status'),
-});
