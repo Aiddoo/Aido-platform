@@ -18,7 +18,7 @@ describe('PreferencePolicy', () => {
     const pushOn = createPreference({ pushEnabled: true, weatherEveningEnabled: true });
 
     // When / Then
-    expect(PreferencePolicy.isWeatherDisabled(pushOff)).toBe(true);
-    expect(PreferencePolicy.isWeatherDisabled(pushOn)).toBe(false);
+    expect(PreferencePolicy.isWeatherDeliveryOff(pushOff)).toBe(true);
+    expect(PreferencePolicy.isWeatherDeliveryOff(pushOn)).toBe(false);
   });
 });

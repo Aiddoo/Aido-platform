@@ -26,7 +26,7 @@ describe('TodoCommentPolicy', () => {
     const actions = [
       TodoCommentPolicy.canLikeComment(deleted),
       TodoCommentPolicy.canReplyToComment(deleted),
-      TodoCommentPolicy.isEditableComment(deleted),
+      TodoCommentPolicy.canEditComment(deleted),
       TodoCommentPolicy.canCopyComment(deleted),
       TodoCommentPolicy.hasCommentActions(deleted),
     ];
@@ -50,8 +50,8 @@ describe('TodoCommentPolicy', () => {
 
     // When
     const result = [
-      TodoCommentPolicy.isDeletingOthersComment(others),
-      TodoCommentPolicy.isDeletingOthersComment(createTodoComment()),
+      TodoCommentPolicy.canDeleteOnlyAsTodoOwner(others),
+      TodoCommentPolicy.canDeleteOnlyAsTodoOwner(createTodoComment()),
     ];
 
     // Then

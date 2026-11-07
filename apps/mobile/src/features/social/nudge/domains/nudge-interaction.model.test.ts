@@ -67,7 +67,7 @@ describe('NudgeInteractionPolicy', () => {
       // Given
       const preview = { throughNudgeId, recipients };
       // When
-      const isThankable = NudgeInteractionPolicy.isThankable(preview);
+      const isThankable = NudgeInteractionPolicy.hasThankableRecipients(preview);
       // Then
       expect(isThankable).toBe(expected);
     },
@@ -85,7 +85,7 @@ test.each([
     // Given
     const todo = { completed, visibility };
     // When
-    const isThankable = NudgeInteractionPolicy.isThankableTodo(todo, { isOwner });
+    const isThankable = NudgeInteractionPolicy.isThankableTodo(todo, { canEditTodo: isOwner });
     // Then
     expect(isThankable).toBe(expected);
   },

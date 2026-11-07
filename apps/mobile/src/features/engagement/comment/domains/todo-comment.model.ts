@@ -37,7 +37,7 @@ function canReplyToComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canReply;
 }
 
-function isEditableComment(comment: TodoComment) {
+function canEditComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canEdit;
 }
 
@@ -46,7 +46,7 @@ function canDeleteComment(comment: TodoComment) {
 }
 
 /** 내 할 일에 달린 남의 글. 수정은 작성자만 할 수 있어 지울 수만 있으면 남의 글이다 */
-function isDeletingOthersComment(comment: TodoComment) {
+function canDeleteOnlyAsTodoOwner(comment: TodoComment) {
   return canDeleteComment(comment) && !comment.viewer.canEdit;
 }
 
@@ -64,7 +64,7 @@ function canBlockCommentAuthor(comment: TodoComment) {
 
 function hasCommentActions(comment: TodoComment) {
   return (
-    isEditableComment(comment) ||
+    canEditComment(comment) ||
     canCopyComment(comment) ||
     canDeleteComment(comment) ||
     canReportComment(comment) ||
@@ -205,9 +205,9 @@ export const TodoCommentPolicy = {
   isReply,
   canLikeComment,
   canReplyToComment,
-  isEditableComment,
+  canEditComment,
   canDeleteComment,
-  isDeletingOthersComment,
+  canDeleteOnlyAsTodoOwner,
   canCopyComment,
   canReportComment,
   canBlockCommentAuthor,

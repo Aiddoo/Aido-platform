@@ -31,11 +31,12 @@ function getNudgeInteractionStatus(
     .exhaustive();
 }
 
+/** 고맙다는 인사는 완료한 공개 할 일의 주인만 받는다. 할 일은 주인만 고칠 수 있어 수정 권한으로 주인을 안다 */
 function isThankableTodo(
   todo: { completed: boolean; visibility: TodoVisibility },
-  { isOwner }: { isOwner: boolean },
+  { canEditTodo }: { canEditTodo: boolean },
 ): boolean {
-  return isOwner && todo.completed && todo.visibility === 'PUBLIC';
+  return canEditTodo && todo.completed && todo.visibility === 'PUBLIC';
 }
 
 function isReceivedBy(nudge: Pick<NudgeInteraction, 'receiverId'>, userId: string): boolean {
@@ -49,7 +50,9 @@ function isReplyable(
   return isReceivedBy(nudge, userId) && nudge.isAvailable;
 }
 
-function isThankable(preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>): boolean {
+function hasThankableRecipients(
+  preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
+): boolean {
   return preview.throughNudgeId != null && preview.recipients.length > 0;
 }
 
@@ -59,7 +62,7 @@ function getThanksSummary(
     'throughNudgeId' | 'recipients' | 'totalRecipients' | 'thankedRecipientCount'
   >,
 ): NudgeThanksSummary {
-  const pendingRecipientCount = isThankable(preview) ? preview.totalRecipients : 0;
+  const pendingRecipientCount = hasThankableRecipients(preview) ? preview.totalRecipients : 0;
   const state = match({
     hasPending: pendingRecipientCount > 0,
     hasThanked: preview.thankedRecipientCount > 0,
@@ -106,6 +109,6 @@ export const NudgeInteractionPolicy = {
   getResponseStage,
   isReceivedBy,
   isThankableTodo,
-  isThankable,
+  hasThankableRecipients,
   getThanksSummary,
 } as const;

@@ -102,7 +102,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
     );
   }
 
-  if (preview == null || !NudgeInteractionPolicy.isThankable(preview)) {
+  if (preview == null || !NudgeInteractionPolicy.hasThankableRecipients(preview)) {
     return <NudgeThanksBottomSheet.Empty />;
   }
 

@@ -268,7 +268,7 @@ TodoDetailSummary.Thanks = function Thanks() {
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
   const isThankable = NudgeInteractionPolicy.isThankableTodo(detail.todo, {
-    isOwner: detail.permissions.canEdit,
+    canEditTodo: detail.permissions.canEdit,
   });
 
   if (!isThankable) {

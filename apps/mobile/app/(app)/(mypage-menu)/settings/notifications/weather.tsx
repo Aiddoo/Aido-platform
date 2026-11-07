@@ -121,7 +121,7 @@ function WeatherTimeInput({
       onChange={(value) => updatePreference.mutate(time.toInput(value))}
       {...time.range}
       timeFormat={preference.timeFormat}
-      isDisabled={PreferencePolicy.isWeatherDisabled(preference) || updatePreference.isPending}
+      isDisabled={PreferencePolicy.isWeatherDeliveryOff(preference) || updatePreference.isPending}
     />
   );
 }

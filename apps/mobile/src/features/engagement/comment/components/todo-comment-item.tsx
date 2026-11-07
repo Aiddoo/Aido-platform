@@ -389,7 +389,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const author = comment.author;
   const authorName = author?.name ?? t('moderation:fallbackName');
   const hasPrimaryActions =
-    TodoCommentPolicy.isEditableComment(comment) || TodoCommentPolicy.canCopyComment(comment);
+    TodoCommentPolicy.canEditComment(comment) || TodoCommentPolicy.canCopyComment(comment);
   const hasSecondaryActions =
     TodoCommentPolicy.canDeleteComment(comment) ||
     TodoCommentPolicy.canReportComment(comment) ||
@@ -413,7 +413,9 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
     const isConfirmed = await confirmDialog.open({
       title: t('deleteConfirm.title'),
       description: match(comment)
-        .when(TodoCommentPolicy.isDeletingOthersComment, () => t('deleteConfirm.othersDescription'))
+        .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>
+          t('deleteConfirm.othersDescription'),
+        )
         .when(TodoCommentPolicy.leavesTombstoneOnDelete, () =>
           t('deleteConfirm.tombstoneDescription'),
         )
@@ -455,7 +457,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           width={MENU_WIDTH}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          {TodoCommentPolicy.isEditableComment(comment) && (
+          {TodoCommentPolicy.canEditComment(comment) && (
             <MenuActionItem
               icon={EditIcon}
               title={t('actions.edit')}

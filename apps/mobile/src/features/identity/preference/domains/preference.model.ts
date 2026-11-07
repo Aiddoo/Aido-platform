@@ -8,7 +8,7 @@ function isWeatherEnabled(
 }
 
 /** 푸시가 꺼져 있으면 날씨 알림도 나가지 않는다 */
-function isWeatherDisabled(
+function isWeatherDeliveryOff(
   preference: Pick<Preference, 'pushEnabled' | 'weatherMorningEnabled' | 'weatherEveningEnabled'>,
 ) {
   return !preference.pushEnabled || !isWeatherEnabled(preference);
@@ -16,5 +16,5 @@ function isWeatherDisabled(
 
 export const PreferencePolicy = {
   isWeatherEnabled,
-  isWeatherDisabled,
+  isWeatherDeliveryOff,
 } as const;
