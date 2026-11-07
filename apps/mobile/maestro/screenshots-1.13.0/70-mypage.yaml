@@ -25,19 +25,18 @@ onFlowStart:
 - takeScreenshot: 71_마이페이지_아래
 - scrollUntilVisible:
     element:
-      id: feature-guide-open
+      id: whats-new-open
     direction: DOWN
     timeout: 10000
 - tapOn:
-    id: feature-guide-open
+    id: whats-new-open
 - extendedWaitUntil:
-    visible: '새로 생겼어요|What.s new'
+    visible:
+      id: whats-new-release-1.14.0
     timeout: 10000
 - waitForAnimationToEnd:
     timeout: 3000
-- takeScreenshot: 72_기능_가이드_시트
-- tapOn:
-    id: feature-discovery-close
+- takeScreenshot: 72_새_소식
 - runFlow:
     file: subflows/open.yaml
     env:

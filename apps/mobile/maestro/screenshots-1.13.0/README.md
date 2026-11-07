@@ -104,7 +104,7 @@ seed 언어당 약 5~8분(가입 API 분당 5회 제한 + AI job 대기 최대 5
 
 화면 이동은 딥링크(`subflows/open.yaml`), 탭·대기는 testID를 우선 쓴다. 쓰는 testID(조립된 스택에 있음):
 `email-login-*`, `todo-detail`, `invite-card-signup`, `invite-card-redeem`, `invite-welcome-sheet`, `my-invite-code`,
-`invitees-see-all`, `invitees-tab-waiting`, `mypage-invite-card`, `feature-guide-open`, `friends-empty-invite`.
+`invitees-see-all`, `invitees-tab-waiting`, `mypage-invite-card`, `whats-new-open`, `friends-empty-invite`.
 
 testID가 없어 문구(ko|en 정규식)로 누르는 곳. 추가하면 언어와 무관해진다(앱 코드는 이 작업에서 고치지 않았다):
 
@@ -117,7 +117,7 @@ testID가 없어 문구(ko|en 정규식)로 누르는 곳. 추가하면 언어�
 | `memo-ai-review`                           | AI 분석 결과 화면                     | 20-memo      |
 | `friends-tab-received`                     | 친구 목록 받은 요청 탭                | 40-friends   |
 | `friend-search-input`, `friend-search-add` | 친구 찾기 입력·추가                   | 40-friends   |
-| `feature-discovery-close`                  | 기능 가이드 닫기                      | settle, 70   |
+| `whats-new-close`                          | 새 소식 안내 닫기                     | settle       |
 | `report-detail`                            | 리포트 상세                           | 30-ai        |
 | `subscription-screen`                      | 구독 화면 각 pane                     | 70, 80       |
 | `store-review-later`                       | 스토어 리뷰 안내 `다음에`             | settle       |

@@ -1,14 +1,14 @@
 appId: com.aido.mobile
 name: 화면을 가리는 안내를 닫고 애니메이션이 멈출 때까지 기다린다
 ---
-# 자동으로 뜨는 기능 소개 시트는 70번 흐름에서 직접 열어 찍으므로 여기서는 닫는다
+# 자동으로 뜨는 새 소식 안내는 70번 흐름에서 직접 열어 찍으므로 여기서는 닫는다
 - runFlow:
     when:
       visible:
-        id: feature-discovery-close
+        id: whats-new-close
     commands:
       - tapOn:
-          id: feature-discovery-close
+          id: whats-new-close
 # 스토어 리뷰 안내는 실제 사용 이틀이 필요해 자동 캡처하지 않는다. 우연히 뜨면 닫는다
 - runFlow:
     when:
