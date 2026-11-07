@@ -3,6 +3,7 @@
   "entry": [
     "index.ts",
     "app/**/*.{ts,tsx}",
+    "src/features/**/constants/*.events.ts",
     "app.config.ts",
     "plugins/*.js",
     "scripts/*.mjs",
