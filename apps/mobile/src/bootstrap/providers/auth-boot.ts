@@ -19,9 +19,9 @@ import { isKeychainLockedError } from '@src/shared/errors';
  *   이를 `locked`로 뭉개면 재판정도 계속 실패해 앱이 **조용히 무한 로딩**에 갇힌다.
  *   호출자가 관측하고 미인증으로 폴백해야 한다(토큰은 지우지 않으므로 다음 실행에 회복 가능).
  */
-export const resolveInitialAuthStatus = async (
+export async function resolveInitialAuthStatus(
   tokenStore: TokenStore,
-): Promise<ResolvedAuthStatus> => {
+): Promise<ResolvedAuthStatus> {
   try {
     const refreshToken = await tokenStore.readRefreshToken();
     return refreshToken ? 'authenticated' : 'unauthenticated';
@@ -31,4 +31,4 @@ export const resolveInitialAuthStatus = async (
     }
     throw error;
   }
-};
+}

@@ -75,7 +75,7 @@ export class SessionCleanupService {
     this.#run('sign-in-queries', () => this.#ports.queryCache.clearQueries());
   };
 
-  #run(step: string, cleanup: () => void): void {
+  #run = (step: string, cleanup: () => void): void => {
     try {
       cleanup();
     } catch (error) {
@@ -84,5 +84,5 @@ export class SessionCleanupService {
         error: getErrorMessage(error),
       });
     }
-  }
+  };
 }

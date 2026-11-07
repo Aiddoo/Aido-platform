@@ -10,5 +10,6 @@ const OAUTH_PROVIDER_LABEL_KEYS = {
 } as const satisfies Record<OAuthProvider, string>;
 
 /** OAuth 제공자 → 로케일 표시 이름 */
-export const getOAuthProviderLabel = (provider: OAuthProvider): string =>
-  t(OAUTH_PROVIDER_LABEL_KEYS[provider]);
+export function getOAuthProviderLabel(provider: OAuthProvider): string {
+  return t(OAUTH_PROVIDER_LABEL_KEYS[provider]);
+}

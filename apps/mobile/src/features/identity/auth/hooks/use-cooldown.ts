@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export const useCooldown = (initialValue = 0) => {
+export function useCooldown(initialValue = 0) {
   const [cooldown, setCooldown] = useState(initialValue);
 
   useEffect(() => {
@@ -16,4 +16,4 @@ export const useCooldown = (initialValue = 0) => {
   }, [cooldown]);
 
   return [cooldown, setCooldown] as const;
-};
+}

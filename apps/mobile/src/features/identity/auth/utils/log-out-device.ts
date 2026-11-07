@@ -24,14 +24,14 @@ interface LogOutDeviceParams {
  * 실패하거나 오프라인이어도 토큰은 항상 지운다.
  * 서버에 닿지 못했으면 세션과 푸시 기기가 서버에 남으므로 온라인이 되면 풀도록 기록한다.
  */
-export const logOutDevice = async ({
+export async function logOutDevice({
   isOnline,
   authService,
   pushDeviceService,
   tokenStore,
   sessionRevocationService,
   logger,
-}: LogOutDeviceParams): Promise<void> => {
+}: LogOutDeviceParams): Promise<void> {
   // 로그아웃이 토큰을 지우고 나면 읽을 수 없어 먼저 읽어 둔다
   const refreshToken = await tokenStore.readRefreshToken().catch((error: unknown) => {
     logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_NOT_RECORDED, { error: getErrorMessage(error) });
@@ -76,4 +76,4 @@ export const logOutDevice = async ({
     logger.warn(AUTH_LOG_EVENT.LOGOUT_API_FAILED, { error: getErrorMessage(error) });
     await recordRevocation();
   }
-};
+}

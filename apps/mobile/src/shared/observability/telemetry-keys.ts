@@ -1,9 +1,7 @@
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import type { PremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/billing/subscription/utils/purchase-failed-reason';
-import type { OAuthProviderSlug } from '@src/features/identity/auth/schemas/oauth.schema';
 import type { SubscriptionStatus } from '@src/features/identity/user/schemas/user.schema';
 import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '@src/features/voice/domains/voice.error';
@@ -126,20 +124,6 @@ export const CLEARED_USER_PROPERTIES = {
 export type GaReservedPurchaseEventName = 'purchase' | 'in_app_purchase' | 'refund';
 
 // 새 이벤트는 해당 기능의 `*EventMap`에 먼저 정의한다 → `AppEventMap`으로 합쳐진다.
-
-type SocialProvider = OAuthProviderSlug;
-type AuthMethod = 'email' | SocialProvider;
-
-interface AuthEventMap {
-  auth_login: { method: AuthMethod };
-  auth_signup: { method: AuthMethod };
-  auth_logout: undefined;
-  auth_social_linked: { provider: SocialProvider };
-  auth_social_unlinked: { provider: SocialProvider };
-  auth_account_deleted: undefined;
-  /** 비자발적 로그아웃(토큰 만료·거부·재사용 감지). reason별 severity는 Sentry 쪽에서 판정. */
-  session_expired: { reason: SessionExpiredReason };
-}
 
 type TodoCreationEntry = 'manual' | 'recurring';
 
@@ -390,8 +374,7 @@ interface ConnectivityEventMap {
 }
 
 /** feature가 아직 `{feature}.events.ts`로 옮기지 않은 이벤트. 옮기는 대로 줄어든다 */
-export type LegacyEventMap = AuthEventMap &
-  TodoEventMap &
+export type LegacyEventMap = TodoEventMap &
   GrowthEventMap &
   LifecycleEventMap &
   SubscriptionEventMap &
