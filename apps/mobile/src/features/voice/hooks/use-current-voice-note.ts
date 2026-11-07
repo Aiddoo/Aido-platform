@@ -1,11 +1,12 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
-import { useVoiceNoteParams } from './use-voice-note-params';
+import { voiceNoteParamsSchema } from '../schemas/voice-note-params.schema';
 import { useVoiceNote } from './use-voice-notes';
 
 export function useCurrentVoiceNote() {
-  const { draftId } = useVoiceNoteParams();
+  const [{ draftId }] = useRouteParams(voiceNoteParamsSchema);
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
 
   return { accountId: me.id, draftId, note: useVoiceNote(me.id, draftId) };

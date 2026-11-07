@@ -8,13 +8,14 @@ import { RecognizerWaveform } from '@src/features/voice/components/note/waveform
 import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
-import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
 import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import type { VoiceCaptureState } from '@src/features/voice/schemas/voice-capture.schema';
+import { voiceNoteRecordParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
@@ -40,7 +41,7 @@ function VoiceNoteRecordScreen() {
   const { maxSeconds, limitMs, notifyLimit } = useVoiceNoteRecordLimit();
   const getSpeechContext = useSpeechContext();
   const [locale] = useRecognitionLanguage();
-  const { draftId: seedDraftId, entry } = useVoiceNoteRecordParams();
+  const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
 
   const recording = useVoiceNoteRecording({
     accountId: me.id,
