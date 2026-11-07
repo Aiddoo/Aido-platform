@@ -76,7 +76,6 @@ import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-i
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
 import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
@@ -94,6 +93,7 @@ import {
   expoExternalLinkGateway,
   expoIncomingLinkGateway,
 } from '@src/shared/infra/linking/expo-linking.gateway';
+import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
 import {
   createCompositeLogger,
@@ -103,7 +103,7 @@ import {
 } from '@src/shared/infra/logger';
 import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status.gateway';
 import { expoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification.gateway';
-import { createEnvironmentAnalytics } from '@src/shared/infra/observability-env';
+import { createEnvironmentAnalytics } from '@src/shared/infra/observability/observability-env';
 import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases.gateway';
 import { systemShareGateway } from '@src/shared/infra/share/system-share.gateway';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';

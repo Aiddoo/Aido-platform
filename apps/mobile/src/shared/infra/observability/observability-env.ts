@@ -6,7 +6,7 @@ import {
   createConsoleAnalytics,
   createFirebaseAnalytics,
   markFirebaseTrafficAsInternal,
-} from './analytics';
+} from '../analytics';
 
 /**
  * 환경별 관측 구현 선택의 단일 소스 — 프로덕션 = Firebase/Sentry, 그 외 = console.

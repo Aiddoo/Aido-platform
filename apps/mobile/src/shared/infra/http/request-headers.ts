@@ -1,5 +1,5 @@
 import { i18n } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 import * as Crypto from 'expo-crypto';
 import type { BeforeRequestState } from 'ky';
 

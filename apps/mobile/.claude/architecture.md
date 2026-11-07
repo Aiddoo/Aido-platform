@@ -698,7 +698,7 @@ const saveMemo = (onFailed: (error: unknown) => void) =>
 | 순간 → 값   | `shared/date/instant.ts`(`toDateKey(d, tz)`, `toHHmm(d, tz)`). 시간대는 인자다                |
 | 표시        | `shared/date/date-format.ts`, `date-labels.ts` + `useDateFormatContext`                       |
 | 시각        | `shared/date/time-of-day.ts`                                                                  |
-| 기기 시간대 | `shared/infra/device-clock.ts`(`getDeviceTimezone`)                                           |
+| 기기 시간대 | `shared/infra/localization/device-timezone.ts`(`getDeviceTimezone`)                           |
 
 ---
 

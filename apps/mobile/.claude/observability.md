@@ -21,7 +21,7 @@
 
 ## 환경별 구현
 
-`shared/infra/observability-env.ts`와 `di-provider.tsx`가 정한다.
+`shared/infra/observability/observability-env.ts`와 `di-provider.tsx`가 정한다.
 
 | 포트·설정                 | 운영                        | 개발·프리뷰                                           |
 | ------------------------- | --------------------------- | ----------------------------------------------------- |
@@ -219,5 +219,5 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 | 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                         |
 | 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                  |
 | 카탈로그·파사드   | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                            |
-| 환경별 구현·DI    | `shared/infra/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                                 |
+| 환경별 구현·DI    | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                   |
 | 계측 지점         | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |

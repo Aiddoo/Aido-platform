@@ -1,4 +1,4 @@
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 import { minBy } from 'es-toolkit';
 
 import { addDaysToDateKey } from './date-key';
