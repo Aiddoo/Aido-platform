@@ -6,7 +6,6 @@ import {
 import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
-import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
 import { queryOptions } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -52,10 +51,10 @@ function reportStoreUnavailable(
 
 const OFFERINGS_STALE_TIME = 10 * 60 * 1000; // 10분
 
-function getOfferingsQueryOptions(
-  subscriptionService: SubscriptionService,
-  observers: OfferingsObservers,
-) {
+export function useGetOfferingsQueryOptions() {
+  const subscriptionService = useSubscriptionService();
+  const observers: OfferingsObservers = { errorReporter: useErrorReporter(), logger: useLogger() };
+
   return queryOptions({
     queryKey: SUBSCRIPTION_QUERY_KEYS.offerings(),
     queryFn: async (): Promise<OfferingsAvailability> => {
@@ -67,12 +66,5 @@ function getOfferingsQueryOptions(
     },
     // 스토어를 쓸 수 없던 결과는 다시 들어오면 새로 확인한다
     staleTime: (query) => (query.state.data?.status === 'available' ? OFFERINGS_STALE_TIME : 0),
-  });
-}
-
-export function useGetOfferingsQueryOptions() {
-  return getOfferingsQueryOptions(useSubscriptionService(), {
-    errorReporter: useErrorReporter(),
-    logger: useLogger(),
   });
 }

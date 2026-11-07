@@ -1,23 +1,21 @@
-import { createHttpClientStub } from '@src/shared/__tests__';
-
 import { createWeatherReport } from '../__tests__/weather-report.fixtures';
-import { WeatherService } from '../apis/weather.service';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
-import { getWeatherReportQueryOptions, WeatherReportSelect } from './weather.queries';
+import { WeatherReportSelect } from './weather.queries';
 
-describe('getWeatherReportQueryOptions', () => {
+describe('WEATHER_QUERY_KEYS.report', () => {
   it('위치가 실제로 바뀐 리비전마다 다른 리포트 캐시를 쓰고, 모두 날씨 무효화 범위 안에 둔다', () => {
     // Given
-    const service = new WeatherService(createHttpClientStub());
+    const revisions = [0, 1];
 
     // When
-    const saved = getWeatherReportQueryOptions(service, { locationRevision: 0 });
-    const moved = getWeatherReportQueryOptions(service, { locationRevision: 1 });
+    const [saved, moved] = revisions.map((locationRevision) =>
+      WEATHER_QUERY_KEYS.report({ locationRevision }),
+    );
 
     // Then
-    expect(saved.queryKey).toEqual(['weather', 'report', { locationRevision: 0 }]);
-    expect(saved.queryKey).not.toEqual(moved.queryKey);
-    expect(saved.queryKey.slice(0, 2)).toEqual(WEATHER_QUERY_KEYS.reports());
+    expect(saved).toEqual(['weather', 'report', { locationRevision: 0 }]);
+    expect(saved).not.toEqual(moved);
+    expect(saved?.slice(0, 2)).toEqual(WEATHER_QUERY_KEYS.reports());
   });
 });
 

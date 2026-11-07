@@ -4,7 +4,6 @@ import {
   useWeatherService,
 } from '@src/bootstrap/providers/di-context';
 import { type Logger } from '@src/core/ports/logger';
-import { type WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { type WeatherService } from '@src/features/weather/apis/weather.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { getErrorMessage, isBusinessError, unwrap } from '@src/shared/errors';
@@ -22,11 +21,7 @@ import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
-import {
-  applyDevWeatherOverride,
-  type DevWeatherOverride,
-  useDevWeatherOverride,
-} from '../hooks/use-dev-weather-override';
+import { applyDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type LocationReading } from '../schemas/weather-location.schema';
 import { type WeatherReport } from '../schemas/weather-report.schema';
 import { removeOutdatedWeatherReports } from './weather-cache';
@@ -63,10 +58,10 @@ async function readReportLocation(client: QueryClient, logger: Logger, revision:
  * 동시에 열려도 위치 읽기와 PUT이 한 번만 일어난다.
  * 리포트는 이 query를 기다리지 않고 서버에 저장된 위치로 먼저 받는다.
  */
-function getWeatherLocationQueryOptions(
-  weatherLocationService: WeatherLocationService,
-  logger: Logger,
-) {
+export function useGetWeatherLocationQueryOptions() {
+  const weatherLocationService = useWeatherLocationService();
+  const logger = useLogger();
+
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),
     queryFn: async ({ signal, client, queryKey }): Promise<LocationReading> =>
@@ -85,10 +80,6 @@ function getWeatherLocationQueryOptions(
     retry: false,
     refetchOnWindowFocus: refetchOnFocus,
   });
-}
-
-export function useGetWeatherLocationQueryOptions() {
-  return getWeatherLocationQueryOptions(useWeatherLocationService(), useLogger());
 }
 
 /** 날씨 블록이 같은 리포트 캐시를 고르도록 위치 리비전을 돌려준다. 위치를 읽는 동안에도 0으로 바로 받는다. */
@@ -132,34 +123,32 @@ async function getReportWithRegistration(
   return unwrap(await weatherService.getReport(signal));
 }
 
-export function getWeatherReportQueryOptions(
-  weatherService: WeatherService,
-  { locationRevision }: { locationRevision: number },
-) {
-  return queryOptions({
+/**
+ * 개발 QA의 날씨 덮어쓰기는 실제 리포트 캐시에서 만들어 새로 요청하지 않고, 실제 리포트와 키를 나누며
+ * 기기에 저장하지 않는다. 실제 리포트가 이미 있으면 처음부터 그 값으로 그려 화면이 로딩으로 돌아가지 않는다.
+ */
+export function useGetWeatherReportQueryOptions() {
+  const weatherService = useWeatherService();
+  const locationRevision = useWeatherLocationRevision();
+  const client = useQueryClient();
+  const devOverride = useDevWeatherOverride();
+
+  const reportOptions = queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision }),
-    queryFn: ({ signal, client }) => {
+    queryFn: ({ signal, client: queryClient }) => {
       // 새 위치의 리포트를 받기 시작하면 화면은 이미 이 리비전을 보므로 이전 위치의 리포트는 기기 캐시에 남기지 않는다
-      removeOutdatedWeatherReports(client, { locationRevision });
-      return getReportWithRegistration(weatherService, client, signal);
+      removeOutdatedWeatherReports(queryClient, { locationRevision });
+      return getReportWithRegistration(weatherService, queryClient, signal);
     },
     staleTime: REPORT_STALE_TIME_MS,
     refetchInterval: REPORT_REFETCH_INTERVAL_MS,
     retry: shouldRetryReport,
     ...PERSISTED_QUERY_OPTIONS,
   });
-}
+  if (devOverride == null) {
+    return reportOptions;
+  }
 
-/**
- * 개발 QA용으로 날씨만 바꾼 리포트. 실제 리포트 캐시에서 만들어 새로 요청하지 않고, 실제 리포트와 키를 나누며
- * 기기에 저장하지 않는다. 실제 리포트가 이미 있으면 처음부터 그 값으로 그려 화면이 로딩으로 돌아가지 않는다.
- */
-function getDevWeatherReportQueryOptions(
-  weatherService: WeatherService,
-  client: QueryClient,
-  { locationRevision, devOverride }: { locationRevision: number; devOverride: DevWeatherOverride },
-) {
-  const reportOptions = getWeatherReportQueryOptions(weatherService, { locationRevision });
   const cached = client.getQueryData(reportOptions.queryKey);
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
@@ -169,16 +158,6 @@ function getDevWeatherReportQueryOptions(
     staleTime: REPORT_STALE_TIME_MS,
     retry: shouldRetryReport,
   });
-}
-
-export function useGetWeatherReportQueryOptions() {
-  const weatherService = useWeatherService();
-  const locationRevision = useWeatherLocationRevision();
-  const client = useQueryClient();
-  const devOverride = useDevWeatherOverride();
-  return devOverride == null
-    ? getWeatherReportQueryOptions(weatherService, { locationRevision })
-    : getDevWeatherReportQueryOptions(weatherService, client, { locationRevision, devOverride });
 }
 
 /**
