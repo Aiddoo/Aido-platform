@@ -2,6 +2,7 @@ import { INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -22,9 +23,9 @@ import { RadioGroup } from 'heroui-native';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
 import { INQUIRY_CATEGORY_LABEL_KEYS } from '../constants/inquiry-labels';
-import { useInquiryParams } from '../hooks/use-inquiry-params';
 import { useCreateInquiryMutationOptions } from '../queries/inquiry.mutations';
 import { inquiryFormSchema } from '../schemas/inquiry-form.schema';
+import { inquiryParamsSchema } from '../schemas/inquiry-params.schema';
 
 interface InquiryFormProps {
   title: string;
@@ -32,7 +33,7 @@ interface InquiryFormProps {
 
 /** 문의 종류와 내용 입력, 키보드 위 보내기 버튼. 보내면 이전 화면으로 돌아간다 */
 export function InquiryForm({ title }: InquiryFormProps) {
-  const initialValues = useInquiryParams();
+  const [initialValues] = useRouteParams(inquiryParamsSchema);
   const { t } = useTranslation('inquiry');
   const { locale } = useDateFormatContext();
   const navigation = useNavigation();

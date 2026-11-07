@@ -2,6 +2,7 @@ import { CategorySelectInput } from '@src/features/planning/category/components/
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
@@ -16,9 +17,9 @@ import {
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { useSuggestionParams } from '../hooks/use-suggestion-params';
 import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
+import { suggestionParamsSchema } from '../schemas/suggestion-params.schema';
 
 type SuggestionCategoryBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -55,7 +56,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   onClose: (next?: SheetRouteExit) => void;
 }) {
   const { t } = useTranslation('ai');
-  const { suggestionId } = useSuggestionParams();
+  const [{ suggestionId }] = useRouteParams(suggestionParamsSchema);
   const [{ data: suggestions }, { data: categoriesData }] = useSuspenseQueries({
     queries: [useGetSuggestionsQueryOptions(), useGetTodoCategoriesQueryOptions()],
   });

@@ -1,10 +1,10 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { getSampleReport } from '@src/features/insights/report/constants/sample-reports';
-import { useReportParams } from '@src/features/insights/report/hooks/use-report-params';
 import { useGetReportDetailQueryOptions } from '@src/features/insights/report/queries/report.queries';
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useTrack } from '@src/shared/analytics';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -21,7 +21,7 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function ReportDetailScreen() {
-  const { reportId: report } = useReportParams();
+  const [{ reportId: report }] = useRouteParams(reportParamsSchema);
   const { t } = useTranslation('ai');
   const gate = useEntitlementGate('AI_REPORT', { surface: 'report_detail' });
 
@@ -80,7 +80,7 @@ export default function ReportDetailRoute() {
 }
 
 function SavedActivityReport() {
-  const { reportId: report } = useReportParams();
+  const [{ reportId: report }] = useRouteParams(reportParamsSchema);
 
   if (report.kind !== 'saved') {
     return null;

@@ -3,6 +3,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
@@ -26,8 +27,8 @@ import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
-import { useAchievementParams } from '../hooks/use-achievement-params';
 import { useGetWeeklyAchievementQueryOptions } from '../queries/achievement.queries';
+import { achievementParamsSchema } from '../schemas/achievement-params.schema';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
@@ -35,7 +36,7 @@ const CERTIFICATE_LINE_COUNT = 4;
 
 export function WeeklyAchievementCertificate() {
   const fontScaledSize = useFontScaledSize();
-  const { year, week } = useAchievementParams();
+  const [{ year, week }] = useRouteParams(achievementParamsSchema);
   const [{ data: achievement }, { data: user }] = useSuspenseQueries({
     queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
   });

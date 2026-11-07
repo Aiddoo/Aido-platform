@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -20,10 +21,10 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import { useTodoCategoryParams } from '../hooks/use-todo-category-params';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
+import { todoCategoryParamsSchema } from '../schemas/todo-category-params.schema';
 import type { TodoCategory } from '../schemas/todo-category.schema';
 import { CategoryFormFields } from './category-form-fields';
 
@@ -60,7 +61,7 @@ interface CategoryEditBottomSheetContentsProps {
 CategoryEditBottomSheet.Contents = function Contents({
   onClose,
 }: CategoryEditBottomSheetContentsProps) {
-  const { categoryId } = useTodoCategoryParams();
+  const [{ categoryId }] = useRouteParams(todoCategoryParamsSchema);
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useRetainedValue(
     TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId),
