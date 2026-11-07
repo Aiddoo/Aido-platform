@@ -8,7 +8,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
   const [query, setQuery] = useState('');
-  const friendLimitInvite = useFriendLimitInvite();
+  const openFriendLimitInvite = useFriendLimitInvite();
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
@@ -30,7 +30,7 @@ export default function SearchFriendScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         <Box flex={1} px={16}>
           <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
-            <FriendSearchList query={query} friendLimitInvite={friendLimitInvite} />
+            <FriendSearchList query={query} openFriendLimitInvite={openFriendLimitInvite} />
           </QueryErrorBoundary>
         </Box>
       </KeyboardAvoidingView>

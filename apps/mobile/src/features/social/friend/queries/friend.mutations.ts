@@ -1,3 +1,4 @@
+import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
 import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
@@ -16,7 +17,7 @@ import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/re
 import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { type FriendLimitInvite, FriendPolicy } from '../domains/friend.model';
+import { FriendPolicy } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend.schema';
 import { invalidateFriends, patchSearchedUser } from './friend-cache';
 
@@ -167,9 +168,10 @@ export function useReorderFriendMutationOptions() {
   });
 }
 
+/** `openFriendLimitInvite`는 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길이다. 초대를 쓸 수 없으면 넘기지 않는다 */
 export function useSendRequestByTagMutationOptions({
-  friendLimitInvite,
-}: { friendLimitInvite?: FriendLimitInvite } = {}) {
+  openFriendLimitInvite,
+}: { openFriendLimitInvite?: () => void } = {}) {
   const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -213,15 +215,20 @@ export function useSendRequestByTagMutationOptions({
         const details = isApiError(err) ? err.details : undefined;
         gate.handleError(
           err,
-          match(FriendPolicy.getFriendLimitDialog(details, friendLimitInvite != null, knownLimit))
+          match(
+            FriendPolicy.getFriendLimitDialog(details, openFriendLimitInvite != null, knownLimit),
+          )
             .with({ type: 'invite' }, ({ limit }) =>
-              friendLimitInvite == null
+              openFriendLimitInvite == null
                 ? {}
                 : {
-                    description: friendLimitInvite.getDescription(limit),
+                    description: t('invite:entry.friendLimitDescription', {
+                      limit,
+                      activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+                    }),
                     alternativeAction: {
-                      label: friendLimitInvite.actionLabel,
-                      onPress: friendLimitInvite.open,
+                      label: t('invite:entry.growFriendLimit'),
+                      onPress: openFriendLimitInvite,
                     },
                   },
             )

@@ -5,11 +5,11 @@ import { Box, H3, QueryErrorBoundary, Spacing, Text } from '@src/shared/ui';
 
 function AddFriendScreen() {
   const { t } = useTranslation('friend');
-  const friendLimitInvite = useFriendLimitInvite();
+  const openFriendLimitInvite = useFriendLimitInvite();
 
   return (
     <Box className="flex-1 bg-white">
-      <AddFriendForm friendLimitInvite={friendLimitInvite}>
+      <AddFriendForm openFriendLimitInvite={openFriendLimitInvite}>
         <H3>{t('add.title')}</H3>
 
         <Spacing size={4} />

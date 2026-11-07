@@ -11,7 +11,6 @@ import type { PropsWithChildren } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 
-import type { FriendLimitInvite } from '../domains/friend.model';
 import { useSendRequestByTagMutationOptions } from '../queries/friend.mutations';
 import {
   addFriendFormSchema,
@@ -21,15 +20,15 @@ import {
 
 interface AddFriendFormProps extends PropsWithChildren {
   /** 친구 한도 안내에서 초대로 자리를 늘리는 길. 초대를 아는 화면이 넘긴다 */
-  friendLimitInvite?: FriendLimitInvite;
+  openFriendLimitInvite?: () => void;
 }
 
 /** 태그 입력과 키보드 위 요청 버튼. 입력 위에 놓는 제목과 안내는 화면이 children으로 넘긴다 */
-export function AddFriendForm({ children, friendLimitInvite }: AddFriendFormProps) {
+export function AddFriendForm({ children, openFriendLimitInvite }: AddFriendFormProps) {
   const goBack = useSingleTap(router.back);
   const { t } = useTranslation('friend');
   const reportUnexpectedError = useReportUnexpectedError('friend');
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ friendLimitInvite }));
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ openFriendLimitInvite }));
 
   const form = useForm({
     resolver: zodResolver(addFriendFormSchema),

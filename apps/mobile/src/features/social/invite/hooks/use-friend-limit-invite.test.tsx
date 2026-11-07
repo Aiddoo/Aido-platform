@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import type { FriendLimitInvite } from '@src/features/social/friend/domains/friend.model';
 import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { waitFor } from '@testing-library/react-native';
@@ -12,10 +11,10 @@ async function renderFriendLimitInvite(isEnabled: boolean) {
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.get.mockResolvedValue(ok({ enabled: isEnabled }));
   const analytics = createAnalyticsStub();
-  let friendLimitInvite: FriendLimitInvite | undefined;
+  let openFriendLimitInvite: (() => void) | undefined;
   let renderCount = 0;
   function Capture() {
-    friendLimitInvite = useFriendLimitInvite();
+    openFriendLimitInvite = useFriendLimitInvite();
     renderCount += 1;
     return null;
   }
@@ -28,23 +27,21 @@ async function renderFriendLimitInvite(isEnabled: boolean) {
 
   return {
     analytics,
-    getFriendLimitInvite: () => friendLimitInvite,
+    getFriendLimitInvite: () => openFriendLimitInvite,
     getRenderCount: () => renderCount,
   };
 }
 
 describe('친구 한도 안내의 초대 길', () => {
-  it('초대를 쓸 수 있으면 한도 인원이 담긴 안내를 만들고 누르면 진입점을 남긴다', async () => {
+  it('초대를 쓸 수 있으면 길을 열고 누르면 진입점을 남긴다', async () => {
     // Given
     const { analytics, getFriendLimitInvite } = await renderFriendLimitInvite(true);
     await waitFor(() => expect(getFriendLimitInvite()).toBeDefined());
 
     // When
-    const description = getFriendLimitInvite()?.getDescription(7);
-    getFriendLimitInvite()?.open();
+    getFriendLimitInvite()?.();
 
     // Then
-    expect(description).toContain('7');
     expect(analytics.trackEvent).toHaveBeenCalledWith('invite_entry_tapped', {
       entry: 'friend_limit_dialog',
     });
