@@ -4,6 +4,7 @@ import { AppProviders } from '@src/bootstrap/providers/app-providers';
 import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from '@src/bootstrap/root-error-boundary-log-events';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
+import { reloadApp } from '@src/shared/infra/application/app-bundle';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/observability-env';
 import { initSentry, wrapRootComponent } from '@src/shared/infra/observability/sentry';
@@ -11,10 +12,8 @@ import { openSupportMail } from '@src/shared/ui';
 
 import '../global.css';
 import '@src/shared/i18n/init';
-import { reloadAppAsync } from 'expo';
 import type { ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Updates from 'expo-updates';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -41,9 +40,8 @@ function AppBootstrapLayout() {
 
 export default wrapRootComponent(AppBootstrapLayout);
 
-// OTA가 켜져 있으면 받아 둔 업데이트로, 아니면(개발 빌드) 같은 번들로 다시 띄운다
 function restartApp() {
-  return (Updates.isEnabled ? Updates.reloadAsync() : reloadAppAsync()).catch((error: unknown) =>
+  return reloadApp().catch((error: unknown) =>
     logger.warn(ROOT_ERROR_BOUNDARY_LOG_EVENT.RESTART_FAILED, { error: getErrorMessage(error) }),
   );
 }

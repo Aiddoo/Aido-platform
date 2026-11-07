@@ -333,10 +333,8 @@ const SDK_MODULES = [
 const SDK_INFRA_ROOT = 'apps/mobile/src/shared/infra/';
 // 규칙을 넣기 전부터 있던 위반. 출시 후 첫 스택에서 모두 옮겨 비운다. 새 위반을 여기 더하지 않는다.
 const SDK_IMPORT_ALLOWLIST = new Map([
-  ['apps/mobile/app/_layout.tsx', ['expo-updates']],
   ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
   ['apps/mobile/src/bootstrap/hooks/use-widget-app-entry.ts', ['expo-linking']],
-  ['apps/mobile/src/bootstrap/providers/query-provider.tsx', ['expo-application', 'expo-updates']],
   [
     'apps/mobile/src/features/app-config/whats-new/apis/native-app-version.ts',
     ['expo-application'],

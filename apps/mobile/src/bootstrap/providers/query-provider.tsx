@@ -1,11 +1,10 @@
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
 import { i18n } from '@src/shared/i18n';
+import { getAppBundleId } from '@src/shared/infra/application/app-bundle';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import * as Application from 'expo-application';
-import * as Updates from 'expo-updates';
 import { type PropsWithChildren, useEffect, useState } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState } from 'react-native';
@@ -63,7 +62,7 @@ const queryClient = new QueryClient({
 });
 
 // OTA 업데이트도 모델 모양을 바꿀 수 있어 번들 id까지 버전에 넣는다
-const appVersion = `${Application.nativeApplicationVersion}+${Updates.updateId ?? 'embedded'}`;
+const appVersion = getAppBundleId();
 
 // 복원한 데이터는 앱이 꺼지기 전 낙관적 반영(서버에 닿지 못한 변경)일 수 있어 stale로만 표시한다.
 // 화면이 붙을 때 서버 값으로 다시 맞추고, 여기서 요청을 기다리지 않아 복원 대기가 네트워크에 묶이지 않는다
