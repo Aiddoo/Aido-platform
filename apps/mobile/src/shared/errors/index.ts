@@ -11,14 +11,7 @@ export {
   TimeoutError,
 } from './infra-error';
 
-export {
-  type CodedError,
-  err,
-  isBusinessError,
-  ok,
-  type Result,
-  unwrap,
-} from '@src/core/errors/result';
+export { err, isBusinessError, ok, type Result, unwrap } from '@src/core/errors/result';
 
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';
 
