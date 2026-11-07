@@ -370,3 +370,13 @@ const MemoizedListRow = React.memo(({ item }) => (
 ```tsx
 <ListRow left={<ListRow.Image source={source} size="medium" rounded />} />
 ```
+
+## 누르는 행
+
+토스 `ListRow`의 `onClick`과 같은 역할로 `onPress`를 받는다. 넘기면 행 전체가 버튼이 된다.
+
+```tsx
+<ListRow contents={<ListRow.Texts type="1RowTypeA" top="계정" />} onPress={openAccount} />
+```
+
+`contents`는 필수다. 패딩은 `withPadding` 대신 `verticalPadding`, `horizontalPadding`으로 정한다.

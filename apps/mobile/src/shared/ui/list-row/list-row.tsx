@@ -1,6 +1,7 @@
 import { HStack } from '@src/shared/ui/h-stack';
 import { cn } from '@src/shared/utils/cn';
 import { tv } from '@src/shared/utils/tv';
+import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
@@ -64,8 +65,9 @@ export type ListRowAlignment = NonNullable<VariantProps<typeof listRowSlotVarian
 
 export interface ListRowProps extends Omit<ViewProps, 'children'>, ListRowVariantProps {
   left?: ReactNode;
-  contents?: ReactNode;
+  contents: ReactNode;
   right?: ReactNode;
+  onPress?: () => void;
   leftAlignment?: ListRowAlignment;
   rightAlignment?: ListRowAlignment;
   className?: string;
@@ -81,10 +83,11 @@ export function ListRow({
   leftAlignment,
   rightAlignment,
   isDisabled,
+  onPress,
   className,
   ...props
 }: ListRowProps) {
-  return (
+  const row = (
     <HStack
       align="center"
       gap={12}
@@ -95,9 +98,19 @@ export function ListRow({
       {...props}
     >
       {left && <Box className={listRowSlotVariants({ alignment: leftAlignment })}>{left}</Box>}
-      {contents && <Box className="flex-1">{contents}</Box>}
+      <Box className="flex-1">{contents}</Box>
       {right && <Box className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</Box>}
     </HStack>
+  );
+
+  if (onPress == null) {
+    return row;
+  }
+
+  return (
+    <PressableFeedback accessibilityRole="button" isDisabled={isDisabled} onPress={onPress}>
+      {row}
+    </PressableFeedback>
   );
 }
 
