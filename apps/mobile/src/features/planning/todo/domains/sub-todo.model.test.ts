@@ -36,7 +36,7 @@ describe('canAddSubTodo', () => {
   });
 });
 
-describe('withSubTodoToggled', () => {
+describe('withSubTodoCompleted', () => {
   it('서브투두를 완료하면 목록과 통계가 함께 바뀐다', () => {
     // Given
     const parentTodo = createParentTodo({
@@ -45,7 +45,7 @@ describe('withSubTodoToggled', () => {
     });
 
     // When
-    const result = SubTodoPolicy.withSubTodoToggled(parentTodo, 1, true);
+    const result = SubTodoPolicy.withSubTodoCompleted(parentTodo, 1, true);
 
     // Then
     expect(result.subTodos.map((subTodo) => subTodo.completed)).toEqual([true, false]);
@@ -60,7 +60,7 @@ describe('withSubTodoToggled', () => {
     });
 
     // When
-    const result = SubTodoPolicy.withSubTodoToggled(parentTodo, 1, true);
+    const result = SubTodoPolicy.withSubTodoCompleted(parentTodo, 1, true);
 
     // Then
     expect(result.subTodoStats).toEqual({ total: 1, completed: 1 });
@@ -74,7 +74,7 @@ describe('withSubTodoToggled', () => {
     });
 
     // When
-    const result = SubTodoPolicy.withSubTodoToggled(parentTodo, 1, false);
+    const result = SubTodoPolicy.withSubTodoCompleted(parentTodo, 1, false);
 
     // Then
     expect(result.subTodoStats).toEqual({ total: 1, completed: 0 });

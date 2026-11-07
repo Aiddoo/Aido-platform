@@ -8,7 +8,7 @@ import {
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
@@ -32,7 +32,7 @@ export function useCreateTodoCategoryMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.addFailedRetry'));
+  const haptics = useHaptics();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -81,7 +81,10 @@ export function useCreateTodoCategoryMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.addFailedRetry'),
+      });
     },
   });
 }
@@ -96,7 +99,7 @@ export function useUpdateTodoCategoryMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
+  const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
@@ -140,7 +143,10 @@ export function useUpdateTodoCategoryMutationOptions() {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.updateFailedRetry'),
+      });
     },
   });
 }
@@ -155,7 +161,7 @@ export function useDeleteTodoCategoryMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.deleteFailedRetry'));
+  const haptics = useHaptics();
 
   return mutationOptions({
     mutationFn: async ({ id, query }: DeleteTodoCategoryParams) =>
@@ -189,7 +195,10 @@ export function useDeleteTodoCategoryMutationOptions() {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.deleteFailedRetry'),
+      });
     },
   });
 }

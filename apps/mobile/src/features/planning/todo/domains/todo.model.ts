@@ -68,7 +68,7 @@ function hasSubTodos(todo: Todo): boolean {
  * 이 할 일을 끝내면 그날 목록이 모두 끝나는지. 할 일이 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다.
  * 여러 날에 걸친 할 일은 시작일 목록만 낙관적으로 바뀌므로 끝낸 할 일은 목록 값과 무관하게 완료로 본다.
  */
-function completesAllTodos(todos: readonly Todo[], completedTodoId: number): boolean {
+function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number): boolean {
   return (
     todos.some((todo) => todo.id === completedTodoId) &&
     todos.every((todo) => todo.id === completedTodoId || todo.completed)
@@ -139,7 +139,7 @@ export const TodoPolicy = {
   getShiftedEndDate,
   isOptimisticTodo,
   hasSubTodos,
-  completesAllTodos,
+  isLastOpenTodo,
   getLocalTime,
   hasUpcomingTimedTodo,
 } as const;

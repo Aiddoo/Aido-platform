@@ -34,7 +34,7 @@ function hasChanges(
 }
 
 /** 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다 */
-function requiresTodoMove(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
+function isTodoMoveRequired(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
   return category.todoCount > 0;
 }
 
@@ -43,7 +43,7 @@ function canReorderCategories(categories: readonly Pick<TodoCategory, 'id'>[]) {
 }
 
 export const TodoCategoryPolicy = {
-  requiresTodoMove,
+  isTodoMoveRequired,
   canReorderCategories,
   findCategory,
   getInitialCategoryId,

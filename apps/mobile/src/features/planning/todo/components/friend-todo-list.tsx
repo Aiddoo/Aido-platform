@@ -96,7 +96,7 @@ FriendTodoList.Item = function Item({
   return (
     <TodoRow
       left={<TodoCheckbox isSelected={todo.completed} />}
-      top={<TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>}
+      top={<TodoLabel isCompleted={todo.completed}>{todo.title}</TodoLabel>}
       middle={
         showDateTime && (
           <Text size="e1" shade={6}>
@@ -136,7 +136,7 @@ FriendTodoList.Item = function Item({
             <TodoRow
               key={subTodo.id}
               left={<TodoCheckbox isSelected={subTodo.completed} />}
-              top={<TodoLabel isChecked={subTodo.completed}>{subTodo.title}</TodoLabel>}
+              top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
             />
           ))}
         </SubTodoIndent>

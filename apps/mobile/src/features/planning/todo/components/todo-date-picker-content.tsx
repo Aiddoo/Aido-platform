@@ -38,7 +38,7 @@ export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePic
       }
     >
       <VStack gap={20}>
-        <QuickDateOptions picker={picker} onSelect={onChange} />
+        <QuickDateOptions picker={picker} onChange={onChange} />
 
         <DatePickerCalendar picker={picker} onDatePress={picker.selectDate} />
       </VStack>
@@ -48,10 +48,10 @@ export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePic
 
 interface QuickDateOptionsProps {
   picker: DatePicker;
-  onSelect: (date: Date) => void;
+  onChange: (date: Date) => void;
 }
 
-function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
+function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
   const { t } = useTranslation('todo');
   const today = useToday();
   const { timeZone } = useDateFormatContext();
@@ -64,13 +64,13 @@ function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
         label={t('picker.today')}
         date={todayStart}
         isSelected={isSameDay(picker.date, todayStart, timeZone)}
-        onSelect={onSelect}
+        onChange={onChange}
       />
       <QuickDateRow
         label={t('picker.tomorrow')}
         date={tomorrowStart}
         isSelected={isSameDay(picker.date, tomorrowStart, timeZone)}
-        onSelect={onSelect}
+        onChange={onChange}
       />
     </VStack>
   );
@@ -80,10 +80,10 @@ interface QuickDateRowProps {
   label: string;
   date: Date;
   isSelected: boolean;
-  onSelect: (date: Date) => void;
+  onChange: (date: Date) => void;
 }
 
-function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) {
+function QuickDateRow({ label, date, isSelected, onChange }: QuickDateRowProps) {
   const { i18n } = useTranslation();
   const { timeZone } = useDateFormatContext();
   const weekdayLabels = getWeekdayLabels(i18n.language);
@@ -91,7 +91,7 @@ function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) 
 
   return (
     <PressableFeedback
-      onPress={() => onSelect(date)}
+      onPress={() => onChange(date)}
       className={cn('rounded-lg', isSelected && 'bg-main/5')}
     >
       <ListRow

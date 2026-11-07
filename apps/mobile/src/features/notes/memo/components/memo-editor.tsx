@@ -71,7 +71,7 @@ import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
 import {
   useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,
-  useToggleMemoPinMutationOptions,
+  useSetMemoPinnedMutationOptions,
   useUpdateMemoMutationOptions,
 } from '../queries/memo.mutations';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
@@ -118,6 +118,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     defaultValues: restoredDraft ?? savedValues,
   });
   const { isDirty, isValid } = useFormState({ control: form.control });
+  const canSave = isDirty && isValid;
   const discardDraft = useFormDraftAutosave(form.subscribe, {
     initialValues: savedValues,
     saveDraft,
@@ -170,7 +171,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   });
 
   const handleBack = () => {
-    if (isDirty && isValid) {
+    if (canSave) {
       saveAndLeave();
 
       return;
@@ -240,14 +241,14 @@ MemoEditor.StackToolbar = function StackToolbar({
   const [memoId] = useMemoId();
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const { isDirty, isSubmitting, isValid } = useFormState({ control });
-  const togglePin = useMutation(useToggleMemoPinMutationOptions());
+  const canSave = isDirty && isValid;
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
   const aiParse = useMemoAiParse();
   const convertToTodo = useMemoConvertToTodo(onConverted);
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const { color: pinnedTint } = useResolveClassNames('text-main');
-  const { color: saveTint } = useResolveClassNames(
-    isDirty && isValid ? 'text-main' : 'text-gray-4',
-  );
+  const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
+  const pinLabel = t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin');
 
   return (
     <>
@@ -263,12 +264,12 @@ MemoEditor.StackToolbar = function StackToolbar({
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={memo.isPinned ? MEMO_TOOLBAR_ICON.pinned : MEMO_TOOLBAR_ICON.pin}
-          accessibilityLabel={t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+          accessibilityLabel={pinLabel}
           tintColor={memo.isPinned ? pinnedTint : undefined}
-          disabled={togglePin.isPending}
-          onPress={() => togglePin.mutate({ memoId, isPinned: !memo.isPinned })}
+          disabled={setPinned.isPending}
+          onPress={() => setPinned.mutate({ memoId, isPinned: !memo.isPinned })}
         >
-          {t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+          {pinLabel}
         </Stack.Toolbar.Button>
         <Stack.Toolbar.Button
           hidden={!isEditing}
@@ -316,19 +317,20 @@ MemoEditor.PaneToolbar = function PaneToolbar({
   const [memoId] = useMemoId();
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const { isDirty, isSubmitting, isValid } = useFormState({ control });
-  const togglePin = useMutation(useToggleMemoPinMutationOptions());
+  const canSave = isDirty && isValid;
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
 
   return (
     <Box className="bg-white">
       <HStack align="center" justify="end" gap={4} className="px-2">
         <MemoPinButton
           isPinned={memo.isPinned}
-          isDisabled={togglePin.isPending}
-          onPress={() => togglePin.mutate({ memoId, isPinned: !memo.isPinned })}
+          isDisabled={setPinned.isPending}
+          onPress={() => setPinned.mutate({ memoId, isPinned: !memo.isPinned })}
         />
         {isEditing && (
           <MemoSaveButton
-            isHighlighted={isDirty && isValid}
+            isHighlighted={canSave}
             isDisabled={!isValid || isSubmitting}
             onPress={onSave}
           />

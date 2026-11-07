@@ -405,7 +405,7 @@ PlanReview.TodoRow = function PlanTodoRow({
         <TodoTitleLine
           label={
             <TodoLabel
-              isChecked={false}
+              isCompleted={false}
               lineBreakStrategyIOS="hangul-word"
               className={cn('flex-1', !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
             >
@@ -449,7 +449,7 @@ PlanReview.TodoRow = function PlanTodoRow({
               key={itemIndex}
               top={
                 <TodoLabel
-                  isChecked={false}
+                  isCompleted={false}
                   lineBreakStrategyIOS="hangul-word"
                   className={cn(!todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
                 >
@@ -494,7 +494,7 @@ PlanReview.MemoRow = function PlanMemoRow({
       }
       top={
         <TodoLabel
-          isChecked={false}
+          isCompleted={false}
           numberOfLines={1}
           className={cn(!memo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
         >

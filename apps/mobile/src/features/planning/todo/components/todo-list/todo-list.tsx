@@ -275,7 +275,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
       top={
         <TodoTitleLine
           label={
-            <TodoLabel isChecked={todo.completed} className="flex-1">
+            <TodoLabel isCompleted={todo.completed} className="flex-1">
               {todo.title}
             </TodoLabel>
           }

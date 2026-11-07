@@ -31,7 +31,7 @@ import {
   cancelTodoQueries,
   settleTodoListWrite,
 } from '@src/features/planning/todo/queries/todo-cache';
-import { useTodoSeriesFailureHandler } from '@src/features/planning/todo/queries/todo-series.mutations';
+import { useNotifyIfSeriesFailure } from '@src/features/planning/todo/queries/todo-series.mutations';
 import type {
   RepeatingTodoDraft,
   TodoSeriesEditOptions,
@@ -42,7 +42,7 @@ import type {
 } from '@src/features/planning/todo/schemas/todo-request.schema';
 import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
@@ -60,7 +60,6 @@ export function useCreateTodoMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.addFailedRetry'));
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -144,7 +143,10 @@ export function useCreateTodoMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.addFailedRetry'),
+      });
     },
     onSettled: () => {
       settleTodoCompletionWrite(queryClient);
@@ -163,7 +165,8 @@ export function useAddSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('todo:toast.subTodoAddFailed'));
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -196,7 +199,10 @@ export function useAddSubTodoMutationOptions() {
       trackEvent('todo_item_added', { todo_id: todoId });
     },
     onError: (error, { todoId, date }, context) => {
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.subTodoAddFailed'),
+      });
 
       if (context != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
@@ -224,8 +230,7 @@ export function useCreateRecurringTodoMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.addFailedRetry'));
-  const handleSeriesFailure = useTodoSeriesFailureHandler();
+  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -254,7 +259,7 @@ export function useCreateRecurringTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      if (handleSeriesFailure(error)) {
+      if (notifyIfSeriesFailure(error)) {
         return;
       }
 
@@ -264,7 +269,10 @@ export function useCreateRecurringTodoMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.addFailedRetry'),
+      });
     },
   });
 }
@@ -281,7 +289,8 @@ export function useUpdateSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('todo:toast.subTodoUpdateFailed'));
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -306,7 +315,10 @@ export function useUpdateSubTodoMutationOptions() {
       trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
     },
     onError: (error, { todoId, subTodoId, date }, context) => {
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.subTodoUpdateFailed'),
+      });
       const previousTitle = context?.previousTitle;
       if (previousTitle != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -331,8 +343,8 @@ export function useUpdateTodoMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
-  const handleSeriesFailure = useTodoSeriesFailureHandler();
+  const haptics = useHaptics();
+  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -355,11 +367,14 @@ export function useUpdateTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      if (handleSeriesFailure(error)) {
+      if (notifyIfSeriesFailure(error)) {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.updateFailedRetry'),
+      });
     },
   });
 }

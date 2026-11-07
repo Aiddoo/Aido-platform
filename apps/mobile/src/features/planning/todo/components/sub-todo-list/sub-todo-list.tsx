@@ -84,7 +84,7 @@ SubTodoList.Item = function Item({
           isDisabled={isDisabled}
         />
       }
-      top={<TodoLabel isChecked={isSelected}>{label}</TodoLabel>}
+      top={<TodoLabel isCompleted={isSelected}>{label}</TodoLabel>}
       right={
         <IconButton
           accessibilityLabel={t('actions.more')}

@@ -47,6 +47,12 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
   const getSpeechContext = useReadSpeechContext();
   const [locale, setLocale] = useRecognitionLanguage();
   const planRequest = useQuickPlanRequest({ aiConsent, onExit });
+  const idGenerator = useIdGenerator();
+  const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
+  const startVoiceNote = useStartVoiceNote();
+  const logger = useLogger();
+  const toast = useAppToast();
+  const { t } = useTranslation('voice');
   const isUnmountedRef = useRef(false);
   /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
   const [isRestarting, setIsRestarting] = useState(false);
@@ -67,12 +73,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       }
     },
   });
-  const continueAsVoiceNote = useContinueAsVoiceNote({ session, locale, onExit });
-  const changeLocale = useChangeRecognitionLocale({
-    session,
-    ensureMicrophonePermission,
-    setLocale,
-  });
+  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
 
   useEffect(() => {
     isUnmountedRef.current = false;
@@ -138,6 +139,54 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     moveTranscriptToTitle();
     planRequest.forget();
     session.cancel();
+  };
+
+  /** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
+  const continueAsVoiceNote = () => {
+    if (me == null) {
+      session.finish();
+      return Promise.resolve();
+    }
+    return startVoiceNote({
+      onSubscribe: onExit,
+      getRecordHref: () => {
+        const { transcript, elapsedMs } = session.state;
+        const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
+          draftId: idGenerator.create(),
+          locale,
+          createdAt: getNowInstant(),
+          transcript,
+          durationMs: elapsedMs,
+        });
+        if (note.sentences.length > 0) {
+          voiceNoteDraftRepository.save(me.id, note);
+        }
+        session.handOff();
+        onExit();
+        return {
+          pathname: '/voice-notes/record',
+          params: {
+            draftId: note.sentences.length > 0 ? note.draftId : undefined,
+            entry: 'quick_voice_upgrade',
+          },
+        };
+      },
+    });
+  };
+
+  /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+  const changeLocale = (nextLocale: SpeechLocale) => {
+    const applyLocale = async () => {
+      if (await ensureMicrophonePermission('quick', nextLocale)) {
+        setLocale(nextLocale);
+        await session.changeLocale(nextLocale);
+      }
+    };
+
+    applyLocale().catch((error: unknown) => {
+      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: getErrorMessage(error) });
+      toast.error(t('listening.languageChangeFailed'));
+    });
   };
 
   return {
@@ -214,82 +263,5 @@ function useQuickPlanRequest({ aiConsent, onExit }: UseQuickPlanRequestOptions) 
     forget: () => {
       planRequestRef.current = null;
     },
-  };
-}
-
-interface UseContinueAsVoiceNoteOptions {
-  session: ReturnType<typeof useVoiceCaptureSession>;
-  locale: SpeechLocale;
-  onExit: () => void;
-}
-
-/** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
-function useContinueAsVoiceNote({ session, locale, onExit }: UseContinueAsVoiceNoteOptions) {
-  const idGenerator = useIdGenerator();
-  const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
-  const startVoiceNote = useStartVoiceNote();
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
-
-  return () => {
-    if (me == null) {
-      session.finish();
-      return Promise.resolve();
-    }
-    return startVoiceNote({
-      onSubscribe: onExit,
-      getRecordHref: () => {
-        const { transcript, elapsedMs } = session.state;
-        const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
-          draftId: idGenerator.create(),
-          locale,
-          createdAt: getNowInstant(),
-          transcript,
-          durationMs: elapsedMs,
-        });
-        if (note.sentences.length > 0) {
-          voiceNoteDraftRepository.save(me.id, note);
-        }
-        session.handOff();
-        onExit();
-        return {
-          pathname: '/voice-notes/record',
-          params: {
-            draftId: note.sentences.length > 0 ? note.draftId : undefined,
-            entry: 'quick_voice_upgrade',
-          },
-        };
-      },
-    });
-  };
-}
-
-interface UseChangeRecognitionLocaleOptions {
-  session: ReturnType<typeof useVoiceCaptureSession>;
-  ensureMicrophonePermission: ReturnType<typeof useEnsureMicrophonePermission>;
-  setLocale: (locale: SpeechLocale) => void;
-}
-
-/** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
-function useChangeRecognitionLocale({
-  session,
-  ensureMicrophonePermission,
-  setLocale,
-}: UseChangeRecognitionLocaleOptions) {
-  const { t } = useTranslation('voice');
-  const logger = useLogger();
-  const toast = useAppToast();
-
-  const applyLocale = async (nextLocale: SpeechLocale) => {
-    if (await ensureMicrophonePermission('quick', nextLocale)) {
-      setLocale(nextLocale);
-      await session.changeLocale(nextLocale);
-    }
-  };
-
-  return (nextLocale: SpeechLocale) => {
-    applyLocale(nextLocale).catch((error: unknown) => {
-      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: getErrorMessage(error) });
-      toast.error(t('listening.languageChangeFailed'));
-    });
   };
 }

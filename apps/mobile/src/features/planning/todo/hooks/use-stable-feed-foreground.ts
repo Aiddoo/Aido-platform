@@ -1,6 +1,6 @@
 import { useIncomingLink } from '@src/bootstrap/providers/di-context';
 import { useOverlayState } from '@src/shared/ui';
-import { useFocusEffect } from 'expo-router';
+import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
@@ -17,7 +17,7 @@ export function useStableFeedForeground({
 }): boolean {
   const incomingLink = useIncomingLink();
   const { hasActiveOverlay } = useOverlayState();
-  const [isFocused, setIsFocused] = useState(false);
+  const isFocused = useIsFocused();
   const [appState, setAppState] = useState<AppStateStatus | null>(
     AppState.currentState === 'active' ? 'active' : null,
   );
@@ -35,14 +35,6 @@ export function useStableFeedForeground({
     });
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      setIsFocused(true);
-
-      return () => setIsFocused(false);
-    }, []),
-  );
-
   useEffect(() => {
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       setAppState(nextState);
@@ -57,11 +49,11 @@ export function useStableFeedForeground({
   }, []);
 
   useEffect(() => {
-    let mounted = true;
+    let isMounted = true;
     incomingLink
       .getInitialUrl()
       .then((url) => {
-        if (mounted) {
+        if (isMounted) {
           setHasPendingDeepLink(url != null);
           if (url != null) {
             releasePendingDeepLinkWhenIdle();
@@ -69,7 +61,7 @@ export function useStableFeedForeground({
         }
       })
       .catch(() => {
-        if (mounted) {
+        if (isMounted) {
           setHasPendingDeepLink(true);
           releasePendingDeepLinkWhenIdle();
         }
@@ -81,7 +73,7 @@ export function useStableFeedForeground({
     });
 
     return () => {
-      mounted = false;
+      isMounted = false;
       if (deepLinkReleaseTaskRef.current != null) {
         cancelIdleCallback(deepLinkReleaseTaskRef.current);
       }

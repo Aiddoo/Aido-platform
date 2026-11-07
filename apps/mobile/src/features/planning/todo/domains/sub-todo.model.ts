@@ -21,7 +21,7 @@ function calculateSubTodoStats(subTodos: readonly SubTodo[]): SubTodoStats {
   };
 }
 
-function toggleSubTodo(
+function setSubTodoCompleted(
   subTodos: readonly SubTodo[],
   subTodoId: number,
   completed: boolean,
@@ -47,12 +47,12 @@ function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boolean {
   return !isMaxSubTodosReached(parentTodo.subTodoStats);
 }
 
-function withSubTodoToggled<T extends SubTodoParent>(
+function withSubTodoCompleted<T extends SubTodoParent>(
   parent: T,
   subTodoId: number,
   completed: boolean,
 ): T {
-  return withSubTodos(parent, toggleSubTodo(parent.subTodos, subTodoId, completed));
+  return withSubTodos(parent, setSubTodoCompleted(parent.subTodos, subTodoId, completed));
 }
 
 /** 서버와 같은 규칙이다. 끝낸 일에 항목을 더하면 남은 일이 생겨 완료가 풀린다 */
@@ -129,7 +129,7 @@ export const SubTodoPolicy = {
   canAddSubTodo,
   isOptimisticSubTodo,
   hasTitleChanged,
-  withSubTodoToggled,
+  withSubTodoCompleted,
   withSubTodoAdded,
   withSubTodoRemoved,
   withSubTodoRenamed,

@@ -13,7 +13,7 @@ import { type DailyCompletionSummary } from '../schemas/todo.schema';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
 export function shouldPersistTodosByDate({ date, todayKey }: { date: string; todayKey: string }) {
-  return date >= addDaysToDateKey(todayKey, -1) && date <= addDaysToDateKey(todayKey, 1);
+  return addDaysToDateKey(todayKey, -1) <= date && date <= addDaysToDateKey(todayKey, 1);
 }
 
 export function useGetTodosByDateQueryOptions({ date }: { date: string }) {

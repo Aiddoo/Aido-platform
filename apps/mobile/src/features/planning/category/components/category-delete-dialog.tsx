@@ -58,7 +58,7 @@ export function CategoryDeleteDialog({
     });
   };
 
-  if (TodoCategoryPolicy.requiresTodoMove(category)) {
+  if (TodoCategoryPolicy.isTodoMoveRequired(category)) {
     return (
       <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
         <Dialog.Portal {...portalTarget}>
@@ -72,7 +72,7 @@ export function CategoryDeleteDialog({
               otherCategories={otherCategories}
               onCancel={() => onOpenChange(false)}
               onDelete={handleDelete}
-              isPending={deleteMutation.isPending}
+              isLoading={deleteMutation.isPending}
             />
           </Dialog.Content>
         </Dialog.Portal>
@@ -114,7 +114,7 @@ interface CategoryMoveDeleteFormProps {
   otherCategories: TodoCategoryWithCount[];
   onCancel: () => void;
   onDelete: (moveToCategoryId: number | null) => void;
-  isPending: boolean;
+  isLoading: boolean;
 }
 
 function CategoryMoveDeleteForm({
@@ -122,7 +122,7 @@ function CategoryMoveDeleteForm({
   otherCategories,
   onCancel,
   onDelete,
-  isPending,
+  isLoading,
 }: CategoryMoveDeleteFormProps) {
   const { t } = useTranslation('todo');
   const [selectedValue, setSelectedValue] = useState(String(otherCategories[0]?.id));
@@ -156,7 +156,7 @@ function CategoryMoveDeleteForm({
       <DialogActions
         onCancel={onCancel}
         onDelete={() => onDelete(selectedCategory?.id ?? null)}
-        isPending={isPending}
+        isLoading={isLoading}
       />
     </>
   );
@@ -165,10 +165,10 @@ function CategoryMoveDeleteForm({
 interface DialogActionsProps {
   onCancel: () => void;
   onDelete: () => void;
-  isPending: boolean;
+  isLoading: boolean;
 }
 
-function DialogActions({ onCancel, onDelete, isPending }: DialogActionsProps) {
+function DialogActions({ onCancel, onDelete, isLoading }: DialogActionsProps) {
   const { t } = useTranslation('common');
 
   return (
@@ -181,7 +181,7 @@ function DialogActions({ onCancel, onDelete, isPending }: DialogActionsProps) {
         size="medium"
         display="inline"
         onPress={onDelete}
-        isLoading={isPending}
+        isLoading={isLoading}
       >
         {t('actions.delete')}
       </Button>

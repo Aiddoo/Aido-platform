@@ -221,7 +221,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                 }
               />
             }
-            top={<TodoLabel isChecked={subTodo.completed}>{subTodo.title}</TodoLabel>}
+            top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
           />
         ))}
       </VStack>

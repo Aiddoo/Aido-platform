@@ -11,7 +11,7 @@ import { invalidateWeeklyAchievements } from '@src/features/insights/achievement
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
 import { toDate } from '@src/shared/date/instant';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -40,7 +40,7 @@ import {
   invalidateWidgetSummary,
   settleTodoListWrite,
 } from './todo-cache';
-import { useTodoSeriesFailureHandler } from './todo-series.mutations';
+import { useNotifyIfSeriesFailure } from './todo-series.mutations';
 
 interface ToggleTodoMutationParams {
   todoId: number;
@@ -91,7 +91,7 @@ export function useToggleTodoMutationOptions() {
       recordActiveDay();
       // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
       const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];
-      if (TodoPolicy.completesAllTodos(todayTodos, variables.todoId)) {
+      if (TodoPolicy.isLastOpenTodo(todayTodos, variables.todoId)) {
         requestReviewAt('all_todos_done');
       }
     },
@@ -124,8 +124,8 @@ export function useChangeTodoCategoryMutationOptions() {
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.changeFailedRetry'));
-  const handleSeriesFailure = useTodoSeriesFailureHandler();
+  const haptics = useHaptics();
+  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -142,11 +142,14 @@ export function useChangeTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      if (handleSeriesFailure(error)) {
+      if (notifyIfSeriesFailure(error)) {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.changeFailedRetry'),
+      });
     },
   });
 }
@@ -163,8 +166,8 @@ export function useDeleteTodoMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.deleteFailedRetry'));
-  const handleSeriesFailure = useTodoSeriesFailureHandler();
+  const haptics = useHaptics();
+  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
@@ -194,11 +197,14 @@ export function useDeleteTodoMutationOptions() {
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
 
-      if (handleSeriesFailure(error)) {
+      if (notifyIfSeriesFailure(error)) {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.deleteFailedRetry'),
+      });
     },
     onSettled: () => {
       invalidateTodoCategories(queryClient);
@@ -254,8 +260,8 @@ export function useUpdateTodoScheduleMutationOptions() {
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('todo:toast.updateFailedRetry'));
-  const handleSeriesFailure = useTodoSeriesFailureHandler();
+  const haptics = useHaptics();
+  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -273,11 +279,14 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
     },
     onError: (error) => {
-      if (handleSeriesFailure(error)) {
+      if (notifyIfSeriesFailure(error)) {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.updateFailedRetry'),
+      });
     },
   });
 }

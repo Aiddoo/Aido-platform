@@ -1,6 +1,6 @@
-import { parseCalendarViewMode } from './calendar-view-mode.schema';
+import { toCalendarViewMode } from './calendar-view-mode.schema';
 
-describe('parseCalendarViewMode', () => {
+describe('toCalendarViewMode', () => {
   it.each([
     { saved: undefined, expected: 'week' },
     { saved: 'week', expected: 'week' },
@@ -11,7 +11,7 @@ describe('parseCalendarViewMode', () => {
     const stored = saved;
 
     // When
-    const result = parseCalendarViewMode(stored);
+    const result = toCalendarViewMode(stored);
 
     // Then
     expect(result).toBe(expected);

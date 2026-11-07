@@ -1,3 +1,4 @@
+import { FlashList } from '@shopify/flash-list';
 import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -20,7 +21,6 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
-import { FlatList } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { useResolveClassNames } from 'uniwind';
@@ -37,11 +37,12 @@ export function CategoryList() {
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
-    <FlatList
+    <FlashList
       data={data.categories}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <CategoryList.EditItem category={item} />}
-      style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
+      style={{ ...containerBgStyle, borderRadius: 16 }}
+      contentContainerStyle={{ padding: 8 }}
     />
   );
 }

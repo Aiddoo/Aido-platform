@@ -35,6 +35,8 @@ import type { Memo } from '../schemas/memo.schema';
 
 const LOADING_ITEMS_PER_COLUMN = 2;
 const MAX_ENTERING_STAGGER_STEP = 8;
+const ENTERING_STAGGER_MS = 40;
+const ENTERING_DURATION_MS = 400;
 
 /** 펼친 화면에서는 목록 pane이 좁아 한 열로 보여준다. */
 function getColumnCount(windowSizeClass: WindowSizeClass) {
@@ -84,9 +86,10 @@ export function MemoList() {
                     key={memo.id}
                     layout={LinearTransition.springify().damping(18).stiffness(120)}
                     entering={FadeInDown.delay(
-                      clamp(rowIndex * 2 + columnIndex, MAX_ENTERING_STAGGER_STEP) * 40,
+                      clamp(rowIndex * 2 + columnIndex, MAX_ENTERING_STAGGER_STEP) *
+                        ENTERING_STAGGER_MS,
                     )
-                      .duration(400)
+                      .duration(ENTERING_DURATION_MS)
                       .damping(15)}
                   >
                     <MemoList.Item memo={memo} />

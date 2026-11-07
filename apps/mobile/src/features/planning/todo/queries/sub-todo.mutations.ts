@@ -1,8 +1,9 @@
 import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
@@ -39,7 +40,7 @@ export function useToggleSubTodoMutationOptions() {
     onMutate: async ({ todoId, subTodoId, isCompleted, date }) => {
       await cancelTodoQueries(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoToggled(todo, subTodoId, isCompleted),
+        SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, isCompleted),
       );
     },
     onSuccess: (_data, { todoId, subTodoId, isCompleted }) => {
@@ -52,7 +53,7 @@ export function useToggleSubTodoMutationOptions() {
     onError: (_error, { todoId, subTodoId, isCompleted, date }) => {
       haptics.notify('error');
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoToggled(todo, subTodoId, !isCompleted),
+        SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, !isCompleted),
       );
     },
     onSettled: () => {
@@ -72,7 +73,8 @@ export function useDeleteSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('todo:toast.subTodoDeleteFailed'));
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
@@ -94,7 +96,10 @@ export function useDeleteSubTodoMutationOptions() {
       trackEvent('todo_item_deleted', { todo_id: todoId, item_id: subTodoId });
     },
     onError: (error, { todoId, date }, context) => {
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('todo:toast.subTodoDeleteFailed'),
+      });
       if (context?.removed != null) {
         const { removed, index } = context;
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>

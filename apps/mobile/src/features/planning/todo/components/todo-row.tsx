@@ -12,6 +12,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { tv } from '@src/shared/utils/tv';
+import { isNotNil } from 'es-toolkit';
 import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
@@ -125,17 +126,17 @@ interface TodoLabelProps extends Omit<
   ComponentProps<typeof Text>,
   'size' | 'weight' | 'strikethrough' | 'shade' | 'children'
 > {
-  isChecked: boolean;
+  isCompleted: boolean;
   children: string;
 }
 
-export function TodoLabel({ isChecked, children, ...props }: TodoLabelProps) {
+export function TodoLabel({ isCompleted, children, ...props }: TodoLabelProps) {
   return (
     <Text
       size="b3"
       weight="medium"
-      strikethrough={isChecked}
-      shade={isChecked ? 5 : undefined}
+      strikethrough={isCompleted}
+      shade={isCompleted ? 5 : undefined}
       lineBreakStrategyIOS="hangul-word"
       {...props}
     >
@@ -183,9 +184,7 @@ export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
       : t('repeat.spokenRule', {
           rule: formatRepeatCadence(repeat, { weekdaySeparator: SPOKEN_WEEKDAY_SEPARATOR }),
         });
-  const spokenLabel = [timeLabel, isRepeating ? spokenRule : null]
-    .filter((part) => part != null)
-    .join(', ');
+  const spokenLabel = [timeLabel, isRepeating ? spokenRule : null].filter(isNotNil).join(', ');
 
   return (
     <HStack gap={4} align="center" className="flex-wrap" accessibilityLabel={spokenLabel}>

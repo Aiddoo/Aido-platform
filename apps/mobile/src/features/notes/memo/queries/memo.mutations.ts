@@ -28,7 +28,6 @@ import {
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
@@ -47,14 +46,18 @@ export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
     mutationFn: async (values: MemoFormValues) => unwrap(await memoService.createMemo(values)),
     onSuccess: () => trackEvent('memo_created'),
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
+    },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
     onSettled: () => {
       invalidateMemos(queryClient);
@@ -66,7 +69,8 @@ export function useUpdateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
@@ -83,7 +87,10 @@ export function useUpdateMemoMutationOptions() {
       replaceMemoInList(queryClient, memo);
       trackEvent('memo_updated', { memo_id: memoId });
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
+    },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
     onSettled: (_memo, _error, { memoId }) => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
@@ -92,23 +99,26 @@ export function useUpdateMemoMutationOptions() {
   });
 }
 
-export function useToggleMemoPinMutationOptions() {
+export function useSetMemoPinnedMutationOptions() {
   const memoService = useMemoService();
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+  const toast = useAppToast();
 
   return mutationOptions({
     onMutate: () => haptics.impact('light'),
     mutationFn: async ({ memoId, isPinned }: { memoId: number; isPinned: boolean }) =>
-      unwrap(await memoService.togglePin(memoId, isPinned)),
+      unwrap(await memoService.setPinned(memoId, isPinned)),
     onSuccess: async (memo, { memoId, isPinned }) => {
       await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
       queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
+    },
     onSettled: () => invalidateMemos(queryClient),
   });
 }
@@ -118,7 +128,7 @@ export function useDeleteMemoMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
@@ -128,7 +138,10 @@ export function useDeleteMemoMutationOptions() {
       toast.success(t('memo:toasts.deleted'));
       trackEvent('memo_deleted', { memo_id: memoId });
     },
-    onError: (error) => showFailure(error, t('memo:toasts.deleteRetry')),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.deleteRetry') });
+    },
     // 기다리면 지운 메모의 404 재조회가 먼저 끝나 다이얼로그가 닫히기 전에 경계로 내려갈 수 있다
     onSettled: () => {
       invalidateMemos(queryClient);
@@ -142,7 +155,7 @@ export function useConvertMemoToTodosMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
@@ -161,7 +174,10 @@ export function useConvertMemoToTodosMutationOptions() {
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });

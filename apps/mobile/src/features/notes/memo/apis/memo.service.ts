@@ -97,12 +97,12 @@ export class MemoService {
       '[MemoService] Invalid updateMemo response',
     );
 
-  togglePin = async (memoId: number, isPinned: boolean) =>
+  setPinned = async (memoId: number, isPinned: boolean) =>
     parseApiResponse(
       await this.#httpClient.patch(`v1/memos/${memoId}/pin`, { isPinned }),
       memoMutationResponseSchema,
       ({ memo }) => toMemo(memo),
-      '[MemoService] Invalid togglePin response',
+      '[MemoService] Invalid setPinned response',
     );
 
   deleteMemo = async (memoId: number) =>

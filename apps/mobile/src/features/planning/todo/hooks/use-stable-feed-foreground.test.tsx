@@ -2,8 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createIncomingLinkGatewayStub, createTestDi } from '@src/shared/__tests__';
 import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { useFocusEffect } from 'expo-router';
-import type { EffectCallback, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
@@ -11,7 +10,6 @@ import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 let mockHasActiveOverlay = false;
 let mockIsKeyboardVisible = false;
-let focusEffect: EffectCallback | undefined;
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
 let deepLinkListener: (() => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
@@ -46,10 +44,6 @@ describe('useStableFeedForeground', () => {
   beforeEach(() => {
     mockHasActiveOverlay = false;
     mockIsKeyboardVisible = false;
-    focusEffect = undefined;
-    jest.mocked(useFocusEffect).mockImplementation((effect: EffectCallback) => {
-      focusEffect = effect;
-    });
     deepLinkListener = undefined;
     idleCallbacks = [];
     Object.defineProperty(AppState, 'currentState', {
@@ -87,7 +81,6 @@ describe('useStableFeedForeground', () => {
 
     // When
     await act(async () => {
-      focusEffect?.();
       await Promise.resolve();
     });
 
@@ -104,7 +97,6 @@ describe('useStableFeedForeground', () => {
     // Given
     const { result } = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
-      focusEffect?.();
       await Promise.resolve();
     });
     expect(result.current).toBe(true);
@@ -143,7 +135,6 @@ describe('useStableFeedForeground', () => {
     mockHasActiveOverlay = true;
     const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
-      focusEffect?.();
       await Promise.resolve();
     });
 
@@ -163,7 +154,6 @@ describe('useStableFeedForeground', () => {
     mockIsKeyboardVisible = true;
     const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
-      focusEffect?.();
       await Promise.resolve();
     });
 
@@ -185,7 +175,6 @@ describe('useStableFeedForeground', () => {
       { initialProps: { hasPendingNavigation: true }, wrapper: OverlayStateWrapper },
     );
     await act(async () => {
-      focusEffect?.();
       await Promise.resolve();
     });
 

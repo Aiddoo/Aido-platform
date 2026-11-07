@@ -3,13 +3,13 @@ import { toInstant } from '@src/shared/date/instant';
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { TodoPolicy } from './todo.model';
 
-describe('completesAllTodos', () => {
+describe('isLastOpenTodo', () => {
   it('할 일이 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다', () => {
     // Given
     const todos = [createParentTodo({ id: 1, completed: true })];
 
     // When
-    const result = TodoPolicy.completesAllTodos(todos, 1);
+    const result = TodoPolicy.isLastOpenTodo(todos, 1);
 
     // Then
     expect(result).toBe(true);
@@ -27,8 +27,8 @@ describe('completesAllTodos', () => {
     const oneMoreOpen = [...lastOpen, createParentTodo({ id: 2, completed: false })];
 
     // When
-    const lastOpenResult = TodoPolicy.completesAllTodos(lastOpen, 7);
-    const oneMoreOpenResult = TodoPolicy.completesAllTodos(oneMoreOpen, 7);
+    const lastOpenResult = TodoPolicy.isLastOpenTodo(lastOpen, 7);
+    const oneMoreOpenResult = TodoPolicy.isLastOpenTodo(oneMoreOpen, 7);
 
     // Then
     // 낙관적 갱신은 시작일 목록에만 반영돼 오늘 목록에는 아직 미완료다
@@ -41,8 +41,8 @@ describe('completesAllTodos', () => {
     const todos = [createParentTodo({ id: 1, completed: true })];
 
     // When
-    const notInList = TodoPolicy.completesAllTodos(todos, 9);
-    const emptyDay = TodoPolicy.completesAllTodos([], 1);
+    const notInList = TodoPolicy.isLastOpenTodo(todos, 9);
+    const emptyDay = TodoPolicy.isLastOpenTodo([], 1);
 
     // Then
     expect(notInList).toBe(false);

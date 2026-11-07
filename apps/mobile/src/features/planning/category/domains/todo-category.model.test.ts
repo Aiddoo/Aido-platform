@@ -70,7 +70,7 @@ describe('hasChanges', () => {
   });
 });
 
-describe('requiresTodoMove', () => {
+describe('isTodoMoveRequired', () => {
   it.each([
     { title: '할 일이 남은 카테고리는 할 일을 옮겨야 지울 수 있다', todoCount: 1, expected: true },
     { title: '할 일이 없는 카테고리는 바로 지울 수 있다', todoCount: 0, expected: false },
@@ -79,7 +79,7 @@ describe('requiresTodoMove', () => {
     const category = { todoCount };
 
     // When
-    const result = TodoCategoryPolicy.requiresTodoMove(category);
+    const result = TodoCategoryPolicy.isTodoMoveRequired(category);
 
     // Then
     expect(result).toBe(expected);

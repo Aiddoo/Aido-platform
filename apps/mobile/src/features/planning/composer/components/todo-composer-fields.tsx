@@ -7,7 +7,7 @@ import { TodoTimePickerContent } from '@src/features/planning/todo/components/to
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
-import { parseInstantOrNull } from '@src/features/planning/todo/utils/parse-instant-or-null';
+import { parseInstant } from '@src/features/planning/todo/utils/parse-instant';
 import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -195,7 +195,7 @@ function DateChip({
       toDateKey(nextStartDate, dateFormatContext.timeZone),
     );
     setValue('startDate', fromDate(nextStartDate));
-    setValue('endDate', parseInstantOrNull(nextEndDate));
+    setValue('endDate', parseInstant(nextEndDate));
   };
 
   const handlePress = () => {
