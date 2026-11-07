@@ -7,13 +7,15 @@ import type { PushNotificationGateway } from '@src/core/ports/push-notification-
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { isEqual, noop } from 'es-toolkit';
+import { isEqual, noop, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import type { PushDevice, PushPermission } from '../schemas/push-permission.schema';
 import type { DeviceIdService } from './device-id.service';
 import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
+
+const REPORT_WAIT_TIMEOUT_MS = 3_000;
 
 interface ReportedPushDevice {
   deviceId: string;
@@ -39,7 +41,8 @@ export class PushDeviceService {
   readonly #getTimeZone: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
   #lastReported: ReportedPushDevice | null = null;
-  #reportInFlight: Promise<unknown> | null = null;
+  readonly #reportsInFlight = new Set<Promise<unknown>>();
+  #unregisterCount = 0;
 
   constructor({
     gateway,
@@ -89,11 +92,9 @@ export class PushDeviceService {
    */
   report = (options: { force?: boolean } = {}): Promise<Result<PushDevice | null, ApiError>> => {
     const reporting = this.#report(options);
-    this.#reportInFlight = reporting;
+    this.#reportsInFlight.add(reporting);
     return reporting.finally(() => {
-      if (this.#reportInFlight === reporting) {
-        this.#reportInFlight = null;
-      }
+      this.#reportsInFlight.delete(reporting);
     });
   };
 
@@ -103,6 +104,7 @@ export class PushDeviceService {
     force?: boolean;
   }): Promise<Result<PushDevice | null, ApiError>> => {
     const epoch = this.#sessionEpoch.current();
+    const unregisterCount = this.#unregisterCount;
     const permission = await this.getPermission();
     const token = PushPermissionPolicy.canDeliverPush(permission) ? await this.#issueToken() : null;
     const deviceId = await this.#deviceIdService.get();
@@ -125,7 +127,7 @@ export class PushDeviceService {
     }
 
     // 읽는 사이 로그아웃했다면 끝난 세션의 기기를 다시 등록하지 않는다
-    if (this.#sessionEpoch.current() !== epoch) {
+    if (this.#sessionEpoch.current() !== epoch || this.#unregisterCount !== unregisterCount) {
       return ok(null);
     }
 
@@ -151,8 +153,13 @@ export class PushDeviceService {
 
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     const epoch = this.#sessionEpoch.current();
-    // 보고가 해제보다 늦게 도착하면 로그아웃한 기기로 푸시가 다시 간다. 진행 중인 보고를 먼저 끝낸다
-    await this.#reportInFlight?.catch(noop);
+    this.#unregisterCount += 1;
+    // 보고가 해제보다 늦게 도착하면 로그아웃한 기기로 푸시가 다시 간다. 진행 중인 보고를 먼저 끝낸다.
+    // 토큰 발급이 느려도 로그아웃을 붙잡지 않게 기다리는 시간은 요청 제한과 같게 둔다
+    await withTimeout(
+      () => Promise.allSettled(this.#reportsInFlight),
+      config?.timeout ?? REPORT_WAIT_TIMEOUT_MS,
+    ).catch(noop);
     const deviceId = await this.#deviceIdService.get();
     // 기다리는 사이 세션이 끝나고 다시 로그인했다면 같은 기기의 등록은 새 세션의 것이라 지우지 않는다
     if (this.#sessionEpoch.current() !== epoch) {

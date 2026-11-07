@@ -313,7 +313,7 @@ describe('PushDeviceService.unregister', () => {
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('권한과 토큰을 읽는 중에 해제하면 읽기가 끝난 뒤에 해제해 늦은 보고가 기기를 다시 등록하지 않는다', async () => {
+  it('권한과 토큰을 읽는 중에 해제하면 늦은 보고를 보내지 않아 기기를 다시 등록하지 않는다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
     let resolveToken: ((token: string) => void) | undefined;
@@ -336,9 +336,53 @@ describe('PushDeviceService.unregister', () => {
     await Promise.all([reporting, unregistering]);
 
     // Then
-    expect(httpClient.put.mock.invocationCallOrder[0]).toBeLessThan(
-      httpClient.delete.mock.invocationCallOrder[0] ?? 0,
+    expect(httpClient.put).not.toHaveBeenCalled();
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('토큰 발급이 끝나지 않아도 제한 시간 뒤에 해제해 로그아웃을 붙잡지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    gateway.getToken.mockImplementationOnce(() => new Promise(() => {}));
+    const { service, httpClient } = setup(gateway);
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    service.report();
+
+    // When
+    const result = await service.unregister({ timeout: 10 });
+
+    // Then
+    expect(result.ok).toBe(true);
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('겹친 보고 중 먼저 시작한 보고가 남아 있으면 그 보고까지 기다린 뒤 해제한다', async () => {
+    // Given
+    const { service, httpClient } = setup();
+    let resolveFirstPut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.put.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstPut = resolve;
+        }),
     );
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const firstReport = service.report();
+    while (resolveFirstPut == null) {
+      await Promise.resolve();
+    }
+    await service.report({ force: true });
+
+    // When
+    const unregistering = service.unregister();
+    await Promise.resolve();
+    const deletedBeforeFirstSettled = httpClient.delete.mock.calls.length > 0;
+    resolveFirstPut({ ok: true, value: createPushDeviceResponseDto() });
+    await Promise.all([firstReport, unregistering]);
+
+    // Then
+    expect(deletedBeforeFirstSettled).toBe(false);
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
   });
 
   it('권한과 토큰을 읽는 중에 세션이 끝나면 보고를 보내지 않는다', async () => {
