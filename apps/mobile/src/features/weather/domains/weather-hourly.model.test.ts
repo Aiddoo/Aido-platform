@@ -1,23 +1,11 @@
-import type { WeatherHourlyForecast } from '@aido/api';
-import { fromEpochMs, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
-import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
+import { createHourlyForecasts, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherHourlyPolicy } from './weather-hourly.model';
 
-const HOUR_MS = 60 * 60_000;
 /** 서울 오후 3시 26분 */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
-const START = '2026-11-02T06:00:00.000Z';
-
-function createHours(rows: readonly Partial<WeatherHourlyForecast>[]) {
-  return rows.map((row, index) =>
-    createHourlyForecastDto({
-      startsAt: fromEpochMs(Date.parse(START) + index * HOUR_MS),
-      ...row,
-    }),
-  );
-}
 
 const DRY_CLOUDY = { condition: 'CLOUDY', precipitationChance: 10 } as const;
 const RAIN = { condition: 'RAIN', precipitationChance: 80, precipitationType: 'RAIN' } as const;
@@ -26,7 +14,7 @@ describe('summarizeHourly', () => {
   it('지금 비가 오면 처음 그치는 시간을 그침 시각으로 반환한다', () => {
     // Given
     // 지금부터 2시간 비, 그 뒤 갬
-    const report = createWeatherReport({ hourly: createHours([RAIN, RAIN, DRY_CLOUDY]) });
+    const report = createWeatherReport({ hourly: createHourlyForecasts([RAIN, RAIN, DRY_CLOUDY]) });
 
     // When
     const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
@@ -45,7 +33,7 @@ describe('summarizeHourly', () => {
     // Given
     // 지금 4.5mm/h 비가 오고 시간별 확률은 47%다
     const base = createWeatherReport({
-      hourly: createHours([{ ...DRY_CLOUDY, precipitationChance: 47 }, DRY_CLOUDY]),
+      hourly: createHourlyForecasts([{ ...DRY_CLOUDY, precipitationChance: 47 }, DRY_CLOUDY]),
     });
     const report = {
       ...base,
@@ -65,7 +53,7 @@ describe('summarizeHourly', () => {
 
   it('비가 하루 안에 그치지 않으면 그침 시각 없이 반환한다', () => {
     // Given
-    const report = createWeatherReport({ hourly: createHours([RAIN, RAIN]) });
+    const report = createWeatherReport({ hourly: createHourlyForecasts([RAIN, RAIN]) });
 
     // When
     const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
@@ -78,7 +66,7 @@ describe('summarizeHourly', () => {
     // Given
     // 오늘 밤까지 흐리고 다음 날 새벽에 비가 온다
     const report = createWeatherReport({
-      hourly: createHours([...range(10).map(() => DRY_CLOUDY), RAIN]),
+      hourly: createHourlyForecasts([...range(10).map(() => DRY_CLOUDY), RAIN]),
     });
 
     // When
@@ -98,7 +86,7 @@ describe('summarizeHourly', () => {
     // Given
     // 상태는 비지만 확률은 30%다
     const report = createWeatherReport({
-      hourly: createHours([DRY_CLOUDY, { condition: 'RAIN', precipitationChance: 30 }]),
+      hourly: createHourlyForecasts([DRY_CLOUDY, { condition: 'RAIN', precipitationChance: 30 }]),
     });
 
     // When
@@ -113,7 +101,7 @@ describe('summarizeHourly', () => {
     // 맑다가 한 시간 구름, 다시 맑다가 흐림이 이어진다
     const clear = { condition: 'CLEAR', precipitationChance: 0 } as const;
     const report = createWeatherReport({
-      hourly: createHours([clear, DRY_CLOUDY, clear, DRY_CLOUDY, DRY_CLOUDY]),
+      hourly: createHourlyForecasts([clear, DRY_CLOUDY, clear, DRY_CLOUDY, DRY_CLOUDY]),
     });
 
     // When
@@ -133,7 +121,7 @@ describe('summarizeHourly', () => {
     // Given
     // 낮 동안 12, 16, 13도이고 밤 20도는 낮이 아니라 제외된다
     const report = createWeatherReport({
-      hourly: createHours([
+      hourly: createHourlyForecasts([
         { ...DRY_CLOUDY, temperature: 12 },
         { ...DRY_CLOUDY, temperature: 16 },
         { ...DRY_CLOUDY, temperature: 13 },
@@ -157,7 +145,7 @@ describe('summarizeHourly', () => {
     // Given
     // 밤 동안 8.0도에서 7.4도로 내려 1도 미만 차이다
     const report = createWeatherReport({
-      hourly: createHours([
+      hourly: createHourlyForecasts([
         { ...DRY_CLOUDY, temperature: 8, isDaylight: false },
         { ...DRY_CLOUDY, temperature: 7.4, isDaylight: false },
       ]),
@@ -172,7 +160,7 @@ describe('summarizeHourly', () => {
 
   it('남은 시간별 예보가 없으면 null을 반환한다', () => {
     // Given
-    const report = createWeatherReport({ hourly: createHours([DRY_CLOUDY]) });
+    const report = createWeatherReport({ hourly: createHourlyForecasts([DRY_CLOUDY]) });
     const lateNow = toInstant('2026-11-02T08:00:00.000Z');
 
     // When

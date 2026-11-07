@@ -1,21 +1,10 @@
-import { fromEpochMs, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
 
-import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
+import { createHourlyForecasts, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { toHourlyTimeline } from './hourly-timeline.view-model';
 
-const HOUR_MS = 60 * 60_000;
 /** 서울 오후 3시 26분 */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
-const START = '2026-11-02T06:00:00.000Z';
-
-function createHours(rows: readonly { condition: 'CLOUDY'; precipitationChance: number }[]) {
-  return rows.map((row, index) =>
-    createHourlyForecastDto({
-      startsAt: fromEpochMs(Date.parse(START) + index * HOUR_MS),
-      ...row,
-    }),
-  );
-}
 
 const DRY_CLOUDY = { condition: 'CLOUDY', precipitationChance: 10 } as const;
 
@@ -23,7 +12,7 @@ describe('toHourlyTimeline', () => {
   it('범위 안의 일몰을 시각 순서로 끼워 넣고 지난 일출은 뺀다', () => {
     // Given 오후 3~6시 예보와 오후 5시 28분 일몰 When 타임라인을 만들면 Then 5시 칸 뒤에 일몰이 온다
     const report = createWeatherReport({
-      hourly: createHours([DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY]),
+      hourly: createHourlyForecasts([DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY]),
     });
 
     const kinds = toHourlyTimeline(report, NOW).map((item) =>
@@ -36,7 +25,7 @@ describe('toHourlyTimeline', () => {
   it('일몰이 정각과 같은 시각이면 시간 칸이 일몰보다 먼저 온다', () => {
     // Given 오후 5시 정각 일몰
     const base = createWeatherReport({
-      hourly: createHours([DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY]),
+      hourly: createHourlyForecasts([DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY, DRY_CLOUDY]),
     });
     const report = {
       ...base,

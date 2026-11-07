@@ -1,6 +1,8 @@
 import type { WeatherHourlyForecast, WeatherReportResponse } from '@aido/api';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { toWeatherReport } from '../apis/weather.mapper';
+import type { BriefingTodo } from '../domains/weather-briefing.model';
 import type { WeatherReport } from '../schemas/weather-report.schema';
 
 const HOUR_MS = 60 * 60_000;
@@ -183,4 +185,29 @@ export function createHanoiReportDto(): WeatherReportResponse {
     airQuality: null,
     alerts: [],
   });
+}
+
+/** 06:00Z부터 1시간 간격 예보. 각 항목이 그 시간의 값을 덮어쓴다. */
+export function createHourlyForecasts(rows: readonly Partial<WeatherHourlyForecast>[]) {
+  return rows.map((row, index) =>
+    createHourlyForecastDto({
+      startsAt: fromEpochMs(Date.parse('2026-11-02T06:00:00.000Z') + index * HOUR_MS),
+      ...row,
+    }),
+  );
+}
+
+export function createWeatherReportWithHours(rows: readonly Partial<WeatherHourlyForecast>[]) {
+  return createWeatherReport({ hourly: createHourlyForecasts(rows) });
+}
+
+export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
+  return {
+    id: 1,
+    title: '산책',
+    scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
+    completed: false,
+    subTodoProgress: null,
+    ...overrides,
+  };
 }

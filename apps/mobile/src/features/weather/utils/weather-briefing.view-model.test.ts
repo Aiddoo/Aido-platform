@@ -1,6 +1,10 @@
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 
-import { createHourlySeries, createWeatherReport } from '../__tests__/weather-report.fixtures';
+import {
+  createBriefingTodo,
+  createHourlySeries,
+  createWeatherReport,
+} from '../__tests__/weather-report.fixtures';
 import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import {
   type BriefingViewDeps,
@@ -24,17 +28,6 @@ const DEPS: BriefingViewDeps = {
   formatDegrees: (celsius) => `${celsius}°`,
   formatChance: (percent) => `${percent}%`,
 };
-
-function createTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
-  return {
-    id: 1,
-    title: '산책',
-    scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
-    completed: false,
-    subTodoProgress: null,
-    ...overrides,
-  };
-}
 
 function viewFor(todos: BriefingTodo[]) {
   const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, todos, {
@@ -69,7 +62,7 @@ describe('toBriefingState', () => {
 describe('toBriefingView', () => {
   it('비와 겹치는 할 일 하나는 제목을 넣어 알리고, 마른 시각과 강수 확률을 행에 보인다', () => {
     // Given 16:30 산책(비 70%) When 화면 모델을 만들면 Then 제목 문구·마른 시각·옮기기 버튼이다
-    const view = viewFor([createTodo()]);
+    const view = viewFor([createBriefingTodo()]);
 
     expect(view.headline).toEqual({ key: 'briefing.rainyOne', values: { title: '산책' } });
     expect(view.rows[0]).toMatchObject({
@@ -83,7 +76,7 @@ describe('toBriefingView', () => {
 
   it('비와 겹친 할 일을 모두 끝냈으면 옮기기 버튼을 감춘다', () => {
     // Given 완료한 할 일 When 화면 모델을 만들면 Then 행은 남고 버튼은 없다
-    const view = viewFor([createTodo({ completed: true })]);
+    const view = viewFor([createBriefingTodo({ completed: true })]);
 
     expect(view.rows).toHaveLength(1);
     expect(view.action).toBeNull();

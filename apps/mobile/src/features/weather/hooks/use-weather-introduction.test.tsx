@@ -1,20 +1,12 @@
 import type { LocationGateway, LocationPermission } from '@src/core/ports/location-gateway';
 import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createLocationGatewayStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { createWeatherIntroductionRepository } from '../apis/weather-introduction.repository';
-import { WeatherLocationService } from '../apis/weather-location.service';
-import { WeatherService } from '../apis/weather.service';
 import { useWeatherIntroduction } from './use-weather-introduction';
 
 const NOT_ASKED: LocationPermission = { isGranted: false, canAskAgain: true };
@@ -42,32 +34,13 @@ function FeedScreen({ path, isStable }: { path: string; isStable: boolean }) {
 }
 
 async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {}) {
-  const gateway: jest.Mocked<LocationGateway> = {
-    getPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-    requestPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-    getCoordinates: jest.fn(),
-    getPlace: jest.fn(),
-    ...gatewayOverrides,
-  };
+  const gateway = Object.assign(createLocationGatewayStub(), gatewayOverrides);
   const introductionRepository = createWeatherIntroductionRepository(createMemorySyncStorage());
-  const weatherService = new WeatherService(createHttpClientStub());
-  const logger = createLoggerStub();
-  const errorReporter = createErrorReporterStub();
   const rendered = await renderUi(<FeedScreen path="/feed" isStable />, {
     di: {
       deviceLocation: gateway,
-      weatherService,
-      weatherLocationService: new WeatherLocationService({
-        gateway,
-        weatherService,
-        logger,
-        errorReporter,
-      }),
       weatherIntroductionRepository: introductionRepository,
       inviteService: createStubInviteService(),
-      logger,
-      analytics: createAnalyticsStub(),
-      errorReporter,
     },
   });
   return { gateway, introductionRepository, ...rendered };

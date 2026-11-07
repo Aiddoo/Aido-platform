@@ -1,12 +1,11 @@
-import type { WeatherHourlyForecast } from '@aido/api';
-import { fromEpochMs, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
 
 import {
-  createHourlyForecastDto,
+  createBriefingTodo,
   createHourlySeries,
   createWeatherReport,
+  createWeatherReportWithHours,
 } from '../__tests__/weather-report.fixtures';
-import type { BriefingTodo } from './weather-briefing.model';
 import { WeatherReschedulePolicy } from './weather-reschedule.model';
 
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
@@ -15,36 +14,12 @@ const { hourly } = createWeatherReport({
   hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),
 });
 
-/** 15시(06:00Z)부터 1시간 간격 예보. 각 항목이 그 시간의 값을 덮어쓴다. */
-function createReport(hours: readonly Partial<WeatherHourlyForecast>[]) {
-  const start = Date.parse('2026-11-02T06:00:00.000Z');
-  return createWeatherReport({
-    hourly: hours.map((hour, index) =>
-      createHourlyForecastDto({
-        startsAt: fromEpochMs(start + index * 60 * 60_000),
-        ...hour,
-      }),
-    ),
-  });
-}
-
-function createTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
-  return {
-    id: 1,
-    title: '산책',
-    scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
-    completed: false,
-    subTodoProgress: null,
-    ...overrides,
-  };
-}
-
 describe('getAffectedTodos', () => {
   it('비를 피할 때는 비 오는 시간에 걸린 미완료 할 일만 고른다', () => {
     // Given
     const todos = [
-      createTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
-      createTodo({ id: 2, scheduledAt: toInstant('2026-11-02T10:30:00.000Z') }),
+      createBriefingTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
+      createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T10:30:00.000Z') }),
     ];
 
     // When
@@ -60,7 +35,7 @@ describe('getAffectedTodos', () => {
   it('비와 겹친 할 일을 끝냈으면 옮길 할 일에서 뺀다', () => {
     // Given
     const todos = [
-      createTodo({
+      createBriefingTodo({
         id: 1,
         scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
         completed: true,
@@ -79,14 +54,14 @@ describe('getAffectedTodos', () => {
 
   it('더위를 피할 때는 체감 온도가 높은 낮 시간에 걸린 미완료 할 일만 고른다', () => {
     // Given
-    const hotHours = createReport([
+    const hotHours = createWeatherReportWithHours([
       { apparentTemperature: 28 },
       { apparentTemperature: 36 },
       { apparentTemperature: 28 },
     ]).hourly;
     const todos = [
-      createTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
-      createTodo({ id: 2, scheduledAt: toInstant('2026-11-02T08:30:00.000Z') }),
+      createBriefingTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
+      createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T08:30:00.000Z') }),
     ];
 
     // When
@@ -155,7 +130,7 @@ describe('getRescheduleOptions', () => {
 
   it('더위를 피할 때는 덥지 않은 같은 날 시간을 원래 시각과 가까운 순으로 고른다', () => {
     // Given
-    const hotHours = createReport([
+    const hotHours = createWeatherReportWithHours([
       { apparentTemperature: 34 },
       { apparentTemperature: 36 },
       { apparentTemperature: 36 },
