@@ -2,7 +2,7 @@ import { fromDate, type Instant, toDate } from '@src/shared/date/instant';
 
 import { TodoPolicy } from '../domains/todo.model';
 import type { Todo } from '../schemas/todo.schema';
-import { toNullableInstant } from './calendar-date';
+import { parseInstantOrNull } from './calendar-date';
 
 interface TodoScheduleValues {
   startDate: Instant;
@@ -17,7 +17,7 @@ export function toTodoScheduleValues(
 ): TodoScheduleValues {
   return {
     startDate: fromDate(toDate(todo.startDate)),
-    endDate: toNullableInstant(todo.endDate),
+    endDate: parseInstantOrNull(todo.endDate),
     scheduledTime: TodoPolicy.getLocalTime(todo, timeZone),
   };
 }

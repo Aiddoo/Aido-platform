@@ -31,7 +31,8 @@ export function getCalendarWeekBounds(date: Date, timeZone: string) {
   };
 }
 
-export function toNullableInstant(date?: Date | string | number | null): Instant | null {
+/** 달력 입력 값을 느슨하게 읽는다. 없거나 읽을 수 없으면 던지지 않고 null이다 */
+export function parseInstantOrNull(date?: Date | string | number | null): Instant | null {
   if (date == null) {
     return null;
   }
