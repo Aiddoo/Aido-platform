@@ -24,29 +24,27 @@ export default function ProfileScreen() {
   const { t } = useTranslation('settings');
 
   return (
-    <>
-      <SettingsScreenLayout>
-        <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-          <Suspense fallback={<AvatarButton.Loading />}>
-            <AvatarButton onPress={() => setIsImageSheetOpen(true)} />
-          </Suspense>
-        </QueryErrorBoundary>
+    <SettingsScreenLayout>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+        <Suspense fallback={<AvatarButton.Loading />}>
+          <AvatarButton onPress={() => setIsImageSheetOpen(true)} />
+          <ProfileImageBottomSheet isOpen={isImageSheetOpen} onOpenChange={setIsImageSheetOpen} />
+        </Suspense>
+      </QueryErrorBoundary>
 
-        <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-          <Suspense fallback={<AccountCard.Loading />}>
-            <AccountCard />
-          </Suspense>
-        </QueryErrorBoundary>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+        <Suspense fallback={<AccountCard.Loading />}>
+          <AccountCard />
+        </Suspense>
+      </QueryErrorBoundary>
 
-        <SettingsListGroup>
-          <SettingsListGroup.Item
-            label={t('titles.linkedAccounts')}
-            onPress={() => push('/settings/linked-accounts')}
-          />
-        </SettingsListGroup>
-      </SettingsScreenLayout>
-      <ProfileImageBottomSheet isOpen={isImageSheetOpen} onOpenChange={setIsImageSheetOpen} />
-    </>
+      <SettingsListGroup>
+        <SettingsListGroup.Item
+          label={t('titles.linkedAccounts')}
+          onPress={() => push('/settings/linked-accounts')}
+        />
+      </SettingsListGroup>
+    </SettingsScreenLayout>
   );
 }
 
