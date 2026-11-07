@@ -64,7 +64,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { MEMO_MUTATION_KEYS } from '../constants/memo-query-keys';
+import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
 import { useMemoParam, useSelectedMemo } from '../hooks/use-memo-params';

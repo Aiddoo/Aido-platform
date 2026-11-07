@@ -1,7 +1,7 @@
 import { createLocalFileSystemFake } from '@src/shared/__tests__';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
-import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { createVoiceRecordingRepository } from './voice-recording.repository';
 
 const NOW = toInstant('2026-12-05T00:00:00.000Z');
@@ -62,7 +62,7 @@ describe('VoiceRecordingRepository', () => {
 
     // Then
     expect(fileName).toBeNull();
-    expect(logger.warn).toHaveBeenCalledWith(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
+    expect(logger.warn).toHaveBeenCalledWith(VOICE_LOG_EVENT.RECORDING_SAVE_FAILED, {
       stage: 'move',
       error: 'ENOSPC',
     });
@@ -78,7 +78,7 @@ describe('VoiceRecordingRepository', () => {
 
     // Then
     expect(directory).toBeNull();
-    expect(logger.warn).toHaveBeenCalledWith(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
+    expect(logger.warn).toHaveBeenCalledWith(VOICE_LOG_EVENT.RECORDING_SAVE_FAILED, {
       stage: 'prepare',
       error: 'EACCES',
     });

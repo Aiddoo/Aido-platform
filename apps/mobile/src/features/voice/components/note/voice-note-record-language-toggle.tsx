@@ -4,7 +4,7 @@ import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 
-import { VOICE_NOTE_LOG_EVENT } from '../../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
 import { useMicrophonePermission } from '../../hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
 import { RecognitionLanguageTabs } from '../quick-voice/recognition-language-tabs';
@@ -35,7 +35,7 @@ export function VoiceNoteRecordLanguageToggle({
       value={locale}
       onValueChange={(next) => {
         handleLocaleChange(next).catch((error: unknown) => {
-          logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
+          logger.warn(VOICE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
             error: getErrorMessage(error),
           });
           toast.error(t('record.languageChangeFailed'));

@@ -3,7 +3,7 @@ import type { Logger } from '@src/core/ports/logger';
 import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 
-import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import {
   VOICE_RECORDING_EXTENSION,
   VOICE_RECORDING_ROOT_DIRECTORY,
@@ -55,7 +55,7 @@ export function createVoiceRecordingRepository(
     try {
       files.removeFile(directory, name);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
+      logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
     }
   };
 
@@ -63,7 +63,7 @@ export function createVoiceRecordingRepository(
     try {
       return files.listFiles(directory);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: getErrorMessage(error) });
+      logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: getErrorMessage(error) });
       return [];
     }
   };
@@ -73,7 +73,7 @@ export function createVoiceRecordingRepository(
       try {
         return files.ensureDirectory(ownerDirectory(accountId));
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'prepare',
           error: getErrorMessage(error),
         });
@@ -88,7 +88,7 @@ export function createVoiceRecordingRepository(
         await files.moveFile(sourceUri, ownerDirectory(accountId), fileName);
         return fileName;
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'move',
           error: getErrorMessage(error),
         });
@@ -100,7 +100,7 @@ export function createVoiceRecordingRepository(
       try {
         return files.findFileUri(ownerDirectory(accountId), fileName);
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),
         });
         return undefined;
@@ -113,7 +113,7 @@ export function createVoiceRecordingRepository(
       try {
         files.removeFileAt(sourceUri);
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
           error: getErrorMessage(error),
         });
       }
@@ -128,7 +128,7 @@ export function createVoiceRecordingRepository(
       try {
         files.removeDirectory(ownerDirectory(accountId));
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
           error: getErrorMessage(error),
         });
       }
@@ -153,7 +153,7 @@ export function createVoiceRecordingRepository(
           .filter((name) => name !== ownerName)
           .forEach((name) => files.removeDirectory([...ROOT, name]));
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),
         });
       }
@@ -163,7 +163,7 @@ export function createVoiceRecordingRepository(
       try {
         files.removeDirectory(ROOT);
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),
         });
       }

@@ -11,7 +11,7 @@ import {
 } from '@src/shared/infra/audio/use-audio-part-playlist';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
-import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
 import {
   findPartSeek,
@@ -63,7 +63,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
     try {
       await playlist.seekTo(offsetSeconds);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.PLAYER_SEEK_FAILED, { error: getErrorMessage(error) });
+      logger.warn(VOICE_LOG_EVENT.PLAYER_SEEK_FAILED, { error: getErrorMessage(error) });
     }
   };
 
@@ -89,7 +89,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
         }
       })
       .catch((error: unknown) => {
-        logger.warn(VOICE_NOTE_LOG_EVENT.PLAYER_SEEK_FAILED, {
+        logger.warn(VOICE_LOG_EVENT.PLAYER_SEEK_FAILED, {
           step: 'play-after-seek',
           error: getErrorMessage(error),
         });
@@ -181,7 +181,7 @@ export function useVoiceNotePlayer({
 
   useEffect(() => {
     setPlaybackAudioMode().catch((error: unknown) => {
-      logger.warn(VOICE_NOTE_LOG_EVENT.PLAYER_AUDIO_MODE_FAILED, {
+      logger.warn(VOICE_LOG_EVENT.PLAYER_AUDIO_MODE_FAILED, {
         error: getErrorMessage(error),
       });
     });

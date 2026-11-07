@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { useEffect, useEffectEvent } from 'react';
 import { BackHandler } from 'react-native';
 
-import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VoiceCapturePolicy } from '../domains/voice-capture.model';
 import type { useVoiceNoteRecording } from './use-voice-note-recording';
 
@@ -63,7 +63,7 @@ export function useVoiceNoteRecordExit({
   };
 
   const logActionFailure = (action: 'close' | 'finish') => (error: unknown) => {
-    logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_ACTION_FAILED, {
+    logger.warn(VOICE_LOG_EVENT.RECORD_ACTION_FAILED, {
       action,
       error: getErrorMessage(error),
     });

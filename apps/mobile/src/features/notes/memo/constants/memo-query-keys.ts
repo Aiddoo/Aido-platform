@@ -5,7 +5,3 @@ export const MEMO_QUERY_KEYS = {
   detail: ({ memoId }: { memoId: number }) => [...MEMO_QUERY_KEYS.details(), { memoId }] as const,
   resourceLimit: () => [...MEMO_QUERY_KEYS.all, 'resource-limit'] as const,
 } as const;
-
-export const MEMO_MUTATION_KEYS = {
-  parse: ({ memoId }: { memoId: number }) => ['memo', 'parse', { memoId }] as const,
-} as const;

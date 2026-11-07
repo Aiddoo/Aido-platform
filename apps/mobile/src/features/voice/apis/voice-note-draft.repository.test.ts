@@ -1,7 +1,7 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 
 import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
-import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { withSentences } from '../domains/voice-note.model';
 import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
 
@@ -163,7 +163,7 @@ describe('VoiceNoteDraftRepository', () => {
     // Then
     expect(found).toBeUndefined();
     expect(logger.warn).toHaveBeenCalledWith(
-      VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED,
+      VOICE_LOG_EVENT.DRAFT_RESTORE_FAILED,
       expect.objectContaining({ reason: 'invalid-json' }),
     );
     expect(storage.get('aido_voice_note_draft_v1:user-1:draft-1')).toBeUndefined();
@@ -179,7 +179,7 @@ describe('VoiceNoteDraftRepository', () => {
 
     // Then
     expect(found).toBeUndefined();
-    expect(logger.warn).toHaveBeenCalledWith(VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
+    expect(logger.warn).toHaveBeenCalledWith(VOICE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
       reason: 'schema-mismatch',
     });
   });

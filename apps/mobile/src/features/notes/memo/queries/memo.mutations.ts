@@ -33,7 +33,8 @@ import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
-import { MEMO_MUTATION_KEYS, MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
+import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import {
   createMemoPlanDraftKey,

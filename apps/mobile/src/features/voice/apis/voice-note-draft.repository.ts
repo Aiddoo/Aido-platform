@@ -4,7 +4,7 @@ import { getErrorMessage } from '@src/shared/errors/to-error';
 // maxWait(계속 쓰는 중에도 이 시간 안에 한 번은 저장)는 메인 패키지 debounce에 없다
 import { debounce } from 'es-toolkit/compat';
 
-import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import {
   VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
   VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
@@ -96,9 +96,9 @@ export function createVoiceNoteDraftRepository({
       if (parsed.success) {
         return parsed.data;
       }
-      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED, { reason: 'schema-mismatch' });
+      logger.warn(VOICE_LOG_EVENT.DRAFT_RESTORE_FAILED, { reason: 'schema-mismatch' });
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
+      logger.warn(VOICE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
         reason: 'invalid-json',
         error: getErrorMessage(error),
       });
@@ -117,7 +117,7 @@ export function createVoiceNoteDraftRepository({
       replaceInSnapshot(accountId, note);
       notifyListeners();
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: getErrorMessage(error) });
+      logger.warn(VOICE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: getErrorMessage(error) });
     }
   };
 
