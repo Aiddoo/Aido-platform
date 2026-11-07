@@ -26,7 +26,7 @@ export default function SuggestionsScreen() {
   const canViewSuggestions =
     entitlementsQuery.data == null
       ? undefined
-      : !EntitlementPolicy.isFeatureLocked(entitlementsQuery.data, 'AI_SUGGESTION');
+      : EntitlementPolicy.canUseFeature(entitlementsQuery.data, 'AI_SUGGESTION');
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
   return (

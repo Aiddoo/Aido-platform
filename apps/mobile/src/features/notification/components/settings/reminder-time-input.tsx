@@ -49,7 +49,7 @@ export function ReminderTimeInput({ label, description, period }: ReminderTimeIn
     queries: [useGetEntitlementsQueryOptions(), useGetPreferenceQueryOptions()],
   });
   const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
-  const isLocked = EntitlementPolicy.isFeatureLocked(entitlements, 'CUSTOM_REMINDER_TIME');
+  const canUseCustomTime = EntitlementPolicy.canUseFeature(entitlements, 'CUSTOM_REMINDER_TIME');
   const time = REMINDER_TIME[period];
 
   return (
@@ -61,7 +61,7 @@ export function ReminderTimeInput({ label, description, period }: ReminderTimeIn
       {...time.range}
       timeFormat={preference.timeFormat}
       isDisabled={!preference.pushEnabled || updatePreference.isPending}
-      accessory={isLocked ? <CrownIcon width={14} height={14} /> : undefined}
+      accessory={canUseCustomTime ? undefined : <CrownIcon width={14} height={14} />}
       onBeforeOpen={() => !gate.promptIfBlocked()}
     />
   );

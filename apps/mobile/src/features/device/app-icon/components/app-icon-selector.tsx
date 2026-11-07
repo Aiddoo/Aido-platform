@@ -21,7 +21,7 @@ export function AppIconSelector() {
   const confirmDialog = useConfirmDialog();
   const gate = useEntitlementGate('APP_ICON', { surface: 'app_icon_settings' });
   const currentIcon = currentIconKey ?? 'default';
-  const isIconLocked = EntitlementPolicy.isFeatureLocked(entitlements, 'APP_ICON');
+  const isIconLocked = !EntitlementPolicy.canUseFeature(entitlements, 'APP_ICON');
 
   const handleIconPress = async (key: AppIconKey) => {
     if (isChanging || key === currentIcon) {

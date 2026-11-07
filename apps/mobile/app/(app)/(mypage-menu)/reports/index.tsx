@@ -43,7 +43,7 @@ export default function ReportsScreen() {
   const canViewReports =
     entitlementsQuery.data == null
       ? undefined
-      : !EntitlementPolicy.isFeatureLocked(entitlementsQuery.data, 'AI_REPORT');
+      : EntitlementPolicy.canUseFeature(entitlementsQuery.data, 'AI_REPORT');
   const [reportType, setReportType] = useReportType();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiReports(queryClient));
 

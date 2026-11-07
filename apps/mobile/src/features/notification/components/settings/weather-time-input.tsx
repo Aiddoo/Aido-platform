@@ -53,7 +53,7 @@ export function WeatherTimeInput({ label, description, period }: WeatherTimeInpu
       onChange={(value) => updatePreference.mutate(time.toInput(value))}
       {...time.range}
       timeFormat={preference.timeFormat}
-      isDisabled={PreferencePolicy.isWeatherDeliveryOff(preference) || updatePreference.isPending}
+      isDisabled={!PreferencePolicy.canDeliverWeather(preference) || updatePreference.isPending}
     />
   );
 }

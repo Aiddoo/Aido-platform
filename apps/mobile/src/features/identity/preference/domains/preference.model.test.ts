@@ -25,16 +25,16 @@ describe('isWeatherEnabled', () => {
   });
 });
 
-describe('isWeatherDeliveryOff', () => {
+describe('canDeliverWeather', () => {
   it('푸시가 꺼져 있으면 날씨 알림을 켜 둬도 나가지 않는다', () => {
     // Given
     const preference = createPreference({ pushEnabled: false, weatherEveningEnabled: true });
 
     // When
-    const result = PreferencePolicy.isWeatherDeliveryOff(preference);
+    const result = PreferencePolicy.canDeliverWeather(preference);
 
     // Then
-    expect(result).toBe(true);
+    expect(result).toBe(false);
   });
 
   it('푸시가 켜져 있고 저녁 알림이 켜져 있으면 날씨 알림이 나간다', () => {
@@ -42,10 +42,10 @@ describe('isWeatherDeliveryOff', () => {
     const preference = createPreference({ pushEnabled: true, weatherEveningEnabled: true });
 
     // When
-    const result = PreferencePolicy.isWeatherDeliveryOff(preference);
+    const result = PreferencePolicy.canDeliverWeather(preference);
 
     // Then
-    expect(result).toBe(false);
+    expect(result).toBe(true);
   });
 
   it('푸시가 켜져 있어도 날씨 알림이 모두 꺼져 있으면 나가지 않는다', () => {
@@ -53,9 +53,9 @@ describe('isWeatherDeliveryOff', () => {
     const preference = createPreference({ pushEnabled: true });
 
     // When
-    const result = PreferencePolicy.isWeatherDeliveryOff(preference);
+    const result = PreferencePolicy.canDeliverWeather(preference);
 
     // Then
-    expect(result).toBe(true);
+    expect(result).toBe(false);
   });
 });

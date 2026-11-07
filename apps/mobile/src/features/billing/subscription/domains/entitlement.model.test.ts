@@ -122,21 +122,24 @@ describe('getAccessDecision', () => {
   });
 });
 
-describe('isFeatureLocked', () => {
+describe('canUseFeature', () => {
   it.each([
-    ['FREE', true],
-    ['PREMIUM', false],
-    ['ADMIN', false],
-  ] as const)('프리미엄 전용 기능은 서버 allowed 기준으로 %s에게 잠김 %s다', (tier, expected) => {
-    // Given
-    const snapshot = createEntitlementSnapshot({ tier });
+    ['FREE', false],
+    ['PREMIUM', true],
+    ['ADMIN', true],
+  ] as const)(
+    '프리미엄 전용 기능은 서버 allowed 기준으로 %s에게 사용 가능 %s다',
+    (tier, expected) => {
+      // Given
+      const snapshot = createEntitlementSnapshot({ tier });
 
-    // When
-    const isLocked = EntitlementPolicy.isFeatureLocked(snapshot, 'AI_REPORT');
+      // When
+      const canUse = EntitlementPolicy.canUseFeature(snapshot, 'AI_REPORT');
 
-    // Then
-    expect(isLocked).toBe(expected);
-  });
+      // Then
+      expect(canUse).toBe(expected);
+    },
+  );
 });
 
 describe('getQuotaStatus', () => {

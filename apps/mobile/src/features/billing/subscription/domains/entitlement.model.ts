@@ -35,9 +35,9 @@ function findFeatureQuota(
   return snapshot.features[feature] ?? null;
 }
 
-/** 서버가 이 등급에 열지 않은 기능인지. 모르는 기능은 서버가 판단하도록 막지 않는다 */
-function isFeatureLocked(snapshot: EntitlementSnapshot, feature: EntitlementFeature): boolean {
-  return findFeatureQuota(snapshot, feature)?.allowed === false;
+/** 서버가 이 등급에 연 기능인지. 모르는 기능은 서버가 판단하도록 막지 않는다 */
+function canUseFeature(snapshot: EntitlementSnapshot, feature: EntitlementFeature): boolean {
+  return findFeatureQuota(snapshot, feature)?.allowed !== false;
 }
 
 /** 초기화 시각이 지난 스냅샷의 남은 0은 오래된 값이다. 앱이 막지 않고 서버에 맡긴다 */
@@ -143,7 +143,7 @@ function shouldOfferPremium(snapshot: EntitlementSnapshot | undefined) {
 
 export const EntitlementPolicy = {
   hasFullAccess,
-  isFeatureLocked,
+  canUseFeature,
   getAccessDecision,
   getLimit,
   getRemainingCount,
