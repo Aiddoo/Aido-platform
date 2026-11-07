@@ -22,7 +22,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Separator, Skeleton } from 'heroui-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 import { isReportUnavailable } from '../domains/ai-report.error';
 import { AiReportPolicy } from '../domains/ai-report.model';
@@ -204,26 +204,31 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
         {t('report.detail.dayPatterns')}
       </Text>
       <HStack justify="around">
-        {items.map((item) => (
-          <VStack key={item.day} align="center" gap={4}>
-            <Text size="e2" shade={6}>
-              {getDayOfWeekLabel(item.day)}
-            </Text>
-            <Box
-              className={cn(
-                'w-8 h-8 rounded-full items-center justify-center',
-                match(item.rate)
-                  .with(P.number.gte(80), () => 'bg-main/20')
-                  .with(P.number.gte(50), () => 'bg-main/10')
-                  .otherwise(() => 'bg-gray-3'),
-              )}
-            >
-              <Text size="e2" weight="bold" shade={item.rate >= 50 ? 9 : 5}>
-                {item.rate}
+        {items.map((item) => {
+          const level = AiReportPolicy.getCompletionLevel(item.rate);
+
+          return (
+            <VStack key={item.day} align="center" gap={4}>
+              <Text size="e2" shade={6}>
+                {getDayOfWeekLabel(item.day)}
               </Text>
-            </Box>
-          </VStack>
-        ))}
+              <Box
+                className={cn(
+                  'w-8 h-8 rounded-full items-center justify-center',
+                  match(level)
+                    .with('high', () => 'bg-main/20')
+                    .with('medium', () => 'bg-main/10')
+                    .with('low', () => 'bg-gray-3')
+                    .exhaustive(),
+                )}
+              >
+                <Text size="e2" weight="bold" shade={level === 'low' ? 5 : 9}>
+                  {item.rate}
+                </Text>
+              </Box>
+            </VStack>
+          );
+        })}
       </HStack>
     </VStack>
   );
