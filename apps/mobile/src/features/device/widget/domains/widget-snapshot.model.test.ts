@@ -4,7 +4,7 @@ import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot.schema';
 import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
-describe('WidgetSnapshotPolicy.getDay', () => {
+describe('getDay', () => {
   it('오늘 key와 같은 day의 상태를 그대로 표시한다', () => {
     // Given
     const snapshot = buildWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
@@ -55,7 +55,7 @@ describe('WidgetSnapshotPolicy.getDay', () => {
   });
 });
 
-describe('WidgetSnapshotPolicy.getDayForOwner', () => {
+describe('getDayForOwner', () => {
   it('소유자를 모르는 개인 목록은 오늘 day가 있어도 stale을 표시한다', () => {
     // Given
     const snapshot = buildWidgetSnapshot({});

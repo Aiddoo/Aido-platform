@@ -3,7 +3,7 @@ import { ApiError } from '@src/core/errors/api-error';
 import { PlanRequestPolicy } from './plan-request.model';
 
 describe('preparePlanRequest', () => {
-  test('같은 내용을 다시 보내면 처음 키를 다시 쓴다', () => {
+  it('같은 내용을 다시 보내면 처음 키를 다시 쓴다', () => {
     // Given
     let count = 0;
     const createIdempotencyKey = () => `key-${++count}`;
@@ -24,7 +24,7 @@ describe('preparePlanRequest', () => {
     expect(retry.idempotencyKey).toBe('key-1');
   });
 
-  test('내용을 고쳐 보내면 새 키를 만든다', () => {
+  it('내용을 고쳐 보내면 새 키를 만든다', () => {
     // Given
     let count = 0;
     const createIdempotencyKey = () => `key-${++count}`;
@@ -49,7 +49,7 @@ describe('preparePlanRequest', () => {
 describe('getRequestToRetry', () => {
   const previous = { fingerprint: 'a', idempotencyKey: 'key-1', input: 'a' };
 
-  test('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
+  it('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
     // Given
     const error = new ApiError('AI_1318', '오류', 422);
 
@@ -60,7 +60,7 @@ describe('getRequestToRetry', () => {
     expect(next).toBeNull();
   });
 
-  test('처리 중(AI_1314)·네트워크 오류 뒤에는 같은 키를 다시 쓴다', () => {
+  it('처리 중(AI_1314)·네트워크 오류 뒤에는 같은 키를 다시 쓴다', () => {
     // Given
     const error = new ApiError('AI_1314', '처리 중', 409);
 

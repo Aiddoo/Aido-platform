@@ -19,18 +19,20 @@ const withActiveDays = (...localDates: string[]): StoreReviewState =>
 
 const ENGAGED: StoreReviewState = withActiveDays('2026-10-20', '2026-10-24', '2026-10-27');
 
-describe('StoreReviewPolicy.getEligibility', () => {
+describe('getEligibility', () => {
   it('하루 한 개씩 세 날 할 일을 끝낸 가벼운 사용자는 셋째 날에 요청 대상이 된다', () => {
-    // Given 하루에 할 일 하나씩만 끝낸 기록
+    // Given
     const twoDays = withActiveDays('2026-10-25', '2026-10-26');
 
-    // When 셋째 날 할 일을 끝낸다
+    // When
     const threeDays = StoreReviewPolicy.withActiveDay(twoDays, '2026-10-27');
+    const twoDaysEligibility = StoreReviewPolicy.getEligibility(twoDays, NOW);
+    const threeDaysEligibility = StoreReviewPolicy.getEligibility(threeDays, NOW);
 
     // Then
     expect(STORE_REVIEW_MIN_ACTIVE_DAYS).toBe(3);
-    expect(StoreReviewPolicy.getEligibility(twoDays, NOW)).toBe('not_engaged');
-    expect(StoreReviewPolicy.getEligibility(threeDays, NOW)).toBe('eligible');
+    expect(twoDaysEligibility).toBe('not_engaged');
+    expect(threeDaysEligibility).toBe('eligible');
   });
 
   it('같은 날 여러 번 끝내도 하루로만 센다', () => {
@@ -56,9 +58,13 @@ describe('StoreReviewPolicy.getEligibility', () => {
       requestedAt: [daysBefore(STORE_REVIEW_REQUEST_COOLDOWN_DAYS)],
     };
 
-    // When / Then
-    expect(StoreReviewPolicy.getEligibility(justBefore, NOW)).toBe('cooling_down');
-    expect(StoreReviewPolicy.getEligibility(elapsed, NOW)).toBe('eligible');
+    // When
+    const justBeforeEligibility = StoreReviewPolicy.getEligibility(justBefore, NOW);
+    const elapsedEligibility = StoreReviewPolicy.getEligibility(elapsed, NOW);
+
+    // Then
+    expect(justBeforeEligibility).toBe('cooling_down');
+    expect(elapsedEligibility).toBe('eligible');
   });
 
   it('최근 365일 안에 세 번 요청했으면 쿨다운이 지나도 요청하지 않는다', () => {
@@ -72,14 +78,18 @@ describe('StoreReviewPolicy.getEligibility', () => {
       requestedAt: [daysBefore(STORE_REVIEW_REQUEST_WINDOW_DAYS), daysBefore(244), daysBefore(124)],
     };
 
-    // When / Then
+    // When
+    const threeInWindowEligibility = StoreReviewPolicy.getEligibility(threeInWindow, NOW);
+    const oldestLeftWindowEligibility = StoreReviewPolicy.getEligibility(oldestLeftWindow, NOW);
+
+    // Then
     expect(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW).toBe(3);
-    expect(StoreReviewPolicy.getEligibility(threeInWindow, NOW)).toBe('window_limit_reached');
-    expect(StoreReviewPolicy.getEligibility(oldestLeftWindow, NOW)).toBe('eligible');
+    expect(threeInWindowEligibility).toBe('window_limit_reached');
+    expect(oldestLeftWindowEligibility).toBe('eligible');
   });
 });
 
-describe('StoreReviewPolicy.withRequest', () => {
+describe('withRequest', () => {
   it('요청 시각을 쌓고 365일 창 밖의 기록은 지운다', () => {
     // Given
     const state: StoreReviewState = { ...ENGAGED, requestedAt: [daysBefore(400), daysBefore(130)] };
@@ -94,7 +104,7 @@ describe('StoreReviewPolicy.withRequest', () => {
 
 describe('시간대가 다른 저장 값', () => {
   it('오프셋이 달라도 같은 순간이면 쿨다운을 같게 판정한다', () => {
-    // Given 서울 표기와 UTC 표기가 가리키는 같은 순간
+    // Given
     const seoul: StoreReviewState = {
       ...ENGAGED,
       requestedAt: [toInstant('2026-06-29T21:00:00.000+09:00')],
@@ -104,9 +114,12 @@ describe('시간대가 다른 저장 값', () => {
       requestedAt: [toInstant('2026-06-29T12:00:00.000Z')],
     };
 
-    // When / Then
-    expect(StoreReviewPolicy.getEligibility(seoul, NOW)).toBe(
-      StoreReviewPolicy.getEligibility(utc, NOW),
-    );
+    // When
+    const seoulEligibility = StoreReviewPolicy.getEligibility(seoul, NOW);
+    const utcEligibility = StoreReviewPolicy.getEligibility(utc, NOW);
+
+    // Then
+    // 서울 표기와 UTC 표기는 같은 순간을 가리킨다
+    expect(seoulEligibility).toBe(utcEligibility);
   });
 });

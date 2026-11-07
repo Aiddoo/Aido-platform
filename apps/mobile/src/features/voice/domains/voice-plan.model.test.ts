@@ -46,8 +46,10 @@ const createPlan = (...actions: VoicePlan['actions']): VoicePlan => ({
   omittedTodoCount: 0,
 });
 
-describe('VoicePlanPolicy', () => {
-  test('이미 있는 할 일은 기본으로 꺼 둔다', () => {
+const FALLBACK_CATEGORY_ID = 7;
+
+describe('getDefaultSelection', () => {
+  it('이미 있는 할 일은 기본으로 꺼 둔다', () => {
     // Given
     const plan = createPlan(
       todo({ actionId: 'a1', duplicateOfTodoId: 9 }),
@@ -61,8 +63,10 @@ describe('VoicePlanPolicy', () => {
     // Then
     expect(selection).toEqual({ a1: false, a2: true, m1: true });
   });
+});
 
-  test('고른 행동만 돌려주고 하나도 없으면 적용할 수 없다', () => {
+describe('getSelectedActions', () => {
+  it('고른 행동만 돌려준다', () => {
     // Given
     const plan = createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2' }));
 
@@ -71,22 +75,37 @@ describe('VoicePlanPolicy', () => {
 
     // Then
     expect(selected.map((action) => action.actionId)).toEqual(['a2']);
-    expect(canApplyPlan(plan, { a1: false, a2: false })).toBe(false);
-  });
-
-  test('메모는 할 일 개수에 세지 않는다', () => {
-    // Given
-    const plan = createPlan(todo(), memo());
-
-    // When & Then
-    expect(countSelectedTodos(plan, { a1: true, m1: true })).toBe(1);
   });
 });
 
-describe('카드 묶기', () => {
-  const FALLBACK_CATEGORY_ID = 7;
+describe('canApplyPlan', () => {
+  it('고른 행동이 하나도 없으면 적용할 수 없다', () => {
+    // Given
+    const plan = createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2' }));
 
-  test.each([
+    // When
+    const canApply = canApplyPlan(plan, { a1: false, a2: false });
+
+    // Then
+    expect(canApply).toBe(false);
+  });
+});
+
+describe('countSelectedTodos', () => {
+  it('메모는 할 일 개수에 세지 않는다', () => {
+    // Given
+    const plan = createPlan(todo(), memo());
+
+    // When
+    const count = countSelectedTodos(plan, { a1: true, m1: true });
+
+    // Then
+    expect(count).toBe(1);
+  });
+});
+
+describe('getPlanActionGroups', () => {
+  it.each([
     {
       name: '나뉘어 나온 같은 카테고리는 처음 나온 자리로 모은다',
       categories: [1, 2, 1, 1],
@@ -122,7 +141,7 @@ describe('카드 묶기', () => {
     expect(result).toEqual(groups);
   });
 
-  test('메모는 할 일 사이에 있어도 맨 뒤로 모으고 할 일 묶음을 끊지 않는다', () => {
+  it('메모는 할 일 사이에 있어도 맨 뒤로 모으고 할 일 묶음을 끊지 않는다', () => {
     // Given
     const actions = [todo({ categoryId: 1 }), memo(), todo({ categoryId: 1 })];
 
@@ -135,8 +154,10 @@ describe('카드 묶기', () => {
       { categoryId: null, indexes: [1] },
     ]);
   });
+});
 
-  test('저장할 카드는 묶어 보인 순서대로 늘어놓는다', () => {
+describe('sortPlanActionsByGroup', () => {
+  it('저장할 카드는 묶어 보인 순서대로 늘어놓는다', () => {
     // Given
     const actions = [
       todo({ actionId: 'a', categoryId: 1 }),
@@ -153,8 +174,8 @@ describe('카드 묶기', () => {
   });
 });
 
-describe('카드 고치기', () => {
-  test('반복으로 바꾸면 기간(종료일)을 지운다', () => {
+describe('withRepeat', () => {
+  it('반복으로 바꾸면 기간(종료일)을 지운다', () => {
     // Given
     const period = todo({ endDate: '2026-11-07' });
 
@@ -164,8 +185,10 @@ describe('카드 고치기', () => {
     // Then
     expect(result.endDate).toBeNull();
   });
+});
 
-  test.each([
+describe('withStartDate', () => {
+  it.each([
     {
       label: '평일',
       startDate: '2026-11-05',
@@ -209,8 +232,8 @@ describe('카드 고치기', () => {
   );
 });
 
-describe('VoicePlanPolicy.getHeadline', () => {
-  test.each<{
+describe('getHeadline', () => {
+  it.each<{
     name: string;
     plan: VoicePlan;
     selection: Record<string, boolean>;

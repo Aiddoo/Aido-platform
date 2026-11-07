@@ -244,7 +244,8 @@ describe('getRescheduleTargets', () => {
   ];
 
   it('시트를 연 사이 지워진 할 일은 옮기지 않는다', () => {
-    // Given: 15번은 목록에서 사라졌다
+    // Given
+    // 15번은 목록에서 사라졌다
     const todos = [{ id: 12, completed: false }];
 
     // When

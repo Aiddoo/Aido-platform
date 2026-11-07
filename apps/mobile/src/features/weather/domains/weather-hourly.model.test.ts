@@ -22,12 +22,18 @@ function createHours(rows: readonly Partial<WeatherHourlyForecast>[]) {
 const DRY_CLOUDY = { condition: 'CLOUDY', precipitationChance: 10 } as const;
 const RAIN = { condition: 'RAIN', precipitationChance: 80, precipitationType: 'RAIN' } as const;
 
-describe('WeatherHourlyPolicy.summarizeHourly', () => {
+describe('summarizeHourly', () => {
   it('지금 비가 오면 처음 그치는 시간을 그침 시각으로 반환한다', () => {
-    // Given 지금부터 2시간 비, 그 뒤 갬 When 요약하면 Then 오후 5시에 그친다
+    // Given
+    // 지금부터 2시간 비, 그 뒤 갬
     const report = createWeatherReport({ hourly: createHours([RAIN, RAIN, DRY_CLOUDY]) });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    // 오후 5시에 그친다
+    expect(summary).toEqual({
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
       endsAt: toInstant('2026-11-02T08:00:00.000Z'),
@@ -36,7 +42,8 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
   });
 
   it('시간별 확률이 낮아도 지금 관측된 비가 있으면 내리는 중으로 반환한다', () => {
-    // Given 지금 4.5mm/h 비가 오고 시간별 확률은 47% When 요약하면 Then 비가 내리는 중이다
+    // Given
+    // 지금 4.5mm/h 비가 오고 시간별 확률은 47%다
     const base = createWeatherReport({
       hourly: createHours([{ ...DRY_CLOUDY, precipitationChance: 47 }, DRY_CLOUDY]),
     });
@@ -45,7 +52,11 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
       current: { ...base.current, condition: 'RAIN', precipitationIntensity: 4.5 },
     } as const;
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toMatchObject({
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    expect(summary).toMatchObject({
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
       endsAt: toInstant('2026-11-02T07:00:00.000Z'),
@@ -53,22 +64,28 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
   });
 
   it('비가 하루 안에 그치지 않으면 그침 시각 없이 반환한다', () => {
-    // Given 남은 시간 내내 비 When 요약하면 Then endsAt은 null이다
+    // Given
     const report = createWeatherReport({ hourly: createHours([RAIN, RAIN]) });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toMatchObject({
-      kind: 'precipitationOngoing',
-      endsAt: null,
-    });
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    expect(summary).toMatchObject({ kind: 'precipitationOngoing', endsAt: null });
   });
 
   it('내일 비가 오면 그 전 하늘과 함께 다음 날이라고 표시한다', () => {
-    // Given 오늘 밤까지 흐리고 다음 날 새벽 비 When 요약하면 Then 내일 비와 흐린 하늘을 반환한다
+    // Given
+    // 오늘 밤까지 흐리고 다음 날 새벽에 비가 온다
     const report = createWeatherReport({
       hourly: createHours([...range(10).map(() => DRY_CLOUDY), RAIN]),
     });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    expect(summary).toEqual({
       kind: 'precipitationUpcoming',
       precipitationType: 'RAIN',
       startsAt: toInstant('2026-11-02T16:00:00.000Z'),
@@ -78,24 +95,32 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
   });
 
   it('강수 확률이 낮은 비 상태는 비로 보지 않는다', () => {
-    // Given 상태는 비지만 확률 30% When 요약하면 Then 강수 요약이 아니다
+    // Given
+    // 상태는 비지만 확률은 30%다
     const report = createWeatherReport({
       hourly: createHours([DRY_CLOUDY, { condition: 'RAIN', precipitationChance: 30 }]),
     });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).not.toMatchObject({
-      kind: 'precipitationUpcoming',
-    });
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    expect(summary).not.toMatchObject({ kind: 'precipitationUpcoming' });
   });
 
   it('두 시간 이상 이어지는 다른 하늘이 오면 바뀌는 시각을 반환한다', () => {
-    // Given 맑다가 한 시간 구름, 다시 맑다가 흐림이 이어짐 When 요약하면 Then 흐려지는 시각을 반환한다
+    // Given
+    // 맑다가 한 시간 구름, 다시 맑다가 흐림이 이어진다
     const clear = { condition: 'CLEAR', precipitationChance: 0 } as const;
     const report = createWeatherReport({
       hourly: createHours([clear, DRY_CLOUDY, clear, DRY_CLOUDY, DRY_CLOUDY]),
     });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    expect(summary).toEqual({
       kind: 'skyChange',
       from: 'clear',
       to: 'cloudy',
@@ -105,7 +130,8 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
   });
 
   it('하늘이 그대로인 낮에는 남은 낮의 최고 기온을 정점으로 반환한다', () => {
-    // Given 낮 동안 12→16→13° When 요약하면 Then 오후 4시 16°가 정점이다
+    // Given
+    // 낮 동안 12, 16, 13도이고 밤 20도는 낮이 아니라 제외된다
     const report = createWeatherReport({
       hourly: createHours([
         { ...DRY_CLOUDY, temperature: 12 },
@@ -115,7 +141,12 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
       ]),
     });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    // 오후 4시 16도가 정점이다
+    expect(summary).toEqual({
       kind: 'steady',
       sky: 'cloudy',
       peak: { extreme: 'highest', at: toInstant('2026-11-02T07:00:00.000Z'), temperature: 16 },
@@ -123,7 +154,8 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
   });
 
   it('밤에는 최저 기온을 정점으로 보고, 지금과 1° 미만 차이면 정점을 두지 않는다', () => {
-    // Given 밤 동안 8.0→7.4° When 요약하면 Then 정점이 없다
+    // Given
+    // 밤 동안 8.0도에서 7.4도로 내려 1도 미만 차이다
     const report = createWeatherReport({
       hourly: createHours([
         { ...DRY_CLOUDY, temperature: 8, isDaylight: false },
@@ -131,19 +163,22 @@ describe('WeatherHourlyPolicy.summarizeHourly', () => {
       ]),
     });
 
-    expect(WeatherHourlyPolicy.summarizeHourly(report, NOW)).toEqual({
-      kind: 'steady',
-      sky: 'cloudy',
-      peak: null,
-    });
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+
+    // Then
+    expect(summary).toEqual({ kind: 'steady', sky: 'cloudy', peak: null });
   });
 
   it('남은 시간별 예보가 없으면 null을 반환한다', () => {
-    // Given 모두 지난 예보 When 요약하면 Then null이다
+    // Given
     const report = createWeatherReport({ hourly: createHours([DRY_CLOUDY]) });
+    const lateNow = toInstant('2026-11-02T08:00:00.000Z');
 
-    expect(
-      WeatherHourlyPolicy.summarizeHourly(report, toInstant('2026-11-02T08:00:00.000Z')),
-    ).toBeNull();
+    // When
+    const summary = WeatherHourlyPolicy.summarizeHourly(report, lateNow);
+
+    // Then
+    expect(summary).toBeNull();
   });
 });

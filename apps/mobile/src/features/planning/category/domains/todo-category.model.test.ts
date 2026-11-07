@@ -2,7 +2,7 @@ import { TodoCategoryPolicy } from './todo-category.model';
 
 const CATEGORIES = [{ id: 3 }, { id: 7 }];
 
-describe('시트의 처음 선택 카테고리', () => {
+describe('getInitialCategoryId', () => {
   it('요청한 카테고리가 남아 있으면 그것을 고른다', () => {
     // Given
     const requestedCategoryId = 7;
@@ -36,7 +36,7 @@ describe('시트의 처음 선택 카테고리', () => {
   });
 });
 
-describe('시트가 가리키는 카테고리', () => {
+describe('findCategory', () => {
   it('목록에 있으면 찾고 지워졌으면 null이다', () => {
     // When
     const found = TodoCategoryPolicy.findCategory(CATEGORIES, 7);
@@ -48,7 +48,7 @@ describe('시트가 가리키는 카테고리', () => {
   });
 });
 
-describe('카테고리 수정 저장', () => {
+describe('hasChanges', () => {
   const category = { name: '업무', color: '#EF4444' };
 
   it('이름과 색이 그대로면 바뀐 값이 없다', () => {
@@ -67,5 +67,39 @@ describe('카테고리 수정 저장', () => {
     // Then
     expect(renamed).toBe(true);
     expect(recolored).toBe(true);
+  });
+});
+
+describe('requiresTodoMove', () => {
+  it.each([
+    { title: '할 일이 남은 카테고리는 할 일을 옮겨야 지울 수 있다', todoCount: 1, expected: true },
+    { title: '할 일이 없는 카테고리는 바로 지울 수 있다', todoCount: 0, expected: false },
+  ])('$title', ({ todoCount, expected }) => {
+    // Given
+    const category = { todoCount };
+
+    // When
+    const result = TodoCategoryPolicy.requiresTodoMove(category);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('canReorderCategories', () => {
+  it.each([
+    { title: '카테고리가 없으면 순서를 바꿀 수 없다', categories: [], expected: false },
+    {
+      title: '카테고리가 하나뿐이면 순서를 바꿀 수 없다',
+      categories: [{ id: 3 }],
+      expected: false,
+    },
+    { title: '카테고리가 둘이면 순서를 바꿀 수 있다', categories: CATEGORIES, expected: true },
+  ])('$title', ({ categories, expected }) => {
+    // When
+    const result = TodoCategoryPolicy.canReorderCategories(categories);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

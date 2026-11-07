@@ -22,7 +22,7 @@ const final = (
 ) => ({ transcript, isFinal: true, segments });
 
 describe('splitIntoSentences', () => {
-  test('문장부호에서 나눈다', () => {
+  it('문장부호에서 나눈다', () => {
     // Given
     const text = '목표는 이탈 줄이기예요. 시안은 언제까지죠? 수요일이요.';
 
@@ -33,7 +33,7 @@ describe('splitIntoSentences', () => {
     expect(sentences).toEqual(['목표는 이탈 줄이기예요.', '시안은 언제까지죠?', '수요일이요.']);
   });
 
-  test('문장부호가 없는 긴 말은 띄어쓰기에서 끊어 카드가 끝없이 길어지지 않게 한다', () => {
+  it('문장부호가 없는 긴 말은 띄어쓰기에서 끊어 카드가 끝없이 길어지지 않게 한다', () => {
     // Given
     const text = range(40)
       .map(() => '가나다라')
@@ -49,7 +49,7 @@ describe('splitIntoSentences', () => {
 });
 
 describe('applyCaptionResult', () => {
-  test('Android처럼 문장마다 final이 오면 문장을 차례로 쌓는다', () => {
+  it('Android처럼 문장마다 final이 오면 문장을 차례로 쌓는다', () => {
     // Given
     const heard = applyCaptionResult(createVoiceNoteCaptions(), interim('첫 문장'), clock(1_000));
 
@@ -65,7 +65,7 @@ describe('applyCaptionResult', () => {
     expect(getCaptionSentences(second, 6_000)[0]).toMatchObject({ startMs: 1_000, endMs: 3_000 });
   });
 
-  test('iOS처럼 interim만 쌓여도 앞 문장은 카드가 되고 마지막만 인식 중으로 남는다', () => {
+  it('iOS처럼 interim만 쌓여도 앞 문장은 카드가 되고 마지막만 인식 중으로 남는다', () => {
     // Given
     const captions = createVoiceNoteCaptions();
 
@@ -84,7 +84,7 @@ describe('applyCaptionResult', () => {
     expect(getCaptionInterimText(heard)).toBe('둘째 문장');
   });
 
-  test('final이 나오기 전에 저장해도 인식 중인 글자까지 남는다', () => {
+  it('final이 나오기 전에 저장해도 인식 중인 글자까지 남는다', () => {
     // Given
     const heard = applyCaptionResult(
       createVoiceNoteCaptions(),
@@ -107,7 +107,7 @@ describe('applyCaptionResult', () => {
     ]);
   });
 
-  test('interim이 처음부터 다시 쌓이면 앞 글자를 확정해 잃지 않는다', () => {
+  it('interim이 처음부터 다시 쌓이면 앞 글자를 확정해 잃지 않는다', () => {
     // Given
     const long = '오늘 회의에서 정한 내용을 길게 말하고 있어요';
     const heard = applyCaptionResult(createVoiceNoteCaptions(), interim(long), clock(1_000));
@@ -120,7 +120,7 @@ describe('applyCaptionResult', () => {
     expect(getCaptionInterimText(restarted)).toBe('새 말');
   });
 
-  test('단어 구간이 있으면 구간 시작 시각을 더해 문장 시각을 찾는다', () => {
+  it('단어 구간이 있으면 구간 시작 시각을 더해 문장 시각을 찾는다', () => {
     // Given
     const captions = createVoiceNoteCaptions();
 
@@ -140,7 +140,7 @@ describe('applyCaptionResult', () => {
     expect(next.sentences.map(({ startMs }) => startMs)).toEqual([60_100, 62_000]);
   });
 
-  test('끝난 뒤 같은 문장을 다시 줘도 한 번만 남긴다', () => {
+  it('끝난 뒤 같은 문장을 다시 줘도 한 번만 남긴다', () => {
     // Given
     const heard = applyCaptionResult(createVoiceNoteCaptions(), final('같은 문장.'), clock(1_000));
 
@@ -150,102 +150,8 @@ describe('applyCaptionResult', () => {
     // Then
     expect(next.sentences).toHaveLength(1);
   });
-});
 
-describe('commitProvisional', () => {
-  test('인식 구간이 끝나면 꼬리를 문장으로 확정한다', () => {
-    // Given
-    const heard = applyCaptionResult(createVoiceNoteCaptions(), interim('들은 말'), clock(1_000));
-
-    // When
-    const next = commitProvisional(heard, 2_000);
-
-    // Then
-    expect(next.provisional).toEqual([]);
-    expect(next.sentences).toEqual([
-      {
-        text: '들은 말',
-        startMs: 1_000,
-        endMs: 2_000,
-        isBookmarked: false,
-        lowConfidenceWords: [],
-      },
-    ]);
-  });
-});
-
-describe('withBookmark', () => {
-  test('깃발은 그 시각에 말하던 문장에 붙고, 말이 없던 때면 직전 문장에 붙는다', () => {
-    // Given
-    const first = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
-    const second = applyCaptionResult(first, final('둘째 문장.'), clock(8_000));
-
-    // When
-    const marked = withBookmark(second, 8_500);
-
-    // Then
-    expect(getCaptionSentences(marked, 9_000).map(({ isBookmarked }) => isBookmarked)).toEqual([
-      false,
-      true,
-    ]);
-  });
-});
-
-describe('getMarkedSentenceCount', () => {
-  test('아무것도 누르지 않았으면 0개다', () => {
-    // Given
-    const captions = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
-
-    // When
-    const count = getMarkedSentenceCount(captions);
-
-    // Then
-    expect(count).toBe(0);
-  });
-
-  test('같은 문장을 여러 번 눌러도 한 문장으로 센다', () => {
-    // Given
-    const captions = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
-
-    // When
-    const count = getMarkedSentenceCount(withBookmark(withBookmark(captions, 2_500), 3_000));
-
-    // Then
-    expect(count).toBe(1);
-  });
-
-  test('다른 문장을 누르면 문장마다 하나씩 센다', () => {
-    // Given
-    const first = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
-    const second = applyCaptionResult(
-      withBookmark(first, 2_500),
-      final('둘째 문장.'),
-      clock(8_000),
-    );
-
-    // When
-    const count = getMarkedSentenceCount(withBookmark(second, 8_500));
-
-    // Then
-    expect(count).toBe(2);
-  });
-
-  test('문장이 나오기 전에 누르면 곧 나올 첫 문장 하나로 센다', () => {
-    // Given
-    const pressed = withBookmark(withBookmark(createVoiceNoteCaptions(), 300), 600);
-
-    // When
-    const beforeSpeech = getMarkedSentenceCount(pressed);
-    const afterSpeech = applyCaptionResult(pressed, final('첫 문장.'), clock(2_000));
-
-    // Then
-    expect(beforeSpeech).toBe(1);
-    expect(getCaptionSentences(afterSpeech, 2_000)[0]?.isBookmarked).toBe(true);
-  });
-});
-
-describe('신뢰도 낮은 단어', () => {
-  test('final의 단어 신뢰도가 낮으면 그 단어가 속한 문장에만 표시한다', () => {
+  it('final의 단어 신뢰도가 낮으면 그 단어가 속한 문장에만 표시한다', () => {
     // Given
     const segments = [
       { text: '첫', startMs: 0, endMs: 100, confidence: 0.9 },
@@ -268,7 +174,7 @@ describe('신뢰도 낮은 단어', () => {
     ]);
   });
 
-  test('Android처럼 신뢰도가 -1이면 아무것도 표시하지 않는다', () => {
+  it('Android처럼 신뢰도가 -1이면 아무것도 표시하지 않는다', () => {
     // Given
     const segments = [{ text: '첫', startMs: 0, endMs: 100, confidence: -1 }];
 
@@ -279,7 +185,7 @@ describe('신뢰도 낮은 단어', () => {
     expect(next.sentences[0]?.lowConfidenceWords).toEqual([]);
   });
 
-  test('단어 구간이 없는 인식기는 아무것도 표시하지 않는다', () => {
+  it('단어 구간이 없는 인식기는 아무것도 표시하지 않는다', () => {
     // Given
     const captions = createVoiceNoteCaptions();
 
@@ -291,6 +197,98 @@ describe('신뢰도 낮은 단어', () => {
   });
 });
 
+describe('commitProvisional', () => {
+  it('인식 구간이 끝나면 꼬리를 문장으로 확정한다', () => {
+    // Given
+    const heard = applyCaptionResult(createVoiceNoteCaptions(), interim('들은 말'), clock(1_000));
+
+    // When
+    const next = commitProvisional(heard, 2_000);
+
+    // Then
+    expect(next.provisional).toEqual([]);
+    expect(next.sentences).toEqual([
+      {
+        text: '들은 말',
+        startMs: 1_000,
+        endMs: 2_000,
+        isBookmarked: false,
+        lowConfidenceWords: [],
+      },
+    ]);
+  });
+});
+
+describe('withBookmark', () => {
+  it('깃발은 그 시각에 말하던 문장에 붙고, 말이 없던 때면 직전 문장에 붙는다', () => {
+    // Given
+    const first = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+    const second = applyCaptionResult(first, final('둘째 문장.'), clock(8_000));
+
+    // When
+    const marked = withBookmark(second, 8_500);
+
+    // Then
+    expect(getCaptionSentences(marked, 9_000).map(({ isBookmarked }) => isBookmarked)).toEqual([
+      false,
+      true,
+    ]);
+  });
+});
+
+describe('getMarkedSentenceCount', () => {
+  it('아무것도 누르지 않았으면 0개다', () => {
+    // Given
+    const captions = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+
+    // When
+    const count = getMarkedSentenceCount(captions);
+
+    // Then
+    expect(count).toBe(0);
+  });
+
+  it('같은 문장을 여러 번 눌러도 한 문장으로 센다', () => {
+    // Given
+    const captions = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+
+    // When
+    const count = getMarkedSentenceCount(withBookmark(withBookmark(captions, 2_500), 3_000));
+
+    // Then
+    expect(count).toBe(1);
+  });
+
+  it('다른 문장을 누르면 문장마다 하나씩 센다', () => {
+    // Given
+    const first = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+    const second = applyCaptionResult(
+      withBookmark(first, 2_500),
+      final('둘째 문장.'),
+      clock(8_000),
+    );
+
+    // When
+    const count = getMarkedSentenceCount(withBookmark(second, 8_500));
+
+    // Then
+    expect(count).toBe(2);
+  });
+
+  it('문장이 나오기 전에 누르면 곧 나올 첫 문장 하나로 센다', () => {
+    // Given
+    const pressed = withBookmark(withBookmark(createVoiceNoteCaptions(), 300), 600);
+
+    // When
+    const beforeSpeech = getMarkedSentenceCount(pressed);
+    const afterSpeech = applyCaptionResult(pressed, final('첫 문장.'), clock(2_000));
+
+    // Then
+    expect(beforeSpeech).toBe(1);
+    expect(getCaptionSentences(afterSpeech, 2_000)[0]?.isBookmarked).toBe(true);
+  });
+});
+
 describe('createVoiceNoteFromTranscript', () => {
   const input = {
     draftId: 'draft-1',
@@ -298,7 +296,7 @@ describe('createVoiceNoteFromTranscript', () => {
     createdAt: toInstant('2026-11-05T00:00:00.000Z'),
   } as const;
 
-  test('확정 문장과 인식 중 꼬리까지 글자를 잃지 않고 들은 시간에 나눠 담는다', () => {
+  it('확정 문장과 인식 중 꼬리까지 글자를 잃지 않고 들은 시간에 나눠 담는다', () => {
     // Given
     const transcript = { sentences: ['첫 문장.', '둘째 문장.'], interim: '셋째 말' };
 
@@ -312,7 +310,7 @@ describe('createVoiceNoteFromTranscript', () => {
     expect(note.sentences.at(-1)?.endMs).toBe(90_000);
   });
 
-  test('들은 글자가 없으면 문장이 없는 초안이다', () => {
+  it('들은 글자가 없으면 문장이 없는 초안이다', () => {
     // Given
     const transcript = { sentences: [], interim: '' };
 
@@ -322,8 +320,16 @@ describe('createVoiceNoteFromTranscript', () => {
     // Then
     expect(note.sentences).toEqual([]);
   });
+});
 
-  test('저장된 초안에서 이어 가면 문장과 깃발이 그대로다', () => {
+describe('createCaptionsFromNote', () => {
+  const input = {
+    draftId: 'draft-1',
+    locale: 'ko-KR',
+    createdAt: toInstant('2026-11-05T00:00:00.000Z'),
+  } as const;
+
+  it('저장된 초안에서 이어 가면 문장과 깃발이 그대로다', () => {
     // Given
     const note = createVoiceNoteFromTranscript({
       ...input,

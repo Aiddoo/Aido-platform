@@ -9,6 +9,14 @@ import {
 const NOW = 100_000;
 
 describe('reduceVoiceCapture', () => {
+  const plan = voicePlanSchema.parse({
+    planId: 'plan-1',
+    source: 'quick-voice',
+    sourceMemoId: null,
+    actions: [],
+    omittedTodoCount: 0,
+  });
+
   it('준비 → 듣기 시작 순서로 진행한다', () => {
     // Given
     const idle = createVoiceCaptureState();
@@ -218,23 +226,6 @@ describe('reduceVoiceCapture', () => {
     expect(states.map(({ status }) => status)).toEqual(['listening', 'preparing']);
   });
 
-  it('앱이 멈춘 뒤 오는 client만 정상 종료로 본다', () => {
-    // Given
-    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
-    const paused = createCaptureState({ status: 'paused', cause: 'user' });
-
-    // When
-    const results = [
-      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', true),
-      VoiceCapturePolicy.isRecognizerFailure(paused, 'client', false),
-      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', false),
-      VoiceCapturePolicy.isRecognizerFailure(listening, 'audio-capture', true),
-    ];
-
-    // Then
-    expect(results).toEqual([false, false, true, true]);
-  });
-
   it('계획에 실패해도 글자는 그대로 두고 다시 시도할 수 있다', () => {
     // Given
     const planning = createCaptureState({
@@ -293,289 +284,80 @@ describe('reduceVoiceCapture', () => {
     // Then
     expect(state).toBe(idle);
   });
-});
 
-describe('VoiceCapturePolicy', () => {
-  it('듣는 중에 인식기가 끝나면 같은 세션을 다시 연다', () => {
+  it('계획이 오면 들은 글자를 든 채 고르는 단계로 넘어간다', () => {
     // Given
-    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
-    const paused = createCaptureState({ status: 'paused', cause: 'app-background' });
+    const transcript = createTranscript({ sentences: ['내일 장보기'] });
+    const planning = createCaptureState({ status: 'planning', transcript });
 
     // When
-    const results = [listening, paused].map(VoiceCapturePolicy.shouldRestartSegment);
+    const next = reduceVoiceCapture(planning, {
+      type: 'planned',
+      result: { plan, isCharged: false },
+    });
 
     // Then
-    expect(results).toEqual([true, false]);
+    expect(next).toMatchObject({ status: 'review', plan, isCharged: false, transcript });
   });
 
-  it('글자가 있을 때만 끝낼 수 있다', () => {
+  it('고르는 단계는 듣는 중이 아니라 닫을 때 인식기를 끊지 않는다', () => {
     // Given
-    const empty = createCaptureState({ status: 'listening', listeningSince: NOW });
-    const spoken = createCaptureState({
-      status: 'listening',
-      listeningSince: NOW,
-      transcript: createTranscript({ interim: '장보기' }),
-    });
+    const planning = createCaptureState({ status: 'planning' });
 
     // When
-    const results = [empty, spoken].map(VoiceCapturePolicy.canFinish);
+    const next = reduceVoiceCapture(planning, {
+      type: 'planned',
+      result: { plan, isCharged: true },
+    });
 
     // Then
-    expect(results).toEqual([false, true]);
+    expect(VoiceCapturePolicy.isActive(next)).toBe(false);
   });
 
-  it('권한·언어 문제로 실패하면 이어 듣기를 권하지 않는다', () => {
+  it('들은 글자가 있으면 실패 상태에서도 여기까지 정리로 넘어간다', () => {
     // Given
-    const denied = createCaptureState({ status: 'failed', reason: 'not-allowed' });
-    const offline = createCaptureState({ status: 'failed', reason: 'network' });
+    const failed = createCaptureState({
+      status: 'failed',
+      reason: 'network',
+      transcript: createTranscript({ sentences: ['들은 말'] }),
+    });
 
     // When
-    const results = [denied, offline].map(VoiceCapturePolicy.canResume);
+    const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
 
     // Then
-    expect(results).toEqual([false, true]);
+    expect(next.status).toBe('planning');
+    expect(VoiceCapturePolicy.canFinish(failed)).toBe(true);
   });
 
-  it('듣기를 마무리하거나 정리하는 중에만 마무리 중으로 본다', () => {
+  it('계획 실패는 끝내기가 아니라 다시 정리로만 이어진다', () => {
     // Given
-    const states = [
-      createCaptureState({ status: 'finalizing' }),
-      createCaptureState({ status: 'planning' }),
-      createCaptureState({ status: 'paused', cause: 'app-background' }),
-    ];
+    const failed = createCaptureState({
+      status: 'failed',
+      reason: 'planning-failed',
+      transcript: createTranscript({ sentences: ['들은 말'] }),
+    });
 
     // When
-    const results = states.map(VoiceCapturePolicy.isWrappingUp);
+    const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
 
     // Then
-    expect(results).toEqual([true, true, false]);
+    expect(next).toBe(failed);
+    expect(VoiceCapturePolicy.canFinish(failed)).toBe(false);
   });
 
-  it('한 번에 들을 수 있는 길이를 다 썼으면 이어 듣기를 권하지 않는다', () => {
+  it('이어 받은 글자와 시간에서 듣기를 시작한다', () => {
     // Given
-    const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 180_000 });
+    const seed = { transcript: createTranscript({ sentences: ['앞 말'] }), elapsedMs: 90_000 };
 
     // When
-    const results = [180_000, 180_001, null].map((limitMs) =>
-      VoiceCapturePolicy.canResumeWithinLimit(paused, limitMs),
-    );
+    const next = reduceVoiceCapture(createCaptureState({ status: 'idle' }), {
+      type: 'prepare',
+      seed,
+    });
 
     // Then
-    expect(results).toEqual([false, true, true]);
-  });
-
-  it('말이 2.5초 멈추고 글자가 있을 때만 자동으로 마무리한다', () => {
-    // Given
-    const spoken = createCaptureState({
-      status: 'listening',
-      listeningSince: NOW,
-      transcript: createTranscript({ interim: '장보기' }),
-    });
-    const empty = createCaptureState({ status: 'listening', listeningSince: NOW });
-
-    // When
-    const results = [
-      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_499),
-      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_500),
-      VoiceCapturePolicy.shouldAutoFinish(empty, 5_000),
-    ];
-
-    // Then
-    expect(results).toEqual([false, true, false]);
-  });
-
-  test.each([
-    { title: '음량이 작으면 말이 아니다', level: 0.1, lastTextAt: NOW, expected: false },
-    {
-      title: '음량이 크고 글자가 방금 왔으면 말이다',
-      level: 0.5,
-      lastTextAt: NOW - 1_499,
-      expected: true,
-    },
-    {
-      title: '음량이 커도 새 글자가 끊겼으면 주변 소리다',
-      level: 0.5,
-      lastTextAt: NOW - 1_500,
-      expected: false,
-    },
-    { title: '아직 글자가 없으면 음량으로만 본다', level: 0.5, lastTextAt: null, expected: true },
-  ])('$title', ({ level, lastTextAt, expected }) => {
-    // When
-    const result = VoiceCapturePolicy.isSpeaking(level, lastTextAt, NOW);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-
-  describe('계획 받기', () => {
-    const plan = voicePlanSchema.parse({
-      planId: 'plan-1',
-      source: 'quick-voice',
-      sourceMemoId: null,
-      actions: [],
-      omittedTodoCount: 0,
-    });
-
-    it('계획이 오면 들은 글자를 든 채 고르는 단계로 넘어간다', () => {
-      // Given
-      const transcript = createTranscript({ sentences: ['내일 장보기'] });
-      const planning = createCaptureState({ status: 'planning', transcript });
-
-      // When
-      const next = reduceVoiceCapture(planning, {
-        type: 'planned',
-        result: { plan, isCharged: false },
-      });
-
-      // Then
-      expect(next).toMatchObject({ status: 'review', plan, isCharged: false, transcript });
-    });
-
-    it('고르는 단계는 듣는 중이 아니라 닫을 때 인식기를 끊지 않는다', () => {
-      // Given
-      const planning = createCaptureState({ status: 'planning' });
-
-      // When
-      const next = reduceVoiceCapture(planning, {
-        type: 'planned',
-        result: { plan, isCharged: true },
-      });
-
-      // Then
-      expect(VoiceCapturePolicy.isActive(next)).toBe(false);
-    });
-  });
-
-  describe('인식 실패 뒤 끝내기', () => {
-    it('들은 글자가 있으면 실패 상태에서도 여기까지 정리로 넘어간다', () => {
-      // Given
-      const failed = createCaptureState({
-        status: 'failed',
-        reason: 'network',
-        transcript: createTranscript({ sentences: ['들은 말'] }),
-      });
-
-      // When
-      const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
-
-      // Then
-      expect(next.status).toBe('planning');
-      expect(VoiceCapturePolicy.canFinish(failed)).toBe(true);
-    });
-
-    it('계획 실패는 끝내기가 아니라 다시 정리로만 이어진다', () => {
-      // Given
-      const failed = createCaptureState({
-        status: 'failed',
-        reason: 'planning-failed',
-        transcript: createTranscript({ sentences: ['들은 말'] }),
-      });
-
-      // When
-      const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
-
-      // Then
-      expect(next).toBe(failed);
-      expect(VoiceCapturePolicy.canFinish(failed)).toBe(false);
-    });
-  });
-
-  describe('시트의 바깥 탭과 Android 뒤로 가기', () => {
-    const createReview = (actions: unknown[]) =>
-      reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
-        type: 'planned',
-        result: {
-          plan: voicePlanSchema.parse({
-            planId: 'plan-1',
-            source: 'quick-voice',
-            sourceMemoId: null,
-            actions,
-            omittedTodoCount: 0,
-          }),
-          isCharged: true,
-        },
-      });
-
-    it('듣기·정리는 X와 같은 취소이고, 고를 카드가 있으면 묻고, 잃을 것이 없으면 시트에 맡긴다', () => {
-      // Given
-      const memoAction = { type: 'create-memo', actionId: 'm1', title: '', content: '내용' };
-
-      // When
-      const actions = {
-        idle: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'idle' })),
-        failed: VoiceCapturePolicy.getDismissAction(
-          createCaptureState({ status: 'failed', reason: 'planning-failed' }),
-        ),
-        preparing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'preparing' })),
-        listening: VoiceCapturePolicy.getDismissAction(
-          createCaptureState({ status: 'listening', listeningSince: NOW }),
-        ),
-        paused: VoiceCapturePolicy.getDismissAction(
-          createCaptureState({ status: 'paused', cause: 'user' }),
-        ),
-        finalizing: VoiceCapturePolicy.getDismissAction(
-          createCaptureState({ status: 'finalizing' }),
-        ),
-        planning: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'planning' })),
-        emptyReview: VoiceCapturePolicy.getDismissAction(createReview([])),
-        review: VoiceCapturePolicy.getDismissAction(createReview([memoAction])),
-      };
-
-      // Then
-      expect(actions).toEqual({
-        idle: null,
-        failed: null,
-        preparing: 'cancel-capture',
-        listening: 'cancel-capture',
-        paused: 'cancel-capture',
-        finalizing: 'cancel-capture',
-        planning: 'cancel-planning',
-        emptyReview: null,
-        review: 'confirm-discard',
-      });
-    });
-  });
-
-  describe('90초 제안', () => {
-    it('90초를 다 써서 멈췄으면 말로 메모하기를 제안한다', () => {
-      // Given
-      const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 90_000 });
-
-      // When
-      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
-
-      // Then
-      expect(offers).toBe(true);
-    });
-
-    it('앱 이탈로 잠깐 멈춘 것은 제안하지 않는다', () => {
-      // Given
-      const paused = createCaptureState({
-        status: 'paused',
-        cause: 'app-background',
-        elapsedMs: 30_000,
-      });
-
-      // When
-      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
-
-      // Then
-      expect(offers).toBe(false);
-    });
-
-    it('이어 받은 글자와 시간에서 듣기를 시작한다', () => {
-      // Given
-      const seed = { transcript: createTranscript({ sentences: ['앞 말'] }), elapsedMs: 90_000 };
-
-      // When
-      const next = reduceVoiceCapture(createCaptureState({ status: 'idle' }), {
-        type: 'prepare',
-        seed,
-      });
-
-      // Then
-      expect(next).toMatchObject({ status: 'preparing', ...seed });
-    });
+    expect(next).toMatchObject({ status: 'preparing', ...seed });
   });
 
   it('듣는 중에 final 없이 구간이 끝나면 듣던 글자를 확정해 다음 구간이 덮지 못한다', () => {
@@ -598,6 +380,213 @@ describe('VoiceCapturePolicy', () => {
     // Then
     expect(ended.status).toBe('listening');
     expect(next.transcript).toEqual({ sentences: ['앞에서 한 말'], interim: '이어서 한 말' });
+  });
+});
+
+describe('shouldRestartSegment', () => {
+  it('듣는 중에 인식기가 끝나면 같은 세션을 다시 연다', () => {
+    // Given
+    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
+    const paused = createCaptureState({ status: 'paused', cause: 'app-background' });
+
+    // When
+    const results = [listening, paused].map(VoiceCapturePolicy.shouldRestartSegment);
+
+    // Then
+    expect(results).toEqual([true, false]);
+  });
+});
+
+describe('canFinish', () => {
+  it('글자가 있을 때만 끝낼 수 있다', () => {
+    // Given
+    const empty = createCaptureState({ status: 'listening', listeningSince: NOW });
+    const spoken = createCaptureState({
+      status: 'listening',
+      listeningSince: NOW,
+      transcript: createTranscript({ interim: '장보기' }),
+    });
+
+    // When
+    const results = [empty, spoken].map(VoiceCapturePolicy.canFinish);
+
+    // Then
+    expect(results).toEqual([false, true]);
+  });
+});
+
+describe('canResume', () => {
+  it('권한·언어 문제로 실패하면 이어 듣기를 권하지 않는다', () => {
+    // Given
+    const denied = createCaptureState({ status: 'failed', reason: 'not-allowed' });
+    const offline = createCaptureState({ status: 'failed', reason: 'network' });
+
+    // When
+    const results = [denied, offline].map(VoiceCapturePolicy.canResume);
+
+    // Then
+    expect(results).toEqual([false, true]);
+  });
+});
+
+describe('isWrappingUp', () => {
+  it('듣기를 마무리하거나 정리하는 중에만 마무리 중으로 본다', () => {
+    // Given
+    const states = [
+      createCaptureState({ status: 'finalizing' }),
+      createCaptureState({ status: 'planning' }),
+      createCaptureState({ status: 'paused', cause: 'app-background' }),
+    ];
+
+    // When
+    const results = states.map(VoiceCapturePolicy.isWrappingUp);
+
+    // Then
+    expect(results).toEqual([true, true, false]);
+  });
+});
+
+describe('canResumeWithinLimit', () => {
+  it('한 번에 들을 수 있는 길이를 다 썼으면 이어 듣기를 권하지 않는다', () => {
+    // Given
+    const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 180_000 });
+
+    // When
+    const results = [180_000, 180_001, null].map((limitMs) =>
+      VoiceCapturePolicy.canResumeWithinLimit(paused, limitMs),
+    );
+
+    // Then
+    expect(results).toEqual([false, true, true]);
+  });
+});
+
+describe('shouldAutoFinish', () => {
+  it('말이 2.5초 멈추고 글자가 있을 때만 자동으로 마무리한다', () => {
+    // Given
+    const spoken = createCaptureState({
+      status: 'listening',
+      listeningSince: NOW,
+      transcript: createTranscript({ interim: '장보기' }),
+    });
+    const empty = createCaptureState({ status: 'listening', listeningSince: NOW });
+
+    // When
+    const results = [
+      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_499),
+      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_500),
+      VoiceCapturePolicy.shouldAutoFinish(empty, 5_000),
+    ];
+
+    // Then
+    expect(results).toEqual([false, true, false]);
+  });
+});
+
+describe('isSpeaking', () => {
+  it.each([
+    { title: '음량이 작으면 말이 아니다', level: 0.1, lastTextAt: NOW, expected: false },
+    {
+      title: '음량이 크고 글자가 방금 왔으면 말이다',
+      level: 0.5,
+      lastTextAt: NOW - 1_499,
+      expected: true,
+    },
+    {
+      title: '음량이 커도 새 글자가 끊겼으면 주변 소리다',
+      level: 0.5,
+      lastTextAt: NOW - 1_500,
+      expected: false,
+    },
+    { title: '아직 글자가 없으면 음량으로만 본다', level: 0.5, lastTextAt: null, expected: true },
+  ])('$title', ({ level, lastTextAt, expected }) => {
+    // When
+    const result = VoiceCapturePolicy.isSpeaking(level, lastTextAt, NOW);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('getDismissAction', () => {
+  const createReview = (actions: unknown[]) =>
+    reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
+      type: 'planned',
+      result: {
+        plan: voicePlanSchema.parse({
+          planId: 'plan-1',
+          source: 'quick-voice',
+          sourceMemoId: null,
+          actions,
+          omittedTodoCount: 0,
+        }),
+        isCharged: true,
+      },
+    });
+
+  it('듣기·정리는 X와 같은 취소이고, 고를 카드가 있으면 묻고, 잃을 것이 없으면 시트에 맡긴다', () => {
+    // Given
+    const memoAction = { type: 'create-memo', actionId: 'm1', title: '', content: '내용' };
+
+    // When
+    const actions = {
+      idle: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'idle' })),
+      failed: VoiceCapturePolicy.getDismissAction(
+        createCaptureState({ status: 'failed', reason: 'planning-failed' }),
+      ),
+      preparing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'preparing' })),
+      listening: VoiceCapturePolicy.getDismissAction(
+        createCaptureState({ status: 'listening', listeningSince: NOW }),
+      ),
+      paused: VoiceCapturePolicy.getDismissAction(
+        createCaptureState({ status: 'paused', cause: 'user' }),
+      ),
+      finalizing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'finalizing' })),
+      planning: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'planning' })),
+      emptyReview: VoiceCapturePolicy.getDismissAction(createReview([])),
+      review: VoiceCapturePolicy.getDismissAction(createReview([memoAction])),
+    };
+
+    // Then
+    expect(actions).toEqual({
+      idle: null,
+      failed: null,
+      preparing: 'cancel-capture',
+      listening: 'cancel-capture',
+      paused: 'cancel-capture',
+      finalizing: 'cancel-capture',
+      planning: 'cancel-planning',
+      emptyReview: null,
+      review: 'confirm-discard',
+    });
+  });
+});
+
+describe('shouldOfferVoiceNote', () => {
+  it('90초를 다 써서 멈췄으면 말로 메모하기를 제안한다', () => {
+    // Given
+    const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 90_000 });
+
+    // When
+    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
+
+    // Then
+    expect(offers).toBe(true);
+  });
+
+  it('앱 이탈로 잠깐 멈춘 것은 제안하지 않는다', () => {
+    // Given
+    const paused = createCaptureState({
+      status: 'paused',
+      cause: 'app-background',
+      elapsedMs: 30_000,
+    });
+
+    // When
+    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
+
+    // Then
+    expect(offers).toBe(false);
   });
 });
 
@@ -633,6 +622,23 @@ describe('isRecognizerFailure', () => {
     // Then
     expect(isFailure).toBe(false);
   });
+
+  it('앱이 멈춘 뒤 오는 client만 정상 종료로 본다', () => {
+    // Given
+    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
+    const paused = createCaptureState({ status: 'paused', cause: 'user' });
+
+    // When
+    const results = [
+      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', true),
+      VoiceCapturePolicy.isRecognizerFailure(paused, 'client', false),
+      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', false),
+      VoiceCapturePolicy.isRecognizerFailure(listening, 'audio-capture', true),
+    ];
+
+    // Then
+    expect(results).toEqual([false, false, true, true]);
+  });
 });
 
 describe('getRemainingCaptureMs', () => {
@@ -663,7 +669,7 @@ describe('getRemainingCaptureMs', () => {
   });
 });
 
-describe('VoiceCapturePolicy.isChargedReview', () => {
+describe('isChargedReview', () => {
   const planned = (isCharged: boolean) =>
     reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
       type: 'planned',

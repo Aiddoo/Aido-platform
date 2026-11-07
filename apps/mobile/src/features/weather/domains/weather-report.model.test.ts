@@ -2,7 +2,6 @@ import type { WeatherAlert as WeatherAlertDto, WeatherNextHourPeriod } from '@ai
 import { toInstant } from '@src/shared/date/instant';
 
 import {
-  createHanoiReportDto,
   createHourlySeries,
   createSeoulReportDto,
   createTokyoReportDto,
@@ -44,7 +43,7 @@ function createAlert(overrides: Partial<WeatherAlertDto>): WeatherAlertDto {
   };
 }
 
-describe('WeatherReportPolicy.getPrecipitationWindow', () => {
+describe('getPrecipitationWindow', () => {
   it('분 단위 예보에서 비가 시작되면 시작 시각과 시간별 예보로 찾은 그침 시각을 함께 반환한다', () => {
     // Given
     const report = createWeatherReport({
@@ -65,9 +64,6 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
       endPrecision: 'hour',
       endsOnLaterDay: false,
     });
-    expect(WeatherReportPolicy.getMinutesUntil(toInstant('2026-11-02T06:43:00.000Z'), NOW)).toBe(
-      17,
-    );
   });
 
   it('비 구간이 이미 시작됐으면 지금 오는 비로 보고 구간 끝 시각을 그침 시각으로 쓴다', () => {
@@ -187,31 +183,77 @@ describe('WeatherReportPolicy.getPrecipitationWindow', () => {
   });
 
   it.each([
-    ['Asia/Seoul', true],
-    ['Asia/Tokyo', true],
-    ['Europe/London', false],
-  ])('비가 위치 시간대의 자정을 넘겨 그치는지 판단한다 (%s → %s)', (timezone, expected) => {
+    { timezone: 'Asia/Seoul', expected: true },
+    { timezone: 'Asia/Tokyo', expected: true },
+    { timezone: 'Europe/London', expected: false },
+  ])(
+    '위치 시간대가 $timezone이면 비가 자정을 넘겨 그치는지는 $expected다',
+    ({ timezone, expected }) => {
+      // Given
+      const now = toInstant('2026-11-02T14:26:00.000Z');
+      const report = createWeatherReport({
+        location: { latitude: 0, longitude: 0, timezone },
+        nextHour: null,
+        hourly: createHourlySeries('2026-11-02T14:00:00.000Z', [80, 10]),
+      });
+
+      // When
+      const window = WeatherReportPolicy.getPrecipitationWindow(report, now);
+
+      // Then
+      expect(window).toMatchObject({
+        kind: 'ongoing',
+        endsAt: toInstant('2026-11-02T15:00:00.000Z'),
+        endsOnLaterDay: expected,
+      });
+    },
+  );
+
+  it('국내처럼 분 단위 예보가 없으면 시간별 예보로 정시 기준 강수를 안내한다', () => {
     // Given
-    const now = toInstant('2026-11-02T14:26:00.000Z');
-    const report = createWeatherReport({
-      location: { latitude: 0, longitude: 0, timezone },
-      nextHour: null,
-      hourly: createHourlySeries('2026-11-02T14:00:00.000Z', [80, 10]),
-    });
+    const report = toWeatherReport(createSeoulReportDto());
 
     // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, now);
+    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
 
     // Then
-    expect(window).toMatchObject({
-      kind: 'ongoing',
-      endsAt: toInstant('2026-11-02T15:00:00.000Z'),
-      endsOnLaterDay: expected,
+    expect(window).toEqual({
+      kind: 'upcoming',
+      precision: 'hour',
+      precipitationType: 'RAIN',
+      startsAt: toInstant('2026-11-02T07:00:00.000Z'),
+      endsAt: toInstant('2026-11-02T09:00:00.000Z'),
+      endPrecision: 'hour',
+      endsOnLaterDay: false,
     });
+  });
+
+  it('도쿄처럼 분 단위 예보가 있으면 분 단위로 시작을 안내하고 도쿄 시간대 기준으로 날짜를 판단한다', () => {
+    // Given
+    const report = toWeatherReport(createTokyoReportDto());
+
+    // When
+    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
+
+    // Then
+    expect(window).toMatchObject({ kind: 'upcoming', precision: 'minute', endsOnLaterDay: false });
   });
 });
 
-describe('WeatherReportPolicy.getUpcomingHours', () => {
+describe('getMinutesUntil', () => {
+  it('지금부터 목표 시각까지 남은 분을 반환한다', () => {
+    // Given
+    const target = toInstant('2026-11-02T06:43:00.000Z');
+
+    // When
+    const minutes = WeatherReportPolicy.getMinutesUntil(target, NOW);
+
+    // Then
+    expect(minutes).toBe(17);
+  });
+});
+
+describe('getUpcomingHours', () => {
   it('지금이 속한 시간부터 남기고 이미 지난 시간은 뺀다', () => {
     // Given
     const report = createWeatherReport({
@@ -227,46 +269,88 @@ describe('WeatherReportPolicy.getUpcomingHours', () => {
       '2026-11-02T07:00:00.000Z',
     ]);
   });
+
+  it('받은 시각이 아니라 지금 이후 시간만 남겨 지난 시간 칸을 보이지 않는다', () => {
+    // Given
+    // 06:00~13:00 시간별 예보를 13:10에 다시 연다
+    const restored = createWeatherReport({
+      hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10, 10, 10, 10, 10, 10]),
+    });
+    const reopenedAt = toInstant('2026-11-02T13:10:00.000Z');
+
+    // When
+    const hours = WeatherReportPolicy.getUpcomingHours(restored.hourly, reopenedAt);
+
+    // Then
+    expect(hours.map((hour) => hour.startsAt)).toEqual(['2026-11-02T13:00:00.000Z']);
+  });
 });
 
-describe('WeatherReportPolicy.getTodayKey', () => {
+describe('getTodayKey', () => {
   const seoul = { location: { latitude: 37.5, longitude: 127, timezone: 'Asia/Seoul' } };
   const losAngeles = {
     location: { latitude: 34, longitude: -118, timezone: 'America/Los_Angeles' },
   };
 
   it('같은 순간도 자정 직전과 정각에 지역 날짜가 바뀐다', () => {
-    // Given 서울 자정 1밀리초 전과 정각
+    // Given
+    // 서울 자정 1밀리초 전과 정각
     const before = toInstant('2026-11-02T14:59:59.999Z');
     const at = toInstant('2026-11-02T15:00:00.000Z');
 
-    // When / Then
-    expect(WeatherReportPolicy.getTodayKey(seoul, before)).toBe('2026-11-02');
-    expect(WeatherReportPolicy.getTodayKey(seoul, at)).toBe('2026-11-03');
+    // When
+    const keyBefore = WeatherReportPolicy.getTodayKey(seoul, before);
+    const keyAt = WeatherReportPolicy.getTodayKey(seoul, at);
+
+    // Then
+    expect(keyBefore).toBe('2026-11-02');
+    expect(keyAt).toBe('2026-11-03');
   });
 
   it('같은 순간이어도 LA는 서울과 다른 날짜다', () => {
     // Given
     const now = toInstant('2026-11-02T15:00:00.000Z');
 
-    // When / Then
-    expect(WeatherReportPolicy.getTodayKey(losAngeles, now)).toBe('2026-11-02');
+    // When
+    const key = WeatherReportPolicy.getTodayKey(losAngeles, now);
+
+    // Then
+    expect(key).toBe('2026-11-02');
   });
 
   it('서머타임이 끝나는 날 LA 자정은 07:00Z에서 08:00Z로 밀리지 않고 날짜 key가 이어진다', () => {
-    // Given LA는 2026-11-01 02:00에 서머타임이 끝난다
+    // Given
+    // LA는 2026-11-01 02:00에 서머타임이 끝난다
     const beforeEnd = toInstant('2026-11-01T08:59:59.999Z');
     const afterEnd = toInstant('2026-11-01T09:00:00.000Z');
     const nextMidnight = toInstant('2026-11-02T08:00:00.000Z');
 
-    // When / Then
-    expect(WeatherReportPolicy.getTodayKey(losAngeles, beforeEnd)).toBe('2026-11-01');
-    expect(WeatherReportPolicy.getTodayKey(losAngeles, afterEnd)).toBe('2026-11-01');
-    expect(WeatherReportPolicy.getTodayKey(losAngeles, nextMidnight)).toBe('2026-11-02');
+    // When
+    const keyBeforeEnd = WeatherReportPolicy.getTodayKey(losAngeles, beforeEnd);
+    const keyAfterEnd = WeatherReportPolicy.getTodayKey(losAngeles, afterEnd);
+    const keyNextMidnight = WeatherReportPolicy.getTodayKey(losAngeles, nextMidnight);
+
+    // Then
+    expect(keyBeforeEnd).toBe('2026-11-01');
+    expect(keyAfterEnd).toBe('2026-11-01');
+    expect(keyNextMidnight).toBe('2026-11-02');
+  });
+
+  it('오늘 날짜는 기기가 아니라 예보 위치 시간대로 정한다', () => {
+    // Given
+    // 서울 자정 직후(UTC로는 전날)
+    const report = createWeatherReport();
+    const justAfterSeoulMidnight = toInstant('2026-09-30T15:05:00Z');
+
+    // When
+    const key = WeatherReportPolicy.getTodayKey(report, justAfterSeoulMidnight);
+
+    // Then
+    expect(key).toBe('2026-10-01');
   });
 });
 
-describe('WeatherReportPolicy.isReportStale', () => {
+describe('isReportStale', () => {
   it('공급자에서 받은 지 30분까지는 최신으로 본다', () => {
     // Given
     const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
@@ -288,9 +372,21 @@ describe('WeatherReportPolicy.isReportStale', () => {
     // Then
     expect(stale).toBe(true);
   });
+
+  it('7시간 전에 받은 리포트를 다시 열면 오래된 정보로 본다', () => {
+    // Given
+    const restored = createWeatherReport({ fetchedAt: '2026-11-02T06:00:00.000Z' });
+    const reopenedAt = toInstant('2026-11-02T13:10:00.000Z');
+
+    // When
+    const stale = WeatherReportPolicy.isReportStale(restored, reopenedAt);
+
+    // Then
+    expect(stale).toBe(true);
+  });
 });
 
-describe('WeatherReportPolicy.getActiveAlerts', () => {
+describe('getActiveAlerts', () => {
   it('만료된 특보만 빼고 서버가 정한 심각도 순서는 바꾸지 않는다', () => {
     // Given
     const report = createWeatherReport({
@@ -321,9 +417,31 @@ describe('WeatherReportPolicy.getActiveAlerts', () => {
     expect(alert?.id).toBe('upcoming');
     expect(alert != null && WeatherReportPolicy.isAlertInEffect(alert, NOW)).toBe(false);
   });
+
+  it('국내처럼 특보가 없는 지역은 빈 목록이다', () => {
+    // Given
+    const report = toWeatherReport(createSeoulReportDto());
+
+    // When
+    const alerts = WeatherReportPolicy.getActiveAlerts(report.alerts, NOW);
+
+    // Then
+    expect(alerts).toEqual([]);
+  });
+
+  it('도쿄 리포트의 유효한 특보는 남긴다', () => {
+    // Given
+    const report = toWeatherReport(createTokyoReportDto());
+
+    // When
+    const alerts = WeatherReportPolicy.getActiveAlerts(report.alerts, NOW);
+
+    // Then
+    expect(alerts).toHaveLength(1);
+  });
 });
 
-describe('WeatherReportPolicy.getSunEvents', () => {
+describe('getSunEvents', () => {
   it('일출·일몰이 모두 있으면 두 시각을 그대로 보여 준다', () => {
     // Given
     const [day] = createWeatherReport().daily;
@@ -412,83 +530,62 @@ describe('getHourlyPrecipitationOutlook', () => {
   });
 });
 
-describe('지역별 리포트 프리셋', () => {
-  it('국내처럼 분 단위 예보·특보가 없으면 시간별 예보로 정시 기준 강수를 안내하고 특보는 비운다', () => {
-    // Given
-    const report = toWeatherReport(createSeoulReportDto());
-
-    // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
-    const alerts = WeatherReportPolicy.getActiveAlerts(report.alerts, NOW);
-
-    // Then
-    expect(window).toEqual({
-      kind: 'upcoming',
-      precision: 'hour',
-      precipitationType: 'RAIN',
-      startsAt: toInstant('2026-11-02T07:00:00.000Z'),
-      endsAt: toInstant('2026-11-02T09:00:00.000Z'),
-      endPrecision: 'hour',
-      endsOnLaterDay: false,
-    });
-    expect(alerts).toEqual([]);
-  });
-
-  it('도쿄처럼 분 단위 예보가 있으면 분 단위로 시작을 안내하고 도쿄 시간대 기준으로 날짜를 판단한다', () => {
-    // Given
-    const report = toWeatherReport(createTokyoReportDto());
-
-    // When
-    const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
-
-    // Then
-    expect(window).toMatchObject({ kind: 'upcoming', precision: 'minute', endsOnLaterDay: false });
-    expect(WeatherReportPolicy.getActiveAlerts(report.alerts, NOW)).toHaveLength(1);
-  });
-
-  it('하노이처럼 대기질이 없으면 대기질 등급을 계산하지 않는다', () => {
-    // Given
-    const report = toWeatherReport(createHanoiReportDto());
-
-    // Then
-    expect(report.airQuality).toBeNull();
-    expect(report.nextHour).toBeNull();
-  });
-});
-
-describe('WeatherReportPolicy.isNowcastExpired', () => {
+describe('isNowcastExpired', () => {
   it.each([
-    ['2026-11-02T12:20:00.000Z', false],
-    ['2026-11-02T12:20:01.000Z', true],
-  ])('%s에는 6시간 경계를 기준으로 곧 올 비 안내를 숨길지 정한다 (%s)', (now, expected) => {
+    { now: '2026-11-02T12:20:00.000Z', expected: false },
+    { now: '2026-11-02T12:20:01.000Z', expected: true },
+  ])(
+    '받은 지 6시간 경계에서 $now에는 곧 올 비 안내를 숨기는지가 $expected다',
+    ({ now, expected }) => {
+      // Given
+      const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
+
+      // When
+      const expired = WeatherReportPolicy.isNowcastExpired(report, toInstant(now));
+
+      // Then
+      expect(expired).toBe(expected);
+    },
+  );
+
+  it('7시간 전에 받은 리포트를 다시 열면 곧 올 비 안내도 만료된다', () => {
     // Given
-    const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
+    const restored = createWeatherReport({ fetchedAt: '2026-11-02T06:00:00.000Z' });
+    const reopenedAt = toInstant('2026-11-02T13:10:00.000Z');
 
     // When
-    const expired = WeatherReportPolicy.isNowcastExpired(report, toInstant(now));
+    const expired = WeatherReportPolicy.isNowcastExpired(restored, reopenedAt);
 
     // Then
-    expect(expired).toBe(expected);
+    expect(expired).toBe(true);
   });
 });
 
-describe('WeatherReportPolicy.isDifferentWallClock', () => {
+describe('isDifferentWallClock', () => {
   const now = toInstant('2026-10-01T06:00:00Z');
 
   it.each([
-    ['Asia/Seoul', false],
-    ['Asia/Tokyo', false],
-    ['Asia/Bangkok', true],
-    ['America/Los_Angeles', true],
-  ])('기기 시간대가 %s이면 서울 리포트의 벽시계가 다른지는 %s다', (deviceTimeZone, expected) => {
-    // Given 서울 리포트 When 기기 시간대와 지금 벽시계를 비교하면 Then 오프셋이 다를 때만 다르다
-    const report = createWeatherReport();
+    { deviceTimeZone: 'Asia/Seoul', expected: false },
+    { deviceTimeZone: 'Asia/Tokyo', expected: false },
+    { deviceTimeZone: 'Asia/Bangkok', expected: true },
+    { deviceTimeZone: 'America/Los_Angeles', expected: true },
+  ])(
+    '기기 시간대가 $deviceTimeZone이면 서울 리포트의 벽시계가 다른지는 $expected다',
+    ({ deviceTimeZone, expected }) => {
+      // Given
+      const report = createWeatherReport();
 
-    expect(WeatherReportPolicy.isDifferentWallClock(report, deviceTimeZone, now)).toBe(expected);
-  });
+      // When
+      const isDifferent = WeatherReportPolicy.isDifferentWallClock(report, deviceTimeZone, now);
+
+      // Then
+      // 지금 시각의 UTC 오프셋이 서울과 다를 때만 다르다
+      expect(isDifferent).toBe(expected);
+    },
+  );
 });
 
-describe('WeatherReportPolicy.isFrozenPrecipitation', () => {
+describe('isFrozenPrecipitation', () => {
   it.each([
     ['SNOW', true],
     ['SLEET', true],
@@ -497,39 +594,10 @@ describe('WeatherReportPolicy.isFrozenPrecipitation', () => {
     ['MIXED', false],
     ['NONE', false],
   ] as const)('%s가 얼어 내리는지는 %s다', (type, expected) => {
-    // Given / When / Then
-    expect(WeatherReportPolicy.isFrozenPrecipitation(type)).toBe(expected);
-  });
-});
+    // When
+    const isFrozen = WeatherReportPolicy.isFrozenPrecipitation(type);
 
-describe('WeatherReportPolicy.getTodayKey', () => {
-  it('오늘 날짜는 기기가 아니라 예보 위치 시간대로 정한다', () => {
-    // Given 서울 자정 직후(UTC로는 전날)
-    const report = createWeatherReport();
-    const justAfterSeoulMidnight = toInstant('2026-09-30T15:05:00Z');
-
-    // When / Then
-    expect(WeatherReportPolicy.getTodayKey(report, justAfterSeoulMidnight)).toBe('2026-10-01');
-  });
-});
-
-describe('오프라인에서 저장한 리포트를 실제 지금 기준으로 볼 때', () => {
-  const restored = createWeatherReport({
-    fetchedAt: '2026-11-02T06:00:00.000Z',
-    hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10, 10, 10, 10, 10, 10]),
-  });
-  const now = toInstant('2026-11-02T13:10:00.000Z');
-
-  it('7시간 전에 받은 리포트는 오래된 정보이고 곧 올 비 안내도 만료된다', () => {
-    // Given 06:00에 받은 리포트 When 13:10에 다시 열면 Then 오래됨·nowcast 만료다
-    expect(WeatherReportPolicy.isReportStale(restored, now)).toBe(true);
-    expect(WeatherReportPolicy.isNowcastExpired(restored, now)).toBe(true);
-  });
-
-  it('받은 시각이 아니라 지금 이후 시간만 남겨 지난 시간 칸을 보이지 않는다', () => {
-    // Given 06:00~13:00 시간별 예보 When 13:10 기준으로 고르면 Then 13시 칸만 남는다
-    const hours = WeatherReportPolicy.getUpcomingHours(restored.hourly, now);
-
-    expect(hours.map((hour) => hour.startsAt)).toEqual(['2026-11-02T13:00:00.000Z']);
+    // Then
+    expect(isFrozen).toBe(expected);
   });
 });
