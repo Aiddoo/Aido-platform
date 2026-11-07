@@ -90,7 +90,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 </StyledSafeAreaView>
 ```
 
-- `todoId`는 props로 넘기지 않는다. 각 컴포넌트가 `useTodoParams()`로 읽는다(`check:conventions`가 검사).
+- `todoId`는 props로 넘기지 않는다. 각 컴포넌트가 `const [todoId] = useTodoId()`로 읽는다(`check:conventions`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·정렬·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
 - 할 일을 볼 수 없으면(`useIsTodoUnavailable`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.

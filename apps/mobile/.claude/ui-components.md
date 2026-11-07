@@ -164,22 +164,22 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 이름만 보고 무엇을 하는지, 어떤 원본을 확장했는지 알 수 있게 짓는다.
 
-| 대상                   | 규칙                                                                     | 예                                                       |
-| ---------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
-| 원본을 확장한 컴포넌트 | 원본 이름으로 끝난다                                                     | `TodoCreateBottomSheet`, `ConfirmDialog`, `ActionButton` |
-| 그 외 컴포넌트         | PascalCase, 대상 + 역할                                                  | `MemoList`, `MemoEditor`, `WeatherHero`                  |
-| 값을 입력받는 컴포넌트 | `…Input`                                                                 | `BottomSheetInput`                                       |
-| 피커 내용              | `*PickerContent`, `value`/`onChange`/`onCancel`                          | `TodoDatePickerContent`                                  |
-| 파일                   | kebab-case, 주 컴포넌트·훅과 같은 이름                                   | `memo-list.tsx`, `use-memo-params.ts`                    |
-| 이벤트 prop / 핸들러   | `onX` / `handleX`                                                        | `onLeave`, `handleBack`                                  |
-| 불리언                 | `is`, `has`, `can`, `should`                                             | `isEditing`, `hasNextPage`                               |
-| 상태 훅                | `[value, setValue]`                                                      | `[selectedMemoId, setSelectedMemoId]`                    |
-| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지 | `canCreateMemo`, `getMemoPreview`                        |
-| 변환·생성·불변 갱신    | `toX`, `createX`, `withX`                                                | `toMemo`, `createMemoDraftKey`                           |
-| 상수                   | SCREAMING_SNAKE, 값의 뜻                                                 | `DEFAULT_PAGE_SIZE`, `EMPTY_MEMO_FORM_VALUES`            |
-| 타입, Props            | PascalCase, Props는 `XProps`                                             | `MemoEditorProps`                                        |
-| 스키마                 | camelCase + `Schema`, 타입은 `z.infer`                                   | `memoSchema`, `Memo`                                     |
-| 축약                   | 쓰지 않는다                                                              | `button`, `message`, `index`                             |
+| 대상                   | 규칙                                                                           | 예                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 원본을 확장한 컴포넌트 | 원본 이름으로 끝난다                                                           | `TodoCreateBottomSheet`, `ConfirmDialog`, `ActionButton`              |
+| 그 외 컴포넌트         | PascalCase, 대상 + 역할                                                        | `MemoList`, `MemoEditor`, `WeatherHero`                               |
+| 값을 입력받는 컴포넌트 | `…Input`                                                                       | `BottomSheetInput`                                                    |
+| 피커 내용              | `*PickerContent`, `value`/`onChange`/`onCancel`                                | `TodoDatePickerContent`                                               |
+| 파일                   | kebab-case, 주 컴포넌트·훅과 같은 이름                                         | `memo-list.tsx`, `use-memo-params.ts`                                 |
+| 이벤트 prop / 핸들러   | `onX` / `handleX`                                                              | `onLeave`, `handleBack`                                               |
+| 불리언                 | `is`, `has`, `can`, `should`                                                   | `isEditing`, `hasNextPage`                                            |
+| 상태·route 훅          | 항상 튜플. `[value, setValue]`, `[{ a, b }, setValues]`, 읽기 전용은 `[value]` | `[selectedMemoId, setSelectedMemoId]`, `const [todoId] = useTodoId()` |
+| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지       | `canCreateMemo`, `getMemoPreview`                                     |
+| 변환·생성·불변 갱신    | `toX`, `createX`, `withX`                                                      | `toMemo`, `createMemoDraftKey`                                        |
+| 상수                   | SCREAMING_SNAKE, 값의 뜻                                                       | `DEFAULT_PAGE_SIZE`, `EMPTY_MEMO_FORM_VALUES`                         |
+| 타입, Props            | PascalCase, Props는 `XProps`                                                   | `MemoEditorProps`                                                     |
+| 스키마                 | camelCase + `Schema`, 타입은 `z.infer`                                         | `memoSchema`, `Memo`                                                  |
+| 축약                   | 쓰지 않는다                                                                    | `button`, `message`, `index`                                          |
 
 - **쓰지 않는 이름:** `Section`, `Body`, `Frame`, `Wrapper`, `Inner`, 역할 없는 `Content`. 위치만 뜻해 분리 근거가 되지 않는다. 시트 안쪽의 `XBottomSheet.Content`와 null을 좁혀 넘기는 `X.Contents`는 쓴다.
 - **네임스페이스:** `Item`, `Loading`, `Error`, `Empty`가 본체 없이는 의미가 없으면 본체 파일의 지역 컴포넌트나 compound member로 둔다.

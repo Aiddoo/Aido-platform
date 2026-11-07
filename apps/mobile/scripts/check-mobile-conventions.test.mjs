@@ -30,7 +30,7 @@ test('route hook과 옵션 팩토리를 쓰는 댓글 컴포넌트는 통과한�
       'apps/mobile/src/features/engagement/comment/components/TodoConversation.tsx': `
         interface TodoConversationProps { className?: string }
         export function TodoConversation({ className }: TodoConversationProps) {
-          const { todoId } = useTodoParams();
+          const [todoId] = useTodoId();
           return useInfiniteQuery(todoConversationQueryOptions({ todoId, className }));
         }
       `,

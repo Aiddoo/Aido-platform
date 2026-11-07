@@ -49,34 +49,34 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 ├── queries/          # 조회·변경 옵션, {feature}-cache.ts
 ├── constants/        # Query Keys, feature 상수
 ├── components/       # UI 블록과 부모에 결합된 네임스페이스 조각
-├── hooks/            # route 읽기(쓰기가 없으면 값 그대로), useRouteParams 위의 튜플, 여러 파일이 쓰는 훅
+├── hooks/            # 여러 파일이 쓰는 튜플 훅(route 값은 읽기 전용도 튜플), 한 파일만 쓰면 그 파일 안
 ├── utils/            # 초안 키, view-model, 순수 계산
 └── __tests__/        # fixture, 테스트 DI
 ```
 
-| 파일 유형      | 패턴                                                               |
-| -------------- | ------------------------------------------------------------------ |
-| 모델 스키마    | `schemas/{entity}.schema.ts`                                       |
-| 함수 + Policy  | `domains/{entity}.model.ts`                                        |
-| 에러           | `domains/{feature}.error.ts`                                       |
-| 폼 스키마      | `schemas/{name}-form.schema.ts`                                    |
-| 서비스         | `apis/{feature}.service.ts`                                        |
-| 매퍼           | `apis/{entity}.mapper.ts`                                          |
-| 조회 옵션      | `queries/{entity}.queries.ts`                                      |
-| 변경 옵션      | `queries/{entity}.mutations.ts`                                    |
-| 캐시 helper    | `queries/{feature}-cache.ts`                                       |
-| Query Keys     | `constants/{feature}-query-keys.ts`                                |
-| feature 상수   | `constants/{feature}.constants.ts`                                 |
-| 라벨 키        | `constants/{feature}-labels.ts`. 한 파일만 쓰면 그 파일 지역 상수  |
-| URL params     | `schemas/{name}-params.schema.ts` + `hooks/use-{name}-param(s).ts` |
-| 쿼리 키 값     | `schemas/{name}-query-key.schema.ts`. `Params`는 route에만 쓴다    |
-| 초안 키        | `utils/{feature}-draft.ts`                                         |
-| 표시 값        | `utils/{name}.view-model.ts`                                       |
-| 좌표·도형 계산 | `utils/{name}.geometry.ts`                                         |
-| Mutation Keys  | `constants/{entity}-mutation-keys.ts`                              |
-| 로그 키        | `constants/{entity}-log-events.ts`                                 |
-| 분석 이벤트    | `constants/{entity}.events.ts`                                     |
-| 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                   |
+| 파일 유형      | 패턴                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 모델 스키마    | `schemas/{entity}.schema.ts`                                                                                                                       |
+| 함수 + Policy  | `domains/{entity}.model.ts`                                                                                                                        |
+| 에러           | `domains/{feature}.error.ts`                                                                                                                       |
+| 폼 스키마      | `schemas/{name}-form.schema.ts`                                                                                                                    |
+| 서비스         | `apis/{feature}.service.ts`                                                                                                                        |
+| 매퍼           | `apis/{entity}.mapper.ts`                                                                                                                          |
+| 조회 옵션      | `queries/{entity}.queries.ts`                                                                                                                      |
+| 변경 옵션      | `queries/{entity}.mutations.ts`                                                                                                                    |
+| 캐시 helper    | `queries/{feature}-cache.ts`                                                                                                                       |
+| Query Keys     | `constants/{feature}-query-keys.ts`                                                                                                                |
+| feature 상수   | `constants/{feature}.constants.ts`                                                                                                                 |
+| 라벨 키        | `constants/{feature}-labels.ts`. 한 파일만 쓰면 그 파일 지역 상수                                                                                  |
+| URL params     | `schemas/{name}-params.schema.ts` + `hooks/use-{name}-param(s).ts`(여러 파일이 쓸 때만). 탭·보기는 공용 `useView`, 한 곳이면 `useRouteParams` 직접 |
+| 쿼리 키 값     | `schemas/{name}-query-key.schema.ts`. `Params`는 route에만 쓴다                                                                                    |
+| 초안 키        | `utils/{feature}-draft.ts`                                                                                                                         |
+| 표시 값        | `utils/{name}.view-model.ts`                                                                                                                       |
+| 좌표·도형 계산 | `utils/{name}.geometry.ts`                                                                                                                         |
+| Mutation Keys  | `constants/{entity}-mutation-keys.ts`                                                                                                              |
+| 로그 키        | `constants/{entity}-log-events.ts`                                                                                                                 |
+| 분석 이벤트    | `constants/{entity}.events.ts`                                                                                                                     |
+| 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                                                                                                   |
 
 파일 이름의 접두사는 그 파일이 다루는 entity 이름이다(`todo-comment.*`, `todo-category.*`). 같은 feature에서 다른 접두사를 쓰지 않는다.
 

@@ -207,7 +207,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | ------------------------------------------ | ----------------------------------------------------------------------- |
 | `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                       |
 | `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                              |
-| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoParam`로 읽음       |
+| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoId`로 읽음          |
 | `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)         |
 | `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다 |
 
@@ -307,13 +307,13 @@ export default function MemoDetailRoute() {
 
 **데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내리면 Suspense 경계를 블록 단위로 나눌 수 없다. 지역 컴포넌트에 좁힌 값을 넘기는 것은 괜찮다(`MemoList.Item`의 `memo`). 목록의 재사용 인터페이스(`filters`, `orderBy`, `limit`)는 실제 쓰는 곳이 있을 때만 둔다. 안 쓰는 옵션은 만들지 않는다.
 
-**화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 `use…Params()`나 상태 튜플 훅에서 직접 읽는다. 예외는 목록 행의 id다.
+**화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 튜플 훅(`const [memoId] = useMemoId()`)이나 `useRouteParams`에서 직접 읽는다. 예외는 목록 행의 id다.
 
 ```tsx
 // features/notes/memo/components/memo-editor.tsx
 function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
   const { t } = useTranslation(['memo', 'common']);
-  const memoId = useMemoParam();
+  const [memoId] = useMemoId();
   const deleteMemo = useMutation(useDeleteMemoMutationOptions());
 ```
 
@@ -423,7 +423,7 @@ MemoList.Loading = function Loading() {
 - 훅은 상태·effect·구독을 묶거나 여러 곳이 같은 규칙을 공유할 때만 만든다. 한두 줄을 감싸는 훅이나 파일을 짧게 하려는 훅은 만들지 않는다. `requestAnimationFrame(() => setFocus('title'))`처럼 몇 곳에 반복돼도 짧으면 쓰는 곳에 그대로 쓴다.
 - 사용처가 같으면 한 파일이다(`hooks/use-memo-params.ts`). 한 곳에서만 쓰면 그 컴포넌트 파일 안이다(`useMemoAiParse`).
 - 입력을 여는 칩·행은 시트가 넘긴 `form`을 props로 받아 `useWatch`·`Controller`로 직접 읽고 쓰며 시트도 직접 연다. 부모에 핸들러를 두고 `value`·`onChange`·`onCloseStart`를 내려보내지 않는다. Props는 부모만 아는 값과 원본 컴포넌트의 props만 받는다. 부모도 같은 동작을 불러야 하면 부모가 소유하고 원본 prop(`onPress`)으로 넘긴다.
-- 상태 훅은 `[value, setValue]` 튜플을 돌려준다. 저장소가 URL·MMKV·`useState` 중 무엇이어도 사용처는 그대로다. 이름은 `[selectedMemoId, setSelectedMemoId]`다.
+- 상태 훅과 route 훅은 항상 튜플을 돌려준다. 값 하나면 `[value, setValue]`, 여러 값이면 `[{ a, b }, setValues]`이고 읽기 전용이어도 세터 없는 튜플이다(`const [todoId] = useTodoId()`). 저장소가 URL·MMKV·`useState` 중 무엇이어도 훅 반환만 고치면 사용처는 그대로다. 이름은 값을 드러낸다(`[selectedMemoId, setSelectedMemoId]`). 저장소가 없는 계산·구독 값(`useIsOnline`, `useTemperatureUnit`)과 동작 묶음은 튜플이 아니다.
 - 쓰지 않는 요소는 비워 두지 않고 `_`를 붙인다(`const [_selectedMemoId, setSelectedMemoId]`).
 
 ### Context 대신 쓰는 것
@@ -435,7 +435,7 @@ MemoList.Loading = function Loading() {
 | 1    | props                                           | 부모만 아는 값, 한두 단계                                                                          | `onLeave`, `isEditing`                                           |
 | 2    | 컴포넌트를 prop으로                             | 자리는 같고 구현이 갈릴 때. 인터페이스 하나                                                        | `fallback={MemoList.Error}`, `toolbar={MemoEditor.StackToolbar}` |
 | 3    | Query 캐시, `useIsMutating`, `useMutationState` | 서버 값과 진행 상태를 떨어진 곳에서 읽을 때                                                        | `MemoAiParsingBadge`의 `useIsMutating`                           |
-| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoParam`, `useSelectedMemo`                                |
+| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoId`, `useSelectedMemoId`                                 |
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
@@ -498,14 +498,15 @@ MemoList.Loading = function Loading() {
 - 같은 화면의 보기 상태(선택 항목, 필터, 날짜, 친구, 작성기)는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`).
 - 쓰는 query param은 nuqs처럼 쓴다. 값 하나면 `[value, setValue]`, 함께 쓰는 값이면 `[values, setValues]`다. 패키지는 넣지 않고 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`) 위에 훅을 만든다. 읽기와 쓰기가 `schemas/{name}-params.schema.ts`의 스키마 하나를 지난다. 스키마 이름은 `{name}ParamsSchema`이고 훅 파일에 두지 않는다.
 - 쓰는 필드의 URL 형식은 문자열이고 `z.codec`이다(`routeIdSchema`, `weatherRescheduleParamsSchema.todoIds`). `.transform`은 `z.encode`에서 터지고 `z.coerce`는 숫자로 남아 조용히 지워지므로 읽기 전용 필드(`routeIntegerStringSchema`, `openedAt`)에만 쓴다. 값 지우기는 `setParams({ date: undefined })`다. boolean은 `?isEditing=false`를 남기지 않도록 끌 때 `undefined`를 넘긴다. 없거나 잘못된 값은 `.catch`로 읽는다.
-- 세터를 부르는 곳이 있으면 `useRouteParams` 위의 튜플이고, 없으면 값 그대로다. 값 하나면 값(`useTodoSheetDateParam(): string`), 여럿이면 객체(`useInquiryParams(): { … }`)다. 경로 세그먼트(`/todo/[todoId]`)도 쓰기가 없는 값이라 같은 규칙이다(`useTodoParams()`). 쓰기가 생기는 순간 튜플로 바꾼다.
-- 값을 바꿀 때 함께 지울 값이 있으면 그 규칙은 세터 안에 둔다. 호출부가 잊을 수 없다(`useFeedFriendParam`의 `selectFriend`, `useFeedSelectedTodo`의 세터, `CLEARED_TODO_SELECTION`). 공개 세터로 안 되는 넘김(접힌 화면의 상세 넘김)도 훅이 맡는다(`useFeedTodoDetailHandoff`, `useMemoDetailHandoff`). `router.setParams`, `useLocalSearchParams` 구조 분해, 파라미터 훅 파일의 `z.object`는 `check:conventions`가 막는다.
+- 읽기만 해도 튜플이다. 값 하나면 `const [todoId] = useTodoId()`, 여럿이면 `const [{ inviteCode, source }] = useInviteParams()`이고 경로 세그먼트(`/todo/[todoId]`)도 같다. 한 파일만 읽으면 훅을 따로 만들지 않고 그 자리에서 `useRouteParams(schema)`를 부른다(`const [{ year, week }] = useRouteParams(achievementParamsSchema)`). 여러 파일이 읽을 때 `hooks/use-{name}-param(s).ts`로 뺀다. 이름은 값을 드러낸다(`useTodoId`, `useFeedDateKey`).
+- 탭·보기처럼 값 하나만 바꾸면 공용 `useView(key, schema)`(`shared/hooks/use-view.ts`)다. `schema`는 `.catch` 기본값이 붙은 문자열 스키마 모듈 상수이고, `setView`는 스키마의 값만 받는다(`const [view, setView] = useView('view', invitedFriendsViewSchema)`). 한 파일만 쓰면 그 자리에서 부르고, 여러 파일이 같은 키를 읽으면 훅 하나로 뺀다(`useReportType`). heroui `Tabs`에는 `ViewTabs`(`src/shared/ui/view-tabs/view-tabs.md`)로 넘긴다. 여러 값을 함께 바꾸면 `useRouteParams`다(`useFriendListView`는 편집 모드를 함께 끈다).
+- 값을 바꿀 때 함께 지울 값이 있으면 그 규칙은 세터 안에 둔다. 호출부가 잊을 수 없다(`useFeedFriendId`의 `selectFriend`, `useFeedSelectedTodoId`의 세터, `CLEARED_TODO_SELECTION`). 공개 세터로 안 되는 넘김(접힌 화면의 상세 넘김)도 훅이 맡는다(`useFeedTodoDetailHandoff`, `useMemoDetailHandoff`). `router.setParams`, `useLocalSearchParams` 구조 분해, 파라미터 훅 파일의 `z.object`는 `check:conventions`가 막는다.
 - 라우트 id는 문자열을 숫자로 바꾼 뒤 검사한다(`routeIdSchema`). `as`로 건너뛰지 않는다.
 - `app/`에는 route 파일만 둔다. `@react-navigation/*`를 직접 import하지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`, Context 읽기는 `use`다.
 - `useGlobalSearchParams`를 화면 훅에서 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 렌더된다. 레이아웃은 내비게이터와 Provider만 두고 자식 params를 읽지 않는다.
 - 이동은 호출부에서 `router.push({ pathname, params })`로 직접 쓴다. typed routes가 `pathname`과 동적 세그먼트를 컴파일 때 검사하므로 href 래퍼를 만들지 않는다. 경로 문자열을 잇지 않는다. 알림은 `utils/notification-destination.ts`, 위젯은 `WidgetNavigationPolicy.getRoute`가 목적지를 정한다.
-- 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의 `parse` 훅으로 좁혀진 값을 읽는다.
-- 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` param으로 바뀐다. 친구 전환은 `useFeedFriendParam`의 세터(`router.setParams`)라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
+- 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의 튜플(`useRouteParams`, `useTodoId`)로 좁혀진 값을 읽는다. 스크린의 `safeParse`는 경계 분기라 튜플로 바꾸지 않는다.
+- 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` param으로 바뀐다. 친구 전환은 `useFeedFriendId`의 세터(`router.setParams`)라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 메모(`memo`)와 말로 메모(`voice-notes`) 스택은 `slide_from_bottom`이다. `voice-notes`는 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다(`gestureEnabled: false`). 시스템 모달은 토스트·한도 안내가 뒤로 가려져 쓰지 않는다.
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenUrl`(OS 앱 안 브라우저)로 연다. 앱 자체 WebView는 없다. 예전 `aido://webview/…` 링크는 `+not-found`로 간다.
 
@@ -515,15 +516,15 @@ MemoList.Loading = function Loading() {
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복사하지 않는다. 계산할 수 있는 값은 상태로 두지 않는다.
 
-| 상태                                                  | 도구                                                                                | 판단 기준·예                                                        |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`                 | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
-| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                                      | 비동기·재조회가 필요하면 Query                                      |
-| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useRouteParams` 위의 튜플 훅(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
-| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage` + `useStoredString`                                                   | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
-| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                            | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
-| 폼 값                                                 | react-hook-form + `zodResolver`                                                     | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
-| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                             | 나머지 전부                                                         |
+| 상태                                                  | 도구                                                                                                     | 판단 기준·예                                                        |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`                                      | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
+| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                                                           | 비동기·재조회가 필요하면 Query                                      |
+| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useView`(탭·보기), `useRouteParams`(여러 값) 튜플(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
+| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `SyncStorage` + `useStoredString`                                                                        | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
+| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                                                 | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
+| 폼 값                                                 | react-hook-form + `zodResolver`                                                                          | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
+| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                                                  | 나머지 전부                                                         |
 
 라이브러리가 주는 상태를 다시 만들지 않는다. 이 라이브러리 훅을 한 번 더 감싸는 훅도 만들지 않는다.
 
