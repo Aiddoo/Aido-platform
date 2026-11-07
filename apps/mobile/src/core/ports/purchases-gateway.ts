@@ -28,7 +28,7 @@ export interface PurchaseOffering {
   packages: readonly PurchasePackage[];
 }
 
-export type PurchasePackageResult =
+type PurchasePackageResult =
   | { type: 'purchased'; status: PurchaseStatus }
   | { type: 'package-not-found' };
 
@@ -59,7 +59,7 @@ export class PurchasesGatewayError extends Error {
 }
 
 /** `missing-api-key`: 이 빌드에는 결제 키가 없어 초기화하지 않았다 */
-export type PurchasesConfigureResult = 'configured' | 'missing-api-key';
+type PurchasesConfigureResult = 'configured' | 'missing-api-key';
 
 export interface PurchasesGateway {
   /** 초기화에 실패하면 throw한다 */

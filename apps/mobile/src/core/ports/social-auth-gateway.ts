@@ -1,4 +1,4 @@
-export interface OAuthSessionRequest {
+interface OAuthSessionRequest {
   /** API 서버의 로그인 시작 경로 */
   startPath: string;
   /** 앱으로 돌아올 경로 */
@@ -7,7 +7,7 @@ export interface OAuthSessionRequest {
   params: Record<string, string>;
 }
 
-export type OAuthSessionResult =
+type OAuthSessionResult =
   | { type: 'success'; url: string; queryParams: Record<string, string> }
   | { type: 'cancelled' }
   | { type: 'failed' };
