@@ -1,11 +1,11 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
-import type { FeatureHubSource } from '@src/shared/observability/telemetry-keys';
 import { Box, HStack, Image, PawIcon, Spacing, Steps } from '@src/shared/ui';
 
 import { RELEASE_1_14_0 } from '../constants/releases';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
+import type { FeatureHubSource } from '../schemas/whats-new-params.schema';
 import { WhatsNewStep } from './whats-new-step';
 
 type Release1140StepMap = {

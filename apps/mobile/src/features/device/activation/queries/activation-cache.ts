@@ -2,12 +2,12 @@ import { getCachedFeatureCampaignConfig } from '@src/features/app-config/feature
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
-import type { GrowthEventMap } from '@src/shared/analytics';
 import { type Instant, getNowInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { ActivationService } from '../apis/activation.service';
 import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
+import type { ActivationCompletedEvent } from '../constants/activation.events';
 import { ActivationPolicy } from '../domains/activation.model';
 import type { ActivationProgress } from '../schemas/activation.schema';
 
@@ -64,7 +64,7 @@ export function recordTodoCompletionForActivation({
   service,
   isCompleted,
   now = getNowInstant(),
-}: TodoCompletionBridgeInput): GrowthEventMap['activation_completed'] | null {
+}: TodoCompletionBridgeInput): ActivationCompletedEvent | null {
   const { config, user } = getContext(queryClient);
   const result = service.recordTodoCompletion({ config, user, isCompleted, now });
   if (result.progress) {

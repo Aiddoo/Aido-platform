@@ -1,7 +1,7 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
-import type { GrowthEventMap } from '@src/shared/analytics';
 import type { Instant } from '@src/shared/date/instant';
 
+import type { ActivationCompletedEvent } from '../constants/activation.events';
 import { ActivationPolicy } from '../domains/activation.model';
 import type { ActivationProgress, ActivationUser } from '../schemas/activation.schema';
 import type { ActivationProgressRepository } from './activation-progress.repository';
@@ -18,7 +18,7 @@ interface TodoCompletionInput extends ActivationActionInput {
 
 interface TodoCompletionResult {
   progress: ActivationProgress | null;
-  event: GrowthEventMap['activation_completed'] | null;
+  event: ActivationCompletedEvent | null;
 }
 
 export class ActivationService {

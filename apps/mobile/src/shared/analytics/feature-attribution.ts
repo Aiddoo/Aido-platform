@@ -3,10 +3,10 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
-import { FEATURE_KEYS, type FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { z } from 'zod';
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
+import { FEATURE_KEYS, type FeatureKey } from './feature-key';
 import { track } from './track';
 
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;

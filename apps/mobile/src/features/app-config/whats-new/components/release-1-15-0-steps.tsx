@@ -1,7 +1,6 @@
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
-import type { FeatureHubSource } from '@src/shared/observability/telemetry-keys';
 import { Box, Spacing, Steps } from '@src/shared/ui';
 import { View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
@@ -12,6 +11,7 @@ import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useStepFling } from '../hooks/use-step-fling';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
+import type { FeatureHubSource } from '../schemas/whats-new-params.schema';
 import { WhatsNewStep } from './whats-new-step';
 
 const STEP_COUNT = 2;

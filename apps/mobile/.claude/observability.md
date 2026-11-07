@@ -34,7 +34,7 @@
 
 ## Analytics
 
-- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 아직 옮기지 않은 이벤트는 `shared/observability/telemetry-keys.ts`의 `LegacyEventMap`에 있고 옮기는 대로 줄인다. `useTrack`·`track`은 둘을 합친 `TrackedEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 앱 tsconfig와 테스트 tsconfig 모두에서 인식된다. Sentry feature·태그 키·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`다.
+- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 특정 feature에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`)만 `shared/analytics/event-map.ts`의 `AppEventMap`에 직접 있다. `useTrack`·`track`은 `AppEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 앱 tsconfig와 테스트 tsconfig 모두에서 인식된다. Sentry feature·태그 키·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 이벤트 이름과 payload가 컴파일 때 검증되지 않기 때문이다.
 

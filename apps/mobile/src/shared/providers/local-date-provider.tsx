@@ -1,4 +1,5 @@
 import { track } from '@src/shared/analytics';
+import type { LocalDateChangeTrigger } from '@src/shared/analytics/event-map';
 import {
   createLocalDateState,
   isSameLocalDateState,
@@ -7,7 +8,6 @@ import {
 } from '@src/shared/date/local-date-clock';
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
-import type { LocalDateChangeTrigger } from '@src/shared/observability/telemetry-keys';
 import { type Calendar, useCalendars } from 'expo-localization';
 import {
   createContext,

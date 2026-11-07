@@ -1,6 +1,6 @@
+import type { InviteEntrySource } from '@src/features/social/invite/schemas/invite-entry.schema';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import type { InviteEntrySource } from '@src/shared/observability/telemetry-keys';
 import { type Href, router } from 'expo-router';
 import { useCallback } from 'react';
 

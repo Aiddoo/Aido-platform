@@ -1,8 +1,7 @@
-import type { FeatureHubSource, FeatureKey } from '@src/shared/observability/telemetry-keys';
+import type { FeatureKey } from '@src/shared/analytics/feature-key';
 
 import type { ReleaseId } from '../schemas/release.schema';
-
-type WhatsNewSource = FeatureHubSource;
+import type { FeatureHubSource as WhatsNewSource } from '../schemas/whats-new-params.schema';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

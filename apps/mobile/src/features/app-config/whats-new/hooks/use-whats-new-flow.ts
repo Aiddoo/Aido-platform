@@ -5,16 +5,17 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
+import type { FeatureKey } from '@src/shared/analytics/feature-key';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import type { FeatureHubSource, FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { useQuery } from '@tanstack/react-query';
 import { type Href, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { WHATS_NEW_LOG_EVENT } from '../constants/whats-new-log-events';
 import type { Release } from '../schemas/release.schema';
+import type { FeatureHubSource } from '../schemas/whats-new-params.schema';
 
 interface WhatsNewFlowInput {
   release: Pick<Release, 'id' | 'campaignId'>;
