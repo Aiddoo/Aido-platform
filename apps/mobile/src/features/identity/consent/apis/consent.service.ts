@@ -1,5 +1,4 @@
 import {
-  consentResponseSchema,
   type UpdateAiDataSharingConsentInput,
   updateAiDataSharingConsentResponseSchema,
   updateMarketingConsentResponseSchema,
@@ -8,7 +7,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { ConsentAgreement } from '../schemas/consent.schema';
+import { type ConsentAgreement, consentEnvelopeSchema } from '../schemas/consent.schema';
 import {
   toConsent,
   toUpdateAiDataSharingConsentResult,
@@ -26,7 +25,7 @@ export class ConsentService {
   getConsent = async (signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/auth/consent', { signal }),
-      consentResponseSchema,
+      consentEnvelopeSchema,
       toConsent,
       '[ConsentService] Invalid getConsent response',
     );

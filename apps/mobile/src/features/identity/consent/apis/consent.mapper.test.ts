@@ -62,7 +62,7 @@ describe('toConsent', () => {
     expect(result.aiDataSharingAgreedAt).toBe('2026-10-26T09:00:00.000Z');
   });
 
-  test('AI 동의 필드가 없는 이전 서버 응답은 답하지 않은 것으로 본다', () => {
+  test('서버가 답하지 않았다고 하면 동의 시각과 안내 버전은 비어 있다', () => {
     // Given
     const dto = createConsentDto();
 

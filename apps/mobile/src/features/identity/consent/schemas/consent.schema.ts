@@ -1,7 +1,15 @@
-import type { UpdateMarketingConsentInput } from '@aido/api';
+import { consentResponseSchema, type UpdateMarketingConsentInput } from '@aido/api';
 import { AI_DATA_SHARING_DECISIONS } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
+
+/** 지금 서버는 AI 데이터 처리 동의 세 칸을 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */
+export const consentEnvelopeSchema = consentResponseSchema.required({
+  aiDataSharingDecision: true,
+  aiDataSharingAgreedAt: true,
+  aiDataSharingConsentVersion: true,
+});
+export type ConsentEnvelope = z.infer<typeof consentEnvelopeSchema>;
 
 const consentSchema = z.object({
   termsAgreedAt: instantSchema.nullable(),
@@ -11,7 +19,7 @@ const consentSchema = z.object({
   marketingPushAgreedAt: instantSchema.nullable(),
   aiDataSharingDecision: z.enum(AI_DATA_SHARING_DECISIONS),
   aiDataSharingAgreedAt: instantSchema.nullable(),
-  /** 마지막으로 답한 안내 버전. 답한 적이 없거나 서버가 주지 않으면 null */
+  /** 마지막으로 답한 안내 버전. 답한 적이 없으면 null */
   aiDataSharingConsentVersion: z.string().nullable(),
 });
 export type Consent = z.infer<typeof consentSchema>;
