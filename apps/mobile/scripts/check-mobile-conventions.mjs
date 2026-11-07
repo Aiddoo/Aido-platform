@@ -401,6 +401,32 @@ function getSdkModule(moduleName) {
   return SDK_MODULES.find((sdk) => moduleName === sdk || moduleName.startsWith(`${sdk}/`));
 }
 
+const FEATURE_SOURCE_ROOT = 'apps/mobile/src/features/';
+
+// feature는 useTrack만 쓴다. 타입 이벤트 맵과 계정 정리 순서가 한 입구를 지나게 한다.
+function checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (!relativePath.startsWith(FEATURE_SOURCE_ROOT) || isTestSource(relativePath)) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) {
+      continue;
+    }
+    const namedBindings = statement.importClause?.namedBindings;
+    if (namedBindings === undefined || !ts.isNamedImports(namedBindings)) {
+      continue;
+    }
+    for (const element of namedBindings.elements) {
+      if ((element.propertyName ?? element.name).text === 'useAnalytics') {
+        errors.push(
+          `${getLocation(sourceFile, element, repositoryRoot)} feature는 useAnalytics를 직접 쓰지 않습니다. useTrack을 쓰세요.`,
+        );
+      }
+    }
+  }
+}
+
 function checkSdkImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (relativePath.startsWith(SDK_INFRA_ROOT) || isTestSource(relativePath)) {
@@ -1782,6 +1808,7 @@ export function checkMobileConventions(
     );
     checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
     checkSdkImports(sourceFile, repositoryRoot, errors);
+    checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors);
     checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors);
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);
   }

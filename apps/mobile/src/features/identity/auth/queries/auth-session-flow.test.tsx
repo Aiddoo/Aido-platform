@@ -347,6 +347,97 @@ describe('대기 중인 초대', () => {
   });
 });
 
+describe('계정을 떠날 때의 Analytics 정리 순서', () => {
+  function givenRecordedAnalytics() {
+    const analytics = createAnalyticsStub();
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, di: { analytics } });
+    const calls: string[] = [];
+    const statusNow = () => session.container.authSessionStore.getState().status;
+    analytics.trackEvent.mockImplementation((name) => calls.push(`${name}:${statusNow()}`));
+    analytics.clearUser.mockImplementation(() => calls.push(`clearUser:${statusNow()}`));
+    analytics.resetData.mockImplementation(() => calls.push(`resetData:${statusNow()}`));
+    session.authHttp.delete.mockResolvedValue(ok(createDeleteAccountDto()));
+    session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
+    return { session, calls };
+  }
+
+  const useLogoutProbe = () => useMutation(useLogoutMutationOptions());
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it('온라인 로그아웃은 이벤트, 사용자 정리, 로그아웃 전환 순서다', async () => {
+    // Given
+    const { session, calls } = givenRecordedAnalytics();
+    const { result } = await session.renderSession(useLogoutProbe, 'authenticated');
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+
+    // Then
+    expect(calls).toEqual(['auth_logout:authenticated', 'clearUser:authenticated']);
+    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+  });
+
+  it('오프라인 로그아웃도 같은 순서다', async () => {
+    // Given
+    const { session, calls } = givenRecordedAnalytics();
+    const { result } = await session.renderSession(useLogoutProbe, 'authenticated');
+    onlineManager.setOnline(false);
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+
+    // Then
+    expect(calls).toEqual(['auth_logout:authenticated', 'clearUser:authenticated']);
+    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+  });
+
+  it('탈퇴는 이벤트, 데이터 초기화, 로그아웃 전환 순서이고 사용자 정리를 따로 부르지 않는다', async () => {
+    // Given
+    const { session, calls } = givenRecordedAnalytics();
+    const { result } = await session.renderSession(
+      () => useMutation(useDeleteAccountMutationOptions()),
+      'authenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    expect(calls).toEqual(['auth_account_deleted:authenticated', 'resetData:authenticated']);
+    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+  });
+
+  it('탈퇴가 실패하면 Analytics를 건드리지 않는다', async () => {
+    // Given
+    const { session, calls } = givenRecordedAnalytics();
+    session.authHttp.delete.mockResolvedValue(
+      err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400)),
+    );
+    const { result } = await session.renderSession(
+      () => useMutation(useDeleteAccountMutationOptions()),
+      'authenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync({ password: 'wrong' }).catch(() => undefined);
+    });
+
+    // Then
+    expect(calls).toEqual([]);
+    expect(session.container.authSessionStore.getState().status).toBe('authenticated');
+  });
+});
+
 describe('탈퇴', () => {
   const useDeleteProbe = () => ({
     status: useAuthStatus(),
@@ -1104,7 +1195,7 @@ describe('토큰 만료', () => {
       });
       await waitFor(() => expect(result.current.status).toBe('authenticated'));
       session.draftService.save(memoDraftKey, { content: '새 세션에서 작성 중' });
-      jest.mocked(analytics.setUserId).mockClear();
+      jest.mocked(analytics.clearUser).mockClear();
 
       // When
       await act(async () => {
@@ -1120,7 +1211,7 @@ describe('토큰 만료', () => {
         value: { content: '새 세션에서 작성 중' },
       });
       expect(analytics.trackEvent).not.toHaveBeenCalledWith('auth_logout', undefined);
-      expect(analytics.setUserId).not.toHaveBeenCalledWith(null);
+      expect(analytics.clearUser).not.toHaveBeenCalled();
     });
 
     it('푸시 해제 중 다시 로그인했으면 새 토큰으로 서버 로그아웃을 보내지 않는다', async () => {
@@ -1188,6 +1279,7 @@ describe('토큰 만료', () => {
         expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
       );
       expect(analytics.trackEvent).toHaveBeenCalledWith('auth_logout', undefined);
+      expect(analytics.clearUser).toHaveBeenCalledTimes(1);
       await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
     });
   });

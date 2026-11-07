@@ -509,6 +509,23 @@ test('SDK를 shared/infra 밖에서 import하면 거부한다', () => {
   );
 });
 
+test('feature의 useAnalytics 직접 사용을 거부하고 bootstrap은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/identity/auth/queries/auth.mutations.ts': `
+        import { useAnalytics } from '@src/bootstrap/providers/di-context';
+      `,
+      'apps/mobile/src/bootstrap/hooks/use-user-identity.ts': `
+        import { useAnalytics } from '@src/bootstrap/providers/di-context';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /auth\.mutations\.ts.*useTrack/u);
+    },
+  );
+});
+
 test('shared/infra와 테스트의 SDK import는 통과한다', () => {
   withFixture(
     {

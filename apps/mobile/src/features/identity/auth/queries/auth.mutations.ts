@@ -1,6 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
 import {
-  useAnalytics,
   useAuthService,
   useHaptics,
   useLogger,
@@ -158,8 +157,7 @@ export function useOpenNaverLoginMutationOptions() {
 
 export function useLogoutMutationOptions() {
   const authService = useAuthService();
-  const analytics = useAnalytics();
-  const { trackEvent } = useTrack();
+  const { trackEvent, clearUser } = useTrack();
   const pushDeviceService = usePushDeviceService();
   const tokenStore = useTokenStore();
   const sessionRevocationService = useSessionRevocationService();
@@ -186,7 +184,7 @@ export function useLogoutMutationOptions() {
         return;
       }
       trackEvent('auth_logout');
-      analytics.setUserId(null);
+      clearUser();
       signOut();
     },
   });
@@ -195,8 +193,7 @@ export function useLogoutMutationOptions() {
 export function useDeleteAccountMutationOptions() {
   const haptics = useHaptics();
   const authService = useAuthService();
-  const analytics = useAnalytics();
-  const { trackEvent } = useTrack();
+  const { trackEvent, resetData } = useTrack();
   const toast = useAppToast();
   const { signOut } = useAuthSession();
   const queryClient = useQueryClient();
@@ -215,7 +212,7 @@ export function useDeleteAccountMutationOptions() {
       haptics.notify('success');
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
-      analytics.resetData();
+      resetData();
       if (accountId != null) {
         sessionCleanupService.afterAccountDeleted(accountId);
       }
