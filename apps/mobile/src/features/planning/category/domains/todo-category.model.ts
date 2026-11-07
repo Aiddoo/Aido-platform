@@ -1,4 +1,3 @@
-import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type { TodoCategory, TodoCategoryWithCount } from '../schemas/todo-category.schema';
 
 const MIN_REORDERABLE_COUNT = 2;
@@ -27,8 +26,11 @@ function getInitialCategoryId(
 }
 
 /** 바뀐 값이 없으면 요청을 보내지 않는다 */
-function hasChanges(category: Pick<TodoCategory, 'name' | 'color'>, form: TodoCategoryFormValues) {
-  return category.name !== form.name || category.color !== form.color;
+function hasChanges(
+  category: Pick<TodoCategory, 'name' | 'color'>,
+  values: Pick<TodoCategory, 'name' | 'color'>,
+) {
+  return category.name !== values.name || category.color !== values.color;
 }
 
 /** 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다 */
@@ -36,7 +38,7 @@ function requiresTodoMove(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
   return category.todoCount > 0;
 }
 
-function canReorderCategories(categories: readonly unknown[]) {
+function canReorderCategories(categories: readonly Pick<TodoCategory, 'id'>[]) {
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
 

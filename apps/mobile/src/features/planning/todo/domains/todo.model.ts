@@ -100,7 +100,7 @@ function getOptimisticListDate(
 }
 
 /** 순서를 바꾸려면 같은 묶음에 할 일이 둘 이상 있어야 한다 */
-function canReorderTodos(todos: readonly unknown[]) {
+function canReorderTodos(todos: readonly Pick<Todo, 'id'>[]) {
   return todos.length >= 2;
 }
 
