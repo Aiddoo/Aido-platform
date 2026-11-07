@@ -28,7 +28,8 @@ export interface PurchaseOffering {
   packages: readonly PurchasePackage[];
 }
 
-type PurchasePackageResult =
+/** 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public */
+export type PurchasePackageResult =
   | { type: 'purchased'; status: PurchaseStatus }
   | { type: 'package-not-found' };
 
@@ -59,7 +60,8 @@ export class PurchasesGatewayError extends Error {
 }
 
 /** `missing-api-key`: 이 빌드에는 결제 키가 없어 초기화하지 않았다 */
-type PurchasesConfigureResult = 'configured' | 'missing-api-key';
+/** 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public */
+export type PurchasesConfigureResult = 'configured' | 'missing-api-key';
 
 export interface PurchasesGateway {
   /** 초기화에 실패하면 throw한다 */

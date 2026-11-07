@@ -1,4 +1,5 @@
-interface OAuthSessionRequest {
+/** 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public */
+export interface OAuthSessionRequest {
   /** API 서버의 로그인 시작 경로 */
   startPath: string;
   /** 앱으로 돌아올 경로 */
@@ -7,7 +8,8 @@ interface OAuthSessionRequest {
   params: Record<string, string>;
 }
 
-type OAuthSessionResult =
+/** 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public */
+export type OAuthSessionResult =
   | { type: 'success'; url: string; queryParams: Record<string, string> }
   | { type: 'cancelled' }
   | { type: 'failed' };
