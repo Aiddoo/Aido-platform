@@ -1,7 +1,7 @@
 import { Avatar } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 
-import { getProfileIconSource } from '../utils/profile-icon.util';
+import { getProfileIconSource } from '../utils/profile-icon';
 
 interface UserAvatarProps extends Omit<ComponentProps<typeof Avatar>, 'children'> {
   profileImage: string | null;

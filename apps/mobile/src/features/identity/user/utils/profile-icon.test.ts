@@ -1,4 +1,4 @@
-import { getProfileIconSource } from './profile-icon.util';
+import { getProfileIconSource } from './profile-icon';
 
 describe('프로필 아이콘 이미지 선택', () => {
   test.each(['russian_blue', 'cream_cat', 'tuxedo_cat'])(
