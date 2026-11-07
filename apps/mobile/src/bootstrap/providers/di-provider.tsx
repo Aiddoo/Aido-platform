@@ -20,6 +20,7 @@ import { createWidgetNavigationRepository } from '@src/features/device/widget/ap
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
+import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
@@ -367,6 +368,7 @@ export function DIProvider({
       purchasesGateway: revenueCatPurchasesGateway,
       pushNotificationGateway: expoPushNotificationGateway,
       tokenStore,
+      authSessionStore: createAuthSessionStore(),
       sessionEpoch,
       sessionManager,
       sessionCleanupService,

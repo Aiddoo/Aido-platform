@@ -5,105 +5,68 @@ import {
   useWidgetSnapshotSync,
   type WidgetSyncAuthState,
 } from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
+import { isAuthBootPending } from '@src/features/identity/auth/domains/auth-session.model';
+import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-session';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { usePendingRevocationFlush } from '@src/features/identity/auth/hooks/use-pending-revocation-flush';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type PropsWithChildren, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
 import { resolveInitialAuthStatus } from './auth-boot';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
 import {
   useAnalytics,
+  useAuthSessionStore,
   useErrorReporter,
   useSessionCleanupService,
   useTokenStore,
 } from './di-context';
 
-interface AuthContextValue {
-  status: AuthStatus;
-  setStatus: (status: AuthStatus) => void;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
-
 export function AuthProvider({ children }: PropsWithChildren) {
+  const authSessionStore = useAuthSessionStore();
   const tokenStore = useTokenStore();
   const errorReporter = useErrorReporter();
   const analytics = useAnalytics();
   const sessionCleanupService = useSessionCleanupService();
-
-  const [status, setStatusState] = useState<AuthStatus>('loading');
-
-  // 세션 만료 이벤트는 React 커밋 전에 도착할 수 있다. 중복 처리를 막으려면
-  // state가 아니라 동기적으로 갱신되는 ref로 "지금 세션이 살아있는가"를 판정해야 한다.
-  const statusRef = useRef<AuthStatus>('loading');
-  const applyStatus = useCallback((next: AuthStatus) => {
-    statusRef.current = next;
-    setStatusState(next);
-  }, []);
-
-  // 사용자가 의도한 미인증 전환(로그아웃·탈퇴)인지 기록한다. 세션 만료는 의도가 아니므로
-  // 작성 중이던 초안을 남겨 같은 사용자가 다시 로그인하면 이어 쓸 수 있게 한다.
-  const isUserInitiatedSignOutRef = useRef(false);
-  const setStatus = useCallback(
-    (next: AuthStatus) => {
-      isUserInitiatedSignOutRef.current = next === 'unauthenticated';
-      if (next === 'authenticated' && statusRef.current !== 'authenticated') {
-        sessionCleanupService.beforeSignIn();
-      }
-      applyStatus(next);
-    },
-    [applyStatus, sessionCleanupService],
-  );
+  const authSession = useSyncExternalStore(authSessionStore.subscribe, authSessionStore.getState);
+  const { status } = authSession;
 
   /**
-   * 판정 실패를 관측하고 미인증으로 폴백한다.
+   * 토큰을 읽어 판정한다. 판정이 끝났으면(로그아웃 등) 결과를 버린다.
    *
    * `locked`는 잠금 해제를 기다리는 상태다. 잠금이 아닌 영구 오류(키체인 손상 등)까지
    * `locked`로 두면 재판정도 계속 실패해 **조용히 무한 로딩**에 갇힌다.
    * 미인증 폴백은 토큰을 지우지 않으므로, 원인이 해소되면 다음 실행에 회복된다.
    */
-  const fallbackToUnauthenticated = useCallback(
-    (error: unknown) => {
-      errorReporter.captureException(toError(error), { feature: 'auth' });
-      isUserInitiatedSignOutRef.current = false;
-      applyStatus('unauthenticated');
+  const resolveBoot = useCallback(
+    async (isCancelled: () => boolean) => {
+      const isStale = () => isCancelled() || !isAuthBootPending(authSessionStore.getState());
+      try {
+        const resolved = await resolveInitialAuthStatus(tokenStore);
+        if (!isStale()) {
+          authSessionStore.dispatch({ type: 'bootResolved', status: resolved });
+        }
+      } catch (error) {
+        if (!isStale()) {
+          errorReporter.captureException(toError(error), { feature: 'auth' });
+          authSessionStore.dispatch({ type: 'bootFailed' });
+        }
+      }
     },
-    [errorReporter, applyStatus],
+    [authSessionStore, tokenStore, errorReporter],
   );
 
   // 앱 시작 시 초기 인증 상태 결정 (읽기만 한다 — auth-boot.ts의 불변식 참조)
   useEffect(() => {
     let cancelled = false;
-
-    const checkAuth = async () => {
-      try {
-        const initialStatus = await resolveInitialAuthStatus(tokenStore);
-        if (!cancelled) {
-          applyStatus(initialStatus);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          fallbackToUnauthenticated(error);
-        }
-      }
-    };
-    checkAuth();
-
+    resolveBoot(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [tokenStore, applyStatus, fallbackToUnauthenticated]);
+  }, [resolveBoot]);
 
   // 잠긴 키체인으로 판정을 미뤘다면, 잠금 해제(포그라운드 복귀) 후 다시 시도한다.
   // 이 재판정이 없으면 잠금 중 콜드 스타트가 영구 로그인 화면이 된다.
@@ -113,19 +76,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     let cancelled = false;
-    const subscription = AppState.addEventListener('change', async (appState) => {
-      if (appState !== 'active') {
-        return;
-      }
-      try {
-        const initialStatus = await resolveInitialAuthStatus(tokenStore);
-        if (!cancelled && statusRef.current === 'locked') {
-          applyStatus(initialStatus);
-        }
-      } catch (error) {
-        if (!cancelled && statusRef.current === 'locked') {
-          fallbackToUnauthenticated(error);
-        }
+    const subscription = AppState.addEventListener('change', (appState) => {
+      if (appState === 'active') {
+        resolveBoot(() => cancelled);
       }
     });
 
@@ -133,7 +86,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       cancelled = true;
       subscription.remove();
     };
-  }, [status, tokenStore, applyStatus, fallbackToUnauthenticated]);
+  }, [status, resolveBoot]);
 
   // 세션 만료 확정 → 미인증으로 전환 + 관측 리포팅.
   useEffect(() => {
@@ -141,12 +94,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // 이미 로그아웃된 앱이 낸 401은 세션 만료가 아니다(로그인 화면에서도 인증 요청은 나간다).
       // 이 가드가 없으면 "로그인한 적 없는 유저의 session_expired"가 대량 발생해
       // 진짜 세션 유실을 노이즈 속에 묻는다.
-      if (statusRef.current !== 'authenticated') {
+      if (authSessionStore.getState().status !== 'authenticated') {
         return;
       }
 
-      isUserInitiatedSignOutRef.current = false;
-      applyStatus('unauthenticated');
+      authSessionStore.dispatch({ type: 'sessionExpired' });
 
       // 검색가능 1급 이벤트(원인 진단용) + 집계 이벤트(빈도 파악용, 타입 카탈로그 경유).
       // errorCode는 클라이언트의 결정 경로, serverErrorCode는 서버의 판정 — 별개 축이다.
@@ -158,7 +110,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       });
       track(analytics, 'session_expired', { reason });
     });
-  }, [errorReporter, analytics, applyStatus]);
+  }, [authSessionStore, errorReporter, analytics]);
 
   usePendingRevocationFlush();
 
@@ -178,23 +130,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
   // 즉시 재요청 → 토큰 없음 → 401 → 다시 만료 → clear 루프를 돈다. 그 401은 ErrorBoundary로
   // 던져져 "재시도/로그아웃" 화면을 띄운다. effect는 인증 화면이 언마운트된 뒤 실행된다.
   useEffect(() => {
-    if (status !== 'unauthenticated') {
+    if (authSession.status !== 'unauthenticated') {
       return;
     }
-    if (isUserInitiatedSignOutRef.current) {
+    if (authSession.reason === 'signed-out') {
       sessionCleanupService.afterSignedOut();
     } else {
       sessionCleanupService.afterSessionEnded();
     }
-  }, [status, sessionCleanupService]);
+  }, [authSession, sessionCleanupService]);
 
-  return <AuthContext.Provider value={{ status, setStatus }}>{children}</AuthContext.Provider>;
+  return children;
 }
 
-export const useAuth = (): AuthContextValue => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  const status = useAuthStatus();
+  const { signIn, signOut } = useAuthSession();
+
+  return {
+    status,
+    setStatus: (next: AuthStatus) => {
+      if (next === 'authenticated') {
+        signIn();
+      } else if (next === 'unauthenticated') {
+        signOut();
+      }
+    },
+  };
+}

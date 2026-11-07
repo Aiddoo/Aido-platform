@@ -27,6 +27,7 @@ import type { StoreReviewService } from '@src/features/device/store-review/apis/
 import type { WidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
+import type { AuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
 import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import type { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
@@ -81,6 +82,7 @@ export interface DIContainer {
   pushNotificationGateway: PushNotificationGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
+  authSessionStore: AuthSessionStore;
   /** 토큰이 지워질 때마다 올라가는 세션 세대 */
   sessionEpoch: SessionEpoch;
   /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
@@ -172,6 +174,7 @@ export const useLocationGateway = () => useDI().locationGateway;
 export const useClipboard = () => useDI().clipboard;
 export const useNetworkStatus = () => useDI().networkStatus;
 export const useTokenStore = () => useDI().tokenStore;
+export const useAuthSessionStore = () => useDI().authSessionStore;
 export const useSessionEpoch = () => useDI().sessionEpoch;
 export const useSessionCleanupService = () => useDI().sessionCleanupService;
 export const useSessionRevocationService = () => useDI().sessionRevocationService;
