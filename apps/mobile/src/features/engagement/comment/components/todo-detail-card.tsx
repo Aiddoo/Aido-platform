@@ -75,7 +75,7 @@ TodoDetailCard.Owner = function Owner() {
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const ownerName = detail.owner.name ?? t('detail.unknownOwner');
 
-  if (TodoPolicy.isOwnTodo(detail)) {
+  if (detail.permissions.canEdit) {
     return null;
   }
 
@@ -108,7 +108,7 @@ TodoDetailCard.Task = function Task() {
           isSelected={todo.completed}
           isDisabled={toggleTodo.isPending}
           onSelectedChange={
-            TodoPolicy.isOwnTodo(detail)
+            detail.permissions.canEdit
               ? () =>
                   toggleTodo.mutate({
                     todoId,
@@ -159,7 +159,7 @@ TodoDetailCard.Schedule = function Schedule() {
             </Text>
           )}
           {isRecurring &&
-            (TodoPolicy.isOwnTodo(detail) ? (
+            (detail.permissions.canEdit ? (
               <OwnRepeatLabel />
             ) : (
               <Text size="b4" shade={6}>
@@ -209,7 +209,7 @@ TodoDetailCard.SubTodos = function SubTodos() {
                 isSelected={subTodo.completed}
                 isDisabled={toggleSubTodo.isPending}
                 onSelectedChange={
-                  TodoPolicy.isOwnTodo(detail)
+                  detail.permissions.canEdit
                     ? () =>
                         toggleSubTodo.mutate({
                           todoId,
@@ -268,7 +268,7 @@ TodoDetailCard.Thanks = function Thanks() {
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
   const isThankable = NudgeInteractionPolicy.isThankableTodo(detail.todo, {
-    isOwner: TodoPolicy.isOwnTodo(detail),
+    isOwner: detail.permissions.canEdit,
   });
 
   if (!isThankable) {

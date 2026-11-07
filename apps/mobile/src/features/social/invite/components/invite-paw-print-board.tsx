@@ -1,3 +1,4 @@
+import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
 import { useHaptics, useInviteService } from '@src/bootstrap/providers/di-context';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
@@ -45,7 +46,6 @@ import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { InvitePolicy } from '../domains/invite.model';
-import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import {
   calculatePawPrintBoardWidth,
@@ -138,7 +138,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
 
       <Text size="b3" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {t('pawPrintBoard.rewardRule', {
-          activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+          activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
           days: InvitePolicy.getNextPremiumDays(myInvite),
           slots: InvitePolicy.getNextFriendSlots(myInvite),
           count: InvitePolicy.getNextFriendSlots(myInvite),
@@ -219,7 +219,7 @@ InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard
           t('pawPrintBoard.waitingOverflow', { count: waitingOverflowCount }),
         )
         .with({ totalPawPrints: 0 }, () =>
-          t('pawPrintBoard.firstHint', { activeDays: InvitedFriendPolicy.getRequiredActiveDays() }),
+          t('pawPrintBoard.firstHint', { activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS }),
         )
         .with({ isComplete: false }, () => null)
         .exhaustive()}
@@ -521,8 +521,8 @@ function InviteProgressMessage() {
           textBreakStrategy="highQuality"
         >
           {t('pawPrintBoard.progress.monthlyCapReached', {
-            windowDays: InvitePolicy.getPremiumCapWindowDays(),
-            days: InvitePolicy.getMonthlyPremiumCapDays(),
+            windowDays: INVITE_REWARD_CAPS.WINDOW_DAYS,
+            days: INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS,
           })}
         </Text>
         <KeepPremiumButton premiumAccess={me.premiumAccess} />
@@ -537,7 +537,7 @@ function InviteProgressMessage() {
           textBreakStrategy="highQuality"
         >
           {t('pawPrintBoard.progress.totalCapReached', {
-            days: InvitePolicy.getTotalPremiumCapDays(),
+            days: INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL,
           })}
         </Text>
         <KeepPremiumButton premiumAccess={me.premiumAccess} />

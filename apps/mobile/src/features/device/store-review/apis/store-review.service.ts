@@ -18,6 +18,12 @@ export type StoreReviewOutcome =
   | 'unavailable'
   | 'interrupted';
 
+/** 축하 화면의 애니메이션이 끝난 뒤 시스템 창이 뜨도록 순간마다 기다릴 시간 */
+const SETTLE_DELAY_MS = {
+  all_todos_done: 1_200,
+  paw_print_celebration: 1_500,
+} as const satisfies Record<StoreReviewMoment, number>;
+
 /** 축하 화면이 가라앉을 때까지 기다린다. 그사이 화면을 떠나거나 앱이 백그라운드로 가면 false */
 export type WaitUntilPresentable = (delayMs: number) => Promise<boolean>;
 
@@ -73,7 +79,7 @@ export class StoreReviewService {
       if (!(await this.#gateway.isAvailable())) {
         return 'unavailable';
       }
-      if (!(await waitUntilPresentable(StoreReviewPolicy.getSettleDelayMs(moment)))) {
+      if (!(await waitUntilPresentable(SETTLE_DELAY_MS[moment]))) {
         return 'interrupted';
       }
       // 기다리는 사이 다른 계정의 요청이 먼저 나갔을 수 있다

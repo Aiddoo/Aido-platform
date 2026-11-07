@@ -1,4 +1,4 @@
-import { REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
+import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetFriendQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
@@ -71,7 +71,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
               .with('waiting', () =>
                 friend.activeDayCount === 0
                   ? t('friendList.waitingNotStarted', {
-                      count: InvitedFriendPolicy.getRequiredActiveDays(),
+                      count: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
                     })
                   : t('friendList.waiting', {
                       count: InvitedFriendPolicy.getActiveDaysLeft(friend),
@@ -81,7 +81,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
                 match(friend.rejectionReason)
                   .with(REDEMPTION_REJECTION_REASON.EXPIRED, () =>
                     t('friendList.excludedExpired', {
-                      days: InvitedFriendPolicy.getQualificationWindowDays(),
+                      days: INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS,
                     }),
                   )
                   .with(REDEMPTION_REJECTION_REASON.INVITER_MONTHLY_CAP, () =>

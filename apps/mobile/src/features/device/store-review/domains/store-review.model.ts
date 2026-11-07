@@ -1,6 +1,5 @@
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { type Instant, diffMs } from '@src/shared/date/instant';
-import { match } from 'ts-pattern';
 
 import {
   STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
@@ -8,7 +7,7 @@ import {
   STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
   STORE_REVIEW_REQUEST_WINDOW_DAYS,
 } from '../constants/store-review.constants';
-import type { StoreReviewMoment, StoreReviewState } from '../schemas/store-review.schema';
+import type { StoreReviewState } from '../schemas/store-review.schema';
 
 export type StoreReviewEligibility =
   | 'eligible'
@@ -84,12 +83,4 @@ function evaluate(state: StoreReviewState, now: Instant): StoreReviewEligibility
   return 'eligible';
 }
 
-/** 축하 화면의 애니메이션이 끝난 뒤 시스템 창이 뜨도록 순간마다 기다릴 시간 */
-function getSettleDelayMs(moment: StoreReviewMoment) {
-  return match(moment)
-    .with('all_todos_done', () => 1_200)
-    .with('paw_print_celebration', () => 1_500)
-    .exhaustive();
-}
-
-export const StoreReviewPolicy = { evaluate, getSettleDelayMs } as const;
+export const StoreReviewPolicy = { evaluate } as const;

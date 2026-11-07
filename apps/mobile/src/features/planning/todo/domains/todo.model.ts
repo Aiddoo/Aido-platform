@@ -8,7 +8,6 @@ import type {
   DailyCompletionsResult,
   MultiDayTodoSpan,
   Todo,
-  TodoDetails,
 } from '../schemas/todo.schema';
 
 /** 비공개 할 일은 친구에게 보이지 않는다 */
@@ -184,21 +183,21 @@ function hasUpcomingTimedTodo(
   });
 }
 
-/** 서버가 준 수정 권한이 곧 내 할 일이다. 사용자 id를 다시 비교하지 않는다 */
-function isOwnTodo(details: Pick<TodoDetails, 'permissions'>): boolean {
-  return details.permissions.canEdit;
-}
-
 /** 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다 */
 function getDetailListDate(todo: Pick<Todo, 'startDate' | 'endDate'>, todayKey: string): string {
   return isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
 }
 
+/** 순서를 바꾸려면 같은 묶음에 할 일이 둘 이상 있어야 한다 */
+function canReorderTodos(todos: readonly unknown[]) {
+  return todos.length >= 2;
+}
+
 export const TodoPolicy = {
+  canReorderTodos,
   isPrivate,
   findTodo,
   findSubTodo,
-  isOwnTodo,
   getDetailListDate,
   isTodoOnDate,
   isRecurringTodo,

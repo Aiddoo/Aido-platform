@@ -4,7 +4,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 
-import { getFinalText, getInterimText } from '../../domains/voice-transcript.model';
+import { getFinalText } from '../../domains/voice-transcript.model';
 import { type VoiceTranscript } from '../../schemas/voice-transcript.schema';
 
 const MAX_ANIMATED_WORDS = 40;
@@ -33,7 +33,7 @@ export function LiveTranscript({
   const isFollowingRef = useRef(true);
   const finalText = getFinalText(transcript);
   const finalWords = splitWords(finalText);
-  const interimWords = splitWords(getInterimText(transcript));
+  const interimWords = splitWords(transcript.interim);
   const isAnimated =
     isWordFadeEnabled && !isReducedMotion && finalWords.length <= MAX_ANIMATED_WORDS;
   const isEmpty = finalWords.length === 0 && interimWords.length === 0;

@@ -1,4 +1,3 @@
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -14,7 +13,7 @@ export function useTodoModerationActions({ todoId }: { todoId: number }) {
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
-  if (detail == null || TodoPolicy.isOwnTodo(detail)) {
+  if (detail == null || detail.permissions.canEdit) {
     return { isAvailable: false, report: () => undefined, block: () => undefined } as const;
   }
 

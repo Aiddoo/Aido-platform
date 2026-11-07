@@ -1,7 +1,7 @@
+import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
 import type { FriendLimitInvite } from '@src/features/social/friend/domains/friend.model';
 import { useTranslation } from '@src/shared/i18n';
 
-import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import { useInviteAvailability } from './use-invite-availability';
 import { useOpenMyInvite } from './use-open-my-invite';
 
@@ -19,7 +19,7 @@ export function useFriendLimitInvite(): FriendLimitInvite | undefined {
     getDescription: (limit) =>
       t('entry.friendLimitDescription', {
         limit,
-        activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+        activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
       }),
     actionLabel: t('entry.growFriendLimit'),
     open: () => openMyInvite('friend_limit_dialog'),

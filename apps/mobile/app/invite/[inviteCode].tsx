@@ -1,3 +1,4 @@
+import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
@@ -5,7 +6,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
 import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
-import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
 import { useInviteParams } from '@src/features/social/invite/hooks/use-invite-params';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
@@ -134,7 +134,7 @@ function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }
         >
           {t('card.receipt.inviterReward', {
             name: inviterName,
-            activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+            activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
             days: InviteRewardPolicy.getInviterPremiumDays(),
           })}
         </Text>

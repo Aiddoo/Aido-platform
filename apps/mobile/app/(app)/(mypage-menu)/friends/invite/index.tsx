@@ -1,3 +1,4 @@
+import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import ShareIcon from '@expo/material-symbols/share.xml';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -8,8 +9,6 @@ import { InviteShareActions } from '@src/features/social/invite/components/invit
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
 import { createInviteShareContent } from '@src/features/social/invite/domains/invite-share.model';
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
-import { InvitePolicy } from '@src/features/social/invite/domains/invite.model';
-import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useShareInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/invite.queries';
@@ -201,15 +200,15 @@ function InviteRewardNotice() {
       <VStack gap={4} accessibilityRole="list">
         <NoticeRow>
           {t('myInvite.notice.qualification', {
-            count: InvitedFriendPolicy.getRequiredActiveDays(),
-            days: InvitedFriendPolicy.getQualificationWindowDays(),
+            count: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+            days: INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS,
           })}
         </NoticeRow>
         <NoticeRow>
           {t('myInvite.notice.cap', {
-            windowDays: InvitePolicy.getPremiumCapWindowDays(),
-            monthly: InvitePolicy.getMonthlyPremiumCapDays(),
-            total: InvitePolicy.getTotalPremiumCapDays(),
+            windowDays: INVITE_REWARD_CAPS.WINDOW_DAYS,
+            monthly: INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS,
+            total: INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL,
           })}
         </NoticeRow>
         <NoticeRow>{t('myInvite.notice.subscription')}</NoticeRow>

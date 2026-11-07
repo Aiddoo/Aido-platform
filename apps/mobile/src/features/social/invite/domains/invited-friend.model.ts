@@ -21,18 +21,8 @@ export function calculateActiveDaysLeft(activeDays: number, requiredDays: number
   return Math.max(requiredDays - activeDays, 0);
 }
 
-/** 발자국이 찍히려면 할 일을 해내야 하는 서로 다른 날 수 */
-function getRequiredActiveDays() {
-  return INVITE_QUALIFICATION.MIN_ACTIVE_DAYS;
-}
-
-/** 가입한 뒤 발자국을 남길 수 있는 기간(일) */
-function getQualificationWindowDays() {
-  return INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS;
-}
-
 function getActiveDaysLeft(friend: Pick<InvitedFriend, 'activeDayCount'>) {
-  return calculateActiveDaysLeft(friend.activeDayCount, getRequiredActiveDays());
+  return calculateActiveDaysLeft(friend.activeDayCount, INVITE_QUALIFICATION.MIN_ACTIVE_DAYS);
 }
 
 /** 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지 */
@@ -46,8 +36,6 @@ function getPawPrintState(friend: Pick<InvitedFriend, 'status'>) {
 }
 
 export const InvitedFriendPolicy = {
-  getRequiredActiveDays,
-  getQualificationWindowDays,
   getActiveDaysLeft,
   getPawPrintState,
 } as const;

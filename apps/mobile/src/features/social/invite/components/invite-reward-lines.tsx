@@ -1,3 +1,4 @@
+import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
 import { useTranslation } from '@src/shared/i18n';
 import { Text, VStack, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -5,7 +6,6 @@ import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { InviteRewardPolicy } from '../domains/invite-reward.model';
-import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 
 /** 내 초대 화면에서 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */
 export function InviteRewardLines({ className, ...props }: ComponentProps<typeof VStack>) {
@@ -20,7 +20,7 @@ export function InviteRewardLines({ className, ...props }: ComponentProps<typeof
       key: 'inviter',
       label: t('myInvite.rewardInviterLabel'),
       value: t('myInvite.rewardInviter', {
-        activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
+        activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
         days: InviteRewardPolicy.getInviterPremiumDays(),
       }),
     },

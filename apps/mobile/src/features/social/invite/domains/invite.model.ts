@@ -1,9 +1,4 @@
-import {
-  INVITE_CODE,
-  INVITE_REWARD_CAPS,
-  INVITER_REWARD_MILESTONES,
-  PREMIUM_CAP_STATE,
-} from '@aido/api/vocabulary';
+import { INVITE_CODE, INVITER_REWARD_MILESTONES, PREMIUM_CAP_STATE } from '@aido/api/vocabulary';
 import { uniq } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -135,21 +130,6 @@ function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
   return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
 }
 
-/** 최근 premiumCapWindowDays일 동안 초대로 받을 수 있는 프리미엄 일수 */
-function getMonthlyPremiumCapDays() {
-  return INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS;
-}
-
-/** getMonthlyPremiumCapDays를 세는 기간(일) */
-function getPremiumCapWindowDays() {
-  return INVITE_REWARD_CAPS.WINDOW_DAYS;
-}
-
-/** 지금까지 초대로 받을 수 있는 프리미엄 일수 */
-function getTotalPremiumCapDays() {
-  return INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL;
-}
-
 function getMilestoneQualifiedCounts() {
   return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
 }
@@ -178,22 +158,13 @@ function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedCount'>)
     .exhaustive();
 }
 
-/** 상한에 닿아 초대로는 프리미엄을 더 받지 못한다 */
-function isPremiumCapReached(invite: Pick<Invite, 'premiumCapState'>) {
-  return invite.premiumCapState !== PREMIUM_CAP_STATE.AVAILABLE;
-}
-
 export const InvitePolicy = {
   getRemainingToNextMilestone,
   getNextPremiumDays,
   getNextFriendSlots,
   getEarnedPremiumDays,
   getEarnedFriendSlots,
-  getMonthlyPremiumCapDays,
-  getPremiumCapWindowDays,
-  getTotalPremiumCapDays,
   getMilestoneQualifiedCounts,
   hasInvitedAnyone,
   getProgress,
-  isPremiumCapReached,
 } as const;

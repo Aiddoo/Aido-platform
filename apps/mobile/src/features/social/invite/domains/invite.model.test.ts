@@ -320,21 +320,4 @@ describe('InvitePolicy', () => {
       expect(result).toBe('in-progress');
     });
   });
-
-  describe('isPremiumCapReached', () => {
-    it.each([
-      ['AVAILABLE', false],
-      ['WINDOW_REACHED', true],
-      ['TOTAL_REACHED', true],
-    ] as const)('상한 상태가 %s면 %s를 반환한다', (premiumCapState, expected) => {
-      // Given
-      const myInvite = createInvite({ premiumCapState });
-
-      // When
-      const result = InvitePolicy.isPremiumCapReached(myInvite);
-
-      // Then
-      expect(result).toBe(expected);
-    });
-  });
 });

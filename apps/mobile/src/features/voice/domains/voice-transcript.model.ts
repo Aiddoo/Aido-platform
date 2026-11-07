@@ -32,10 +32,6 @@ export function getFinalText(transcript: VoiceTranscript): string {
   return transcript.sentences.join(' ');
 }
 
-export function getInterimText(transcript: VoiceTranscript): string {
-  return transcript.interim;
-}
-
 export function getTranscriptText(transcript: VoiceTranscript): string {
   return [getFinalText(transcript), transcript.interim].filter((part) => part.length > 0).join(' ');
 }

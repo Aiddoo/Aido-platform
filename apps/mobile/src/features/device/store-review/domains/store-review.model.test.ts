@@ -113,12 +113,3 @@ describe('시간대가 다른 저장 값', () => {
     expect(StoreReviewPolicy.evaluate(seoul, NOW)).toBe(StoreReviewPolicy.evaluate(utc, NOW));
   });
 });
-
-describe('StoreReviewPolicy.getSettleDelayMs', () => {
-  it('축하 화면이 가라앉도록 순간마다 1초 이상 기다린다', () => {
-    expect(StoreReviewPolicy.getSettleDelayMs('all_todos_done')).toBeGreaterThanOrEqual(1_000);
-    expect(StoreReviewPolicy.getSettleDelayMs('paw_print_celebration')).toBeGreaterThanOrEqual(
-      1_000,
-    );
-  });
-});

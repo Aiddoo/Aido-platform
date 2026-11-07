@@ -1,4 +1,3 @@
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
@@ -105,7 +104,7 @@ function TodoActionsButton({ date }: { date: string }) {
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
-  if (detail == null || !TodoPolicy.isOwnTodo(detail)) {
+  if (detail == null || !detail.permissions.canEdit) {
     return null;
   }
 
