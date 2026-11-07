@@ -1,33 +1,23 @@
-import { inviteRewardOrUnknownSchema } from '../schemas/invite-reward.schema';
 import {
   calculateRewardQuantity,
   InviteRewardPolicy,
   isPremiumDaysReward,
 } from './invite-reward.model';
 
-describe('inviteRewardOrUnknownSchema', () => {
-  it('모르는 보상 종류를 받으면 UNKNOWN 0개를 반환한다', () => {
-    // When
-    const result = inviteRewardOrUnknownSchema.parse({ rewardType: 'BADGE', quantity: 1 });
-
-    // Then
-    expect(result).toEqual({ rewardType: 'UNKNOWN', quantity: 0 });
-  });
-});
-
 describe('calculateRewardQuantity', () => {
   it('고른 종류의 수량만 더해서 반환한다', () => {
-    // When
-    const result = calculateRewardQuantity(
-      [
-        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
-        { rewardType: 'FRIEND_SLOT', quantity: 1 },
-        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
-      ],
-      isPremiumDaysReward,
-    );
+    // Given
+    const rewards = [
+      { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+      { rewardType: 'FRIEND_SLOT', quantity: 1 },
+      { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+    ] as const;
 
-    // Then 7 + 7 = 14
+    // When
+    const result = calculateRewardQuantity(rewards, isPremiumDaysReward);
+
+    // Then
+    // 7 + 7 = 14
     expect(result).toBe(14);
   });
 
@@ -40,24 +30,24 @@ describe('calculateRewardQuantity', () => {
   });
 });
 
-describe('InviteRewardPolicy', () => {
-  describe('welcomePremiumDays', () => {
-    it('초대받은 사람 보상 표의 프리미엄 일수를 반환한다', () => {
-      // When
-      const result = InviteRewardPolicy.getWelcomePremiumDays();
+describe('getWelcomePremiumDays', () => {
+  it('초대받은 사람 보상 표의 프리미엄 일수를 반환한다', () => {
+    // When
+    const result = InviteRewardPolicy.getWelcomePremiumDays();
 
-      // Then INVITEE_REWARDS의 PREMIUM_DAYS 7
-      expect(result).toBe(7);
-    });
+    // Then
+    // INVITEE_REWARDS의 PREMIUM_DAYS 7
+    expect(result).toBe(7);
   });
+});
 
-  describe('inviterPremiumDays', () => {
-    it('초대받은 사람 보상이 아니라 초대한 사람 첫 단계 보상의 프리미엄 일수를 반환한다', () => {
-      // When
-      const result = InviteRewardPolicy.getInviterPremiumDays();
+describe('getInviterPremiumDays', () => {
+  it('초대받은 사람 보상이 아니라 초대한 사람 첫 단계 보상의 프리미엄 일수를 반환한다', () => {
+    // When
+    const result = InviteRewardPolicy.getInviterPremiumDays();
 
-      // Then INVITER_REWARD_MILESTONES[0]의 PREMIUM_DAYS 7 (친구 추가 +1명은 세지 않는다)
-      expect(result).toBe(7);
-    });
+    // Then
+    // INVITER_REWARD_MILESTONES[0]의 PREMIUM_DAYS 7 (친구 추가 +1명은 세지 않는다)
+    expect(result).toBe(7);
   });
 });

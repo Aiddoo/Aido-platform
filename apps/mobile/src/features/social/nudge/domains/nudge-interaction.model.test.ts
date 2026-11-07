@@ -2,8 +2,8 @@ import { toInstant } from '@src/shared/date/instant';
 
 import { NudgeInteractionPolicy } from './nudge-interaction.model';
 
-describe('콕 상호작용 상태', () => {
-  test.each([
+describe('getNudgeInteractionStatus', () => {
+  it.each([
     [false, false, false, false, 'UNAVAILABLE'],
     [false, false, false, true, 'UNAVAILABLE'],
     [false, false, true, false, 'UNAVAILABLE'],
@@ -39,7 +39,7 @@ describe('콕 상호작용 상태', () => {
     },
   );
 
-  test('완료된 할 일에 답장이 있어도 완료 상태가 우선한다', () => {
+  it('완료된 할 일에 답장이 있어도 완료 상태가 우선한다', () => {
     // Given
     const nudge = {
       isAvailable: true,
@@ -56,8 +56,8 @@ describe('콕 상호작용 상태', () => {
   });
 });
 
-describe('NudgeInteractionPolicy', () => {
-  test.each([
+describe('hasThankableRecipients', () => {
+  it.each([
     [1, [{ id: 'friend', name: '친구', profileImage: null }], true],
     [null, [{ id: 'friend', name: '친구', profileImage: null }], false],
     [1, [], false],
@@ -66,35 +66,41 @@ describe('NudgeInteractionPolicy', () => {
     (throughNudgeId, recipients, expected) => {
       // Given
       const preview = { throughNudgeId, recipients };
+
       // When
-      const isThankable = NudgeInteractionPolicy.hasThankableRecipients(preview);
+      const hasThankable = NudgeInteractionPolicy.hasThankableRecipients(preview);
+
+      // Then
+      expect(hasThankable).toBe(expected);
+    },
+  );
+});
+
+describe('isThankableTodo', () => {
+  it.each([
+    [true, true, 'PUBLIC' as const, true],
+    [false, true, 'PUBLIC' as const, false],
+    [true, false, 'PUBLIC' as const, false],
+    [true, true, 'PRIVATE' as const, false],
+  ])(
+    '수정 권한 %s, 완료 %s, 공개 범위 %s에 맞게 감사를 허용한다',
+    (canEditTodo, completed, visibility, expected) => {
+      // Given
+      const todo = { completed, visibility };
+
+      // When
+      const isThankable = NudgeInteractionPolicy.isThankableTodo(todo, { canEditTodo });
+
       // Then
       expect(isThankable).toBe(expected);
     },
   );
 });
 
-test.each([
-  [true, true, 'PUBLIC' as const, true],
-  [false, true, 'PUBLIC' as const, false],
-  [true, false, 'PUBLIC' as const, false],
-  [true, true, 'PRIVATE' as const, false],
-])(
-  '소유자 %s, 완료 %s, 공개 범위 %s에 맞게 감사를 허용한다',
-  (isOwner, completed, visibility, expected) => {
-    // Given
-    const todo = { completed, visibility };
-    // When
-    const isThankable = NudgeInteractionPolicy.isThankableTodo(todo, { canEditTodo: isOwner });
-    // Then
-    expect(isThankable).toBe(expected);
-  },
-);
-
-describe('감사 요약 상태', () => {
+describe('getThanksSummary', () => {
   const recipient = { id: 'friend-1', name: '응원냥', profileImage: null };
 
-  test.each([
+  it.each([
     [10, 3, 0, 'PENDING', 3],
     [10, 3, 2, 'SENT_WITH_PENDING', 3],
     [null, 0, 2, 'SENT', 0],
@@ -118,7 +124,7 @@ describe('감사 요약 상태', () => {
     },
   );
 
-  test('감사 기준 콕이 없으면 남은 친구 수가 있어도 보낼 친구로 세지 않는다', () => {
+  it('감사 기준 콕이 없으면 남은 친구 수가 있어도 보낼 친구로 세지 않는다', () => {
     // Given
     const preview = {
       throughNudgeId: null,
@@ -144,7 +150,7 @@ describe('getResponseStage', () => {
     thankedAt: null,
   };
 
-  test.each([
+  it.each([
     ['사라진 콕은 unavailable', { ...nudge, isAvailable: false }, 'me', 'unavailable'],
     ['받은 사람이 끝나지 않은 할 일에는 reply', nudge, 'me', 'reply'],
     ['보낸 사람은 답장 없이 status', nudge, 'sender', 'status'],
@@ -161,7 +167,6 @@ describe('getResponseStage', () => {
       'thanked',
     ],
   ] as const)('%s', (_title, input, userId, expected) => {
-    // Given
     // When
     const stage = NudgeInteractionPolicy.getResponseStage(input, userId);
 

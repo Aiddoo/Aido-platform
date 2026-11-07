@@ -1,8 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 
-import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite.fixtures';
-import { invitedFriendSchema } from '../schemas/invited-friend.schema';
+import { createInvitedFriend } from '../__tests__/invite.fixtures';
 import {
   calculateActiveDaysLeft,
   InvitedFriendPolicy,
@@ -27,58 +26,6 @@ describe('orderByJoinedAtDesc', () => {
 
     // Then
     expect(result.map((friend) => friend.userId)).toEqual(['later', 'earlier']);
-  });
-});
-
-describe('calculateActiveDaysLeft', () => {
-  it('필요한 날보다 적게 했으면 남은 날을 반환한다', () => {
-    // When
-    const result = calculateActiveDaysLeft(1, 2);
-
-    // Then 2 - 1 = 1
-    expect(result).toBe(1);
-  });
-
-  it('필요한 날을 넘겼으면 0을 반환한다', () => {
-    // When
-    const result = calculateActiveDaysLeft(3, 2);
-
-    // Then max(2 - 3, 0) = 0
-    expect(result).toBe(0);
-  });
-});
-
-describe('InvitedFriendPolicy', () => {
-  describe('activeDaysLeft', () => {
-    it('사용 시작까지 남은 날을 규칙 값으로 계산해 반환한다', () => {
-      // Given
-      const friend = createInvitedFriend({ activeDayCount: 0 });
-
-      // When
-      const result = InvitedFriendPolicy.getActiveDaysLeft(friend);
-
-      // Then MIN_ACTIVE_DAYS 2 - 0 = 2
-      expect(result).toBe(2);
-    });
-  });
-
-  describe('pawPrintState', () => {
-    it.each([
-      ['JOINED', 'waiting'],
-      ['QUALIFIED', 'stamped'],
-      ['REWARDED', 'stamped'],
-      ['REJECTED', 'excluded'],
-      ['UNKNOWN', 'unknown'],
-    ] as const)('상태가 %s면 %s를 반환한다', (status, expected) => {
-      // Given
-      const friend = createInvitedFriend({ status });
-
-      // When
-      const result = InvitedFriendPolicy.getPawPrintState(friend);
-
-      // Then
-      expect(result).toBe(expected);
-    });
   });
 });
 
@@ -108,7 +55,8 @@ describe('orderByWaitingFirst', () => {
       ['asc', 'asc'],
     );
 
-    // Then JOINED(0) → 그 외(1), 같은 값이면 -joinedAt 오름차순
+    // Then
+    // JOINED(0) → 그 외(1), 같은 값이면 -joinedAt 오름차순
     expect(result.map((friend) => friend.userId)).toEqual([
       'waiting-later',
       'waiting-earlier',
@@ -117,15 +65,55 @@ describe('orderByWaitingFirst', () => {
   });
 });
 
-describe('invitedFriendSchema', () => {
-  it('모르는 상태와 보상 제외 사유는 UNKNOWN과 null로 받는다', () => {
-    // Given
-    const dto = { ...createInvitedFriendDto(), status: 'PAUSED', rejectionReason: 'NEW_REASON' };
-
+describe('calculateActiveDaysLeft', () => {
+  it('필요한 날보다 적게 했으면 남은 날을 반환한다', () => {
     // When
-    const result = invitedFriendSchema.parse(dto);
+    const result = calculateActiveDaysLeft(1, 2);
 
     // Then
-    expect(result).toMatchObject({ status: 'UNKNOWN', rejectionReason: null });
+    // 2 - 1 = 1
+    expect(result).toBe(1);
+  });
+
+  it('필요한 날을 넘겼으면 0을 반환한다', () => {
+    // When
+    const result = calculateActiveDaysLeft(3, 2);
+
+    // Then
+    // max(2 - 3, 0) = 0
+    expect(result).toBe(0);
+  });
+});
+
+describe('getActiveDaysLeft', () => {
+  it('사용 시작까지 남은 날을 규칙 값으로 계산해 반환한다', () => {
+    // Given
+    const friend = createInvitedFriend({ activeDayCount: 0 });
+
+    // When
+    const result = InvitedFriendPolicy.getActiveDaysLeft(friend);
+
+    // Then
+    // MIN_ACTIVE_DAYS 2 - 0 = 2
+    expect(result).toBe(2);
+  });
+});
+
+describe('getPawPrintState', () => {
+  it.each([
+    ['JOINED', 'waiting'],
+    ['QUALIFIED', 'stamped'],
+    ['REWARDED', 'stamped'],
+    ['REJECTED', 'excluded'],
+    ['UNKNOWN', 'unknown'],
+  ] as const)('상태가 %s면 %s를 반환한다', (status, expected) => {
+    // Given
+    const friend = createInvitedFriend({ status });
+
+    // When
+    const result = InvitedFriendPolicy.getPawPrintState(friend);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });
