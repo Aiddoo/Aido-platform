@@ -440,7 +440,7 @@ MemoList.Loading = function Loading() {
 
 **유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`).
 
-**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `use-mypage-pane-layout`, `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`.
+**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`.
 
 ### 함수 형태
 
