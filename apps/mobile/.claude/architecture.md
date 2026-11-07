@@ -965,6 +965,23 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 - **조립은 `di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
 - **Mapper는 DI에 넣지 않는다.** 순수 함수라 서비스가 직접 import한다.
 
+### 직접 import·`new`·전역을 허용하는 곳
+
+feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`로 만드는 곳은 아래뿐이다. 새로 늘리지 않고, 포트로 옮길 수 있으면 옮긴다.
+
+| 곳                                                                                                                                                                                                       | 이유                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 훅 경계: `useAudioPartPlaylist`(`use-voice-note-player`), `useKeepScreenAwake`(`voice-notes/record`), `useSystemLocale`(`weather-hero`, `use-temperature-unit`), `useLinkingUrl`(`use-widget-app-entry`) | 라이브러리 자체가 React 훅이라 DI 값으로 바꿀 수 없다. 훅 파일 하나가 SDK를 가린다                                                   |
+| `app/_layout.tsx`: `initErrorReporting`, `createEnvironmentErrorReporter`, 전역 `logger`, `reloadApp`                                                                                                    | 루트 경계는 Provider 밖에서 그려진다. DI 훅을 부를 수 없다                                                                           |
+| 위젯 진입점: `register-widget-task-handler.android.ts`, `android-widgets.bridge.ts`(`widgetStorage`, `getDeviceLanguage`)                                                                                | 위젯만 깨어난 프로세스에는 앱 트리가 없다. 진입점이 환경별 오류 보고기를 직접 만들고 `initErrorReporting`을 부른다(중복 호출에 안전) |
+| `notification-provider`(`registerForegroundNotificationPresentation`)                                                                                                                                    | 앱 시작 때 한 번 거는 모듈 수준 설정이다                                                                                             |
+| `device-info`(`DEVICE_TOTAL_MEMORY_BYTES`, `IS_PHYSICAL_DEVICE`)                                                                                                                                         | 시작 때 정해지는 상수라 렌더 중 호출이 아니다. 날씨 장면 품질과 개발 API 주소만 쓴다                                                 |
+| `new SecureStorage`(`di-provider`, `use-encrypted-storage-bootstrap`)                                                                                                                                    | 암호화 초안 저장소는 키체인에서 키를 읽어 열린 뒤에야 DI가 만들어진다. 부트스트랩이 같은 어댑터를 따로 연다                          |
+| `new VoiceRecordingIntake`(`use-voice-note-recording`)                                                                                                                                                   | 초안마다 하나씩 만들어 화면이 내려간 뒤에도 파일을 받는 수명 객체다. 상태를 갖지 않는 Service가 아니라 DI에 두지 않는다              |
+| 모듈 수준 전역 `logger`: `env.ts`, `use-reduce-motion`, `use-reduce-transparency`, `query-cache-persistence`, `openSupportMail`                                                                          | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다 |
+
+기기 동기 값을 렌더에서 읽는 Service는 컴포넌트가 `useXService()`로 직접 부른다(저장소 읽기라 Suspense·쿼리가 필요 없다). 서버 비동기는 쿼리 옵션 훅으로만 부른다.
+
 ### 대표 포트
 
 전체 목록은 `core/ports/`에 있다.
@@ -972,8 +989,9 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | 포트                      | 메서드 이름                                                                 | 어댑터 (`shared/infra/`)                         |
 | ------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
 | `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                         | `http/ky-client.ts`                              |
-| `Storage`                 | `get`·`set`·`remove`·`clear`                                                | `storage/secure-storage.ts`                      |
-| `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/device-sync-storage.ts`                 |
+| `Storage`                 | `get`·`set`·`remove`                                                        | `storage/secure-storage.ts`                      |
+| `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/encrypted-draft-storage.ts`             |
+| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                 | `storage/device-sync-storage.ts`                 |
 | `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/encrypted-draft-storage.ts`             |
 | `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard.gateway.ts`            |
 | `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `linking/expo-linking.gateway.ts`                |

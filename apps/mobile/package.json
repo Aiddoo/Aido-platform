@@ -29,7 +29,7 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "ios": "expo run:ios",
-    "check:unused": "knip --directory ../.. --workspace apps/mobile --config apps/mobile/knip.json",
+    "check:unused": "knip --directory ../.. --workspace apps/mobile --config apps/mobile/knip.jsonc",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "maestro:accounts": "node maestro/release-1.13.0/scripts/maestro-accounts.ts",
