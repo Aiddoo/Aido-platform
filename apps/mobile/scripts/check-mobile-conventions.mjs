@@ -1421,6 +1421,14 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       });
     }
 
+    if (isFormShapeViolation(node)) {
+      findings.push({
+        rule: 'form-shape',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} 폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요.`,
+      });
+    }
+
     if (
       ts.isImportDeclaration(node) &&
       ts.isStringLiteral(node.moduleSpecifier) &&
@@ -1487,6 +1495,34 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
   }
 
   visit(sourceFile);
+}
+
+const FORM_CONTEXT_IMPORTS = new Set(['FormProvider', 'useFormContext']);
+const FORM_VARIABLE_NAMES = new Set(['methods', 'formMethods']);
+
+function isFormShapeViolation(node) {
+  if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+    const bindings = node.importClause?.namedBindings;
+    if (bindings === undefined || !ts.isNamedImports(bindings)) {
+      return false;
+    }
+    const names = bindings.elements.map((element) => (element.propertyName ?? element.name).text);
+    const specifier = node.moduleSpecifier.text;
+    return (
+      (specifier === 'react-hook-form' && names.some((name) => FORM_CONTEXT_IMPORTS.has(name))) ||
+      (names.includes('FormField') &&
+        (specifier === '@src/shared/ui' || specifier.endsWith('/form-field')))
+    );
+  }
+  if (ts.isVariableDeclaration(node)) {
+    return ts.isIdentifier(node.name) && FORM_VARIABLE_NAMES.has(node.name.text);
+  }
+  return (
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    node.expression.text === 'useForm' &&
+    node.typeArguments !== undefined
+  );
 }
 
 function isInsideClass(node) {

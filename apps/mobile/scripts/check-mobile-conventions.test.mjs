@@ -962,3 +962,33 @@ test('xxxOf 함수 이름을 거부한다', () => {
     },
   );
 });
+
+test('폼 모양을 어긴 import와 변수와 useForm 제네릭을 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/planning/category/components/bad-form.tsx': `
+        import { FormProvider, useForm, useFormContext } from 'react-hook-form';
+        import { FormField } from '@src/shared/ui';
+        export function BadForm() {
+          const methods = useForm<Values>();
+          return null;
+        }
+      `,
+      'apps/mobile/src/features/planning/category/components/good-form.tsx': `
+        import { Controller, useForm } from 'react-hook-form';
+        export function GoodForm() {
+          const form = useForm({ defaultValues: { title: '' } });
+          return null;
+        }
+      `,
+      'apps/mobile/src/features/planning/category/components/good-form.test.tsx': `
+        import { FormProvider, useForm } from 'react-hook-form';
+        const form = useForm<Values>();
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 4);
+      assert.ok(errors.every((error) => /bad-form\.tsx/u.test(error)));
+    },
+  );
+});

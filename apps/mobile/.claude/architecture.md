@@ -150,7 +150,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 **이미 있는 위반:** 위층 import부터 쿼리 키 자리까지는 `scripts/mobile-conventions-allowlist.json`에 규칙별 이유와 파일별 수로 적었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
 
-아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, `FormField` 사용, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import.
+아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import.
 
 ## 아직 옮기지 않은 것
 
@@ -162,10 +162,10 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 18개. `safeParse(result.value)` 22곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo`, `voice` 각 1)                                                                           |
 | [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 6개(`shared` 5, `hooks` 1)                                                                                                                              |
 | [스키마 폴더](#서버-응답과-모델)  | 29개 기능에 `schemas/`가 있다. `domains/`의 Zod는 `voice`까지 모두 옮겼다                                                                                                                                                      |
-| [폼](#폼)                         | `FormField`를 쓰는 파일 4개(`planning/composer`, `social/nudge`, `voice`, `weather`). `useFormContext<T>` 40곳                                                                                                                 |
+| [폼](#폼)                         | `voice`와 `weather`가 `FormProvider`·`FormField`·`useFormContext`를 쓴다(`form-shape` 허용 목록). 모두 옮기면 `shared/ui/form-field`를 지운다                                                                                  |
 | [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                                                                                                    |
 | [모델](#모델과-policy)            | Facade 별칭 1개(`social/nudge`)                                                                                                                                                                                                |
-| [컴포넌트 이름](#이름)            | `InvitedFriendSummaryFrame`                                                                                                                                                                                                    |
+| [컴포넌트 이름](#이름)            | 없음                                                                                                                                                                                                                           |
 | [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                    |
 | [함수 형태](#함수-형태)           | 모듈 수준 화살표 107파일 244개(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                                                               |
 | [테스트](./testing-guide.md)      | `jest.mock('@src/…')` 5파일 12건                                                                                                                                                                                               |
@@ -421,7 +421,7 @@ MemoList.Loading = function Loading() {
 - 훅은 변화 이유가 하나다(route 읽기, 전환 조정, field focus). 계산은 순수 함수·Policy로 뺀다. 이름 변경이나 코드 이동은 단일 책임이 아니다.
 - 훅은 상태·effect·구독을 묶거나 여러 곳이 같은 규칙을 공유할 때만 만든다. 한두 줄을 감싸는 훅이나 파일을 짧게 하려는 훅은 만들지 않는다. `requestAnimationFrame(() => setFocus('title'))`처럼 몇 곳에 반복돼도 짧으면 쓰는 곳에 그대로 쓴다.
 - 사용처가 같으면 한 파일이다(`hooks/use-memo-params.ts`). 한 곳에서만 쓰면 그 컴포넌트 파일 안이다(`useMemoAiParse`).
-- 입력을 여는 칩·행은 폼을 `useFormContext`·`useWatch`·`Controller`로 직접 읽고 쓰며 시트도 직접 연다. 부모에 핸들러를 두고 `value`·`onChange`·`onCloseStart`를 내려보내지 않는다. Props는 부모만 아는 값과 원본 컴포넌트의 props만 받는다. 부모도 같은 동작을 불러야 하면 부모가 소유하고 원본 prop(`onPress`)으로 넘긴다.
+- 입력을 여는 칩·행은 시트가 넘긴 `form`을 props로 받아 `useWatch`·`Controller`로 직접 읽고 쓰며 시트도 직접 연다. 부모에 핸들러를 두고 `value`·`onChange`·`onCloseStart`를 내려보내지 않는다. Props는 부모만 아는 값과 원본 컴포넌트의 props만 받는다. 부모도 같은 동작을 불러야 하면 부모가 소유하고 원본 prop(`onPress`)으로 넘긴다.
 - 상태 훅은 `[value, setValue]` 튜플을 돌려준다. 저장소가 URL·MMKV·`useState` 중 무엇이어도 사용처는 그대로다. 이름은 `[selectedMemoId, setSelectedMemoId]`다.
 - 쓰지 않는 요소는 비워 두지 않고 `_`를 붙인다(`const [_selectedMemoId, setSelectedMemoId]`).
 
@@ -429,14 +429,14 @@ MemoList.Loading = function Loading() {
 
 앱이 만드는 Context는 DI와 라이브러리처럼 동작하는 UI 내부 구현에만 남긴다. Context는 값이 바뀔 때 소비자 전체가 다시 그려지고 의존이 타입에 안 보이기 때문이다. 나머지는 아래 순서로 고른다.
 
-| 순서 | 수단                                            | 언제                                                                                | 예                                                               |
-| ---- | ----------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1    | props                                           | 부모만 아는 값, 한두 단계                                                           | `onLeave`, `isEditing`                                           |
-| 2    | 컴포넌트를 prop으로                             | 자리는 같고 구현이 갈릴 때. 인터페이스 하나                                         | `fallback={MemoList.Error}`, `toolbar={MemoEditor.StackToolbar}` |
-| 3    | Query 캐시, `useIsMutating`, `useMutationState` | 서버 값과 진행 상태를 떨어진 곳에서 읽을 때                                         | `MemoAiParsingBadge`의 `useIsMutating`                           |
-| 4    | route 훅                                        | URL에 남는 값                                                                       | `useMemoScreenParams`, `useSelectedMemo`                         |
-| 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다              | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
-| 6    | RHF `FormProvider`                              | 칩처럼 깊은 자식들이 `setValue`, `setFocus`까지 쓰는 폼만. 얕은 폼은 `control` prop | 메모는 `control`(`Control<MemoFormValues>`)                      |
+| 순서 | 수단                                            | 언제                                                                                               | 예                                                               |
+| ---- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1    | props                                           | 부모만 아는 값, 한두 단계                                                                          | `onLeave`, `isEditing`                                           |
+| 2    | 컴포넌트를 prop으로                             | 자리는 같고 구현이 갈릴 때. 인터페이스 하나                                                        | `fallback={MemoList.Error}`, `toolbar={MemoEditor.StackToolbar}` |
+| 3    | Query 캐시, `useIsMutating`, `useMutationState` | 서버 값과 진행 상태를 떨어진 곳에서 읽을 때                                                        | `MemoAiParsingBadge`의 `useIsMutating`                           |
+| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoScreenParams`, `useSelectedMemo`                         |
+| 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
+| 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
 **유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`).
 
@@ -570,7 +570,7 @@ const { isSubmitting, isValid } = useFormState({ control: form.control });
 ```
 
 - 이름은 `form`으로 통일한다. 입력 바인딩은 RHF `Controller` 공식 형태이고 `field.ref`를 이어 검증 실패 때 그 칸으로 포커스한다.
-- 폼은 그 폼을 제출하는 컴포넌트가 소유한다(스크린 또는 `MemoCreateForm`). 얕은 폼은 `control`을 props로 넘긴다(`Control<MemoFormValues>`). `useFormContext<T>()`와 `useFormState<T>()`의 제네릭은 검사 없는 단정이라 깊은 자식이 많을 때만 `FormProvider`를 쓴다. 시트는 Portal로 그려지므로 `FormProvider`를 시트 안에 둔다([시트](./ui-components.md#시트)).
+- 폼은 그 폼을 제출하는 컴포넌트가 소유한다(스크린 또는 `MemoCreateForm`). 읽기만 하는 자식은 `control`, `setValue`·`setFocus`까지 쓰는 자식은 `form`(`UseFormReturn<T>`)을 props로 넘긴다. `FormProvider`와 `useFormContext`는 쓰지 않는다(`useFormContext<T>()`의 제네릭은 검사 없는 단정이다). 입력과 출력의 타입이 다른 스키마를 Context로 나눠야 하면 값 필드를 `z.custom<T>()`로 입력과 출력을 맞춘다.
 - 하위는 `useWatch({ name })`·`useFormState({ name })`로 자기 값만 구독한다.
 - `useForm`은 제네릭 없이 `resolver`에서 타입을 추론한다(`@hookform/resolvers` 권장). 스키마가 변환 없이 입력과 출력이 같으면 타입은 `z.infer` 하나로 쓴다.
 - 처음 값은 스키마의 `.default()`가 아니라 `defaultValues`에 둔다. 값이 없는 칸은 `undefined`가 아니라 `null`이다(RHF가 `undefined` 기본값을 권장하지 않고, 앱 모델의 "없음"도 `null`이다). 그래서 `?? null`·`?? undefined` 변환이 필요 없다.

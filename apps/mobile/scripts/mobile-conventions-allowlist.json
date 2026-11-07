@@ -162,5 +162,15 @@
         "reason": "moderation→nudge는 차단 뒤 콕 캐시 정리, nudge→moderation은 신고 진입"
       }
     }
+  },
+  "form-shape": {
+    "reason": "voice와 weather 담당이 폼을 form과 Controller로 옮기면 줄이고, 모두 사라지면 shared/ui/form-field를 지운다",
+    "entries": {
+      "apps/mobile/src/features/voice/components/plan/plan-review.tsx": 1,
+      "apps/mobile/src/features/voice/components/plan/plan-todo-edit-sheet.tsx": 3,
+      "apps/mobile/src/features/weather/components/weather-reschedule/weather-reschedule-submit-button.tsx": 1,
+      "apps/mobile/src/features/weather/components/weather-reschedule/weather-reschedule-todo.tsx": 2,
+      "apps/mobile/app/(app)/weather/reschedule.tsx": 1
+    }
   }
 }

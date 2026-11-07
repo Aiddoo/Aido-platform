@@ -15,7 +15,7 @@
 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`로 그린다. 호스트는 `OverlayProvider`가 가져 Query·DI·Overlay를 그대로 쓸 수 있고,
 열린 순서대로 쌓인다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 펼쳐 넘긴다.
 
-- **Context:** Portal은 Context를 잇지 못한다. `FormProvider`처럼 시트 안에서 읽는 Context는 시트 안에 둔다. `footer`에서 폼을 읽으면 `control`을 넘긴다.
+- **Context:** Portal은 Context를 잇지 못한다. 시트 안에서 읽는 Context는 시트 안에 둔다. 폼은 Context 없이 `form`·`control`을 props로 넘기고, `footer`에서 읽을 때도 그렇다.
 - **배경:** `BottomSheet`는 문서의 커스텀 Overlay 방식(`useBottomSheet`, `useBottomSheetAnimation`)이다. 기본 Overlay는 닫기 시작하면 바로 사라진다.
 - **닫힘 알림:** `BottomSheet`의 `onOpenChange(false)`는 `useBottomSheetAnimation().progress`가 닫힌 위치에 멈춘 뒤에 온다. 문서상 gorhom `onClose`는 스와이프로 닫을 때만 오기 때문이다.
 

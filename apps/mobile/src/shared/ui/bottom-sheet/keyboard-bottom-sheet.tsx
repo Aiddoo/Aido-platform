@@ -64,7 +64,7 @@ interface KeyboardBottomSheetProps {
 }
 
 /**
- * 키보드 연동 BottomSheet. 바깥은 HeroUI Root·Portal이고 `FormProvider` 같은 주변 Context는 시트 안에 둔다.
+ * 키보드 연동 BottomSheet. 바깥은 HeroUI Root·Portal이고 주변 Context는 시트 안에 둔다.
  *
  * 내용은 gorhom을 직접 쓴다. `BottomSheet.Content`는 내용을 `BottomSheetView`로 한 번 더 감싸, 키보드 때문에
  * 시트가 줄어도 안쪽 스크롤 높이가 줄지 않아 작은 화면에서 입력칸과 버튼에 손이 닿지 않는다.

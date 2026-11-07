@@ -13,9 +13,11 @@ import { FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 
 <View className="flex-1">
   <FormStepLayout title={t('changePassword.currentTitle')}>
-    <FormField control={control} name="currentPassword">
-      {({ onChange, value }) => <PasswordInput value={value} onChange={onChange} />}
-    </FormField>
+    <Controller
+      control={form.control}
+      name="currentPassword"
+      render={({ field }) => <PasswordInput value={field.value} onChange={field.onChange} />}
+    />
   </FormStepLayout>
 
   <KeyboardAdaptiveButton onPress={onNext}>{t('changePassword.next')}</KeyboardAdaptiveButton>

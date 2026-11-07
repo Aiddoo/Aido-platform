@@ -60,7 +60,7 @@ interface BottomSheetProps extends Omit<ComponentProps<typeof HeroBottomSheet>, 
 
 /**
  * 키보드가 필요 없는 시트. HeroUI BottomSheet를 떠 있는 모양으로 쓴다.
- * 내용은 Portal로 그려지므로 `FormProvider` 같은 주변 Context는 시트 안에 둔다.
+ * 내용은 Portal로 그려지므로 주변 Context는 시트 안에 둔다.
  * `onOpenChange(false)`는 닫힘 애니메이션이 끝난 뒤에 오므로 route를 바로 떠나도 잘리지 않는다.
  */
 export function BottomSheet({
