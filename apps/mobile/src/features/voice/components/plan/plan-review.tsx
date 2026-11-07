@@ -11,7 +11,6 @@ import {
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { getPlanHeadline } from '@src/features/voice/utils/plan-headline.view-model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -131,7 +130,7 @@ export function PlanReview({
   const selection = PlanReviewPolicy.toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
-  const headline = getPlanHeadline(plan, selection);
+  const headline = VoicePlanPolicy.getHeadline(plan, selection);
   const ScrollFade = surface === 'sheet' ? SheetScrollShadow : ScreenScrollShadow;
 
   if (fields.length === 0) {

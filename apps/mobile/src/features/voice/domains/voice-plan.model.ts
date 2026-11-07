@@ -142,6 +142,29 @@ export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
   );
 }
 
+export type PlanHeadline =
+  | { kind: 'todos'; count: number }
+  | { kind: 'memo' }
+  | { kind: 'already-added' };
+
+/** 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다 */
+function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
+  const selectedTodoCount = countSelectedTodos(plan, selection);
+  if (selectedTodoCount > 0) {
+    return { kind: 'todos', count: selectedTodoCount };
+  }
+  if (getSelectedActions(plan, selection).length > 0) {
+    return { kind: 'memo' };
+  }
+  const todos = plan.actions.filter(isTodoAction);
+  if (todos.length === 0) {
+    return { kind: 'memo' };
+  }
+  return todos.every(isDuplicateAction)
+    ? { kind: 'already-added' }
+    : { kind: 'todos', count: todos.length };
+}
+
 export const VoicePlanPolicy = {
   isTodoAction,
   withRepeat,
@@ -151,6 +174,7 @@ export const VoicePlanPolicy = {
   isDuplicateAction,
   getSelectedActions,
   countSelectedTodos,
+  getHeadline,
   canApplyPlan,
   getPlanActionGroups,
   sortPlanActionsByGroup,
