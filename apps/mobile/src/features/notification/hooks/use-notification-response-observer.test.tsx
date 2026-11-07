@@ -31,7 +31,7 @@ async function setup({ status }: { status: AuthStatus }) {
   const authSessionStore = createAuthSessionStoreStub(status);
   const container = createTestDi({
     httpClient: createHttpClientStub(),
-    pushNotificationGateway: gateway,
+    pushNotification: gateway,
     logger,
     authSessionStore,
   });

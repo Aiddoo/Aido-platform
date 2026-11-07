@@ -55,7 +55,7 @@ async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {
   const errorReporter = createErrorReporterStub();
   const rendered = await renderUi(<FeedScreen path="/feed" isStable />, {
     di: {
-      locationGateway: gateway,
+      deviceLocation: gateway,
       weatherService,
       weatherLocationService: new WeatherLocationService({
         gateway,

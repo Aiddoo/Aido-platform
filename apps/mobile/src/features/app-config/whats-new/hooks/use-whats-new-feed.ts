@@ -1,9 +1,9 @@
 import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
+import { useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
-import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';

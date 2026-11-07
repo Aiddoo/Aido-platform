@@ -1,5 +1,5 @@
+import { useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useQuery } from '@tanstack/react-query';
 

@@ -1,4 +1,4 @@
-import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
+import { useLogger, usePushNotification } from '@src/bootstrap/providers/di-context';
 import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
 import { useEffect } from 'react';
 
@@ -8,7 +8,7 @@ export function useForegroundNotificationListener(
   handleForegroundNotification: (notification?: ReceivedPushNotification) => void,
 ) {
   const logger = useLogger();
-  const gateway = usePushNotificationGateway();
+  const gateway = usePushNotification();
 
   useEffect(
     () =>

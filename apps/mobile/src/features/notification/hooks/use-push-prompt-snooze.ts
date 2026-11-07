@@ -1,7 +1,7 @@
 import { usePushPromptRepository } from '@src/bootstrap/providers/di-context';
+import { useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
-import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useSuspenseQuery } from '@tanstack/react-query';

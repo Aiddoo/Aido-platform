@@ -1,4 +1,4 @@
-import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
+import { useLogger, usePushNotification } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { useEffect } from 'react';
@@ -8,7 +8,7 @@ import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 
 export function useRegisterMarketingNotificationCategory() {
   const logger = useLogger();
-  const gateway = usePushNotificationGateway();
+  const gateway = usePushNotification();
 
   useEffect(() => {
     gateway

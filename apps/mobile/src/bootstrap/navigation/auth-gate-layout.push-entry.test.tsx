@@ -127,7 +127,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
   const container = createTestDi({
     externalLink,
     httpClient,
-    pushNotificationGateway: gateway,
+    pushNotification: gateway,
     inviteService: createStubInviteService(),
     widgetNavigationRepository: {
       subscribe: () => () => {},

@@ -1,8 +1,4 @@
-import {
-  useExternalLink,
-  useLocationGateway,
-  useLogger,
-} from '@src/bootstrap/providers/di-context';
+import { useExternalLink, useDeviceLocation, useLogger } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,7 +23,7 @@ export type WeatherLocation =
  * 설정에서 권한을 켜고 돌아오면 위치 query가 포커스에서 다시 확인해 재시작 없이 ready로 바뀐다.
  */
 export function useWeatherLocation(): WeatherLocation {
-  const gateway = useLocationGateway();
+  const gateway = useDeviceLocation();
   const externalLink = useExternalLink();
   const logger = useLogger();
   const queryClient = useQueryClient();

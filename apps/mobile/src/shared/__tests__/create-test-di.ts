@@ -8,12 +8,13 @@ import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-ga
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
+import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
-import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
@@ -116,7 +117,6 @@ import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 import { createSocialShareGatewayStub } from './create-social-share-gateway-stub';
 import { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 import { createSystemShareGatewayStub } from './create-system-share-gateway-stub';
-import { createTokenRefresherStub } from './create-token-refresher-stub';
 import { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 import { createTestQueryClient } from './query-client';
 
@@ -135,6 +135,10 @@ interface TestDiPorts {
   localFileSystem: LocalFileSystemFake;
   widgetBridge: WidgetBridge;
   requestRefresh: RefreshTokensRequest;
+  /** 키체인 저장소. 토큰과 로그아웃하지 못한 세션 기록을 둔다 */
+  storage: Storage;
+  /** 스토어 결제 SDK. 화면은 구독 Service로만 쓴다 */
+  purchasesGateway: PurchasesGateway;
   /** 암호화 초안 저장소. 초안, 말로 메모 초안, 인식 언어가 함께 쓴다 */
   draftStorage: EnumerableSyncStorage;
   /** 앱과 위젯이 함께 읽는 기기 저장소. 운영의 `deviceSyncStorage` 하나와 같다 */
@@ -170,6 +174,8 @@ export function createTestDi({
   requestRefresh = jest.fn(async () => {
     throw new Error('createTestDi: requestRefresh를 정하지 않았습니다');
   }),
+  storage = createMemoryStorage(),
+  purchasesGateway = createPurchasesGatewayStub(),
   draftStorage = createMemorySyncStorage(),
   syncStorage = createMemoryObservableSyncStorage(),
   widgetStorage = createMemoryObservableSyncStorage(),
@@ -183,16 +189,13 @@ export function createTestDi({
   const sessionEpoch = overrides.sessionEpoch ?? createSessionEpoch();
   const tokenStore =
     overrides.tokenStore ?? withSessionEpoch(createMemoryTokenStore(), sessionEpoch);
-  const storage = overrides.storage ?? createMemoryStorage();
-  const socialAuthGateway = overrides.socialAuthGateway ?? createSocialAuthGatewayStub();
-  const pushNotificationGateway =
-    overrides.pushNotificationGateway ?? createPushNotificationGatewayStub();
+  const socialAuth = overrides.socialAuth ?? createSocialAuthGatewayStub();
+  const pushNotification = overrides.pushNotification ?? createPushNotificationGatewayStub();
   const applicationMetadata =
     overrides.applicationMetadata ?? createNativeApplicationMetadataGatewayStub();
   const clipboard = overrides.clipboard ?? createClipboardGatewayStub();
   const systemShare = overrides.systemShare ?? createSystemShareGatewayStub();
-  const locationGateway = overrides.locationGateway ?? createLocationGatewayStub();
-  const purchasesGateway = overrides.purchasesGateway ?? createPurchasesGatewayStub();
+  const deviceLocation = overrides.deviceLocation ?? createLocationGatewayStub();
 
   const draftService = new DraftService(createDraftRepository(draftStorage), Date.now);
   const voiceNoteStorage = createVoiceNoteStorageFake(localFileSystem, {
@@ -209,7 +212,7 @@ export function createTestDi({
     publicHttpClient: httpClient,
     authHttpClient: httpClient,
     tokenStore,
-    socialAuthGateway,
+    socialAuthGateway: socialAuth,
   });
   const sessionRevocationService = new SessionRevocationService({
     repository: createPendingRevocationRepository(storage),
@@ -219,7 +222,7 @@ export function createTestDi({
     now: Date.now,
   });
   const pushDeviceService = new PushDeviceService({
-    gateway: pushNotificationGateway,
+    gateway: pushNotification,
     deviceIdService: new DeviceIdService(deviceIdStore, vendorIdGateway, idGenerator),
     httpClient,
     logger,
@@ -239,19 +242,16 @@ export function createTestDi({
   const weatherService = new WeatherService(httpClient);
 
   return {
-    storage,
     logger,
     analytics,
     errorReporter,
     haptics: createHapticsGatewayStub(),
     idGenerator,
     speechRecognizer: createSpeechRecognizerStub(),
-    purchasesGateway,
-    pushNotificationGateway,
+    pushNotification,
     tokenStore,
     authSessionStore: createAuthSessionStore(),
     sessionEpoch,
-    sessionManager: createSessionManager(tokenStore),
     sessionCleanupService: new SessionCleanupService({
       queryCache: createSessionQueryCache(queryClient),
       persistedQueryCache: disabledQueryCacheStorage,
@@ -263,7 +263,6 @@ export function createTestDi({
       logger,
     }),
     sessionRevocationService,
-    tokenRefresher: createTokenRefresherStub(),
     featureAttribution: createFeatureAttributionStore(syncStorage),
     draftService,
     queryCacheStorage: disabledQueryCacheStorage,
@@ -308,7 +307,7 @@ export function createTestDi({
     todoService: new TodoService(httpClient),
     todoCommentService: new TodoCommentService(httpClient),
     todoCategoryService: new TodoCategoryService(httpClient),
-    notificationService: new NotificationService(httpClient, pushNotificationGateway, httpClient),
+    notificationService: new NotificationService(httpClient, pushNotification, httpClient),
     notificationEntryStore: createNotificationEntryStore(),
     pushDeviceService,
     deviceTimezoneService,
@@ -327,16 +326,16 @@ export function createTestDi({
     entitlementService: new EntitlementService(httpClient, logger),
     weatherService,
     weatherLocationService: new WeatherLocationService({
-      gateway: locationGateway,
+      gateway: deviceLocation,
       weatherService,
       logger,
       errorReporter,
     }),
     weatherIntroductionRepository: createWeatherIntroductionRepository(syncStorage),
-    locationGateway,
+    deviceLocation,
     clipboard,
     applicationMetadata,
-    socialAuthGateway,
+    socialAuth,
     appStoreListing: createAppStoreListingGatewayStub(),
     externalLink: createExternalLinkGatewayStub(),
     systemShare,

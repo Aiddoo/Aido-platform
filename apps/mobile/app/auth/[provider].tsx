@@ -1,4 +1,4 @@
-import { useSocialAuthGateway } from '@src/bootstrap/providers/di-context';
+import { useSocialAuth } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { Redirect } from 'expo-router';
 import { useEffect } from 'react';
@@ -13,7 +13,7 @@ import { useEffect } from 'react';
  */
 export default function OAuthCallbackScreen() {
   const status = useAuthStatus();
-  const socialAuthGateway = useSocialAuthGateway();
+  const socialAuthGateway = useSocialAuth();
 
   useEffect(() => {
     socialAuthGateway.completeOAuthSession();

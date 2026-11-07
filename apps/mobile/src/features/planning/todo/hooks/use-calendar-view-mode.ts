@@ -1,4 +1,4 @@
-import { useSyncStorage } from '@src/shared/di/shared-di-context';
+import { useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 
 import { type CalendarViewMode, parseCalendarViewMode } from '../schemas/calendar-view-mode.schema';

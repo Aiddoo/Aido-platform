@@ -58,7 +58,7 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   const queryClient = createTestQueryClient();
   const weatherService = new WeatherService(httpClient);
   const container = createTestDi({
-    locationGateway: gateway,
+    deviceLocation: gateway,
     weatherService,
     weatherLocationService: new WeatherLocationService({
       gateway,

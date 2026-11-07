@@ -2,7 +2,7 @@ import {
   useLogger,
   useNotificationEntryStore,
   useNotificationService,
-  usePushNotificationGateway,
+  usePushNotification,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
@@ -43,7 +43,7 @@ import { useNotificationNavigation } from './use-notification-navigation';
  */
 export function useNotificationResponseObserver(): void {
   const status = useAuthStatus();
-  const gateway = usePushNotificationGateway();
+  const gateway = usePushNotification();
   const store = useNotificationEntryStore();
   const logger = useLogger();
   const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getState);

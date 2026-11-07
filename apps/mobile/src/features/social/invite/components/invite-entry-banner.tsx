@@ -1,9 +1,9 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useAllDoneBannerRepository } from '@src/bootstrap/providers/di-context';
+import { useSyncStorage } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

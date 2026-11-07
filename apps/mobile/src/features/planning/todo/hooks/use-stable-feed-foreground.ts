@@ -1,4 +1,4 @@
-import { useIncomingLink } from '@src/shared/di/shared-di-context';
+import { useIncomingLink } from '@src/bootstrap/providers/di-context';
 import { useOverlayState } from '@src/shared/ui';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
