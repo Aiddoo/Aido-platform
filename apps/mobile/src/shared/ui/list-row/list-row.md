@@ -362,3 +362,11 @@ const MemoizedListRow = React.memo(({ item }) => (
   />
 ));
 ```
+
+## ListRow.Image
+
+목록 왼쪽의 작은 이미지다. 크기는 `small`(32), `medium`(48), `large`(64)이고 공용 `Image`로 그린다.
+
+```tsx
+<ListRow left={<ListRow.Image source={source} size="medium" rounded />} />
+```
