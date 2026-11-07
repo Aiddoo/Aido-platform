@@ -191,5 +191,10 @@
     "remaining": "{{amount}} left",
     "usedUpMonth": "Used up this month",
     "usedUpDay": "Used up today"
+  },
+  "tier": {
+    "admin": "Admin",
+    "premium": "Premium",
+    "basic": "Basic"
   }
 }

@@ -43,11 +43,6 @@
     "tagCopied": "Hashtag copied",
     "tagCopiedDescription": "Share your 8-character hashtag to receive friend requests",
     "updateFailed": "Failed to update your profile",
-    "badges": {
-      "admin": "Admin",
-      "premium": "Premium",
-      "basic": "Basic"
-    },
     "imageSheet": {
       "title": "Choose profile image",
       "selectedAlt": "Selected profile image",

@@ -27,8 +27,8 @@ import { AdaptivePane } from '@src/shared/ui';
 
 ## 내 정보 메뉴 (왼쪽 메뉴 + 오른쪽 내비게이터)
 
-- 라우트 그룹 `app/(app)/(mypage-menu)`가 `friends`·`achievements`·`reports`·`settings`를 URL 변경 없이 묶고, `_layout`에서 `primary`에 `MyPagePaneLayout` + `MyPagePane`, `secondary`에 `Stack`, `compactPane="secondary"`로 쓴다. 접힌 화면은 왼쪽 메뉴 없이 기존처럼 push다.
-- 내 정보 탭도 같은 `MyPagePane`을 두 칸 왼쪽에 그린다. 탭에서 들어갈 때 넓은 화면은 애니메이션을 끄고, `useMyPagePaneLayout`이 탭과 메뉴 화면의 스크롤과 위 여백을 맞춰 왼쪽이 움직이지 않는다.
+- 라우트 그룹 `app/(app)/(mypage-menu)`가 `friends`·`achievements`·`reports`·`settings`를 URL 변경 없이 묶고, `_layout`에서 `primary`에 `MyPageMenuPane`(`(tabs)/mypage/index.tsx`), `secondary`에 `Stack`, `compactPane="secondary"`로 쓴다. 접힌 화면은 왼쪽 메뉴 없이 기존처럼 push다.
+- 내 정보 탭도 같은 `MyPageMenuPane`을 두 칸 왼쪽에 그린다. 조립은 스크린이 맡고 메뉴 화면은 그 칸을 가져다 쓴다. 탭에서 들어갈 때 넓은 화면은 애니메이션을 끄고, `useMyPagePaneLayout`이 탭과 메뉴 화면의 스크롤과 위 여백을 맞춰 왼쪽이 움직이지 않는다.
 - 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 메뉴 화면 안에서는 상세만 교체(더 들어간 화면은 먼저 걷어 냄)해 뒤로 가기에 쌓이지 않는다.
 - 탭 바는 탭 화면에만 있다. 넓은 화면의 메뉴 화면에서 탭으로 돌아갈 때는 첫 화면의 뒤로 가기를 쓴다.
 

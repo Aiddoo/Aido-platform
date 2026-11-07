@@ -115,12 +115,12 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 **끊는 방법**
 
-| 위층이 필요한 이유                      | 끊는 방법                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------- |
-| 화면 조각을 함께 보여 줌                | `app/`이 조립해 슬롯(`ReactNode`)으로 넘긴다(`MyPagePane`의 `inviteCard`) |
-| 서로의 캐시를 갱신                      | 위층의 `*-cache` 무효화 함수를 쓴다                                       |
-| 받는 쪽이 여럿이거나 정해지지 않은 알림 | `core/events`(`notifications-changed`)                                    |
-| 판단에 위층 값이 필요                   | 호출한 쪽이 값을 인자로 넘긴다(`useStableFeedForeground`)                 |
+| 위층이 필요한 이유                      | 끊는 방법                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------ |
+| 화면 조각을 함께 보여 줌                | `app/`이 조립해 슬롯(`ReactNode`)으로 넘긴다(`ProfileCard`의 `tierChip`) |
+| 서로의 캐시를 갱신                      | 위층의 `*-cache` 무효화 함수를 쓴다                                      |
+| 받는 쪽이 여럿이거나 정해지지 않은 알림 | `core/events`(`notifications-changed`)                                   |
+| 판단에 위층 값이 필요                   | 호출한 쪽이 값을 인자로 넘긴다(`useStableFeedForeground`)                |
 
 ## check:conventions가 막는 것
 
@@ -170,7 +170,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | [함수 형태](#함수-형태)           | 모듈 수준 화살표 112파일 253개(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                                                               |
 | [테스트](./testing-guide.md)      | `jest.mock('@src/…')` 9파일 19건                                                                                                                                                                                               |
 | [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
-| [층과 의존](#층과-의존)           | 양방향 8쌍, 위층 import 1간선 3줄                                                                                                                                                                                              |
+| [층과 의존](#층과-의존)           | 양방향 7쌍, 위층 import 1간선 3줄                                                                                                                                                                                              |
 | [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                                                                                                                 |
 | 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                               |
 
@@ -256,7 +256,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 - `QueryErrorBoundary`·`Suspense`·`Spacing`을 스크린에 그대로 나열한다. 조각 안으로 숨기지 않는다.
 - 화면 제목, 구역 제목, 안내 문구처럼 화면 구성을 설명하는 글자와 그 레이아웃도 스크린에 적는다. 글자 한 줄을 감싼 지역 컴포넌트를 만들지 않는다. 데이터에 따라 달라지는 글자만 해당 컴포넌트 안에 둔다(`MemoList`의 `list.savedTitle`).
 - 스크린에 남겨도 되는 것은 폼 소유, `match`, 짧은 route 처리다. 긴 제출·effect·큰 조각은 그 역할을 맡는 컴포넌트로 옮긴다(`MemoCreateForm`, `MemoEditor`).
-- 넘기기용 래퍼(`MyPagePane.Profile`, `Content → Header → Section`)를 만들지 않는다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않는다.
+- 넘기기용 래퍼(`Content → Header → Section`)를 만들지 않는다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않는다.
 - JSX 상수(`const waveform = …`)로 화면 구조를 숨기지 않는다.
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다.
 - fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.

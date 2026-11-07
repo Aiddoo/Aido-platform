@@ -1,22 +1,15 @@
-import { WhatsNewMenuItem } from '@src/features/app-config/whats-new/components/whats-new-menu-item';
-import { MyPagePane } from '@src/features/identity/user/components/mypage-pane/mypage-pane';
-import { MyPagePaneLayout } from '@src/features/identity/user/components/mypage-pane/mypage-pane-layout';
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
-import { MyPageInviteCard } from '@src/features/social/invite/components/invite-reward-card';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { AdaptivePane } from '@src/shared/ui';
 import { Stack } from 'expo-router';
+
+import { MyPageMenuPane } from '../(tabs)/mypage/index';
 
 export default function MyPageMenuLayout() {
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (
     <AdaptivePane
-      primary={
-        <MyPagePaneLayout isSplit headerAction={<NotificationBell.Header />}>
-          <MyPagePane inviteCard={<MyPageInviteCard />} whatsNewItem={<WhatsNewMenuItem />} />
-        </MyPagePaneLayout>
-      }
+      primary={<MyPageMenuPane isSplit />}
       secondary={
         <Stack
           screenOptions={{

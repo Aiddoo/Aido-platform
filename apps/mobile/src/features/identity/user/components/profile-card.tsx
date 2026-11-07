@@ -1,6 +1,4 @@
 import { useClipboard } from '@src/bootstrap/providers/di-context';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import type { AccessTier } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -15,21 +13,24 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useSuspenseQueries } from '@tanstack/react-query';
-import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import type { ReactNode } from 'react';
 
 import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
 
-export function ProfileCard() {
+interface ProfileCardProps {
+  /** 구독 기능을 모르도록 route가 조립해 넘긴다. 같은 경계 안이라 함께 로딩하고 함께 실패한다 */
+  tierChip: ReactNode;
+}
+
+export function ProfileCard({ tierChip }: ProfileCardProps) {
   const fontScaledSize = useFontScaledSize();
   const { navigate, isSelected } = useMyPageMenuNavigation();
-
-  const [{ data: user }, { data: entitlements }] = useSuspenseQueries({
-    queries: [useGetMeQueryOptions(), useGetEntitlementsQueryOptions()],
-  });
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
   const { t } = useTranslation('user');
   const clipboard = useClipboard();
@@ -62,7 +63,7 @@ export function ProfileCard() {
             <H4 numberOfLines={1} className="shrink">
               {user.name}
             </H4>
-            <UserTierChip tier={entitlements.tier} />
+            {tierChip}
           </HStack>
 
           <HStack align="center" gap={2}>
@@ -92,40 +93,6 @@ export function ProfileCard() {
       </HStack>
       <PressableFeedback.Highlight className="rounded-2xl" />
     </PressableFeedback>
-  );
-}
-
-const USER_TIER_CONFIG = {
-  ADMIN: {
-    labelKey: 'profile.badges.admin',
-    color: 'warning',
-    className: 'self-center shrink-0',
-    textClassName: 'text-warning-soft-foreground',
-  },
-  PREMIUM: {
-    labelKey: 'profile.badges.premium',
-    color: 'accent',
-    className: 'self-center shrink-0',
-    textClassName: 'text-accent-soft-foreground',
-  },
-  FREE: {
-    labelKey: 'profile.badges.basic',
-    color: 'default',
-    className: 'self-center shrink-0 bg-gray-3',
-    textClassName: 'text-default-soft-foreground',
-  },
-} as const satisfies Record<AccessTier, unknown>;
-
-function UserTierChip({ tier }: { tier: AccessTier }) {
-  const { t } = useTranslation('user');
-  const { labelKey, color, className, textClassName } = USER_TIER_CONFIG[tier];
-
-  return (
-    <Chip size="sm" variant="soft" color={color} className={className}>
-      <Text size="e1" weight="medium" className={textClassName}>
-        {t(labelKey)}
-      </Text>
-    </Chip>
   );
 }
 

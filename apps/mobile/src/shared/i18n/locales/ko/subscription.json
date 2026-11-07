@@ -188,5 +188,10 @@
     "remaining": "{{amount}}번 남음",
     "usedUpMonth": "이번 달 다 씀",
     "usedUpDay": "오늘 다 씀"
+  },
+  "tier": {
+    "admin": "어드민",
+    "premium": "프리미엄",
+    "basic": "베이직"
   }
 }

@@ -158,10 +158,6 @@
   "feature-bidirectional": {
     "reason": "끊지 못한 쌍. 항목마다 이유를 적고 새 쌍은 막는다",
     "entries": {
-      "billing/subscription <-> identity/user": {
-        "count": 1,
-        "reason": "user→billing은 마이페이지의 구독 카드(mypage-pane, profile-card). 슬롯으로 끊을 예정"
-      },
       "device/activation <-> planning/todo": {
         "count": 1,
         "reason": "todo→activation은 activation-cache 한 줄, activation→todo는 체크리스트가 오늘 할 일을 읽는다"
