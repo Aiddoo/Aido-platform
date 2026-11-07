@@ -38,17 +38,19 @@ export default function NotificationsScreen() {
   );
   const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
 
+  const handleCategoryChange = (value: string) => {
+    const parsed = notificationCategorySchema.safeParse(value);
+    if (parsed.success) {
+      setCategory(parsed.data);
+    }
+  };
+
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <ReadableContent flex={1}>
         <Tabs
           value={category}
-          onValueChange={(value) => {
-            const parsed = notificationCategorySchema.safeParse(value);
-            if (parsed.success) {
-              setCategory(parsed.data);
-            }
-          }}
+          onValueChange={handleCategoryChange}
           variant="secondary"
           className="flex-1"
         >
@@ -74,7 +76,7 @@ export default function NotificationsScreen() {
           {match(visibleDirection)
             .with('received', () => (
               <>
-                <QueryErrorBoundary>
+                <QueryErrorBoundary fallback={() => null}>
                   <Suspense fallback={<UnreadNotificationCard.Loading className="mx-4 my-2" />}>
                     <UnreadNotificationCard className="mx-4 my-2" />
                   </Suspense>
@@ -114,18 +116,16 @@ function DirectionTabs({
 }) {
   const { t } = useTranslation('notification');
 
+  const handleValueChange = (nextValue: string) => {
+    const parsed = nudgeDirectionSchema.safeParse(nextValue);
+    if (parsed.success) {
+      onValueChange(parsed.data);
+    }
+  };
+
   return (
     <Box px={16} pt={12} pb={4}>
-      <Tabs
-        value={value}
-        onValueChange={(nextValue) => {
-          const parsed = nudgeDirectionSchema.safeParse(nextValue);
-          if (parsed.success) {
-            onValueChange(parsed.data);
-          }
-        }}
-        variant="primary"
-      >
+      <Tabs value={value} onValueChange={handleValueChange} variant="primary">
         <Tabs.List className="self-start">
           <Tabs.Indicator />
           <SegmentTabTrigger value="received">{t('directions.received')}</SegmentTabTrigger>

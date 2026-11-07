@@ -14,31 +14,32 @@ import {
   useGetReportsQueryOptions,
   useGetReportStatusQueryOptions,
 } from '@src/features/insights/report/queries/report.queries';
-import {
-  type ReportType,
-  reportTypeSchema,
-} from '@src/features/insights/report/schemas/report.schema';
+import { reportTypeSchema } from '@src/features/insights/report/schemas/report.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   Button,
   H4,
+  Image,
   QueryErrorBoundary,
+  ScallopedContainer,
+  SegmentTabTrigger,
   Spacing,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   VStack,
-  ScallopedContainer,
-  Box,
-  Image,
 } from '@src/shared/ui';
 import { usePrefetchQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 function ReportsScreen() {
   const { t } = useTranslation('ai');
@@ -46,12 +47,27 @@ function ReportsScreen() {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const canViewReports = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_REPORT');
   const [reportType, setReportType] = useReportTypeParam();
-  const [refreshing, onRefresh] = useRefresh(() => invalidateAiReports(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiReports(queryClient));
+  const { color: refreshTint } = useResolveClassNames('text-main');
+
+  const handleReportTypeChange = (value: string) => {
+    const parsed = reportTypeSchema.safeParse(value);
+    if (parsed.success) {
+      setReportType(parsed.data);
+    }
+  };
 
   return (
     <ScrollView
       className="flex-1 px-4"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor={refreshTint}
+          colors={refreshTint == null ? undefined : [refreshTint]}
+        />
+      }
     >
       <StyledSafeAreaView edges={['left', 'right']}>
         <Spacing size={16} />
@@ -92,20 +108,15 @@ function ReportsScreen() {
             <Spacing size={12} />
 
             <Box className="px-4">
-              <Tabs
-                value={reportType}
-                onValueChange={(value) => {
-                  const parsed = reportTypeSchema.safeParse(value);
-                  if (parsed.success) {
-                    setReportType(parsed.data);
-                  }
-                }}
-                variant="primary"
-              >
+              <Tabs value={reportType} onValueChange={handleReportTypeChange} variant="primary">
                 <Tabs.List>
                   <Tabs.Indicator />
-                  <ReportTypeTab type="WEEKLY" />
-                  <ReportTypeTab type="MONTHLY" />
+                  <SegmentTabTrigger value="WEEKLY">
+                    {t(REPORT_TYPE_LABEL_KEYS.WEEKLY)}
+                  </SegmentTabTrigger>
+                  <SegmentTabTrigger value="MONTHLY">
+                    {t(REPORT_TYPE_LABEL_KEYS.MONTHLY)}
+                  </SegmentTabTrigger>
                 </Tabs.List>
               </Tabs>
             </Box>
@@ -133,21 +144,46 @@ function ReportsScreen() {
   );
 }
 
-function ReportTypeTab({ type }: { type: ReportType }) {
-  const { t } = useTranslation('ai');
-
+ReportsScreen.Loading = function Loading() {
   return (
-    <Tabs.Trigger value={type}>
-      {({ isSelected }) => (
-        <Tabs.Label>
-          <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-            {t(REPORT_TYPE_LABEL_KEYS[type])}
-          </Text>
-        </Tabs.Label>
-      )}
-    </Tabs.Trigger>
+    <ScrollView className="flex-1 px-4" scrollEnabled={false}>
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <Spacing size={16} />
+
+        <ScallopedContainer>
+          <Box className="items-center px-5 pt-4">
+            <Box className="size-[100px]" />
+            <Spacing size={8} />
+            <TextSkeleton size="t3" className="w-40" />
+            <TextSkeleton size="b4" className="w-56" />
+          </Box>
+
+          <Spacing size={28} />
+
+          <Box className="px-4">
+            <Tabs value="WEEKLY" onValueChange={noop} variant="primary">
+              <Tabs.List>
+                <Tabs.Indicator />
+                <Tabs.Trigger value="WEEKLY">
+                  <TextSkeleton size="b4" className="w-10" />
+                </Tabs.Trigger>
+                <Tabs.Trigger value="MONTHLY">
+                  <TextSkeleton size="b4" className="w-10" />
+                </Tabs.Trigger>
+              </Tabs.List>
+            </Tabs>
+          </Box>
+
+          <Spacing size={8} />
+
+          <Box className="px-4 pb-4">
+            <ReportCard.Loading />
+          </Box>
+        </ScallopedContainer>
+      </StyledSafeAreaView>
+    </ScrollView>
   );
-}
+};
 
 function FreeReportPreview() {
   const push = useSingleTap(router.push);
@@ -216,7 +252,7 @@ export default function ReportsRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <QueryErrorBoundary>
-        <Suspense fallback={<ReportCard.Loading />}>
+        <Suspense fallback={<ReportsScreen.Loading />}>
           <ReportsScreen />
         </Suspense>
       </QueryErrorBoundary>

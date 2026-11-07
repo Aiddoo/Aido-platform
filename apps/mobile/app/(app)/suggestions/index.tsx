@@ -16,12 +16,14 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 function SuggestionsScreen() {
   const { t } = useTranslation('ai');
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
+  const { color: refreshTint } = useResolveClassNames('text-main');
 
   const canViewSuggestions = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_SUGGESTION');
 
@@ -31,7 +33,12 @@ function SuggestionsScreen() {
       contentContainerClassName="grow pb-8"
       refreshControl={
         canViewSuggestions ? (
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={refreshTint}
+            colors={refreshTint == null ? undefined : [refreshTint]}
+          />
         ) : undefined
       }
     >
