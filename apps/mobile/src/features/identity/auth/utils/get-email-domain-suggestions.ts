@@ -7,6 +7,8 @@ const EMAIL_DOMAINS = [
   'kakao.com',
 ];
 
+const MAX_SUGGESTIONS = 3;
+
 export function getEmailDomainSuggestions(email: string) {
   const atIndex = email.lastIndexOf('@');
   if (atIndex < 1) {
@@ -20,6 +22,6 @@ export function getEmailDomainSuggestions(email: string) {
   }
 
   return EMAIL_DOMAINS.filter((domain) => domain.startsWith(domainPart))
-    .slice(0, 3)
+    .slice(0, MAX_SUGGESTIONS)
     .map((domain) => ({ domain, value: `${localPart}@${domain}` }));
 }

@@ -753,7 +753,7 @@ describe('로그아웃과 늦은 갱신', () => {
       sessionRevocationService: { record: async () => undefined },
       sessionEpoch,
       logger: createLoggerStub(),
-    }).logOut(true);
+    }).logOut({ isOnline: true });
 
     // When
     await act(async () => {

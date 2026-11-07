@@ -8,8 +8,7 @@ import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import type { SignUpFormInput } from '../schemas/sign-up-form.schema';
-import { signUpPasswordSchema } from '../schemas/sign-up-form.schema';
+import { type SignUpFormInput, signUpFormSchema } from '../schemas/sign-up-form.schema';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { RevealedField } from './revealed-field';
@@ -34,7 +33,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
     form.setFocus('passwordConfirm');
   }, [form]);
 
-  const isPasswordValid = signUpPasswordSchema.safeParse(password).success;
+  const isPasswordValid = signUpFormSchema.shape.password.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
 
   const handleSubmit = async () => {

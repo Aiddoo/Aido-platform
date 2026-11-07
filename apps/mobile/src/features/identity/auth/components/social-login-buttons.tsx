@@ -1,5 +1,4 @@
 import { useTranslation } from '@src/shared/i18n';
-import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   AppleIcon,
   Button,
@@ -24,20 +23,16 @@ import type { OAuthStartProvider } from '../schemas/oauth.schema';
 
 export function SocialLoginButtons() {
   const { t } = useTranslation('auth');
-  const { resolvedTheme } = useTheme();
   const exchangeCode = useMutation(useExchangeCodeMutationOptions());
   const appleLogin = useMutation(useOpenAppleLoginMutationOptions());
   const kakaoLogin = useMutation(useOpenKakaoLoginMutationOptions());
   const googleLogin = useMutation(useOpenGoogleLoginMutationOptions());
   const naverLogin = useMutation(useOpenNaverLoginMutationOptions());
-  const isDark = resolvedTheme === 'dark';
 
   // 교환에 성공하면 인증 상태로 바뀌고 Stack.Protected가 (app)으로 보낸다.
   const exchangeOnSuccess = (provider: OAuthStartProvider) => ({
-    onSuccess: (code: string | null) => {
-      if (code) {
-        exchangeCode.mutate({ code, provider });
-      }
+    onSuccess: (code: string) => {
+      exchangeCode.mutate({ code, provider });
     },
   });
 
@@ -45,13 +40,7 @@ export function SocialLoginButtons() {
     <VStack gap={8}>
       {process.env.EXPO_OS === 'ios' && (
         <SocialLoginButton
-          icon={
-            <AppleIcon
-              width={20}
-              height={20}
-              colorClassName={isDark ? 'text-black' : 'text-white'}
-            />
-          }
+          icon={<AppleIcon width={20} height={20} colorClassName="text-white dark:text-black" />}
           label={t('login.continueWith', { provider: t('providers.APPLE') })}
           onPress={() => appleLogin.mutate()}
           isLoading={appleLogin.isPending}

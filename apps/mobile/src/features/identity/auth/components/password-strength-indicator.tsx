@@ -5,25 +5,24 @@ import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
 import { PasswordPolicy } from '../domains/password.model';
 
 export interface PasswordStrengthIndicatorProps {
-  password: string | undefined;
+  password: string;
 }
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
   const { t } = useTranslation('auth');
-  const value = password || '';
 
   return (
     <HStack gap={16} className="items-center">
       <RuleItem
-        isSatisfied={PasswordPolicy.hasLetter(value)}
+        isSatisfied={PasswordPolicy.hasLetter(password)}
         label={t('passwordRules.hasLetter')}
       />
       <RuleItem
-        isSatisfied={PasswordPolicy.hasNumber(value)}
+        isSatisfied={PasswordPolicy.hasNumber(password)}
         label={t('passwordRules.hasNumber')}
       />
       <RuleItem
-        isSatisfied={PasswordPolicy.hasMinLength(value)}
+        isSatisfied={PasswordPolicy.hasMinLength(password)}
         label={t('passwordRules.minLength', { count: PASSWORD_RULES.MIN_LENGTH })}
       />
     </HStack>

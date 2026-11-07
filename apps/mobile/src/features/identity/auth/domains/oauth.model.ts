@@ -23,7 +23,7 @@ export function toOAuthProviderSlug(provider: OAuthProvider): OAuthProviderSlug 
 }
 
 /** 돌아온 주소의 쿼리에 없으면 해시까지 본다. 서버와 업체마다 코드를 두는 자리가 다르다 */
-export function extractOAuthCode(url: string, queryParams: Record<string, string>): string | null {
+export function findOAuthCode(url: string, queryParams: Record<string, string>): string | null {
   if (queryParams.code) {
     return queryParams.code;
   }

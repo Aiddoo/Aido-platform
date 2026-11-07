@@ -97,8 +97,8 @@ export function useExchangeCodeMutationOptions() {
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (request: ExchangeCodeInput & { provider: OAuthProviderSlug }) =>
-      unwrap(await authService.exchangeCode(request)),
+    mutationFn: async ({ code }: ExchangeCodeInput & { provider: OAuthProviderSlug }) =>
+      unwrap(await authService.exchangeCode({ code })),
     onSuccess: (data, variables) => {
       signIn();
       if (data.accountRestored) {
@@ -177,7 +177,7 @@ export function useLogoutMutationOptions() {
     // 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다. 사용자가 나간 것으로 끝나도록 콜백에 두지 않는다.
     // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
     mutationFn: async () => {
-      const outcome = await logOutDeviceService.logOut(onlineManager.isOnline());
+      const outcome = await logOutDeviceService.logOut({ isOnline: onlineManager.isOnline() });
       if (outcome === 'superseded') {
         return;
       }

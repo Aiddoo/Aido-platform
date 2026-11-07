@@ -28,7 +28,7 @@ import { identity } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
-import { extractOAuthCode } from '../domains/oauth.model';
+import { findOAuthCode } from '../domains/oauth.model';
 import {
   type AuthTokens,
   authTokensEnvelopeSchema,
@@ -111,7 +111,7 @@ export class AuthService {
     return match(session)
       .returnType<Result<string, BusinessError>>()
       .with({ type: 'success' }, ({ url, queryParams }) => {
-        const code = extractOAuthCode(url, queryParams);
+        const code = findOAuthCode(url, queryParams);
         if (code) {
           return ok(code);
         }

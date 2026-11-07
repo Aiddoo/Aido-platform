@@ -58,7 +58,7 @@ export class LogOutDeviceService {
     this.#logger = logger;
   }
 
-  logOut = async (isOnline: boolean): Promise<LogOutOutcome> => {
+  logOut = async ({ isOnline }: { isOnline: boolean }): Promise<LogOutOutcome> => {
     const epoch = this.#sessionEpoch.current();
     const isSameSession = () => this.#sessionEpoch.current() === epoch;
 

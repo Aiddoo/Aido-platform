@@ -7,7 +7,7 @@ import type {
   ResendVerificationResponse,
   ResetPasswordResponse,
 } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import type {
   AuthTokens,
@@ -83,7 +83,7 @@ export function toLinkedAccount(dto: LinkedAccountDto): LinkedAccount {
     provider: dto.provider,
     linked: dto.linked,
     providerAccountId: dto.providerAccountId,
-    linkedAt: dto.linkedAt ? toInstant(dto.linkedAt) : null,
+    linkedAt: toNullableInstant(dto.linkedAt),
   };
 }
 
