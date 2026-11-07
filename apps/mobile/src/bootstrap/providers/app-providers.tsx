@@ -44,8 +44,14 @@ function BootQueryErrorFallback({ reset }: Pick<QueryErrorFallbackProps, 'reset'
   return <QueryErrorFallback reset={reset} onInquiry={openSupportMail} />;
 }
 
-export function AppProviders({ children, encryptedStorageBootstrap }: AppProvidersProps) {
+/** 화면이 바뀌면 열려 있던 오버레이를 걷는다. 경로는 여기서만 읽어 화면 이동마다 다른 Provider가 다시 그려지지 않게 한다 */
+function RouteOverlayProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
+
+  return <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>;
+}
+
+export function AppProviders({ children, encryptedStorageBootstrap }: AppProvidersProps) {
   const [queryCacheStorage] = useState(() => {
     const storage = encryptedStorageBootstrap.queryCacheStorage;
     return storage == null ? null : createQueryCacheStorage(storage);
@@ -70,16 +76,14 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                             <NotificationProvider>
                               <ReservedRegionsProvider style={{ flex: 1 }}>
                                 {/* 이 경계가 그리면 내비게이터가 내려가 있어 문의는 화면 이동 대신 메일로 연다 */}
-                                <QueryErrorBoundary
-                                  fallback={({ reset }) => <BootQueryErrorFallback reset={reset} />}
-                                >
-                                  <OverlayProvider resetKey={pathname}>
+                                <QueryErrorBoundary fallback={BootQueryErrorFallback}>
+                                  <RouteOverlayProvider>
                                     <OfflineBanner />
                                     {/* 배너가 상태 표시줄 inset을 차지하면 아래 화면은 남은 inset만 받는다 */}
                                     <SafeAreaProvider style={{ flex: 1 }}>
                                       {children}
                                     </SafeAreaProvider>
-                                  </OverlayProvider>
+                                  </RouteOverlayProvider>
                                 </QueryErrorBoundary>
                               </ReservedRegionsProvider>
                             </NotificationProvider>

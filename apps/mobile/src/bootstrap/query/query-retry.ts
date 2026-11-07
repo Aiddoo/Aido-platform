@@ -1,10 +1,4 @@
-import {
-  isApiError,
-  isBusinessError,
-  NetworkError,
-  ServerError,
-  TimeoutError,
-} from '@src/shared/errors';
+import { isBusinessError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 
 /** 재시도 상한(그 외 — 예: 응답 파싱 실패). */
 const MAX_RETRIES = 3;
@@ -30,17 +24,12 @@ function isRetryableInfraError(error: unknown): boolean {
 /**
  * React Query 쿼리 재시도 술어.
  *
- * - `ApiError` 401/403(세션 종료·권한 없음): 재시도하지 않는다 — 화면별 `QueryErrorBoundary`가 담는다.
- * - 그 외 `BusinessError`(예측 가능한 4xx): 재시도하지 않는다 — 호출부가 처리한다.
+ * - 서버 4xx와 앱 오류(`ApiError` 등 `code`가 있는 오류): 재시도하지 않는다 — 호출부와 `QueryErrorBoundary`가 처리한다.
  * - 일시 인프라 장애(네트워크·5xx·타임아웃): 넉넉한 상한까지 재시도해 서버 복귀를
  *   기다린다(콜드스타트/배포 재시작 구간에 재시도 화면 대신 로딩 유지).
  * - 나머지: 기본 상한까지 재시도한다.
  */
 export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
-  if (isApiError(error) && [401, 403].includes(error.status)) {
-    return false;
-  }
-
   if (isBusinessError(error)) {
     return false;
   }
