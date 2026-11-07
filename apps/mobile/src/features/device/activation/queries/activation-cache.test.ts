@@ -139,6 +139,56 @@ describe('activation mutation bridge', () => {
     });
   });
 
+  it('이미 요청 시점이 열려 있으면 다시 켤 때는 직접 물으라고 false를 돌려준다', () => {
+    // Given
+    queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
+    const service = createService();
+    tryUnlockPushRegistration({
+      queryClient,
+      service,
+      now: toInstant('2026-08-02T00:00:00.000Z'),
+    });
+
+    // When
+    const unlocked = tryUnlockPushRegistration({
+      queryClient,
+      service,
+      now: toInstant('2026-08-03T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(unlocked).toBe(false);
+  });
+
+  it('이미 활성화된 신규 사용자가 처음 켜도 요청 키가 그대로라 직접 물으라고 false를 돌려준다', () => {
+    // Given
+    queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
+    const service = createService();
+    recordTodoCreatedForActivation({
+      queryClient,
+      service,
+      now: toInstant('2026-08-02T00:00:00.000Z'),
+    });
+    recordTodoCompletionForActivation({
+      queryClient,
+      service,
+      isCompleted: true,
+      now: toInstant('2026-08-03T00:00:00.000Z'),
+    });
+
+    // When
+    const unlocked = tryUnlockPushRegistration({
+      queryClient,
+      service,
+      now: toInstant('2026-08-04T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(unlocked).toBe(false);
+  });
+
   it('기존 사용자는 신규 코호트 게이트 해제 대상이 아님을 반환한다', () => {
     // Given
     queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);

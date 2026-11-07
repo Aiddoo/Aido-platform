@@ -50,14 +50,6 @@ function resolveEnabledCampaign(
   return null;
 }
 
-function isNewUserCohort(
-  config: FeatureCampaignConfig | undefined,
-  user: ActivationUser | undefined,
-): boolean {
-  const campaign = config ? resolveEnabledCampaign(config) : null;
-  return Boolean(campaign && user && toEpochMs(user.createdAt) >= toEpochMs(campaign.launchedAt));
-}
-
 function getActivationIdentity(
   config: FeatureCampaignConfig | undefined,
   user: ActivationUser | undefined,
@@ -70,6 +62,13 @@ function getActivationIdentity(
     accountId: user.id,
     campaignId: campaign.campaignId,
   };
+}
+
+function isNewUserCohort(
+  config: FeatureCampaignConfig | undefined,
+  user: ActivationUser | undefined,
+): boolean {
+  return getActivationIdentity(config, user) != null;
 }
 
 function isWithinTimeWindow(createdAt: number, now: number, window: number): boolean {

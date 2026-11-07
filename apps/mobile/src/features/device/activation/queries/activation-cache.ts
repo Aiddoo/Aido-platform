@@ -73,15 +73,17 @@ export function recordTodoCompletionForActivation({
   return result.event;
 }
 
+/** 이번 호출로 푸시 권한을 묻는 시점이 새로 열렸으면 true. 이미 열려 있었다면 자동 요청이 다시 오지 않으니 호출부가 직접 묻는다 */
 export function tryUnlockPushRegistration({
   queryClient,
   service,
   now = getNowInstant(),
 }: ActivationMutationBridgeInput): boolean {
   const { config, user } = getContext(queryClient);
-  const progress = service.unlockPushRegistration({ config, user, now });
-  if (progress) {
-    updateProgressCache(queryClient, config, user, progress);
+  const result = service.unlockPushRegistration({ config, user, now });
+  if (result == null) {
+    return false;
   }
-  return progress != null && progress.pushRegistrationUnlockedAt != null;
+  updateProgressCache(queryClient, config, user, result.progress);
+  return result.didOpenAskMoment;
 }
