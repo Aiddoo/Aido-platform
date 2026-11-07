@@ -29,12 +29,14 @@ export function useAcceptRequestMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async (userId: string) => {
       const result = await friendService.acceptRequest(userId);
       return unwrap(result);
     },
-    onSuccess: async () => {
-      await invalidateFriends(queryClient);
+    onSuccess: () => {
+      invalidateFriends(queryClient);
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
     },
@@ -53,6 +55,8 @@ export function useCancelRequestMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async (userId: string) => {
       const result = await friendService.cancelRequest(userId);
       return unwrap(result);
@@ -77,6 +81,8 @@ export function useRejectRequestMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async (userId: string) => {
       const result = await friendService.rejectRequest(userId);
       return unwrap(result);

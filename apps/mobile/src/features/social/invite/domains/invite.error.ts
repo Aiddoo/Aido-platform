@@ -51,8 +51,9 @@ export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
 }
 
 /**
- * 다시 열어도 결과가 같은 실패인지. 이어서 열 초대를 지울지 정한다.
- * 잠시 막힌 경우(초대 중지·친구 자리·장애)는 남겨 두어 다음 실행 때 다시 시도한다.
+ * 다시 열어도 결과가 같은 실패인지. 미리보기를 받지 못했을 때 이어서 열 초대를 지울지 정한다.
+ * 잠시 막힌 경우(초대 중지·친구 자리·장애)는 지우지 않는다. 다만 초대 카드를 보는 순간
+ * 이어서 열 초대를 지우므로 다음 실행 때 다시 열리는 것은 카드에 닿기 전에 끊긴 경우뿐이다.
  */
 export function isTerminalRedeemFailure(reason: RedeemFailureReason) {
   return match(reason)

@@ -92,36 +92,21 @@ describe('getFriendship', () => {
   });
 });
 
-describe('getWelcomeVariant', () => {
+describe('isAlreadyFriends', () => {
   it.each([
-    ['보상을 받고 친구가 됐으면', createRedemptionResult(), 'friends-with-reward'],
-    [
-      '보상을 받고 친구 요청만 갔으면',
-      createRedemptionResult({ friendship: 'REQUESTED' }),
-      'requested-with-reward',
-    ],
-    [
-      '같은 기기라 보상 없이 친구가 됐으면',
-      createRedemptionResult({ rewards: [] }),
-      'friends-only',
-    ],
+    ['이미 친구였으면', { outcome: 'ALREADY_FRIENDS' as const, inviter }, true],
+    ['보상을 받고 친구가 됐으면', createRedemptionResult(), false],
     [
       '기존 사용자가 친구를 맺었으면',
       { outcome: 'CONNECTED' as const, inviter, friendship: 'FRIENDS' as const },
-      'friends-only',
+      false,
     ],
-    [
-      '기존 사용자가 친구 요청만 보냈으면',
-      { outcome: 'CONNECTED' as const, inviter, friendship: 'REQUESTED' as const },
-      'requested-only',
-    ],
-    ['이미 친구였으면', { outcome: 'ALREADY_FRIENDS' as const, inviter }, 'already-friends'],
   ])('%s %s를 반환한다', (_case, result, expected) => {
     // When
-    const variant = InviteRedemptionPolicy.getWelcomeVariant(result);
+    const isAlreadyFriends = InviteRedemptionPolicy.isAlreadyFriends(result);
 
     // Then
-    expect(variant).toBe(expected);
+    expect(isAlreadyFriends).toBe(expected);
   });
 });
 

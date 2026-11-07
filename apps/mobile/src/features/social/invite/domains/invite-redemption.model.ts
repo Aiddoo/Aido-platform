@@ -39,35 +39,14 @@ function isAlreadyAccepted(result: RedemptionResult) {
   return result.outcome === REDEEM_OUTCOME.REDEEMED && result.isReplay === true;
 }
 
-/** 환영 시트가 어떤 결과를 보여 줄지 정한다(문구는 화면이 고른다) */
-function getWelcomeVariant(result: RedemptionResult) {
-  return match({ result, hasReward: getGrantedPremiumDays(result) > 0 })
-    .with({ result: { outcome: REDEEM_OUTCOME.ALREADY_FRIENDS } }, () => 'already-friends' as const)
-    .with(
-      { result: { friendship: INVITE_FRIENDSHIP.FRIENDS }, hasReward: true },
-      () => 'friends-with-reward' as const,
-    )
-    .with(
-      { result: { friendship: INVITE_FRIENDSHIP.REQUESTED }, hasReward: true },
-      () => 'requested-with-reward' as const,
-    )
-    .with(
-      { result: { friendship: INVITE_FRIENDSHIP.FRIENDS }, hasReward: false },
-      () => 'friends-only' as const,
-    )
-    .with(
-      { result: { friendship: INVITE_FRIENDSHIP.REQUESTED }, hasReward: false },
-      () => 'requested-only' as const,
-    )
-    .exhaustive();
+/** 이미 친구였으면 축하할 것이 없어 환영 시트 없이 바로 친구 할 일로 간다 */
+function isAlreadyFriends(result: RedemptionResult) {
+  return result.outcome === REDEEM_OUTCOME.ALREADY_FRIENDS;
 }
 
 /** 초대한 사람 친구 자리가 꽉 차 친구 요청만 보낸 경우 */
 function isFriendRequestOnly(result: RedemptionResult) {
-  return match(getWelcomeVariant(result))
-    .with('requested-with-reward', 'requested-only', () => true)
-    .with('already-friends', 'friends-with-reward', 'friends-only', () => false)
-    .exhaustive();
+  return getFriendship(result) === INVITE_FRIENDSHIP.REQUESTED;
 }
 
 /** 보상이 없을 때 이유. 같은 기기·신원으로 이미 받았거나, 이미 쓰던 계정이다 */
@@ -108,7 +87,7 @@ export const InviteRedemptionPolicy = {
   getFriendship,
   getGrantedPremiumDays,
   isAlreadyAccepted,
-  getWelcomeVariant,
+  isAlreadyFriends,
   isFriendRequestOnly,
   getMissingRewardReason,
   getRewardStart,

@@ -98,13 +98,6 @@ export class InviteService {
 
     const result = await this.#publicHttpClient.get(`v1/invites/${inviteCode}`, { signal });
     if (!result.ok) {
-      // 이어서 열려던 초대가 없어졌거나 바뀌었으면 다음 실행 때 다시 열지 않는다
-      if (
-        this.#pendingRedemptionRepository.find()?.inviteCode === inviteCode &&
-        isTerminalRedeemFailure(toRedeemFailureReason(result.error))
-      ) {
-        this.#pendingRedemptionRepository.clear();
-      }
       return result;
     }
 
@@ -198,9 +191,19 @@ export class InviteService {
     }
   };
 
-  /** 수락했거나 다시 열어도 같은 실패라 더 이어서 열 필요가 없을 때 */
+  /** 사용자가 초대 카드를 봤을 때. 닫고 나가도 다음 실행 때 다시 열지 않는다 */
   clearPendingRedemption = () => {
     this.#pendingRedemptionRepository.clear();
+  };
+
+  /** 이어서 열려던 초대가 없어졌거나 바뀌어 미리보기를 받지 못했으면 다음 실행 때 다시 열지 않는다 */
+  clearPendingRedemptionIfTerminal = (inviteCode: string, error: unknown) => {
+    if (
+      this.#pendingRedemptionRepository.find()?.inviteCode === inviteCode &&
+      isTerminalRedeemFailure(toRedeemFailureReason(error))
+    ) {
+      this.#pendingRedemptionRepository.clear();
+    }
   };
 
   /** 처음 실행 때 Play 설치 referrer의 초대 코드를 이어서 열 초대로 남긴다 */

@@ -14,7 +14,7 @@ function selectUserId(user: User) {
 /**
  * 로그인 전에 연 초대를 로그인 뒤 초대 카드로 이어서 연다(위젯 진입과 같은 방식).
  * 앱 화면이 준비되고 내 정보를 받은 다음에 찾는다. 수락은 카드에서 사용자가 직접 누른다.
- * 초대는 수락하거나 끝난 실패일 때 지우고, 같은 초대는 이번 실행에서 한 번만 연다.
+ * 초대는 카드가 보이는 순간 지워지고(`InviteCardActions.Redeem`), 같은 초대는 이번 실행에서 한 번만 연다.
  */
 export function useInviteAppEntry() {
   const status = useAuthStatus();
