@@ -4,12 +4,12 @@ import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
+import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
 import {
   createQueryCacheStorage,
   disabledQueryCacheStorage,
 } from '@src/bootstrap/providers/query-cache-persistence';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
-import { RevenueCatProvider } from '@src/bootstrap/providers/revenuecat-provider';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -65,7 +65,7 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                     <OnlineManagerProvider>
                       <LocalDateProvider>
                         <AuthBootProvider>
-                          <RevenueCatProvider>
+                          <PurchasesProvider>
                             <NotificationProvider>
                               <ReservedRegionsProvider style={{ flex: 1 }}>
                                 {/* 이 경계가 그리면 내비게이터가 내려가 있어 문의는 화면 이동 대신 메일로 연다 */}
@@ -82,7 +82,7 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                                 </QueryErrorBoundary>
                               </ReservedRegionsProvider>
                             </NotificationProvider>
-                          </RevenueCatProvider>
+                          </PurchasesProvider>
                         </AuthBootProvider>
                       </LocalDateProvider>
                     </OnlineManagerProvider>

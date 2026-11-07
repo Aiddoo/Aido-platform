@@ -58,7 +58,7 @@ describe('RevenueCat 구독자 속성', () => {
 
     // Then
     expect(logger.warn).toHaveBeenCalledWith(
-      SUBSCRIPTION_LOG_EVENT.REVENUECAT_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED,
+      SUBSCRIPTION_LOG_EVENT.PURCHASES_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED,
       { error: 'network' },
     );
   });
@@ -120,7 +120,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
 
     // Then
     expect(logger.warn).toHaveBeenCalledWith(
-      SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED,
+      SUBSCRIPTION_LOG_EVENT.PURCHASES_ANALYTICS_ID_SYNC_FAILED,
       { error: 'analytics disabled' },
     );
     expect(purchases.setAnalyticsId).not.toHaveBeenCalled();

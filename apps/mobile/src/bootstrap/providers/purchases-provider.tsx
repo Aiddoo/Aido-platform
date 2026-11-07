@@ -15,7 +15,7 @@ import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 
 import { usePurchasesSdkManager, useSubscriptionService } from './di-context';
 
-export function RevenueCatProvider({ children }: PropsWithChildren) {
+export function PurchasesProvider({ children }: PropsWithChildren) {
   const status = useAuthStatus();
   const sdkManager = usePurchasesSdkManager();
   const subscriptionService = useSubscriptionService();
@@ -35,8 +35,8 @@ export function RevenueCatProvider({ children }: PropsWithChildren) {
   useEffect(() => watchPremiumEntitlementChanges(queryClient), [queryClient]);
 
   useEffect(() => {
-    if (ENV.REVENUECAT_API_KEY) {
-      sdkManager.configure(ENV.REVENUECAT_API_KEY);
+    if (ENV.PURCHASES_API_KEY) {
+      sdkManager.configure(ENV.PURCHASES_API_KEY);
     }
   }, [sdkManager]);
 

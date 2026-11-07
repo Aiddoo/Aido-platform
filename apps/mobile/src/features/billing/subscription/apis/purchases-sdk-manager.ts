@@ -43,7 +43,7 @@ export class PurchasesSdkManager {
 
   configure = (apiKey: string): void => {
     if (!apiKey) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_SKIPPED);
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_CONFIGURE_SKIPPED);
       return;
     }
 
@@ -51,7 +51,7 @@ export class PurchasesSdkManager {
       this.#purchases.configure(apiKey, { isDebugLogEnabled: this.#isDebugLogEnabled });
       this.#configured = true;
     } catch (error) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_FAILED, {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_CONFIGURE_FAILED, {
         error: getErrorMessage(error),
       });
       return;
@@ -69,7 +69,7 @@ export class PurchasesSdkManager {
     try {
       await this.#purchases.logIn(userId);
     } catch (error) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGIN_FAILED, {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_LOGIN_FAILED, {
         error: getErrorMessage(error),
       });
       return;
@@ -91,7 +91,7 @@ export class PurchasesSdkManager {
 
       await this.#purchases.logOut();
     } catch (error) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGOUT_FAILED, {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_LOGOUT_FAILED, {
         error: getErrorMessage(error),
       });
     }
@@ -106,13 +106,13 @@ export class PurchasesSdkManager {
     try {
       await this.#purchases.setAttributes({ ...this.#subscriberAttributes });
     } catch (error) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED, {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED, {
         error: getErrorMessage(error),
       });
     }
   };
 
-  // RevenueCat Firebase 연동은 구독 이벤트를 앱 인스턴스 ID로 귀속하므로 configure·logIn 직후마다 다시 설정한다.
+  // 결제 공급자의 분석 연동이 구독 이벤트를 분석 ID로 귀속하므로 configure·logIn 직후마다 다시 설정한다.
   #syncAnalyticsId = async (): Promise<void> => {
     try {
       const analyticsId = await this.#analytics.getAnalyticsId();
@@ -122,7 +122,7 @@ export class PurchasesSdkManager {
 
       await this.#purchases.setAnalyticsId(analyticsId);
     } catch (error) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED, {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_ANALYTICS_ID_SYNC_FAILED, {
         error: getErrorMessage(error),
       });
     }

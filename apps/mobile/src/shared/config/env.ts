@@ -136,7 +136,7 @@ export const ENV = {
 
   API_URL: resolveApiUrl(),
   SCHEME: resolveScheme(),
-  REVENUECAT_API_KEY: resolveRevenueCatApiKey({
+  PURCHASES_API_KEY: resolveRevenueCatApiKey({
     isDebugBuild: __DEV__,
     isDevelopmentEnvironment: extra.isDevelopment,
     platform: process.env.EXPO_OS,
