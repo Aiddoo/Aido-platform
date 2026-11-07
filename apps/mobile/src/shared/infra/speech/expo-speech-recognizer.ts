@@ -8,6 +8,7 @@ import type {
   SpeechRecognizer,
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
+import { ANDROID_API_LEVEL } from '@src/shared/infra/device/device-info';
 import { clamp } from 'es-toolkit';
 import { PermissionStatus } from 'expo';
 import { getLocales } from 'expo-localization';
@@ -15,7 +16,6 @@ import {
   type ExpoSpeechRecognitionOptions,
   ExpoSpeechRecognitionModule,
 } from 'expo-speech-recognition';
-import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
 /** Apple 권장 상한. 한 항목은 한두 단어로 둔다(SFSpeechRecognitionRequest.contextualStrings) */
@@ -58,7 +58,7 @@ async function toPermissionSnapshot(
 function supportsContinuousRecognition() {
   return (
     process.env.EXPO_OS !== 'android' ||
-    (typeof Platform.Version === 'number' && Platform.Version >= ANDROID_CONTINUOUS_API_LEVEL)
+    (ANDROID_API_LEVEL != null && ANDROID_API_LEVEL >= ANDROID_CONTINUOUS_API_LEVEL)
   );
 }
 

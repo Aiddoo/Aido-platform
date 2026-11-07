@@ -1,7 +1,7 @@
+import { ANDROID_API_LEVEL } from '@src/shared/infra/device/device-info';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { useIsFocused } from 'expo-router';
 import type { ComponentProps, Ref } from 'react';
-import { Platform } from 'react-native';
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
 import type Reanimated from 'react-native-reanimated';
 import { useDerivedValue, useSharedValue } from 'react-native-reanimated';
@@ -22,10 +22,7 @@ interface TodoCommentKeyboardScrollViewProps extends Omit<
   ref?: Ref<Reanimated.ScrollView>;
 }
 
-const IS_LEGACY_ANDROID_KEYBOARD =
-  process.env.EXPO_OS === 'android' &&
-  typeof Platform.Version === 'number' &&
-  Platform.Version < 30;
+const IS_LEGACY_ANDROID_KEYBOARD = ANDROID_API_LEVEL != null && ANDROID_API_LEVEL < 30;
 
 function getKeyboardDismissMode(): 'interactive' | 'on-drag' | 'none' {
   if (process.env.EXPO_OS === 'ios') {

@@ -1,9 +1,10 @@
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { IOS_MAJOR_VERSION } from '@src/shared/infra/device/device-info';
 import { Box, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { type PropsWithChildren } from 'react';
-import { Platform, RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
@@ -15,7 +16,7 @@ const SCREEN_GUTTER = 16;
 const TOP_FADE_EXTENT = 40;
 const IS_IOS = process.env.EXPO_OS === 'ios';
 /** iOS 26부터는 투명 헤더 아래 내용을 시스템 스크롤 엣지 효과가 흐리므로 직접 그린 페이드를 쓰지 않는다. */
-const HAS_NATIVE_EDGE_EFFECT = IS_IOS && Number.parseInt(String(Platform.Version), 10) >= 26;
+const HAS_NATIVE_EDGE_EFFECT = IOS_MAJOR_VERSION != null && IOS_MAJOR_VERSION >= 26;
 
 interface WeatherScrollViewProps extends PropsWithChildren {
   /** 기본 아래 여백에 더할 높이 */
