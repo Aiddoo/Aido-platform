@@ -12,7 +12,7 @@ import {
 import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
 import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
-import { useInvitedFriendsViewParam } from '@src/features/social/invite/hooks/use-invited-friends-view-param';
+import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
 import { useVoiceNoteTab } from '@src/features/voice/hooks/use-voice-note-params';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { mockWindowDimensions } from '@src/shared/__tests__';
@@ -188,7 +188,9 @@ describe('공개 URL 계약', () => {
 
   it('초대한 친구 보기', async () => {
     // Given
-    const route = await renderRouteHook(() => useInvitedFriendsViewParam(), { url: '/invitees' });
+    const route = await renderRouteHook(() => useView('view', invitedFriendsViewSchema), {
+      url: '/invitees',
+    });
 
     // When
     await route.run(([_view, setView]) => setView('waiting'));

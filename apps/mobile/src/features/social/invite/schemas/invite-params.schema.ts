@@ -17,10 +17,6 @@ export const inviteWelcomeParamsSchema = z.object({
   friendId: userIdParamSchema.shape.userId.nullable().catch(null),
 });
 
-export const invitedFriendsViewSchema = z.enum(['all', 'waiting']);
+export const invitedFriendsViewSchema = z.enum(['all', 'waiting']).catch('all');
 
 export type InvitedFriendsView = z.output<typeof invitedFriendsViewSchema>;
-
-export const invitedFriendsParamsSchema = z.object({
-  view: invitedFriendsViewSchema.catch('all'),
-});

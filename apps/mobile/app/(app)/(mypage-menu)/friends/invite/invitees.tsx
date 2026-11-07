@@ -1,13 +1,10 @@
 import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
-import { useInvitedFriendsViewParam } from '@src/features/social/invite/hooks/use-invited-friends-view-param';
 import {
   useGetInviteQueryOptions,
   useGetInvitedFriendCountInfiniteQueryOptions,
 } from '@src/features/social/invite/queries/invite.queries';
-import {
-  type InvitedFriendsView,
-  invitedFriendsViewSchema,
-} from '@src/features/social/invite/schemas/invite-params.schema';
+import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
+import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -16,6 +13,7 @@ import {
   SegmentTabTrigger,
   StyledSafeAreaView,
   TextSkeleton,
+  ViewTabs,
 } from '@src/shared/ui';
 import {
   usePrefetchInfiniteQuery,
@@ -25,12 +23,12 @@ import {
 } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Tabs } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 export default function InvitedFriendsScreen() {
   const { t } = useTranslation('invite');
-  const [view, setView] = useInvitedFriendsViewParam();
+  const [view] = useView('view', invitedFriendsViewSchema);
   // 탭 숫자와 목록이 같은 두 쿼리를 읽으므로 화면에서 함께 시작해 차례로 기다리지 않게 한다
   usePrefetchQuery(useGetInviteQueryOptions());
   usePrefetchInfiniteQuery(useGetInvitedFriendCountInfiniteQueryOptions());
@@ -41,7 +39,7 @@ export default function InvitedFriendsScreen() {
         <QueryErrorBoundary resetKeys={[view]} fallback={InvitedFriendList.Error}>
           <Box px={16} pt={8} pb={8}>
             <Suspense fallback={<InvitedFriendFilterTabs.Loading />}>
-              <InvitedFriendFilterTabs value={view} onValueChange={setView} />
+              <InvitedFriendFilterTabs />
             </Suspense>
           </Box>
 
@@ -67,36 +65,22 @@ export default function InvitedFriendsScreen() {
   );
 }
 
-interface InvitedFriendFilterTabsProps extends Omit<
-  ComponentProps<typeof Tabs>,
-  'value' | 'onValueChange' | 'children'
-> {
-  value: InvitedFriendsView;
-  /** 원본 Tabs와 같은 이름. 아는 보기 값만 넘긴다 */
-  onValueChange?: (value: InvitedFriendsView) => void;
-}
-
 /** 전체 수는 전체 목록 첫 페이지, 기다리는 수는 초대 요약에서 읽는다(목록은 걸러서 세면 페이지마다 달라진다) */
-function InvitedFriendFilterTabs({
-  value,
-  onValueChange = noop,
-  ...props
-}: InvitedFriendFilterTabsProps) {
+function InvitedFriendFilterTabs() {
   const { t } = useTranslation('invite');
+  const [view, setView] = useView('view', invitedFriendsViewSchema);
   const { data: myInvite } = useSuspenseQuery(useGetInviteQueryOptions());
   const { data: totalCount } = useSuspenseInfiniteQuery(
     useGetInvitedFriendCountInfiniteQueryOptions(),
   );
 
-  const handleValueChange = (next: string) => {
-    const parsed = invitedFriendsViewSchema.safeParse(next);
-    if (parsed.success) {
-      onValueChange(parsed.data);
-    }
-  };
-
   return (
-    <Tabs value={value} onValueChange={handleValueChange} variant="primary" {...props}>
+    <ViewTabs
+      schema={invitedFriendsViewSchema}
+      value={view}
+      onValueChange={setView}
+      variant="primary"
+    >
       <Tabs.List>
         <Tabs.Indicator />
         <SegmentTabTrigger value="all" testID="invitees-tab-all" size="b2">
@@ -106,13 +90,13 @@ function InvitedFriendFilterTabs({
           {t('friendList.tab.waiting', { count: myInvite.waitingCount })}
         </SegmentTabTrigger>
       </Tabs.List>
-    </Tabs>
+    </ViewTabs>
   );
 }
 
 /** 숫자를 받기 전에도 같은 탭 모양·선택을 두고 라벨 자리만 비워 둔다 */
 InvitedFriendFilterTabs.Loading = function Loading() {
-  const [view] = useInvitedFriendsViewParam();
+  const [view] = useView('view', invitedFriendsViewSchema);
 
   return (
     <Tabs value={view} onValueChange={noop} variant="primary" accessibilityState={{ busy: true }}>
