@@ -49,7 +49,7 @@
 
 | 코드(앱)                                                                 | 읽는 것                                                       | 지울 시점                               |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------- |
-| `shared/infra/storage/mmkv-draft-storage.ts` `migrateLegacyDrafts`       | 암호화 전 MMKV `aido.drafts`의 초안                           | 미정. 1.16.0 호환 판단 때 정한다        |
+| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts`  | 암호화 전 MMKV `aido.drafts`의 초안                           | 미정. 1.16.0 호환 판단 때 정한다        |
 | `store-review.repository.ts` `fromLegacy`                                | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt` | 미정. 1.16.0 호환 판단 때 정한다        |
 | `notification-destination.ts` `fromLegacyFields`                         | `navigation`이 없는 알림의 type·action·context·routing        | 미정. 보관된 알림이 모두 지난 뒤 정한다 |
 | `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                         | 미정. 1.16.0 호환 판단 때 정한다        |

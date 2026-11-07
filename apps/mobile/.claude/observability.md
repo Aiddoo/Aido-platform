@@ -34,7 +34,7 @@
 
 ## Analytics
 
-- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 특정 feature에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`)만 `shared/analytics/event-map.ts`의 `AppEventMap`에 직접 있다. `useTrack`·`track`은 `AppEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 앱 tsconfig와 테스트 tsconfig 모두에서 인식된다. Sentry feature·태그 키·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`다.
+- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 특정 feature에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`)만 `shared/analytics/event-map.ts`의 `AppEventMap`에 직접 있다. `useTrack`·`track`은 `AppEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 테스트까지 함께 검사하는 앱 tsconfig에서 인식된다. 오류 보고 feature·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`이고, Sentry 태그 키는 어댑터의 `shared/infra/error-reporter/sentry-tags.ts`다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 이벤트 이름과 payload가 컴파일 때 검증되지 않기 때문이다.
 
@@ -72,7 +72,7 @@ Issue로 묶이는 신호다. `severity`와 태그를 함께 넘긴다.
 
 ```ts
 errorReporter.captureException(error, { feature: 'error_boundary' });
-errorReporter.captureMessage(SENTRY_MESSAGES.SESSION_EXPIRED, {
+errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
   feature: 'auth',
   severity: sessionExpiredSeverity[reason],
   errorCode: reason,
@@ -80,7 +80,7 @@ errorReporter.captureMessage(SENTRY_MESSAGES.SESSION_EXPIRED, {
 });
 ```
 
-`captureMessage`의 제목은 `SENTRY_MESSAGES`(`SentryMessage`)의 값만 쓴다. 알림 규칙이 볼 수 있어 값은 바꾸지 않는다.
+`captureMessage`의 제목은 `ERROR_REPORT_MESSAGES`(`ErrorReportMessage`)의 값만 쓴다. 알림 규칙이 볼 수 있어 값은 바꾸지 않는다.
 
 ### Breadcrumb: `addBreadcrumb`
 
@@ -128,8 +128,8 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 `ErrorReporterContext`(`feature`·`errorCode`·`serverErrorCode`·`method`·`endpoint`·`statusCode`)가 태그가 된다. `severity`는 제외다. 저카디널리티 값만 넣는다.
 
 - `errorCode`는 클라이언트가 판단한 사유, `serverErrorCode`는 서버가 내려준 `@aido/api/errors` 코드다. 섞지 않는다.
-- `feature`는 `SENTRY_FEATURES`(`SentryFeature`)의 snake_case 값이다. 새 값은 거기에 먼저 더한다. 태그 키는 `SENTRY_TAGS`를 쓴다.
-- `logger.error`의 `feature` 태그는 이벤트 키의 첫 마디이고 `SENTRY_FEATURES` 안의 값만 보낸다. 새 첫 마디를 쓰는 로그 이벤트는 거기에도 더한다. 빠지면 `sentry-logger.test.ts`가 실패한다.
+- `feature`는 `ERROR_REPORT_FEATURES`(`ErrorReportFeature`)의 snake_case 값이다. 새 값은 거기에 먼저 더한다. 태그 키는 `SENTRY_TAGS`를 쓴다.
+- `logger.error`의 `feature` 태그는 이벤트 키의 첫 마디이고 `ERROR_REPORT_FEATURES` 안의 값만 보낸다. 새 첫 마디를 쓰는 로그 이벤트는 거기에도 더한다. 빠지면 `sentry-logger.test.ts`가 실패한다.
 
 ## 오류 분류와 한 번만 보고
 
@@ -161,7 +161,7 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 | ---------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
 | 운영 이벤트·격리된 실패            | `logger.info/warn(KEY, { error: getErrorMessage(e) })` | breadcrumb                                 |
 | 예측 못한 오류(경계 밖·백그라운드) | `logger.error(KEY, toError(e))`                        | 이벤트 `source=logger`·`feature=<첫 마디>` |
-| 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`        | 이벤트 `feature`(`SENTRY_FEATURES`)        |
+| 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`        | 이벤트 `feature`(`ERROR_REPORT_FEATURES`)  |
 
 - `logger.error(KEY, Error)`는 Sentry로 가는 길이다. 같은 오류 객체를 `captureException`으로 또 보내도 이슈는 한 번만 생긴다(아래 [한 번만 보고](#오류-분류와-한-번만-보고)). 그래도 한 곳에서 한 방법으로만 보낸다.
 - `logger.error(KEY, undefined, context)`는 breadcrumb만 남긴다. 이벤트가 필요하면 `Error`를 넘긴다.
