@@ -108,13 +108,13 @@ export function TextArea({
               }),
               resolvedTextSize == null ? undefined : TEXT_SIZE_CLASSES[resolvedTextSize],
             )}
-            onFocus={(e) => {
+            onFocus={(event) => {
               setIsFocused(true);
-              onFocus?.(e);
+              onFocus?.(event);
             }}
-            onBlur={(e) => {
+            onBlur={(event) => {
               setIsFocused(false);
-              onBlur?.(e);
+              onBlur?.(event);
             }}
             onLayout={(event) => {
               recordLayoutMeasurement({ inputHeight: event.nativeEvent.layout.height });

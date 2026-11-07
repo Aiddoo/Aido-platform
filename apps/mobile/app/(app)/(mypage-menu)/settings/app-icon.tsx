@@ -7,7 +7,7 @@ import { AppIconPolicy } from '@src/features/device/app-icon/domains/app-icon.mo
 import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/app-icon.mutations';
 import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/queries/app-icon.queries';
 import type { AppIconKey } from '@src/features/device/app-icon/schemas/app-icon.schema';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,
   HStack,
@@ -103,6 +103,7 @@ function AppIconScreen() {
 
 AppIconScreen.Loading = function Loading() {
   const { t } = useTranslation('appIcon');
+
   return (
     <SettingsScreenLayout gap={8}>
       <Text size="b4" shade={6} className="px-2">
@@ -125,7 +126,8 @@ interface AppIconRestartDialogProps {
 }
 
 function AppIconRestartDialog({ isOpen, onOpenChange, onConfirm }: AppIconRestartDialogProps) {
-  const { t } = useTranslation('appIcon');
+  const { t } = useTranslation(['appIcon', 'common']);
+
   return (
     <ConfirmDialog
       isOpen={isOpen}
@@ -136,7 +138,7 @@ function AppIconRestartDialog({ isOpen, onOpenChange, onConfirm }: AppIconRestar
       }
       cancelButton={
         <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-          {tGlobal('common:actions.cancel')}
+          {t('common:actions.cancel')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={

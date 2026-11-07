@@ -3,7 +3,7 @@ import type { FeatureCampaignConfig } from '@src/features/app-config/feature-cam
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';
-import { getNowInstant, type Instant } from '@src/shared/date/instant';
+import { type Instant, getNowInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { ActivationService } from '../apis/activation.service';
@@ -19,11 +19,6 @@ interface ActivationMutationBridgeInput {
 
 interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
   isCompleted: boolean;
-}
-
-/** 기본값 인자는 호출 때마다 새로 계산된다 */
-function getCurrentInstant() {
-  return getNowInstant();
 }
 
 function getContext(queryClient: QueryClient) {
@@ -55,7 +50,7 @@ function updateProgressCache(
 export function recordTodoCreatedForActivation({
   queryClient,
   service,
-  now = getCurrentInstant(),
+  now = getNowInstant(),
 }: ActivationMutationBridgeInput): void {
   const { config, user } = getContext(queryClient);
   const progress = service.recordTodoCreated({ config, user, now });
@@ -68,7 +63,7 @@ export function recordTodoCompletionForActivation({
   queryClient,
   service,
   isCompleted,
-  now = getCurrentInstant(),
+  now = getNowInstant(),
 }: TodoCompletionBridgeInput): GrowthEventMap['activation_completed'] | null {
   const { config, user } = getContext(queryClient);
   const result = service.recordTodoCompletion({ config, user, isCompleted, now });
@@ -81,7 +76,7 @@ export function recordTodoCompletionForActivation({
 export function unlockPushRegistrationForActivation({
   queryClient,
   service,
-  now = getCurrentInstant(),
+  now = getNowInstant(),
 }: ActivationMutationBridgeInput): boolean {
   const { config, user } = getContext(queryClient);
   const progress = service.unlockPushRegistration({ config, user, now });

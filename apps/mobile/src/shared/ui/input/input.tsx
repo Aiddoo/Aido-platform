@@ -65,13 +65,13 @@ export function Input({
             fontSize: resolveSize(INPUT_TEXT_SIZES[size]),
             hasLeftContent: !!leftContent,
           })}
-          onFocus={(e) => {
+          onFocus={(event) => {
             setIsFocused(true);
-            onFocus?.(e);
+            onFocus?.(event);
           }}
-          onBlur={(e) => {
+          onBlur={(event) => {
             setIsFocused(false);
-            onBlur?.(e);
+            onBlur?.(event);
           }}
           {...props}
         />

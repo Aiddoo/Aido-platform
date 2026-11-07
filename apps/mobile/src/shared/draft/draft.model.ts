@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 export const DRAFT_TTL_MS = 7 * DAY_MS;
 
+const DRAFT_KEY_SEPARATOR = ':';
+
 const draftKeyIdSchema = z.string().brand<'DraftKeyId'>();
 
 type DraftKeyId = z.infer<typeof draftKeyIdSchema>;
@@ -32,8 +34,6 @@ export function createDraftKey<TValue>({
 
   return { id: draftKeyIdSchema.parse(id), schema };
 }
-
-const DRAFT_KEY_SEPARATOR = ':';
 
 /** `createDraftKey`가 각 구간을 URI 인코딩하므로 구분자는 구간 안에 나타나지 않는다. */
 export function isDraftOwnedBy(draftKeyId: string, ownerId: string) {

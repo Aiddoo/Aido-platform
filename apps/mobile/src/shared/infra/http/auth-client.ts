@@ -33,7 +33,6 @@ export function createAuthClient({
   sessionEpoch,
 }: AuthClientDeps): KyInstance {
   return ky.create({
-    // v2: prefixUrl → prefix (append 시맨틱 동일 — input 앞에 붙이고 경계 슬래시 정규화)
     prefix: ENV.API_URL,
     timeout: 10_000,
     // 자동 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — ky의 자체 재시도는

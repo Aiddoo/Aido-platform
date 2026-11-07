@@ -84,7 +84,6 @@ export function useAuthBoot(): void {
     };
   }, [status, resolveBoot]);
 
-  // 세션 만료 확정 → 미인증으로 전환 + 관측 리포팅.
   useEffect(() => {
     return subscribeSessionExpired(({ reason, serverErrorCode }) => {
       // 이미 로그아웃된 앱이 낸 401은 세션 만료가 아니다(로그인 화면에서도 인증 요청은 나간다).

@@ -69,6 +69,7 @@ export default function FriendsScreen() {
           {isEditMode ? t('common:actions.done') : t('list.edit')}
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
+
       <Tabs value={view} onValueChange={handleTabChange} variant="secondary" className="flex-1">
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
@@ -77,6 +78,7 @@ export default function FriendsScreen() {
           <LineTabTrigger value={FRIEND_LIST_VIEW.receiver}>{t('tabs.received')}</LineTabTrigger>
           <LineTabTrigger value={FRIEND_LIST_VIEW.sender}>{t('tabs.sent')}</LineTabTrigger>
         </Tabs.List>
+
         {match(view)
           .with(FRIEND_LIST_VIEW.friends, () => (
             <FriendTabContent value={FRIEND_LIST_VIEW.friends}>

@@ -1,12 +1,8 @@
-// Base Classes
 export { ApiError, isApiError } from '@src/core/errors/api-error';
 
 // Boundary 에러 분류 (라우트 ErrorBoundary 처리 분기)
 export { classifyBoundaryError } from './classify-boundary-error';
 
-// Sentry 전송 방식 판정 (이슈 / breadcrumb)
-
-// Infrastructure Errors
 export {
   isConnectivityError,
   isInfraError,
@@ -16,7 +12,6 @@ export {
   TimeoutError,
 } from './infra-error';
 
-// Result Type
 export {
   type CodedError,
   err,
@@ -26,7 +21,6 @@ export {
   unwrap,
 } from '@src/core/errors/result';
 
-// Storage Errors
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';
 
 // 던져진 값 정규화

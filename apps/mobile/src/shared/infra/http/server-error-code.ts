@@ -2,7 +2,7 @@ import type { ErrorCodeType } from '@aido/api/errors';
 import { isErrorCode } from '@aido/api/errors';
 import { z } from 'zod';
 
-/** 서버 에러 envelope(신뢰 불가 입력) — 런타임 검증으로 `as` 캐스트를 피한다. */
+/** 서버 에러 envelope은 신뢰할 수 없는 입력이라 런타임에 검증한다 */
 const errorEnvelopeSchema = z.object({
   error: z.object({ code: z.string() }),
 });

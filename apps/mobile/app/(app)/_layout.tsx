@@ -7,7 +7,7 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
 import { useMutation, useQueryErrorResetBoundary } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { type ErrorBoundaryProps, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
@@ -78,11 +78,6 @@ function AppLayout() {
 
 export default AppLayout;
 
-interface ErrorBoundaryProps {
-  error: Error;
-  retry: () => void;
-}
-
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const status = useAuthStatus();
   const logout = useMutation(useLogoutMutationOptions());
@@ -95,7 +90,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const isAuthTransition =
     status !== 'authenticated' && classifyBoundaryError(error) === 'auth-transition';
 
-  // 렌더 중 부수효과 금지 — 리렌더마다 중복 캡처된다.
   useEffect(() => {
     if (isAuthTransition) {
       return;

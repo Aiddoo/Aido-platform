@@ -47,16 +47,16 @@ export function OverlayProvider({
 
   const mount = useCallback((id: string, element: ReactNode) => {
     const version = ++versionRef.current;
-    setOverlays((prev) => {
-      const next = new Map(prev);
+    setOverlays((previous) => {
+      const next = new Map(previous);
       next.set(id, { element, version });
       return next;
     });
   }, []);
 
   const unmount = useCallback((id: string) => {
-    setOverlays((prev) => {
-      const next = new Map(prev);
+    setOverlays((previous) => {
+      const next = new Map(previous);
       next.delete(id);
       return next;
     });

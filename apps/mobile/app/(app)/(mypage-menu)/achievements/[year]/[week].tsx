@@ -40,6 +40,7 @@ const CERTIFICATE_LINE_COUNT = 4;
 export default function AchievementDetailScreen() {
   const params = useLocalSearchParams();
   const parsed = achievementParamsSchema.safeParse(params);
+
   if (!parsed.success) {
     return <Redirect href="/achievements" />;
   }

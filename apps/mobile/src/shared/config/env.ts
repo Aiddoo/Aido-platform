@@ -7,10 +7,6 @@ import { z } from 'zod';
 import { ENV_LOG_EVENT } from './env-log-events';
 import { resolveRevenueCatApiKey } from './revenuecat-api-key';
 
-// =============================================================================
-// Schema Definitions
-// =============================================================================
-
 const AppEnvSchema = z.enum(['development', 'preview', 'production']);
 type AppEnv = z.infer<typeof AppEnvSchema>;
 
@@ -33,10 +29,6 @@ const ExtraSchema = z.object({
     .transform((key) => (key == null || key.length === 0 ? undefined : key)),
 });
 
-// =============================================================================
-// Types
-// =============================================================================
-
 type PlatformType = typeof process.env.EXPO_OS;
 
 type ApiUrlContext = {
@@ -46,10 +38,6 @@ type ApiUrlContext = {
   isPhysicalDevice: boolean;
   devMachineIp?: string;
 };
-
-// =============================================================================
-// Environment Resolution
-// =============================================================================
 
 const extra = ExtraSchema.parse(Constants.expoConfig?.extra);
 
@@ -81,8 +69,7 @@ function toAndroidEmulatorUrl(url: string): string {
 }
 
 function toDeviceUrl(url: string, devMachineIp?: string): string {
-  // 1. 환경변수로 설정된 IP 우선 사용
-  // 2. 없으면 자동 감지된 IP 사용
+  // 환경변수로 설정한 IP가 자동 감지한 IP보다 우선한다
   const autoIp = getAutoDetectedDevMachineIp();
   const resolvedIp = devMachineIp || autoIp;
 
@@ -119,7 +106,6 @@ function resolveApiUrl(): string {
     // 그 외: 원본 URL 사용
     .otherwise(({ apiUrl }) => apiUrl);
 
-  // 개발 환경에서 디버깅 로그 출력
   if (extra.env === 'development' && __DEV__) {
     logger.debug(ENV_LOG_EVENT.API_URL_RESOLVED, {
       platform: context.platform,
@@ -137,10 +123,6 @@ function resolveScheme(): string {
   const scheme = Constants.expoConfig?.scheme;
   return Array.isArray(scheme) ? (scheme[0] ?? 'aido') : (scheme ?? 'aido');
 }
-
-// =============================================================================
-// Environment Configuration
-// =============================================================================
 
 export const ENV = {
   APP_VERSION: Constants.expoConfig?.version,

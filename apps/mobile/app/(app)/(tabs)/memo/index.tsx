@@ -152,6 +152,7 @@ function MemoCreateButton() {
 MemoCreateButton.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();
   const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
+
   return <Box style={{ width: createButtonSize, height: createButtonSize }} />;
 };
 
@@ -159,6 +160,7 @@ MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackPro
   const fontScaledSize = useFontScaledSize();
   const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const { t } = useTranslation('common');
+
   return (
     <PressableFeedback
       accessibilityRole="button"

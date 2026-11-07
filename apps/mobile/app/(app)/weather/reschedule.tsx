@@ -9,6 +9,7 @@ export default function WeatherRescheduleSheetRoute() {
   if (!params.success) {
     return <Redirect href="/weather" />;
   }
+
   return (
     <SheetRouteScreen>
       <WeatherRescheduleSheet />

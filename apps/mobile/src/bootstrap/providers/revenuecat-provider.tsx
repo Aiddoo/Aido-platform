@@ -34,17 +34,13 @@ export function RevenueCatProvider({ children }: PropsWithChildren) {
   // 프리미엄 의존 쿼리는 내 정보가 실제로 바뀌었을 때만 따라 갱신한다(스토어 이벤트가 없는 보상 기간 포함)
   useEffect(() => watchPremiumEntitlementChanges(queryClient), [queryClient]);
 
-  // SDK 초기화 (앱 시작 시 1회)
   useEffect(() => {
     if (ENV.REVENUECAT_API_KEY) {
       sdkManager.configure(ENV.REVENUECAT_API_KEY);
     }
   }, [sdkManager]);
 
-  // 사용자 동기화
-  // When authenticated, we need the user ID to sync with RevenueCat
-  // Use useQuery (not useSuspenseQuery) because this provider is above the auth gate
-  // and we don't want to suspend while loading user data
+  // 인증 게이트 위의 Provider라 사용자 조회에서 suspend하지 않도록 useSuspenseQuery 대신 useQuery를 쓴다
   const { data: user } = useQuery({
     ...useGetMeQueryOptions(),
     enabled: isAuthenticated,

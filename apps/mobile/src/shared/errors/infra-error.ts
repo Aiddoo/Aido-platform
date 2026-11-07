@@ -1,4 +1,5 @@
 import { t } from '@src/shared/i18n';
+
 /**
  * 인프라 에러 - ErrorBoundary에서 처리
  * - 5xx 서버 에러
@@ -13,7 +14,6 @@ export abstract class InfraError extends Error {
   abstract readonly statusCode: number | null;
 }
 
-/** 네트워크 연결 에러 */
 export class NetworkError extends InfraError {
   readonly statusCode = null;
 
@@ -22,7 +22,6 @@ export class NetworkError extends InfraError {
   }
 }
 
-/** 요청 타임아웃 */
 export class TimeoutError extends InfraError {
   readonly statusCode = 504;
 
@@ -31,7 +30,6 @@ export class TimeoutError extends InfraError {
   }
 }
 
-/** 5xx 서버 에러 */
 export class ServerError extends InfraError {
   readonly statusCode: number;
   /** 같은 요청의 서버 로그·Sentry 이벤트를 찾는 `X-Request-Id` */
@@ -44,7 +42,6 @@ export class ServerError extends InfraError {
   }
 }
 
-/** 응답 파싱/검증 에러 */
 export class ParseError extends InfraError {
   readonly statusCode = null;
 
@@ -53,7 +50,6 @@ export class ParseError extends InfraError {
   }
 }
 
-/** InfraError 타입 가드 */
 export function isInfraError(error: unknown): error is InfraError {
   return error instanceof InfraError;
 }

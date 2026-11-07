@@ -34,10 +34,12 @@ function VerifyEmailScreen() {
 }
 
 export default function VerifyEmailRoute() {
-  const params = useLocalSearchParams();
-  if (!verifyEmailParamsSchema.safeParse(params).success) {
+  const params = verifyEmailParamsSchema.safeParse(useLocalSearchParams());
+
+  if (!params.success) {
     return <Redirect href="/login" />;
   }
+
   return (
     <QueryErrorBoundary>
       <VerifyEmailScreen />

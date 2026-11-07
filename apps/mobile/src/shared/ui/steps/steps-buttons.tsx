@@ -74,9 +74,9 @@ export function StepsButtons({
     marginRight: interpolate(checkProgress.get(), [0, 1], [0, CHECK_SLOT_GAP]),
   }));
 
-  function handleLayout(event: LayoutChangeEvent) {
+  const handleLayout = (event: LayoutChangeEvent) => {
     containerWidth.set(event.nativeEvent.layout.width);
-  }
+  };
 
   return (
     <View onLayout={handleLayout} style={styles.row}>

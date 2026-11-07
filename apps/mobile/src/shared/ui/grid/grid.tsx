@@ -5,12 +5,14 @@ import { gridStartColumns } from './grid-layout';
 import type { GridProps } from './grid.types';
 
 const GridContext = createContext(1);
+
 export function useGridColumns() {
   return useContext(GridContext);
 }
 
 /** 열 간격과 이 칸의 시작 열. GridItem이 좌우 padding으로 간격을 만든다 */
 const GridCellContext = createContext({ columnGap: 0, startColumn: 0 });
+
 export function useGridCell() {
   return useContext(GridCellContext);
 }

@@ -25,7 +25,6 @@ export function createRefreshTokensRequest(source: AppHeaderSource): RefreshToke
     });
     setPerRequestHeaders(headers);
     return ky.post('v1/auth/refresh', {
-      // v2: prefixUrl → prefix (append 시맨틱 동일)
       prefix: ENV.API_URL,
       retry: 0,
       timeout: REFRESH_TIMEOUT_MS,

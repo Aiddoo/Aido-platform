@@ -4,7 +4,7 @@
  * - 실패: { ok: false, error: E }
  *
  * 4xx 에러는 Result.err로 반환하여 UI에서 처리
- * 5xx/네트워크/타임아웃은 throw InfraError로 ErrorBoundary 처리
+ * 5xx/네트워크/타임아웃은 throw해서 ErrorBoundary가 처리
  */
 
 export interface CodedError {
@@ -17,12 +17,10 @@ export type Result<T, E extends CodedError = CodedError> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
-/** 성공 Result 생성 */
 export function ok<T>(value: T): Result<T, never> {
   return { ok: true, value };
 }
 
-/** 실패 Result 생성 */
 export function err<E extends CodedError>(error: E): Result<never, E> {
   return { ok: false, error };
 }

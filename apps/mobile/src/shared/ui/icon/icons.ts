@@ -65,7 +65,6 @@ import WeatherRainIconSvg from '@assets/icons/ic_weather_rain.svg';
 
 import { createStyledIcon } from './create-styled-icon';
 
-// 래핑된 아이콘 컴포넌트들
 export const AiIcon = createStyledIcon(AiIconSvg);
 export const AppleIcon = createStyledIcon(AppleIconSvg);
 export const ArrowLeftIcon = createStyledIcon(ArrowLeftIconSvg);

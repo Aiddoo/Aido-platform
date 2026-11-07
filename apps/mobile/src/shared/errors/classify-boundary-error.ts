@@ -13,6 +13,9 @@ import { isApiError } from '@src/core/errors/api-error';
  */
 export type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
 
+/** 서버 플래그로 기능이 꺼졌다는 코드. fallback이 "지금은 쓸 수 없음"을 그린다 */
+const FEATURE_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([ErrorCode.INVITE_2105]);
+
 /**
  * 던져진 에러가 "401(인증 계열)"인지 "진짜 장애"인지만 판정하는 순수 함수.
  *
@@ -22,9 +25,6 @@ export type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
  * 가 `status`와 결합해 내린다(`app/(app)/_layout.tsx` 안전망 참조). 이 함수는 그 판단의
  * 한 축(에러 종류)만 제공한다.
  */
-/** 서버 플래그로 기능이 꺼졌다는 코드. fallback이 "지금은 쓸 수 없음"을 그린다 */
-const FEATURE_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([ErrorCode.INVITE_2105]);
-
 export function classifyBoundaryError(error: unknown): BoundaryErrorKind {
   if (isApiError(error) && error.status === 401) {
     return 'auth-transition';

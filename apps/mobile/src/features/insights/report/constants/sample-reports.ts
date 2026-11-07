@@ -172,18 +172,15 @@ function buildMonthlySampleReport(): AiReport {
   };
 }
 
-/** 샘플 route param → 빌더 매핑 (표시 시점 언어 반영) */
 const SAMPLE_REPORT_BUILDERS: Record<string, () => AiReport> = {
   [SAMPLE_REPORT_IDS.WEEKLY]: buildWeeklySampleReport,
   [SAMPLE_REPORT_IDS.MONTHLY]: buildMonthlySampleReport,
 };
 
-/** route param이 샘플 리포트 ID인지 판별 */
 export function isSampleReportId(id?: string): boolean {
   return !!id && Object.hasOwn(SAMPLE_REPORT_BUILDERS, id);
 }
 
-/** 샘플 리포트 조회 (없으면 주간 폴백) */
 export function getSampleReport(id?: string): AiReport {
   return (
     (id && isSampleReportId(id) ? SAMPLE_REPORT_BUILDERS[id] : undefined) ?? buildWeeklySampleReport

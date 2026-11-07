@@ -13,7 +13,7 @@ export interface RequestConfig {
 /**
  * Result 기반 HttpClient
  * - 4xx 에러: Result.err(ApiError) 반환
- * - 5xx/네트워크/타임아웃: throw InfraError → ErrorBoundary 처리
+ * - 5xx/네트워크/타임아웃: throw → ErrorBoundary 처리
  */
 export interface HttpClient {
   get(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>>;

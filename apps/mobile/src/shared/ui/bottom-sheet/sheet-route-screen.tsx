@@ -17,11 +17,11 @@ interface SheetRouteScreenProps {
 export function SheetRouteScreen({ children }: SheetRouteScreenProps) {
   const [hasLayout, setHasLayout] = useState(false);
 
-  function handleLayout(event: LayoutChangeEvent) {
+  const handleLayout = (event: LayoutChangeEvent) => {
     if (event.nativeEvent.layout.height > 0) {
       setHasLayout(true);
     }
-  }
+  };
 
   return (
     <GestureHandlerRootView style={styles.root} onLayout={handleLayout}>

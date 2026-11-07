@@ -2,7 +2,7 @@ import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { AppToast, type AppToastVariant } from '@src/shared/ui/toast';
 import { useToast } from 'heroui-native';
-import { useCallback } from 'react';
+import { type ReactNode, useCallback } from 'react';
 
 interface ToastAction {
   label: string;
@@ -14,7 +14,7 @@ export interface ToastOptions {
   variant?: AppToastVariant;
   duration?: number | 'persistent';
   action?: ToastAction;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 }
 
 export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {

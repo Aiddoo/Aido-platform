@@ -69,8 +69,7 @@ export class SecureStorage implements Storage {
   }
 
   async clear(): Promise<void> {
-    // expo-secure-store doesn't have a clear method
-    // You need to manually track and remove keys if needed
+    // expo-secure-store에는 전체 삭제가 없다. 필요하면 키를 직접 추적해 지운다
     throw new Error('Clear method is not implemented for SecureStorage');
   }
 }

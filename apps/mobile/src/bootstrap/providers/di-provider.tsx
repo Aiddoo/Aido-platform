@@ -153,7 +153,6 @@ export function DIProvider({
     );
     draftService.removeExpired();
 
-    // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
     const errorReporter = createEnvironmentErrorReporter();
 
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
@@ -202,15 +201,12 @@ export function DIProvider({
     });
     const authHttpClient = new KyHttpClient(authKyInstance);
 
-    // Achievement
     const achievementService = new AchievementService(authHttpClient);
 
-    // AI
     const reportService = new ReportService(authHttpClient, logger);
     const suggestionService = new SuggestionService(authHttpClient, logger);
     const consentService = new ConsentService(authHttpClient);
 
-    // Auth
     const authService = new AuthService({
       publicHttpClient,
       authHttpClient,
@@ -222,7 +218,6 @@ export function DIProvider({
       createActivationProgressRepository(mmkvSyncStorage),
     );
 
-    // Friend
     const friendService = new FriendService(authHttpClient);
 
     // 소개 캠페인 설정: app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
@@ -234,7 +229,6 @@ export function DIProvider({
     );
     const whatsNewRepository = createWhatsNewRepository(mmkvSyncStorage);
 
-    // Invite
     const pendingRedemptionRepository = createPendingRedemptionRepository(mmkvSyncStorage);
     const inviteService = new InviteService({
       publicHttpClient,
@@ -256,23 +250,18 @@ export function DIProvider({
       errorReporter,
     });
 
-    // Inquiry
     const inquiryService = new InquiryService(authHttpClient);
 
-    // Memo
     const memoService = new MemoService(authHttpClient, logger);
     const voiceService = new VoiceService(authHttpClient, logger);
     const moderationService = new ModerationService(authHttpClient);
 
-    // Todo
     const subTodoService = new SubTodoService(authHttpClient);
     const todoService = new TodoService(authHttpClient);
     const todoCommentService = new TodoCommentService(authHttpClient);
 
-    // Todo Category
     const todoCategoryService = new TodoCategoryService(authHttpClient);
 
-    // Notification
     const deviceIdService = new DeviceIdService(
       secureDeviceIdStore,
       expoVendorIdGateway,
@@ -297,7 +286,6 @@ export function DIProvider({
     const pushPromptRepository = createPushPromptRepository(mmkvSyncStorage);
     const marketingPushPromptRepository = createMarketingPushPromptRepository(mmkvSyncStorage);
 
-    // Todo Nudge
     const todoNudgeService = new TodoNudgeService(authHttpClient);
     const coachmarkRepository = createCoachmarkRepository(mmkvSyncStorage);
     const coachmarkService = new CoachmarkService(coachmarkRepository);
@@ -313,17 +301,14 @@ export function DIProvider({
       logger,
     );
 
-    // Store review
     const storeReviewService = new StoreReviewService(
       createStoreReviewRepository(mmkvSyncStorage),
       expoAppStoreGateway,
       getNowInstant,
     );
 
-    // User
     const userService = new UserService(authHttpClient);
 
-    // Subscription
     const purchasesSdkManager = new PurchasesSdkManager({
       purchases: revenueCatPurchasesGateway,
       logger,
@@ -341,7 +326,6 @@ export function DIProvider({
     );
     const entitlementService = new EntitlementService(authHttpClient, logger);
 
-    // Weather
     const weatherService = new WeatherService(authHttpClient);
 
     // Voice note — 녹음은 기기 밖으로 나가지 않는다. 초안은 암호화 초안 저장소, 녹음은 문서 폴더에 둔다

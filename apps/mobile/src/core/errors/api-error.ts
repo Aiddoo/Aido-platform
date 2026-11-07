@@ -2,12 +2,7 @@ import type { ErrorCodeType } from '@aido/api/errors';
 
 import type { CodedError } from './result';
 
-/**
- * 서버 비즈니스 에러 (4xx)
- * - code: @aido/api/errors의 비즈니스 에러 코드
- * - status: HTTP 상태 코드
- * - details: 서버가 제공하는 추가 정보
- */
+/** 서버 비즈니스 에러(4xx). `code`는 `@aido/api/errors`의 비즈니스 에러 코드다 */
 export class ApiError extends Error implements CodedError {
   override readonly name = 'ApiError';
 
@@ -31,7 +26,6 @@ export class ApiError extends Error implements CodedError {
   }
 }
 
-/** ApiError 타입 가드 */
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }

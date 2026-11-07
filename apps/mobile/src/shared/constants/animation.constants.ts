@@ -1,7 +1,3 @@
-/**
- * 애니메이션 상수
- * React Native Reanimated에서 사용하는 duration, delay 값
- */
 export const ANIMATION = {
   duration: {
     fast: 150,

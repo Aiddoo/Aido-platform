@@ -10,6 +10,7 @@ const CONTAINER_PADDING_X = 16;
 const BUTTON_RADIUS = 12;
 const DEFAULT_BOTTOM_PADDING = 16;
 const STICKY_OFFSET = 0;
+
 /**
  * 포커스한 입력이 키보드 위에 붙은 버튼에 가리지 않게 스크롤 영역에 넘길 값.
  * 키보드 컨트롤러는 칸 전체가 아니라 안쪽 글자 줄(TextInput)을 재므로, 버튼(`xlarge` 56)에 더해
@@ -21,9 +22,6 @@ interface KeyboardAdaptiveButtonProps extends ButtonProps {
   enabled?: boolean;
 }
 
-/**
- * 키보드 상태에 따라 스타일이 변하는 버튼 컴포넌트
- */
 export function KeyboardAdaptiveButton({
   children,
   enabled = true,
@@ -33,9 +31,9 @@ export function KeyboardAdaptiveButton({
   const isKeyboardOpen = useSharedValue(false);
 
   useKeyboardHandler({
-    onStart: (e) => {
+    onStart: (event) => {
       'worklet';
-      isKeyboardOpen.value = e.height > 0;
+      isKeyboardOpen.value = event.height > 0;
     },
   });
 

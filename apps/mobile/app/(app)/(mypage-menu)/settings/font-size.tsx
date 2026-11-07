@@ -49,6 +49,7 @@ interface FontScaleRadioItemProps {
 function FontScaleRadioItem({ value, label }: FontScaleRadioItemProps) {
   const { t } = useTranslation('settings');
   const sample = t('fontSize.sample');
+
   return (
     <RadioGroup.Item value={value}>
       {() => (

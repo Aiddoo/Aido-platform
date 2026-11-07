@@ -17,7 +17,7 @@ import { REQUEST_ID_HEADER } from './request-headers';
  * (locales/{ko,en}/errors.json — 키는 ErrorCode 그대로, 보안 마스킹 그룹은 동일 문구 유지).
  */
 
-/** 서버 에러 envelope(신뢰 불가 입력)를 런타임 검증 — `as` 캐스트 없이 타입 확정. */
+/** 서버 에러 envelope은 신뢰할 수 없는 입력이라 런타임에 검증한다 */
 const errorEnvelopeSchema = z.object({
   error: z.object({
     code: z.string(),
@@ -42,7 +42,7 @@ async function readBody(response: Response): Promise<unknown> {
   }
 }
 
-/** code가 알려진 ErrorCode면 로케일 문구를, 아니면 서버 메시지/폴백을 사용(무캐스트, isErrorCode 가드). */
+/** code가 알려진 ErrorCode면 로케일 문구를, 아니면 서버 메시지나 폴백을 쓴다 */
 export function resolveMessage(code: string, serverMessage: string): string {
   if (isErrorCode(code)) {
     const mapped = tDynamic('errors', code);

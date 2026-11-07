@@ -44,9 +44,9 @@ function PushSettingsScreen() {
         <SettingsCard.Toggle
           label={t('settings.nightPushLabel')}
           description={
-            !preference.pushEnabled
-              ? t('auth:preference.enablePushFirst')
-              : t('settings.nightPushDescription')
+            preference.pushEnabled
+              ? t('settings.nightPushDescription')
+              : t('auth:preference.enablePushFirst')
           }
           isSelected={preference.nightPushEnabled}
           onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}

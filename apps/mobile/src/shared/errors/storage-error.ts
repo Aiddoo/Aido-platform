@@ -19,7 +19,6 @@ export class KeychainLockedError extends Error {
   }
 }
 
-/** `KeychainLockedError` 타입 가드 */
 export function isKeychainLockedError(error: unknown): error is KeychainLockedError {
   return error instanceof KeychainLockedError;
 }

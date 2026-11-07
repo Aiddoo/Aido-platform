@@ -50,11 +50,9 @@ export const buttonVariants = tv({
   },
 
   compoundVariants: [
-    // fill variants
     { variant: 'fill', color: 'primary', className: 'bg-main' },
     { variant: 'fill', color: 'danger', className: 'bg-error' },
     { variant: 'fill', color: 'dark', className: 'bg-gray-9 dark:bg-gray-3' },
-    // weak variants
     { variant: 'weak', color: 'primary', className: 'bg-main/5 dark:bg-main/20' },
     { variant: 'weak', color: 'danger', className: 'bg-error/5 dark:bg-error/20' },
     { variant: 'weak', color: 'dark', className: 'bg-gray-9/5 dark:bg-gray-9/20' },

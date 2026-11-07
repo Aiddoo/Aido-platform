@@ -10,7 +10,6 @@ import { type AppHeaderSource, applyPerRequestHeaders, createAppHeaders } from '
  */
 export function createPublicClient({ appVersion, appBuild }: AppHeaderSource = {}): KyInstance {
   return ky.create({
-    // v2: prefixUrl → prefix (append 시맨틱 동일)
     prefix: ENV.API_URL,
     timeout: 10_000,
     // 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — auth-client와 동일.

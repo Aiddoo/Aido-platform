@@ -5,13 +5,13 @@ import { useResolveClassNames } from 'uniwind';
 
 export default function MemoLayout() {
   const indexScreenOptions = useStackScreenOptions({ fillContent: true });
-  const bg = useResolveClassNames('bg-white');
+  const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: bg.backgroundColor },
+        contentStyle: { backgroundColor },
         animation: 'fade',
         animationDuration: 200,
       }}

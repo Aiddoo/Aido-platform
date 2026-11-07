@@ -62,7 +62,6 @@ import { createContext, type PropsWithChildren, use } from 'react';
 import type { QueryCacheStorage } from './query-cache-persistence';
 
 export interface DIContainer extends SharedDependencies {
-  // Infrastructure
   storage: Storage;
   locationGateway: LocationGateway;
   clipboard: ClipboardGateway;
@@ -90,7 +89,6 @@ export interface DIContainer extends SharedDependencies {
   recognitionLanguageRepository: RecognitionLanguageRepository;
   offlineModelPromptRepository: OfflineModelPromptRepository;
 
-  // Services
   achievementService: AchievementService;
   reportService: ReportService;
   suggestionService: SuggestionService;
@@ -172,7 +170,6 @@ function useDI(): DIContainer {
   return context;
 }
 
-// Infrastructure Hooks
 export function useLocationGateway() {
   return useDI().locationGateway;
 }
@@ -216,7 +213,6 @@ export function useOfflineModelPromptRepository() {
   return useDI().offlineModelPromptRepository;
 }
 
-// Service Hooks
 export function useAchievementService() {
   return useDI().achievementService;
 }

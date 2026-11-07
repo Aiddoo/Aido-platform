@@ -1,10 +1,10 @@
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import * as Sharing from 'expo-sharing';
-import { useCallback, useState } from 'react';
+import { type RefObject, useCallback, useState } from 'react';
 import type { ViewShotRef } from 'react-native-view-shot';
 
-export function useShareView(viewShotRef: React.RefObject<ViewShotRef | null>) {
+export function useShareView(viewShotRef: RefObject<ViewShotRef | null>) {
   const { warning, error } = useAppToast();
   const [isSharing, setIsSharing] = useState(false);
 

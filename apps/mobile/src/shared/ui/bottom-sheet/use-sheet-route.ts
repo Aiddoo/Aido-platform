@@ -15,26 +15,26 @@ export function useSheetRoute(fallbackHref: Href) {
   const pendingExitRef = useRef<SheetRouteExit>(BACK);
   const hasExitedRef = useRef(false);
 
-  function exit(next: SheetRouteExit = pendingExitRef.current) {
+  const exit = (next: SheetRouteExit = pendingExitRef.current) => {
     if (hasExitedRef.current) {
       return;
     }
     hasExitedRef.current = true;
     exitSheetRoute(router, next, fallbackHref);
-  }
+  };
 
-  function close(next: SheetRouteExit = BACK) {
+  const close = (next: SheetRouteExit = BACK) => {
     pendingExitRef.current = next;
     setIsOpen(false);
-  }
+  };
 
-  function handleOpenChange(nextIsOpen: boolean) {
+  const handleOpenChange = (nextIsOpen: boolean) => {
     if (nextIsOpen) {
       return;
     }
     setIsOpen(false);
     exit();
-  }
+  };
 
   return { isOpen, close, exit, onOpenChange: handleOpenChange };
 }
