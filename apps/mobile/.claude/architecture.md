@@ -208,7 +208,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | ------------------------------------------ | ----------------------------------------------------------------------- |
 | `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                       |
 | `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                              |
-| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoParams`로 읽음      |
+| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoParam`로 읽음       |
 | `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)         |
 | `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다 |
 
@@ -314,7 +314,7 @@ export default function MemoDetailRoute() {
 // features/notes/memo/components/memo-editor.tsx
 function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
   const { t } = useTranslation(['memo', 'common']);
-  const { memoId } = useMemoParams();
+  const memoId = useMemoParam();
   const deleteMemo = useMutation(useDeleteMemoMutationOptions());
 ```
 
@@ -434,7 +434,7 @@ MemoList.Loading = function Loading() {
 | 1    | props                                           | 부모만 아는 값, 한두 단계                                                                          | `onLeave`, `isEditing`                                           |
 | 2    | 컴포넌트를 prop으로                             | 자리는 같고 구현이 갈릴 때. 인터페이스 하나                                                        | `fallback={MemoList.Error}`, `toolbar={MemoEditor.StackToolbar}` |
 | 3    | Query 캐시, `useIsMutating`, `useMutationState` | 서버 값과 진행 상태를 떨어진 곳에서 읽을 때                                                        | `MemoAiParsingBadge`의 `useIsMutating`                           |
-| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoParams`, `useSelectedMemo`                               |
+| 4    | route 훅                                        | URL에 남는 값                                                                                      | `useMemoParam`, `useSelectedMemo`                                |
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
