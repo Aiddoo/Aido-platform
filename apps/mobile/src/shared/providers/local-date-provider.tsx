@@ -13,7 +13,7 @@ import {
   createContext,
   type PropsWithChildren,
   useCallback,
-  useContext,
+  use,
   useEffect,
   useRef,
   useState,
@@ -184,7 +184,7 @@ export function LocalDateProvider({
 }
 
 export function useLocalDate(): LocalDateState {
-  const localDateState = useContext(LocalDateContext);
+  const localDateState = use(LocalDateContext);
   if (localDateState == null) {
     throw new Error('useLocalDate must be used within LocalDateProvider');
   }

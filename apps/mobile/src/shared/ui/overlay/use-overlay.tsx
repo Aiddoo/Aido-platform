@@ -1,5 +1,5 @@
 import { noop } from 'es-toolkit';
-import { useCallback, useContext, useEffect, useId, useMemo, useRef } from 'react';
+import { use, useCallback, useEffect, useId, useMemo, useRef } from 'react';
 
 import { type OverlayAsyncRender, OverlayItem, type OverlayRender } from './overlay-item';
 import { OverlayContext } from './overlay-provider';
@@ -37,7 +37,7 @@ interface OverlayAsyncOptions<T> {
  * ```
  */
 export function useOverlay(): Overlay {
-  const controller = useContext(OverlayContext);
+  const controller = use(OverlayContext);
 
   if (!controller) {
     throw new Error('useOverlay must be used within OverlayProvider');
