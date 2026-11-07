@@ -1,12 +1,6 @@
 import { useAppIconService } from '@src/bootstrap/providers/di-context';
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
-import { AppIconPolicy } from '@src/features/device/app-icon/domains/app-icon.model';
-import { useChangeAppIconMutationOptions } from '@src/features/device/app-icon/queries/app-icon.mutations';
-import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/queries/app-icon.queries';
-import type { AppIconKey } from '@src/features/device/app-icon/schemas/app-icon.schema';
+import { AppIconSelector } from '@src/features/device/app-icon/components/app-icon-selector';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -14,108 +8,43 @@ import {
   SettingsListGroup,
   SettingsScreenLayout,
   Text,
-  useConfirmDialog,
 } from '@src/shared/ui';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-function AppIconScreen() {
-  const { t } = useTranslation(['appIcon', 'common']);
-  const appIconService = useAppIconService();
-  const { data: currentIconKey, isPending: isCurrentIconPending } = useQuery(
-    useGetCurrentAppIconQueryOptions(),
-  );
-  const { mutate: changeIcon, isPending: isChanging } = useMutation(
-    useChangeAppIconMutationOptions(),
-  );
-  const currentIcon = currentIconKey ?? 'default';
-  const isSupported = appIconService.isSupported();
-  const isLoading = isSupported && isCurrentIconPending;
-  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const isIconLocked = EntitlementPolicy.isFeatureLocked(entitlements, 'APP_ICON');
-  const confirmDialog = useConfirmDialog();
-  const gate = useEntitlementGate('APP_ICON', { surface: 'app_icon_settings' });
-
-  const handleIconPress = async (key: AppIconKey) => {
-    if (isChanging || key === currentIcon) {
-      return;
-    }
-
-    if (AppIconPolicy.isPremiumIcon(key) && !gate.guard()) {
-      return;
-    }
-
-    if (process.env.EXPO_OS === 'android') {
-      const isConfirmed = await confirmDialog.open({
-        title: t('restartDialog.title'),
-        description: t('restartDialog.description'),
-        confirmLabel: t('restartDialog.confirm'),
-        cancelLabel: t('common:actions.cancel'),
-      });
-      if (!isConfirmed) {
-        return;
-      }
-    }
-    changeIcon(key);
-  };
-
-  return match({ isSupported, isLoading })
-    .with({ isSupported: false }, () => (
-      <SettingsScreenLayout>
-        <HStack justify="center" align="center">
-          <Text size="b4" shade={6}>
-            {t('screen.unsupported')}
-          </Text>
-        </HStack>
-      </SettingsScreenLayout>
-    ))
-    .with({ isSupported: true, isLoading: true }, () => <AppIconScreen.Loading />)
-    .with({ isSupported: true, isLoading: false }, () => (
-      <SettingsScreenLayout gap={8}>
-        <Text size="b4" shade={6} className="px-2">
-          {t('screen.chooseIcon')}
-        </Text>
-
-        <SettingsListGroup>
-          <SettingsListGroup.Content>
-            <AppIconPicker
-              value={currentIcon}
-              onValueChange={handleIconPress}
-              isDisabled={isChanging}
-              isLocked={(key) => isIconLocked && AppIconPolicy.isPremiumIcon(key)}
-            />
-          </SettingsListGroup.Content>
-        </SettingsListGroup>
-      </SettingsScreenLayout>
-    ))
-    .exhaustive();
-}
-
-AppIconScreen.Loading = function Loading() {
+export default function AppIconScreen() {
   const { t } = useTranslation('appIcon');
+  // 지원 여부는 기기의 동기 값이라 쿼리 없이 읽는다
+  const isSupported = useAppIconService().isSupported();
 
   return (
     <SettingsScreenLayout gap={8}>
-      <Text size="b4" shade={6} className="px-2">
-        {t('screen.chooseIcon')}
-      </Text>
+      {match(isSupported)
+        .with(false, () => (
+          <HStack justify="center" align="center">
+            <Text size="b4" shade={6}>
+              {t('screen.unsupported')}
+            </Text>
+          </HStack>
+        ))
+        .with(true, () => (
+          <>
+            <Text size="b4" shade={6} className="px-2">
+              {t('screen.chooseIcon')}
+            </Text>
 
-      <SettingsListGroup>
-        <SettingsListGroup.Content>
-          <AppIconPicker.Loading />
-        </SettingsListGroup.Content>
-      </SettingsListGroup>
+            <SettingsListGroup>
+              <SettingsListGroup.Content>
+                <QueryErrorBoundary fallback={AppIconPicker.Error}>
+                  <Suspense fallback={<AppIconPicker.Loading />}>
+                    <AppIconSelector />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </SettingsListGroup.Content>
+            </SettingsListGroup>
+          </>
+        ))
+        .exhaustive()}
     </SettingsScreenLayout>
-  );
-};
-
-export default function AppIconRoute() {
-  return (
-    <QueryErrorBoundary fallback={AppIconPicker.Error}>
-      <Suspense fallback={<AppIconScreen.Loading />}>
-        <AppIconScreen />
-      </Suspense>
-    </QueryErrorBoundary>
   );
 }
