@@ -20,7 +20,7 @@ const todoDto = {
 };
 
 describe('toVoicePlan', () => {
-  test('모르는 행동 타입은 버리고 아는 행동만 남긴다', () => {
+  it('모르는 행동 타입은 버리고 아는 행동만 남긴다', () => {
     // Given
     const actions = [todoDto, { type: 'SEND_EMAIL', key: 'x' }];
 
@@ -32,8 +32,8 @@ describe('toVoicePlan', () => {
     expect(plan.omittedTodoCount).toBe(2);
   });
 
-  test('달력 날짜는 그대로 옮기고, 반복은 앱 모델로 바꾼다', () => {
-    // Given & When
+  it('달력 날짜는 그대로 옮기고, 반복은 앱 모델로 바꾼다', () => {
+    // When
     const plan = toVoicePlan('plan-1', 'quick-voice', { actions: [todoDto], omittedTodoCount: 0 });
 
     // Then
@@ -49,7 +49,7 @@ describe('toVoicePlan', () => {
 });
 
 describe('toApplyActionPlanRequest', () => {
-  test('카테고리를 고르지 못한 할 일은 시트의 현재 카테고리로 채운다', () => {
+  it('카테고리를 고르지 못한 할 일은 시트의 현재 카테고리로 채운다', () => {
     // Given
     const plan = toVoicePlan('plan-1', 'quick-text', { actions: [todoDto], omittedTodoCount: 0 });
 

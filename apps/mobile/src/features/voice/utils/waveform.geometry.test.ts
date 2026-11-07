@@ -14,8 +14,9 @@ import {
 } from './waveform.geometry';
 
 describe('withFlagBars', () => {
-  test('음량 이벤트가 느려 칸이 시간보다 적어도 표시한 순간의 칸에 깃발을 꽂는다', () => {
-    // Given 13초가 지났지만 칸은 40개다
+  it('음량 이벤트가 느려 칸이 시간보다 적어도 표시한 순간의 칸에 깃발을 꽂는다', () => {
+    // Given
+    // 13초가 지났지만 칸은 40개다
     const bookmarkMs = 13_000;
 
     // When
@@ -25,7 +26,7 @@ describe('withFlagBars', () => {
     expect(flagBars.get(bookmarkMs)).toBe(39);
   });
 
-  test('이미 꽂은 깃발은 칸이 늘어도 자리를 옮기지 않는다', () => {
+  it('이미 꽂은 깃발은 칸이 늘어도 자리를 옮기지 않는다', () => {
     // Given
     const flagBars = new Map([[1_000, 10]]);
 
@@ -37,7 +38,7 @@ describe('withFlagBars', () => {
     expect(next.get(2_000)).toBe(30);
   });
 
-  test('표시를 지우면 깃발도 지운다', () => {
+  it('표시를 지우면 깃발도 지운다', () => {
     // When
     const next = withFlagBars(new Map([[1_000, 10]]), [], 30);
 
@@ -45,7 +46,7 @@ describe('withFlagBars', () => {
     expect(next.size).toBe(0);
   });
 
-  test('바뀐 게 없으면 같은 값을 돌려줘 다시 그리지 않는다', () => {
+  it('바뀐 게 없으면 같은 값을 돌려줘 다시 그리지 않는다', () => {
     // Given
     const flagBars = new Map([[1_000, 10]]);
 
@@ -56,7 +57,7 @@ describe('withFlagBars', () => {
     expect(next).toBe(flagBars);
   });
 
-  test('칸이 아직 없으면 0번 칸에 꽂는다', () => {
+  it('칸이 아직 없으면 0번 칸에 꽂는다', () => {
     // When
     const next = withFlagBars(new Map(), [500], -1);
 
@@ -66,7 +67,7 @@ describe('withFlagBars', () => {
 });
 
 describe('createSpeechLevels', () => {
-  test('말한 구간은 높고 조용한 구간은 낮다', () => {
+  it('말한 구간은 높고 조용한 구간은 낮다', () => {
     // Given
     const sentences = [createVoiceNoteSentence({ startMs: 0, endMs: 500 })];
 
@@ -81,7 +82,7 @@ describe('createSpeechLevels', () => {
 });
 
 describe('getFlagBarIndexes', () => {
-  test('중요 표시한 문장의 시작 칸에만 깃발을 꽂는다', () => {
+  it('중요 표시한 문장의 시작 칸에만 깃발을 꽂는다', () => {
     // Given
     const sentences = [
       createVoiceNoteSentence({ startMs: 41_050, isBookmarked: true }),
@@ -97,7 +98,7 @@ describe('getFlagBarIndexes', () => {
 });
 
 describe('getTimelineLevel', () => {
-  test('재생선은 마지막 칸을 가리키고 시작 앞과 아직 소리가 없는 뒤쪽 칸은 null이다', () => {
+  it('재생선은 마지막 칸을 가리키고 시작 앞과 아직 소리가 없는 뒤쪽 칸은 null이다', () => {
     // Given
     const levels = [0.5, 0.6, 0.7];
 
@@ -110,7 +111,7 @@ describe('getTimelineLevel', () => {
 });
 
 describe('appendTimelineBar', () => {
-  test('오래 녹음해도 칸 수는 정한 길이를 넘지 않고 최근 칸을 남긴다', () => {
+  it('오래 녹음해도 칸 수는 정한 길이를 넘지 않고 최근 칸을 남긴다', () => {
     // Given
     const bars = range(18_000)
       .map((index) => index)
@@ -124,7 +125,7 @@ describe('appendTimelineBar', () => {
 });
 
 describe('resampleLevels', () => {
-  test('줄인 칸은 구간에서 가장 큰 값을 가진다', () => {
+  it('줄인 칸은 구간에서 가장 큰 값을 가진다', () => {
     // Given
     const levels = [0.1, 0.9, 0.2, 0.3];
 
@@ -135,7 +136,7 @@ describe('resampleLevels', () => {
     expect(result).toEqual([0.9, 0.3]);
   });
 
-  test('칸 수가 원본보다 많아도 비지 않는다', () => {
+  it('칸 수가 원본보다 많아도 비지 않는다', () => {
     // Given
     const levels = [0.4, 0.8];
 
@@ -148,7 +149,7 @@ describe('resampleLevels', () => {
 });
 
 describe('appendLevelFrame', () => {
-  test('칸 간격이 차기 전에는 최댓값만 모으고 칸을 만들지 않는다', () => {
+  it('칸 간격이 차기 전에는 최댓값만 모으고 칸을 만들지 않는다', () => {
     // When
     const { sampler, bar } = appendLevelFrame(createLevelSampler(), 0.5, 16, 100);
 
@@ -157,7 +158,7 @@ describe('appendLevelFrame', () => {
     expect(sampler).toEqual({ pendingMax: 0.5, elapsedMs: 16 });
   });
 
-  test('칸 간격이 차면 그동안의 최댓값으로 한 칸을 만들고 남은 시간을 넘긴다', () => {
+  it('칸 간격이 차면 그동안의 최댓값으로 한 칸을 만들고 남은 시간을 넘긴다', () => {
     // Given
     const pending = { pendingMax: 0.8, elapsedMs: 90 };
 
@@ -169,7 +170,7 @@ describe('appendLevelFrame', () => {
     expect(sampler).toEqual({ pendingMax: 0, elapsedMs: 6 });
   });
 
-  test('음량이 0으로 내려가도 시간이 지나면 조용한 칸을 만든다', () => {
+  it('음량이 0으로 내려가도 시간이 지나면 조용한 칸을 만든다', () => {
     // Given
     const pending = { pendingMax: 0, elapsedMs: 95 };
 
@@ -180,7 +181,7 @@ describe('appendLevelFrame', () => {
     expect(bar).toBe(0);
   });
 
-  test('프레임이 크게 벌어져도 칸을 한 번에 하나만 만든다', () => {
+  it('프레임이 크게 벌어져도 칸을 한 번에 하나만 만든다', () => {
     // When
     const { sampler, bar } = appendLevelFrame(createLevelSampler(), 0.4, 950, 100);
 
@@ -191,7 +192,7 @@ describe('appendLevelFrame', () => {
 });
 
 describe('getPlayedBarCount', () => {
-  test.each([
+  it.each([
     { ratio: 0, expected: 0 },
     { ratio: 0.25, expected: 25 },
     { ratio: 0.251, expected: 26 },

@@ -11,7 +11,7 @@ const STATUS = {
 const MEMORY = { hasFinished: false, resolvedDurationMs: 120_000 };
 
 describe('getVoiceNotePlayback', () => {
-  test('조각 안의 위치를 노트 시계로 바꾼다', () => {
+  it('조각 안의 위치를 노트 시계로 바꾼다', () => {
     // When
     const { playback } = getVoiceNotePlayback(
       { ...STATUS, currentIndex: 1, currentTime: 2 },
@@ -23,7 +23,7 @@ describe('getVoiceNotePlayback', () => {
     expect(playback.positionMs).toBe(62_000);
   });
 
-  test('마지막 조각의 실제 길이가 더 길면 전체 길이를 늘려 기억한다', () => {
+  it('마지막 조각의 실제 길이가 더 길면 전체 길이를 늘려 기억한다', () => {
     // When
     const { playback, memory } = getVoiceNotePlayback(
       { ...STATUS, currentIndex: 1, duration: 70 },
@@ -36,7 +36,7 @@ describe('getVoiceNotePlayback', () => {
     expect(memory.resolvedDurationMs).toBe(130_000);
   });
 
-  test('다 들었으면 항목이 사라져도 끝 위치에 멈춰 있다', () => {
+  it('다 들었으면 항목이 사라져도 끝 위치에 멈춰 있다', () => {
     // When
     const { playback } = getVoiceNotePlayback(
       { ...STATUS, currentIndex: 1, playing: true, isLoaded: false },
@@ -55,7 +55,7 @@ describe('getVoiceNotePlayback', () => {
 });
 
 describe('findPartSeek', () => {
-  test('위치가 속한 조각과 그 안의 초를 찾는다', () => {
+  it('위치가 속한 조각과 그 안의 초를 찾는다', () => {
     // When
     const seek = findPartSeek(PARTS, 70_000, 120_000);
 
@@ -63,7 +63,7 @@ describe('findPartSeek', () => {
     expect(seek).toEqual({ index: 1, offsetSeconds: 10 });
   });
 
-  test('전체 길이를 넘으면 끝으로 맞춘다', () => {
+  it('전체 길이를 넘으면 끝으로 맞춘다', () => {
     // When
     const seek = findPartSeek(PARTS, 500_000, 120_000);
 
@@ -71,7 +71,7 @@ describe('findPartSeek', () => {
     expect(seek).toEqual({ index: 1, offsetSeconds: 60 });
   });
 
-  test('조각이 없으면 옮기지 않는다', () => {
+  it('조각이 없으면 옮기지 않는다', () => {
     // When
     const seek = findPartSeek([], 1_000, 120_000);
 

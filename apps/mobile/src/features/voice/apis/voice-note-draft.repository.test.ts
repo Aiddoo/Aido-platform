@@ -2,10 +2,9 @@ import { createLoggerStub, createMemorySyncStorage } from '@src/shared/__tests__
 
 import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
+import { VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS } from '../constants/voice-note.constants';
 import { withSentences } from '../domains/voice-note.model';
 import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
-
-const DEBOUNCE_MS = 800;
 
 const STORED_NOTE = {
   draftId: 'draft-1',
@@ -51,7 +50,6 @@ function createRepository(timeZone = 'Asia/Seoul') {
     storage,
     logger,
     getTimeZone: () => timeZone,
-    debounceMs: DEBOUNCE_MS,
   });
 
   return { storage, logger, repository };
@@ -66,7 +64,7 @@ describe('VoiceNoteDraftRepository', () => {
     jest.useRealTimers();
   });
 
-  test('저장한 초안을 같은 계정에서 그대로 복원한다', () => {
+  it('저장한 초안을 같은 계정에서 그대로 복원한다', () => {
     // Given
     const { repository } = createRepository();
     const note = createVoiceNoteFixture();
@@ -78,7 +76,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.find('user-1', note.draftId)).toEqual(note);
   });
 
-  test('다른 계정의 초안은 읽지도 목록에 넣지도 않는다', () => {
+  it('다른 계정의 초안은 읽지도 목록에 넣지도 않는다', () => {
     // Given
     const { repository } = createRepository();
     repository.save('user-1', createVoiceNoteFixture());
@@ -92,7 +90,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(all).toEqual([]);
   });
 
-  test('계정 id가 다른 계정 id로 시작해도 초안이 섞이지 않는다', () => {
+  it('계정 id가 다른 계정 id로 시작해도 초안이 섞이지 않는다', () => {
     // Given
     const { repository } = createRepository();
     repository.save('1', createVoiceNoteFixture());
@@ -105,7 +103,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(all).toHaveLength(1);
   });
 
-  test('문장이 이어서 들어오면 마지막 상태로 한 번만 쓴다', () => {
+  it('문장이 이어서 들어오면 마지막 상태로 한 번만 쓴다', () => {
     // Given
     const { storage, repository } = createRepository();
     const write = jest.spyOn(storage, 'set');
@@ -118,14 +116,14 @@ describe('VoiceNoteDraftRepository', () => {
       'user-1',
       withSentences(note, [createVoiceNoteSentence(), createVoiceNoteSentence()], 2_000),
     );
-    jest.advanceTimersByTime(DEBOUNCE_MS);
+    jest.advanceTimersByTime(VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS);
 
     // Then
     expect(write).toHaveBeenCalledTimes(1);
     expect(repository.find('user-1', note.draftId)?.sentences).toHaveLength(2);
   });
 
-  test('모아 둔 쓰기는 시간이 지나기 전에도 flush로 끝낼 수 있다', () => {
+  it('모아 둔 쓰기는 시간이 지나기 전에도 flush로 끝낼 수 있다', () => {
     // Given
     const { repository } = createRepository();
     const note = createVoiceNoteFixture();
@@ -138,7 +136,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.find('user-1', note.draftId)).toEqual(note);
   });
 
-  test('지운 초안은 모아 둔 쓰기가 뒤늦게 되살리지 않는다', () => {
+  it('지운 초안은 모아 둔 쓰기가 뒤늦게 되살리지 않는다', () => {
     // Given
     const { repository } = createRepository();
     const note = createVoiceNoteFixture();
@@ -146,13 +144,13 @@ describe('VoiceNoteDraftRepository', () => {
 
     // When
     repository.remove('user-1', note.draftId);
-    jest.advanceTimersByTime(DEBOUNCE_MS);
+    jest.advanceTimersByTime(VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS);
 
     // Then
     expect(repository.find('user-1', note.draftId)).toBeUndefined();
   });
 
-  test('읽을 수 없는 초안은 복원 실패를 남기고 버린다', () => {
+  it('읽을 수 없는 초안은 복원 실패를 남기고 버린다', () => {
     // Given
     const { storage, logger, repository } = createRepository();
     storage.set('aido_voice_note_draft_v1:user-1:draft-1', '{"draftId":');
@@ -169,7 +167,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(storage.get('aido_voice_note_draft_v1:user-1:draft-1')).toBeUndefined();
   });
 
-  test('형식이 맞지 않는 초안은 복원 실패를 남기고 버린다', () => {
+  it('형식이 맞지 않는 초안은 복원 실패를 남기고 버린다', () => {
     // Given
     const { storage, logger, repository } = createRepository();
     storage.set('aido_voice_note_draft_v1:user-1:draft-1', JSON.stringify({ draftId: 'draft-1' }));
@@ -184,7 +182,7 @@ describe('VoiceNoteDraftRepository', () => {
     });
   });
 
-  test('다른 계정의 초안만 지우고 현재 계정의 초안은 남긴다', () => {
+  it('다른 계정의 초안만 지우고 현재 계정의 초안은 남긴다', () => {
     // Given
     const { repository } = createRepository();
     repository.save('user-1', createVoiceNoteFixture());
@@ -198,7 +196,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.findAll('user-2')).toHaveLength(0);
   });
 
-  test('초안이 아닌 다른 저장 값은 건드리지 않고 초안만 모두 지운다', () => {
+  it('초안이 아닌 다른 저장 값은 건드리지 않고 초안만 모두 지운다', () => {
     // Given
     const { storage, repository } = createRepository();
     storage.set('aido_draft_v1:user-1:memo', 'keep');
@@ -212,7 +210,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(storage.get('aido_draft_v1:user-1:memo')).toBe('keep');
   });
 
-  test('기기에 저장된 초안의 고친 카드를 그대로 읽고 같은 형식으로 다시 쓴다', () => {
+  it('기기에 저장된 초안의 고친 카드를 그대로 읽고 같은 형식으로 다시 쓴다', () => {
     // Given
     const { storage, repository } = createRepository();
     const key = 'aido_voice_note_draft_v1:user-1:draft-1';
@@ -232,7 +230,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(JSON.parse(storage.get(key) ?? '')).toEqual(STORED_NOTE);
   });
 
-  test('달력 날짜를 ISO 순간으로 남긴 옛 초안은 지금 시간대의 날짜로 읽는다', () => {
+  it('달력 날짜를 ISO 순간으로 남긴 옛 초안은 지금 시간대의 날짜로 읽는다', () => {
     // Given
     const { storage, repository } = createRepository('America/Los_Angeles');
     const [action] = STORED_NOTE.planDraft.form.actions;
@@ -254,7 +252,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(note?.planDraft?.form.actions[0]).toMatchObject({ startDate: '2026-11-09' });
   });
 
-  test('바뀌기 전까지 같은 목록을 돌려주고 바뀌면 구독자에게 알린다', () => {
+  it('바뀌기 전까지 같은 목록을 돌려주고 바뀌면 구독자에게 알린다', () => {
     // Given
     const repository = createVoiceNoteDraftRepository({
       storage: createMemorySyncStorage(),
@@ -275,7 +273,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.getSnapshot('user-1')).toHaveLength(1);
   });
 
-  test('말이 끊이지 않아도 최대 대기 시간이 지나면 쓴다', () => {
+  it('말이 끊이지 않아도 최대 대기 시간이 지나면 쓴다', () => {
     // Given
     const { repository } = createRepository();
 
@@ -289,7 +287,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.find('user-1', 'draft-1')).toBeDefined();
   });
 
-  test('한 초안을 저장해도 다른 초안은 다시 해석하지 않는다', () => {
+  it('한 초안을 저장해도 다른 초안은 다시 해석하지 않는다', () => {
     // Given
     const { storage, repository } = createRepository();
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1' }));
@@ -310,7 +308,7 @@ describe('VoiceNoteDraftRepository', () => {
     );
   });
 
-  test('저장소에 아직 없는 초안의 대기 쓰기도 전체 삭제 뒤에 되살아나지 않는다', () => {
+  it('저장소에 아직 없는 초안의 대기 쓰기도 전체 삭제 뒤에 되살아나지 않는다', () => {
     // Given
     const { repository } = createRepository();
     repository.scheduleSave('user-1', createVoiceNoteFixture());
@@ -323,7 +321,7 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.find('user-1', 'draft-1')).toBeUndefined();
   });
 
-  test('다른 계정의 대기 쓰기는 소유자만 남길 때 함께 취소한다', () => {
+  it('다른 계정의 대기 쓰기는 소유자만 남길 때 함께 취소한다', () => {
     // Given
     const { repository } = createRepository();
     repository.scheduleSave('user-2', createVoiceNoteFixture());

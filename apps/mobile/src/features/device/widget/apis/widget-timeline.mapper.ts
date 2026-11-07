@@ -32,15 +32,19 @@ export function toWidgetTimelineEntries(
     return entries;
   }
 
-  let lastDay = current.day;
-  let boundary = getNextLocalMidnight(now, timeZone);
-  const nextDay = snapshot.days.find((day) => day.date === toDateKey(boundary, timeZone));
-  if (nextDay != null) {
-    entries.push({ date: boundary, props: toWidgetProps(nextDay, nextDay.state, appScheme) });
-    lastDay = nextDay;
-    boundary = getNextLocalMidnight(boundary, timeZone);
+  const firstBoundary = getNextLocalMidnight(now, timeZone);
+  const nextDay = snapshot.days.find((day) => day.date === toDateKey(firstBoundary, timeZone));
+  if (nextDay == null) {
+    entries.push({ date: firstBoundary, props: toWidgetProps(current.day, 'stale', appScheme) });
+    return entries;
   }
 
-  entries.push({ date: boundary, props: toWidgetProps(lastDay, 'stale', appScheme) });
+  entries.push(
+    { date: firstBoundary, props: toWidgetProps(nextDay, nextDay.state, appScheme) },
+    {
+      date: getNextLocalMidnight(firstBoundary, timeZone),
+      props: toWidgetProps(nextDay, 'stale', appScheme),
+    },
+  );
   return entries;
 }

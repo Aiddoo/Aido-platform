@@ -20,7 +20,7 @@ export function getSpeechContextStrings({
   const toPhrases = (values: readonly string[]) =>
     values
       .map((value) => value.trim())
-      .filter((value) => value.length > 0 && value.length <= MAX_PHRASE_LENGTH);
+      .filter((value) => 0 < value.length && value.length <= MAX_PHRASE_LENGTH);
 
   return uniq([
     ...toPhrases(categoryNames),

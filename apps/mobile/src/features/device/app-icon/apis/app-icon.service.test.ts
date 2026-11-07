@@ -5,7 +5,7 @@ import { AppIconService } from './app-icon.service';
 const createGateway = createAppIconGatewayStub;
 
 describe('앱 아이콘 서비스', () => {
-  test.each([
+  it.each([
     [null, 'default'],
     ['russian_blue', 'russian_blue'],
     ['cream_cat', 'cream_cat'],
@@ -24,7 +24,7 @@ describe('앱 아이콘 서비스', () => {
     expect(currentIcon).toBe(expected);
   });
 
-  test('기본 아이콘으로 돌아갈 때 네이티브에 null을 전달한다', async () => {
+  it('기본 아이콘으로 돌아갈 때 네이티브에 null을 전달한다', async () => {
     // Given
     const gateway = createGateway();
     const service = new AppIconService(gateway);
@@ -37,7 +37,7 @@ describe('앱 아이콘 서비스', () => {
     expect(currentIcon).toBe('default');
   });
 
-  test('빠르게 다른 아이콘을 눌러도 진행 중인 변경 결과를 공유한다', async () => {
+  it('빠르게 다른 아이콘을 눌러도 진행 중인 변경 결과를 공유한다', async () => {
     // Given
     const gateway = createGateway();
     let completeChange: (name: string | null) => void = () => undefined;
@@ -61,7 +61,7 @@ describe('앱 아이콘 서비스', () => {
     expect(results).toEqual(['russian_blue', 'russian_blue']);
   });
 
-  test('변경이 실패한 뒤 새로운 변경을 다시 시도할 수 있다', async () => {
+  it('변경이 실패한 뒤 새로운 변경을 다시 시도할 수 있다', async () => {
     // Given
     const gateway = createGateway();
     const failure = new Error('네이티브 변경 실패');
@@ -78,7 +78,7 @@ describe('앱 아이콘 서비스', () => {
     expect(gateway.changeIcon).toHaveBeenCalledTimes(2);
   });
 
-  test('취소된 초기 조회의 결과를 반환하지 않는다', async () => {
+  it('취소된 초기 조회의 결과를 반환하지 않는다', async () => {
     // Given
     const gateway = createGateway();
     const controller = new AbortController();
@@ -95,7 +95,7 @@ describe('앱 아이콘 서비스', () => {
     await expect(lookup).rejects.toThrow('App icon lookup cancelled');
   });
 
-  test('메서드를 분리해서 호출해도 주입한 네이티브 포트를 사용한다', async () => {
+  it('메서드를 분리해서 호출해도 주입한 네이티브 포트를 사용한다', async () => {
     // Given
     const gateway = createGateway();
     const { changeIcon, getCurrentIcon } = new AppIconService(gateway);

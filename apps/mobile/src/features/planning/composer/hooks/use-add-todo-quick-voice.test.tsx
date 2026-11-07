@@ -23,7 +23,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { fromDate } from '@src/shared/date/instant';
+import { fromDate, getNowInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
@@ -131,7 +131,7 @@ async function renderQuickVoice({
   const queryClient = createTestQueryClient();
   const syncStorage = createMemoryObservableSyncStorage();
   if (isCoachmarkSeen) {
-    createCoachmarkRepository(syncStorage).markSeen({
+    createCoachmarkRepository(syncStorage, getNowInstant).markSeen({
       accountId: ACCOUNT_ID,
       kind: 'ai-consent-renewal',
     });

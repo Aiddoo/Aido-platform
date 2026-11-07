@@ -15,7 +15,7 @@ function createRepository() {
 }
 
 describe('VoiceRecordingRepository', () => {
-  test('인식기가 쓴 파일을 초안 이름으로 옮겨 계정 폴더에 둔다', async () => {
+  it('인식기가 쓴 파일을 초안 이름으로 옮겨 계정 폴더에 둔다', async () => {
     // Given
     const { files, repository } = createRepository();
     const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav', { sizeBytes: 1_900_000 });
@@ -34,7 +34,7 @@ describe('VoiceRecordingRepository', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
   });
 
-  test('옮기기 전의 파일을 URI로 지운다', () => {
+  it('옮기기 전의 파일을 URI로 지운다', () => {
     // Given
     const { files, repository } = createRepository();
     const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav');
@@ -46,7 +46,7 @@ describe('VoiceRecordingRepository', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
   });
 
-  test('옮기지 못하면 save-failed를 남기고 null을 돌려줘 글자만 남게 한다', async () => {
+  it('옮기지 못하면 save-failed를 남기고 null을 돌려줘 글자만 남게 한다', async () => {
     // Given
     const { files, logger, repository } = createRepository();
     const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav');
@@ -68,7 +68,7 @@ describe('VoiceRecordingRepository', () => {
     });
   });
 
-  test('녹음 폴더를 만들지 못하면 save-failed를 남기고 null을 돌려준다', () => {
+  it('녹음 폴더를 만들지 못하면 save-failed를 남기고 null을 돌려준다', () => {
     // Given
     const { files, logger, repository } = createRepository();
     files.failNextEnsureDirectory(new Error('EACCES'));
@@ -84,7 +84,7 @@ describe('VoiceRecordingRepository', () => {
     });
   });
 
-  test('초안이 가리키지 않고 한 시간이 지난 파일만 지운다', () => {
+  it('초안이 가리키지 않고 한 시간이 지난 파일만 지운다', () => {
     // Given
     const { files, repository } = createRepository();
     const old = new Date('2026-11-01T00:00:00.000Z');
@@ -103,7 +103,7 @@ describe('VoiceRecordingRepository', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'orphan-new.wav')).toBe(true);
   });
 
-  test('다른 계정의 녹음 폴더만 지우고 현재 계정은 남긴다', () => {
+  it('다른 계정의 녹음 폴더만 지우고 현재 계정은 남긴다', () => {
     // Given
     const { files, repository } = createRepository();
     files.addFile(OWNER_DIRECTORY, 'a.wav');
@@ -117,7 +117,7 @@ describe('VoiceRecordingRepository', () => {
     expect(files.hasFile(['voice-notes', 'user-2'], 'b.wav')).toBe(false);
   });
 
-  test('로그아웃하면 모든 계정의 녹음을 지운다', () => {
+  it('로그아웃하면 모든 계정의 녹음을 지운다', () => {
     // Given
     const { files, repository } = createRepository();
     files.addFile(OWNER_DIRECTORY, 'a.wav');

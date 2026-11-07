@@ -90,7 +90,7 @@ function findSegmentsWithin(
   return segments.filter((segment) => {
     const startOffset = consumed;
     consumed += removeSpaces(segment.text).length;
-    return startOffset >= fromOffset && startOffset < toOffset;
+    return fromOffset <= startOffset && startOffset < toOffset;
   });
 }
 

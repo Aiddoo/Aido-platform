@@ -5,7 +5,7 @@ import { Popover } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef } from 'react';
 
 import { CoachmarkPolicy } from '../domains/coachmark.model';
-import { useCoachmarkSettle } from '../hooks/use-coachmark-settle';
+import { useIsCoachmarkSettled } from '../hooks/use-is-coachmark-settled';
 import { useMyAccountId } from '../hooks/use-my-account-id';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 import type { CoachmarkKind } from '../schemas/coachmark.schema';
@@ -60,11 +60,11 @@ export function CoachmarkPopover({
   children,
   ...popoverProps
 }: CoachmarkPopoverProps) {
-  const [accountId] = useMyAccountId();
+  const accountId = useMyAccountId();
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isFocused = useIsFocused();
-  const isSettled = useCoachmarkSettle(isFocused, dismissKey);
+  const isSettled = useIsCoachmarkSettled(isFocused, dismissKey);
   const isOpen = accountId != null && (isPending || isForced) && isEnabled && isSettled;
   const shownDismissKeyRef = useRef(dismissKey);
   /** 대상이 움직여 닫았다 다시 여는 것은 같은 노출이다. 사용자가 닫아야 끝난다 */

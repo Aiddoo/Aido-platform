@@ -668,7 +668,8 @@ describe('useVoiceCaptureSession', () => {
     });
 
     it('일시정지했다 이어 들으면 남은 시간만큼만 듣고 한도를 알린다', async () => {
-      // Given 10초 한도에서 4초 듣고 멈췄다
+      // Given
+      // 10초 한도에서 4초 듣고 멈췄다
       const onLimitReached = jest.fn();
       const { speechRecognizer } = await renderSession({ maxSeconds: 10, onLimitReached });
       await fireEvent.press(screen.getByTestId('begin'));

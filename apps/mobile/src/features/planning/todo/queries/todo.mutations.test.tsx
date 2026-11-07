@@ -92,7 +92,7 @@ async function renderToggle() {
     httpClient,
     queryClient,
     appStoreReviewGateway,
-    getActiveDays: () => storeReviewRepository.read(ACCOUNT_ID).activeDays,
+    getActiveDays: () => storeReviewRepository.get(ACCOUNT_ID).activeDays,
     settleReviewWait: () => act(async () => jest.advanceTimersByTimeAsync(REVIEW_SETTLE_MS)),
     toggle,
     startToggle,

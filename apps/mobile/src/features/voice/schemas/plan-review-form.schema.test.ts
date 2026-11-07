@@ -1,7 +1,7 @@
 import { createPlanReviewDraftSchema, restoreDraftDateKey } from './plan-review-form.schema';
 
 describe('restoreDraftDateKey 옛 초안의 달력 날짜 복원', () => {
-  test.each([
+  it.each([
     {
       label: '서울 자정',
       stored: '2026-11-09T15:00:00.000Z',
@@ -45,17 +45,17 @@ describe('restoreDraftDateKey 옛 초안의 달력 날짜 복원', () => {
       expected: '2026-11-09',
     },
   ])('$label', ({ stored, timeZone, expected }) => {
-    // Given & When
+    // When
     const dateKey = restoreDraftDateKey(stored, timeZone);
 
     // Then
     expect(dateKey).toBe(expected);
   });
 
-  test.each(['Asia/Seoul', 'America/Los_Angeles'])(
+  it.each(['Asia/Seoul', 'America/Los_Angeles'])(
     '새 초안의 달력 날짜는 %s에서도 그대로다',
     (timeZone) => {
-      // Given & When
+      // When
       const dateKey = restoreDraftDateKey('2026-11-10', timeZone);
 
       // Then
@@ -80,7 +80,7 @@ describe('createPlanReviewDraftSchema', () => {
     isSelected: true,
   };
 
-  test('옛 ISO 초안도 카드로 살리고 달력 날짜 키로 바꾼다', () => {
+  it('옛 ISO 초안도 카드로 살리고 달력 날짜 키로 바꾼다', () => {
     // Given
     const stored = {
       omittedTodoCount: 0,
@@ -97,7 +97,7 @@ describe('createPlanReviewDraftSchema', () => {
     });
   });
 
-  test('날짜를 읽지 못한 카드만 빼고 못 살린 수를 더한다', () => {
+  it('날짜를 읽지 못한 카드만 빼고 못 살린 수를 더한다', () => {
     // Given
     const stored = {
       omittedTodoCount: 1,

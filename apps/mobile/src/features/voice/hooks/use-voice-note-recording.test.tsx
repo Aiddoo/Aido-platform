@@ -129,7 +129,7 @@ describe('useVoiceNoteRecording', () => {
     jest.useRealTimers();
   });
 
-  test('기기 인식과 녹음 파일 저장으로 시작하고 말을 끝내도 알아서 끝나지 않는다', async () => {
+  it('기기 인식과 녹음 파일 저장으로 시작하고 말을 끝내도 알아서 끝나지 않는다', async () => {
     // Given
     const { speechRecognizer } = await renderRecording();
 
@@ -150,7 +150,7 @@ describe('useVoiceNoteRecording', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('listening');
   });
 
-  test('확정한 문장을 기기 초안에 저장해 앱이 꺼져도 글자가 남는다', async () => {
+  it('확정한 문장을 기기 초안에 저장해 앱이 꺼져도 글자가 남는다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecording();
     await start(speechRecognizer);
@@ -166,7 +166,7 @@ describe('useVoiceNoteRecording', () => {
     ]);
   });
 
-  test('일시정지하면 인식기를 멈추고 초안을 바로 저장하며 이어 들으면 다시 시작한다', async () => {
+  it('일시정지하면 인식기를 멈추고 초안을 바로 저장하며 이어 들으면 다시 시작한다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecording();
     await start(speechRecognizer);
@@ -191,7 +191,7 @@ describe('useVoiceNoteRecording', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('listening');
   });
 
-  test('끝내면 글자와 녹음 조각을 저장한 뒤 초안 id로 넘긴다', async () => {
+  it('끝내면 글자와 녹음 조각을 저장한 뒤 초안 id로 넘긴다', async () => {
     // Given
     const { speechRecognizer, storage, onFinished } = await renderRecording();
     await start(speechRecognizer);
@@ -210,7 +210,7 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
-  test('일시정지 직후 끝내도 녹음 파일이 올 때까지 기다렸다가 조각을 남긴다', async () => {
+  it('일시정지 직후 끝내도 녹음 파일이 올 때까지 기다렸다가 조각을 남긴다', async () => {
     // Given
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
@@ -235,7 +235,7 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
   });
 
-  test('끝낼 때 인식기가 final 대신 client로 답해도 듣던 글자까지 초안에 남겨 넘긴다', async () => {
+  it('끝낼 때 인식기가 final 대신 client로 답해도 듣던 글자까지 초안에 남겨 넘긴다', async () => {
     // Given
     const { speechRecognizer, storage, onFinished } = await renderRecording();
     await start(speechRecognizer);
@@ -257,7 +257,7 @@ describe('useVoiceNoteRecording', () => {
     ]);
   });
 
-  test('일시정지 뒤 인식기가 client로 답해도 실패가 아니고 들은 글자를 그대로 둔다', async () => {
+  it('일시정지 뒤 인식기가 client로 답해도 실패가 아니고 들은 글자를 그대로 둔다', async () => {
     // Given
     const { speechRecognizer } = await renderRecording();
     await start(speechRecognizer);
@@ -273,7 +273,7 @@ describe('useVoiceNoteRecording', () => {
     expect(screen.getByTestId('captions')).toHaveTextContent('첫 문장');
   });
 
-  test('녹음 파일을 쓰지 않은 구간(Android 12 이하)은 기다리지 않고 글자를 넘긴다', async () => {
+  it('녹음 파일을 쓰지 않은 구간(Android 12 이하)은 기다리지 않고 글자를 넘긴다', async () => {
     // Given
     const { speechRecognizer, onFinished } = await renderRecording();
     await start(speechRecognizer);
@@ -287,7 +287,7 @@ describe('useVoiceNoteRecording', () => {
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
   });
 
-  test('녹음 파일이 끝내 오지 않아도 글자는 넘긴다', async () => {
+  it('녹음 파일이 끝내 오지 않아도 글자는 넘긴다', async () => {
     // Given
     const { speechRecognizer, onFinished } = await renderRecording();
     await start(speechRecognizer);
@@ -305,7 +305,7 @@ describe('useVoiceNoteRecording', () => {
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
   });
 
-  test('한 번의 길이 한도에 닿으면 멈추고 알린다', async () => {
+  it('한 번의 길이 한도에 닿으면 멈추고 알린다', async () => {
     // Given
     const { speechRecognizer, onLimitReached } = await renderRecording({ maxSeconds: 3 });
     await start(speechRecognizer);
@@ -320,7 +320,7 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.stop).toHaveBeenCalled();
   });
 
-  test('들은 글자 없이 끝내면 초안을 남기지 않고 알린다', async () => {
+  it('들은 글자 없이 끝내면 초안을 남기지 않고 알린다', async () => {
     // Given
     const { speechRecognizer, storage, onEmpty } = await renderRecording();
     await start(speechRecognizer);
@@ -334,7 +334,7 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
-  test('빠른 말하기에서 넘어온 초안은 글자와 시간을 이어 듣고 진입 경로를 남긴다', async () => {
+  it('빠른 말하기에서 넘어온 초안은 글자와 시간을 이어 듣고 진입 경로를 남긴다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
@@ -385,7 +385,7 @@ describe('useVoiceNoteRecording', () => {
     expect(saved?.sentences[1]?.startMs).toBeGreaterThanOrEqual(90_000);
   });
 
-  test('말한 내용은 분석에 싣지 않는다', async () => {
+  it('말한 내용은 분석에 싣지 않는다', async () => {
     // Given
     const { speechRecognizer, analytics } = await renderRecording();
     await start(speechRecognizer);
@@ -399,7 +399,7 @@ describe('useVoiceNoteRecording', () => {
     expect(JSON.stringify(analytics.trackEvent.mock.calls)).not.toContain('회의');
   });
 
-  test('Android에 언어 모델이 없으면 받을지 묻고 거절해도 네트워크 인식으로 시작한다', async () => {
+  it('Android에 언어 모델이 없으면 받을지 묻고 거절해도 네트워크 인식으로 시작한다', async () => {
     // Given
     const { speechRecognizer, analytics } = await renderRecording({
       canDownloadOnDeviceModel: true,
@@ -422,7 +422,7 @@ describe('useVoiceNoteRecording', () => {
     });
   });
 
-  test('받기를 거절하면 이 사용자의 그 언어로 기억한다', async () => {
+  it('받기를 거절하면 이 사용자의 그 언어로 기억한다', async () => {
     // Given
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
@@ -438,7 +438,7 @@ describe('useVoiceNoteRecording', () => {
     );
   });
 
-  test('받기를 묻는 중에 화면이 내려가면 거절로 기억하지 않고 듣지도 않는다', async () => {
+  it('받기를 묻는 중에 화면이 내려가면 거절로 기억하지 않고 듣지도 않는다', async () => {
     // Given
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
@@ -458,7 +458,7 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.start).not.toHaveBeenCalled();
   });
 
-  test.each(['dialog-opened', 'unavailable', 'scheduled'] as const)(
+  it.each(['dialog-opened', 'unavailable', 'scheduled'] as const)(
     '받기를 고른 뒤 결과가 %s이면 다음 녹음에 다시 묻지 않는다',
     async (result) => {
       // Given
@@ -481,7 +481,7 @@ describe('useVoiceNoteRecording', () => {
     },
   );
 
-  test('받기가 끝났으면 거절로 기억하지 않는다', async () => {
+  it('받기가 끝났으면 거절로 기억하지 않는다', async () => {
     // Given
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
@@ -500,7 +500,7 @@ describe('useVoiceNoteRecording', () => {
     expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(false);
   });
 
-  test('이미 거절한 언어는 묻지 않고 바로 네트워크 인식으로 시작한다', async () => {
+  it('이미 거절한 언어는 묻지 않고 바로 네트워크 인식으로 시작한다', async () => {
     // Given
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
@@ -518,7 +518,7 @@ describe('useVoiceNoteRecording', () => {
     expect(screen.queryByText('나중에')).toBeNull();
   });
 
-  test('다른 언어를 거절했어도 이 언어는 한 번 묻는다', async () => {
+  it('다른 언어를 거절했어도 이 언어는 한 번 묻는다', async () => {
     // Given
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
@@ -532,7 +532,7 @@ describe('useVoiceNoteRecording', () => {
     expect(await screen.findByText('나중에')).toBeTruthy();
   });
 
-  test('화면이 사라지면 구독을 풀고 듣던 세션을 끊는다', async () => {
+  it('화면이 사라지면 구독을 풀고 듣던 세션을 끊는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const { unmount } = await renderUi(
@@ -565,7 +565,7 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 
-  test('끝내서 넘긴 뒤에는 들은 글자 없음 안내와 뒤로 가기를 부르지 않는다', async () => {
+  it('끝내서 넘긴 뒤에는 들은 글자 없음 안내와 뒤로 가기를 부르지 않는다', async () => {
     // Given
     const { speechRecognizer, onEmpty, onFinished } = await renderRecording();
     await start(speechRecognizer);
@@ -581,7 +581,7 @@ describe('useVoiceNoteRecording', () => {
     expect(onEmpty).not.toHaveBeenCalled();
   });
 
-  test('초안을 지운 뒤 늦게 온 녹음 파일과 대기 쓰기가 초안을 되살리지 않는다', async () => {
+  it('초안을 지운 뒤 늦게 온 녹음 파일과 대기 쓰기가 초안을 되살리지 않는다', async () => {
     // Given
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
@@ -599,7 +599,7 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
-  test('이어 듣기를 눌러도 앞 구간의 end가 올 때까지 인식기를 다시 열지 않는다', async () => {
+  it('이어 듣기를 눌러도 앞 구간의 end가 올 때까지 인식기를 다시 열지 않는다', async () => {
     // Given
     const { speechRecognizer } = await renderRecording();
     await start(speechRecognizer);
@@ -619,7 +619,7 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
   });
 
-  test('end가 끝내 오지 않아도 잠시 뒤 이어 듣는다', async () => {
+  it('end가 끝내 오지 않아도 잠시 뒤 이어 듣는다', async () => {
     // Given
     const { speechRecognizer } = await renderRecording();
     await start(speechRecognizer);
@@ -634,7 +634,7 @@ describe('useVoiceNoteRecording', () => {
     expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
   });
 
-  test('파일이 뒤바뀌어 와도 파일마다 그 구간의 시작 시각을 붙이고 시각 순서로 저장한다', async () => {
+  it('파일이 뒤바뀌어 와도 파일마다 그 구간의 시작 시각을 붙이고 시각 순서로 저장한다', async () => {
     // Given
     const files = createLocalFileSystemFake();
     const first = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
@@ -669,7 +669,7 @@ describe('useVoiceNoteRecording', () => {
     expect(recordings[1]?.startMs).toBeGreaterThanOrEqual(5_000);
   });
 
-  test('기다리는 시간을 넘긴 녹음 파일도 화면이 내려간 뒤 초안에 더한다', async () => {
+  it('기다리는 시간을 넘긴 녹음 파일도 화면이 내려간 뒤 초안에 더한다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const files = createLocalFileSystemFake();
@@ -763,7 +763,7 @@ describe('useVoiceNoteRecording', () => {
       };
     };
 
-    test('화면이 내려갔으면 모델을 받을지 묻지 않고 인식기도 시작하지 않는다', async () => {
+    it('화면이 내려갔으면 모델을 받을지 묻지 않고 인식기도 시작하지 않는다', async () => {
       // Given
       const { speechRecognizer, capabilities, leaveScreen } = await renderStartingProbe();
       await act(async () => leaveScreen());
@@ -776,7 +776,7 @@ describe('useVoiceNoteRecording', () => {
       expect(speechRecognizer.start).not.toHaveBeenCalled();
     });
 
-    test('모델이 있는 기기도 화면이 내려갔으면 인식기를 시작하지 않는다', async () => {
+    it('모델이 있는 기기도 화면이 내려갔으면 인식기를 시작하지 않는다', async () => {
       // Given
       const { speechRecognizer, capabilities, leaveScreen } = await renderStartingProbe();
       await act(async () => leaveScreen());
@@ -788,7 +788,7 @@ describe('useVoiceNoteRecording', () => {
       expect(speechRecognizer.start).not.toHaveBeenCalled();
     });
 
-    test('닫아서 초안을 지웠으면 화면이 내려가기 전이어도 인식기를 시작하지 않는다', async () => {
+    it('닫아서 초안을 지웠으면 화면이 내려가기 전이어도 인식기를 시작하지 않는다', async () => {
       // Given
       const { speechRecognizer, capabilities } = await renderStartingProbe();
       await fireEvent.press(screen.getByTestId('discard'));
@@ -801,7 +801,7 @@ describe('useVoiceNoteRecording', () => {
     });
   });
 
-  test('끝내는 동안 화면이 내려가면 글자는 저장하되 결과 화면으로 끌어오지 않는다', async () => {
+  it('끝내는 동안 화면이 내려가면 글자는 저장하되 결과 화면으로 끌어오지 않는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
@@ -844,8 +844,9 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
-  test('화면이 내려간 뒤 새 녹음의 파일이 와도 옛 초안으로 가져오지 않고 자기 파일만 받는다', async () => {
-    // Given 앞 녹음의 파일을 기다리는 동안 새 녹음이 시작됐다
+  it('화면이 내려간 뒤 새 녹음의 파일이 와도 옛 초안으로 가져오지 않고 자기 파일만 받는다', async () => {
+    // Given
+    // 앞 녹음의 파일을 기다리는 동안 새 녹음이 시작됐다
     const speechRecognizer = createSpeechRecognizerStub();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
@@ -933,7 +934,7 @@ describe('useVoiceNoteRecording', () => {
       return { speechRecognizer, files, uri, storage, unmount, draftId };
     };
 
-    test('지운 초안의 파일은 받는 즉시 지운다', async () => {
+    it('지운 초안의 파일은 받는 즉시 지운다', async () => {
       // Given
       const { speechRecognizer, files, uri } = await renderListening();
       await fireEvent.press(screen.getByTestId('discard'));
@@ -945,7 +946,7 @@ describe('useVoiceNoteRecording', () => {
       expect(files.hasFile(RECORDING_DIRECTORY, 'recording_a.wav')).toBe(false);
     });
 
-    test('지우고 화면까지 내려간 뒤에 온 파일도 지우고 구독을 푼다', async () => {
+    it('지우고 화면까지 내려간 뒤에 온 파일도 지우고 구독을 푼다', async () => {
       // Given
       const { speechRecognizer, files, uri, storage, unmount } = await renderListening();
       await fireEvent.press(screen.getByTestId('discard'));
@@ -960,8 +961,9 @@ describe('useVoiceNoteRecording', () => {
       expect(speechRecognizer.getListenerCount()).toBe(0);
     });
 
-    test('끝내지 않고 떠났어도 초안이 남아 있으면 파일을 그 초안에 더한다', async () => {
-      // Given 스와이프로 나가 듣던 세션이 끊겼다
+    it('끝내지 않고 떠났어도 초안이 남아 있으면 파일을 그 초안에 더한다', async () => {
+      // Given
+      // 스와이프로 나가 듣던 세션이 끊겼다
       const { speechRecognizer, uri, storage, unmount, draftId } = await renderListening();
       await act(async () => unmount());
 
@@ -974,7 +976,7 @@ describe('useVoiceNoteRecording', () => {
       expect(speechRecognizer.getListenerCount()).toBe(0);
     });
 
-    test('파일이 끝내 오지 않으면 30초 뒤 구독을 푼다', async () => {
+    it('파일이 끝내 오지 않으면 30초 뒤 구독을 푼다', async () => {
       // Given
       const { speechRecognizer, unmount } = await renderListening();
       await act(async () => unmount());
@@ -987,7 +989,7 @@ describe('useVoiceNoteRecording', () => {
     });
   });
 
-  test('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
+  it('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecording();
     await start(speechRecognizer);
@@ -1004,7 +1006,7 @@ describe('useVoiceNoteRecording', () => {
     ]);
   });
 
-  test('화면이 내려간 뒤에도 기다리던 초안 쓰기가 끝나 글자가 남는다', async () => {
+  it('화면이 내려간 뒤에도 기다리던 초안 쓰기가 끝나 글자가 남는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
@@ -1041,8 +1043,9 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
-  test('앱을 다시 열어 저장된 초안으로 들어오면 글자를 보여 주고 시간 뒤로 이어 쓴다', async () => {
-    // Given 앞 세션이 저장한 초안이 기기에 있다
+  it('앱을 다시 열어 저장된 초안으로 들어오면 글자를 보여 주고 시간 뒤로 이어 쓴다', async () => {
+    // Given
+    // 앞 세션이 저장한 초안이 기기에 있다
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
     storage.drafts.save(
@@ -1092,7 +1095,7 @@ describe('useVoiceNoteRecording', () => {
     expect(saved?.sentences[1]?.startMs).toBeGreaterThanOrEqual(40_000);
   });
 
-  test('저장 공간이 모자라 파일을 옮기지 못해도 글자는 넘기고 조각만 빠진다', async () => {
+  it('저장 공간이 모자라 파일을 옮기지 못해도 글자는 넘기고 조각만 빠진다', async () => {
     // Given
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
@@ -1115,7 +1118,7 @@ describe('useVoiceNoteRecording', () => {
     expect(saved?.recordings).toEqual([]);
   });
 
-  test('녹음 폴더를 만들지 못하면 파일 없이 글자만 받으며 듣는다', async () => {
+  it('녹음 폴더를 만들지 못하면 파일 없이 글자만 받으며 듣는다', async () => {
     // Given
     const files = createLocalFileSystemFake();
     const { speechRecognizer } = await renderRecording({ files });

@@ -23,7 +23,7 @@ function DictationProbe({ onEnd }: { onEnd?: () => void }) {
 }
 
 describe('useDictation', () => {
-  test('내가 시작한 받아쓰기 결과만 입력에 넣는다', async () => {
+  it('내가 시작한 받아쓰기 결과만 입력에 넣는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     await renderUi(
@@ -59,7 +59,7 @@ describe('useDictation', () => {
     expect(screen.getByTestId('title')).toHaveTextContent('장보기');
   });
 
-  test('직접 멈춘 뒤 인식기가 client로 답해도 오류를 띄우지 않고 정상으로 끝낸다', async () => {
+  it('직접 멈춘 뒤 인식기가 client로 답해도 오류를 띄우지 않고 정상으로 끝낸다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const onEnd = jest.fn();
@@ -86,7 +86,7 @@ describe('useDictation', () => {
     expect(onEnd).toHaveBeenCalledTimes(1);
   });
 
-  test('멈추지 않았는데 오는 client는 실패라 정상 종료로 알리지 않는다', async () => {
+  it('멈추지 않았는데 오는 client는 실패라 정상 종료로 알리지 않는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const onEnd = jest.fn();
@@ -112,7 +112,7 @@ describe('useDictation', () => {
     expect(onEnd).not.toHaveBeenCalled();
   });
 
-  test('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
+  it('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const { unmount } = await renderUi(

@@ -1,7 +1,7 @@
 import { formatMediaTime } from './format-media-time';
 
 describe('formatMediaTime', () => {
-  test('1분 미만은 초를 두 자리로 맞춘다', () => {
+  it('1분 미만은 초를 두 자리로 맞춘다', () => {
     // Given
     const ms = 9_999;
 
@@ -12,7 +12,7 @@ describe('formatMediaTime', () => {
     expect(text).toBe('0:09');
   });
 
-  test('한 시간부터는 시간을 붙인다', () => {
+  it('한 시간부터는 시간을 붙인다', () => {
     // Given
     const ms = 3_725_000;
 
@@ -23,7 +23,7 @@ describe('formatMediaTime', () => {
     expect(text).toBe('1:02:05');
   });
 
-  test('음수는 0으로 본다', () => {
+  it('음수는 0으로 본다', () => {
     // Given
     const ms = -500;
 

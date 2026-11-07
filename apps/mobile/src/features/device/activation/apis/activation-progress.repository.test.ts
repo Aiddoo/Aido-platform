@@ -1,16 +1,7 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
-
-function createMemoryStorage(initial?: Record<string, string>): SyncStorage {
-  const values = new Map(Object.entries(initial ?? {}));
-  return {
-    get: (key) => values.get(key),
-    set: (key, value) => values.set(key, value),
-    remove: (key) => values.delete(key),
-  };
-}
 
 const identity = {
   accountId: 'account-1',
@@ -20,7 +11,7 @@ const identity = {
 describe('ActivationProgressRepository', () => {
   it('할 일 생성 시각을 최초 한 번만 보존한다', () => {
     // Given
-    const repository = createActivationProgressRepository(createMemoryStorage());
+    const repository = createActivationProgressRepository(createMemorySyncStorage());
 
     // When
     repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
@@ -32,7 +23,7 @@ describe('ActivationProgressRepository', () => {
 
   it('생성 기록이 있어야 완료를 한 번만 claim한다', () => {
     // Given
-    const repository = createActivationProgressRepository(createMemoryStorage());
+    const repository = createActivationProgressRepository(createMemorySyncStorage());
 
     // When
     const beforeCreate = repository.claimActivated(identity, toInstant('2026-08-02T12:00:00.000Z'));
@@ -49,9 +40,8 @@ describe('ActivationProgressRepository', () => {
 
   it('손상된 로컬 값은 빈 진행 상태로 안전하게 복구한다', () => {
     // Given
-    const storage = createMemoryStorage({
-      'aido_activation_v1:account-1:feature-discovery-2026-08': '{broken-json',
-    });
+    const storage = createMemorySyncStorage();
+    storage.set('aido_activation_v1:account-1:feature-discovery-2026-08', '{broken-json');
     const repository = createActivationProgressRepository(storage);
 
     // When
@@ -67,7 +57,7 @@ describe('ActivationProgressRepository', () => {
 
   it('계정과 캠페인이 다르면 진행 상태를 공유하지 않는다', () => {
     // Given
-    const repository = createActivationProgressRepository(createMemoryStorage());
+    const repository = createActivationProgressRepository(createMemorySyncStorage());
     repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
 
     // When
@@ -81,7 +71,7 @@ describe('ActivationProgressRepository', () => {
 
   it('설정에서 푸시 등록을 해제한 시각을 최초 한 번만 보존한다', () => {
     // Given
-    const repository = createActivationProgressRepository(createMemoryStorage());
+    const repository = createActivationProgressRepository(createMemorySyncStorage());
 
     // When
     repository.unlockPushRegistration(identity, toInstant('2026-08-02T10:00:00.000Z'));
@@ -96,10 +86,10 @@ describe('ActivationProgressRepository', () => {
 
   it('저장소 쓰기 실패가 핵심 할 일 동작으로 전파되지 않는다', () => {
     // Given
-    const storage = createMemoryStorage();
-    storage.set = () => {
+    const storage = createMemorySyncStorage();
+    storage.set.mockImplementation(() => {
       throw new Error('storage unavailable');
-    };
+    });
     const repository = createActivationProgressRepository(storage);
 
     // When

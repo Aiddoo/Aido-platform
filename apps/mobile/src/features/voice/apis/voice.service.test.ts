@@ -19,7 +19,7 @@ describe('VoiceService', () => {
     service = new VoiceService(httpClient, logger);
   });
 
-  test('빠른 계획은 Idempotency-Key 헤더와 함께 보내고 한도가 없어도 결과를 돌려준다', async () => {
+  it('빠른 계획은 Idempotency-Key 헤더와 함께 보내고 한도가 없어도 결과를 돌려준다', async () => {
     // Given
     httpClient.post.mockResolvedValue({ ok: true, value: quickPlanDto });
 
@@ -35,14 +35,15 @@ describe('VoiceService', () => {
     expect(result).toMatchObject({ ok: true, value: { featureQuota: null, charged: false } });
   });
 
-  test('응답이 계약과 다르면 내용 없이 매핑 실패를 남기고 ParseError를 던진다', async () => {
+  it('응답이 계약과 다르면 내용 없이 매핑 실패를 남기고 ParseError를 던진다', async () => {
     // Given
     httpClient.post.mockResolvedValue({ ok: true, value: { plan: 1 } });
 
-    // When & Then
-    await expect(
-      service.createQuickPlan({ text: '장보기', source: 'text' }, 'key-1'),
-    ).rejects.toThrow('Invalid createQuickPlan response');
+    // When
+    const result = service.createQuickPlan({ text: '장보기', source: 'text' }, 'key-1');
+
+    // Then
+    await expect(result).rejects.toThrow('Invalid createQuickPlan response');
     expect(logger.error).toHaveBeenCalledWith(
       'voice.plan.mapping-failed',
       undefined,

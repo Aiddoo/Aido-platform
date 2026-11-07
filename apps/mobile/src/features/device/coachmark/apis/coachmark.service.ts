@@ -6,25 +6,25 @@ import type { CoachmarkRepository } from './coachmark.repository';
  * complete는 구독자에게 알려 같은 안내를 보이는 화면이 바로 닫힌다.
  */
 export class CoachmarkService {
-  readonly #repository: Pick<CoachmarkRepository, 'isSeen' | 'markSeen'>;
+  readonly #repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen'>;
   readonly #listeners = new Set<() => void>();
 
-  constructor(repository: Pick<CoachmarkRepository, 'isSeen' | 'markSeen'>) {
+  constructor(repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen'>) {
     this.#repository = repository;
   }
 
   claim = (input: CoachmarkInput): boolean => {
-    if (this.#repository.isSeen(input)) {
+    if (this.#repository.hasSeen(input)) {
       return false;
     }
     this.#repository.markSeen(input);
     return true;
   };
 
-  isPending = (input: CoachmarkInput): boolean => !this.#repository.isSeen(input);
+  isPending = (input: CoachmarkInput): boolean => !this.#repository.hasSeen(input);
 
   complete = (input: CoachmarkInput): void => {
-    if (this.#repository.isSeen(input)) {
+    if (this.#repository.hasSeen(input)) {
       return;
     }
     this.#repository.markSeen(input);

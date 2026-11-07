@@ -56,7 +56,7 @@ export function useActivationChecklist() {
   const now = useMemo(() => getNowInstant(), [todayKey]);
   const isEligible =
     activation.isReady &&
-    ActivationPolicy.isChecklistEligible({
+    ActivationPolicy.shouldOfferChecklist({
       config: activation.config,
       user: activation.user,
       progress: activation.progress,
@@ -78,7 +78,7 @@ export function useActivationChecklist() {
     isVisible:
       isEligible &&
       hasSettledTodoExistence &&
-      ActivationPolicy.isChecklistVisible({
+      ActivationPolicy.shouldShowChecklist({
         config: activation.config,
         user: activation.user,
         progress: activation.progress,

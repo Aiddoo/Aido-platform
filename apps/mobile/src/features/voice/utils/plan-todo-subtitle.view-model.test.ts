@@ -18,7 +18,7 @@ const TODO = {
 
 describe('getPlanTodoSubtitle', () => {
   it('오늘의 종일 할 일은 보일 것이 없다', () => {
-    // Given & When
+    // When
     const subtitle = getPlanTodoSubtitle(TODO, CONTEXT);
 
     // Then
@@ -26,7 +26,7 @@ describe('getPlanTodoSubtitle', () => {
   });
 
   it('다른 날의 할 일은 날짜를 보인다', () => {
-    // Given & When
+    // When
     const subtitle = getPlanTodoSubtitle({ ...TODO, startDate: '2026-11-10' }, CONTEXT);
 
     // Then
@@ -34,7 +34,7 @@ describe('getPlanTodoSubtitle', () => {
   });
 
   it('날짜와 시간을 가운뎃점으로 잇는다', () => {
-    // Given & When
+    // When
     const subtitle = getPlanTodoSubtitle(
       { ...TODO, startDate: '2026-11-10', scheduledTime: '09:30:00' },
       CONTEXT,
@@ -62,7 +62,7 @@ describe('getPlanTodoSubtitle', () => {
   });
 
   it('기간 할 일은 시작과 끝을 보인다', () => {
-    // Given & When
+    // When
     const subtitle = getPlanTodoSubtitle(
       { ...TODO, startDate: '2026-11-10', endDate: '2026-11-12' },
       CONTEXT,

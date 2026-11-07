@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
   cancelAnimation,
+  clamp,
   type SharedValue,
   useDerivedValue,
   useSharedValue,
@@ -77,12 +78,10 @@ function toRgb(color: string) {
 
 function getBarCount(width: number) {
   'worklet';
-  return Math.min(
+  return clamp(
+    Math.floor((width / 2 - VOICE_VISUAL_BARS.startOffset - 1) / VOICE_VISUAL_BARS.step),
+    0,
     VOICE_VISUAL_BARS.maxCount,
-    Math.max(
-      0,
-      Math.floor((width / 2 - VOICE_VISUAL_BARS.startOffset - 1) / VOICE_VISUAL_BARS.step),
-    ),
   );
 }
 
@@ -172,13 +171,13 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   const midColor = toRgb(VOICE_GRADIENT_COLORS.orbCoral);
   const lightColor = toRgb(VOICE_GRADIENT_COLORS.orbPeach);
   const mainRgb = toRgb(mainColor);
-  const isDark = theme === 'dark' ? 1 : 0;
+  const darkFactor = theme === 'dark' ? 1 : 0;
   const uniforms = useDerivedValue(() => ({
     center: [centerX.get(), VOICE_VISUAL.height / 2],
     size: VOICE_VISUAL.orbSize,
     time: time.get(),
     level: smoothed.get(),
-    isDark,
+    isDark: darkFactor,
     mainColor: mainRgb,
     midColor,
     lightColor,

@@ -2,8 +2,7 @@ import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
@@ -13,7 +12,6 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createLoggerStub,
-  createMemorySyncStorage,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -23,7 +21,6 @@ import { Button, OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
 import { useStartVoiceNote } from './use-start-voice-note';
 
 const ACCOUNT_ID = 'user-1';
@@ -65,8 +62,9 @@ async function renderStart({
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
   const analytics = createAnalyticsStub();
-  const coachmarkRepository = createCoachmarkRepository(createMemorySyncStorage());
-  seenCoachmarks.forEach((kind) => coachmarkRepository.markSeen({ accountId: ACCOUNT_ID, kind }));
+  const { syncStorage } = createCoachmarkStorage(
+    seenCoachmarks.map((kind) => ({ accountId: ACCOUNT_ID, kind })),
+  );
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consent));
@@ -87,9 +85,7 @@ async function renderStart({
       queryClient,
       di: {
         httpClient,
-        coachmarkService: new CoachmarkService(coachmarkRepository),
-        recognitionLanguageRepository:
-          createRecognitionLanguageRepository(createMemorySyncStorage()),
+        syncStorage,
         speechRecognizer,
         analytics,
         errorReporter: createErrorReporterStub(),
@@ -190,5 +186,30 @@ describe('useStartVoiceNote', () => {
       expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note', 'ko-KR'),
     );
     expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
+  });
+
+  it('마이크 권한을 얻지 못하면 녹음 화면으로 가지 않는다', async () => {
+    // Given
+    const { speechRecognizer } = await renderStart({
+      consent: PREVIOUS_AGREEMENT,
+      seenCoachmarks: ['ai-consent-renewal'],
+    });
+    speechRecognizer.getPermission.mockResolvedValue({
+      isGranted: false,
+      canAskAgain: true,
+      missing: 'microphone',
+    });
+    speechRecognizer.requestPermission.mockResolvedValue({
+      isGranted: false,
+      canAskAgain: true,
+      missing: 'microphone',
+    });
+
+    // When
+    await fireEvent.press(screen.getByText('시작'));
+
+    // Then
+    await waitFor(() => expect(speechRecognizer.requestPermission).toHaveBeenCalled());
+    expect(router.push).not.toHaveBeenCalled();
   });
 });

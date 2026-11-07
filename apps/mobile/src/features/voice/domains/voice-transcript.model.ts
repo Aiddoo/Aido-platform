@@ -1,4 +1,5 @@
 import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
+import { compact } from 'es-toolkit';
 
 import { LOW_CONFIDENCE_THRESHOLD } from '../constants/voice.constants';
 import type { SpeechResult, VoiceTranscript } from '../schemas/voice-transcript.schema';
@@ -33,7 +34,7 @@ function getFinalText(transcript: VoiceTranscript): string {
 }
 
 export function getTranscriptText(transcript: VoiceTranscript): string {
-  return [getFinalText(transcript), transcript.interim].filter((part) => part.length > 0).join(' ');
+  return compact([getFinalText(transcript), transcript.interim]).join(' ');
 }
 
 export function isTranscriptEmpty(transcript: VoiceTranscript): boolean {
@@ -68,10 +69,11 @@ export function getLowConfidenceWords(
   segments: readonly SpeechSegment[],
   threshold: number = LOW_CONFIDENCE_THRESHOLD,
 ): string[] {
-  return segments
-    .filter(({ confidence }) => confidence > 0 && confidence < threshold)
-    .map(({ text }) => text.trim())
-    .filter((text) => text.length > 0);
+  return compact(
+    segments
+      .filter(({ confidence }) => 0 < confidence && confidence < threshold)
+      .map(({ text }) => text.trim()),
+  );
 }
 
 export const VoiceTranscriptPolicy = {

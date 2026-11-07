@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
@@ -11,7 +11,6 @@ import {
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
-  createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
@@ -23,7 +22,6 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useIsFocused } from 'expo-router';
 
 import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
-import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
 
 const ACCOUNT_ID = 'user-1';
 let logger: ReturnType<typeof createLoggerStub>;
@@ -54,9 +52,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
       queryClient,
       di: {
         httpClient,
-        coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
-        recognitionLanguageRepository:
-          createRecognitionLanguageRepository(createMemorySyncStorage()),
+        syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
         storage: createMemoryStorage(),
         speechRecognizer,
         ...storage.di,
@@ -79,7 +75,7 @@ const say = (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>, tr
   );
 
 describe('녹음 화면', () => {
-  test('화면이 열리면 듣기를 시작하고 무료 사용자의 남은 시간을 서버 값으로 보여 준다', async () => {
+  it('화면이 열리면 듣기를 시작하고 무료 사용자의 남은 시간을 서버 값으로 보여 준다', async () => {
     // Given
     const snapshot = createEntitlementSnapshot({ tier: 'FREE' });
 
@@ -91,7 +87,7 @@ describe('녹음 화면', () => {
     expect(screen.getByTestId('voice-note-pause')).toBeTruthy();
   });
 
-  test('알림을 눌러 다른 화면이 올라오면 듣기를 멈추고 들은 내용을 남긴다', async () => {
+  it('알림을 눌러 다른 화면이 올라오면 듣기를 멈추고 들은 내용을 남긴다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -106,7 +102,7 @@ describe('녹음 화면', () => {
     expect(screen.getByText('첫 문장.')).toBeTruthy();
   });
 
-  test('일시정지하면 들은 내용이 남아 있다고 알리고 이어서 녹음과 여기까지 정리를 보인다', async () => {
+  it('일시정지하면 들은 내용이 남아 있다고 알리고 이어서 녹음과 여기까지 정리를 보인다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -121,7 +117,7 @@ describe('녹음 화면', () => {
     expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
   });
 
-  test('들은 내용 없이 일시정지하면 남아 있다고 말하지 않고 닫기와 이어서 녹음을 보인다', async () => {
+  it('들은 내용 없이 일시정지하면 남아 있다고 말하지 않고 닫기와 이어서 녹음을 보인다', async () => {
     // Given
     await renderRecordScreen();
 
@@ -135,7 +131,7 @@ describe('녹음 화면', () => {
     expect(screen.getByTestId('voice-note-resume')).toBeTruthy();
   });
 
-  test('들은 내용 없이 멈춘 화면에서 닫으면 초안 없이 나간다', async () => {
+  it('들은 내용 없이 멈춘 화면에서 닫으면 초안 없이 나간다', async () => {
     // Given
     const { storage } = await renderRecordScreen();
     await fireEvent.press(screen.getByTestId('voice-note-pause'));
@@ -148,7 +144,7 @@ describe('녹음 화면', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
-  test('글자를 못 받고 인식이 실패하면 남아 있다고 말하지 않고 닫을 수 있다', async () => {
+  it('글자를 못 받고 인식이 실패하면 남아 있다고 말하지 않고 닫을 수 있다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
 
@@ -162,7 +158,7 @@ describe('녹음 화면', () => {
     expect(screen.getByTestId('voice-note-stopped-close')).toBeTruthy();
   });
 
-  test('들은 내용 없이 끝내기를 누르면 이유를 묻고 그대로 두면 계속 듣는다', async () => {
+  it('들은 내용 없이 끝내기를 누르면 이유를 묻고 그대로 두면 계속 듣는다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
 
@@ -177,7 +173,7 @@ describe('녹음 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  test('들은 내용 없이 끝내기를 확인하면 남기지 않고 나간다', async () => {
+  it('들은 내용 없이 끝내기를 확인하면 남기지 않고 나간다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecordScreen();
     await act(async () => {
@@ -195,7 +191,7 @@ describe('녹음 화면', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
-  test('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
+  it('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
     // Given
     jest.useFakeTimers({ advanceTimers: true });
     await renderRecordScreen(createEntitlementSnapshot({ tier: 'FREE' }));
@@ -211,7 +207,7 @@ describe('녹음 화면', () => {
     jest.useRealTimers();
   });
 
-  test('끝내면 초안을 저장하고 정리 화면으로 바꾼다', async () => {
+  it('끝내면 초안을 저장하고 정리 화면으로 바꾼다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -233,7 +229,7 @@ describe('녹음 화면', () => {
     jest.clearAllMocks();
   });
 
-  test('글자가 없을 때 닫으면 초안 없이 바로 나간다', async () => {
+  it('글자가 없을 때 닫으면 초안 없이 바로 나간다', async () => {
     // Given
     const { storage } = await renderRecordScreen();
 
@@ -245,7 +241,7 @@ describe('녹음 화면', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
-  test('글자가 있을 때 닫으면 바로 나가지 않고 묻는다', async () => {
+  it('글자가 있을 때 닫으면 바로 나가지 않고 묻는다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -260,7 +256,7 @@ describe('녹음 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  test('이어서 녹음을 누른 직후 닫아도 글자가 있으면 지우지 않고 묻는다', async () => {
+  it('이어서 녹음을 누른 직후 닫아도 글자가 있으면 지우지 않고 묻는다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -279,7 +275,7 @@ describe('녹음 화면', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toHaveLength(1);
   });
 
-  test('듣기 시작 전에 끝내기를 확인해도 글자를 들고 정리 화면으로 넘어간다', async () => {
+  it('듣기 시작 전에 끝내기를 확인해도 글자를 들고 정리 화면으로 넘어간다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -300,7 +296,7 @@ describe('녹음 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  test('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
+  it('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
     // Given
     jest.useFakeTimers({ advanceTimers: true });
     const { speechRecognizer } = await renderRecordScreen();
@@ -317,7 +313,7 @@ describe('녹음 화면', () => {
     jest.useRealTimers();
   });
 
-  test('언어를 바꿀 때 그 언어에 필요한 권한을 거절하면 듣던 언어로 이어 간다', async () => {
+  it('언어를 바꿀 때 그 언어에 필요한 권한을 거절하면 듣던 언어로 이어 간다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
     const denied = { isGranted: false, canAskAgain: true, missing: 'microphone' } as const;

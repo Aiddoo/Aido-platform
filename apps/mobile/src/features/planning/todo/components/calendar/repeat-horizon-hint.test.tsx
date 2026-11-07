@@ -12,6 +12,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -53,7 +54,7 @@ async function renderHint({
   const { userService } = createTestDi({ httpClient: userHttpClient });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userService.getCurrentUser()));
   const syncStorage = createMemoryObservableSyncStorage();
-  const coachmarkRepository = createCoachmarkRepository(syncStorage);
+  const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
   if (isSeen) {
     coachmarkRepository.markSeen({ accountId, kind: 'repeat-horizon' });
   }
@@ -78,7 +79,7 @@ async function renderHint({
 
   return {
     analytics,
-    isCoachmarkPending: () => !coachmarkRepository.isSeen({ accountId, kind: 'repeat-horizon' }),
+    isCoachmarkPending: () => !coachmarkRepository.hasSeen({ accountId, kind: 'repeat-horizon' }),
     httpClient,
     moveTo: (date: string) => rerender(hint(date)),
   };

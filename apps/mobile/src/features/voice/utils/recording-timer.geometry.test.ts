@@ -1,7 +1,7 @@
 import { getRecordingRingLayout } from './recording-timer.geometry';
 
 describe('getRecordingRingLayout', () => {
-  test.each([
+  it.each([
     { name: '큰 폰은 원래 크기', windowHeight: 915, size: 156 },
     { name: '보통 폰도 원래 크기', windowHeight: 700, size: 156 },
     { name: '360x640 폰은 비율대로 조금 줄인다', windowHeight: 640, size: 154 },
@@ -15,7 +15,7 @@ describe('getRecordingRingLayout', () => {
     expect(result.size).toBe(size);
   });
 
-  test('선을 포함한 원이 그리는 칸 안에 들어가고 글자 칸은 원 안쪽에 있다', () => {
+  it('선을 포함한 원이 그리는 칸 안에 들어가고 글자 칸은 원 안쪽에 있다', () => {
     // When
     const { size, radius, strokeWidth, textWidth } = getRecordingRingLayout(640);
 

@@ -23,6 +23,7 @@ import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-query';
+import { match } from 'ts-pattern';
 
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
@@ -93,11 +94,12 @@ export function useApplyActionPlanMutationOptions({
         onMemoChanged();
       }
       toast.success(
-        todoCount > 0 && hasMemo
-          ? t('voicePlan:applied.todosAndMemo', { count: todoCount })
-          : todoCount > 0
-            ? t('voicePlan:applied.todos', { count: todoCount })
-            : t('voicePlan:applied.memo'),
+        match({ hasTodos: todoCount > 0, hasMemo })
+          .with({ hasTodos: true, hasMemo: true }, () =>
+            t('voicePlan:applied.todosAndMemo', { count: todoCount }),
+          )
+          .with({ hasTodos: true }, () => t('voicePlan:applied.todos', { count: todoCount }))
+          .otherwise(() => t('voicePlan:applied.memo')),
       );
       trackEvent('voice_plan_applied', {
         source: toAnalyticsSource(source),

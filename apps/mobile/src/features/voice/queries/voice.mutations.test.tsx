@@ -72,8 +72,8 @@ async function renderApply(
 }
 
 describe('useApplyActionPlanMutationOptions', () => {
-  test('메모 계획은 원본 메모를 함께 보내고 메모가 바뀌었다고 알리며 예전 전환 이벤트도 보낸다', async () => {
-    // Given & When
+  it('메모 계획은 원본 메모를 함께 보내고 메모가 바뀌었다고 알리며 예전 전환 이벤트도 보낸다', async () => {
+    // When
     const { analytics, httpClient, onMemoChanged } = await renderApply(42);
 
     // Then
@@ -95,8 +95,8 @@ describe('useApplyActionPlanMutationOptions', () => {
     expect(onMemoChanged).toHaveBeenCalledTimes(1);
   });
 
-  test('메모가 아닌 계획은 원본 메모를 보내지 않고 전환 이벤트도 보내지 않는다', async () => {
-    // Given & When
+  it('메모가 아닌 계획은 원본 메모를 보내지 않고 전환 이벤트도 보내지 않는다', async () => {
+    // When
     const { analytics, httpClient, onMemoChanged } = await renderApply(null);
 
     // Then
@@ -114,8 +114,8 @@ describe('useApplyActionPlanMutationOptions', () => {
     );
   });
 
-  test('원본 메모가 이미 없어 저장하지 못하면 메모가 바뀌었다고 알려 목록을 다시 읽게 한다', async () => {
-    // Given & When
+  it('원본 메모가 이미 없어 저장하지 못하면 메모가 바뀌었다고 알려 목록을 다시 읽게 한다', async () => {
+    // When
     const { onMemoChanged } = await renderApply(
       42,
       err(new ApiError('MEMO_2001', '메모 없음', 404)),

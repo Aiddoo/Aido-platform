@@ -50,7 +50,7 @@ async function renderBar(player: VoiceNotePlayer) {
 }
 
 describe('VoiceNotePlayerBar', () => {
-  test('드래그를 끝낸 위치로 옮긴다', async () => {
+  it('드래그를 끝낸 위치로 옮긴다', async () => {
     // Given
     const { player } = createPlayerStub();
     await renderBar(player);
@@ -69,7 +69,7 @@ describe('VoiceNotePlayerBar', () => {
     expect(player.seekTo).toHaveBeenCalledWith(60_000);
   });
 
-  test('화면 밖까지 끌어도 노트 범위 안으로 옮긴다', async () => {
+  it('화면 밖까지 끌어도 노트 범위 안으로 옮긴다', async () => {
     // Given
     const { player } = createPlayerStub();
     await renderBar(player);
@@ -86,7 +86,7 @@ describe('VoiceNotePlayerBar', () => {
     expect(player.seekTo).toHaveBeenCalledWith(120_000);
   });
 
-  test('화면이 사라지면 재생 위치 구독을 푼다', async () => {
+  it('화면이 사라지면 재생 위치 구독을 푼다', async () => {
     // Given
     const { player, getListenerCount } = createPlayerStub();
     const { unmount } = await renderBar(player);
@@ -98,7 +98,7 @@ describe('VoiceNotePlayerBar', () => {
     expect(getListenerCount()).toBe(0);
   });
 
-  test('녹음을 쓸 수 없으면 재생 대신 안내를 보여 준다', async () => {
+  it('녹음을 쓸 수 없으면 재생 대신 안내를 보여 준다', async () => {
     // Given
     const { player } = createPlayerStub();
 

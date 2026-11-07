@@ -1,5 +1,5 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
@@ -14,13 +14,7 @@ const config: FeatureCampaignConfig = {
 };
 
 function createService(): ActivationService {
-  const values = new Map<string, string>();
-  const storage: SyncStorage = {
-    get: (key) => values.get(key),
-    set: (key, value) => values.set(key, value),
-    remove: (key) => values.delete(key),
-  };
-  return new ActivationService(createActivationProgressRepository(storage));
+  return new ActivationService(createActivationProgressRepository(createMemorySyncStorage()));
 }
 
 describe('ActivationService', () => {

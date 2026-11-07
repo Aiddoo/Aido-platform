@@ -6,15 +6,10 @@ import { createStoreReviewRepository } from './store-review.repository';
 
 const KEY = 'aido_store_review_prompt_v1:account-a';
 
-const createMemoryStorage = () => {
-  const storage = createMemorySyncStorage();
-  return { storage, values: storage };
-};
-
 describe('StoreReviewRepository', () => {
   it('계정별로 할 일을 끝낸 날과 요청 시각을 보존한다', () => {
     // Given
-    const { storage, values } = createMemoryStorage();
+    const storage = createMemorySyncStorage();
     const repository = createStoreReviewRepository(storage);
 
     // When
@@ -24,18 +19,19 @@ describe('StoreReviewRepository', () => {
     );
 
     // Then
-    expect(repository.read('account-a')).toEqual({
+    expect(repository.get('account-a')).toEqual({
       activeDays: ['2026-10-27'],
       requestedAt: [toInstant('2026-10-27T12:00:00.000Z')],
     });
-    expect(repository.read('account-b')).toEqual({ activeDays: [], requestedAt: [] });
-    expect(values.keys()).toEqual([KEY]);
+    expect(repository.get('account-b')).toEqual({ activeDays: [], requestedAt: [] });
+    expect(storage.keys()).toEqual([KEY]);
   });
 
   it('이전 저장 모양은 읽을 때 새 모양으로 옮기고 지난 요청을 한 번의 요청으로 이어받는다', () => {
-    // Given 앱 안 확인 창을 쓰던 버전의 저장값
-    const { storage, values } = createMemoryStorage();
-    values.set(
+    // Given
+    // 앱 안 확인 창을 쓰던 버전의 저장값
+    const storage = createMemorySyncStorage();
+    storage.set(
       KEY,
       JSON.stringify({
         completions: [
@@ -50,14 +46,14 @@ describe('StoreReviewRepository', () => {
     const repository = createStoreReviewRepository(storage);
 
     // When
-    const state = repository.read('account-a');
+    const state = repository.get('account-a');
 
     // Then
     expect(state).toEqual({
       activeDays: ['2026-08-10', '2026-08-11'],
       requestedAt: [toInstant('2026-08-12T00:00:00.000Z')],
     });
-    expect(JSON.parse(values.get(KEY) ?? 'null')).toEqual({
+    expect(JSON.parse(storage.get(KEY) ?? 'null')).toEqual({
       version: 2,
       activeDays: ['2026-08-10', '2026-08-11'],
       requestedAt: ['2026-08-12T00:00:00.000Z'],
@@ -66,8 +62,8 @@ describe('StoreReviewRepository', () => {
 
   it('리뷰를 요청받지 않은 이전 사용자는 끝낸 날만 이어받는다', () => {
     // Given
-    const { storage, values } = createMemoryStorage();
-    values.set(
+    const storage = createMemorySyncStorage();
+    storage.set(
       KEY,
       JSON.stringify({
         completions: [{ todoId: 1, localDate: '2026-08-10' }],
@@ -77,7 +73,7 @@ describe('StoreReviewRepository', () => {
     );
 
     // When
-    const state = createStoreReviewRepository(storage).read('account-a');
+    const state = createStoreReviewRepository(storage).get('account-a');
 
     // Then
     expect(state).toEqual({ activeDays: ['2026-08-10'], requestedAt: [] });
@@ -89,7 +85,7 @@ describe('StoreReviewRepository', () => {
     storage.get.mockReturnValue('{broken');
 
     // When
-    const state = createStoreReviewRepository(storage).read('account-a');
+    const state = createStoreReviewRepository(storage).get('account-a');
 
     // Then
     expect(state).toEqual({ activeDays: [], requestedAt: [] });

@@ -1,13 +1,8 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import {
-  createAnalyticsStub,
-  createHttpClientStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
@@ -35,12 +30,9 @@ async function renderMarkControl({
 }) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-  const coachmarkService = new CoachmarkService(
-    createCoachmarkRepository(createMemorySyncStorage()),
+  const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage(
+    isSeen ? [{ accountId, kind: 'voice-note-mark' }] : [],
   );
-  if (isSeen) {
-    coachmarkService.complete({ accountId, kind: 'voice-note-mark' });
-  }
   const analytics = createAnalyticsStub();
   const onPress = jest.fn();
 
@@ -48,11 +40,11 @@ async function renderMarkControl({
     <Suspense>
       <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onPress} />
     </Suspense>,
-    { di: { httpClient, coachmarkService, analytics } },
+    { di: { httpClient, syncStorage, analytics } },
   );
   await screen.findByTestId('voice-note-mark');
 
-  return { analytics, coachmarkService, onPress };
+  return { analytics, coachmarkRepository, onPress };
 }
 
 describe('VoiceNoteMarkControl', () => {
@@ -94,7 +86,7 @@ describe('VoiceNoteMarkControl', () => {
 
   it('안내가 떠 있어도 첫 탭이 표시하고 안내를 끝낸다', async () => {
     // Given
-    const { analytics, coachmarkService, onPress } = await renderMarkControl({});
+    const { analytics, coachmarkRepository, onPress } = await renderMarkControl({});
     await waitFor(() => expect(analytics.trackEvent).toHaveBeenCalled());
 
     // When
@@ -105,7 +97,7 @@ describe('VoiceNoteMarkControl', () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_dismissed', {
       kind: 'voice-note-mark',
     });
-    expect(coachmarkService.isPending({ accountId, kind: 'voice-note-mark' })).toBe(false);
+    expect(coachmarkRepository.hasSeen({ accountId, kind: 'voice-note-mark' })).toBe(true);
   });
 
   it('처음 안내가 끝나면 라벨을 눌러 같은 설명을 다시 본다', async () => {
@@ -122,7 +114,7 @@ describe('VoiceNoteMarkControl', () => {
 
   it('처음 안내를 X로 닫아도 다시 열리지 않는다', async () => {
     // Given
-    const { coachmarkService, onPress } = await renderMarkControl({});
+    const { coachmarkRepository, onPress } = await renderMarkControl({});
     await screen.findByTestId('hint-popover');
     await layoutHint();
 
@@ -131,7 +123,7 @@ describe('VoiceNoteMarkControl', () => {
 
     // Then
     await waitFor(() => expect(screen.queryByText('중요한 말이 나오면 눌러보세요')).toBeNull());
-    expect(coachmarkService.isPending({ accountId, kind: 'voice-note-mark' })).toBe(false);
+    expect(coachmarkRepository.hasSeen({ accountId, kind: 'voice-note-mark' })).toBe(true);
     expect(onPress).not.toHaveBeenCalled();
   });
 

@@ -73,7 +73,7 @@ export function recordTodoCompletionForActivation({
   return result.event;
 }
 
-export function unlockPushRegistrationForActivation({
+export function tryUnlockPushRegistration({
   queryClient,
   service,
   now = getNowInstant(),

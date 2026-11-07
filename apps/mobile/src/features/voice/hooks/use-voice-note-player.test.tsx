@@ -58,7 +58,7 @@ const renderPlayer = async () => {
 const flush = () => act(async () => undefined);
 
 describe('useVoiceNotePlayer', () => {
-  test('조각을 순서대로 플레이리스트에 넣고 위치는 노트 시계로 알린다', async () => {
+  it('조각을 순서대로 플레이리스트에 넣고 위치는 노트 시계로 알린다', async () => {
     // Given
     const playlist = await renderPlayer();
 
@@ -70,7 +70,7 @@ describe('useVoiceNotePlayer', () => {
     expect(screen.getByTestId('position')).toHaveTextContent('62000');
   });
 
-  test('종료 이벤트 바로 뒤에 다른 상태가 이어 와도 끝난 것을 놓치지 않고 처음부터 다시 재생한다', async () => {
+  it('종료 이벤트 바로 뒤에 다른 상태가 이어 와도 끝난 것을 놓치지 않고 처음부터 다시 재생한다', async () => {
     // Given
     const playlist = await renderPlayer();
 
@@ -95,7 +95,7 @@ describe('useVoiceNotePlayer', () => {
     expect(playlist.play).toHaveBeenCalledTimes(1);
   });
 
-  test('파일 끝에 멈춰 있으면 종료 이벤트 없이도 처음부터 다시 재생한다', async () => {
+  it('파일 끝에 멈춰 있으면 종료 이벤트 없이도 처음부터 다시 재생한다', async () => {
     // Given
     const playlist = await renderPlayer();
     await act(async () =>
@@ -110,7 +110,7 @@ describe('useVoiceNotePlayer', () => {
     expect(playlist.play).not.toHaveBeenCalled();
   });
 
-  test('다른 조각으로 가면 새 조각이 열린 뒤에만 위치를 옮기고 재생한다', async () => {
+  it('다른 조각으로 가면 새 조각이 열린 뒤에만 위치를 옮기고 재생한다', async () => {
     // Given
     const playlist = await renderPlayer();
 
@@ -134,7 +134,7 @@ describe('useVoiceNotePlayer', () => {
     expect(playlist.play).toHaveBeenCalledTimes(1);
   });
 
-  test('이벤트가 교체 전 값을 들고 와도 플레이어가 아직 준비 전이면 옮기지 않는다', async () => {
+  it('이벤트가 교체 전 값을 들고 와도 플레이어가 아직 준비 전이면 옮기지 않는다', async () => {
     // Given
     const playlist = await renderPlayer();
     await fireEvent.press(screen.getByTestId('play-from-second'));
@@ -153,7 +153,7 @@ describe('useVoiceNotePlayer', () => {
     expect(playlist.seekTo).not.toHaveBeenCalled();
   });
 
-  test('지금 조각 안에서 옮기면 바로 옮겨 재생한다', async () => {
+  it('지금 조각 안에서 옮기면 바로 옮겨 재생한다', async () => {
     // Given
     const playlist = await renderPlayer();
 

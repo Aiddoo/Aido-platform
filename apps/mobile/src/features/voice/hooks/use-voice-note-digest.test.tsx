@@ -5,7 +5,7 @@ import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -82,7 +82,7 @@ async function renderDigest() {
       queryClient,
       di: {
         httpClient,
-        coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
+        syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
         storage: createMemoryStorage(),
         ...storage.di,
         analytics: createAnalyticsStub(),
@@ -108,7 +108,7 @@ const getIdempotencyKey = (
 ) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
 describe('useVoiceNoteDigest', () => {
-  test('정리에 성공하면 요약과 카드 초안을 기기 초안에 담는다', async () => {
+  it('정리에 성공하면 요약과 카드 초안을 기기 초안에 담는다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();
     httpClient.post.mockResolvedValue(ok(createDigestDto()));
@@ -123,7 +123,7 @@ describe('useVoiceNoteDigest', () => {
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/voice-notes/digest');
   });
 
-  test('동의 안내에서 나중에를 누르면 동의가 필요하다고 보이고 다시 정리하면 안내를 다시 띄워 이어 간다', async () => {
+  it('동의 안내에서 나중에를 누르면 동의가 필요하다고 보이고 다시 정리하면 안내를 다시 띄워 이어 간다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
@@ -151,7 +151,7 @@ describe('useVoiceNoteDigest', () => {
     );
   });
 
-  test('기다리는 사이 초안을 지웠으면 늦은 응답이 초안을 되살리지 않는다', async () => {
+  it('기다리는 사이 초안을 지웠으면 늦은 응답이 초안을 되살리지 않는다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();
     let respond = () => {};
@@ -174,7 +174,7 @@ describe('useVoiceNoteDigest', () => {
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeUndefined();
   });
 
-  test('오프라인이어도 멈추지 않고 네트워크 실패로 알리며 글자를 그대로 둔다', async () => {
+  it('오프라인이어도 멈추지 않고 네트워크 실패로 알리며 글자를 그대로 둔다', async () => {
     // Given
     onlineManager.setOnline(false);
     const { httpClient, storage } = await renderDigest();
@@ -190,7 +190,7 @@ describe('useVoiceNoteDigest', () => {
     onlineManager.setOnline(true);
   });
 
-  test('오프라인이 확실하면 서버에 보내지 않고 바로 네트워크 실패로 알린다', async () => {
+  it('오프라인이 확실하면 서버에 보내지 않고 바로 네트워크 실패로 알린다', async () => {
     // Given
     onlineManager.setOnline(false);
     const { httpClient } = await renderDigest();
@@ -204,7 +204,7 @@ describe('useVoiceNoteDigest', () => {
     onlineManager.setOnline(true);
   });
 
-  test('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {
+  it('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();
     httpClient.post.mockResolvedValue(
@@ -222,7 +222,7 @@ describe('useVoiceNoteDigest', () => {
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digest).toBeNull();
   });
 
-  test('차감 여부를 서버가 말하지 않은 실패면 차감되지 않았다고 말하지 않는다', async () => {
+  it('차감 여부를 서버가 말하지 않은 실패면 차감되지 않았다고 말하지 않는다', async () => {
     // Given
     const { httpClient } = await renderDigest();
     httpClient.post.mockResolvedValue(err(new ApiError('AI_1301', '실패', 503)));
@@ -236,7 +236,7 @@ describe('useVoiceNoteDigest', () => {
     );
   });
 
-  test('다시 정리는 같은 키로 보내 두 번 차감되지 않고, 키는 초안에 남아 앱을 다시 켜도 같다', async () => {
+  it('다시 정리는 같은 키로 보내 두 번 차감되지 않고, 키는 초안에 남아 앱을 다시 켜도 같다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1301', '실패', 503)));
@@ -275,7 +275,7 @@ describe('VoiceNoteDigestButton', () => {
     });
   }
 
-  test('무료는 한 번 쓰고 이번 달 몇 번 남는지 서버 값으로 보여 준다', async () => {
+  it('무료는 한 번 쓰고 이번 달 몇 번 남는지 서버 값으로 보여 준다', async () => {
     // Given
     const snapshot = createEntitlementSnapshot({ tier: 'FREE', used: { VOICE_NOTE: 1 } });
 
@@ -289,7 +289,7 @@ describe('VoiceNoteDigestButton', () => {
     );
   });
 
-  test('프리미엄·관리자는 보조 문구를 숨긴다', async () => {
+  it('프리미엄·관리자는 보조 문구를 숨긴다', async () => {
     // Given
     const snapshot = createEntitlementSnapshot({ tier: 'PREMIUM' });
 

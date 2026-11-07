@@ -74,7 +74,7 @@ function getActivationIdentity(
 
 function isWithinTimeWindow(createdAt: number, now: number, window: number): boolean {
   const elapsed = now - createdAt;
-  return elapsed >= 0 && elapsed < window;
+  return 0 <= elapsed && elapsed < window;
 }
 
 function calculateElapsedDays(createdAt: number, now: number): number {
@@ -82,7 +82,7 @@ function calculateElapsedDays(createdAt: number, now: number): number {
 }
 
 /** 체크리스트 대상인지. 신규 코호트이고 활성화 전이며 가입 후 7일 안이어야 한다 */
-function isChecklistEligible({ config, user, progress, now }: ChecklistEligibilityInput): boolean {
+function shouldOfferChecklist({ config, user, progress, now }: ChecklistEligibilityInput): boolean {
   if (!isNewUserCohort(config, user) || !user || progress.activatedAt) {
     return false;
   }
@@ -112,8 +112,8 @@ function getChecklistSteps(
 }
 
 /** 대상이고 필수 단계를 아직 다 끝내지 않았을 때만 보인다. 선택 단계(친구 초대)는 카드를 붙잡아 두지 않는다 */
-function isChecklistVisible({ steps, ...input }: ChecklistVisibilityInput): boolean {
-  return isChecklistEligible(input) && !(steps.hasCreatedTodo && steps.hasCompletedTodo);
+function shouldShowChecklist({ steps, ...input }: ChecklistVisibilityInput): boolean {
+  return shouldOfferChecklist(input) && !(steps.hasCreatedTodo && steps.hasCompletedTodo);
 }
 
 function shouldRegisterPushAutomatically({
@@ -142,7 +142,7 @@ export const ActivationPolicy = {
   getActivationIdentity,
   getChecklistSteps,
   getDaysSinceSignup,
-  isChecklistEligible,
-  isChecklistVisible,
+  shouldOfferChecklist,
+  shouldShowChecklist,
   shouldRegisterPushAutomatically,
 } as const;

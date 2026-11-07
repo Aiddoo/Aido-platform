@@ -132,7 +132,7 @@ async function renderPlan(
 }
 
 describe('PlanReview', () => {
-  test('할 일이 전부 이미 있으면 메모로 정리했다고 말하지 않고 버튼도 메모 저장이 아니다', async () => {
+  it('할 일이 전부 이미 있으면 메모로 정리했다고 말하지 않고 버튼도 메모 저장이 아니다', async () => {
     // Given
     const plan = { ...PLAN, actions: [createTodoAction({ duplicateOfTodoId: 9 })] };
 
@@ -146,8 +146,8 @@ describe('PlanReview', () => {
     expect(screen.queryByText('메모 저장')).toBeNull();
   });
 
-  test('반복은 같은 요약 문구로 보이고 고른 카드 수가 버튼에 나타난다', async () => {
-    // Given & When
+  it('반복은 같은 요약 문구로 보이고 고른 카드 수가 버튼에 나타난다', async () => {
+    // When
     await renderPlan();
 
     // Then
@@ -155,7 +155,7 @@ describe('PlanReview', () => {
     expect(screen.getByText('할 일 2개 추가')).toBeTruthy();
   });
 
-  test('체크를 끄면 추가할 개수가 줄어든다', async () => {
+  it('체크를 끄면 추가할 개수가 줄어든다', async () => {
     // Given
     await renderPlan();
 
@@ -176,7 +176,7 @@ describe('PlanReview', () => {
       ],
     };
 
-    test('카테고리 머리글을 한 번씩만 보이고 카드를 그 아래로 모은다', async () => {
+    it('카테고리 머리글을 한 번씩만 보이고 카드를 그 아래로 모은다', async () => {
       // When
       await renderPlan(SPLIT_PLAN);
 
@@ -188,7 +188,7 @@ describe('PlanReview', () => {
       );
     });
 
-    test('모아 보여도 고친 값은 그 카드의 자리에 들어간다', async () => {
+    it('모아 보여도 고친 값은 그 카드의 자리에 들어간다', async () => {
       // Given
       const onValues = jest.fn();
       await renderPlan(SPLIT_PLAN, true, onValues);
@@ -213,7 +213,7 @@ describe('PlanReview', () => {
       );
     });
 
-    test('저장은 묶어 보인 순서대로 보낸다', async () => {
+    it('저장은 묶어 보인 순서대로 보낸다', async () => {
       // Given
       const httpClient = createHttpClientStub();
       await renderPlan(SPLIT_PLAN, true, undefined, httpClient);
@@ -230,7 +230,7 @@ describe('PlanReview', () => {
     });
   });
 
-  test('제목이 비어 저장할 수 없는 카드가 있으면 추가 버튼을 막는다', async () => {
+  it('제목이 비어 저장할 수 없는 카드가 있으면 추가 버튼을 막는다', async () => {
     // Given
     await renderPlan({
       ...PLAN,
@@ -241,7 +241,7 @@ describe('PlanReview', () => {
     await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeDisabled());
   });
 
-  test('성공 응답의 charged가 false여도 카드가 있으면 차감 문구를 보이지 않는다', async () => {
+  it('성공 응답의 charged가 false여도 카드가 있으면 차감 문구를 보이지 않는다', async () => {
     // Given
     const isCharged = false;
 
@@ -253,7 +253,7 @@ describe('PlanReview', () => {
     expect(screen.queryByText('횟수는 차감되지 않았어요')).toBeNull();
   });
 
-  test('카드 제목을 지워도 확인 전에는 폼과 초안에 빈 제목이 들어가지 않는다', async () => {
+  it('카드 제목을 지워도 확인 전에는 폼과 초안에 빈 제목이 들어가지 않는다', async () => {
     // Given
     const onValues = jest.fn();
     await renderPlan(PLAN, true, onValues);
@@ -271,7 +271,7 @@ describe('PlanReview', () => {
     expect(screen.getByTestId('plan-review-apply')).toBeEnabled();
   });
 
-  test('카드 제목을 고치고 확인하면 그때 목록에 반영된다', async () => {
+  it('카드 제목을 고치고 확인하면 그때 목록에 반영된다', async () => {
     // Given
     await renderPlan();
     await fireEvent.press(await screen.findByText('장보기'));

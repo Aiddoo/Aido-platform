@@ -1,9 +1,9 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { FEATURE_CAMPAIGN_QUERY_KEYS } from '@src/features/app-config/feature-campaign/constants/feature-campaign-query-keys';
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { toInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
@@ -14,17 +14,11 @@ import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
 import {
   recordTodoCompletionForActivation,
   recordTodoCreatedForActivation,
-  unlockPushRegistrationForActivation,
+  tryUnlockPushRegistration,
 } from './activation-cache';
 
 function createService(): ActivationService {
-  const values = new Map<string, string>();
-  const storage: SyncStorage = {
-    get: (key) => values.get(key),
-    set: (key, value) => values.set(key, value),
-    remove: (key) => values.delete(key),
-  };
-  return new ActivationService(createActivationProgressRepository(storage));
+  return new ActivationService(createActivationProgressRepository(createMemorySyncStorage()));
 }
 
 const config: FeatureCampaignConfig = {
@@ -124,7 +118,7 @@ describe('activation mutation bridge', () => {
     const service = createService();
 
     // When
-    const unlocked = unlockPushRegistrationForActivation({
+    const unlocked = tryUnlockPushRegistration({
       queryClient,
       service,
       now: toInstant('2026-08-02T00:00:00.000Z'),
@@ -156,7 +150,7 @@ describe('activation mutation bridge', () => {
     });
 
     // When
-    const unlocked = unlockPushRegistrationForActivation({
+    const unlocked = tryUnlockPushRegistration({
       queryClient,
       service: createService(),
       now: toInstant('2026-08-02T00:00:00.000Z'),

@@ -200,7 +200,7 @@ export function createTestDi({
     logger,
   });
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
-  const coachmarkRepository = createCoachmarkRepository(syncStorage);
+  const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
   const pendingRedemptionRepository = createPendingRedemptionRepository(syncStorage);
   const deviceTimezoneService = new DeviceTimezoneService(
     createDeviceTimezoneRepository(syncStorage),

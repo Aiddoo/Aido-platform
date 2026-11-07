@@ -52,6 +52,11 @@ export function useVoiceNoteRecording({
   const draftRepository = useVoiceNoteDraftRepository();
   const recordingRepository = useVoiceRecordingRepository();
   const idGenerator = useIdGenerator();
+  const offlineModelPrompt = useOfflineModelPromptRepository();
+  const toast = useAppToast();
+  const confirmDialog = useConfirmDialog();
+  const errorReporter = useErrorReporter();
+  const { trackEvent } = useTrack();
 
   const [seedNote] = useState(() =>
     seedDraftId == null ? undefined : draftRepository.find(accountId, seedDraftId),
@@ -183,7 +188,47 @@ export function useVoiceNoteRecording({
   /** 확인을 기다리는 사이 화면이 내려갔거나 초안을 지웠다. 묻지도 듣지도 않는다 */
   const isStartAbandoned = () => isUnmountedRef.current || intake.isDiscarded();
 
-  const offerOnDeviceModel = useOfflineModelOffer(accountId, isStartAbandoned);
+  // Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
+  // 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
+  const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
+    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(
+      startLocale,
+      'note',
+    );
+    if (isStartAbandoned()) {
+      return;
+    }
+    if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
+      return;
+    }
+    const shouldDownload = await confirmDialog.openAsync({
+      title: t('voiceNote:offlineModel.title'),
+      description: t('voiceNote:offlineModel.description'),
+      confirmLabel: t('voiceNote:offlineModel.confirm'),
+      cancelLabel: t('voiceNote:offlineModel.cancel'),
+    });
+    if (isStartAbandoned()) {
+      return;
+    }
+    if (!shouldDownload) {
+      offlineModelPrompt.saveDeclined(accountId, startLocale);
+      trackEvent('voice_offline_model_requested', { locale: startLocale, result: 'declined' });
+      return;
+    }
+    const result = await speechRecognizer.requestOfflineModel(startLocale);
+    if (result !== 'downloaded') {
+      offlineModelPrompt.saveDeclined(accountId, startLocale);
+    }
+    trackEvent('voice_offline_model_requested', { locale: startLocale, result });
+    errorReporter.addBreadcrumb({
+      category: 'voice',
+      message: 'offline-model.requested',
+      data: { locale: startLocale, result },
+    });
+    if (result === 'scheduled') {
+      toast.toast(t('voiceNote:offlineModel.scheduled'));
+    }
+  };
 
   const start = async ({
     startLocale,
@@ -222,58 +267,5 @@ export function useVoiceNoteRecording({
     start,
     mark: captions.mark,
     discard,
-  };
-}
-
-/**
- * Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
- * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
- */
-function useOfflineModelOffer(accountId: string, isAbandoned: () => boolean) {
-  const speechRecognizer = useSpeechRecognizer();
-  const offlineModelPrompt = useOfflineModelPromptRepository();
-  const toast = useAppToast();
-  const confirmDialog = useConfirmDialog();
-  const errorReporter = useErrorReporter();
-  const { trackEvent } = useTrack();
-
-  return async (startLocale: SpeechLocale) => {
-    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(
-      startLocale,
-      'note',
-    );
-    if (isAbandoned()) {
-      return;
-    }
-    if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
-      return;
-    }
-    const shouldDownload = await confirmDialog.openAsync({
-      title: t('voiceNote:offlineModel.title'),
-      description: t('voiceNote:offlineModel.description'),
-      confirmLabel: t('voiceNote:offlineModel.confirm'),
-      cancelLabel: t('voiceNote:offlineModel.cancel'),
-    });
-    if (isAbandoned()) {
-      return;
-    }
-    if (!shouldDownload) {
-      offlineModelPrompt.saveDeclined(accountId, startLocale);
-      trackEvent('voice_offline_model_requested', { locale: startLocale, result: 'declined' });
-      return;
-    }
-    const result = await speechRecognizer.requestOfflineModel(startLocale);
-    if (result !== 'downloaded') {
-      offlineModelPrompt.saveDeclined(accountId, startLocale);
-    }
-    trackEvent('voice_offline_model_requested', { locale: startLocale, result });
-    errorReporter.addBreadcrumb({
-      category: 'voice',
-      message: 'offline-model.requested',
-      data: { locale: startLocale, result },
-    });
-    if (result === 'scheduled') {
-      toast.toast(t('voiceNote:offlineModel.scheduled'));
-    }
   };
 }

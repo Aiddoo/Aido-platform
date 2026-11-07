@@ -28,8 +28,9 @@ export function useStartVoiceNote() {
     if (!consent.hasAgreed) {
       return;
     }
-    if (await ensureMicrophonePermission('note', locale)) {
-      navigate(getRecordHref?.() ?? '/voice-notes/record');
+    if (!(await ensureMicrophonePermission('note', locale))) {
+      return;
     }
+    navigate(getRecordHref?.() ?? '/voice-notes/record');
   };
 }

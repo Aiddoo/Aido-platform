@@ -14,7 +14,7 @@ import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import {
   createDigestInput,
   createDigestMemo,
-  hasNoPlannedTodos,
+  hasEmptyPlan,
   VoiceNotePolicy,
   withDigestResult,
   withPlanDraft,
@@ -350,7 +350,7 @@ describe('voiceNoteSchema', () => {
     // Then
     expect(restored.planDraft?.form.actions.map(({ title }) => title)).toEqual(['장보기']);
     expect(restored.planDraft?.omittedTodoCount).toBe(2);
-    expect(hasNoPlannedTodos(restored)).toBe(false);
+    expect(hasEmptyPlan(restored)).toBe(false);
   });
 });
 
@@ -471,7 +471,7 @@ describe('withDigestResult', () => {
     );
 
     // Then
-    expect(VoiceNotePolicy.hasNoPlannedTodos(next)).toBe(true);
+    expect(VoiceNotePolicy.hasEmptyPlan(next)).toBe(true);
     expect(next.digest?.summary).toBe('요약');
   });
 });
@@ -495,7 +495,7 @@ describe('createDigestMemo', () => {
   });
 });
 
-describe('hasNoPlannedTodos', () => {
+describe('hasEmptyPlan', () => {
   it('할 일 카드를 읽을 수 없게 된 노트를 할 일이 없었던 노트로 치지 않는다', () => {
     // Given
     const note = {
@@ -504,7 +504,7 @@ describe('hasNoPlannedTodos', () => {
     };
 
     // When
-    const result = hasNoPlannedTodos(note);
+    const result = hasEmptyPlan(note);
 
     // Then
     expect(result).toBe(false);

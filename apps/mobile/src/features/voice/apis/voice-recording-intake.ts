@@ -119,7 +119,7 @@ export class VoiceRecordingIntake {
     const timer = setTimeout(stop, VOICE_RECORDING_LATE_WAIT_MS);
   };
 
-  async #save(sourceUri: string, startMs: number): Promise<void> {
+  #save = async (sourceUri: string, startMs: number): Promise<void> => {
     const { accountId, draftId, draftRepository, recordingRepository, onRecordingSaved } =
       this.#deps;
     const partIndex = this.#partCount;
@@ -142,5 +142,5 @@ export class VoiceRecordingIntake {
     if (handedOff != null) {
       draftRepository.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
     }
-  }
+  };
 }

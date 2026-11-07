@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const coachmarkKindSchema = z.enum([
+export const coachmarkKindSchema = z.enum([
   'todo-reorder',
   'category-reorder',
   'comment-double-tap',

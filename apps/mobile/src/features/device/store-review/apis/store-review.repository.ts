@@ -15,7 +15,7 @@ const KEY_PREFIX = 'aido_store_review_prompt_v1';
 type StateTransition = (current: StoreReviewState) => StoreReviewState;
 
 export interface StoreReviewRepository {
-  read(accountId: string): StoreReviewState;
+  get(accountId: string): StoreReviewState;
   update(accountId: string, transition: StateTransition): StoreReviewState;
 }
 
@@ -38,7 +38,7 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
     storage.set(createStoreReviewKey(accountId), JSON.stringify({ version: 2, ...state }));
   };
 
-  const read = (accountId: string): StoreReviewState => {
+  const get = (accountId: string): StoreReviewState => {
     const saved = storage.get(createStoreReviewKey(accountId));
     if (saved == null) {
       return StoreReviewPolicy.createEmptyState();
@@ -62,7 +62,7 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
   };
 
   const update = (accountId: string, transition: StateTransition): StoreReviewState => {
-    const current = read(accountId);
+    const current = get(accountId);
     const candidate = transition(current);
     if (candidate === current) {
       return current;
@@ -72,5 +72,5 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
     return next;
   };
 
-  return { read, update };
+  return { get, update };
 }

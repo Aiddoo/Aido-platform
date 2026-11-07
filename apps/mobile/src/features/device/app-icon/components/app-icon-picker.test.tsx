@@ -19,10 +19,10 @@ describe('AppIconPicker', () => {
   });
 
   it('프로필 사진 주소처럼 아이콘 키가 아닌 값이면 아무것도 선택하지 않는다', async () => {
-    // Given
+    // When
     await renderUi(<AppIconPicker value="https://example.com/me.png" onValueChange={jest.fn()} />);
 
-    // When / Then
+    // Then
     expect(screen.getByRole('radio', { name: '기본', checked: false })).toBeTruthy();
   });
 

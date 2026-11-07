@@ -1,6 +1,3 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createSessionEpoch } from '@src/core/session/session-epoch';
-import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import {
   createCurrentUserDto,
@@ -10,22 +7,18 @@ import {
   createPushDeviceResponseDto,
   createPushPermissionResponse,
 } from '@src/features/notification/__tests__/notification.fixtures';
-import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import {
   createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
+  createJsonFetcherStub,
+  createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
-  createTestDi,
+  renderUiHook,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { toInstant } from '@src/shared/date/instant';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook, waitFor } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { act, waitFor } from '@testing-library/react-native';
 
 import { createActivationProgressRepository } from '../apis/activation-progress.repository';
-import { ActivationService } from '../apis/activation.service';
 import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
 import { usePushPermissionAskMoment } from './use-push-permission-ask-moment';
 
@@ -53,55 +46,47 @@ function setup({
     isUserLoadable ? { ok: true, value: user } : { ok: false, error: createUserApiError() },
   );
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-  const pushDeviceService = new PushDeviceService({
-    gateway,
-    deviceIdService: { get: async () => 'ios_device-123' },
-    httpClient,
-    logger: createLoggerStub(),
-    getTimeZone: () => 'Asia/Seoul',
-    sessionEpoch: createSessionEpoch(),
+  const jsonFetcher = createJsonFetcherStub();
+  jsonFetcher.get.mockResolvedValue({
+    enabled: true,
+    campaignId: CAMPAIGN_ID,
+    minAppVersion: '1.8.0',
+    launchedAt: '2026-08-01T00:00:00.000Z',
+    autoOpen: true,
   });
-  const activationRepository = createActivationProgressRepository(createMemorySyncStorage());
+  const syncStorage = createMemoryObservableSyncStorage();
+  const activationRepository = createActivationProgressRepository(syncStorage);
   const queryClient = createTestQueryClient();
-  const container = createTestDi({
-    httpClient,
-    pushDeviceService,
-    logger: createLoggerStub(),
-    authSessionStore: createAuthSessionStore({ status: 'authenticated' }),
-    activationService: new ActivationService(activationRepository),
-    featureCampaignService: new FeatureCampaignService({
-      get: async () => ({
-        enabled: true,
-        campaignId: CAMPAIGN_ID,
-        minAppVersion: '1.8.0',
-        launchedAt: '2026-08-01T00:00:00.000Z',
-        autoOpen: true,
-      }),
-    }),
-  });
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <StaticDIProvider container={container}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </StaticDIProvider>
-  );
+  const render = () =>
+    renderUiHook(() => usePushPermissionAskMoment(), {
+      queryClient,
+      di: {
+        httpClient,
+        jsonFetcher,
+        syncStorage,
+        pushNotification: gateway,
+        authSessionStore: createAuthSessionStore({ status: 'authenticated' }),
+      },
+    });
   const activate = async () => {
     const identity = { accountId: user.userId, campaignId: CAMPAIGN_ID };
     activationRepository.markTodoCreated(identity, toInstant('2026-08-01T12:00:00.000Z'));
     activationRepository.claimActivated(identity, toInstant('2026-08-02T00:00:00.000Z'));
     await queryClient.invalidateQueries({ queryKey: ACTIVATION_QUERY_KEYS.progress(identity) });
   };
-  return { gateway, wrapper, activate };
+  return { gateway, render, activate };
 }
 
 describe('usePushPermissionAskMoment', () => {
   it('기존 사용자가 아직 알림 권한을 정하지 않았으면 로그인하자마자 안내할 차례가 된다', async () => {
     // Given
-    const { gateway, wrapper } = setup();
+    const { gateway, render } = setup();
 
     // When
-    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
+    const { result } = await render();
 
-    // Then 시스템 창은 안내에서 허용을 눌렀을 때만 뜬다
+    // Then
+    // 시스템 창은 안내에서 허용을 눌렀을 때만 뜬다
     await waitFor(() => {
       expect(result.current[0]).toBe(true);
     });
@@ -110,8 +95,8 @@ describe('usePushPermissionAskMoment', () => {
 
   it('안내를 마치면 같은 계정·활성화 시점에는 다시 묻지 않는다', async () => {
     // Given
-    const { wrapper } = setup();
-    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
+    const { render } = setup();
+    const { result } = await render();
     await waitFor(() => {
       expect(result.current[0]).toBe(true);
     });
@@ -125,10 +110,10 @@ describe('usePushPermissionAskMoment', () => {
 
   it('이미 허용하거나 거절한 사용자에게는 묻지 않는다', async () => {
     // Given
-    const { gateway, wrapper } = setup({ permissionStatus: 'denied' });
+    const { gateway, render } = setup({ permissionStatus: 'denied' });
 
     // When
-    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
+    const { result } = await render();
 
     // Then
     await waitFor(() => {
@@ -139,10 +124,8 @@ describe('usePushPermissionAskMoment', () => {
 
   it('활성화 전 신규 사용자에게는 묻지 않고, 활성화하면 그때 안내한다', async () => {
     // Given
-    const { gateway, wrapper, activate } = setup({ userCreatedAt: NEW_USER_CREATED_AT });
-    const { result } = await renderHook(() => usePushPermissionAskMoment(), {
-      wrapper,
-    });
+    const { gateway, render, activate } = setup({ userCreatedAt: NEW_USER_CREATED_AT });
+    const { result } = await render();
     await waitFor(() => {
       expect(gateway.getPermission).toHaveBeenCalled();
     });
@@ -159,10 +142,10 @@ describe('usePushPermissionAskMoment', () => {
 
   it('/me 조회가 실패해도 기존 권한 요청 흐름을 막지 않는다', async () => {
     // Given
-    const { wrapper } = setup({ isUserLoadable: false });
+    const { render } = setup({ isUserLoadable: false });
 
     // When
-    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
+    const { result } = await render();
 
     // Then
     await waitFor(() => {

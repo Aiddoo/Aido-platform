@@ -32,7 +32,7 @@ function createService() {
 }
 
 describe('VoiceNoteStorageService', () => {
-  test('초안을 버리면 그 녹음 파일도 함께 지운다', () => {
+  it('초안을 버리면 그 녹음 파일도 함께 지운다', () => {
     // Given
     const { files, service, drafts } = createService();
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav');
@@ -46,7 +46,7 @@ describe('VoiceNoteStorageService', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
   });
 
-  test('아직 쓰지 않은 대기 쓰기만 있는 초안을 버려도 나중에 되살아나지 않는다', () => {
+  it('아직 쓰지 않은 대기 쓰기만 있는 초안을 버려도 나중에 되살아나지 않는다', () => {
     // Given
     jest.useFakeTimers();
     const { service, drafts } = createService();
@@ -61,7 +61,7 @@ describe('VoiceNoteStorageService', () => {
     jest.useRealTimers();
   });
 
-  test('30일이 지난 초안은 녹음과 함께 지우고 최근 초안은 남긴다', () => {
+  it('30일이 지난 초안은 녹음과 함께 지우고 최근 초안은 남긴다', () => {
     // Given
     const { files, service, drafts } = createService();
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', {
@@ -111,7 +111,7 @@ describe('VoiceNoteStorageService', () => {
       return { files, service, drafts };
     };
 
-    test('메모에 속한 녹음만 합쳐 전체 용량과 메모별 용량을 최근 순으로 알려 준다', () => {
+    it('메모에 속한 녹음만 합쳐 전체 용량과 메모별 용량을 최근 순으로 알려 준다', () => {
       // Given
       const { service } = setUp();
 
@@ -126,7 +126,7 @@ describe('VoiceNoteStorageService', () => {
       ]);
     });
 
-    test('한 메모의 녹음을 지워도 글자와 요약은 남고 다시 듣기만 없어진다', () => {
+    it('한 메모의 녹음을 지워도 글자와 요약은 남고 다시 듣기만 없어진다', () => {
       // Given
       const { files, service, drafts } = setUp();
 
@@ -143,7 +143,7 @@ describe('VoiceNoteStorageService', () => {
       expect(files.hasFile(OWNER_DIRECTORY, 'b-0.wav')).toBe(true);
     });
 
-    test('모두 지우면 어느 메모에도 속하지 않은 파일까지 지우고 메모는 남긴다', () => {
+    it('모두 지우면 어느 메모에도 속하지 않은 파일까지 지우고 메모는 남긴다', () => {
       // Given
       const { files, service, drafts } = setUp();
 

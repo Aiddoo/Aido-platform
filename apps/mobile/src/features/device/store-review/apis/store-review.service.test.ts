@@ -1,5 +1,4 @@
-import type { AppStoreReviewGateway } from '@src/core/ports/app-store-gateway';
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createAppStoreReviewGatewayStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { StoreReviewPolicy } from '../domains/store-review.model';
@@ -14,10 +13,7 @@ const presentable: WaitUntilPresentable = async () => true;
 const createFixture = () => {
   const storage = createMemorySyncStorage();
   const repository = createStoreReviewRepository(storage);
-  const gateway: jest.Mocked<AppStoreReviewGateway> = {
-    isAvailable: jest.fn().mockResolvedValue(true),
-    requestReview: jest.fn().mockResolvedValue(undefined),
-  };
+  const gateway = createAppStoreReviewGatewayStub();
   const service = new StoreReviewService(repository, gateway, () => NOW);
   const becomeEngaged = (accountId = ACCOUNT) => {
     for (const localDate of ['2026-10-25', '2026-10-26', '2026-10-27']) {
@@ -34,7 +30,7 @@ describe('StoreReviewService', () => {
     becomeEngaged();
     const waitUntilPresentable = jest.fn<Promise<boolean>, [number]>().mockResolvedValue(true);
     gateway.requestReview.mockImplementation(async () => {
-      expect(repository.read(ACCOUNT).requestedAt).toEqual([NOW]);
+      expect(repository.get(ACCOUNT).requestedAt).toEqual([NOW]);
     });
 
     // When
@@ -86,7 +82,7 @@ describe('StoreReviewService', () => {
     // Then
     expect(interrupted).toBe('interrupted');
     expect(gateway.requestReview).not.toHaveBeenCalled();
-    expect(repository.read(ACCOUNT).requestedAt).toEqual([]);
+    expect(repository.get(ACCOUNT).requestedAt).toEqual([]);
     await expect(service.requestReviewAt(ALL_DONE, presentable)).resolves.toBe('requested');
   });
 
@@ -142,7 +138,7 @@ describe('StoreReviewService', () => {
 
     // Then
     await expect(failed).rejects.toThrow('native unavailable');
-    expect(repository.read(ACCOUNT).requestedAt).toEqual([]);
+    expect(repository.get(ACCOUNT).requestedAt).toEqual([]);
     await expect(service.requestReviewAt(ALL_DONE, presentable)).resolves.toBe('requested');
   });
 

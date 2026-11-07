@@ -1,19 +1,15 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { getNowInstant } from '@src/shared/date/instant';
 
 import { createCoachmarkKey, createCoachmarkRepository } from './coachmark.repository';
 import { CoachmarkService } from './coachmark.service';
 
-function createMemoryStorage(initial: Record<string, string> = {}) {
-  const storage = createMemorySyncStorage();
-  Object.entries(initial).forEach(([key, value]) => storage.set(key, value));
-
-  return storage;
-}
-
 describe('CoachmarkService', () => {
   it('보이는 순간 끝나는 안내는 계정·종류마다 처음 한 번만 claim한다', () => {
     // Given
-    const service = new CoachmarkService(createCoachmarkRepository(createMemoryStorage()));
+    const service = new CoachmarkService(
+      createCoachmarkRepository(createMemorySyncStorage(), getNowInstant),
+    );
 
     // When
     const first = service.claim({ accountId: 'account-1', kind: 'todo-reorder' });
@@ -27,10 +23,9 @@ describe('CoachmarkService', () => {
 
   it('1.14.0 이하에서 본 재정렬 안내는 예전 키로 읽어 다시 보이지 않는다', () => {
     // Given
-    const storage = createMemoryStorage({
-      'aido_reorder_coachmark_v1:account-1:todo': '2026-10-01T00:00:00.000Z',
-    });
-    const service = new CoachmarkService(createCoachmarkRepository(storage));
+    const storage = createMemorySyncStorage();
+    storage.set('aido_reorder_coachmark_v1:account-1:todo', '2026-10-01T00:00:00.000Z');
+    const service = new CoachmarkService(createCoachmarkRepository(storage, getNowInstant));
 
     // When
     const claimed = service.claim({ accountId: 'account-1', kind: 'todo-reorder' });
@@ -41,7 +36,9 @@ describe('CoachmarkService', () => {
 
   it('더블탭 안내는 쓰거나 닫기 전까지 남아 있다', () => {
     // Given
-    const service = new CoachmarkService(createCoachmarkRepository(createMemoryStorage()));
+    const service = new CoachmarkService(
+      createCoachmarkRepository(createMemorySyncStorage(), getNowInstant),
+    );
     const input = { accountId: 'account-1', kind: 'comment-double-tap' } as const;
 
     // When

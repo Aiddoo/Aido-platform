@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { type Instant, toNullableInstant } from '@src/shared/date/instant';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { EMPTY_ACTIVATION_PROGRESS } from '../constants/activation.constants';
 import { persistedActivationProgressSchema } from '../schemas/activation-persisted.schema';
@@ -27,25 +28,17 @@ export function createActivationProgressRepository(
   storage: SyncStorage,
 ): ActivationProgressRepository {
   const get = (identity: ActivationIdentity): ActivationProgress => {
-    let decoded: unknown;
-    try {
-      const raw = storage.get(createActivationProgressKey(identity));
-      if (!raw) {
-        return { ...EMPTY_ACTIVATION_PROGRESS };
-      }
-      decoded = JSON.parse(raw);
-    } catch {
-      return { ...EMPTY_ACTIVATION_PROGRESS };
-    }
-
-    const parsed = persistedActivationProgressSchema.safeParse(decoded);
-    if (!parsed.success) {
+    const parsed = parseStoredJson(
+      storage.get(createActivationProgressKey(identity)),
+      persistedActivationProgressSchema,
+    );
+    if (parsed == null) {
       return { ...EMPTY_ACTIVATION_PROGRESS };
     }
     return {
-      todoCreatedAt: toNullableInstant(parsed.data.todoCreatedAt),
-      activatedAt: toNullableInstant(parsed.data.activatedAt),
-      pushRegistrationUnlockedAt: toNullableInstant(parsed.data.pushRegistrationUnlockedAt),
+      todoCreatedAt: toNullableInstant(parsed.todoCreatedAt),
+      activatedAt: toNullableInstant(parsed.activatedAt),
+      pushRegistrationUnlockedAt: toNullableInstant(parsed.pushRegistrationUnlockedAt),
     };
   };
 

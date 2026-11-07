@@ -1,4 +1,5 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { getNowInstant } from '@src/shared/date/instant';
 
 import { createCoachmarkKey, createCoachmarkRepository } from './coachmark.repository';
 
@@ -7,11 +8,11 @@ describe('createCoachmarkRepository', () => {
     // Given
     const storage = createMemorySyncStorage();
     storage.set('aido_friend_strip_hint_dismissed_v1:user-1', '2026-10-01T00:00:00.000Z');
-    const repository = createCoachmarkRepository(storage);
+    const repository = createCoachmarkRepository(storage, getNowInstant);
 
     // Then
-    expect(repository.isSeen({ accountId: 'user-1', kind: 'friend-strip' })).toBe(true);
-    expect(repository.isSeen({ accountId: 'user-2', kind: 'friend-strip' })).toBe(false);
+    expect(repository.hasSeen({ accountId: 'user-1', kind: 'friend-strip' })).toBe(true);
+    expect(repository.hasSeen({ accountId: 'user-2', kind: 'friend-strip' })).toBe(false);
   });
 
   it('저장 키는 출시된 앱과 같다', () => {
@@ -35,7 +36,7 @@ describe('createCoachmarkRepository', () => {
     storage.set('aido_reorder_coachmark_v1:user-1:todo', 'seen');
 
     // When
-    createCoachmarkRepository(storage).removeRetiredKeys();
+    createCoachmarkRepository(storage, getNowInstant).removeRetiredKeys();
 
     // Then
     expect(storage.keys().sort()).toEqual([
@@ -47,7 +48,7 @@ describe('createCoachmarkRepository', () => {
   it('탈퇴한 계정의 키만 지운다', () => {
     // Given
     const storage = createMemorySyncStorage();
-    const repository = createCoachmarkRepository(storage);
+    const repository = createCoachmarkRepository(storage, getNowInstant);
     repository.markSeen({ accountId: 'user-1', kind: 'friend-strip' });
     repository.markSeen({ accountId: 'user-1', kind: 'todo-reorder' });
     repository.markSeen({ accountId: 'user-1', kind: 'voice-note-start' });

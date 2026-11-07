@@ -67,7 +67,7 @@ async function renderScreen({
 }
 
 describe('녹음 저장 공간', () => {
-  test('전체 용량과 메모별 녹음 용량을 보여 준다', async () => {
+  it('전체 용량과 메모별 녹음 용량을 보여 준다', async () => {
     // Given
     await renderScreen();
 
@@ -79,7 +79,7 @@ describe('녹음 저장 공간', () => {
     expect(screen.getByText('주간 회의')).toBeTruthy();
   });
 
-  test('녹음이 없으면 없다고 알리고 삭제 버튼을 숨긴다', async () => {
+  it('녹음이 없으면 없다고 알리고 삭제 버튼을 숨긴다', async () => {
     // Given
     await renderScreen({ hasRecording: false });
 
@@ -91,7 +91,7 @@ describe('녹음 저장 공간', () => {
     expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
   });
 
-  test('메모에 속하지 않은 파일만 있으면 용량도 0이고 비어 있다고 알린다', async () => {
+  it('메모에 속하지 않은 파일만 있으면 용량도 0이고 비어 있다고 알린다', async () => {
     // Given
     await renderScreen({ hasRecording: false, hasOrphanFile: true });
 
@@ -104,7 +104,7 @@ describe('녹음 저장 공간', () => {
     expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
   });
 
-  test('확인을 누르면 녹음만 삭제하고 들은 내용과 요약은 남는다', async () => {
+  it('확인을 누르면 녹음만 삭제하고 들은 내용과 요약은 남는다', async () => {
     // Given
     const { storage, files } = await renderScreen();
     fireEvent.press(await screen.findByTestId('voice-storage-remove')).catch(jest.fn());
@@ -121,7 +121,7 @@ describe('녹음 저장 공간', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
   });
 
-  test('확인 창에서 취소하면 아무것도 지우지 않는다', async () => {
+  it('확인 창에서 취소하면 아무것도 지우지 않는다', async () => {
     // Given
     const { files } = await renderScreen();
     fireEvent.press(await screen.findByTestId('voice-storage-remove')).catch(jest.fn());

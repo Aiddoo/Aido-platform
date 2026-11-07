@@ -179,7 +179,7 @@ function WaveformTimeline({
     const cursorLeft = width / 2 - RADIUS;
     for (const flagIndex of flagIndexes) {
       const barsBehindCursor = levels.length - 1 - (flagIndex - firstBarIndex);
-      if (barsBehindCursor >= 0 && barsBehindCursor < levels.length) {
+      if (0 <= barsBehindCursor && barsBehindCursor < levels.length) {
         const poleX = cursorLeft - barsBehindCursor * STEP + RADIUS - FLAG.poleWidth / 2;
         target.addRect(
           Skia.XYWHRect(poleX, FLAG.top, FLAG.poleWidth, height * FLAG.heightShare + FLAG.height),

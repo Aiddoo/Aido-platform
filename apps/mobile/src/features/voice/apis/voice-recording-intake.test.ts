@@ -35,7 +35,7 @@ describe('VoiceRecordingIntake', () => {
     jest.useRealTimers();
   });
 
-  test('기다릴 파일이 없으면 바로 끝난다', async () => {
+  it('기다릴 파일이 없으면 바로 끝난다', async () => {
     // Given
     const { intake } = createIntake();
 
@@ -46,7 +46,7 @@ describe('VoiceRecordingIntake', () => {
     await expect(settled).resolves.toBeUndefined();
   });
 
-  test('파일이 오지 않으면 3초만 기다린다', async () => {
+  it('파일이 오지 않으면 3초만 기다린다', async () => {
     // Given
     const { intake } = createIntake();
     intake.segmentStarted('file:///documents/voice-notes/user-1/a.wav', 0);
@@ -66,7 +66,7 @@ describe('VoiceRecordingIntake', () => {
     expect(onSettled).toHaveBeenCalledTimes(1);
   });
 
-  test('파일이 뒤바뀌어 와도 구간 시작 시각 순서로 저장하고 옮길 때마다 알린다', async () => {
+  it('파일이 뒤바뀌어 와도 구간 시작 시각 순서로 저장하고 옮길 때마다 알린다', async () => {
     // Given
     const { files, intake, onRecordingSaved } = createIntake();
     const first = files.addFile(DIRECTORY, 'a.wav');
@@ -84,7 +84,7 @@ describe('VoiceRecordingIntake', () => {
     expect(onRecordingSaved).toHaveBeenCalledTimes(2);
   });
 
-  test('넘긴 뒤에 온 파일은 저장된 초안에 더한다', async () => {
+  it('넘긴 뒤에 온 파일은 저장된 초안에 더한다', async () => {
     // Given
     const { files, storage, intake } = createIntake();
     const uri = files.addFile(DIRECTORY, 'a.wav');
@@ -100,7 +100,7 @@ describe('VoiceRecordingIntake', () => {
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.recordings).toHaveLength(1);
   });
 
-  test('지운 뒤에 온 파일은 옮기지 않고 바로 지운다', () => {
+  it('지운 뒤에 온 파일은 옮기지 않고 바로 지운다', () => {
     // Given
     const { files, intake } = createIntake();
     const uri = files.addFile(DIRECTORY, 'a.wav');
@@ -114,7 +114,7 @@ describe('VoiceRecordingIntake', () => {
     expect(files.hasFile(DIRECTORY, 'a.wav')).toBe(false);
   });
 
-  test('늦은 파일은 자기 파일만 받고 다 받으면 구독을 푼다', async () => {
+  it('늦은 파일은 자기 파일만 받고 다 받으면 구독을 푼다', async () => {
     // Given
     const { files, intake } = createIntake();
     const uri = files.addFile(DIRECTORY, 'a.wav');
@@ -139,7 +139,7 @@ describe('VoiceRecordingIntake', () => {
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 
-  test('늦은 파일이 끝내 오지 않으면 30초 뒤 구독을 푼다', () => {
+  it('늦은 파일이 끝내 오지 않으면 30초 뒤 구독을 푼다', () => {
     // Given
     const { intake } = createIntake();
     const speechRecognizer = createSpeechRecognizerStub();
@@ -153,7 +153,7 @@ describe('VoiceRecordingIntake', () => {
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 
-  test('기다릴 파일이 없으면 늦은 파일을 듣지 않는다', () => {
+  it('기다릴 파일이 없으면 늦은 파일을 듣지 않는다', () => {
     // Given
     const { intake } = createIntake();
     const speechRecognizer = createSpeechRecognizerStub();

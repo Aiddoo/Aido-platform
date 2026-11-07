@@ -24,7 +24,7 @@ const createProgress = (overrides?: Partial<ActivationProgress>): ActivationProg
   ...overrides,
 });
 
-describe('isChecklistEligible', () => {
+describe('shouldOfferChecklist', () => {
   const now = toInstant('2026-08-02T00:00:00.000Z');
 
   it('캠페인 시작 시각에 가입한 사용자를 신규 코호트로 분류한다', () => {
@@ -32,7 +32,7 @@ describe('isChecklistEligible', () => {
     const user = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
 
     // When
-    const result = ActivationPolicy.isChecklistEligible({
+    const result = ActivationPolicy.shouldOfferChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -48,7 +48,7 @@ describe('isChecklistEligible', () => {
     const user = { id: 'existing-user', createdAt: toInstant('2026-07-31T23:59:59.999Z') };
 
     // When
-    const result = ActivationPolicy.isChecklistEligible({
+    const result = ActivationPolicy.shouldOfferChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -64,13 +64,13 @@ describe('isChecklistEligible', () => {
     const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
     // When
-    const disabled = ActivationPolicy.isChecklistEligible({
+    const disabled = ActivationPolicy.shouldOfferChecklist({
       config: { enabled: false },
       user,
       progress: createProgress(),
       now,
     });
-    const unknown = ActivationPolicy.isChecklistEligible({
+    const unknown = ActivationPolicy.shouldOfferChecklist({
       config: createConfig({ campaignId: 'unknown-campaign' }),
       user,
       progress: createProgress(),
@@ -88,7 +88,7 @@ describe('isChecklistEligible', () => {
     const lastDay = toInstant('2026-08-07T23:59:59.999Z');
 
     // When
-    const result = ActivationPolicy.isChecklistEligible({
+    const result = ActivationPolicy.shouldOfferChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -104,13 +104,13 @@ describe('isChecklistEligible', () => {
     const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
     // When
-    const activated = ActivationPolicy.isChecklistEligible({
+    const activated = ActivationPolicy.shouldOfferChecklist({
       config: createConfig(),
       user,
       progress: createProgress({ activatedAt: toInstant('2026-08-02T00:00:00.000Z') }),
       now: toInstant('2026-08-02T00:00:01.000Z'),
     });
-    const expired = ActivationPolicy.isChecklistEligible({
+    const expired = ActivationPolicy.shouldOfferChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -127,7 +127,7 @@ describe('isChecklistEligible', () => {
     const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
     // When
-    const result = ActivationPolicy.isChecklistEligible({
+    const result = ActivationPolicy.shouldOfferChecklist({
       config: undefined,
       user,
       progress: createProgress(),
@@ -139,7 +139,7 @@ describe('isChecklistEligible', () => {
   });
 });
 
-describe('isChecklistVisible', () => {
+describe('shouldShowChecklist', () => {
   const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
   const withinWindow = toInstant('2026-08-03T00:00:00.000Z');
   const requiredDone = { hasCreatedTodo: true, hasCompletedTodo: true };
@@ -149,7 +149,7 @@ describe('isChecklistVisible', () => {
     const steps = requiredDone;
 
     // When
-    const result = ActivationPolicy.isChecklistVisible({
+    const result = ActivationPolicy.shouldShowChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -166,7 +166,7 @@ describe('isChecklistVisible', () => {
     const steps = { hasCreatedTodo: true, hasCompletedTodo: false };
 
     // When
-    const result = ActivationPolicy.isChecklistVisible({
+    const result = ActivationPolicy.shouldShowChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -183,7 +183,7 @@ describe('isChecklistVisible', () => {
     const steps = { hasCreatedTodo: false, hasCompletedTodo: false };
 
     // When
-    const result = ActivationPolicy.isChecklistVisible({
+    const result = ActivationPolicy.shouldShowChecklist({
       config: createConfig(),
       user,
       progress: createProgress(),
@@ -205,7 +205,7 @@ describe('isChecklistVisible', () => {
     };
 
     // When
-    const result = ActivationPolicy.isChecklistVisible({
+    const result = ActivationPolicy.shouldShowChecklist({
       config: createConfig(),
       user: existingUser,
       progress: createProgress(),

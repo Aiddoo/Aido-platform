@@ -167,7 +167,7 @@ export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
 }
 
 /** 정리했는데 저장할 할 일이 없다. 요약은 남았고 횟수는 썼다. 카드를 읽지 못한 경우(`planDraft`가 null)와 구분한다 */
-export function hasNoPlannedTodos(note: VoiceNote): boolean {
+export function hasEmptyPlan(note: VoiceNote): boolean {
   return (
     note.digest != null &&
     note.appliedAt == null &&
@@ -186,7 +186,7 @@ function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
   if (note.appliedAt != null) {
     return { status: 'applied' };
   }
-  if (hasNoPlannedTodos(note) && (note.planDraft?.form.actions.length ?? 0) === 0) {
+  if (hasEmptyPlan(note) && (note.planDraft?.form.actions.length ?? 0) === 0) {
     return { status: 'no-todos' };
   }
   return note.planDraft == null
@@ -300,7 +300,7 @@ export const VoiceNotePolicy = {
   withoutRecordings,
   hasText,
   getListedNotes,
-  hasNoPlannedTodos,
+  hasEmptyPlan,
   hasAppliedOnlyMemo,
   canDigest,
   canPlayRecording,

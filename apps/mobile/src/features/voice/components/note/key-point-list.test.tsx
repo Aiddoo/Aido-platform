@@ -1,13 +1,8 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import {
-  createAnalyticsStub,
-  createHttpClientStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -69,13 +64,11 @@ describe('KeyPointList', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const analytics = createAnalyticsStub();
-    const coachmarkService = new CoachmarkService(
-      createCoachmarkRepository(createMemorySyncStorage()),
-    );
+    const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
 
     // When
     await renderUi(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
-      di: { httpClient, analytics, coachmarkService },
+      di: { httpClient, analytics, syncStorage },
     });
     await new Promise((resolve) => {
       setTimeout(resolve, 600);
@@ -84,11 +77,11 @@ describe('KeyPointList', () => {
     // Then
     expect(analytics.trackEvent).not.toHaveBeenCalled();
     expect(
-      coachmarkService.isPending({
+      coachmarkRepository.hasSeen({
         accountId: createCurrentUserDto().userId,
         kind: 'voice-key-point',
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('들을 녹음이 없으면 포인트를 눌러 재생할 수 없다', async () => {

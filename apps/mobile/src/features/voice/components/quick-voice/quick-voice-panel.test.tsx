@@ -51,7 +51,7 @@ describe('QuickVoicePanel 90초 제안', () => {
     transcript: createTranscript({ sentences: ['길게 말한 내용.'] }),
   });
 
-  test('90초를 넘기면 들은 글자를 보이고 두 길을 함께 제안한다', async () => {
+  it('90초를 넘기면 들은 글자를 보이고 두 길을 함께 제안한다', async () => {
     // Given
     const { onContinueAsVoiceNote, onFinish } = await renderPanel(overLimit);
 
@@ -66,7 +66,7 @@ describe('QuickVoicePanel 90초 제안', () => {
     expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
-  test('들은 내용 없이 90초를 넘기면 정리를 권하지 않고 말로 메모하기로 잇게 한다', async () => {
+  it('들은 내용 없이 90초를 넘기면 정리를 권하지 않고 말로 메모하기로 잇게 한다', async () => {
     // Given
     const nothingHeard = createCaptureState({
       status: 'paused',
@@ -84,7 +84,7 @@ describe('QuickVoicePanel 90초 제안', () => {
     expect(screen.getByTestId('quick-voice-continue-as-note')).toBeTruthy();
   });
 
-  test('앱 이탈로 멈춘 때는 제안하지 않고 이어 듣기를 보인다', async () => {
+  it('앱 이탈로 멈춘 때는 제안하지 않고 이어 듣기를 보인다', async () => {
     // Given
     const paused = createCaptureState({
       status: 'paused',
@@ -108,7 +108,7 @@ describe('QuickVoicePanel.Failed', () => {
     transcript: createTranscript({ sentences: ['말한 내용.'] }),
   });
 
-  test('정리가 동의 때문에 막혔으면 들은 글자 안내 대신 동의가 필요하다고 보인다', async () => {
+  it('정리가 동의 때문에 막혔으면 들은 글자 안내 대신 동의가 필요하다고 보인다', async () => {
     // When
     await renderUi(
       <QuickVoicePanel.Failed
@@ -123,7 +123,7 @@ describe('QuickVoicePanel.Failed', () => {
     expect(screen.getByText(/AI 동의가 필요해요/)).toBeTruthy();
   });
 
-  test('글자를 못 받고 실패했으면 남겨뒀다고 말하지 않는다', async () => {
+  it('글자를 못 받고 실패했으면 남겨뒀다고 말하지 않는다', async () => {
     // Given
     const nothingHeard = createCaptureState({ status: 'failed', reason: 'audio-capture' });
 
@@ -141,7 +141,7 @@ describe('QuickVoicePanel.Failed', () => {
     expect(screen.queryByText(/남겨뒀어요/)).toBeNull();
   });
 
-  test('다른 이유로 실패했으면 들은 글자를 남겼다고 보인다', async () => {
+  it('다른 이유로 실패했으면 들은 글자를 남겼다고 보인다', async () => {
     // When
     await renderUi(
       <QuickVoicePanel.Failed
@@ -155,7 +155,7 @@ describe('QuickVoicePanel.Failed', () => {
     expect(screen.getByText(/들은 내용은 남겨뒀어요/)).toBeTruthy();
   });
 
-  test('입력 칸에 친 글자를 그대로 뒀으면 들은 글자가 칸에 있다고 말하지 않는다', async () => {
+  it('입력 칸에 친 글자를 그대로 뒀으면 들은 글자가 칸에 있다고 말하지 않는다', async () => {
     // When
     await renderUi(
       <QuickVoicePanel.Failed

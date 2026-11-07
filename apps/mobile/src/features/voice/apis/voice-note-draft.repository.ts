@@ -34,8 +34,6 @@ interface Dependencies {
   logger: Pick<Logger, 'warn'>;
   /** 옛 초안의 날짜를 읽을 시간대. 시스템 설정 변경이 반영되도록 읽을 때마다 부른다 */
   getTimeZone: () => string;
-  debounceMs?: number;
-  maxWaitMs?: number;
 }
 
 interface PendingSave {
@@ -57,8 +55,6 @@ export function createVoiceNoteDraftRepository({
   storage,
   logger,
   getTimeZone,
-  debounceMs = VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
-  maxWaitMs = VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
 }: Dependencies): VoiceNoteDraftRepository {
   const pendingSaves = new Map<string, PendingSave>();
   const listeners = new Set<() => void>();
@@ -179,8 +175,8 @@ export function createVoiceNoteDraftRepository({
             pendingSaves.delete(key);
             write(accountId, created.note);
           },
-          debounceMs,
-          { maxWait: maxWaitMs },
+          VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
+          { maxWait: VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS },
         ),
       };
       pendingSaves.set(key, created);

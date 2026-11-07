@@ -291,7 +291,7 @@ export function DIProvider({
     const marketingPushPromptRepository = createMarketingPushPromptRepository(deviceSyncStorage);
 
     const todoNudgeService = new TodoNudgeService(authHttpClient);
-    const coachmarkRepository = createCoachmarkRepository(deviceSyncStorage);
+    const coachmarkRepository = createCoachmarkRepository(deviceSyncStorage, getNowInstant);
     const coachmarkService = new CoachmarkService(coachmarkRepository);
     cleanStartupKeys(
       {

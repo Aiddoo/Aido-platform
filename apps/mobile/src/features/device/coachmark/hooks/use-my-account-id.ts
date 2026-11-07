@@ -5,5 +5,5 @@ import { useQuery } from '@tanstack/react-query';
 export function useMyAccountId() {
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
 
-  return [me?.id ?? null] as const;
+  return me?.id ?? null;
 }

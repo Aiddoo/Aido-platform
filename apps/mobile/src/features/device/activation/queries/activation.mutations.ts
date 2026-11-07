@@ -9,7 +9,7 @@ import { setCachedPushPermission } from '@src/features/notification/queries/noti
 import { getErrorMessage } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { unlockPushRegistrationForActivation } from './activation-cache';
+import { tryUnlockPushRegistration } from './activation-cache';
 
 /**
  * 앱 푸시 설정을 바꾸고, 켰을 때는 이어서 OS 권한을 묻는다.
@@ -30,7 +30,11 @@ export function useUpdatePushEnabledMutationOptions() {
         return;
       }
       // 아직 활성화 전인 신규 사용자는 여기서 요청 시점이 열리고, 자동 요청 훅이 이어서 묻는다
-      if (unlockPushRegistrationForActivation({ queryClient, service: activationService })) {
+      const isHandledByActivation = tryUnlockPushRegistration({
+        queryClient,
+        service: activationService,
+      });
+      if (isHandledByActivation) {
         return;
       }
       await pushDeviceService.requestPermission().then(

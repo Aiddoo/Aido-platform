@@ -21,7 +21,7 @@ import {
 import { noop } from 'es-toolkit';
 import { Stack } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { type ComponentProps, Suspense, useState } from 'react';
+import { type ComponentProps, type ReactNode, Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -77,7 +77,9 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
           <Animated.View entering={FadeIn.duration(200)} key={selectedTab} style={{ flex: 1 }}>
             {match(selectedTab)
               .with('summary', () => (
-                <VoiceNoteResult.Summary note={note} player={player} canPlay={canPlay} />
+                <VoiceNoteResult.Summary note={note}>
+                  <VoiceNoteResult.KeyPoints note={note} player={player} canPlay={canPlay} />
+                </VoiceNoteResult.Summary>
               ))
               .with('todos', () => (
                 <VoiceNoteResult.Todos note={note} onMemoChanged={onMemoChanged} />
@@ -217,11 +219,12 @@ interface VoiceNoteResultPlaybackProps {
   canPlay: boolean;
 }
 
-VoiceNoteResult.Summary = function Summary({
-  note,
-  player,
-  canPlay,
-}: VoiceNoteResultPlaybackProps) {
+interface VoiceNoteResultSummaryProps {
+  note: VoiceNote;
+  children: ReactNode;
+}
+
+VoiceNoteResult.Summary = function Summary({ note, children }: VoiceNoteResultSummaryProps) {
   const { t } = useTranslation('voiceNote');
   const isCompact = useWindowSizeClass() === 'compact';
 
@@ -230,7 +233,7 @@ VoiceNoteResult.Summary = function Summary({
       <ScrollView contentContainerClassName="gap-4 pb-6" showsVerticalScrollIndicator={false}>
         <WordWrapText size="b2">{note.digest?.summary ?? ''}</WordWrapText>
         {/* 넓은 화면은 할 일 칸이 늘 보여 거기서 알린다 */}
-        {isCompact && VoiceNotePolicy.hasNoPlannedTodos(note) && (
+        {isCompact && VoiceNotePolicy.hasEmptyPlan(note) && (
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word" testID="voice-note-no-todos">
             {t('result.noTodos')}
           </Text>
@@ -239,7 +242,7 @@ VoiceNoteResult.Summary = function Summary({
           <Text size="b4" weight="semibold" shade={6}>
             {t('keyPoints.title')}
           </Text>
-          <VoiceNoteResult.KeyPoints note={note} player={player} canPlay={canPlay} />
+          {children}
         </VStack>
       </ScrollView>
     </ScreenScrollShadow>

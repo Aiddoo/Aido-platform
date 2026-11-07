@@ -67,7 +67,7 @@ export class StoreReviewService {
       return 'in_flight';
     }
     const eligibility = StoreReviewPolicy.getEligibility(
-      this.#repository.read(accountId),
+      this.#repository.get(accountId),
       this.#now(),
     );
     if (eligibility !== 'eligible') {

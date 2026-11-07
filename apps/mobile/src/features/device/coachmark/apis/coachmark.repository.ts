@@ -1,11 +1,11 @@
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
-import { getNowInstant, type Instant } from '@src/shared/date/instant';
+import type { Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { CoachmarkInput } from '../schemas/coachmark.schema';
 
 export interface CoachmarkRepository {
-  isSeen(input: CoachmarkInput): boolean;
+  hasSeen(input: CoachmarkInput): boolean;
   markSeen(input: CoachmarkInput): void;
   /** 은퇴한 안내의 키를 지운다 */
   removeRetiredKeys(): void;
@@ -40,10 +40,10 @@ export function createCoachmarkKey({ accountId, kind }: CoachmarkInput): string 
 
 export function createCoachmarkRepository(
   storage: SyncStorage & Pick<EnumerableSyncStorage, 'keys'>,
-  now: () => Instant = getNowInstant,
+  now: () => Instant,
 ): CoachmarkRepository {
   return {
-    isSeen: (input) => {
+    hasSeen: (input) => {
       try {
         return storage.get(createCoachmarkKey(input)) != null;
       } catch {
