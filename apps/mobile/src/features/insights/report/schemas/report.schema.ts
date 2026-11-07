@@ -1,15 +1,14 @@
+import type { reportTypeSchema } from '@aido/api';
 import {
   aiReportListResponseSchema,
   aiReportSchema as aiReportContractSchema,
   aiReportResponseSchema,
   reportStatusResponseSchema,
   reportStatusSchema as reportStatusContractSchema,
-  reportTypeSchema,
 } from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export { reportTypeSchema };
 export type ReportType = z.infer<typeof reportTypeSchema>;
 
 const aiReportSchema = aiReportContractSchema.extend({ generatedAt: instantSchema });
