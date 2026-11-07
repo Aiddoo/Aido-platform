@@ -1,9 +1,9 @@
 import { entitlementSnapshotSchema } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
-import { ok, type Result } from '@src/core/errors/result';
+import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
-import { ParseError } from '@src/shared/errors/infra-error';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import type { EntitlementSnapshot } from '../schemas/entitlement.schema';
@@ -23,20 +23,16 @@ export class EntitlementService {
   ): Promise<Result<EntitlementSnapshot, ApiError>> => {
     const result = await this.#httpClient.get('v1/entitlements', { signal });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = entitlementSnapshotSchema.safeParse(result.value);
-    if (!parsed.success) {
-      this.#logger.error(SUBSCRIPTION_LOG_EVENT.ENTITLEMENT_SNAPSHOT_MAPPING_FAILED, undefined, {
-        zodError: parsed.error.message,
-      });
-      throw new ParseError(
-        `[EntitlementService] Invalid getEntitlements response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toEntitlementSnapshot(parsed.data));
+    return parseApiResponse(
+      result,
+      entitlementSnapshotSchema,
+      toEntitlementSnapshot,
+      '[EntitlementService] Invalid getEntitlements response',
+      (zodError) => {
+        this.#logger.error(SUBSCRIPTION_LOG_EVENT.ENTITLEMENT_SNAPSHOT_MAPPING_FAILED, undefined, {
+          zodError,
+        });
+      },
+    );
   };
 }
