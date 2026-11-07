@@ -179,6 +179,7 @@ export {
 } from './settings-card';
 export { Spacing, type SpacingProps } from './spacing';
 export { Steps } from './steps';
+export { LineTabTrigger, SegmentTabTrigger } from './tab-trigger';
 export {
   STACK_BACK_ICON,
   STACK_CLOSE_ICON,

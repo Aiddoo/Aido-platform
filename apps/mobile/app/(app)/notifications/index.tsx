@@ -4,17 +4,21 @@ import { SentNudgeList } from '@src/features/notification/components/sent-nudge-
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
 import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
 import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
-import {
-  type NotificationCategory,
-  notificationCategorySchema,
-} from '@src/features/notification/schemas/notification.schema';
+import { notificationCategorySchema } from '@src/features/notification/schemas/notification.schema';
 import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import {
   nudgeDirectionSchema,
   type NudgeDirection,
 } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView, Text } from '@src/shared/ui';
+import {
+  Box,
+  LineTabTrigger,
+  QueryErrorBoundary,
+  ReadableContent,
+  SegmentTabTrigger,
+  StyledSafeAreaView,
+} from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
@@ -48,10 +52,16 @@ export default function NotificationsScreen() {
           <Tabs.List className="border-b border-gray-2 w-full">
             <Tabs.Indicator className="h-[2px]" />
 
-            <CategoryTab value={NOTIFICATION_CATEGORY.ALL}>{t('categories.all')}</CategoryTab>
-            <CategoryTab value={NOTIFICATION_CATEGORY.NOTICE}>{t('categories.notice')}</CategoryTab>
-            <CategoryTab value={NOTIFICATION_CATEGORY.TODO}>{t('categories.todo')}</CategoryTab>
-            <CategoryTab value={NOTIFICATION_CATEGORY.SOCIAL}>{t('categories.social')}</CategoryTab>
+            <LineTabTrigger value={NOTIFICATION_CATEGORY.ALL}>{t('categories.all')}</LineTabTrigger>
+            <LineTabTrigger value={NOTIFICATION_CATEGORY.NOTICE}>
+              {t('categories.notice')}
+            </LineTabTrigger>
+            <LineTabTrigger value={NOTIFICATION_CATEGORY.TODO}>
+              {t('categories.todo')}
+            </LineTabTrigger>
+            <LineTabTrigger value={NOTIFICATION_CATEGORY.SOCIAL}>
+              {t('categories.social')}
+            </LineTabTrigger>
           </Tabs.List>
 
           {isDirectionSelectable && (
@@ -92,20 +102,6 @@ export default function NotificationsScreen() {
   );
 }
 
-function CategoryTab({ value, children }: { value: NotificationCategory; children: string }) {
-  return (
-    <Tabs.Trigger value={value} className="py-3">
-      {({ isSelected }) => (
-        <Tabs.Label>
-          <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-            {children}
-          </Text>
-        </Tabs.Label>
-      )}
-    </Tabs.Trigger>
-  );
-}
-
 function DirectionTabs({
   value,
   onValueChange,
@@ -129,24 +125,10 @@ function DirectionTabs({
       >
         <Tabs.List className="self-start">
           <Tabs.Indicator />
-          <DirectionTab value="received">{t('directions.received')}</DirectionTab>
-          <DirectionTab value="sent">{t('directions.sent')}</DirectionTab>
+          <SegmentTabTrigger value="received">{t('directions.received')}</SegmentTabTrigger>
+          <SegmentTabTrigger value="sent">{t('directions.sent')}</SegmentTabTrigger>
         </Tabs.List>
       </Tabs>
     </Box>
-  );
-}
-
-function DirectionTab({ value, children }: { value: NudgeDirection; children: string }) {
-  return (
-    <Tabs.Trigger value={value}>
-      {({ isSelected }) => (
-        <Tabs.Label>
-          <Text size="b4" weight={isSelected ? 'bold' : 'medium'} shade={isSelected ? 8 : 6}>
-            {children}
-          </Text>
-        </Tabs.Label>
-      )}
-    </Tabs.Trigger>
   );
 }

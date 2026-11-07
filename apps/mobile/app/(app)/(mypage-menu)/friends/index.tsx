@@ -16,7 +16,7 @@ import { useInviteAvailability } from '@src/features/social/invite/hooks/use-inv
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
+import { Box, LineTabTrigger, QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Stack, router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { type ReactNode, Suspense, useCallback } from 'react';
@@ -73,9 +73,9 @@ export default function FriendsScreen() {
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
-          <FriendTab value={FRIEND_LIST_VIEW.friends}>{t('tabs.friends')}</FriendTab>
-          <FriendTab value={FRIEND_LIST_VIEW.receiver}>{t('tabs.received')}</FriendTab>
-          <FriendTab value={FRIEND_LIST_VIEW.sender}>{t('tabs.sent')}</FriendTab>
+          <LineTabTrigger value={FRIEND_LIST_VIEW.friends}>{t('tabs.friends')}</LineTabTrigger>
+          <LineTabTrigger value={FRIEND_LIST_VIEW.receiver}>{t('tabs.received')}</LineTabTrigger>
+          <LineTabTrigger value={FRIEND_LIST_VIEW.sender}>{t('tabs.sent')}</LineTabTrigger>
         </Tabs.List>
         {match(view)
           .with(FRIEND_LIST_VIEW.friends, () => (
@@ -117,20 +117,6 @@ export default function FriendsScreen() {
           .exhaustive()}
       </Tabs>
     </StyledSafeAreaView>
-  );
-}
-
-function FriendTab({ value, children }: { value: FriendListView; children: string }) {
-  return (
-    <Tabs.Trigger value={value} className="py-3">
-      {({ isSelected }) => (
-        <Tabs.Label>
-          <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-            {children}
-          </Text>
-        </Tabs.Label>
-      )}
-    </Tabs.Trigger>
   );
 }
 

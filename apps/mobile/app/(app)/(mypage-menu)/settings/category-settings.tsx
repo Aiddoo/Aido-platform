@@ -14,6 +14,7 @@ import {
   PlusIcon,
   QueryErrorBoundary,
   ReadableContent,
+  SegmentTabTrigger,
   StyledSafeAreaView,
   Text,
   VStack,
@@ -91,15 +92,5 @@ export default TodoCategorySettingsScreen;
 function ViewTab({ view }: { view: CategorySettingsView }) {
   const { t } = useTranslation('settings');
 
-  return (
-    <Tabs.Trigger value={view}>
-      {({ isSelected }) => (
-        <Tabs.Label>
-          <Text size="b4" weight={isSelected ? 'bold' : 'medium'} shade={isSelected ? 8 : 6}>
-            {t(VIEW_LABEL_KEYS[view])}
-          </Text>
-        </Tabs.Label>
-      )}
-    </Tabs.Trigger>
-  );
+  return <SegmentTabTrigger value={view}>{t(VIEW_LABEL_KEYS[view])}</SegmentTabTrigger>;
 }
