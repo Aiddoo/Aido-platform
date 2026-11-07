@@ -12,13 +12,14 @@ import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
+import type { VoicePlan } from '@src/features/voice/schemas/voice-plan.schema';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
 
 import { MEMO_LOG_EVENT } from '../constants/memo-log-events';
-import type { ParsedMemoPlan } from '../domains/memo.model';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import { parseMemoPlanResponseSchema } from '../schemas/memo.schema';
 import {
@@ -29,6 +30,12 @@ import {
   toMemoResourceLimit,
   toVoicePlanFromParsedMemo,
 } from './memo.mapper';
+
+/** 메모 정리 결과. 계획과, 이 요청을 반영한 AI 할 일 만들기 한도(서버가 한도를 읽지 못하면 싣지 않아 null) */
+export interface ParsedMemoPlan {
+  plan: VoicePlan;
+  featureQuota: FeatureQuota | null;
+}
 
 // 서버 업체 체인 제한(AI_DEADLINE_PARSE_MEMO_MS 25초)보다 길게 기다려야 앱이 먼저 끊어 차감된 결과를 잃지 않는다
 const PARSE_MEMO_TIMEOUT_MS = 30_000;
