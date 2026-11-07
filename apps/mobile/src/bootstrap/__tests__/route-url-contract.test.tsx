@@ -4,7 +4,7 @@ import { useReportTypeParam } from '@src/features/insights/report/hooks/use-repo
 import { useSelectedMemo } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
 import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
-import { useCategorySettingsViewParam } from '@src/features/planning/category/hooks/use-category-settings-view-param';
+import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import {
   useFeedActionParam,
   useFeedFriendParam,
@@ -17,6 +17,7 @@ import { useVoiceNoteTab } from '@src/features/voice/hooks/use-voice-note-params
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { mockWindowDimensions } from '@src/shared/__tests__';
 import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
+import { useView } from '@src/shared/hooks/use-view';
 
 jest.unmock('expo-router');
 
@@ -221,7 +222,7 @@ describe('공개 URL 계약', () => {
 
   it('카테고리 설정 보기', async () => {
     // Given
-    const route = await renderRouteHook(() => useCategorySettingsViewParam(), {
+    const route = await renderRouteHook(() => useView('view', categorySettingsViewSchema), {
       url: '/category-settings',
     });
 

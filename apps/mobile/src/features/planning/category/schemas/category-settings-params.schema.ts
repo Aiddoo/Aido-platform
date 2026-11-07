@@ -5,10 +5,8 @@ export const CATEGORY_SETTINGS_VIEW = {
   reorder: 'reorder',
 } as const;
 
-export const categorySettingsViewSchema = z.enum(CATEGORY_SETTINGS_VIEW);
+export const categorySettingsViewSchema = z
+  .enum(CATEGORY_SETTINGS_VIEW)
+  .catch(CATEGORY_SETTINGS_VIEW.edit);
 
 export type CategorySettingsView = z.output<typeof categorySettingsViewSchema>;
-
-export const categorySettingsParamsSchema = z.object({
-  view: categorySettingsViewSchema.catch(CATEGORY_SETTINGS_VIEW.edit),
-});

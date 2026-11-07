@@ -1,5 +1,4 @@
 import { CategoryList } from '@src/features/planning/category/components/category-list';
-import { useCategorySettingsViewParam } from '@src/features/planning/category/hooks/use-category-settings-view-param';
 import {
   CATEGORY_SETTINGS_VIEW,
   type CategorySettingsView,
@@ -7,6 +6,7 @@ import {
 } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
   H3,
@@ -17,6 +17,7 @@ import {
   SegmentTabTrigger,
   StyledSafeAreaView,
   Text,
+  ViewTabs,
   VStack,
 } from '@src/shared/ui';
 import { router } from 'expo-router';
@@ -33,7 +34,7 @@ function TodoCategorySettingsScreen() {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('settings');
   const push = useSingleTap(router.push);
-  const [view, setView] = useCategorySettingsViewParam();
+  const [view, setView] = useView('view', categorySettingsViewSchema);
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
@@ -42,14 +43,10 @@ function TodoCategorySettingsScreen() {
           <H3 className="my-4">{t('categorySettings.header')}</H3>
 
           <HStack justify="between" align="center" className="mb-3">
-            <Tabs
+            <ViewTabs
+              schema={categorySettingsViewSchema}
               value={view}
-              onValueChange={(value) => {
-                const parsed = categorySettingsViewSchema.safeParse(value);
-                if (parsed.success) {
-                  setView(parsed.data);
-                }
-              }}
+              onValueChange={setView}
               variant="primary"
             >
               <Tabs.List>
@@ -57,7 +54,7 @@ function TodoCategorySettingsScreen() {
                 <ViewTab view={CATEGORY_SETTINGS_VIEW.edit} />
                 <ViewTab view={CATEGORY_SETTINGS_VIEW.reorder} />
               </Tabs.List>
-            </Tabs>
+            </ViewTabs>
 
             <PressableFeedback onPress={() => push('/todo-categories/new')}>
               <HStack align="center" gap={4}>
