@@ -112,6 +112,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 - **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
 - **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
 - **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
+- **`app/` 안 route 간 import**: `app/` 안 파일은 모두 route가 되어 공용 파일을 옆에 둘 수 없고, 조립 대상이 여러 층이면 feature로 내릴 수도 없다. 그래서 두 route가 같은 조립을 쓰면 한쪽 route 파일에서 이름 있는 export로 나눈다(`(mypage-menu)/_layout`이 `(tabs)/mypage/index`의 `MyPageMenuPane`을 쓴다). 같은 일이 또 생기면 공용 폴더를 만든다.
 
 **끊는 방법**
 
@@ -437,7 +438,7 @@ MemoList.Loading = function Loading() {
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
-**유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`).
+**유지하는 Context:** `di-context`, `shared-di-context`(`shared`가 쓰는 포트만 나눈 DI), `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`).
 
 **UI 내부 Context의 예, 댓글 폼:** 작성 바, 댓글 행, 뒤로 가기가 한 입력값을 읽고 바꾸고, 세션이 폼을 소유한다. 폼은 props로 내리면 작성 바와 행 사이의 여러 층을 거쳐야 하고, 이 Context는 `UseFormReturn` 하나만 나눠 주며 서버 값이나 앱 상태를 담지 않는다. 폼의 값 변화는 `useWatch`가 구독하므로 Context 값(폼 객체)은 바뀌지 않아 소비자가 다시 그려지지 않는다.
 

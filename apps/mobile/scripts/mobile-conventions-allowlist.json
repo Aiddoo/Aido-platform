@@ -12,27 +12,27 @@
     "entries": {
       "device/activation <-> planning/todo": {
         "count": 1,
-        "reason": "todo→activation은 activation-cache 한 줄, activation→todo는 체크리스트가 오늘 할 일을 읽는다"
+        "reason": "todo→activation은 완료 기록 activation-cache 한 줄, activation→todo는 체크리스트가 할 일 유무의 타입과 조회를 읽는다"
       },
       "engagement/comment <-> social/moderation": {
         "count": 1,
-        "reason": "comment→moderation은 신고 시트, moderation→comment는 차단 뒤 댓글 캐시 정리"
+        "reason": "comment→moderation은 제목 바의 신고·차단 동작 훅, moderation→comment는 차단 뒤 댓글 캐시 정리"
       },
       "identity/auth <-> identity/user": {
         "count": 1,
-        "reason": "같은 영역. auth가 내 정보를 캐시에 넣고 user가 로그아웃 훅을 쓴다"
+        "reason": "같은 영역. auth→user는 탈퇴 뒤 정리에 쓸 내 정보 캐시 읽기, user→auth는 계정 버튼의 로그아웃·탈퇴 mutation"
       },
       "planning/category <-> planning/todo": {
         "count": 1,
-        "reason": "카테고리 href, 파라미터 훅 이동이 남았다(7단계)"
+        "reason": "todo→category는 할 일 화면이 카테고리 조회, 부품, 스키마, 캐시를 쓴다. category→todo는 카테고리 변경 뒤 todo-cache 갱신 한 줄이라 끊는다면 이 줄이다"
       },
       "social/friend <-> social/moderation": {
         "count": 1,
-        "reason": "차단 목록과 친구 캐시를 서로 정리한다"
+        "reason": "friend→moderation은 친구 목록의 신고 판별 모델과 차단 대상 타입, moderation→friend는 차단 목록의 친구 줄 부품과 차단 뒤 친구 캐시 정리"
       },
       "social/moderation <-> social/nudge": {
         "count": 1,
-        "reason": "moderation→nudge는 차단 뒤 콕 캐시 정리, nudge→moderation은 신고 진입"
+        "reason": "moderation→nudge는 차단 뒤 콕 캐시 정리, nudge→moderation은 콕 상세 툴바의 신고 판별 모델"
       }
     }
   },
