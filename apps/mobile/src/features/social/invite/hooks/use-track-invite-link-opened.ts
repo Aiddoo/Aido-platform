@@ -8,7 +8,7 @@ let lastTrackedOpenKey: string | null = null;
 
 /** 시스템이 연 초대 링크가 착지한 화면에서 invite_link_opened를 남긴다 */
 export function useTrackInviteLinkOpened() {
-  const { source, openedAt } = useInviteParams();
+  const [{ source, openedAt }] = useInviteParams();
   const { trackEvent } = useTrack();
 
   useEffect(() => {

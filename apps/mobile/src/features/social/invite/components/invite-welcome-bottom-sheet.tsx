@@ -3,6 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/notification.mutations';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/notification.queries';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BellFilledIcon,
@@ -42,8 +43,8 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { useInviteWelcomeParams } from '../hooks/use-invite-welcome-params';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
+import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
 import type { RedemptionResult } from '../schemas/invite-redemption.schema';
 
 type InviteWelcomeBottomSheetProps = Omit<
@@ -54,7 +55,7 @@ type InviteWelcomeBottomSheetProps = Omit<
 /** 초대를 수락한 뒤 누구와 친구가 됐는지, 무엇을 받았는지 보여 주고 첫 할 일로 이끈다 */
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   const { t } = useTranslation('common');
-  const { friendId } = useInviteWelcomeParams();
+  const [{ friendId }] = useRouteParams(inviteWelcomeParamsSchema);
   const sheet = useSheetRoute('/feed');
   const { data: redemption } = useQuery(
     useGetRedemptionResultQueryOptions({ inviterId: friendId }),

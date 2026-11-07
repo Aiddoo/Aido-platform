@@ -23,7 +23,7 @@ import type { InviteCode } from '../schemas/invite.schema';
 
 /** 가입하면 받는 혜택을 구독 화면과 같은 영수증 톤으로 보여 준다 */
 export function InviteBenefitReceipt() {
-  const { inviteCode } = useInviteParams();
+  const [{ inviteCode }] = useInviteParams();
 
   if (inviteCode == null) {
     return null;

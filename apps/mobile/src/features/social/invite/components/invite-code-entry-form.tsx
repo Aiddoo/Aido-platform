@@ -36,7 +36,7 @@ import { InviteCodeInput } from './invite-code-input';
 
 /** 코드 입력과 제출 버튼. 입력 위에 붙는 안내는 화면이 children으로 넘긴다 */
 export function InviteCodeEntryForm({ children }: PropsWithChildren) {
-  const { openedAt } = useInviteParams();
+  const [{ openedAt }] = useInviteParams();
   const { t } = useTranslation('invite');
   const showFailure = useMutationFailure();
   const { trackEvent } = useTrack();

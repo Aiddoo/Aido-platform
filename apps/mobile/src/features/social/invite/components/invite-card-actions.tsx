@@ -18,7 +18,7 @@ import type { InviteCode } from '../schemas/invite.schema';
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 export function InviteCardActions() {
   const status = useAuthStatus();
-  const { inviteCode, source } = useInviteParams();
+  const [{ inviteCode, source }] = useInviteParams();
   const inviteService = useInviteService();
   const { t } = useTranslation('invite');
 

@@ -29,7 +29,7 @@ import type { InviteCode } from '../schemas/invite.schema';
 
 /** 초대 카드 위쪽. 누가 초대했는지를 가장 크게 보여 준다 */
 export function InvitePreview() {
-  const { inviteCode } = useInviteParams();
+  const [{ inviteCode }] = useInviteParams();
 
   if (inviteCode == null) {
     return <InvitePreview.Empty />;
