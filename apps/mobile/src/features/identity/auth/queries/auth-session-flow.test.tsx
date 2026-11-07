@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { resolveInitialAuthStatus } from '@src/bootstrap/auth/auth-boot';
+import { resolveInitialAuthStatus } from '@src/bootstrap/auth/resolve-initial-auth-status';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';

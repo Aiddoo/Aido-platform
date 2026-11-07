@@ -16,11 +16,11 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 그 외 어떤 코드도 토큰을 지우지 않는다. 특히:
 
 - **로컬 휴리스틱(플래그·앱 버전·MMKV 상태 비교)으로 토큰을 선제 삭제하지 않는다.** MMKV 플래그 부재는 재설치뿐 아니라 그 플래그가 없던 구버전에서의 업데이트도 뜻한다. v1.3.5의 첫 실행 가드가 이 오판으로 업데이트한 전체 유저를 강제 로그아웃시켰다(v1.4.0 사고, PR #591의 회귀).
-- **부팅 시 인증 상태를 네트워크 결과에 걸지 않는다.** 오프라인·서버 장애 중에도 리프레시 토큰이 있으면 인증 상태로 시작한다(`auth-boot.ts`).
+- **부팅 시 인증 상태를 네트워크 결과에 걸지 않는다.** 오프라인·서버 장애 중에도 리프레시 토큰이 있으면 인증 상태로 시작한다(`resolve-initial-auth-status.ts`).
 
-`auth-boot.test.ts`가 회귀 테스트다.
+`resolve-initial-auth-status.test.ts`가 회귀 테스트다.
 
-## 부팅 흐름 (`bootstrap/auth/auth-boot.ts`)
+## 부팅 흐름 (`bootstrap/auth/resolve-initial-auth-status.ts`)
 
 부팅은 읽기 전용이다. 토큰을 지우지도, 저장하지도, 네트워크를 타지도 않는다.
 

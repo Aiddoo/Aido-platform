@@ -1,7 +1,7 @@
 import { createMemoryTokenStore } from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
 
-import { resolveInitialAuthStatus } from './auth-boot';
+import { resolveInitialAuthStatus } from './resolve-initial-auth-status';
 
 describe('앱 부팅 인증 판정 — 클라이언트는 세션을 먼저 끊지 않는다', () => {
   let tokenStore: ReturnType<typeof createMemoryTokenStore>;

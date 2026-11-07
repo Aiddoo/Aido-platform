@@ -1,4 +1,4 @@
-import { cleanStartupKeys } from '@src/bootstrap/startup-key-cleanup';
+import { cleanStartupKeys } from '@src/bootstrap/startup/startup-key-cleanup';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';

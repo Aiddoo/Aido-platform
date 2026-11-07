@@ -7,7 +7,7 @@ import { toError } from '@src/shared/errors';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
-import { resolveInitialAuthStatus } from '../auth/auth-boot';
+import { resolveInitialAuthStatus } from '../auth/resolve-initial-auth-status';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
 import {
   useAnalytics,

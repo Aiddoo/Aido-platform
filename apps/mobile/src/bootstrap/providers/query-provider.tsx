@@ -1,4 +1,4 @@
-import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { i18n } from '@src/shared/i18n';
 import { getAppBundleId } from '@src/shared/infra/application/app-bundle';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
