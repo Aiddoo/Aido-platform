@@ -22,7 +22,11 @@ export function createPendingRedemptionRepository(
     // 손상된 값은 초대가 없는 것으로 본다
     find: () => parseStoredJson(storage.get(PENDING_REDEMPTION_KEY), pendingRedemptionSchema),
     save: (pending) => {
-      storage.set(PENDING_REDEMPTION_KEY, JSON.stringify(pending));
+      try {
+        storage.set(PENDING_REDEMPTION_KEY, JSON.stringify(pending));
+      } catch {
+        // 이어서 열지 못할 뿐 가입을 막지 않는다
+      }
     },
     clear: () => {
       storage.remove(PENDING_REDEMPTION_KEY);

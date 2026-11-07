@@ -1,4 +1,5 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -109,9 +110,10 @@ InvitePreview.Empty = function Empty() {
 
 function EnterCodeButton() {
   const { t } = useTranslation('invite');
+  const replace = useSingleTap(router.replace);
 
   return (
-    <Result.Button testID="invite-result-enter-code" onPress={() => router.replace('/invite')}>
+    <Result.Button testID="invite-result-enter-code" onPress={() => replace('/invite')}>
       {t('result.enterCode')}
     </Result.Button>
   );

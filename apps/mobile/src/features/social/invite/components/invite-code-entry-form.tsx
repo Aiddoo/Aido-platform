@@ -109,14 +109,16 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
         params: { inviteCode, source: 'code_entry' },
       });
     } catch (error) {
-      // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 토스트로 알려 입력한 코드를 지키지 않고 둔다
+      // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 토스트로 알려 입력한 코드를 지우지 않고 둔다
       if (!isBusinessError(error)) {
         haptics.notify('error');
         toast.error(getUserFacingMessage(error));
         return;
       }
 
-      form.setError('inviteCode', { message: error.message });
+      form.setError('inviteCode', {
+        message: getUserFacingMessage(error) ?? t('errors.invalidCode'),
+      });
     }
   });
 

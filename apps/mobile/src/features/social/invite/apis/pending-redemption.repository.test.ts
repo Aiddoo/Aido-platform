@@ -56,4 +56,21 @@ describe('createPendingRedemptionRepository', () => {
     // Then
     expect(result).toBeNull();
   });
+
+  it('저장에 실패해도 던지지 않아 가입 화면으로 갈 수 있다', () => {
+    // Given
+    const storage = {
+      ...createMemorySyncStorage(),
+      set: () => {
+        throw new Error('storage full');
+      },
+    };
+    const repository = createPendingRedemptionRepository(storage);
+
+    // When
+    const save = () => repository.save(createPendingRedemption({ inviteCode: 'K7M2QX' }));
+
+    // Then
+    expect(save).not.toThrow();
+  });
 });
