@@ -1,6 +1,5 @@
-import { createLoggerStub } from '@src/shared/__tests__';
+import { createLoggerStub, renderUi } from '@src/shared/__tests__';
 import { getLastAudioPlaylist } from '@src/shared/__tests__/mocks/expo-audio';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';

@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 
 import { createTodoDto } from '../__tests__/todo.fixtures';
 import { TodoPolicy } from '../domains/todo.model';

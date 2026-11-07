@@ -4,9 +4,12 @@ import { err } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createErrorReporterStub, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createErrorReporterStub,
+  createHttpClientStub,
+  createTestQueryClient,
+  renderUi,
+} from '@src/shared/__tests__';
 import { screen } from '@testing-library/react-native';
 
 import { SuggestionEntry } from './suggestion-entry';

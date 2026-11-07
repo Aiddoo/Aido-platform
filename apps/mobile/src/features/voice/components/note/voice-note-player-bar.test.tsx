@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { renderUi } from '@src/shared/__tests__';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';

@@ -12,9 +12,9 @@ import {
   createLoggerStub,
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
+  createTestQueryClient,
+  renderUi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import {

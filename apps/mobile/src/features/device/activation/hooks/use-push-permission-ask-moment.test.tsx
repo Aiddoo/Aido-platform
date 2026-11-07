@@ -13,8 +13,8 @@ import {
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   renderUiHook,
+  createTestQueryClient,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { toInstant } from '@src/shared/date/instant';
 import { act, waitFor } from '@testing-library/react-native';
 

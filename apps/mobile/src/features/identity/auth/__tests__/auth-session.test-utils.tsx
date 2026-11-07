@@ -28,8 +28,8 @@ import {
   createSocialAuthGatewayStub,
   createTestDi,
   createVoiceNoteStorageFake,
+  createTestQueryClient,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';

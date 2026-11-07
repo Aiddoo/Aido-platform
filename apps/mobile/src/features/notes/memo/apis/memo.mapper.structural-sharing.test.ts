@@ -1,5 +1,5 @@
 import type { MemoListResponse } from '@aido/api';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 
 import type { MemoPage } from '../schemas/memo.schema';
 import { toMemoPage } from './memo.mapper';

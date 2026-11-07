@@ -1,6 +1,9 @@
 import '@src/shared/i18n/init';
-import { createHapticsGatewayStub, createSpeechRecognizerStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createHapticsGatewayStub,
+  createSpeechRecognizerStub,
+  renderUi,
+} from '@src/shared/__tests__';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useSharedValue } from 'react-native-reanimated';
 

@@ -1,8 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createAnalyticsStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
 import { Text } from '@src/shared/ui';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';

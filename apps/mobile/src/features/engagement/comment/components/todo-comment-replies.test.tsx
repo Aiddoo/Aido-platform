@@ -7,8 +7,8 @@ import {
   createHttpClientStub,
   createLoggerStub,
   createPendingResponse,
+  renderUi,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen } from '@testing-library/react-native';

@@ -6,8 +6,8 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
+  renderUi,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, screen } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
 

@@ -3,8 +3,7 @@ import type { FeatureCampaignConfig } from '@src/features/app-config/feature-cam
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createMemorySyncStorage } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 

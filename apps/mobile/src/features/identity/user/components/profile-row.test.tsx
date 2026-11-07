@@ -1,7 +1,5 @@
 import '@src/shared/i18n/init';
-import { createClipboardGatewayStub } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createClipboardGatewayStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
 import { fireEvent, screen } from '@testing-library/react-native';
 

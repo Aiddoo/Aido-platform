@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 import type { InfiniteData } from '@tanstack/react-query';
 
 import { createMemo } from '../__tests__/memo.fixtures';

@@ -21,8 +21,11 @@ import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-
 import { friendsPageSchema } from '@src/features/social/friend/schemas/friend.schema';
 import { createWeatherReport } from '@src/features/weather/__tests__/weather-report.fixtures';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
-import { createLoggerStub, createMemorySyncStorage } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import {
+  createLoggerStub,
+  createMemorySyncStorage,
+  createTestQueryClient,
+} from '@src/shared/__tests__';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { setGlobalLogger } from '@src/shared/infra/logger/global-logger';
 import { partialMatchKey, type QueryKey } from '@tanstack/react-query';

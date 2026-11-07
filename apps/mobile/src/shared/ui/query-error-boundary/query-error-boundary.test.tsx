@@ -1,6 +1,5 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createErrorReporterStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createErrorReporterStub, renderUi } from '@src/shared/__tests__';
 import { ApiError, ServerError } from '@src/shared/errors';
 import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';

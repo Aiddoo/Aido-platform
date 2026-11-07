@@ -8,8 +8,8 @@ import {
   createHttpClientStub,
   createTestDi,
   createMemoryObservableSyncStorage,
+  createTestQueryClient,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { QueryClientProvider } from '@tanstack/react-query';

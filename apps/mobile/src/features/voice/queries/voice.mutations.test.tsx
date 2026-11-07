@@ -1,9 +1,12 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createTestQueryClient,
+  renderUi,
+} from '@src/shared/__tests__';
 import { Button } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';

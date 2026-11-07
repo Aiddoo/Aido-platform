@@ -1,5 +1,5 @@
+import { renderUi } from '@src/shared/__tests__';
 import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
 import { act } from '@testing-library/react-native';
 

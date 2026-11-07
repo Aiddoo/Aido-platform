@@ -1,5 +1,5 @@
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import {

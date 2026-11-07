@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
 import type { WeatherReport } from '../schemas/weather-report.schema';

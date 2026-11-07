@@ -1,7 +1,6 @@
 import '@src/shared/i18n/init';
 import type { MissingSpeechPermission } from '@src/core/ports/speech-recognizer';
-import { createLoggerStub, createSpeechRecognizerStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createLoggerStub, createSpeechRecognizerStub, renderUi } from '@src/shared/__tests__';
 import { Button, OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen } from '@testing-library/react-native';
 

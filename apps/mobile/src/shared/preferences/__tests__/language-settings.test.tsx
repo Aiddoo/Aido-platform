@@ -1,5 +1,8 @@
-import { createAnalyticsStub, createMemoryObservableSyncStorage } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createAnalyticsStub,
+  createMemoryObservableSyncStorage,
+  renderUi,
+} from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { fireEvent, screen } from '@testing-library/react-native';

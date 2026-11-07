@@ -1,5 +1,4 @@
-import { createPendingResponse } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createPendingResponse, createTestQueryClient } from '@src/shared/__tests__';
 
 import { createSessionQueryCache } from './session-query-cache';
 

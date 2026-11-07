@@ -1,7 +1,6 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createHttpClientStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createHttpClientStub, renderUi } from '@src/shared/__tests__';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';

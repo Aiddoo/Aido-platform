@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { renderUi } from '@src/shared/__tests__';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 

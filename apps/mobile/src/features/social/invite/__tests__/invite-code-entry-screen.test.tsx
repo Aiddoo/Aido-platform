@@ -5,9 +5,9 @@ import {
   createClipboardGatewayStub,
   createErrorReporterStub,
   createHttpClientStub,
+  createTestQueryClient,
+  renderUi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';

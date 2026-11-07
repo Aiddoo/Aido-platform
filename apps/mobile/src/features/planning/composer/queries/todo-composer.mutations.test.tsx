@@ -4,8 +4,8 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  renderUi,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError, ParseError } from '@src/shared/errors';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';

@@ -14,9 +14,9 @@ import {
   createLoggerStub,
   createMemoryStorage,
   createVoiceNoteStorageFake,
+  createTestQueryClient,
+  renderUi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';

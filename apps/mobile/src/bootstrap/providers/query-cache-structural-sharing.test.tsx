@@ -1,5 +1,4 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { toInstant } from '@src/shared/date/instant';
 import { QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';

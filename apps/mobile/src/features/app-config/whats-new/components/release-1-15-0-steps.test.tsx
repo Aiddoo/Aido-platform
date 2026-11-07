@@ -11,9 +11,9 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
+  createTestQueryClient,
+  renderUi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';

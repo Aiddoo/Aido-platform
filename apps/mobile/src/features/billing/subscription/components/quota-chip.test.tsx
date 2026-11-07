@@ -1,9 +1,7 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { screen } from '@testing-library/react-native';
 
 import {

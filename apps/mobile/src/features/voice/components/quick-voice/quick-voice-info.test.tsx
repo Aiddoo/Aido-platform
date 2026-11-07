@@ -4,8 +4,12 @@ import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { ok } from '@src/core/errors/result';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { createHttpClientStub, createLoggerStub, createTestDi } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createTestDi,
+  createTestQueryClient,
+} from '@src/shared/__tests__';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';

@@ -1,6 +1,6 @@
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { createInvite } from '../__tests__/invite.fixtures';

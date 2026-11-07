@@ -2,9 +2,9 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createTestQueryClient,
+  renderUi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';

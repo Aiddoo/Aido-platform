@@ -1,7 +1,6 @@
 import { TODO_EDIT_SCOPES, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createAnalyticsStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createErrorReporterStub, createAnalyticsStub, renderUi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';

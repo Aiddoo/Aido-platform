@@ -7,8 +7,8 @@ import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createPendingResponse,
+  renderUi,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';

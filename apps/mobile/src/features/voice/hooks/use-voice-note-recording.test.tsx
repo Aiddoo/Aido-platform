@@ -8,8 +8,8 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
+  renderUi,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';

@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createAnalyticsStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createErrorReporterStub, createAnalyticsStub, renderUi } from '@src/shared/__tests__';
 import { screen } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';

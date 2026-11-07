@@ -1,8 +1,11 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createPendingResponse } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createHttpClientStub,
+  createPendingResponse,
+  createTestQueryClient,
+  renderUi,
+} from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';

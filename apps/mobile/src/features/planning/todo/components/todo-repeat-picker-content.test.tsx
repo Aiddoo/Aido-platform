@@ -2,9 +2,9 @@ import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createAnalyticsStub,
+  renderUi,
 } from '@src/shared/__tests__';
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen } from '@testing-library/react-native';

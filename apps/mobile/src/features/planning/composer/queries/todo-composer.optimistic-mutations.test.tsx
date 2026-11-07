@@ -21,9 +21,12 @@ import type {
   TodoDetails,
   TodoListResult,
 } from '@src/features/planning/todo/schemas/todo.schema';
-import { createHttpClientStub, createPendingResponse } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createHttpClientStub,
+  createPendingResponse,
+  createTestQueryClient,
+  renderUi,
+} from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';

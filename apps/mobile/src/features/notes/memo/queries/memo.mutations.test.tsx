@@ -4,9 +4,9 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createTestQueryClient,
+  renderUi,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';

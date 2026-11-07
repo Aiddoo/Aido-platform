@@ -12,8 +12,8 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
+  renderUi,
 } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';

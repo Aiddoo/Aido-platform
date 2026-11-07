@@ -23,8 +23,8 @@ import {
   createMemoryTokenStore,
   createTestDi,
   createVoiceNoteStorageFake,
+  createTestQueryClient,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';

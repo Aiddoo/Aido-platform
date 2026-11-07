@@ -1,4 +1,4 @@
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { renderUi } from '@src/shared/__tests__';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { AppIconPicker } from './app-icon-picker';

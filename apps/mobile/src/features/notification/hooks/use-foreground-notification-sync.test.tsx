@@ -3,8 +3,8 @@ import {
   createHttpClientStub,
   createPushNotificationGatewayStub,
   createTestDi,
+  createTestQueryClient,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';

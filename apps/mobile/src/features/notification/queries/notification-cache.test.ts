@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';

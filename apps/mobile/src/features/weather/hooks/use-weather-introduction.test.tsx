@@ -1,6 +1,9 @@
 import type { LocationGateway, LocationPermission } from '@src/core/ports/location-gateway';
-import { createLocationGatewayStub, createMemorySyncStorage } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createLocationGatewayStub,
+  createMemorySyncStorage,
+  renderUi,
+} from '@src/shared/__tests__';
 import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';

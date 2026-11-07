@@ -1,8 +1,7 @@
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createAuthApiError } from '@src/features/identity/auth/__tests__/auth.fixtures';
-import { createHttpClientStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createHttpClientStub, renderUi } from '@src/shared/__tests__';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { RemindNudgeBottomSheet } from './nudge-bottom-sheet';

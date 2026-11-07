@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';

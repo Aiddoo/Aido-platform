@@ -1,7 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import { createAnalyticsStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
 import { waitFor } from '@testing-library/react-native';
 
 import { useFriendLimitInvite } from './use-friend-limit-invite';

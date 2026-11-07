@@ -6,8 +6,8 @@ import {
   createLoggerStub,
   createPushNotificationGatewayStub,
   createTestDi,
+  createTestQueryClient,
 } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
