@@ -1,23 +1,10 @@
 import appIconImage from '@assets/images/profile-icons/default.webp';
-import {
-  useExchangeCodeMutationOptions,
-  useOpenAppleLoginMutationOptions,
-  useOpenGoogleLoginMutationOptions,
-  useOpenKakaoLoginMutationOptions,
-  useOpenNaverLoginMutationOptions,
-} from '@src/features/identity/auth/queries/auth.mutations';
-import type { OAuthStartProvider } from '@src/features/identity/auth/schemas/oauth.schema';
+import { SocialLoginButtons } from '@src/features/identity/auth/components/social-login-buttons';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useTheme } from '@src/shared/providers/theme-provider';
 import {
-  AppleIcon,
-  Button,
-  GoogleIcon,
   H1,
   HStack,
-  KakaoIcon,
-  NaverIcon,
   ReadableContent,
   Spacing,
   StyledSafeAreaView,
@@ -25,34 +12,12 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Avatar, Separator } from 'heroui-native';
-import type { ComponentProps, ReactNode } from 'react';
 
-function LoginScreen() {
+export default function LoginScreen() {
   const push = useSingleTap(router.push);
-
   const { t } = useTranslation(['auth', 'invite']);
-  const exchangeCodeMutation = useMutation(useExchangeCodeMutationOptions());
-
-  const kakaoLoginMutation = useMutation(useOpenKakaoLoginMutationOptions());
-  const naverLoginMutation = useMutation(useOpenNaverLoginMutationOptions());
-  const googleLoginMutation = useMutation(useOpenGoogleLoginMutationOptions());
-
-  // 교환에 성공하면 인증 상태로 바뀌고 Stack.Protected가 (app)으로 보낸다.
-  const createExchangeCodeCallbacks = (provider: OAuthStartProvider) => ({
-    onSuccess: (code: string | null) => {
-      if (code) {
-        exchangeCodeMutation.mutate({ code, provider });
-      }
-    },
-  });
-
-  const appleLoginMutation = useMutation(useOpenAppleLoginMutationOptions());
-
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white mb-2">
@@ -69,54 +34,7 @@ function LoginScreen() {
           </VStack>
         </VStack>
 
-        <VStack gap={8}>
-          {process.env.EXPO_OS === 'ios' && (
-            <SocialLoginButton
-              icon={
-                <AppleIcon
-                  width={20}
-                  height={20}
-                  colorClassName={isDark ? 'text-black' : 'text-white'}
-                />
-              }
-              label={t('login.continueWith', { provider: t('providers.APPLE') })}
-              onPress={() => appleLoginMutation.mutate()}
-              isLoading={appleLoginMutation.isPending}
-              className="bg-apple-button dark:bg-apple-button-dark"
-              labelClassName="text-white dark:text-black"
-            />
-          )}
-          <SocialLoginButton
-            icon={<KakaoIcon width={20} height={20} />}
-            label={t('login.continueWith', { provider: t('providers.KAKAO') })}
-            onPress={() =>
-              kakaoLoginMutation.mutate(undefined, createExchangeCodeCallbacks('kakao'))
-            }
-            isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
-            className="bg-kakao"
-            labelClassName="dark:text-gray-1"
-          />
-          <SocialLoginButton
-            icon={<GoogleIcon width={20} height={20} />}
-            label={t('login.continueWith', { provider: t('providers.GOOGLE') })}
-            onPress={() =>
-              googleLoginMutation.mutate(undefined, createExchangeCodeCallbacks('google'))
-            }
-            isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
-            className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
-            labelClassName="dark:text-gray-9"
-          />
-          <SocialLoginButton
-            icon={<NaverIcon width={16} height={16} colorClassName="text-white" />}
-            label={t('login.continueWith', { provider: t('providers.NAVER') })}
-            onPress={() =>
-              naverLoginMutation.mutate(undefined, createExchangeCodeCallbacks('naver'))
-            }
-            isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
-            className="bg-naver"
-            labelClassName="text-white dark:text-gray-9"
-          />
-        </VStack>
+        <SocialLoginButtons />
 
         <Spacing size={24} />
 
@@ -142,34 +60,5 @@ function LoginScreen() {
         </HStack>
       </ReadableContent>
     </StyledSafeAreaView>
-  );
-}
-
-export default LoginScreen;
-
-type ButtonProps = ComponentProps<typeof Button>;
-
-interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: ReactNode;
-  label: string;
-  labelClassName?: string;
-}
-
-function SocialLoginButton({
-  icon,
-  label,
-  className,
-  labelClassName,
-  ...props
-}: SocialLoginButtonProps) {
-  return (
-    <Button {...props} className={className}>
-      <HStack align="center" gap={8}>
-        {icon}
-        <Text size="b4" weight="semibold" shade={9} className={labelClassName}>
-          {label}
-        </Text>
-      </HStack>
-    </Button>
   );
 }

@@ -9,20 +9,19 @@ import { useGetCurrentAppIconQueryOptions } from '@src/features/device/app-icon/
 import type { AppIconKey } from '@src/features/device/app-icon/schemas/app-icon.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ConfirmDialog,
   HStack,
   QueryErrorBoundary,
   SettingsListGroup,
   SettingsScreenLayout,
   Text,
-  useOverlay,
+  useConfirmDialog,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 function AppIconScreen() {
-  const { t } = useTranslation('appIcon');
+  const { t } = useTranslation(['appIcon', 'common']);
   const appIconService = useAppIconService();
   const { data: currentIconKey, isPending: isCurrentIconPending } = useQuery(
     useGetCurrentAppIconQueryOptions(),
@@ -35,10 +34,10 @@ function AppIconScreen() {
   const isLoading = isSupported && isCurrentIconPending;
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const isIconLocked = EntitlementPolicy.isFeatureLocked(entitlements, 'APP_ICON');
-  const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
   const gate = useEntitlementGate('APP_ICON', { surface: 'app_icon_settings' });
 
-  const handleIconPress = (key: AppIconKey) => {
+  const handleIconPress = async (key: AppIconKey) => {
     if (isChanging || key === currentIcon) {
       return;
     }
@@ -48,25 +47,17 @@ function AppIconScreen() {
     }
 
     if (process.env.EXPO_OS === 'android') {
-      overlay.open(({ isOpen, close, unmount }) => (
-        <AppIconRestartDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              unmount();
-            }
-          }}
-          onConfirm={() => {
-            close();
-            unmount();
-            changeIcon(key);
-          }}
-        />
-      ));
-    } else {
-      changeIcon(key);
+      const isConfirmed = await confirmDialog.open({
+        title: t('restartDialog.title'),
+        description: t('restartDialog.description'),
+        confirmLabel: t('restartDialog.confirm'),
+        cancelLabel: t('common:actions.cancel'),
+      });
+      if (!isConfirmed) {
+        return;
+      }
     }
+    changeIcon(key);
   };
 
   return match({ isSupported, isLoading })
@@ -118,37 +109,6 @@ AppIconScreen.Loading = function Loading() {
     </SettingsScreenLayout>
   );
 };
-
-interface AppIconRestartDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-}
-
-function AppIconRestartDialog({ isOpen, onOpenChange, onConfirm }: AppIconRestartDialogProps) {
-  const { t } = useTranslation(['appIcon', 'common']);
-
-  return (
-    <ConfirmDialog
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>{t('restartDialog.title')}</ConfirmDialog.Title>}
-      description={
-        <ConfirmDialog.Description>{t('restartDialog.description')}</ConfirmDialog.Description>
-      }
-      cancelButton={
-        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-          {t('common:actions.cancel')}
-        </ConfirmDialog.CancelButton>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={onConfirm}>
-          {t('restartDialog.confirm')}
-        </ConfirmDialog.ConfirmButton>
-      }
-    />
-  );
-}
 
 export default function AppIconRoute() {
   return (
