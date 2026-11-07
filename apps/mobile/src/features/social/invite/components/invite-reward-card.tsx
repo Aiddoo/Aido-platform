@@ -22,7 +22,7 @@ import { InvitePolicy } from '../domains/invite.model';
 import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
-import { createPawPrintBoard } from '../utils/invite-paw-print-board.view-model';
+import { createPawPrintBoard } from '../utils/invite-paw-print-board.geometry';
 import { inviteRewardDotVariants } from './invite-reward-card.variants';
 
 type InviteRewardCardProps = Omit<ComponentProps<typeof PressableFeedback>, 'onPress' | 'children'>;

@@ -56,7 +56,7 @@ import {
   type PawPrintBoard,
   type PawPrintCell,
   type PawPrintState,
-} from '../utils/invite-paw-print-board.view-model';
+} from '../utils/invite-paw-print-board.geometry';
 import {
   fishBoneVariants,
   pawPrintIconVariants,

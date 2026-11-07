@@ -10,7 +10,7 @@ import {
   calculateWaitingOverflow,
   createPawPrintBoard,
   PAW_PRINT_BOARD_SIZE,
-} from './invite-paw-print-board.view-model';
+} from './invite-paw-print-board.geometry';
 
 describe('calculatePawPrintColumns', () => {
   it.each([
