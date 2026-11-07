@@ -196,7 +196,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 - **레이아웃 프리미티브**: raw RN `View`/`Pressable` 대신 `Box`/`HStack`/`VStack`/`Flex`/`Grid`/`Spacing`/`ListRow`와
   HeroUI `PressableFeedback`을 쓴다. 예외는 shared/ui 내부 구현과 프리미티브가 지원하지 않는 native ref·Animated뿐이다.
 - **스켈레톤**: `.Loading`은 `.Item`과 같은 레이아웃·슬롯에 `Skeleton`만 바꿔 넣는다. 글자 자리는 `TextSkeleton`
-  (`useFontScaledSize`로 현재 글꼴 배율의 줄 높이), 고정 개수는 es-toolkit `range(n).map`이다([목록·스켈레톤](architecture.md#목록스켈레톤)).
+  (`useSystemFontScaledSize`로 현재 글꼴 배율의 줄 높이), 고정 개수는 es-toolkit `range(n).map`이다([목록·스켈레톤](architecture.md#목록스켈레톤)).
 - **진행 중**: 저장 버튼의 진행 표시는 mutation `isPending`을 `Button`의 `isLoading`에 넘긴다. 별도 `useState` 로딩이나
   화면 전체 스피너를 만들지 않는다.
 - **상태 분기**: 탭·단계·결과처럼 서로 배타적인 상태는 union에 ts-pattern `match(...).with(...).exhaustive()`로 그린다.

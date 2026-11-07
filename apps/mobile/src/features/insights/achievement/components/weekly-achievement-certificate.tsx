@@ -2,9 +2,9 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -35,7 +35,7 @@ import { Certificate } from './certificate';
 const CERTIFICATE_LINE_COUNT = 4;
 
 export function WeeklyAchievementCertificate() {
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const [{ year, week }] = useRouteParams(achievementParamsSchema);
   const [{ data: achievement }, { data: user }] = useSuspenseQueries({
     queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],

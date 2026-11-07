@@ -7,9 +7,9 @@ import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/que
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import type { SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -62,7 +62,7 @@ interface EditSubTodoFormProps {
 function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const { t } = useTranslation('todo');
   const [date] = useTodoSheetDateKey();
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: subTodo.title },

@@ -190,7 +190,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 검증 실패                  | 틀린 칸으로 포커스                                      | `Controller`의 `field.ref`                                                                                                                           |
 | 시트 위에 피커를 열고 닫음 | 키보드 내린 뒤 열림, 닫으면 입력으로 포커스 복귀        | `ModalBottomSheet`가 열릴 때 키보드를 내린다. 복귀는 `onCloseStart`에서 한다([시트](./ui-components.md#시트))                                        |
 | 저장 중·실패               | 중복 제출 없음, 성공 전에 닫지 않음, 실패해도 글자 유지 | `isSubmitting`, `isPending`, 초안                                                                                                                    |
-| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useFontScaledSize`                                                                                                                |
+| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useSystemFontScaledSize`                                                                                                          |
 | 뒤로 가기                  | 작성 중 글자를 잃지 않음                                | 초안 또는 확인                                                                                                                                       |
 
 화면을 끝내기 전에 주요 흐름 한 번, 실패와 재시도 한 번, 키보드, 뒤로 가기, 긴 문구, 큰 글꼴을 직접 해 보고 실행한 것과 못 한 것을 나눠 보고한다.
@@ -408,7 +408,7 @@ MemoList.Loading = function Loading() {
 | 데이터에 따라 생기는 줄(설명, 하위 항목) | 로딩에서 그리지 않아 끝날 때 위 내용이 밀리지 않게 한다                                                                                  |
 | 받은 뒤 나타나는 버튼·배너               | 자리를 먼저 비워 두거나(`MemoCreateButton.Loading`, `MemoEditor.PaneLoading`의 버튼 줄), 대부분 안 보이면 자리를 잡지 않고 이유를 적는다 |
 | 오류 문구                                | `preserveErrorSpace`로 자리 유지. 입력 칸이 밀리지 않는다                                                                                |
-| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useFontScaledSize`, 칩은 `ActionButton.Icon`                                                                     |
+| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useSystemFontScaledSize`, 칩은 `ActionButton.Icon`                                                               |
 | 재조회                                   | 화면에 데이터가 있으면 fallback으로 바꾸지 않는다. 키가 바뀌는 전환은 `startTransition`을 검토한다                                       |
 | 시트                                     | 내용 높이 변화는 기존 시트 측정을 쓴다. 키보드는 `KeyboardBottomSheet`, `react-native-keyboard-controller`                               |
 | 넓은 화면 전환                           | `AdaptivePane`으로 재마운트 없이 유지                                                                                                    |

@@ -1,5 +1,5 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { InfoIcon, RepeatIcon } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { RepeatHintLine } from '../repeat-hint-line';
 /** 달을 넘기면 닫히고, 읽을 틈 없이 넘긴 경우에는 본 것으로 남기지 않아 멈춘 달에서 다시 열린다 */
 export function RepeatHorizonHint() {
   const { t } = useTranslation('todo');
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const [selectedDateKey] = useFeedDateKey();
   const { data: hasUpcomingRepeat = false } = useQuery(useGetHasUpcomingRepeatQueryOptions());
   const [isInfoOpen, setIsInfoOpen] = useState(false);

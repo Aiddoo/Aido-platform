@@ -13,7 +13,7 @@ import {
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -346,7 +346,7 @@ PlanReview.TodoRow = function PlanTodoRow({
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
 
   if (!VoicePlanPolicy.isTodoAction(todo)) {
     return null;

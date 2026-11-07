@@ -1,4 +1,4 @@
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack } from '@src/shared/ui';
@@ -17,7 +17,7 @@ interface QuickVoiceHeaderProps {
  */
 export function QuickVoiceHeader({ center, right, onClose }: QuickVoiceHeaderProps) {
   const { t } = useTranslation('voice');
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (

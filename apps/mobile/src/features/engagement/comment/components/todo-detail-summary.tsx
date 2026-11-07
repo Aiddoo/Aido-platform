@@ -24,8 +24,8 @@ import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.m
 import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
 import { isSameYearDateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -94,7 +94,7 @@ TodoDetailSummary.Task = function Task() {
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const todayKey = useTodayKey();
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const { todo } = detail;
 
   return (
@@ -289,7 +289,7 @@ TodoDetailSummary.Thanks = function Thanks() {
 
 /** 자기 할 일이 대부분이라 작성자 줄 자리는 잡지 않는다. 친구 할 일은 그 한 줄만 받은 뒤 들어온다 */
 TodoDetailSummary.Loading = function Loading() {
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
 
   return (
     <VStack gap={12} testID="todo-detail-card-loading">

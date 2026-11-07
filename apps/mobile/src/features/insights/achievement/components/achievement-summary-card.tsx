@@ -3,9 +3,9 @@ import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { getYearOfDateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
@@ -51,7 +51,7 @@ export function AchievementSummaryCard() {
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: getYearOfDateKey(todayKey) }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();

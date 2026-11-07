@@ -3,8 +3,8 @@ import {
   CATEGORY_SETTINGS_VIEW,
   categorySettingsViewSchema,
 } from '@src/features/planning/category/schemas/category-settings-params.schema';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -25,7 +25,7 @@ import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 export default function TodoCategorySettingsScreen() {
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const { t } = useTranslation('settings');
   const push = useSingleTap(router.push);
   const [view, setView] = useView('view', categorySettingsViewSchema);

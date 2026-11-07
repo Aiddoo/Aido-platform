@@ -1,7 +1,7 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   FlagFilledIcon,
@@ -39,7 +39,7 @@ export function VoiceNoteMarkControl({
   onPress,
 }: VoiceNoteMarkControlProps) {
   const { t } = useTranslation('voiceNote');
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const [isHintPending] = usePendingCoachmark({ accountId: me.id, kind: 'voice-note-mark' });
   const [isInfoOpen, setIsInfoOpen] = useState(false);

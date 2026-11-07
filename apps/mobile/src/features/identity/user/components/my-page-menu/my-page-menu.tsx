@@ -1,4 +1,4 @@
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiIcon,
@@ -49,7 +49,7 @@ function MyPageMenuItem({ pathname, Icon, ...props }: MyPageMenuItemProps) {
 }
 
 function MyPageMenuIcon({ Icon }: { Icon: StyledIconType }) {
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
 
   return (
     <Icon

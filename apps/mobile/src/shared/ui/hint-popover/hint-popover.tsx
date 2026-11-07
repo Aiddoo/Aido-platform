@@ -1,4 +1,4 @@
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Popover, usePopover } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -101,7 +101,7 @@ export function HintPopoverContent({
   ...contentProps
 }: HintPopoverContentProps) {
   const { t } = useTranslation('common');
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { top: topInset, bottom: bottomInset, left: leftInset } = useSafeAreaInsets();
   const { triggerPosition, contentLayout } = usePopover();

@@ -3,7 +3,7 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { toDateFormatLocale } from '@src/shared/date/date-format';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { AiIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
@@ -14,7 +14,7 @@ import { useState } from 'react';
 
 export function QuickVoiceInfo() {
   const { t } = useTranslation('voice');
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const [isOpen, setIsOpen] = useState(false);
   // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());

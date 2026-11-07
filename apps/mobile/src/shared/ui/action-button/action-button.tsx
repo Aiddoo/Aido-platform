@@ -1,4 +1,4 @@
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -62,7 +62,7 @@ ActionButton.Icon = function Icon({
   as: StyledIcon;
   colorClassName: string;
 }) {
-  const fontScaledSize = useFontScaledSize();
+  const fontScaledSize = useSystemFontScaledSize();
   const size = fontScaledSize(ICON_SIZE, ICON_FONT_SCALE_RATIO);
 
   return <IconComponent width={size} height={size} colorClassName={colorClassName} />;
