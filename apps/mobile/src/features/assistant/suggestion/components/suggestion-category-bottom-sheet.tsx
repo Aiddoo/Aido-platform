@@ -41,7 +41,7 @@ export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomShe
           )}
         >
           <Suspense fallback={<SuggestionCategoryBottomSheet.Loading />}>
-            <SuggestionCategoryBottomSheet.Content onClose={sheet.close} />
+            <SuggestionCategoryBottomSheet.AcceptForm onClose={sheet.close} />
           </Suspense>
         </QueryErrorBoundary>
       )}
@@ -49,7 +49,7 @@ export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomShe
   );
 }
 
-SuggestionCategoryBottomSheet.Content = function Content({
+SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   onClose,
 }: {
   onClose: (next?: SheetRouteExit) => void;

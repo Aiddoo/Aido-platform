@@ -46,20 +46,20 @@ export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
         )}
       >
         <Suspense fallback={<CategoryEditBottomSheet.Loading />}>
-          <CategoryEditBottomSheet.Content onClose={() => sheet.close()} />
+          <CategoryEditBottomSheet.Contents onClose={() => sheet.close()} />
         </Suspense>
       </QueryErrorBoundary>
     </KeyboardBottomSheet>
   );
 }
 
-interface CategoryEditBottomSheetContentProps {
+interface CategoryEditBottomSheetContentsProps {
   onClose: () => void;
 }
 
-CategoryEditBottomSheet.Content = function Content({
+CategoryEditBottomSheet.Contents = function Contents({
   onClose,
-}: CategoryEditBottomSheetContentProps) {
+}: CategoryEditBottomSheetContentsProps) {
   const { categoryId } = useTodoCategoryParams();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useRetainedValue(
@@ -102,7 +102,7 @@ CategoryEditBottomSheet.Error = function ErrorFallback({
   );
 };
 
-interface CategoryEditFormProps extends CategoryEditBottomSheetContentProps {
+interface CategoryEditFormProps extends CategoryEditBottomSheetContentsProps {
   category: TodoCategory;
 }
 

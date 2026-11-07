@@ -43,7 +43,7 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
           )}
         >
           <Suspense fallback={<TodoDateBottomSheet.Loading />}>
-            <TodoDateBottomSheet.Content onClose={() => sheet.close()} />
+            <TodoDateBottomSheet.DateForm onClose={() => sheet.close()} />
           </Suspense>
         </QueryErrorBoundary>
       )}
@@ -51,7 +51,7 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
   );
 }
 
-TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
+TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => void }) {
   const { timeZone } = useDateFormatContext();
   const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();

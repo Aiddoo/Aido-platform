@@ -74,22 +74,22 @@ export function TodoActionsBottomSheet({ summary, ...props }: TodoActionsBottomS
         )}
       >
         <Suspense fallback={<TodoActionsBottomSheet.Loading />}>
-          <TodoActionsBottomSheet.Content summary={summary} onClose={sheet.close} />
+          <TodoActionsBottomSheet.ActionList summary={summary} onClose={sheet.close} />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
   );
 }
 
-interface TodoActionsContentProps {
+interface TodoActionListProps {
   summary: ComponentType<TodoActionsSummaryProps>;
   onClose: (next?: SheetRouteExit) => void;
 }
 
-TodoActionsBottomSheet.Content = function Content({
+TodoActionsBottomSheet.ActionList = function ActionList({
   summary: Summary,
   onClose,
-}: TodoActionsContentProps) {
+}: TodoActionListProps) {
   const { t } = useTranslation(['todo', 'common']);
   const today = useToday();
   const { todoId } = useTodoParams();

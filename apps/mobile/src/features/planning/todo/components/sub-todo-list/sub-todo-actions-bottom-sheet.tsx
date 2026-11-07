@@ -47,18 +47,18 @@ export function SubTodoActionsBottomSheet(props: SubTodoActionsBottomSheetProps)
         )}
       >
         <Suspense fallback={<SubTodoActionsBottomSheet.Loading />}>
-          <SubTodoActionsBottomSheet.Content onClose={sheet.close} />
+          <SubTodoActionsBottomSheet.ActionList onClose={sheet.close} />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
   );
 }
 
-interface SubTodoActionsContentProps {
+interface SubTodoActionListProps {
   onClose: (next?: SheetRouteExit) => void;
 }
 
-SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActionsContentProps) {
+SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoActionListProps) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoParams();
   const { subTodoId } = useSubTodoParams();

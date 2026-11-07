@@ -41,7 +41,7 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
           )}
         >
           <Suspense fallback={<TodoCategoryBottomSheet.Loading />}>
-            <TodoCategoryBottomSheet.Content onClose={() => sheet.close()} />
+            <TodoCategoryBottomSheet.CategoryForm onClose={() => sheet.close()} />
           </Suspense>
         </QueryErrorBoundary>
       )}
@@ -49,7 +49,7 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
   );
 }
 
-TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
+TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();
