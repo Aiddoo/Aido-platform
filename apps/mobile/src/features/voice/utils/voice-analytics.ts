@@ -1,5 +1,10 @@
-import type { VoiceDurationBucket, VoicePlanAnalyticsSource } from '../constants/voice.events';
+import type {
+  VoiceCaptureOutcome,
+  VoiceDurationBucket,
+  VoicePlanAnalyticsSource,
+} from '../constants/voice.events';
 import { VoicePlanPolicy } from '../domains/voice-plan.model';
+import type { VoiceCaptureState } from '../schemas/voice-capture.schema';
 import { type VoicePlan, type VoicePlanSource } from '../schemas/voice-plan.schema';
 
 const SECONDS = { half: 30, threeMinutes: 180, tenMinutes: 600 } as const;
@@ -34,4 +39,11 @@ export function summarizePlanForAnalytics(plan: VoicePlan) {
     memo_count: plan.actions.filter((action) => !VoicePlanPolicy.isTodoAction(action)).length,
     duplicate_count: plan.actions.filter(VoicePlanPolicy.isDuplicateAction).length,
   };
+}
+
+/** 듣기를 끝낸 뒤의 상태로 결과를 나눈다. 글자가 있으면 정리로 가고 없으면 처음으로 돌아간다 */
+export function toCaptureOutcome(
+  state: Pick<VoiceCaptureState, 'status'>,
+): Extract<VoiceCaptureOutcome, 'completed' | 'empty'> {
+  return state.status === 'planning' ? 'completed' : 'empty';
 }

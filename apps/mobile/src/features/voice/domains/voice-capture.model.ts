@@ -6,15 +6,12 @@ import {
   QUICK_CAPTURE_MAX_SECONDS,
   SPEAKING_VOLUME_THRESHOLD,
   SPEECH_TEXT_GRACE_MS,
-  VOICE_RESTART_LOOP,
-  VOICE_STALL_RESTART,
 } from '../constants/voice.constants';
 import type {
   CapturedPlan,
   VoiceCaptureFailureReason,
   VoiceCaptureState,
   VoicePauseCause,
-  VoiceStallWatch,
 } from '../schemas/voice-capture.schema';
 import type { SpeechResult, VoiceTranscript } from '../schemas/voice-transcript.schema';
 import {
@@ -223,147 +220,6 @@ function shouldRestartSegment(state: VoiceCaptureState): boolean {
   return state.status === 'listening';
 }
 
-export function createVoiceStallWatch(
-  now: number,
-  lastRestartAt: number | null = null,
-): VoiceStallWatch {
-  return { lastTextAt: now, voicedMs: 0, lastSampleAt: null, isVoiceAudible: false, lastRestartAt };
-}
-
-export function withVolumeSample(
-  watch: VoiceStallWatch,
-  level: number,
-  now: number,
-): VoiceStallWatch {
-  const isVoiceAudible = level >= SPEAKING_VOLUME_THRESHOLD;
-  const gapMs = watch.lastSampleAt == null ? 0 : Math.max(0, now - watch.lastSampleAt);
-  return {
-    ...watch,
-    voicedMs:
-      watch.voicedMs + (isVoiceAudible && gapMs <= VOICE_STALL_RESTART.maxSampleGapMs ? gapMs : 0),
-    lastSampleAt: now,
-    isVoiceAudible,
-  };
-}
-
-export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
-  return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
-}
-
-export function withStallRestart(now: number): VoiceStallWatch {
-  return createVoiceStallWatch(now, now);
-}
-
-function shouldRestartStalledRecognizer(
-  state: VoiceCaptureState,
-  watch: VoiceStallWatch,
-  now: number,
-): boolean {
-  return (
-    state.status === 'listening' &&
-    watch.isVoiceAudible &&
-    watch.voicedMs >= VOICE_STALL_RESTART.voicedMs &&
-    now - watch.lastTextAt >= VOICE_STALL_RESTART.textlessMs &&
-    (watch.lastRestartAt == null || now - watch.lastRestartAt >= VOICE_STALL_RESTART.minIntervalMs)
-  );
-}
-
-/** 인식기와 세션의 연결 상태. 화면에 보이지 않고 시각은 호출한 쪽이 넘긴다 */
-export interface VoiceRecognizerLink {
-  /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
-  isRunning: boolean;
-  /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
-  isStopRequested: boolean;
-  lastStartedAt: number;
-  quickEndCount: number;
-  lastTextAt: number | null;
-  lastTranscript: string;
-  stallWatch: VoiceStallWatch;
-}
-
-export type VoiceRecognizerLinkEvent =
-  /** 준비를 마치고 인식기에 시작을 맡겼다. 재시작 횟수와 멈춤 감시를 새로 센다 */
-  | { type: 'start-requested'; at: number }
-  /** 사용자가 끝내지 않았는데 구간이 끝나 같은 세션을 다시 열었다 */
-  | { type: 'segment-restarted'; at: number }
-  /** 인식기가 시작 신호를 보냈다 */
-  | { type: 'started'; at: number }
-  | { type: 'stop-requested' }
-  /** 글자 없이 말소리만 들려 구간을 닫는다 */
-  | { type: 'stall-restarted'; at: number }
-  /** `end`를 받았거나 abort로 끝난 것으로 본다 */
-  | { type: 'ended' }
-  | { type: 'text-heard'; transcript: string; at: number }
-  | { type: 'volume-sampled'; level: number; at: number };
-
-export function createVoiceRecognizerLink(): VoiceRecognizerLink {
-  return {
-    isRunning: false,
-    isStopRequested: false,
-    lastStartedAt: 0,
-    quickEndCount: 0,
-    lastTextAt: null,
-    lastTranscript: '',
-    stallWatch: createVoiceStallWatch(0),
-  };
-}
-
-function getQuickEndCount(
-  { lastStartedAt, quickEndCount }: Pick<VoiceRecognizerLink, 'lastStartedAt' | 'quickEndCount'>,
-  now: number,
-): number {
-  return now - lastStartedAt < VOICE_RESTART_LOOP.windowMs ? quickEndCount + 1 : 0;
-}
-
-function isRestartLooping(
-  link: Pick<VoiceRecognizerLink, 'lastStartedAt' | 'quickEndCount'>,
-  now: number,
-): boolean {
-  return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
-}
-
-export function reduceRecognizerLink(
-  link: VoiceRecognizerLink,
-  event: VoiceRecognizerLinkEvent,
-): VoiceRecognizerLink {
-  return match(event)
-    .returnType<VoiceRecognizerLink>()
-    .with({ type: 'start-requested' }, ({ at }) => ({
-      ...link,
-      isRunning: true,
-      isStopRequested: false,
-      lastStartedAt: at,
-      quickEndCount: 0,
-      stallWatch: createVoiceStallWatch(at),
-    }))
-    .with({ type: 'segment-restarted' }, ({ at }) => ({
-      ...link,
-      isRunning: true,
-      isStopRequested: false,
-      lastStartedAt: at,
-      quickEndCount: getQuickEndCount(link, at),
-    }))
-    .with({ type: 'started' }, ({ at }) => ({
-      ...link,
-      stallWatch: createVoiceStallWatch(at, link.stallWatch.lastRestartAt),
-    }))
-    .with({ type: 'stop-requested' }, () => ({ ...link, isStopRequested: true }))
-    .with({ type: 'stall-restarted' }, ({ at }) => ({ ...link, stallWatch: withStallRestart(at) }))
-    .with({ type: 'ended' }, () => ({ ...link, isRunning: false, isStopRequested: false }))
-    .with({ type: 'text-heard' }, ({ transcript, at }) => ({
-      ...link,
-      lastTranscript: transcript,
-      lastTextAt: transcript === link.lastTranscript ? link.lastTextAt : at,
-      // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
-      stallWatch: link.isStopRequested ? link.stallWatch : withTextHeard(link.stallWatch, at),
-    }))
-    .with({ type: 'volume-sampled' }, ({ level, at }) => ({
-      ...link,
-      stallWatch: withVolumeSample(link.stallWatch, level, at),
-    }))
-    .exhaustive();
-}
-
 function isActive(state: VoiceCaptureState): boolean {
   return (
     state.status === 'preparing' ||
@@ -453,11 +309,6 @@ function isChargedReview(state: VoiceCaptureState): boolean {
   return state.status === 'review' && state.isCharged;
 }
 
-/** 듣기를 끝낸 뒤의 상태로 결과를 나눈다. 글자가 있으면 정리로 가고 없으면 처음으로 돌아간다 */
-function getCaptureOutcome(state: Pick<VoiceCaptureState, 'status'>): 'completed' | 'empty' {
-  return state.status === 'planning' ? 'completed' : 'empty';
-}
-
 /** 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다 */
 function getRemainingCaptureMs(state: VoiceCaptureState, maxSeconds: number, now: number): number {
   return Math.max(0, maxSeconds * 1_000 - getElapsedMs(state, now));
@@ -469,11 +320,8 @@ function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
 
 export const VoiceCapturePolicy = {
   isRecognizerFailure,
-  isRestartLooping,
-  getCaptureOutcome,
   getRemainingCaptureMs,
   shouldRestartSegment,
-  shouldRestartStalledRecognizer,
   isActive,
   isManualInput,
   isWrappingUp,

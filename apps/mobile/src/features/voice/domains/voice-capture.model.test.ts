@@ -1,17 +1,9 @@
 import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
-import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
-import { type VoiceStallWatch } from '../schemas/voice-capture.schema';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import {
   createVoiceCaptureState,
-  createVoiceRecognizerLink,
-  createVoiceStallWatch,
-  reduceRecognizerLink,
   reduceVoiceCapture,
   VoiceCapturePolicy,
-  withStallRestart,
-  withTextHeard,
-  withVolumeSample,
 } from './voice-capture.model';
 
 const NOW = 100_000;
@@ -415,114 +407,6 @@ describe('VoiceCapturePolicy', () => {
     expect(result).toBe(expected);
   });
 
-  describe('멈춘 인식기 판단', () => {
-    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
-    const watch = (overrides: Partial<VoiceStallWatch> = {}): VoiceStallWatch => ({
-      ...createVoiceStallWatch(NOW),
-      voicedMs: 3_000,
-      isVoiceAudible: true,
-      ...overrides,
-    });
-
-    it.each([
-      { why: '글자 없이 6초가 지나고 3초 넘게 들었다', at: 6_000, overrides: {}, expected: true },
-      { why: '글자가 온 지 6초가 안 됐다', at: 5_999, overrides: {}, expected: false },
-      {
-        why: '들은 시간이 3초가 안 된다',
-        at: 6_000,
-        overrides: { voicedMs: 2_999 },
-        expected: false,
-      },
-      { why: '지금은 조용하다', at: 60_000, overrides: { isVoiceAudible: false }, expected: false },
-      {
-        why: '글자 없이 다시 연 지 30초가 안 됐다',
-        at: 29_999,
-        overrides: { lastRestartAt: NOW },
-        expected: false,
-      },
-      {
-        why: '글자 없이 다시 연 지 30초가 지났다',
-        at: 30_000,
-        overrides: { lastRestartAt: NOW },
-        expected: true,
-      },
-    ])('$why → $expected', ({ at, overrides, expected }) => {
-      // Given
-      const stallWatch = watch(overrides);
-
-      // When
-      const result = VoiceCapturePolicy.shouldRestartStalledRecognizer(
-        listening,
-        stallWatch,
-        NOW + at,
-      );
-
-      // Then
-      expect(result).toBe(expected);
-    });
-
-    it.each(['preparing', 'paused', 'finalizing'] as const)(
-      '듣는 중이 아닌 %s에서는 다시 열지 않는다',
-      (status) => {
-        // Given
-        const state = createCaptureState(
-          status === 'paused' ? { status, cause: 'user' } : { status },
-        );
-
-        // When
-        const result = VoiceCapturePolicy.shouldRestartStalledRecognizer(
-          state,
-          watch(),
-          NOW + 60_000,
-        );
-
-        // Then
-        expect(result).toBe(false);
-      },
-    );
-
-    it.each([
-      {
-        why: '말소리 샘플 사이 시간을 더한다',
-        level: SPEAKING_VOLUME_THRESHOLD,
-        gapMs: 50,
-        expected: 50,
-      },
-      { why: '조용한 샘플은 더하지 않는다', level: 0, gapMs: 50, expected: 0 },
-      {
-        why: '샘플이 끊긴 틈은 더하지 않는다',
-        level: SPEAKING_VOLUME_THRESHOLD,
-        gapMs: 251,
-        expected: 0,
-      },
-    ])('$why', ({ level, gapMs, expected }) => {
-      // Given
-      const stallWatch = withVolumeSample(createVoiceStallWatch(NOW), 0, NOW);
-
-      // When
-      const next = withVolumeSample(stallWatch, level, NOW + gapMs);
-
-      // Then
-      expect(next.voicedMs).toBe(expected);
-    });
-
-    it('글자가 오면 들은 시간과 다시 연 시각을 지운다', () => {
-      // Given
-      const stallWatch = withVolumeSample(withStallRestart(NOW), SPEAKING_VOLUME_THRESHOLD, NOW);
-
-      // When
-      const next = withTextHeard({ ...stallWatch, voicedMs: 5_000 }, NOW + 7_000);
-
-      // Then
-      expect(next).toMatchObject({
-        lastTextAt: NOW + 7_000,
-        voicedMs: 0,
-        lastRestartAt: null,
-        lastSampleAt: NOW,
-      });
-    });
-  });
-
   describe('계획 받기', () => {
     const plan = voicePlanSchema.parse({
       planId: 'plan-1',
@@ -751,18 +635,6 @@ describe('isRecognizerFailure', () => {
   });
 });
 
-describe('getCaptureOutcome', () => {
-  it('정리 단계로 갔으면 completed, 아니면 empty다', () => {
-    // When
-    const planning = VoiceCapturePolicy.getCaptureOutcome({ status: 'planning' });
-    const idle = VoiceCapturePolicy.getCaptureOutcome({ status: 'idle' });
-
-    // Then
-    expect(planning).toBe('completed');
-    expect(idle).toBe('empty');
-  });
-});
-
 describe('getRemainingCaptureMs', () => {
   it('앞서 들은 시간과 지금 구간을 뺀 만큼 남는다', () => {
     // Given
@@ -788,117 +660,6 @@ describe('getRemainingCaptureMs', () => {
 
     // Then
     expect(remainingMs).toBe(0);
-  });
-});
-
-describe('reduceRecognizerLink', () => {
-  it('시작을 맡기면 달리는 중이 되고 앞 구간의 멈춤 요청과 재시작 횟수를 지운다', () => {
-    // Given
-    const link = {
-      ...createVoiceRecognizerLink(),
-      isStopRequested: true,
-      quickEndCount: 3,
-    };
-
-    // When
-    const next = reduceRecognizerLink(link, { type: 'start-requested', at: NOW });
-
-    // Then
-    expect(next).toMatchObject({
-      isRunning: true,
-      isStopRequested: false,
-      quickEndCount: 0,
-      lastStartedAt: NOW,
-    });
-  });
-
-  it('end를 받으면 달리지 않고 멈춤 요청도 지운다', () => {
-    // Given
-    const link = reduceRecognizerLink(
-      reduceRecognizerLink(createVoiceRecognizerLink(), { type: 'start-requested', at: NOW }),
-      { type: 'stop-requested' },
-    );
-
-    // When
-    const next = reduceRecognizerLink(link, { type: 'ended' });
-
-    // Then
-    expect(next).toMatchObject({ isRunning: false, isStopRequested: false });
-  });
-
-  it('같은 글자가 다시 오면 마지막 글자 시각을 옮기지 않는다', () => {
-    // Given
-    const heard = reduceRecognizerLink(createVoiceRecognizerLink(), {
-      type: 'text-heard',
-      transcript: '장보기',
-      at: NOW,
-    });
-
-    // When
-    const repeated = reduceRecognizerLink(heard, {
-      type: 'text-heard',
-      transcript: '장보기',
-      at: NOW + 1_000,
-    });
-
-    // Then
-    expect(repeated.lastTextAt).toBe(NOW);
-  });
-
-  it('stop 뒤의 마지막 글자는 다시 연 간격을 지우지 않는다', () => {
-    // Given
-    const link = reduceRecognizerLink(
-      reduceRecognizerLink(createVoiceRecognizerLink(), { type: 'stall-restarted', at: NOW }),
-      { type: 'stop-requested' },
-    );
-
-    // When
-    const next = reduceRecognizerLink(link, {
-      type: 'text-heard',
-      transcript: '마지막 글자',
-      at: NOW + 500,
-    });
-
-    // Then
-    expect(next.stallWatch.lastRestartAt).toBe(NOW);
-  });
-
-  it('인식기 시작 신호는 다시 연 간격을 남기고 감시를 새로 센다', () => {
-    // Given
-    const link = reduceRecognizerLink(createVoiceRecognizerLink(), {
-      type: 'stall-restarted',
-      at: NOW,
-    });
-
-    // When
-    const next = reduceRecognizerLink(link, { type: 'started', at: NOW + 200 });
-
-    // Then
-    expect(next.stallWatch).toMatchObject({ lastTextAt: NOW + 200, lastRestartAt: NOW });
-  });
-});
-
-describe('isRestartLooping', () => {
-  it('400ms 안에 네 번째로 끝나면 다시 열어도 소용없다고 본다', () => {
-    // Given
-    const link = { lastStartedAt: NOW, quickEndCount: 3 };
-
-    // When
-    const isLooping = VoiceCapturePolicy.isRestartLooping(link, NOW + 399);
-
-    // Then
-    expect(isLooping).toBe(true);
-  });
-
-  it('간격이 벌어지면 횟수와 상관없이 다시 연다', () => {
-    // Given
-    const link = { lastStartedAt: NOW, quickEndCount: 3 };
-
-    // When
-    const isLooping = VoiceCapturePolicy.isRestartLooping(link, NOW + 400);
-
-    // Then
-    expect(isLooping).toBe(false);
   });
 });
 

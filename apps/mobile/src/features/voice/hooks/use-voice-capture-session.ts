@@ -20,14 +20,17 @@ import {
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import {
   createVoiceCaptureState,
-  createVoiceRecognizerLink,
-  reduceRecognizerLink,
   reduceVoiceCapture,
   type VoiceCaptureEvent,
   type VoiceCaptureSeed,
   VoiceCapturePolicy,
-  type VoiceRecognizerLinkEvent,
 } from '../domains/voice-capture.model';
+import {
+  createVoiceRecognizerLink,
+  reduceRecognizerLink,
+  type VoiceRecognizerLinkEvent,
+  VoiceRecognizerLinkPolicy,
+} from '../domains/voice-recognizer-link.model';
 import { VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 import {
   type CapturedPlan,
@@ -35,6 +38,7 @@ import {
   type VoicePauseCause,
 } from '../schemas/voice-capture.schema';
 import { type VoiceTranscript } from '../schemas/voice-transcript.schema';
+import { toCaptureOutcome } from '../utils/voice-analytics';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 
@@ -136,7 +140,7 @@ export function useVoiceCaptureSession({
   const handleFinalized = () => {
     timers.clear('finalize');
     const { next } = dispatch({ type: 'end' });
-    telemetry.finished(VoiceCapturePolicy.getCaptureOutcome(next), next);
+    telemetry.finished(toCaptureOutcome(next), next);
   };
 
   function finish() {
@@ -151,7 +155,7 @@ export function useVoiceCaptureSession({
       timers.set('finalize', handleFinalized, FINALIZE_TIMEOUT_MS);
       return;
     }
-    telemetry.finished(VoiceCapturePolicy.getCaptureOutcome(next), next);
+    telemetry.finished(toCaptureOutcome(next), next);
   }
 
   const handleError = (code: SpeechErrorCode) => {
@@ -184,7 +188,7 @@ export function useVoiceCaptureSession({
       return;
     }
     const now = Date.now();
-    if (VoiceCapturePolicy.isRestartLooping(linkRef.current, now)) {
+    if (VoiceRecognizerLinkPolicy.isRestartLooping(linkRef.current, now)) {
       handleError('client');
       return;
     }
@@ -218,7 +222,7 @@ export function useVoiceCaptureSession({
     const { isStopRequested, stallWatch } = linkRef.current;
     if (
       !isStopRequested &&
-      VoiceCapturePolicy.shouldRestartStalledRecognizer(stateRef.current, stallWatch, now)
+      VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(stateRef.current, stallWatch, now)
     ) {
       restartStalledRecognizer(now);
     }

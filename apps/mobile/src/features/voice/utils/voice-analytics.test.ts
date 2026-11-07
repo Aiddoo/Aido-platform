@@ -1,4 +1,4 @@
-import { getDurationBucket } from './voice-analytics';
+import { getDurationBucket, toCaptureOutcome } from './voice-analytics';
 
 describe('getDurationBucket', () => {
   it.each([
@@ -13,5 +13,17 @@ describe('getDurationBucket', () => {
 
     // Then
     expect(result).toBe(bucket);
+  });
+});
+
+describe('toCaptureOutcome', () => {
+  it('정리 단계로 갔으면 completed, 아니면 empty다', () => {
+    // When
+    const planning = toCaptureOutcome({ status: 'planning' });
+    const idle = toCaptureOutcome({ status: 'idle' });
+
+    // Then
+    expect(planning).toBe('completed');
+    expect(idle).toBe('empty');
   });
 });
