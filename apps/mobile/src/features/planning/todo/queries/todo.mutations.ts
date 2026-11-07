@@ -269,6 +269,8 @@ export function useUpdateTodoScheduleMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    // 오프라인에 멈추면 저장 중인 시트가 잠긴 채 남고 연결되는 순간 일정이 바뀐다. 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async ({ todoId, input, scope }: UpdateTodoScheduleMutationParams) => {
       const result = await todoService.updateTodoSchedule(todoId, input, scope);
       return unwrap(result);
