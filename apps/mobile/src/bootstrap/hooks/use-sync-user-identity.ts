@@ -1,10 +1,4 @@
-import {
-  useAnalytics,
-  useDraftService,
-  useErrorReporter,
-  useQueryCacheStorage,
-  useVoiceNoteStorageService,
-} from '@src/bootstrap/providers/di-context';
+import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { toUserAnalyticsProperties } from '@src/features/identity/user/utils/user-analytics-properties';
@@ -15,9 +9,6 @@ export function useSyncUserIdentity(): void {
   const status = useAuthStatus();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
-  const draftService = useDraftService();
-  const queryCacheStorage = useQueryCacheStorage();
-  const voiceNoteStorageService = useVoiceNoteStorageService();
   const isAuthenticated = status === 'authenticated';
 
   const { data: me } = useQuery({
@@ -35,14 +26,4 @@ export function useSyncUserIdentity(): void {
       errorReporter.setUserId(null);
     }
   }, [isAuthenticated, me, analytics, errorReporter]);
-
-  const meId = me?.id;
-  useEffect(() => {
-    if (isAuthenticated && meId != null) {
-      draftService.removeAllExceptOwner(meId);
-      queryCacheStorage.setOwner(meId);
-      voiceNoteStorageService.removeAllExceptOwner(meId);
-      voiceNoteStorageService.removeExpired(meId);
-    }
-  }, [isAuthenticated, meId, draftService, queryCacheStorage, voiceNoteStorageService]);
 }

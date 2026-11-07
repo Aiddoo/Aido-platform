@@ -197,7 +197,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth
 - 조회 옵션에 `...PERSISTED_QUERY_OPTIONS`(`meta.persist` + `gcTime` 24시간)를 붙인다. 토큰·결제·배지 수·AI 제안은 붙이지 않는다.
 - 새로 붙이면 `bootstrap/query/persisted-query-schemas.ts`에 모델 스키마를 함께 더한다(빠지면 테스트가 깨진다). 복원한 값을 스키마로 검증해 깨진 조회만 버리고 서버에서 다시 받으며, 표에 없는 조회도 버린다. 값은 바꾸지 않는다. 버린 수는 `query-cache.restored-queries.dropped` warn으로 남는다.
 - 복원 직후 전체를 invalidate한다. 앱이 꺼지기 전의 낙관적 반영이 서버 값처럼 남지 않게 하기 위해서다.
-- 로그인한 사용자 키에만 쓰고(`useSyncUserIdentity`가 주인 지정), 미인증 전환 때 `SessionCleanupService`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
+- 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`가 주인 지정), 미인증 전환 때 `SessionCleanupService`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
 
 ## 저장소 에러: KeychainLockedError
 

@@ -25,7 +25,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { z } from 'zod';
 
-import { useSyncUserIdentity } from './use-sync-user-identity';
+import { useClaimDeviceDataForUser } from './use-claim-device-data-for-user';
 
 const CURRENT_USER_ID = createCurrentUserDto().userId;
 
@@ -37,7 +37,7 @@ const createMemoDraftKey = (ownerId: string) =>
     schema: z.object({ content: z.string() }),
   });
 
-describe('useSyncUserIdentity', () => {
+describe('useClaimDeviceDataForUser', () => {
   let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
   let queryClient: QueryClient;
@@ -70,7 +70,7 @@ describe('useSyncUserIdentity', () => {
     draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
 
     // When
-    await renderHook(useSyncUserIdentity, { wrapper });
+    await renderHook(useClaimDeviceDataForUser, { wrapper });
 
     // Then
     await waitFor(() =>
@@ -88,7 +88,7 @@ describe('useSyncUserIdentity', () => {
     queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '이전 사용자 캐시');
 
     // When
-    await renderHook(useSyncUserIdentity, { wrapper });
+    await renderHook(useClaimDeviceDataForUser, { wrapper });
 
     // Then
     await waitFor(() => expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull());

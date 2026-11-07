@@ -1,3 +1,4 @@
+import { useClaimDeviceDataForUser } from '@src/bootstrap/hooks/use-claim-device-data-for-user';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
@@ -9,6 +10,7 @@ import { useInviteAppEntry } from '@src/features/social/invite/hooks/use-invite-
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import { useIsRestoring } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -22,6 +24,7 @@ export function AuthGateLayout() {
   const { resolvedTheme } = useTheme();
   useScreenTracking();
   useSyncUserIdentity();
+  useClaimDeviceDataForUser();
   useWidgetAppEntry();
   useInstallReferrerCapture();
   useInviteAppEntry();
@@ -42,7 +45,7 @@ export function AuthGateLayout() {
       return;
     }
     // 첫 화면이 그려진 다음 프레임에 내려야 앞 화면이 비치지 않는다
-    const frameId = requestAnimationFrame(() => SplashScreen.hideAsync());
+    const frameId = requestAnimationFrame(() => SplashScreen.hideAsync().catch(noop));
     return () => cancelAnimationFrame(frameId);
   }, [isSplashDone]);
 
@@ -50,7 +53,10 @@ export function AuthGateLayout() {
     if (!isEntryPending) {
       return;
     }
-    const timer = setTimeout(() => SplashScreen.hideAsync(), NOTIFICATION_ENTRY_HOLD_MAX_MS);
+    const timer = setTimeout(
+      () => SplashScreen.hideAsync().catch(noop),
+      NOTIFICATION_ENTRY_HOLD_MAX_MS,
+    );
     return () => clearTimeout(timer);
   }, [isEntryPending]);
 

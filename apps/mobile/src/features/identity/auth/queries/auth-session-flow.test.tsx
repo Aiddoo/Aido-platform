@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { resolveInitialAuthStatus } from '@src/bootstrap/auth/resolve-initial-auth-status';
+import { useClaimDeviceDataForUser } from '@src/bootstrap/hooks/use-claim-device-data-for-user';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
@@ -898,6 +899,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     });
     const { result } = await session.renderSession(() => {
       useSyncUserIdentity();
+      useClaimDeviceDataForUser();
       return {
         status: useAuthStatus(),
         logout: useMutation(useLogoutMutationOptions()),
@@ -1330,6 +1332,7 @@ describe('만료 후 다시 로그인', () => {
 
   const useReloginProbe = () => {
     useSyncUserIdentity();
+    useClaimDeviceDataForUser();
     return { status: useAuthStatus(), login: useMutation(useEmailLoginMutationOptions()) };
   };
 
