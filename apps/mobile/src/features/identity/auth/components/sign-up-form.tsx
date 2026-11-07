@@ -67,6 +67,8 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
     verification: ({ context: { email } }) => (
       <EmailVerificationCodeStep
         email={email}
+        isVerifying={verify.isPending}
+        isResending={resend.isPending}
         onComplete={(code) => verify.mutateAsync({ email, code })}
         onResend={() => resend.mutateAsync({ email })}
       />

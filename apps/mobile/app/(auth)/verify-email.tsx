@@ -1,39 +1,11 @@
-import { EmailVerificationCodeStep } from '@src/features/identity/auth/components/email-verification-code-step';
-import { useVerifyEmailParam } from '@src/features/identity/auth/hooks/use-verify-email-param';
-import {
-  useResendVerificationMutationOptions,
-  useVerifyEmailMutationOptions,
-} from '@src/features/identity/auth/queries/auth.mutations';
+import { VerifyEmailForm } from '@src/features/identity/auth/components/verify-email-form';
 import { verifyEmailParamsSchema } from '@src/features/identity/auth/schemas/verify-email-params.schema';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
-import { useMutation } from '@tanstack/react-query';
+import { Box, ReadableContent } from '@src/shared/ui';
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 
-/** 로그인 중 미인증(EMAIL_0503) 계정이 이메일 인증을 마치는 화면 */
-function VerifyEmailScreen() {
+export default function VerifyEmailScreen() {
   const { t } = useTranslation('auth');
-  const email = useVerifyEmailParam();
-  const verify = useMutation(useVerifyEmailMutationOptions());
-  const resend = useMutation(useResendVerificationMutationOptions());
-
-  return (
-    <Box className="flex-1 bg-white">
-      <Stack.Screen options={{ title: t('verifyEmail.title') }} />
-
-      <ReadableContent flex={1}>
-        <EmailVerificationCodeStep
-          isSeparated
-          email={email}
-          onComplete={(code) => verify.mutateAsync({ email, code })}
-          onResend={() => resend.mutateAsync({ email })}
-        />
-      </ReadableContent>
-    </Box>
-  );
-}
-
-export default function VerifyEmailRoute() {
   const params = verifyEmailParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
@@ -41,8 +13,12 @@ export default function VerifyEmailRoute() {
   }
 
   return (
-    <QueryErrorBoundary>
-      <VerifyEmailScreen />
-    </QueryErrorBoundary>
+    <Box className="flex-1 bg-white">
+      <Stack.Screen options={{ title: t('verifyEmail.title') }} />
+
+      <ReadableContent flex={1}>
+        <VerifyEmailForm />
+      </ReadableContent>
+    </Box>
   );
 }

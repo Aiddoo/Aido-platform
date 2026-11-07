@@ -93,6 +93,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     verificationCode: ({ context: { email }, history }) => (
       <EmailVerificationCodeStep
         email={email}
+        isResending={forgotPassword.isPending}
         onComplete={async (code) => {
           form.setValue('code', code, { shouldValidate: true });
           history.push('newPassword', {});
