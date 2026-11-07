@@ -17,7 +17,7 @@ describe('PreferenceService', () => {
   });
 
   describe('getPreference', () => {
-    test('정상 응답 → pushEnabled, nightPushEnabled만 추출', async () => {
+    it('서버 응답이 성공하면 pushEnabled, nightPushEnabled만 추출', async () => {
       // Given
       const dto = createPreferenceDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -47,7 +47,7 @@ describe('PreferenceService', () => {
       });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createPreferenceApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -59,17 +59,20 @@ describe('PreferenceService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getPreference()).rejects.toThrow('Invalid getPreference response');
+      // When
+      const result = service.getPreference();
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid getPreference response');
     });
   });
 
   describe('updatePreference', () => {
-    test('정상 응답 → 도메인 모델 반환', async () => {
+    it('서버 응답이 성공하면 도메인 모델 반환', async () => {
       // Given
       const dto = createPreferenceDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -100,7 +103,7 @@ describe('PreferenceService', () => {
       });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createPreferenceApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -112,14 +115,15 @@ describe('PreferenceService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       httpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.updatePreference({ pushEnabled: true })).rejects.toThrow(
-        'Invalid updatePreference response',
-      );
+      // When
+      const result = service.updatePreference({ pushEnabled: true });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid updatePreference response');
     });
   });
 });

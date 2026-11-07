@@ -213,7 +213,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
   }
 
   it('로그아웃하면 토큰은 지우고 해제할 세션만 기록한다', async () => {
-    // Given·When
+    // When
     const { session } = await logOutOffline();
 
     // Then
@@ -751,7 +751,7 @@ describe('로그아웃과 늦은 갱신', () => {
       tokenStore,
       sessionRevocationService: { record: async () => undefined },
       sessionEpoch,
-      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+      logger: createLoggerStub(),
     }).logOut(true);
 
     // When
@@ -1352,7 +1352,7 @@ describe('만료 후 다시 로그인', () => {
   }
 
   it('같은 계정으로 돌아오면 초안을 이어 쓴다', async () => {
-    // Given·When
+    // When
     const session = await expireThenLogin(ACCOUNT_A);
 
     // Then
@@ -1367,7 +1367,7 @@ describe('만료 후 다시 로그인', () => {
   });
 
   it('다른 계정이 로그인하면 이전 계정의 초안을 지운다', async () => {
-    // Given·When
+    // When
     const session = await expireThenLogin(ACCOUNT_B);
 
     // Then

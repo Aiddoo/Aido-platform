@@ -9,10 +9,9 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import type { CurrentUserResponse } from '@src/features/identity/user/schemas/user.schema';
 import {
   createAnalyticsStub,
-  createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
   createPurchasesGatewayStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -22,8 +21,6 @@ import { onlineManager } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../../app/(app)/(mypage-menu)/settings/subscription';
-import { PurchasesSession } from '../apis/purchases-session';
-import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
@@ -73,15 +70,14 @@ async function renderSubscriptionScreen(
   const purchases = createPurchasesGatewayStub();
   purchases.getOffering.mockImplementation(getOffering);
   const analytics = createAnalyticsStub();
-  const session = new PurchasesSession({
-    purchases,
-    logger: createLoggerStub(),
-    analytics,
-    subscriberAttributes: { appVersion: null, deviceModel: null },
-  });
-  session.configure();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
+  const di = createTestDi({
+    httpClient,
+    analytics,
+    purchasesGateway: purchases,
+  });
+  di.purchasesSession.configure();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -99,18 +95,7 @@ async function renderSubscriptionScreen(
         <SubscriptionRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      di: {
-        httpClient,
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        logger: createLoggerStub(),
-        purchasesSession: session,
-        subscriptionService: new SubscriptionService(session, purchases, createLoggerStub()),
-        applicationMetadata: { getInstallation: () => undefined },
-      },
-      queryClient,
-    },
+    { di, queryClient },
   );
 
   return { purchases, analytics };

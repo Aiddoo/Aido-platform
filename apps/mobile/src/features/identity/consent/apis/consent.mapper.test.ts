@@ -2,7 +2,7 @@ import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/
 import { toConsent, toUpdateMarketingConsentResult } from './consent.mapper';
 
 describe('toConsent', () => {
-  test('ISO 문자열 → Instant 변환', () => {
+  it('ISO 문자열 → Instant 변환', () => {
     // Given
     const dto = createConsentDto({
       termsAgreedAt: '2026-01-01T00:00:00.000Z',
@@ -19,7 +19,7 @@ describe('toConsent', () => {
     expect(result.marketingAgreedAt).toBe('2026-02-01T00:00:00.000Z');
   });
 
-  test('null → null 유지', () => {
+  it('null → null 유지', () => {
     // Given
     const dto = createConsentDto({
       termsAgreedAt: null,
@@ -36,7 +36,7 @@ describe('toConsent', () => {
     expect(result.marketingAgreedAt).toBeNull();
   });
 
-  test('agreedTermsVersion 유지', () => {
+  it('agreedTermsVersion 유지', () => {
     // Given
     const dto = createConsentDto({ agreedTermsVersion: '2.0.0' });
 
@@ -47,7 +47,7 @@ describe('toConsent', () => {
     expect(result.agreedTermsVersion).toBe('2.0.0');
   });
 
-  test('AI 데이터 제공 동의 상태와 동의 시각을 옮긴다', () => {
+  it('AI 데이터 제공 동의 상태와 동의 시각을 옮긴다', () => {
     // Given
     const dto = createConsentDto({
       aiDataSharingDecision: 'AGREED',
@@ -62,7 +62,7 @@ describe('toConsent', () => {
     expect(result.aiDataSharingAgreedAt).toBe('2026-10-26T09:00:00.000Z');
   });
 
-  test('서버가 답하지 않았다고 하면 동의 시각과 안내 버전은 비어 있다', () => {
+  it('서버가 답하지 않았다고 하면 동의 시각과 안내 버전은 비어 있다', () => {
     // Given
     const dto = createConsentDto();
 
@@ -76,7 +76,7 @@ describe('toConsent', () => {
 });
 
 describe('toUpdateMarketingConsentResult', () => {
-  test('ISO → Instant 변환', () => {
+  it('ISO → Instant 변환', () => {
     // Given
     const dto = createUpdateMarketingConsentDto({
       marketingAgreedAt: '2026-02-01T00:00:00.000Z',
@@ -89,7 +89,7 @@ describe('toUpdateMarketingConsentResult', () => {
     expect(result.marketingAgreedAt).toBe('2026-02-01T00:00:00.000Z');
   });
 
-  test('null → null (마케팅 동의 철회)', () => {
+  it('null → null (마케팅 동의 철회)', () => {
     // Given
     const dto = createUpdateMarketingConsentDto({ marketingAgreedAt: null });
 

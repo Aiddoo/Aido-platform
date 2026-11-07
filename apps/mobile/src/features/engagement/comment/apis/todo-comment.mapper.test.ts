@@ -50,7 +50,7 @@ function createV2Dto(overrides: Partial<TodoCommentV2> = {}): TodoCommentV2 {
 }
 
 describe('todo comment mapper', () => {
-  test('묶음 페이지의 날짜만 Date로 바꾸고 서버 집계·anchor는 그대로 둔다', () => {
+  it('묶음 페이지의 날짜만 Date로 바꾸고 서버 집계·anchor는 그대로 둔다', () => {
     // Given
     const dto = todoCommentThreadsResponseSchema.parse({
       items: [
@@ -85,7 +85,7 @@ describe('todo comment mapper', () => {
     expect(page.anchor).toEqual(dto.anchor);
   });
 
-  test('v1 쓰기 응답의 parentId를 묶음 머리로, 빠진 1.13.0 필드는 할 수 없음으로 읽는다', () => {
+  it('v1 쓰기 응답의 parentId를 묶음 머리로, 빠진 1.13.0 필드는 할 수 없음으로 읽는다', () => {
     // Given
     const dto = todoCommentV1Schema.parse({
       id: REPLY_ID,

@@ -1,7 +1,7 @@
 import { maskEmail } from './mask-email';
 
 describe('maskEmail', () => {
-  test('앞 두 글자와 도메인만 남긴다', () => {
+  it('앞 두 글자와 도메인만 남긴다', () => {
     // Given
     const email = 'matthew@aido.app';
 
@@ -12,7 +12,7 @@ describe('maskEmail', () => {
     expect(masked).toBe('ma****@aido.app');
   });
 
-  test('이메일 형식이 아니면 그대로 둔다', () => {
+  it('이메일 형식이 아니면 그대로 둔다', () => {
     // Given
     const value = 'a@b';
 

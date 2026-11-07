@@ -2,7 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
-import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
   createHttpClientStub,

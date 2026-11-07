@@ -42,7 +42,7 @@ describe('AuthService', () => {
   // ── emailLogin ─────────────────────────────
 
   describe('emailLogin', () => {
-    test('정상 응답 → 토큰 저장 + 도메인 모델 반환', async () => {
+    it('서버 응답이 성공하면 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
       const dto = createAuthTokensDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -69,7 +69,7 @@ describe('AuthService', () => {
       });
     });
 
-    test('name null → userName null 매핑', async () => {
+    it('name null → userName null 매핑', async () => {
       // Given
       const dto = createAuthTokensDto({ name: null, profileImage: null });
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -85,7 +85,7 @@ describe('AuthService', () => {
       }
     });
 
-    test('accountRestored 미포함 → 기본값 false', async () => {
+    it('accountRestored 미포함 → 기본값 false', async () => {
       // Given
       const dto = createAuthTokensDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -100,7 +100,7 @@ describe('AuthService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err + 토큰 미저장', async () => {
+    it('HTTP 에러 → Result.err + 토큰 미저장', async () => {
       // Given
       const apiError = createAuthApiError();
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -113,21 +113,22 @@ describe('AuthService', () => {
       expect(tokenStore.save).not.toHaveBeenCalled();
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.emailLogin('a@b.com', 'pw')).rejects.toThrow(
-        'Invalid auth tokens response',
-      );
+      // When
+      const result = service.emailLogin('a@b.com', 'pw');
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid auth tokens response');
     });
   });
 
   // ── exchangeCode ───────────────────────────
 
   describe('exchangeCode', () => {
-    test('정상 응답 → 토큰 저장 + 도메인 모델 반환', async () => {
+    it('서버 응답이 성공하면 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
       const dto = createAuthTokensDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -145,7 +146,7 @@ describe('AuthService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -157,21 +158,22 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.exchangeCode({ code: 'code' })).rejects.toThrow(
-        'Invalid auth tokens response',
-      );
+      // When
+      const result = service.exchangeCode({ code: 'code' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid auth tokens response');
     });
   });
 
   // ── logout ─────────────────────────────────
 
   describe('logout', () => {
-    test('성공하면 서버 세션만 끝내고 토큰은 지우지 않는다', async () => {
+    it('성공하면 서버 세션만 끝내고 토큰은 지우지 않는다', async () => {
       // Given
       authHttpClient.post.mockResolvedValue({ ok: true, value: undefined });
 
@@ -184,7 +186,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
-    test('API 실패를 그대로 돌려준다', async () => {
+    it('API 실패를 그대로 돌려준다', async () => {
       // Given
       const apiError = createAuthApiError();
       authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -200,7 +202,7 @@ describe('AuthService', () => {
   // ── verifyEmail ────────────────────────────
 
   describe('verifyEmail', () => {
-    test('정상 응답 → 토큰 저장 + 도메인 모델 반환', async () => {
+    it('서버 응답이 성공하면 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
       const dto = createAuthTokensDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -217,7 +219,7 @@ describe('AuthService', () => {
       expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -229,14 +231,15 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.verifyEmail({ email: 'a@b.com', code: '000000' })).rejects.toThrow(
-        'Invalid auth tokens response',
-      );
+      // When
+      const result = service.verifyEmail({ email: 'a@b.com', code: '000000' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid auth tokens response');
     });
   });
 
@@ -253,7 +256,7 @@ describe('AuthService', () => {
       marketingAgreed: false,
     };
 
-    test('정상 응답 → RegisterResult 반환', async () => {
+    it('서버 응답이 성공하면 RegisterResult 반환', async () => {
       // Given
       const dto = createRegisterDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -269,7 +272,7 @@ describe('AuthService', () => {
       });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError({ code: 'EMAIL_ALREADY_EXISTS', status: 409 });
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -281,19 +284,22 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.register(registerInput)).rejects.toThrow('Invalid register response');
+      // When
+      const result = service.register(registerInput);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid register response');
     });
   });
 
   // ── resendVerification ─────────────────────
 
   describe('resendVerification', () => {
-    test('정상 응답 → retryAfterSeconds 포함', async () => {
+    it('서버 응답이 성공하면 retryAfterSeconds 포함', async () => {
       // Given
       const dto = createResendVerificationDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -314,7 +320,7 @@ describe('AuthService', () => {
       });
     });
 
-    test('retryAfterSeconds 없음 → undefined', async () => {
+    it('retryAfterSeconds 없음 → undefined', async () => {
       // Given
       const dto = createResendVerificationDto({ retryAfterSeconds: undefined });
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -329,7 +335,7 @@ describe('AuthService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -341,21 +347,22 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.resendVerification({ email: 'a@b.com' })).rejects.toThrow(
-        'Invalid resendVerification response',
-      );
+      // When
+      const result = service.resendVerification({ email: 'a@b.com' });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid resendVerification response');
     });
   });
 
   // ── getLinkedAccounts ──────────────────────
 
   describe('getLinkedAccounts', () => {
-    test('정상 응답 → LinkedAccount 배열, linkedAt Instant 변환', async () => {
+    it('서버 응답이 성공하면 LinkedAccount 배열, linkedAt Instant 변환', async () => {
       // Given
       const dto = createLinkedAccountsDto();
       authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -387,7 +394,7 @@ describe('AuthService', () => {
       });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       authHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -399,14 +406,15 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getLinkedAccounts()).rejects.toThrow(
-        'Invalid getLinkedAccounts response',
-      );
+      // When
+      const result = service.getLinkedAccounts();
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid getLinkedAccounts response');
     });
   });
 
@@ -421,7 +429,7 @@ describe('AuthService', () => {
       });
     });
 
-    test('성공 → 결과 반환', async () => {
+    it('성공 → 결과 반환', async () => {
       // Given
       const response = { message: '계정이 연동되었습니다.' };
       authHttpClient.post.mockResolvedValue({ ok: true, value: response });
@@ -436,7 +444,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: response });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -452,7 +460,7 @@ describe('AuthService', () => {
   // ── unlinkAccount ──────────────────────────
 
   describe('unlinkAccount', () => {
-    test('성공 → 결과 반환', async () => {
+    it('성공 → 결과 반환', async () => {
       // Given
       const response = { message: '계정 연동이 해제되었습니다.', provider: 'GOOGLE' as const };
       authHttpClient.delete.mockResolvedValue({ ok: true, value: response });
@@ -465,7 +473,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: response });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       authHttpClient.delete.mockResolvedValue({ ok: false, error: apiError });
@@ -487,7 +495,7 @@ describe('AuthService', () => {
       newPasswordConfirm: 'NewPass1!',
     };
 
-    test('정상 응답 → ChangePasswordResult 반환', async () => {
+    it('서버 응답이 성공하면 ChangePasswordResult 반환', async () => {
       // Given
       const dto = createChangePasswordDto();
       authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -500,7 +508,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: { message: dto.message } });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError({
         code: 'WRONG_PASSWORD',
@@ -515,14 +523,15 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       authHttpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.changePassword(input)).rejects.toThrow(
-        'Invalid changePassword response',
-      );
+      // When
+      const result = service.changePassword(input);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid changePassword response');
     });
   });
 
@@ -531,7 +540,7 @@ describe('AuthService', () => {
   describe('deleteAccount', () => {
     const input = { password: 'Password1!', reason: '더 이상 사용하지 않음' };
 
-    test('정상 응답 → 토큰 삭제 + DeleteAccountResult 반환', async () => {
+    it('서버 응답이 성공하면 토큰 삭제 + DeleteAccountResult 반환', async () => {
       // Given
       const dto = createDeleteAccountDto();
       authHttpClient.delete.mockResolvedValue({ ok: true, value: dto });
@@ -552,7 +561,7 @@ describe('AuthService', () => {
       });
     });
 
-    test('HTTP 에러 → Result.err + 토큰 미삭제', async () => {
+    it('HTTP 에러 → Result.err + 토큰 미삭제', async () => {
       // Given
       const apiError = createAuthApiError({ code: 'WRONG_PASSWORD', status: 400 });
       authHttpClient.delete.mockResolvedValue({ ok: false, error: apiError });
@@ -565,22 +574,28 @@ describe('AuthService', () => {
       expect(tokenStore.clear).not.toHaveBeenCalled();
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       authHttpClient.delete.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.deleteAccount(input)).rejects.toThrow('Invalid deleteAccount response');
+      // When
+      const result = service.deleteAccount(input);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid deleteAccount response');
     });
 
-    test('토큰 삭제 실패해도 결과 반환', async () => {
+    it('토큰 삭제 실패해도 결과 반환', async () => {
       // Given
       const dto = createDeleteAccountDto();
       authHttpClient.delete.mockResolvedValue({ ok: true, value: dto });
       tokenStore.clear.mockRejectedValueOnce(new Error('storage error'));
 
-      // When & Then
-      await expect(service.deleteAccount(input)).rejects.toThrow('storage error');
+      // When
+      const result = service.deleteAccount(input);
+
+      // Then
+      await expect(result).rejects.toThrow('storage error');
     });
   });
 
@@ -589,7 +604,7 @@ describe('AuthService', () => {
   describe('forgotPassword', () => {
     const input = { email: 'test@example.com' };
 
-    test('정상 응답 → ForgotPasswordResult 반환', async () => {
+    it('서버 응답이 성공하면 ForgotPasswordResult 반환', async () => {
       // Given
       const dto = createForgotPasswordDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -602,7 +617,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: { message: dto.message } });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -614,14 +629,15 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.forgotPassword(input)).rejects.toThrow(
-        'Invalid forgotPassword response',
-      );
+      // When
+      const result = service.forgotPassword(input);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid forgotPassword response');
     });
   });
 
@@ -635,7 +651,7 @@ describe('AuthService', () => {
       newPasswordConfirm: 'NewPass1!',
     };
 
-    test('정상 응답 → ResetPasswordResult 반환', async () => {
+    it('서버 응답이 성공하면 ResetPasswordResult 반환', async () => {
       // Given
       const dto = createResetPasswordDto();
       publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -648,7 +664,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: { message: dto.message } });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -660,12 +676,15 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.resetPassword(input)).rejects.toThrow('Invalid resetPassword response');
+      // When
+      const result = service.resetPassword(input);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid resetPassword response');
     });
   });
 

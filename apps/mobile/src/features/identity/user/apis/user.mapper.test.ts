@@ -5,7 +5,7 @@ import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.
 import { toUpdateProfileResult, toUser } from './user.mapper';
 
 describe('toUser', () => {
-  test('userId → id, createdAt ISO → Instant 매핑', () => {
+  it('userId → id, createdAt ISO → Instant 매핑', () => {
     // Given
     const dto = createCurrentUserDto();
 
@@ -18,7 +18,7 @@ describe('toUser', () => {
     expect(result.createdAt).toBe(dto.createdAt);
   });
 
-  test('name null → null 유지', () => {
+  it('name null → null 유지', () => {
     // Given
     const dto = createCurrentUserDto({ name: null });
 
@@ -29,7 +29,7 @@ describe('toUser', () => {
     expect(result.name).toBeNull();
   });
 
-  test('profileImage null → null 유지', () => {
+  it('profileImage null → null 유지', () => {
     // Given
     const dto = createCurrentUserDto({ profileImage: null });
 
@@ -40,7 +40,7 @@ describe('toUser', () => {
     expect(result.profileImage).toBeNull();
   });
 
-  test.each([
+  it.each([
     [
       'A. 보상 중 구독: 지금 기간은 스토어 만료, 전체 끝은 쌓아 둔 5일까지',
       PREMIUM_ME_EXAMPLES.buyDuringReward,
@@ -85,7 +85,7 @@ describe('toUser', () => {
     expect(result.premiumAccess).toEqual(expected);
   });
 
-  test('providers 배열 매핑', () => {
+  it('providers 배열 매핑', () => {
     // Given
     const dto = createCurrentUserDto({ providers: ['CREDENTIAL', 'GOOGLE'] });
 
@@ -98,7 +98,7 @@ describe('toUser', () => {
 });
 
 describe('toUpdateProfileResult', () => {
-  test('name, profileImage만 추출 (message 제외)', () => {
+  it('name, profileImage만 추출 (message 제외)', () => {
     // Given
     const dto = createUpdateProfileDto();
 
@@ -113,7 +113,7 @@ describe('toUpdateProfileResult', () => {
     expect(result).not.toHaveProperty('message');
   });
 
-  test('name null → null 유지', () => {
+  it('name null → null 유지', () => {
     // Given
     const dto = createUpdateProfileDto({ name: null });
 

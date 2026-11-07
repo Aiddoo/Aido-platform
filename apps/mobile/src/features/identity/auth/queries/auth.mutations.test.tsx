@@ -83,7 +83,7 @@ describe('구글·카카오·네이버 코드 교환', () => {
   }
 
   it('기존 계정 로그인은 auth_login만 보낸다', async () => {
-    // Given·When
+    // When
     const { analytics } = await exchangeCode('google', createAuthTokensDto({ isNewUser: false }));
 
     // Then
@@ -92,7 +92,7 @@ describe('구글·카카오·네이버 코드 교환', () => {
   });
 
   it('신규 가입은 auth_signup만 보낸다', async () => {
-    // Given·When
+    // When
     const { analytics } = await exchangeCode('kakao', createAuthTokensDto({ isNewUser: true }));
 
     // Then
@@ -119,7 +119,7 @@ describe('Apple 로그인', () => {
   }
 
   it('기존 계정 로그인은 인증 상태로 바꾸고 auth_login만 보낸다', async () => {
-    // Given·When
+    // When
     const { status, analytics } = await loginWithApple(createAuthTokensDto({ isNewUser: false }));
 
     // Then
@@ -129,7 +129,7 @@ describe('Apple 로그인', () => {
   });
 
   it('신규 가입은 auth_signup만 보낸다', async () => {
-    // Given·When
+    // When
     const { analytics } = await loginWithApple(createAuthTokensDto({ isNewUser: true }));
 
     // Then
@@ -183,7 +183,7 @@ describe('회원가입 인증 메일', () => {
     '가입은 됐지만 인증 메일을 보내지 못했어요. 잠시 후 다시 보내기를 눌러주세요';
 
   it('메일을 보내지 못했으면 가입은 성공이고 재발송을 안내한다', async () => {
-    // Given·When
+    // When
     await register(createRegisterDto({ emailSent: false }));
 
     // Then
@@ -191,7 +191,7 @@ describe('회원가입 인증 메일', () => {
   });
 
   it('메일을 보냈으면 따로 알리지 않는다', async () => {
-    // Given·When
+    // When
     await register(createRegisterDto({ emailSent: true }));
 
     // Then

@@ -5,7 +5,7 @@ import {
   type QueryCacheStorage,
 } from '@src/bootstrap/query/query-cache-persistence';
 import { ok } from '@src/core/errors/result';
-import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {

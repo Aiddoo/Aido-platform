@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
+import { createClipboardGatewayStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { i18n } from '@src/shared/i18n';
@@ -10,11 +10,7 @@ import { toUser } from '../apis/user.mapper';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { ProfileRow } from './profile-row';
 
-function createClipboardStub(copy: ClipboardGateway['copy']): ClipboardGateway {
-  return { copy, hasContent: jest.fn(), paste: jest.fn() };
-}
-
-async function renderProfileRow(clipboard: ClipboardGateway) {
+async function renderProfileRow(clipboard: ReturnType<typeof createClipboardGatewayStub>) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(createCurrentUserDto()));
   await renderUi(<ProfileRow tierChip={null} />, { queryClient, di: { clipboard } });
@@ -23,7 +19,9 @@ async function renderProfileRow(clipboard: ClipboardGateway) {
 describe('해시태그 복사', () => {
   it('복사하면 완료를 알린다', async () => {
     // Given
-    await renderProfileRow(createClipboardStub(jest.fn().mockResolvedValue(undefined)));
+    const clipboard = createClipboardGatewayStub();
+    clipboard.copy.mockResolvedValue(undefined);
+    await renderProfileRow(clipboard);
 
     // When
     await fireEvent.press(screen.getByLabelText(i18n.t('user:profile.copyTag')));
@@ -34,7 +32,9 @@ describe('해시태그 복사', () => {
 
   it('복사에 실패하면 실패를 알린다', async () => {
     // Given
-    await renderProfileRow(createClipboardStub(jest.fn().mockRejectedValue(new Error('denied'))));
+    const clipboard = createClipboardGatewayStub();
+    clipboard.copy.mockRejectedValue(new Error('denied'));
+    await renderProfileRow(clipboard);
 
     // When
     await fireEvent.press(screen.getByLabelText(i18n.t('user:profile.copyTag')));

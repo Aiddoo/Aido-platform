@@ -29,7 +29,8 @@ describe('toSubscriptionReceiptViewModel', () => {
       // When
       const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward);
 
-      // Then 갱신마다 밀리는 보상 끝 날짜는 고정 날짜처럼 보이지 않게 뺀다
+      // Then
+      // 갱신마다 밀리는 보상 끝 날짜는 고정 날짜처럼 보이지 않게 뺀다
       expect(result).toEqual({
         variant: 'paid',
         rows: [
@@ -64,7 +65,8 @@ describe('toSubscriptionReceiptViewModel', () => {
     });
 
     it('E. 구독을 취소했고 보상이 쌓여 있으면 종료일과 보상을 보이고 내일 끝나도 끝남 안내를 하지 않는다', () => {
-      // When 구독이 3월 10일에 끝나기 하루 전
+      // When
+      // 구독이 3월 10일에 끝나기 하루 전
       const result = createReceipt(PREMIUM_ME_EXAMPLES.cancelledWithBanked, {
         now: toInstant('2028-03-09T03:00:00Z'),
       });
@@ -102,7 +104,8 @@ describe('toSubscriptionReceiptViewModel', () => {
     });
 
     it('자동 갱신 결제 예정 시각이 지났는데 갱신이 아직 반영되지 않았으면 지난 날짜 대신 갱신 확인 중으로 보인다', () => {
-      // When 다음 결제 예정(3월 10일 13:00 KST) 1시간 뒤, 갱신 웹훅 전이다
+      // When
+      // 다음 결제 예정(3월 10일 13:00 KST) 1시간 뒤, 갱신 웹훅 전이다
       const result = createReceipt(PREMIUM_ME_EXAMPLES.buyDuringReward, {
         now: toInstant('2028-03-10T05:00:00Z'),
       });
@@ -144,7 +147,8 @@ describe('toSubscriptionReceiptViewModel', () => {
       // When
       const result = createReceipt(PREMIUM_ME_EXAMPLES.newRewardAfterEnded);
 
-      // Then 결제 용어(다음 결제일·자동 갱신) 행이 없다
+      // Then
+      // 결제 용어(다음 결제일·자동 갱신) 행이 없다
       expect(result).toEqual({
         variant: 'reward',
         rows: [
@@ -161,7 +165,8 @@ describe('toSubscriptionReceiptViewModel', () => {
       // When
       const result = createReceipt(PREMIUM_ME_EXAMPLES.rewardDuringReward);
 
-      // Then 남은 기간과 무료 플랜 안내는 전체 끝(3월 11일) 기준이다
+      // Then
+      // 남은 기간과 무료 플랜 안내는 전체 끝(3월 11일) 기준이다
       expect(result.rows).toEqual([
         { type: 'rewardPeriod', endsAt: toInstant('2028-03-04T04:00:00.000Z') },
         { type: 'bankedReward', days: 7, endsAt: null },

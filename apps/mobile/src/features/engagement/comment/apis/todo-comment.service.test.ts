@@ -50,7 +50,7 @@ const PAGINATION = {
 };
 
 describe('TodoCommentService', () => {
-  test('묶음 목록은 v2 endpoint에서 anchor와 함께 읽고 signal을 넘긴다', async () => {
+  it('묶음 목록은 v2 endpoint에서 anchor와 함께 읽고 signal을 넘긴다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
@@ -79,7 +79,7 @@ describe('TodoCommentService', () => {
     expect(result.ok && result.value.items[0]?.comment.createdAt).toBe('2026-08-26T00:00:00.000Z');
   });
 
-  test('답글은 묶음 머리의 replies endpoint에서 cursor를 그대로 보낸다', async () => {
+  it('답글은 묶음 머리의 replies endpoint에서 cursor를 그대로 보낸다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
@@ -102,7 +102,7 @@ describe('TodoCommentService', () => {
     expect(result.ok && result.value.items[0]?.threadCommentId).toBe(COMMENT_ID);
   });
 
-  test('계약과 다른 응답은 ParseError로 던져 QueryErrorBoundary가 받게 한다', async () => {
+  it('계약과 다른 응답은 ParseError로 던져 QueryErrorBoundary가 받게 한다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
@@ -118,7 +118,7 @@ describe('TodoCommentService', () => {
     await expect(request).rejects.toBeInstanceOf(ParseError);
   });
 
-  test('이미 지운 글처럼 예측한 4xx는 Result 오류로 그대로 넘긴다', async () => {
+  it('이미 지운 글처럼 예측한 4xx는 Result 오류로 그대로 넘긴다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);
@@ -133,7 +133,7 @@ describe('TodoCommentService', () => {
     expect(result).toEqual(err(apiError));
   });
 
-  test('답글 쓰기는 v1 POST에 답할 글 id를 parentId로 보낸다', async () => {
+  it('답글 쓰기는 v1 POST에 답할 글 id를 parentId로 보낸다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const service = new TodoCommentService(httpClient);

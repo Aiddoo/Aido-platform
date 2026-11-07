@@ -2,7 +2,7 @@ import { createInquiryResponseDto } from '../__tests__/inquiry.fixtures';
 import { toInquiryResult } from './inquiry.mapper';
 
 describe('toInquiryResult', () => {
-  test('message 필드 매핑', () => {
+  it('message 필드 매핑', () => {
     // Given
     const dto = createInquiryResponseDto();
 
@@ -13,7 +13,7 @@ describe('toInquiryResult', () => {
     expect(result).toEqual({ message: dto.message });
   });
 
-  test('커스텀 메시지 매핑', () => {
+  it('커스텀 메시지 매핑', () => {
     // Given
     const dto = createInquiryResponseDto({ message: '커스텀 메시지' });
 

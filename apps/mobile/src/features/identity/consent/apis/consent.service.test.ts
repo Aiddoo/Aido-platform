@@ -20,7 +20,7 @@ describe('ConsentService', () => {
   // ── getConsent ──────────────────────────────
 
   describe('getConsent', () => {
-    test('정상 응답 → ISO 문자열을 Instant로 변환', async () => {
+    it('서버 응답이 성공하면 ISO 문자열을 Instant로 변환', async () => {
       // Given
       const termsAgreedAt = '2026-01-01T00:00:00.000Z';
       const privacyAgreedAt = '2026-01-01T00:00:00.000Z';
@@ -48,7 +48,7 @@ describe('ConsentService', () => {
       });
     });
 
-    test('marketingAgreedAt null → null 유지', async () => {
+    it('marketingAgreedAt null → null 유지', async () => {
       // Given
       const dto = createConsentDto({ marketingAgreedAt: null });
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -63,7 +63,7 @@ describe('ConsentService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -75,19 +75,22 @@ describe('ConsentService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getConsent()).rejects.toThrow('Invalid getConsent response');
+      // When
+      const result = service.getConsent();
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid getConsent response');
     });
   });
 
   // ── updateMarketingConsent ──────────────────
 
   describe('updateMarketingConsent', () => {
-    test('동의 → ISO를 Instant로 변환', async () => {
+    it('동의 → ISO를 Instant로 변환', async () => {
       // Given
       const marketingAgreedAt = '2026-02-01T00:00:00.000Z';
       const dto = createUpdateMarketingConsentDto({ marketingAgreedAt });
@@ -106,7 +109,7 @@ describe('ConsentService', () => {
       });
     });
 
-    test('철회 → marketingAgreedAt null', async () => {
+    it('철회 → marketingAgreedAt null', async () => {
       // Given
       const dto = createUpdateMarketingConsentDto({ marketingAgreedAt: null });
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -118,7 +121,7 @@ describe('ConsentService', () => {
       expect(result).toEqual({ ok: true, value: { marketingAgreedAt: null } });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createAuthApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -130,14 +133,15 @@ describe('ConsentService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       httpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.updateMarketingConsent({ agreed: true })).rejects.toThrow(
-        'Invalid updateMarketingConsent response',
-      );
+      // When
+      const result = service.updateMarketingConsent({ agreed: true });
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid updateMarketingConsent response');
     });
   });
 });

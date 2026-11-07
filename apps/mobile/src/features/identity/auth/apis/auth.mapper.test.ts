@@ -21,7 +21,7 @@ import {
 } from './auth.mapper';
 
 describe('toAuthTokens', () => {
-  test('name → userName, profileImage → userProfileImage 매핑', () => {
+  it('name → userName, profileImage → userProfileImage 매핑', () => {
     // Given
     const dto = createAuthTokensDto({
       name: '홍길동',
@@ -43,7 +43,7 @@ describe('toAuthTokens', () => {
     });
   });
 
-  test('null 필드 유지', () => {
+  it('null 필드 유지', () => {
     // Given
     const dto = createAuthTokensDto({ name: null, profileImage: null });
 
@@ -55,7 +55,7 @@ describe('toAuthTokens', () => {
     expect(result.userProfileImage).toBeNull();
   });
 
-  test('accountRestored undefined → false 기본값', () => {
+  it('accountRestored undefined → false 기본값', () => {
     // Given
     const dto = createAuthTokensDto();
     // accountRestored는 DTO에 없는 필드 → undefined
@@ -67,7 +67,7 @@ describe('toAuthTokens', () => {
     expect(result.accountRestored).toBe(false);
   });
 
-  test('accountRestored true → true 유지', () => {
+  it('accountRestored true → true 유지', () => {
     // Given
     const dto = createAuthTokensDto({ accountRestored: true });
 
@@ -78,7 +78,7 @@ describe('toAuthTokens', () => {
     expect(result.accountRestored).toBe(true);
   });
 
-  test('isNewUser가 없는 이메일 로그인 응답은 기존 로그인으로 본다', () => {
+  it('isNewUser가 없는 이메일 로그인 응답은 기존 로그인으로 본다', () => {
     // Given
     const dto = createAuthTokensDto();
 
@@ -89,7 +89,7 @@ describe('toAuthTokens', () => {
     expect(result.isNewUser).toBe(false);
   });
 
-  test('isNewUser true → true 유지', () => {
+  it('isNewUser true → true 유지', () => {
     // Given
     const dto = createAuthTokensDto({ isNewUser: true });
 
@@ -102,7 +102,7 @@ describe('toAuthTokens', () => {
 });
 
 describe('toRegisterResult', () => {
-  test('message, email 매핑', () => {
+  it('message, email 매핑', () => {
     // Given
     const dto = createRegisterDto();
 
@@ -117,7 +117,7 @@ describe('toRegisterResult', () => {
     });
   });
 
-  test('인증 메일을 보내지 못했다는 응답을 그대로 옮긴다', () => {
+  it('인증 메일을 보내지 못했다는 응답을 그대로 옮긴다', () => {
     // Given
     const dto = createRegisterDto({ emailSent: false });
 
@@ -130,7 +130,7 @@ describe('toRegisterResult', () => {
 });
 
 describe('toResendVerificationResult', () => {
-  test('retryAfterSeconds 포함', () => {
+  it('retryAfterSeconds 포함', () => {
     // Given
     const dto = createResendVerificationDto({ retryAfterSeconds: 120 });
 
@@ -145,7 +145,7 @@ describe('toResendVerificationResult', () => {
     });
   });
 
-  test('retryAfterSeconds undefined → undefined', () => {
+  it('retryAfterSeconds undefined → undefined', () => {
     // Given
     const dto = createResendVerificationDto({ retryAfterSeconds: undefined });
 
@@ -158,7 +158,7 @@ describe('toResendVerificationResult', () => {
 });
 
 describe('toDeleteAccountResult', () => {
-  test('deletedAt ISO → Instant, gracePeriodDays 포함', () => {
+  it('deletedAt ISO → Instant, gracePeriodDays 포함', () => {
     // Given
     const dto = createDeleteAccountDto({
       deletedAt: '2026-02-13T10:00:00.000Z',
@@ -176,7 +176,7 @@ describe('toDeleteAccountResult', () => {
 });
 
 describe('toForgotPasswordResult', () => {
-  test('message 매핑', () => {
+  it('message 매핑', () => {
     // Given
     const dto = createForgotPasswordDto();
 
@@ -189,7 +189,7 @@ describe('toForgotPasswordResult', () => {
 });
 
 describe('toResetPasswordResult', () => {
-  test('message 매핑', () => {
+  it('message 매핑', () => {
     // Given
     const dto = createResetPasswordDto();
 
@@ -202,7 +202,7 @@ describe('toResetPasswordResult', () => {
 });
 
 describe('toChangePasswordResult', () => {
-  test('message 매핑', () => {
+  it('message 매핑', () => {
     // Given
     const dto = createChangePasswordDto();
 
@@ -215,7 +215,7 @@ describe('toChangePasswordResult', () => {
 });
 
 describe('toLinkedAccount', () => {
-  test('linkedAt ISO → Instant', () => {
+  it('linkedAt ISO → Instant', () => {
     // Given
     const dto = {
       provider: 'GOOGLE' as const,
@@ -233,7 +233,7 @@ describe('toLinkedAccount', () => {
     expect(result.linked).toBe(true);
   });
 
-  test('linkedAt null → null', () => {
+  it('linkedAt null → null', () => {
     // Given
     const dto = {
       provider: 'KAKAO' as const,
@@ -252,7 +252,7 @@ describe('toLinkedAccount', () => {
 });
 
 describe('toLinkedAccounts', () => {
-  test('배열 변환', () => {
+  it('배열 변환', () => {
     // Given
     const dto = createLinkedAccountsDto();
 
@@ -266,7 +266,7 @@ describe('toLinkedAccounts', () => {
     expect(result.canUnlink).toBe(true);
   });
 
-  test('빈 배열 → 빈 배열', () => {
+  it('빈 배열 → 빈 배열', () => {
     // Given
     const dto = { accounts: [], canUnlink: false };
 

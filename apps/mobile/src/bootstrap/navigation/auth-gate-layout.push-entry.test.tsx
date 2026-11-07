@@ -2,7 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
-import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';

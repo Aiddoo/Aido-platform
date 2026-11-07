@@ -19,7 +19,7 @@ function createQueryClient() {
 }
 
 describe('SuggestionEntry', () => {
-  test('제안 API가 실패해도 오류를 던지지 않고 칸 안에서 다시 시도를 보인다', async () => {
+  it('제안 API가 실패해도 오류를 던지지 않고 칸 안에서 다시 시도를 보인다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(serverError());
@@ -40,7 +40,7 @@ describe('SuggestionEntry', () => {
     expect(await screen.findByText(RETRY_LABEL)).toBeTruthy();
   });
 
-  test('한도 스냅샷을 읽지 못해도 오류를 던지지 않고 칸 안에서 다시 시도를 보인다', async () => {
+  it('한도 스냅샷을 읽지 못해도 오류를 던지지 않고 칸 안에서 다시 시도를 보인다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(serverError());

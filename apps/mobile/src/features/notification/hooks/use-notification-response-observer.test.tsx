@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
-import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import {
   createHttpClientStub,
   createLoggerStub,

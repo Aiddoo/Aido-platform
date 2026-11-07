@@ -37,8 +37,11 @@ describe('FeatureCampaignService', () => {
     fetcher.get.mockResolvedValue({ data: { enabled: false } });
     const service = new FeatureCampaignService(fetcher);
 
-    // When & Then
-    await expect(service.getConfig()).rejects.toThrow(ParseError);
+    // When
+    const result = service.getConfig();
+
+    // Then
+    await expect(result).rejects.toThrow(ParseError);
   });
 
   it('네트워크 실패를 삼키지 않고 호출자에게 전파한다', async () => {
@@ -47,7 +50,10 @@ describe('FeatureCampaignService', () => {
     fetcher.get.mockRejectedValue(new Error('offline'));
     const service = new FeatureCampaignService(fetcher);
 
-    // When & Then
-    await expect(service.getConfig()).rejects.toThrow('offline');
+    // When
+    const result = service.getConfig();
+
+    // Then
+    await expect(result).rejects.toThrow('offline');
   });
 });

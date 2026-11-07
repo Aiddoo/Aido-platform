@@ -1,7 +1,7 @@
 import { getSubscriptionStore } from './subscription-store';
 
 describe('getSubscriptionStore', () => {
-  test.each([
+  it.each([
     ['ios', 'appStore'],
     ['macos', 'appStore'],
     ['android', 'googlePlay'],
@@ -16,7 +16,7 @@ describe('getSubscriptionStore', () => {
     expect(store).toBe(expected);
   });
 
-  test('인앱 구독이 없는 웹은 스토어가 없다', () => {
+  it('인앱 구독이 없는 웹은 스토어가 없다', () => {
     // Given
     const platform = 'web';
 

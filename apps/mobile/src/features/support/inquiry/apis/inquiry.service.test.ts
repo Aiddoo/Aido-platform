@@ -23,7 +23,7 @@ describe('InquiryService', () => {
   } as const;
 
   describe('createInquiry', () => {
-    test('정상 응답 → InquiryResult 반환', async () => {
+    it('서버 응답이 성공하면 InquiryResult 반환', async () => {
       // Given
       const dto = createInquiryResponseDto();
       httpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -39,7 +39,7 @@ describe('InquiryService', () => {
       });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createInquiryApiError();
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -51,12 +51,15 @@ describe('InquiryService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.createInquiry(input)).rejects.toThrow('Invalid createInquiry response');
+      // When
+      const result = service.createInquiry(input);
+
+      // Then
+      await expect(result).rejects.toThrow('Invalid createInquiry response');
     });
   });
 });

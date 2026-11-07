@@ -1,4 +1,3 @@
-import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
@@ -12,12 +11,16 @@ import {
 const identity = { userId: 'user-1', campaignId: 'feature-discovery-2026-08' };
 const claimedAt = toInstant('2026-08-02T00:00:00.000Z');
 
-function createFailingStorage(): SyncStorage & Pick<EnumerableSyncStorage, 'keys'> {
+function createFailingStorage() {
+  const storage = createMemorySyncStorage();
   const fail = () => {
     throw new Error('storage unavailable');
   };
+  storage.get.mockImplementation(fail);
+  storage.set.mockImplementation(fail);
+  storage.remove.mockImplementation(fail);
 
-  return { get: fail, set: fail, remove: fail, keys: fail };
+  return storage;
 }
 
 describe('whats-new 본 기록', () => {
@@ -42,6 +45,9 @@ describe('whats-new 본 기록', () => {
     storage.set('aido_feature_discovery_seen_v1:user-1:feature-discovery-2026-08', claimedAt);
     const repository = createWhatsNewRepository(storage);
 
+    // When
+    const result = repository.claimSeen(identity, claimedAt);
+
     // Then
     expect(createWhatsNewSeenKey(identity)).toBe(
       'aido_feature_discovery_seen_v1:user-1:feature-discovery-2026-08',
@@ -49,12 +55,15 @@ describe('whats-new 본 기록', () => {
     expect(createWhatsNewReentryKey(identity)).toBe(
       'aido_feature_discovery_reentry_v1:user-1:feature-discovery-2026-08',
     );
-    expect(repository.claimSeen(identity, claimedAt)).toBe(false);
+    expect(result).toBe(false);
   });
 
   it('저장소를 쓰지 못하면 claim하지 않아 자동으로 열지 않는다', () => {
+    // Given
+    const repository = createWhatsNewRepository(createFailingStorage());
+
     // When
-    const result = createWhatsNewRepository(createFailingStorage()).claimSeen(identity, claimedAt);
+    const result = repository.claimSeen(identity, claimedAt);
 
     // Then
     expect(result).toBe(false);
@@ -63,10 +72,15 @@ describe('whats-new 본 기록', () => {
 
 describe('whats-new 재진입 시각', () => {
   it('손상된 시각은 없는 것으로 읽고 이전 버전이 쓴 시각은 그대로 읽는다', () => {
+    // When
+    const corrupted = parseReentryOpenedAt('not-a-date');
+    const missing = parseReentryOpenedAt(undefined);
+    const saved = parseReentryOpenedAt('2026-08-02T00:00:00.000Z');
+
     // Then
-    expect(parseReentryOpenedAt('not-a-date')).toBeNull();
-    expect(parseReentryOpenedAt(undefined)).toBeNull();
-    expect(parseReentryOpenedAt('2026-08-02T00:00:00.000Z')).toBe(claimedAt);
+    expect(corrupted).toBeNull();
+    expect(missing).toBeNull();
+    expect(saved).toBe(claimedAt);
   });
 
   it('닫으면 재진입 키만 지워 다시 claim해도 돌아오지 않는다', () => {
@@ -106,8 +120,11 @@ describe('whats-new 재진입 시각', () => {
     // Given
     const repository = createWhatsNewRepository(createFailingStorage());
 
+    // When
+    const dismiss = () => repository.dismissReentry(identity);
+
     // Then
-    expect(() => repository.dismissReentry(identity)).not.toThrow();
+    expect(dismiss).not.toThrow();
   });
 });
 

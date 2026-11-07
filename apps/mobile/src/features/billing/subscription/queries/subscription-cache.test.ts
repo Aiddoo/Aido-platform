@@ -72,9 +72,13 @@ describe('isPremiumDependentQuery', () => {
   });
 
   it('오프라인 복원 같은 다른 meta만 있으면 고르지 않는다', () => {
-    // Given / When / Then
-    expect(isPremiumDependentQuery({ meta: { persist: true } })).toBe(false);
-    expect(isPremiumDependentQuery({ meta: undefined })).toBe(false);
+    // When
+    const withOtherMeta = isPremiumDependentQuery({ meta: { persist: true } });
+    const withoutMeta = isPremiumDependentQuery({ meta: undefined });
+
+    // Then
+    expect(withOtherMeta).toBe(false);
+    expect(withoutMeta).toBe(false);
   });
 });
 
@@ -96,7 +100,8 @@ describe('watchPremiumEntitlementChanges', () => {
     seedDependentQueries(queryClient);
     unwatch = watchPremiumEntitlementChanges(queryClient);
 
-    // When 스토어 이벤트 없이 서버가 보상 기간을 시작했다
+    // When
+    // 스토어 이벤트 없이 서버가 보상 기간을 시작했다
     queryClient.setQueryData(USER_QUERY_KEYS.me(), GRANT_ME);
 
     // Then
@@ -169,7 +174,8 @@ describe('syncMeUntilStorePremium', () => {
   }
 
   it('웹훅이 반영돼 내 정보가 STORE가 되면 그때 멈추고 true를 반환한다', async () => {
-    // Given 첫 응답과 첫 재요청은 아직 무료, 두 번째 재요청에서 반영된다
+    // Given
+    // 첫 응답과 첫 재요청은 아직 무료, 두 번째 재요청에서 반영된다
     const fetchMe = await serveMe(FREE_ME, FREE_ME, STORE_ME);
 
     // When
