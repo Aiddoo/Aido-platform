@@ -14,6 +14,7 @@ export function PremiumDialog({
   alternativeAction,
 }: PremiumDialogProps) {
   const subscribe = useSingleTap(onSubscribe);
+  const runAlternative = useSingleTap((action: PremiumDialogAlternativeAction) => action.onPress());
 
   const { t } = useTranslation();
 
@@ -24,7 +25,7 @@ export function PremiumDialog({
 
   const handleAlternative = (action: PremiumDialogAlternativeAction) => {
     onOpenChange(false);
-    action.onPress();
+    runAlternative(action);
   };
 
   if (alternativeAction != null) {

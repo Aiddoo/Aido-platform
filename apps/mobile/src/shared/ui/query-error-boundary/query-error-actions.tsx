@@ -1,6 +1,7 @@
 import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t, useTranslation } from '@src/shared/i18n';
 import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
@@ -81,9 +82,10 @@ QueryErrorActions.Inquiry = function Inquiry({
   onPress?: () => void;
 }) {
   const { t } = useTranslation('common');
+  const inquire = useSingleTap(onPress);
 
   return (
-    <TextButton size="small" testID="query-error-inquiry" onPress={onPress}>
+    <TextButton size="small" testID="query-error-inquiry" onPress={inquire}>
       {t('errorBoundary.inquiry')}
     </TextButton>
   );
