@@ -142,31 +142,29 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                           |
 | 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                     |
 | Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`                                                                                                                                          |
-| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름                                                                                                                                  |
-| 테스트 mock          | 테스트의 `jest.mock('@src/…')`                                                                                                                                                                |
+| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                  |
+| 테스트 mock          | 테스트의 `jest.mock('@src/…')`. 허용 목록 없음                                                                                                                                                |
+| worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                   |
 | RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
 | `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                      |
 | 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                     |
 | 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                 |
 
-**이미 있는 위반:** 위층 import부터 쿼리 키 자리까지는 `scripts/mobile-conventions-allowlist.json`에 규칙별 이유와 파일별 수로 적었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
+**이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`)만 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
 
 아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import.
 
 ## 아직 옮기지 않은 것
 
-이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 billing·기기·음성·폼 묶음을 합친 `aa9967649` 기준 grep). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 이름, 함수 형태, 층처럼 검사가 세는 항목의 파일 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
+이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
 | 규칙                              | 지금 코드                                                                                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| utils 폴더                        | `notification/utils/analytics/`, `weather/utils/analytics/`가 남았다. 평탄한 `*.view-model.ts`는 9개다                                                                                                                         |
+| utils 파일                        | 평탄한 `*.view-model.ts` 9개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                                                                                                             |
 | [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1)                                                                                    |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 8개(`shared` 5, `billing` 훅 1, `app` 2)                                                                                                                |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 7개(`shared` 5, `app` 2)                                                                                                                                |
 | [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                                                                                                    |
-| [모델](#모델과-policy)            | Facade 별칭 1개(`social/nudge`)                                                                                                                                                                                                |
 | [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                    |
-| [함수 형태](#함수-형태)           | 모듈 수준 화살표 106파일 243개(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                                                               |
-| [테스트](./testing-guide.md)      | `jest.mock('@src/…')` 5파일 12건                                                                                                                                                                                               |
 | [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
 | [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                                                                                                   |
 | [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                                                                                                                 |
@@ -436,7 +434,9 @@ MemoList.Loading = function Loading() {
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
-**유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`).
+**유지하는 Context:** `di-context`, `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`).
+
+**UI 내부 Context의 예, 댓글 폼:** 작성 바, 댓글 행, 뒤로 가기가 한 입력값을 읽고 바꾸고, 세션이 폼을 소유한다. 폼은 props로 내리면 작성 바와 행 사이의 여러 층을 거쳐야 하고, 이 Context는 `UseFormReturn` 하나만 나눠 주며 서버 값이나 앱 상태를 담지 않는다. 폼의 값 변화는 `useWatch`가 구독하므로 Context 값(폼 객체)은 바뀌지 않아 소비자가 다시 그려지지 않는다.
 
 **아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다): `font-scale-provider`, `theme-provider`, `language-provider`, `local-date-provider`, `keyboard-bottom-gap-provider`, `todo-comment-expansion`, `todo-comment-reveal`.
 

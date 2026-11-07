@@ -112,6 +112,8 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `createMemoryStorage()`                                                     | 키체인(`Storage` 포트) 대신 메모리 저장소                                                |
 | `createMemoryTokenStore(tokens)`                                            | 저장·삭제가 다음 읽기에 반영되는 토큰 저장소 fake                                        |
 | `createHttpClientStub()`                                                    | HTTP 포트 stub                                                                           |
+| `createWidgetNavigationStorageFake()`                                       | 위젯 이동 명령 저장소 fake. 바뀔 때 구독자에게 알린다                                    |
+| `OverlayStateContext.Provider`                                              | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다   |
 | `createAnalyticsStub()`, `createStorageStub()`, `createMemorySyncStorage()` | Analytics·저장소 포트 stub                                                               |
 | `createLoggerStub()`                                                        | Logger 포트 stub. `jest.fn()` 네 개를 파일마다 만들지 않는다                             |
 | `createTestQueryClient()`                                                   | 테스트용 QueryClient                                                                     |
@@ -187,10 +189,10 @@ await renderUi(
 
 기존 테스트는 일괄 교체하지 않고 손대는 파일부터 옮긴다.
 
-| 규칙                       | 지금 코드 (2026-11-07 grep)                                                                                                       |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 모듈 `jest.mock`           | 40개 파일에 남아 있다. `jest.mock('@src/…')` 5개 파일(`check:conventions`가 수를 막는다), `jest.mock('expo-router', …)` 10개 파일 |
-| 폼 스키마와 계약 교차 검증 | 폼 스키마와 계약 스키마가 같은 값을 통과시키는지 mapper 테스트로 확인하는 곳이 아직 없다                                          |
+| 규칙                       | 지금 코드 (2026-11-07 grep)                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 모듈 `jest.mock`           | 39개 파일에 남아 있다. `jest.mock('@src/…')`은 0개라 `check:conventions`가 새로 생기는 것을 막는다. `jest.mock('expo-router', …)` 10개 파일 |
+| 폼 스키마와 계약 교차 검증 | 폼 스키마와 계약 스키마가 같은 값을 통과시키는지 mapper 테스트로 확인하는 곳이 아직 없다                                                    |
 
 ## UI와 native 검증
 
