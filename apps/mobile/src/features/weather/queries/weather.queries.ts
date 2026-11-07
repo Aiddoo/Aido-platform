@@ -1,14 +1,10 @@
 import {
-  useErrorReporter,
-  useLocationGateway,
   useLogger,
+  useWeatherLocationService,
   useWeatherService,
 } from '@src/bootstrap/providers/di-context';
 import { type Logger } from '@src/core/ports/logger';
-import {
-  resolveLocation,
-  type WeatherLocationDependencies,
-} from '@src/features/weather/apis/weather-location.service';
+import { type WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { type WeatherService } from '@src/features/weather/apis/weather.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { getErrorMessage, isBusinessError, unwrap } from '@src/shared/errors';
@@ -67,15 +63,20 @@ async function readReportLocation(client: QueryClient, logger: Logger, revision:
  * 동시에 열려도 위치 읽기와 PUT이 한 번만 일어난다.
  * 리포트는 이 query를 기다리지 않고 서버에 저장된 위치로 먼저 받는다.
  */
-function getWeatherLocationQueryOptions(dependencies: WeatherLocationDependencies) {
+function getWeatherLocationQueryOptions(
+  weatherLocationService: WeatherLocationService,
+  logger: Logger,
+) {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),
-    queryFn: ({ signal, client, queryKey }): Promise<LocationReading> =>
-      resolveLocation(dependencies, {
-        previous: client.getQueryData<LocationReading>(queryKey),
-        signal,
-        readReportLocation: (revision) => readReportLocation(client, dependencies.logger, revision),
-      }),
+    queryFn: async ({ signal, client, queryKey }): Promise<LocationReading> =>
+      unwrap(
+        await weatherLocationService.resolveLocation({
+          previous: client.getQueryData<LocationReading>(queryKey),
+          signal,
+          readReportLocation: (revision) => readReportLocation(client, logger, revision),
+        }),
+      ),
     ...PERSISTED_QUERY_OPTIONS,
     staleTime: LOCATION_STALE_TIME_MS,
     gcTime: Infinity,
@@ -87,12 +88,7 @@ function getWeatherLocationQueryOptions(dependencies: WeatherLocationDependencie
 }
 
 export function useGetWeatherLocationQueryOptions() {
-  return getWeatherLocationQueryOptions({
-    gateway: useLocationGateway(),
-    weatherService: useWeatherService(),
-    logger: useLogger(),
-    errorReporter: useErrorReporter(),
-  });
+  return getWeatherLocationQueryOptions(useWeatherLocationService(), useLogger());
 }
 
 /** 날씨 블록이 같은 리포트 캐시를 고르도록 위치 리비전을 돌려준다. 위치를 읽는 동안에도 0으로 바로 받는다. */

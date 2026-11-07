@@ -61,7 +61,7 @@ import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-sto
 import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
 import { VoiceService } from '@src/features/voice/apis/voice.service';
 import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
-import { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
+import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { DEVICE_MODEL_NAME } from '@src/shared/config/device';
@@ -425,9 +425,13 @@ export function DIProvider({
       subscriptionService,
       entitlementService,
       weatherService,
-      weatherIntroductionService: new WeatherIntroductionService(
-        createWeatherIntroductionRepository(mmkvSyncStorage),
+      weatherLocationService: new WeatherLocationService(
+        expoLocationGateway,
+        weatherService,
+        logger,
+        errorReporter,
       ),
+      weatherIntroductionRepository: createWeatherIntroductionRepository(mmkvSyncStorage),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
       networkStatus: expoNetworkStatusGateway,

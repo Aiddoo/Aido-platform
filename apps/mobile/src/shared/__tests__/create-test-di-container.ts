@@ -236,8 +236,11 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get weatherService() {
       return dependency('weatherService');
     },
-    get weatherIntroductionService() {
-      return dependency('weatherIntroductionService');
+    get weatherLocationService() {
+      return dependency('weatherLocationService');
+    },
+    get weatherIntroductionRepository() {
+      return dependency('weatherIntroductionRepository');
     },
     get widgetSyncService() {
       return dependency('widgetSyncService');

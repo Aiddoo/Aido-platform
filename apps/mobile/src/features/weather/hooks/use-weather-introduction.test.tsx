@@ -13,7 +13,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { createWeatherIntroductionRepository } from '../apis/weather-introduction.repository';
-import { WeatherIntroductionService } from '../apis/weather-introduction.service';
+import { WeatherLocationService } from '../apis/weather-location.service';
 import { WeatherService } from '../apis/weather.service';
 import { useWeatherIntroduction } from './use-weather-introduction';
 
@@ -49,21 +49,28 @@ async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {
     getPlace: jest.fn(),
     ...gatewayOverrides,
   };
-  const introductionService = new WeatherIntroductionService(
-    createWeatherIntroductionRepository(createMemorySyncStorage()),
-  );
+  const introductionRepository = createWeatherIntroductionRepository(createMemorySyncStorage());
+  const weatherService = new WeatherService(createHttpClientStub());
+  const logger = createLoggerStub();
+  const errorReporter = createErrorReporterStub();
   const rendered = await renderUi(<FeedScreen path="/feed" isStable />, {
     di: {
       locationGateway: gateway,
-      weatherService: new WeatherService(createHttpClientStub()),
-      weatherIntroductionService: introductionService,
+      weatherService,
+      weatherLocationService: new WeatherLocationService(
+        gateway,
+        weatherService,
+        logger,
+        errorReporter,
+      ),
+      weatherIntroductionRepository: introductionRepository,
       inviteService: createStubInviteService(),
-      logger: createLoggerStub(),
+      logger,
       analytics: createAnalyticsStub(),
-      errorReporter: createErrorReporterStub(),
+      errorReporter,
     },
   });
-  return { gateway, introductionService, ...rendered };
+  return { gateway, introductionRepository, ...rendered };
 }
 
 describe('useWeatherIntroduction', () => {
@@ -104,20 +111,20 @@ describe('useWeatherIntroduction', () => {
 
   it('나중에를 고르면 본 것으로 기억하고 다음 안내를 막지 않는다', async () => {
     // Given
-    const { gateway, introductionService } = await setup();
+    const { gateway, introductionRepository } = await setup();
 
     // When
     await fireEvent.press(await screen.findByText('나중에'));
 
     // Then
     await waitFor(() => expect(screen.getByTestId('pending')).toHaveTextContent('false'));
-    expect(introductionService.hasSeenIntroduction()).toBe(true);
+    expect(introductionRepository.hasSeenIntroduction()).toBe(true);
     expect(gateway.requestPermission).not.toHaveBeenCalled();
   });
 
   it('답 없이 사라지면 본 것으로 기억하지 않는다', async () => {
     // Given
-    const { introductionService, unmount } = await setup();
+    const { introductionRepository, unmount } = await setup();
     await screen.findByText('나중에');
 
     // When
@@ -125,12 +132,12 @@ describe('useWeatherIntroduction', () => {
     await act(async () => undefined);
 
     // Then
-    expect(introductionService.hasSeenIntroduction()).toBe(false);
+    expect(introductionRepository.hasSeenIntroduction()).toBe(false);
   });
 
   it('다른 화면으로 가서 사라지면 피드로 돌아올 때 다시 권한다', async () => {
     // Given
-    const { introductionService, rerender } = await setup();
+    const { introductionRepository, rerender } = await setup();
     await screen.findByText('나중에');
 
     // When
@@ -139,7 +146,7 @@ describe('useWeatherIntroduction', () => {
 
     // Then
     expect(screen.queryByText('나중에')).toBeNull();
-    expect(introductionService.hasSeenIntroduction()).toBe(false);
+    expect(introductionRepository.hasSeenIntroduction()).toBe(false);
 
     // When
     await rerender(<FeedScreen path="/mypage" isStable />);

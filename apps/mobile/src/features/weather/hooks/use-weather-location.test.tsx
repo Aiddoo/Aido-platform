@@ -19,6 +19,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
+import { WeatherLocationService } from '../apis/weather-location.service';
 import { WeatherService } from '../apis/weather.service';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import {
@@ -64,9 +65,16 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   };
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
+  const weatherService = new WeatherService(httpClient);
   const container = createTestDiContainer({
     locationGateway: gateway,
-    weatherService: new WeatherService(httpClient),
+    weatherService,
+    weatherLocationService: new WeatherLocationService(
+      gateway,
+      weatherService,
+      logger,
+      errorReporter,
+    ),
     logger,
     errorReporter,
     analytics,

@@ -1,7 +1,7 @@
 import {
   useInviteService,
   useLogger,
-  useWeatherIntroductionService,
+  useWeatherIntroductionRepository,
 } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,12 +20,12 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
   isPending: boolean;
 } {
   const location = useWeatherLocation();
-  const introductionService = useWeatherIntroductionService();
+  const introductionRepository = useWeatherIntroductionRepository();
   const inviteService = useInviteService();
   const logger = useLogger();
   const overlay = useOverlay();
   const { t } = useTranslation(['weather']);
-  const [hasSeen, setHasSeen] = useState(() => introductionService.hasSeenIntroduction());
+  const [hasSeen, setHasSeen] = useState(() => introductionRepository.hasSeenIntroduction());
   const [isRequesting, setIsRequesting] = useState(false);
   const hasClaimed = useRef(false);
   const shouldIntroduce = location.status === 'needsPermission' && !hasSeen;
@@ -87,7 +87,7 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
             hasClaimed.current = false;
             return undefined;
           }
-          introductionService.markIntroductionSeen();
+          introductionRepository.markIntroductionSeen();
           setHasSeen(true);
           if (!accepted) {
             return undefined;
@@ -100,7 +100,16 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
         });
     });
     return () => cancelIdleCallback(task);
-  }, [introductionService, inviteService, logger, overlay, request, shouldIntroduce, isStable, t]);
+  }, [
+    introductionRepository,
+    inviteService,
+    logger,
+    overlay,
+    request,
+    shouldIntroduce,
+    isStable,
+    t,
+  ]);
 
   return { isPending: location.status === 'checking' || shouldIntroduce || isRequesting };
 }
