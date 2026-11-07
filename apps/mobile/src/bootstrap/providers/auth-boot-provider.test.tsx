@@ -80,7 +80,7 @@ describe('AuthBootProvider', () => {
     errorReporter = createErrorReporterStub();
     analytics = createAnalyticsStub();
     queryClient = createTestQueryClient();
-    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
+    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     deviceTimezoneService = new DeviceTimezoneService(
       createDeviceTimezoneRepository(createMemorySyncStorage()),

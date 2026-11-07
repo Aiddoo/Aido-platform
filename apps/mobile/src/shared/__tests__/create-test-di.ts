@@ -83,7 +83,7 @@ export function createTestDi({
     todoNudgeService: new TodoNudgeService(httpClient),
     todoService: new TodoService(httpClient),
     subTodoService: new SubTodoService(httpClient),
-    draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+    draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
     activationService: new ActivationService(
       createActivationProgressRepository(createMemorySyncStorage()),
     ),

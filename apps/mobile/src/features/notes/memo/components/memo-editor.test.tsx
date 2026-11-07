@@ -80,7 +80,7 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
       di: createTestDi({
         httpClient,
         todoCategoryService: new TodoCategoryService(httpClient),
-        draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+        draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),

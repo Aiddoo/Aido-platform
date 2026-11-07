@@ -44,7 +44,7 @@ describe('useUserIdentity', () => {
   let wrapper: (props: PropsWithChildren) => React.JSX.Element;
 
   beforeEach(() => {
-    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
+    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     queryClient = createTestQueryClient();
     const httpClient = createHttpClientStub();

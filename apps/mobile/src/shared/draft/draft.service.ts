@@ -16,7 +16,7 @@ export class DraftService {
   readonly #repository: DraftRepository;
   readonly #now: () => number;
 
-  constructor(repository: DraftRepository, now: () => number = Date.now) {
+  constructor(repository: DraftRepository, now: () => number) {
     this.#repository = repository;
     this.#now = now;
   }

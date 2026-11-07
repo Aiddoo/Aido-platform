@@ -38,7 +38,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
+    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     const container = createTestDi({ draftService });
     wrapper = ({ children }) => (
       <StaticDIProvider container={container}>{children}</StaticDIProvider>

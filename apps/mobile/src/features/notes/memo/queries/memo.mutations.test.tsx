@@ -144,7 +144,7 @@ describe('오프라인에서 AI 정리', () => {
       di: createTestDi({
         httpClient,
         haptics: createHapticsStub(),
-        draftService: new DraftService(createDraftRepository(createMemorySyncStorage())),
+        draftService: new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now),
       }),
     });
 

@@ -153,6 +153,7 @@ export function DIProvider({
     const featureAttribution = createFeatureAttributionStore(deviceSyncStorage);
     const draftService = new DraftService(
       createDraftRepository(encryptedStorageBootstrap.draftStorage),
+      Date.now,
     );
     draftService.removeExpired();
 

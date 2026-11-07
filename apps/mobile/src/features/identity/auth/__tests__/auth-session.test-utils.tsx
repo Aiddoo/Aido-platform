@@ -76,7 +76,7 @@ export function createAuthSession({
   const userHttp = createHttpClientStub();
   userHttp.get.mockResolvedValue(ok(createCurrentUserDto()));
   const queryClient = createTestQueryClient();
-  const draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
+  const draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
   const queryCacheStorage: QueryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
   const errorReporter = createErrorReporterStub();
   const writeSnapshot = jest.fn(async () => undefined);
