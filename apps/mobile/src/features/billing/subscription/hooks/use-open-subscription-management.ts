@@ -1,10 +1,13 @@
-import { useErrorReporter, useSubscriptionService } from '@src/bootstrap/providers/di-context';
+import {
+  useErrorReporter,
+  useExternalLink,
+  useSubscriptionService,
+} from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import * as Application from 'expo-application';
-import * as Linking from 'expo-linking';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
@@ -13,6 +16,7 @@ import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 /** 스토어 구독 관리를 연다. 열지 못하면 문의로 잇는 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */
 export function useOpenSubscriptionManagement() {
   const subscriptionService = useSubscriptionService();
+  const externalLink = useExternalLink();
   const errorReporter = useErrorReporter();
   const toast = useAppToast();
   const openInquiry = useOpenSubscriptionInquiry();
@@ -31,7 +35,7 @@ export function useOpenSubscriptionManagement() {
       if (url == null) {
         throw new Error('Subscription management URL is unavailable');
       }
-      await Linking.openURL(url);
+      await externalLink.open(url);
     } catch (error) {
       errorReporter.addBreadcrumb({
         category: 'ui',

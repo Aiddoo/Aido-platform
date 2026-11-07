@@ -1,21 +1,22 @@
-import { useLogger } from '@src/shared/di/shared-di-context';
+import { useExternalLink, useLogger } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useRef } from 'react';
 
 import { OPEN_URL_LOG_EVENT } from './open-url-log-events';
 import { useSingleTap } from './use-single-tap';
 
 export function useOpenAppSettings() {
+  const externalLink = useExternalLink();
   const logger = useLogger();
 
   return useCallback(
     () =>
-      Linking.openSettings().catch((error: unknown) =>
-        logger.warn(OPEN_URL_LOG_EVENT.SETTINGS_OPEN_FAILED, { error: getErrorMessage(error) }),
-      ),
-    [logger],
+      externalLink
+        .openSettings()
+        .catch((error: unknown) =>
+          logger.warn(OPEN_URL_LOG_EVENT.SETTINGS_OPEN_FAILED, { error: getErrorMessage(error) }),
+        ),
+    [externalLink, logger],
   );
 }
 
@@ -25,6 +26,7 @@ export function useOpenAppSettings() {
  * 앱 안 브라우저를 쓸 수 없으면 기본 브라우저로 열고, 그래도 실패하면 기록만 남긴다.
  */
 export function useOpenUrl() {
+  const externalLink = useExternalLink();
   const logger = useLogger();
   const isBrowserOpenRef = useRef(false);
 
@@ -34,10 +36,9 @@ export function useOpenUrl() {
     }
     isBrowserOpenRef.current = true;
 
-    WebBrowser.openBrowserAsync(url, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-    })
-      .catch(() => Linking.openURL(url))
+    externalLink
+      .openInAppBrowser(url)
+      .catch(() => externalLink.open(url))
       .catch((error: unknown) =>
         logger.warn(OPEN_URL_LOG_EVENT.BROWSER_OPEN_FAILED, { error: getErrorMessage(error) }),
       )

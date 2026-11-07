@@ -13,6 +13,7 @@ import { createStubInviteService } from '@src/features/social/invite/__tests__/c
 import {
   createHttpClientStub,
   createMemorySyncStorage,
+  createExternalLinkGatewayStub,
   createTestDiContainer,
   mockWindowDimensions,
 } from '@src/shared/__tests__';
@@ -44,7 +45,6 @@ jest.mock('uniwind', () => ({
 jest.mock('expo-linking', () => ({
   ...jest.requireActual('expo-linking'),
   useLinkingURL: jest.fn(() => null),
-  openURL: jest.fn(async () => true),
 }));
 jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(async () => {}),
@@ -139,7 +139,9 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
   }
 
   const queryClient = createTestQueryClient();
+  const externalLink = createExternalLinkGatewayStub();
   const container = createTestDiContainer({
+    externalLink,
     ...createTestDi({
       httpClient,
       pushNotificationGateway: gateway,
@@ -190,7 +192,15 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     hideLog.push(route.getPathname());
   });
 
-  return { route, gateway, httpClient, focusLog, hideLog, analytics: container.analytics };
+  return {
+    route,
+    gateway,
+    httpClient,
+    focusLog,
+    hideLog,
+    externalLink,
+    analytics: container.analytics,
+  };
 }
 
 describe('푸시 탭 진입', () => {
@@ -293,7 +303,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 외부 링크는 피드로 간 뒤 한 번만 연다', async () => {
     // Given
-    const { route } = await setup({
+    const { route, externalLink } = await setup({
       status: 'loading',
       lastResponse: {
         ...TODO_RESPONSE,
@@ -315,8 +325,8 @@ describe('푸시 탭 진입', () => {
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
-    await waitFor(() => expect(ExpoLinking.openURL).toHaveBeenCalledTimes(1));
-    expect(ExpoLinking.openURL).toHaveBeenCalledWith('https://aido.kr/notice');
+    await waitFor(() => expect(externalLink.open).toHaveBeenCalledTimes(1));
+    expect(externalLink.open).toHaveBeenCalledWith('https://aido.kr/notice');
   });
 
   it('앱 종료 상태 탭: 펼친 화면은 피드의 상세 pane으로 연다', async () => {

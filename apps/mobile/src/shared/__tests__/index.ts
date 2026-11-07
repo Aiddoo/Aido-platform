@@ -6,6 +6,10 @@ export { createLocalFileSystemFake } from './create-local-file-system-fake';
 export { createAppIconGatewayStub } from './create-app-icon-gateway-stub';
 export { createAnalyticsStub } from './create-analytics-stub';
 export { createTestDiContainer } from './create-test-di-container';
+export {
+  createExternalLinkGatewayStub,
+  createIncomingLinkGatewayStub,
+} from './create-external-link-gateway-stub';
 export { createHttpClientStub } from './create-http-client-stub';
 export { createStorageStub } from './create-storage-stub';
 export { createMemorySyncStorage } from './create-memory-sync-storage';

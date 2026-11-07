@@ -1,6 +1,6 @@
+import { useExternalLink } from '@src/bootstrap/providers/di-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { noop } from 'es-toolkit';
-import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
@@ -8,6 +8,7 @@ import { match } from 'ts-pattern';
 import type { NotificationDestination } from '../utils/notification-destination';
 
 export function useNotificationNavigation() {
+  const externalLink = useExternalLink();
   const openUrl = useOpenUrl();
 
   return useCallback(
@@ -15,10 +16,10 @@ export function useNotificationNavigation() {
       await match(destination)
         .with({ kind: 'route' }, ({ href }) => router.navigate(href))
         .with({ kind: 'webview' }, ({ url }) => openUrl(url))
-        .with({ kind: 'browser' }, ({ url }) => Linking.openURL(url))
+        .with({ kind: 'browser' }, ({ url }) => externalLink.open(url))
         .with({ kind: 'none' }, noop)
         .exhaustive();
     },
-    [openUrl],
+    [externalLink, openUrl],
   );
 }

@@ -5,8 +5,8 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { toError } from '@src/shared/errors';
+import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
 
@@ -26,7 +26,7 @@ export function useWidgetAppEntry() {
   const segments = useSegments();
   const pathname = usePathname();
   const parameters = feedParamsSchema.parse(useGlobalSearchParams());
-  const url = useLinkingURL();
+  const url = useLinkingUrl();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,
     widgetNavigationRepository.getPendingCommand,

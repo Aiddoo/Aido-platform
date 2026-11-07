@@ -2,10 +2,10 @@ import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { t, useTranslation } from '@src/shared/i18n';
+import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-linking.gateway';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { buildSupportMailUrl, createDiagnosticCode } from '@src/shared/utils/support-mail';
 import * as Application from 'expo-application';
-import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
@@ -41,9 +41,13 @@ export function openSupportMail() {
     subject: t('common:errorBoundary.mailSubject', { code }),
     body: t('common:errorBoundary.mailBody', { code }),
   });
-  return Linking.openURL(url).catch((error: unknown) =>
-    logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, { error: getErrorMessage(error) }),
-  );
+  return expoExternalLinkGateway
+    .open(url)
+    .catch((error: unknown) =>
+      logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, {
+        error: getErrorMessage(error),
+      }),
+    );
 }
 
 interface QueryErrorActionsProps {

@@ -88,6 +88,10 @@ import { createRefreshTokensRequest } from '@src/shared/infra/http/refresh-token
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
 import { createKakaoShareClient } from '@src/shared/infra/kakao/kakao-share.client';
+import {
+  expoExternalLinkGateway,
+  expoIncomingLinkGateway,
+} from '@src/shared/infra/linking/expo-linking.gateway';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
 import {
   createCompositeLogger,
@@ -426,6 +430,8 @@ export function DIProvider({
       weatherIntroductionRepository: createWeatherIntroductionRepository(mmkvSyncStorage),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
+      externalLink: expoExternalLinkGateway,
+      incomingLink: expoIncomingLinkGateway,
       networkStatus: expoNetworkStatusGateway,
       widgetSyncService,
       widgetNavigationRepository,

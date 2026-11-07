@@ -7,6 +7,10 @@ import { DeviceTimezoneService } from '@src/features/notification/apis/device-ti
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 
+import {
+  createExternalLinkGatewayStub,
+  createIncomingLinkGatewayStub,
+} from './create-external-link-gateway-stub';
 import { createHapticsStub } from './create-haptics-stub';
 import { createIdGeneratorStub } from './create-id-generator-stub';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
@@ -39,6 +43,9 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     notificationEntryStore: createNotificationEntryStore(),
     // 햅틱은 꾸밈이라 저장·실패 흐름 테스트마다 넣지 않아도 되게 아무것도 하지 않는 stub을 둔다
     haptics: createHapticsStub(),
+    // 링크를 여는 훅은 화면마다 렌더 때 읽으니 여는 동작을 보는 테스트만 override한다
+    externalLink: createExternalLinkGatewayStub(),
+    incomingLink: createIncomingLinkGatewayStub(),
     // 초안 id·멱등 키는 쓰는 화면이 많아 호출마다 다른 값을 주는 stub을 기본으로 둔다
     idGenerator: createIdGeneratorStub(),
     // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
@@ -67,6 +74,12 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get clipboard() {
       return dependency('clipboard');
+    },
+    get externalLink() {
+      return dependency('externalLink');
+    },
+    get incomingLink() {
+      return dependency('incomingLink');
     },
     get networkStatus() {
       return dependency('networkStatus');

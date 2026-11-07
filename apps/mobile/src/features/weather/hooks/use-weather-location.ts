@@ -1,8 +1,11 @@
-import { useLocationGateway, useLogger } from '@src/bootstrap/providers/di-context';
+import {
+  useExternalLink,
+  useLocationGateway,
+  useLogger,
+} from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Linking from 'expo-linking';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -24,6 +27,7 @@ export type WeatherLocation =
  */
 export function useWeatherLocation(): WeatherLocation {
   const gateway = useLocationGateway();
+  const externalLink = useExternalLink();
   const logger = useLogger();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -49,7 +53,7 @@ export function useWeatherLocation(): WeatherLocation {
     .with({ status: 'denied' }, () => ({
       status: 'denied' as const,
       openSettings: () =>
-        Linking.openSettings().catch((error) => {
+        externalLink.openSettings().catch((error) => {
           logger.warn(WEATHER_LOG_EVENT.LOCATION_SETTINGS_OPEN_FAILED, {
             error: getErrorMessage(error),
           });

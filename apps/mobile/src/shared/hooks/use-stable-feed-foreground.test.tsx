@@ -1,6 +1,7 @@
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { createIncomingLinkGatewayStub, createTestDiContainer } from '@src/shared/__tests__';
 import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import * as Linking from 'expo-linking';
 import type { EffectCallback, PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
@@ -10,7 +11,8 @@ import { useStableFeedForeground } from './use-stable-feed-foreground';
 let mockHasActiveOverlay = false;
 let mockIsKeyboardVisible = false;
 let focusEffect: EffectCallback | undefined;
-let deepLinkListener: Parameters<typeof Linking.addEventListener>[1] | undefined;
+let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
+let deepLinkListener: (() => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
 
 jest.mock('expo-router', () => ({
@@ -33,9 +35,11 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
 
 function OverlayStateWrapper({ children }: PropsWithChildren) {
   return (
-    <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
-      {children}
-    </OverlayStateContext.Provider>
+    <StaticDIProvider container={createTestDiContainer({ incomingLink })}>
+      <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
+        {children}
+      </OverlayStateContext.Provider>
+    </StaticDIProvider>
   );
 }
 
@@ -59,10 +63,10 @@ describe('useStableFeedForeground', () => {
       const state = createKeyboardState(mockIsKeyboardVisible);
       return selector == null ? state : selector(state);
     });
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
-    jest.spyOn(Linking, 'addEventListener').mockImplementation((_event, listener) => {
+    incomingLink = createIncomingLinkGatewayStub();
+    incomingLink.subscribe.mockImplementation((listener) => {
       deepLinkListener = listener;
-      return { remove: jest.fn() };
+      return () => {};
     });
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     Object.defineProperty(globalThis, 'requestIdleCallback', {
@@ -80,7 +84,7 @@ describe('useStableFeedForeground', () => {
 
   it('딥링크 라우팅 상호작용이 끝나면 같은 focus에서도 대기 상태를 해제한다', async () => {
     // Given
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
+    incomingLink.getInitialUrl.mockResolvedValue('aido://feed');
     const { result } = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
 
     // When
@@ -109,7 +113,7 @@ describe('useStableFeedForeground', () => {
 
     // When
     await act(async () => {
-      deepLinkListener?.({ url: 'aido://feed' });
+      deepLinkListener?.();
     });
 
     // Then
@@ -125,7 +129,7 @@ describe('useStableFeedForeground', () => {
   });
 
   it('화면을 떠나면 대기 중인 딥링크 해제를 취소한다', async () => {
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
+    incomingLink.getInitialUrl.mockResolvedValue('aido://feed');
     const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
       await Promise.resolve();

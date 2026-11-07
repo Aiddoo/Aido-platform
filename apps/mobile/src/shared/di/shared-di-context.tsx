@@ -1,5 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { ExternalLinkGateway, IncomingLinkGateway } from '@src/core/ports/external-link';
 import type { HapticsGateway } from '@src/core/ports/haptics';
 import type { Logger } from '@src/core/ports/logger';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
@@ -14,6 +15,8 @@ export interface SharedDependencies {
   haptics: HapticsGateway;
   featureAttribution: FeatureAttributionStore;
   draftService: DraftService;
+  externalLink: ExternalLinkGateway;
+  incomingLink: IncomingLinkGateway;
 }
 
 export const SharedDIContext = createContext<SharedDependencies | null>(null);
@@ -50,4 +53,12 @@ export function useFeatureAttribution() {
 
 export function useDraftService() {
   return useSharedDI().draftService;
+}
+
+export function useExternalLink() {
+  return useSharedDI().externalLink;
+}
+
+export function useIncomingLink() {
+  return useSharedDI().incomingLink;
 }

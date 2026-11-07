@@ -155,6 +155,8 @@ export {
   useAnalytics,
   useDraftService,
   useErrorReporter,
+  useExternalLink,
+  useIncomingLink,
   useFeatureAttribution,
   useHaptics,
   useLogger,

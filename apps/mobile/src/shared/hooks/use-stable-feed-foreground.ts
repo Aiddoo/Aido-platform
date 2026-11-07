@@ -1,6 +1,6 @@
+import { useIncomingLink } from '@src/shared/di/shared-di-context';
 import { useOverlayState } from '@src/shared/ui';
 import { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground';
-import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -14,6 +14,7 @@ export function useStableFeedForeground({
   isAuthenticated: boolean;
   hasPendingNavigation: boolean;
 }): boolean {
+  const incomingLink = useIncomingLink();
   const { hasActiveOverlay } = useOverlayState();
   const [isFocused, setIsFocused] = useState(false);
   const [appState, setAppState] = useState<AppStateStatus | null>(
@@ -56,7 +57,8 @@ export function useStableFeedForeground({
 
   useEffect(() => {
     let mounted = true;
-    Linking.getInitialURL()
+    incomingLink
+      .getInitialUrl()
       .then((url) => {
         if (mounted) {
           setHasPendingDeepLink(url != null);
@@ -72,7 +74,7 @@ export function useStableFeedForeground({
         }
       });
 
-    const subscription = Linking.addEventListener('url', () => {
+    const unsubscribe = incomingLink.subscribe(() => {
       setHasPendingDeepLink(true);
       releasePendingDeepLinkWhenIdle();
     });
@@ -82,9 +84,9 @@ export function useStableFeedForeground({
       if (deepLinkReleaseTaskRef.current != null) {
         cancelIdleCallback(deepLinkReleaseTaskRef.current);
       }
-      subscription.remove();
+      unsubscribe();
     };
-  }, [releasePendingDeepLinkWhenIdle]);
+  }, [incomingLink, releasePendingDeepLinkWhenIdle]);
 
   return isStableFeedForeground({
     isAuthenticated,
