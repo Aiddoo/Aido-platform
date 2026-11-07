@@ -22,17 +22,19 @@ describe('AuthService', () => {
   let publicHttpClient: ReturnType<typeof createHttpClientStub>;
   let authHttpClient: ReturnType<typeof createHttpClientStub>;
   let tokenStore: ReturnType<typeof createMemoryTokenStore>;
+  let socialAuthGateway: ReturnType<typeof createSocialAuthGatewayStub>;
   let service: AuthService;
 
   beforeEach(() => {
     publicHttpClient = createHttpClientStub();
     authHttpClient = createHttpClientStub();
     tokenStore = createMemoryTokenStore();
+    socialAuthGateway = createSocialAuthGatewayStub();
     service = new AuthService({
       publicHttpClient,
       authHttpClient,
       tokenStore,
-      socialAuthGateway: createSocialAuthGatewayStub(),
+      socialAuthGateway,
     });
   });
 
@@ -407,16 +409,24 @@ describe('AuthService', () => {
     });
   });
 
-  // ── linkWithCode ───────────────────────────
+  // ── linkAccount ────────────────────────────
 
-  describe('linkWithCode', () => {
+  describe('linkAccount(브라우저 연결 코드 교환)', () => {
+    beforeEach(() => {
+      socialAuthGateway.openOAuthSession.mockResolvedValue({
+        type: 'success',
+        url: 'aido://auth/google?code=auth-code-123',
+        queryParams: { code: 'auth-code-123' },
+      });
+    });
+
     test('성공 → 결과 반환', async () => {
       // Given
       const response = { message: '계정이 연동되었습니다.' };
       authHttpClient.post.mockResolvedValue({ ok: true, value: response });
 
       // When
-      const result = await service.linkWithCode('auth-code-123');
+      const result = await service.linkAccount('google');
 
       // Then
       expect(authHttpClient.post).toHaveBeenCalledWith('v1/auth/link-with-code', {
@@ -431,7 +441,7 @@ describe('AuthService', () => {
       authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.linkWithCode('bad-code');
+      const result = await service.linkAccount('google');
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });

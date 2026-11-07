@@ -66,18 +66,19 @@ describe('소셜 로그인', () => {
       });
     });
 
-    it('계정 연결은 link 모드와 사용자 힌트를 함께 보낸다', async () => {
+    it('계정 연결은 link 모드로 시작한다', async () => {
       // Given
       gateway.openOAuthSession.mockResolvedValue(oauthSuccess('aido://auth/google?code=abc'));
+      authHttp.post.mockResolvedValue({ ok: true, value: { message: '연결됨' } });
 
       // When
-      await service.openLinkOAuth('google', 'user-1');
+      await service.linkAccount('google');
 
       // Then
       expect(gateway.openOAuthSession).toHaveBeenCalledWith({
         startPath: 'v1/auth/google/start',
         callbackPath: 'auth/google',
-        params: { mode: 'link', user_hint: 'user-1' },
+        params: { mode: 'link' },
       });
     });
 
@@ -231,7 +232,7 @@ describe('소셜 로그인', () => {
       authHttp.post.mockResolvedValue({ ok: true, value: { message: '연결됨' } });
 
       // When
-      const result = await service.linkApple();
+      const result = await service.linkAccount('apple');
 
       // Then
       expect(result).toEqual({ ok: true, value: { message: '연결됨' } });

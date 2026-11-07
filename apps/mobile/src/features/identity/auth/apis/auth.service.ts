@@ -96,12 +96,11 @@ export class AuthService {
   #openOAuth = async (
     provider: OAuthStartProvider,
     mode: OAuthStartMode,
-    userHint?: string,
   ): Promise<Result<string, BusinessError>> => {
     const session = await this.#socialAuthGateway.openOAuthSession({
       startPath: `v1/auth/${provider}/start`,
       callbackPath: `auth/${provider}`,
-      params: userHint ? { mode, user_hint: userHint } : { mode },
+      params: { mode },
     });
 
     return match(session)
@@ -210,25 +209,22 @@ export class AuthService {
       '[AuthService] Invalid getLinkedAccounts response',
     );
 
-  openLinkOAuth = (provider: OAuthStartProvider, userHint?: string) =>
-    this.#openOAuth(provider, 'link', userHint);
-
   linkAccount = async (
     provider: OAuthProviderSlug,
   ): Promise<Result<{ message: string }, AuthServiceError>> => {
     if (provider === 'apple') {
-      return this.linkApple();
+      return this.#linkApple();
     }
 
-    const oauthResult = await this.openLinkOAuth(provider);
+    const oauthResult = await this.#openOAuth(provider, 'link');
     if (!oauthResult.ok) {
       return oauthResult;
     }
 
-    return this.linkWithCode(oauthResult.value);
+    return this.#linkWithCode(oauthResult.value);
   };
 
-  linkWithCode = async (code: string) =>
+  #linkWithCode = async (code: string) =>
     parseApiResponse(
       await this.#authHttpClient.post('v1/auth/link-with-code', { code }),
       linkAccountResponseSchema,
@@ -236,7 +232,7 @@ export class AuthService {
       '[AuthService] Invalid link response',
     );
 
-  linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
+  #linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
     const credential = await this.#signInWithApple();
     if (!credential.ok) {
       return credential;
