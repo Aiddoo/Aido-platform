@@ -148,7 +148,11 @@ PlanPicker.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackPr
   );
 };
 
-function PurchaseButton({ chosenPlanId }: { chosenPlanId: string | undefined }) {
+interface PurchaseButtonProps {
+  chosenPlanId: string | undefined;
+}
+
+function PurchaseButton({ chosenPlanId }: PurchaseButtonProps) {
   const { t } = useTranslation('subscription');
   const purchase = useMutation(usePurchaseMutationOptions());
   const view = useSubscriptionViewParam();

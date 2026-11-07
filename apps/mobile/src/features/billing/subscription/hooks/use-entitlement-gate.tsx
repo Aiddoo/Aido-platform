@@ -1,7 +1,3 @@
-import type {
-  EntitlementGateSurface,
-  LimitReachedTrigger,
-} from '@src/features/billing/subscription/constants/subscription.events';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -15,6 +11,7 @@ import { useCallback, useMemo } from 'react';
 import { match } from 'ts-pattern';
 
 import { findLimitedFeature } from '../apis/entitlement.mapper';
+import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
@@ -143,10 +140,8 @@ function useEntitlementGateCopy() {
       const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
       const premium = EntitlementPolicy.getPremiumBenefitAmounts();
 
-      const getRefillSentence = () => getRefill(snapshot, feature);
-
       const withRefill = (premiumBenefit: string) => {
-        const refill = getRefillSentence();
+        const refill = getRefill(snapshot, feature);
         return {
           description: refill == null ? premiumBenefit : `${refill} ${premiumBenefit}`,
           refill,

@@ -1,4 +1,5 @@
 import { useErrorReporter, useSubscriptionService } from '@src/bootstrap/providers/di-context';
+import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
@@ -39,7 +40,7 @@ export function useOpenSubscriptionManagement() {
         data: {
           platform: process.env.EXPO_OS,
           hasProductId: productId != null,
-          error: error instanceof Error ? error.message : String(error),
+          error: getErrorMessage(error),
         },
       });
       toast.error(t('subscription:subscriber.manageOpenFailed'), {
