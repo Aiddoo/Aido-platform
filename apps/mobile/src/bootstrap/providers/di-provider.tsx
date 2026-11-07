@@ -89,7 +89,7 @@ import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { createRefreshTokensRequest } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
-import { createKakaoShareClient } from '@src/shared/infra/kakao/kakao-share.client';
+import { createKakaoShareGateway } from '@src/shared/infra/kakao/kakao-share.gateway';
 import {
   expoExternalLinkGateway,
   expoIncomingLinkGateway,
@@ -243,7 +243,7 @@ export function DIProvider({
       logger,
     });
     const inviteShareService = new InviteShareService({
-      socialShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),
+      socialShare: createKakaoShareGateway(ENV.KAKAO_NATIVE_APP_KEY),
       systemShare: systemShareGateway,
       clipboard: expoClipboardGateway,
       errorReporter,
