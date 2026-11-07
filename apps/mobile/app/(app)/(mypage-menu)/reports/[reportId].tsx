@@ -5,25 +5,23 @@ import { useReportParams } from '@src/features/insights/report/hooks/use-report-
 import { useGetReportDetailQueryOptions } from '@src/features/insights/report/queries/report.queries';
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useTrack } from '@src/shared/analytics';
-import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   QueryErrorBoundary,
-  QueryErrorFallback,
   Spacing,
   StyledSafeAreaView,
   Text,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function ReportDetailScreen() {
-  const { id: report } = useReportParams();
+  const { reportId: report } = useReportParams();
   const { t } = useTranslation('ai');
   const gate = useEntitlementGate('AI_REPORT', { surface: 'report_detail' });
 
@@ -55,17 +53,7 @@ function ReportDetailScreen() {
           </ScrollView>
         ))
         .with({ kind: 'saved' }, ({ id }) => (
-          <QueryErrorBoundary
-            resetKeys={[id]}
-            fallback={({ error, reset }) =>
-              // 지워졌거나 볼 수 없는 리포트(AI_1304 등 404)는 다시 시도해도 같다. 목록으로 보낸다
-              classifyBoundaryError(error) === 'expected-state' ? (
-                <ActivityReport.Unavailable onBackToList={() => router.dismissTo('/reports')} />
-              ) : (
-                <QueryErrorFallback reset={reset} />
-              )
-            }
-          >
+          <QueryErrorBoundary resetKeys={[id]} fallback={ActivityReport.Error}>
             <Suspense fallback={<ActivityReport.Loading />}>
               <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
                 <StyledSafeAreaView edges={['left', 'right']}>
@@ -92,7 +80,7 @@ export default function ReportDetailRoute() {
 }
 
 function SavedActivityReport() {
-  const { id: report } = useReportParams();
+  const { reportId: report } = useReportParams();
 
   if (report.kind !== 'saved') {
     return null;

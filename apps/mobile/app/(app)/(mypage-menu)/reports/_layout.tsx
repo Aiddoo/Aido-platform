@@ -12,7 +12,7 @@ function ReportsLayout() {
       <Stack.Screen name="index" options={{ title: t('titles.reports') }}>
         {backToolbar}
       </Stack.Screen>
-      <Stack.Screen name="[id]" options={{ title: '' }}>
+      <Stack.Screen name="[reportId]" options={{ title: '' }}>
         {backToolbar}
       </Stack.Screen>
     </Stack>

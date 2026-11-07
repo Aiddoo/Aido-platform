@@ -1,44 +1,34 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import ShareIcon from '@expo/material-symbols/share.xml';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { InviteContentsError } from '@src/features/social/invite/components/invite-contents-error';
 import { InviteLinkCard } from '@src/features/social/invite/components/invite-link-card';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
+import { PawPrintBoardCard } from '@src/features/social/invite/components/invite-paw-print-board-card';
 import { InviteRewardLines } from '@src/features/social/invite/components/invite-reward-lines';
 import { InviteShareActions } from '@src/features/social/invite/components/invite-share-actions';
+import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
-import { createInviteShareContent } from '@src/features/social/invite/domains/invite-share.model';
-import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
-import { useShareInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
-import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/invite.queries';
-import { getInviteShareCopy } from '@src/features/social/invite/utils/invite-share-copy';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  H4,
   HStack,
-  QueryErrorActions,
+  Image,
   QueryErrorBoundary,
-  type QueryErrorFallbackProps,
   ReadableContent,
-  Result,
   Spacing,
   StyledSafeAreaView,
   Text,
   VStack,
-  Image,
 } from '@src/shared/ui';
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
-import { type ReactNode, Suspense } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-const SHARE_ICON = process.env.EXPO_OS === 'ios' ? 'square.and.arrow.up' : ShareIcon;
-
 export default function MyInviteScreen() {
+  const { t } = useTranslation('invite');
   const queryClient = useQueryClient();
   const { color: refreshTint } = useResolveClassNames('text-main');
   // 발자국 판·링크·친구 요약이 모두 초대 쿼리를 읽으니 한 번에 새로 고친다
@@ -62,7 +52,24 @@ export default function MyInviteScreen() {
         <StyledSafeAreaView edges={['left', 'right']}>
           <ReadableContent px={16} pt={8} pb={32}>
             <VStack gap={20}>
-              <InviteHeroBanner />
+              <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
+                {/* 고양이를 먼저 그려 글자 아래에 깔고, 제목은 고양이가 보이는 폭(98pt)만큼 비켜 선다 */}
+                <Image
+                  source={catHiImage}
+                  accessibilityIgnoresInvertColors
+                  className="absolute -bottom-[30px] -right-[18px] size-[136px]"
+                  contentFit="cover"
+                />
+
+                <Text
+                  size="t2"
+                  weight="bold"
+                  lineBreakStrategyIOS="hangul-word"
+                  className="mr-[98px]"
+                >
+                  {t('myInvite.heroTitle')}
+                </Text>
+              </Box>
 
               <InviteRewardLines />
 
@@ -89,131 +96,34 @@ export default function MyInviteScreen() {
                 </Box>
               </QueryErrorBoundary>
 
-              <InviteRewardNotice />
+              {/* 사용 시작 조건과 상한 안내. 이 화면에서만 보여 준다 */}
+              <VStack gap={4} px={2}>
+                <Text size="b4" weight="semibold" shade={7} accessibilityRole="header">
+                  {t('myInvite.notice.title')}
+                </Text>
+                <Spacing size={2} />
+                <VStack gap={4} accessibilityRole="list">
+                  <NoticeRow>
+                    {t('myInvite.notice.qualification', {
+                      count: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+                      days: INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS,
+                    })}
+                  </NoticeRow>
+                  <NoticeRow>
+                    {t('myInvite.notice.cap', {
+                      windowDays: INVITE_REWARD_CAPS.WINDOW_DAYS,
+                      monthly: INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS,
+                      total: INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL,
+                    })}
+                  </NoticeRow>
+                  <NoticeRow>{t('myInvite.notice.subscription')}</NoticeRow>
+                </VStack>
+              </VStack>
             </VStack>
           </ReadableContent>
         </StyledSafeAreaView>
       </ScrollView>
     </>
-  );
-}
-
-/** 툴바 공유 버튼. 요약이 오기 전에는 숨긴다(레일·가로 바로 OS가 옮긴다) */
-function InviteShareToolbar() {
-  const { t } = useTranslation('invite');
-  const share = useMutation(useShareInviteMutationOptions());
-  const [{ data: myInvite }, { data: me }] = useQueries({
-    queries: [
-      { ...useGetInviteQueryOptions(), throwOnError: false },
-      { ...useGetMeQueryOptions(), throwOnError: false },
-    ],
-  });
-
-  return (
-    <Stack.Toolbar placement="right">
-      <Stack.Toolbar.Button
-        icon={SHARE_ICON}
-        hidden={myInvite == null || me == null}
-        accessibilityLabel={t('share.toolbarLabel')}
-        onPress={() => {
-          if (myInvite == null || me == null) {
-            return;
-          }
-
-          share.mutate({
-            channel: 'system',
-            content: createInviteShareContent(myInvite, getInviteShareCopy(me.name)),
-          });
-        }}
-      />
-    </Stack.Toolbar>
-  );
-}
-
-/** 초대가 꺼졌으면 블록마다 쓸 수 없음 안내를, 그 밖의 실패는 다시 시도·문의를 한 번만 보인다 */
-function InviteContentsError({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('invite');
-
-  if (isInviteDisabledError(error)) {
-    return (
-      <>
-        <InviteLinkCard.Unavailable />
-        <InviteShareActions.Unavailable />
-        <PawPrintBoardCard>
-          <InvitePawPrintBoard.Unavailable />
-        </PawPrintBoardCard>
-        <Box className="-mx-4">
-          <InvitedFriendSummary.Unavailable />
-        </Box>
-      </>
-    );
-  }
-
-  return (
-    <Box className="min-h-[320px] justify-center">
-      <Result title={t('result.loadFailed.title')} button={<QueryErrorActions onRetry={reset} />} />
-    </Box>
-  );
-}
-
-function PawPrintBoardCard({ children }: { children: ReactNode }) {
-  const { t } = useTranslation('invite');
-
-  return (
-    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-5">
-      <H4>{t('pawPrintBoard.title')}</H4>
-      {children}
-    </VStack>
-  );
-}
-
-function InviteHeroBanner() {
-  const { t } = useTranslation('invite');
-
-  return (
-    <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
-      {/* 고양이를 먼저 그려 글자 아래에 깔고, 제목은 고양이가 보이는 폭(98pt)만큼 비켜 선다 */}
-      <Image
-        source={catHiImage}
-        accessibilityIgnoresInvertColors
-        className="absolute -bottom-[30px] -right-[18px] size-[136px]"
-        contentFit="cover"
-      />
-
-      <Text size="t2" weight="bold" lineBreakStrategyIOS="hangul-word" className="mr-[98px]">
-        {t('myInvite.heroTitle')}
-      </Text>
-    </Box>
-  );
-}
-
-/** 사용 시작 조건과 상한 안내. 이 화면에서만 보여 준다 */
-function InviteRewardNotice() {
-  const { t } = useTranslation('invite');
-
-  return (
-    <VStack gap={4} px={2}>
-      <Text size="b4" weight="semibold" shade={7} accessibilityRole="header">
-        {t('myInvite.notice.title')}
-      </Text>
-      <Spacing size={2} />
-      <VStack gap={4} accessibilityRole="list">
-        <NoticeRow>
-          {t('myInvite.notice.qualification', {
-            count: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-            days: INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS,
-          })}
-        </NoticeRow>
-        <NoticeRow>
-          {t('myInvite.notice.cap', {
-            windowDays: INVITE_REWARD_CAPS.WINDOW_DAYS,
-            monthly: INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS,
-            total: INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL,
-          })}
-        </NoticeRow>
-        <NoticeRow>{t('myInvite.notice.subscription')}</NoticeRow>
-      </VStack>
-    </VStack>
   );
 }
 

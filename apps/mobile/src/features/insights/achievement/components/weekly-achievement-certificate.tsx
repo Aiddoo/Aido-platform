@@ -1,0 +1,195 @@
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useTrack } from '@src/shared/analytics';
+import { formatDateKeyRange } from '@src/shared/date/date-format';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useShareView } from '@src/shared/hooks/use-share-view';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import {
+  Box,
+  DashedDivider,
+  H4,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
+  Result,
+  ShareIcon,
+  Spacing,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { range } from 'es-toolkit';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import { useRef } from 'react';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
+
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
+import { AchievementPolicy } from '../domains/achievement.model';
+import { useAchievementParams } from '../hooks/use-achievement-params';
+import { useGetWeeklyAchievementQueryOptions } from '../queries/achievement.queries';
+import { BadgeIcon } from './badge-icon';
+import { Certificate } from './certificate';
+
+const CERTIFICATE_LINE_COUNT = 4;
+
+export function WeeklyAchievementCertificate() {
+  const fontScaledSize = useFontScaledSize();
+  const { year, week } = useAchievementParams();
+  const [{ data: achievement }, { data: user }] = useSuspenseQueries({
+    queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
+  });
+  const { t } = useTranslation('achievement');
+  const dateFormatContext = useDateFormatContext();
+
+  const { trackEvent } = useTrack();
+  const viewShotRef = useRef<ViewShotRef>(null);
+  const { shareCapture, isSharing } = useShareView(viewShotRef);
+
+  const badgeType = AchievementPolicy.getBadgeType(achievement);
+  const badgeName = tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[badgeType]);
+
+  const handleShare = async () => {
+    trackEvent('badge_share_attempted', { badge_type: badgeType, year, week });
+    await shareCapture();
+  };
+
+  return (
+    <>
+      <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
+        <Certificate subtitle={badgeName}>
+          <Spacing size={16} />
+
+          <VStack align="center" gap={8}>
+            <BadgeIcon type={badgeType} size="large" />
+          </VStack>
+
+          <Spacing size={16} />
+
+          <Certificate.Ornament />
+
+          <Spacing size={16} />
+
+          <VStack align="center" gap={4}>
+            <Text size="e1" shade={5}>
+              {t('card.nameLabel')}
+            </Text>
+            <Box className="border-b border-gray-3 pb-1 px-8">
+              <H4
+                weight="bold"
+                align="center"
+                lineBreakStrategyIOS="hangul-word"
+                textBreakStrategy="highQuality"
+              >
+                {user.name}
+              </H4>
+            </Box>
+          </VStack>
+
+          <Spacing size={16} />
+
+          <Text
+            size="b3"
+            shade={7}
+            align="center"
+            weight="medium"
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+          >
+            {t('card.certificate', {
+              weekLabel: achievement.weekLabel,
+              total: achievement.totalTodos,
+              completed: achievement.completedTodos,
+              rate: achievement.completionRate,
+            })}
+          </Text>
+
+          <Spacing size={20} />
+
+          <DashedDivider />
+
+          <Spacing size={14} />
+
+          <VStack align="center" gap={2}>
+            <Text size="e1" shade={5}>
+              {formatDateKeyRange(
+                achievement.dateRange.startDate,
+                achievement.dateRange.endDate,
+                dateFormatContext,
+              )}
+            </Text>
+          </VStack>
+        </Certificate>
+      </ViewShot>
+
+      <Spacing size={8} />
+
+      <PressableFeedback
+        onPress={handleShare}
+        isDisabled={isSharing}
+        className="flex-row items-center gap-1.5 self-end py-1"
+      >
+        <Text size="b3" shade={6} weight="medium">
+          {t('card.share')}
+        </Text>
+        <ShareIcon
+          width={fontScaledSize(16)}
+          height={fontScaledSize(16)}
+          colorClassName="text-gray-6"
+        />
+      </PressableFeedback>
+    </>
+  );
+}
+
+WeeklyAchievementCertificate.Loading = function Loading() {
+  return (
+    <Certificate>
+      <Spacing size={16} />
+
+      <VStack align="center">
+        <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
+      </VStack>
+
+      <Spacing size={16} />
+
+      <Certificate.Ornament />
+
+      <Spacing size={16} />
+
+      <VStack align="center" gap={4}>
+        <TextSkeleton size="e1" className="w-10" />
+        <TextSkeleton size="t3" className="w-32" />
+      </VStack>
+
+      <Spacing size={16} />
+
+      <VStack align="center">
+        {range(CERTIFICATE_LINE_COUNT).map((index) => (
+          <TextSkeleton key={index} size="b3" className="w-full" />
+        ))}
+      </VStack>
+
+      <Spacing size={20} />
+
+      <DashedDivider />
+
+      <Spacing size={14} />
+
+      <VStack align="center">
+        <TextSkeleton size="e1" className="w-40" />
+      </VStack>
+    </Certificate>
+  );
+};
+
+WeeklyAchievementCertificate.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+
+  return (
+    <Certificate>
+      <Spacing size={16} />
+      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
+    </Certificate>
+  );
+};

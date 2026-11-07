@@ -1,41 +1,15 @@
-import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
-import { useInviteService } from '@src/bootstrap/providers/di-context';
-import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
-import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
-import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
-import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
-import { useInviteParams } from '@src/features/social/invite/hooks/use-invite-params';
+import { InviteBenefitReceipt } from '@src/features/social/invite/components/invite-benefit-receipt';
+import { InviteCardActions } from '@src/features/social/invite/components/invite-card-actions';
+import { InvitePreview } from '@src/features/social/invite/components/invite-preview';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
-import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
-import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
-import type { InviteCode } from '@src/features/social/invite/schemas/invite.schema';
-import { getNowInstant } from '@src/shared/date/instant';
-import { useTranslation } from '@src/shared/i18n';
 import {
-  Barcode,
   Box,
-  Button,
-  DashedDivider,
-  FillTicketIcon,
-  HStack,
-  ListRow,
   QueryErrorBoundary,
   ReadableContent,
-  ScallopedContainer,
   Spacing,
   StyledSafeAreaView,
-  Text,
-  TextButton,
-  TextSkeleton,
-  VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
-import { router, useFocusEffect } from 'expo-router';
-import { Skeleton } from 'heroui-native';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function InviteCardScreen() {
@@ -43,7 +17,7 @@ export default function InviteCardScreen() {
 
   return (
     <Box flex={1} className="bg-white">
-      <QueryErrorBoundary fallback={InvitePreviewCard.Error}>
+      <QueryErrorBoundary fallback={InvitePreview.Error}>
         <Suspense fallback={<InviteCardScreenLoading />}>
           <ScrollView
             className="flex-1"
@@ -52,7 +26,7 @@ export default function InviteCardScreen() {
           >
             <StyledSafeAreaView edges={['left', 'right']} className="grow">
               <ReadableContent px={24} pt={4} pb={24} className="grow">
-                <InvitePreviewCard />
+                <InvitePreview />
 
                 <Spacing size={24} />
 
@@ -72,217 +46,11 @@ function InviteCardScreenLoading() {
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1">
       <ReadableContent px={24} pt={4} className="flex-1">
-        <InvitePreviewCard.Loading />
+        <InvitePreview.Loading />
 
         <Spacing size={24} />
 
-        <InviteBenefitReceiptLoading />
-      </ReadableContent>
-    </StyledSafeAreaView>
-  );
-}
-
-/** 가입하면 받는 혜택을 구독 화면과 같은 영수증 톤으로 보여 준다 */
-function InviteBenefitReceipt() {
-  const { inviteCode } = useInviteParams();
-
-  if (inviteCode == null) {
-    return null;
-  }
-
-  return <InviteBenefitReceiptContents inviteCode={inviteCode} />;
-}
-
-function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }) {
-  const { t } = useTranslation('invite');
-  const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));
-  const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
-
-  return (
-    <ScallopedContainer>
-      <VStack gap={14} className="px-5 pb-[18px] pt-3.5">
-        <HStack gap={12} align="center">
-          <FillTicketIcon width={40} height={40} />
-
-          <VStack gap={2} className="flex-1">
-            <Text size="t3" weight="bold" tone="brand">
-              {t('card.receipt.title', { count: InviteRewardPolicy.getWelcomePremiumDays() })}
-            </Text>
-
-            <Text size="b4" shade={7}>
-              {t('card.receipt.description')}
-            </Text>
-          </VStack>
-        </HStack>
-
-        <DashedDivider />
-
-        <VStack>
-          <ReceiptBenefitRow
-            shade={9}
-            title={t('card.receipt.benefitFriend', { name: inviterName })}
-          />
-          <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitAi')} />
-          <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitFriends')} />
-        </VStack>
-
-        <Text
-          size="b4"
-          shade={6}
-          lineBreakStrategyIOS="hangul-word"
-          textBreakStrategy="highQuality"
-        >
-          {t('card.receipt.inviterReward', {
-            name: inviterName,
-            activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-            days: InviteRewardPolicy.getInviterPremiumDays(),
-          })}
-        </Text>
-
-        <DashedDivider />
-
-        <HStack justify="between" align="center">
-          <Text size="b4" shade={7}>
-            {t('card.receipt.codeLabel')}
-          </Text>
-          <Text size="b2" weight="bold" className="tracking-[3px] tabular-nums" selectable>
-            {inviteCode}
-          </Text>
-        </HStack>
-
-        <Barcode className="px-9" />
-      </VStack>
-    </ScallopedContainer>
-  );
-}
-
-/** 영수증과 같은 행·슬롯에 Skeleton만 넣어 큰 글자에서도 높이가 그대로다 */
-function InviteBenefitReceiptLoading() {
-  return (
-    <ScallopedContainer>
-      <VStack gap={14} className="px-5 pb-[18px] pt-3.5" accessibilityState={{ busy: true }}>
-        <HStack gap={12} align="center">
-          <Skeleton className="size-10 rounded-xl" />
-
-          <VStack gap={2} className="flex-1">
-            <TextSkeleton size="t3" className="w-40" />
-            <TextSkeleton size="b4" className="w-56" />
-          </VStack>
-        </HStack>
-
-        <DashedDivider />
-
-        <VStack>
-          {range(3).map((index) => (
-            <ListRow
-              key={index}
-              verticalPadding="small"
-              left={<Skeleton className="size-5 rounded-full" />}
-              contents={<TextSkeleton size="b3" className="w-48" />}
-            />
-          ))}
-        </VStack>
-
-        <DashedDivider />
-
-        <HStack justify="between" align="center">
-          <TextSkeleton size="b4" className="w-16" />
-          <TextSkeleton size="b2" className="w-24" />
-        </HStack>
-
-        <Skeleton className="mx-9 h-8 rounded" />
-      </VStack>
-    </ScallopedContainer>
-  );
-}
-
-/** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
-function InviteCardActions() {
-  const status = useAuthStatus();
-  const { inviteCode, source } = useInviteParams();
-  const inviteService = useInviteService();
-  const { t } = useTranslation('invite');
-
-  if (inviteCode == null) {
-    return null;
-  }
-
-  if (status === 'authenticated') {
-    return <InviteRedeemActions inviteCode={inviteCode} />;
-  }
-
-  const handleContinueAsGuest = (pathname: '/sign-up' | '/login') => {
-    inviteService.savePendingRedemption({ inviteCode, source }, getNowInstant());
-    router.push(pathname);
-  };
-
-  return (
-    <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
-      <ReadableContent px={20} pt={12} pb={12} gap={4}>
-        <Button testID="invite-card-signup" onPress={() => handleContinueAsGuest('/sign-up')}>
-          {t('card.signUp')}
-        </Button>
-
-        <Box className="items-center">
-          <TextButton
-            testID="invite-card-login"
-            size="medium"
-            onPress={() => handleContinueAsGuest('/login')}
-          >
-            {t('card.login')}
-          </TextButton>
-        </Box>
-      </ReadableContent>
-    </StyledSafeAreaView>
-  );
-}
-
-/**
- * 로그인한 사용자의 수락 버튼. 가입한 지 얼마 안 된 계정은 보상을, 오래 쓴 계정은 친구 맺기만 안내한다.
- * 최종 판정은 서버가 하고 결과는 환영 시트가 보여 준다.
- */
-function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
-  const { t } = useTranslation('invite');
-  const inviteService = useInviteService();
-  // 내 초대 정보(GET /v1/invites/me)는 처음 부르면 내 코드를 만들어 여기서 읽지 않는다.
-  // 내 링크를 열었으면 서버가 INVITE_2103으로 막고 수락 오류 처리가 내 초대 화면으로 보낸다
-  const [{ data: preview }, { data: me }] = useSuspenseQueries({
-    queries: [useGetInvitePreviewQueryOptions({ inviteCode }), useGetMeQueryOptions()],
-  });
-  const redeem = useMutation(useRedeemInviteMutationOptions());
-  const [now] = useState(() => getNowInstant());
-  const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
-  const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, now);
-
-  // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다.
-  // 로그인 화면 아래에 남은 카드는 로그인 순간 보이지 않으므로 지우지 않고, 로그인 뒤 이어서 연 카드가 지운다
-  useFocusEffect(
-    useCallback(() => {
-      inviteService.clearPendingRedemption();
-    }, [inviteService]),
-  );
-
-  return (
-    <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
-      <ReadableContent px={20} pt={12} pb={12} gap={12}>
-        {!isRewardExpected && (
-          <Box className="rounded-2xl bg-gray-1 px-4 py-3">
-            <Text size="b4" shade={7} align="center">
-              {t('card.existingAccountNote')}
-            </Text>
-          </Box>
-        )}
-
-        <Button
-          testID="invite-card-redeem"
-          onPress={() => redeem.mutate(inviteCode)}
-          isLoading={redeem.isPending}
-          isDisabled={redeem.isPending}
-        >
-          {isRewardExpected
-            ? t('card.redeemWithReward', { count: InviteRewardPolicy.getWelcomePremiumDays() })
-            : t('card.connect', { name: inviterName })}
-        </Button>
+        <InviteBenefitReceipt.Loading />
       </ReadableContent>
     </StyledSafeAreaView>
   );

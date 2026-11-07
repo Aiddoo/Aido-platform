@@ -27,3 +27,10 @@ export interface AchievementPaginationParams {
   cursor?: number;
   size?: number;
 }
+
+export const BADGE_TYPE = {
+  perfect: 'perfect',
+  almost: 'almost',
+  completed: 'completed',
+} as const;
+export type BadgeType = (typeof BADGE_TYPE)[keyof typeof BADGE_TYPE];

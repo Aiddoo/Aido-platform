@@ -286,7 +286,7 @@ AchievementSummaryCard.Loading = function Loading() {
   );
 };
 
-AchievementSummaryCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+AchievementSummaryCard.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
   return (

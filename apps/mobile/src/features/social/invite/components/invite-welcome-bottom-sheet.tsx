@@ -24,6 +24,7 @@ import {
   VStack,
   Image,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
@@ -43,7 +44,7 @@ import { match } from 'ts-pattern';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { useInviteWelcomeParams } from '../hooks/use-invite-welcome-params';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
-import { type RedemptionResult } from '../schemas/invite-redemption.schema';
+import type { RedemptionResult } from '../schemas/invite-redemption.schema';
 
 type InviteWelcomeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -55,16 +56,18 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   const { t } = useTranslation('common');
   const { friendId } = useInviteWelcomeParams();
   const sheet = useSheetRoute('/feed');
-  const { data: result } = useQuery(useGetRedemptionResultQueryOptions({ inviterId: friendId }));
+  const { data: redemption } = useQuery(
+    useGetRedemptionResultQueryOptions({ inviterId: friendId }),
+  );
 
   // 수락 응답 없이 열리면(앱을 다시 켠 뒤, 형식이 틀린 링크 등) 보여 줄 내용이 없어 바로 닫는다
   useEffect(() => {
-    if (result == null) {
+    if (redemption == null) {
       sheet.exit({ type: 'replace', href: '/feed' });
     }
-  }, [result, sheet]);
+  }, [redemption, sheet]);
 
-  if (result == null) {
+  if (redemption == null) {
     return null;
   }
 
@@ -75,7 +78,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
       // 작은 화면(Duo 바깥 화면 등)에서 내용이 시트보다 길어도 버튼은 시트 아래에 보이게 고정한다
       footer={
         <InviteWelcomeBottomSheet.Actions
-          result={result}
+          redemption={redemption}
           onCreateFirstTodo={() =>
             sheet.close({
               type: 'replace',
@@ -85,7 +88,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
           onOpenFriendFeed={() =>
             sheet.close({
               type: 'replace',
-              href: { pathname: '/feed', params: { friendId: result.inviter.userId } },
+              href: { pathname: '/feed', params: { friendId: redemption.inviter.userId } },
             })
           }
           onDismiss={() => sheet.close()}
@@ -108,7 +111,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
       >
         {/* 수락 mutation이 내 정보를 이미 받아 캐시에서 바로 그린다. 기다릴 일이 거의 없어 자리를 잡지 않는다 */}
         <Suspense fallback={null}>
-          <InviteWelcomeBottomSheet.Contents result={result} />
+          <InviteWelcomeBottomSheet.Contents redemption={redemption} />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
@@ -116,16 +119,16 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
 }
 
 interface WelcomeContentsProps {
-  result: RedemptionResult;
+  redemption: RedemptionResult;
 }
 
-InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContentsProps) {
+InviteWelcomeBottomSheet.Contents = function Contents({ redemption }: WelcomeContentsProps) {
   const { t } = useTranslation('invite');
   // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const name = result.inviter.name ?? t('card.unnamedInviter');
-  const premiumDays = InviteRedemptionPolicy.getGrantedPremiumDays(result);
-  const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
+  const name = redemption.inviter.name ?? t('card.unnamedInviter');
+  const premiumDays = InviteRedemptionPolicy.getGrantedPremiumDays(redemption);
+  const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(redemption);
 
   return (
     <VStack testID="invite-welcome-sheet" align="center" px={20} pb={8}>
@@ -147,7 +150,7 @@ InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContent
         textBreakStrategy="highQuality"
       >
         {/* 친구 요청 상태면 "친구를 맺었다"는 문구를 쓰지 않는다 */}
-        {match({ reason: InviteRedemptionPolicy.getMissingRewardReason(result), isRequested })
+        {match({ reason: InviteRedemptionPolicy.getMissingRewardReason(redemption), isRequested })
           .with({ reason: 'already-claimed', isRequested: true }, () =>
             t('welcome.requestedAlreadyClaimedDescription', { name }),
           )
@@ -194,27 +197,27 @@ InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContent
         </HStack>
       )}
 
-      <WelcomeNotificationPrompt />
+      <WelcomeNotificationPrompt className="mt-4 w-full" />
     </VStack>
   );
 };
 
 interface WelcomeActionsProps {
-  result: RedemptionResult;
+  redemption: RedemptionResult;
   onCreateFirstTodo: () => void;
   onOpenFriendFeed: () => void;
   onDismiss: () => void;
 }
 
 InviteWelcomeBottomSheet.Actions = function Actions({
-  result,
+  redemption,
   onCreateFirstTodo,
   onOpenFriendFeed,
   onDismiss,
 }: WelcomeActionsProps) {
   const { t } = useTranslation('invite');
-  const name = result.inviter.name ?? t('card.unnamedInviter');
-  const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
+  const name = redemption.inviter.name ?? t('card.unnamedInviter');
+  const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(redemption);
 
   return (
     <VStack gap={4} px={20}>
@@ -232,7 +235,7 @@ InviteWelcomeBottomSheet.Actions = function Actions({
 };
 
 /** 친구 소식을 받으려면 알림이 필요하다는 맥락을 이 순간에 한 번 알린다. 이미 켰으면 보여 주지 않는다 */
-function WelcomeNotificationPrompt() {
+function WelcomeNotificationPrompt({ className }: { className?: string }) {
   const { t } = useTranslation('invite');
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
   const { data: permission } = useQuery({
@@ -256,7 +259,7 @@ function WelcomeNotificationPrompt() {
     <HStack
       gap={8}
       align="center"
-      className="mt-4 w-full rounded-2xl bg-gray-1 px-4 py-3 dark:bg-gray-2"
+      className={cn('rounded-2xl bg-gray-1 px-4 py-3 dark:bg-gray-2', className)}
     >
       <BellFilledIcon width={18} height={18} colorClassName="text-gray-7" />
       <Text
