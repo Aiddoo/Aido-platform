@@ -30,7 +30,7 @@ import { Separator } from 'heroui-native';
 
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
-import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
+import { getSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
 
 export function Paywall() {
   const { t } = useTranslation('subscription');
@@ -158,7 +158,7 @@ Paywall.AdditionalBenefits = function AdditionalBenefits() {
 const RENEWAL_NOTICE_KEYS = {
   appStore: 'paywall.renewalNotice.appStore',
   googlePlay: 'paywall.renewalNotice.googlePlay',
-} as const satisfies Record<SubscriptionStore, string>;
+} as const satisfies Record<RenewalNoticeStore, string>;
 
 Paywall.RenewalNotice = function RenewalNotice() {
   const { t } = useTranslation('subscription');

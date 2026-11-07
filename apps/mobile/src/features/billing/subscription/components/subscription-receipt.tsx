@@ -139,6 +139,10 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
   );
 }
 
+/** 받은 뒤 높이가 바뀌지 않게 실제 영수증과 같은 줄 수와 자리를 잡는다. 줄 수는 가장 흔한 결제 영수증(다음 결제일, 자동 갱신)과 혜택 목록 줄 수다 */
+const LOADING_DETAIL_ROW_COUNT = 2;
+const BENEFIT_ROW_COUNT = 10;
+
 SubscriptionReceipt.Loading = function Loading() {
   return (
     <ScallopedContainer>
@@ -153,29 +157,37 @@ SubscriptionReceipt.Loading = function Loading() {
 
         <Spacing size={24} />
 
-        <VStack gap={12}>
-          {range(3).map((index) => (
-            <HStack key={index} justify="between">
-              <TextSkeleton size="b3" className="w-20" />
-              <TextSkeleton size="b3" className="w-28" />
-            </HStack>
+        <VStack>
+          {range(LOADING_DETAIL_ROW_COUNT).map((index) => (
+            <ListRow
+              key={index}
+              verticalPadding="small"
+              contents={<TextSkeleton size="b4" className="w-20" />}
+              right={<TextSkeleton size="b4" className="w-28" />}
+            />
           ))}
         </VStack>
       </Box>
 
       <DashedDivider className="my-5 mx-5" />
 
-      <Box className="px-5 pb-5">
+      <Box className="px-5">
         <TextSkeleton size="b3" className="mb-3 w-32" />
-        <VStack gap={10}>
-          {range(4).map((index) => (
-            <HStack key={index} gap={12} align="center">
-              <Skeleton className="size-5 rounded-full dark:bg-gray-2" />
-              <TextSkeleton size="b3" className="w-44" />
-            </HStack>
+        <VStack gap={2}>
+          {range(BENEFIT_ROW_COUNT).map((index) => (
+            <ListRow
+              key={index}
+              verticalPadding="small"
+              left={<Skeleton className="size-5 rounded-full dark:bg-gray-2" />}
+              contents={<TextSkeleton size="b3" className="w-44" />}
+            />
           ))}
         </VStack>
       </Box>
+
+      <DashedDivider className="my-5 mx-5" />
+
+      <Barcode className="px-5 pb-5" />
     </ScallopedContainer>
   );
 };
