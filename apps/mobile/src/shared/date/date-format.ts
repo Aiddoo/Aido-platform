@@ -194,7 +194,7 @@ export interface RelativeTimeLabels {
  * 경과 시간을 표시한다. 1분 미만·7일 미만은 주입한 문구("방금 전", "5분 전", "3시간 전", "2일 전"),
  * 그 이후는 같은 해면 "1월 5일", 다른 해면 "2025. 1. 5." (연도는 context 시간대 기준).
  */
-export function formatRelativeTime(
+export function formatRelativeTimeWith(
   date: Instant,
   now: Instant,
   labels: RelativeTimeLabels,
@@ -224,7 +224,7 @@ export function formatRelativeTime(
 }
 
 /** "HH:mm" 문자열을 사용자 시간 형식에 맞춰 표시한다 */
-export function formatTimeDisplay(
+export function formatHHmmTime(
   time: string,
   timeFormat: TimeFormat,
   context: DateFormatContext,

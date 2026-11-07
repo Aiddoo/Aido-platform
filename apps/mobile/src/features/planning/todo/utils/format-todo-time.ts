@@ -1,5 +1,5 @@
 import {
-  formatTimeDisplay,
+  formatHHmmTime,
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/date-format';
@@ -13,5 +13,5 @@ export function formatTodoTime(
   context: DateFormatContext,
 ): string | null {
   const localTime = TodoPolicy.getLocalTime(todo, context.timeZone);
-  return localTime == null ? null : formatTimeDisplay(localTime, timeFormat, context);
+  return localTime == null ? null : formatHHmmTime(localTime, timeFormat, context);
 }

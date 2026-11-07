@@ -1,4 +1,4 @@
-import { getDateWithTime, isValidHHmm, parseHour, parseMinute, timeToDate } from './time-of-day';
+import { getDateWithTime, isValidHHmm, parseHour, parseMinute, getTodayAt } from './time-of-day';
 
 const FALLBACK_TIME = '09:00';
 
@@ -63,29 +63,29 @@ describe('time utils', () => {
     });
   });
 
-  describe('timeToDate', () => {
+  describe('getTodayAt', () => {
     it('주어진 시간과 분이 Date 객체에 반영되어야 한다', () => {
-      const result = timeToDate(14, 30);
+      const result = getTodayAt(14, 30);
 
       expect(result.getHours()).toBe(14);
       expect(result.getMinutes()).toBe(30);
     });
 
     it('seconds, milliseconds가 0으로 초기화되어야 한다', () => {
-      const result = timeToDate(9, 0);
+      const result = getTodayAt(9, 0);
 
       expect(result.getSeconds()).toBe(0);
       expect(result.getMilliseconds()).toBe(0);
     });
 
     it('경계값 0시 0분을 처리해야 한다', () => {
-      const result = timeToDate(0, 0);
+      const result = getTodayAt(0, 0);
       expect(result.getHours()).toBe(0);
       expect(result.getMinutes()).toBe(0);
     });
 
     it('경계값 23시 30분을 처리해야 한다', () => {
-      const result = timeToDate(23, 30);
+      const result = getTodayAt(23, 30);
       expect(result.getHours()).toBe(23);
       expect(result.getMinutes()).toBe(30);
     });

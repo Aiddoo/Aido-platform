@@ -26,7 +26,7 @@ export function getDateWithTime(date: Date, time: string | undefined, fallbackTi
 }
 
 /** 시간+분 정수를 오늘 날짜의 Date 객체로 변환 (DatePicker용) */
-export function timeToDate(hour: number, minute: number): Date {
+export function getTodayAt(hour: number, minute: number): Date {
   return withTime(new Date(), hour, minute);
 }
 

@@ -1,7 +1,7 @@
 import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
 
-import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';
+import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } from './date-format';
 import { getCalendarWeek, isSameYearDateKey } from './date-key';
 import type { Instant } from './instant';
 
@@ -60,7 +60,7 @@ export function formatRelativeTimeLabel(
   context: DateFormatContext,
 ): string {
   const lng = toCatalogLanguage(context);
-  return formatRelativeTime(
+  return formatRelativeTimeWith(
     date,
     now,
     {

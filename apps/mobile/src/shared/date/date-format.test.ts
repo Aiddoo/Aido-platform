@@ -7,8 +7,8 @@ import {
   formatDateLabel,
   formatHourLabel,
   formatInstantHour,
-  formatRelativeTime,
-  formatTimeDisplay,
+  formatRelativeTimeWith,
+  formatHHmmTime,
   formatTimeOfDay,
 } from './date-format';
 import { fromEpochMs, toEpochMs, toInstant } from './instant';
@@ -178,7 +178,7 @@ describe('formatDateKeyCompactRange', () => {
   });
 });
 
-describe('formatRelativeTime', () => {
+describe('formatRelativeTimeWith', () => {
   const now = toInstant('2026-10-25T03:00:00Z');
   const minutesAgo = (minutes: number) => fromEpochMs(toEpochMs(now) - minutes * 60_000);
   const labels = {
@@ -189,17 +189,17 @@ describe('formatRelativeTime', () => {
   };
 
   it('7일 미만은 경과 구간에 맞는 주입 문구를 내림한 개수로 고른다', () => {
-    expect(formatRelativeTime(minutesAgo(0.5), now, labels, KO_SEOUL)).toBe('justNow');
-    expect(formatRelativeTime(minutesAgo(59), now, labels, KO_SEOUL)).toBe('minutes:59');
-    expect(formatRelativeTime(minutesAgo(3 * 60 + 59), now, labels, KO_SEOUL)).toBe('hours:3');
-    expect(formatRelativeTime(minutesAgo(6 * 24 * 60), now, labels, KO_SEOUL)).toBe('days:6');
+    expect(formatRelativeTimeWith(minutesAgo(0.5), now, labels, KO_SEOUL)).toBe('justNow');
+    expect(formatRelativeTimeWith(minutesAgo(59), now, labels, KO_SEOUL)).toBe('minutes:59');
+    expect(formatRelativeTimeWith(minutesAgo(3 * 60 + 59), now, labels, KO_SEOUL)).toBe('hours:3');
+    expect(formatRelativeTimeWith(minutesAgo(6 * 24 * 60), now, labels, KO_SEOUL)).toBe('days:6');
   });
 
   it('7일 이상은 같은 해면 월·일, 다른 해면 연도를 포함한 날짜로 표시한다', () => {
-    expect(formatRelativeTime(toInstant('2026-01-05T03:00:00Z'), now, labels, KO_SEOUL)).toBe(
+    expect(formatRelativeTimeWith(toInstant('2026-01-05T03:00:00Z'), now, labels, KO_SEOUL)).toBe(
       '1월 5일',
     );
-    expect(formatRelativeTime(toInstant('2025-01-05T03:00:00Z'), now, labels, EN_SEOUL)).toBe(
+    expect(formatRelativeTimeWith(toInstant('2025-01-05T03:00:00Z'), now, labels, EN_SEOUL)).toBe(
       '1/5/2025',
     );
   });
@@ -210,7 +210,7 @@ describe('formatRelativeTime', () => {
     const later = toInstant('2026-02-01T00:00:00Z');
 
     // When
-    const result = formatRelativeTime(seoulNewYear, later, labels, KO_SEOUL);
+    const result = formatRelativeTimeWith(seoulNewYear, later, labels, KO_SEOUL);
 
     // Then
     expect(result).toBe('1월 1일');
@@ -235,15 +235,15 @@ describe('formatDateLabel monthDay 윤일 경계', () => {
   });
 });
 
-describe('formatTimeDisplay', () => {
+describe('formatHHmmTime', () => {
   const koSeoul = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
 
   it('HH:mm 시각을 사용자 시간 형식과 표시 언어로 바꾼다', () => {
-    expect(formatTimeDisplay('14:30', 'TWENTY_FOUR_HOUR', koSeoul)).toBe('14:30');
-    expect(formatTimeDisplay('14:30', 'TWELVE_HOUR', koSeoul)).toBe('오후 2:30');
+    expect(formatHHmmTime('14:30', 'TWENTY_FOUR_HOUR', koSeoul)).toBe('14:30');
+    expect(formatHHmmTime('14:30', 'TWELVE_HOUR', koSeoul)).toBe('오후 2:30');
   });
 
   it('유효하지 않은 시간 문자열이면 원본을 반환해야 한다', () => {
-    expect(formatTimeDisplay('invalid', 'TWELVE_HOUR', koSeoul)).toBe('invalid');
+    expect(formatHHmmTime('invalid', 'TWELVE_HOUR', koSeoul)).toBe('invalid');
   });
 });

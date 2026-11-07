@@ -1,7 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
   formatDateLabel,
-  formatTimeDisplay,
+  formatHHmmTime,
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/date-format';
@@ -111,7 +111,7 @@ function formatSchedule(
   const time =
     suggestion.scheduledTime == null
       ? tGlobal('ai:suggestions.list.allDay')
-      : formatTimeDisplay(suggestion.scheduledTime, timeFormat, context);
+      : formatHHmmTime(suggestion.scheduledTime, timeFormat, context);
   return `${days} · ${time}`;
 }
 

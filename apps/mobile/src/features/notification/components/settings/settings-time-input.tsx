@@ -4,7 +4,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { PickerHeader } from '@src/features/planning/todo/components/picker-header';
 import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/date-format';
-import { getPickerLocale, timeToDate } from '@src/shared/date/time-of-day';
+import { getPickerLocale, getTodayAt } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -178,8 +178,8 @@ export function SettingsTimeInput({
   const { resolvedLanguage } = useLanguage();
   const overlay = useOverlay();
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
-  const minimumDate = timeToDate(minimumTime.hour, minimumTime.minute);
-  const maximumDate = timeToDate(maximumTime.hour, maximumTime.minute);
+  const minimumDate = getTodayAt(minimumTime.hour, minimumTime.minute);
+  const maximumDate = getTodayAt(maximumTime.hour, maximumTime.minute);
   const commit = (date: Date) => onChange({ hour: date.getHours(), minute: date.getMinutes() });
 
   const handlePress = () => {
@@ -209,7 +209,7 @@ export function SettingsTimeInput({
         >
           <TimePickerSheetContent
             title={rowProps.label}
-            initialValue={timeToDate(value.hour, value.minute)}
+            initialValue={getTodayAt(value.hour, value.minute)}
             minimumDate={minimumDate}
             maximumDate={maximumDate}
             locale={getPickerLocale(resolvedLanguage, timeFormat)}
@@ -236,7 +236,7 @@ export function SettingsTimeInput({
       />
       {androidPickerOpen && (
         <AndroidTimePicker
-          value={timeToDate(value.hour, value.minute)}
+          value={getTodayAt(value.hour, value.minute)}
           minimumDate={minimumDate}
           maximumDate={maximumDate}
           is24Hour={timeFormat === 'TWENTY_FOUR_HOUR'}
