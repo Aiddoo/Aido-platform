@@ -11,7 +11,7 @@ import {
   friendListViewSchema,
 } from '@src/features/social/friend/schemas/friend-params.schema';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -38,7 +38,7 @@ export default function FriendsScreen() {
   const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useFriendListView();
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
   const openMyInvite = useOpenMyInvite();
 
   return (

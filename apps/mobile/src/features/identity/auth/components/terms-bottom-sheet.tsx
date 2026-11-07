@@ -1,5 +1,5 @@
 import { legalUrl } from '@src/shared/constants/legal-urls';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -28,7 +28,7 @@ interface TermsBottomSheetProps {
 export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: TermsBottomSheetProps) {
   const { t } = useTranslation(['auth', 'common']);
   const { isSubmitting } = useFormState({ control: form.control });
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
 
   const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({

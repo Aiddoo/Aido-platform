@@ -5,7 +5,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 
 import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
-import { useMicrophonePermission } from '../../hooks/use-microphone-permission';
+import { useEnsureMicrophonePermission } from '../../hooks/use-ensure-microphone-permission';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
 import { RecognitionLanguageTabs } from '../quick-voice/recognition-language-tabs';
 
@@ -21,7 +21,7 @@ export function VoiceNoteRecordLanguageToggle({
   const toast = useAppToast();
   const logger = useLogger();
   const [locale, setLocale] = useRecognitionLanguage();
-  const ensureMicrophonePermission = useMicrophonePermission();
+  const ensureMicrophonePermission = useEnsureMicrophonePermission();
 
   const handleLocaleChange = async (next: SpeechLocale) => {
     if (await ensureMicrophonePermission('note', next)) {

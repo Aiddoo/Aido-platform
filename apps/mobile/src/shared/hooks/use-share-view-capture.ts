@@ -4,7 +4,7 @@ import { t } from '@src/shared/i18n';
 import { type RefObject, useCallback, useState } from 'react';
 import type { ViewShotRef } from 'react-native-view-shot';
 
-export function useShareView(viewShotRef: RefObject<ViewShotRef | null>) {
+export function useShareViewCapture(viewShotRef: RefObject<ViewShotRef | null>) {
   const systemShare = useSystemShare();
   const { warning, error } = useAppToast();
   const [isSharing, setIsSharing] = useState(false);

@@ -11,8 +11,8 @@ import Animated, {
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { SUN_COLORS } from '../constants/weather-colors';
+import { useIsWeatherSceneRunning } from '../hooks/use-is-weather-scene-running';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
-import { useWeatherSceneClock } from '../hooks/use-weather-scene-clock';
 import { SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import type { DialPoint } from '../utils/weather-dial.geometry';
 
@@ -121,7 +121,7 @@ export function WeatherSunArc({
 
 /** 시안 wxPulse: 해 점에서 퍼지는 빛. 동작 줄이기·화면 밖·앱 비활성에서는 멈춘다. */
 function SunPulse() {
-  const isRunning = useWeatherSceneClock();
+  const isRunning = useIsWeatherSceneRunning();
   const progress = useSharedValue(0);
 
   useEffect(() => {

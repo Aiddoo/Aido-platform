@@ -4,7 +4,7 @@ import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { getYearOfDateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useShareView } from '@src/shared/hooks/use-share-view';
+import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -56,7 +56,7 @@ export function AchievementSummaryCard() {
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();
   const viewShotRef = useRef<ViewShotRef>(null);
-  const { shareCapture, isSharing } = useShareView(viewShotRef);
+  const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
   const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
   const latestCompletionRate = latest?.completionRate;

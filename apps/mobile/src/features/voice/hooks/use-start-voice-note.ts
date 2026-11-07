@@ -3,7 +3,7 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { type Href, router } from 'expo-router';
 
-import { useMicrophonePermission } from './use-microphone-permission';
+import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useRecognitionLanguage } from './use-recognition-language';
 
 interface StartVoiceNoteOptions {
@@ -13,10 +13,10 @@ interface StartVoiceNoteOptions {
   navigate?: (href: Href) => void;
 }
 
-export function useVoiceNoteStart() {
+export function useStartVoiceNote() {
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const aiConsent = useAiDataSharingConsentGate();
-  const ensureMicrophonePermission = useMicrophonePermission();
+  const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const [locale] = useRecognitionLanguage();
   const push = useSingleTap(router.push);
 

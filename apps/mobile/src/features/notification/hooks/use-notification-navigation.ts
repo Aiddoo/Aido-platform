@@ -1,5 +1,5 @@
 import { useExternalLink } from '@src/bootstrap/providers/di-context';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
@@ -9,7 +9,7 @@ import type { NotificationDestination } from '../utils/notification-destination'
 
 export function useNotificationNavigation() {
   const externalLink = useExternalLink();
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
 
   return useCallback(
     async (destination: NotificationDestination): Promise<void> => {

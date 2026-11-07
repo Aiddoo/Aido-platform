@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { createAllDoneBannerStorageKey } from '../apis/all-done-banner.repository';
-import { useInviteAvailability } from '../hooks/use-invite-availability';
+import { useIsInviteAvailable } from '../hooks/use-is-invite-available';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 
 function selectUserId(user: User) {
@@ -28,7 +28,7 @@ export function InviteEntryBanner({
   const todayKey = useTodayKey();
   const allDoneBannerRepository = useAllDoneBannerRepository();
   const openMyInvite = useOpenMyInvite();
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
   const { data: userId } = useQuery({
     ...useGetMeQueryOptions(),
     throwOnError: false,

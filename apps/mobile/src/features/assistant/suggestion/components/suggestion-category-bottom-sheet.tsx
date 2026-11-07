@@ -17,7 +17,7 @@ import {
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
+import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { suggestionParamsSchema } from '../schemas/suggestion-params.schema';
 
@@ -67,7 +67,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
     categoriesData.categories,
     suggestion?.suggestedCategoryId,
   );
-  const handleSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
+  const handleSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
 
   useEffect(() => {
     if (suggestion == null || defaultCategoryId == null) {

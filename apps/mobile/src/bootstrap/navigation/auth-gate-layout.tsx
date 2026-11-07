@@ -1,4 +1,4 @@
-import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
+import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '@src/features/notification/constants/notification.constants';
@@ -19,7 +19,7 @@ export function AuthGateLayout() {
   const isRestoring = useIsRestoring();
   const { resolvedTheme } = useTheme();
   useScreenTracking();
-  useUserIdentity();
+  useSyncUserIdentity();
   useWidgetAppEntry();
   useInstallReferrerCapture();
   useInviteAppEntry();

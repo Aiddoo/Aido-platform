@@ -515,7 +515,7 @@ test('feature의 useAnalytics 직접 사용을 거부하고 bootstrap은 통과�
       'apps/mobile/src/features/identity/auth/queries/auth.mutations.ts': `
         import { useAnalytics } from '@src/bootstrap/providers/di-context';
       `,
-      'apps/mobile/src/bootstrap/hooks/use-user-identity.ts': `
+      'apps/mobile/src/bootstrap/hooks/use-sync-user-identity.ts': `
         import { useAnalytics } from '@src/bootstrap/providers/di-context';
       `,
     },

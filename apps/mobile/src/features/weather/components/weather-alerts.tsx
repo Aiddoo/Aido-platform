@@ -4,7 +4,7 @@ import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, Box, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -13,7 +13,7 @@ import { PressableFeedback } from 'heroui-native';
 
 import { ALERT_GLYPH_BACKGROUND_CLASS } from '../constants/weather-colors';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { WeatherAlert } from '../schemas/weather-report.schema';
 import { WeatherCard } from './weather-card';
@@ -69,11 +69,11 @@ WeatherAlerts.Item = function Item({
   now,
 }: WeatherAlertItemProps) {
   const { t } = useTranslation('weather');
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const { trackEvent } = useTrack();
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useLocalTimeLabel(timeZone, now);
+  const localTime = useFormatLocalTime(timeZone, now);
   const time = (date: Instant) => localTime(formatClockTime(date, timeFormat, dateFormat));
   const period = isInEffect
     ? t('alerts.until', { time: time(alert.expiresAt) })

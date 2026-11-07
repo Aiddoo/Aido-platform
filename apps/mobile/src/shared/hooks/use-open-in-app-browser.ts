@@ -25,7 +25,7 @@ export function useOpenAppSettings() {
  * 연타와 브라우저가 떠 있는 동안 들어온 호출은 무시한다. iOS는 두 번째 호출이 실패하고 Android는 탭이 두 개 쌓인다.
  * 앱 안 브라우저를 쓸 수 없으면 기본 브라우저로 열고, 그래도 실패하면 기록만 남긴다.
  */
-export function useOpenUrl() {
+export function useOpenInAppBrowser() {
   const externalLink = useExternalLink();
   const logger = useLogger();
   const isBrowserOpenRef = useRef(false);

@@ -5,10 +5,10 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Button, OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import { useMicrophonePermission } from './use-microphone-permission';
+import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 
 function PermissionProbe({ onResult }: { onResult: (isGranted: boolean) => void }) {
-  const ensurePermission = useMicrophonePermission();
+  const ensurePermission = useEnsureMicrophonePermission();
 
   return (
     <Button
@@ -44,7 +44,7 @@ async function renderBlocked(missing: MissingSpeechPermission) {
   return { speechRecognizer, onResult };
 }
 
-describe('useMicrophonePermission', () => {
+describe('useEnsureMicrophonePermission', () => {
   it('음성 인식만 막혔으면 음성 인식 권한을 말하고 마이크를 말하지 않는다', async () => {
     // Given
     await renderBlocked('speech-recognition');

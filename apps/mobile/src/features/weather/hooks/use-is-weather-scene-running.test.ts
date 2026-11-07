@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 import { AccessibilityInfo, AppState, type AppStateStatus } from 'react-native';
 
-import { useWeatherSceneClock } from './use-weather-scene-clock';
+import { useIsWeatherSceneRunning } from './use-is-weather-scene-running';
 
 let mockIsReducedMotion = false;
 
@@ -30,7 +30,7 @@ describe('날씨 장면 시계', () => {
 
   test('보이는 화면이 앞에 있으면 장면을 움직인다', async () => {
     // Given
-    const { result } = await renderHook(() => useWeatherSceneClock());
+    const { result } = await renderHook(() => useIsWeatherSceneRunning());
     // When
     const isAnimating = result.current;
     // Then
@@ -39,7 +39,7 @@ describe('날씨 장면 시계', () => {
 
   test('앱이 백그라운드로 가면 멈추고 돌아오면 다시 움직인다', async () => {
     // Given
-    const { result } = await renderHook(() => useWeatherSceneClock());
+    const { result } = await renderHook(() => useIsWeatherSceneRunning());
     // When
     await act(async () => setAppState('background'));
     const whileBackground = result.current;
@@ -53,7 +53,7 @@ describe('날씨 장면 시계', () => {
     // Given
     jest.mocked(useIsFocused).mockReturnValue(false);
     // When
-    const { result } = await renderHook(() => useWeatherSceneClock());
+    const { result } = await renderHook(() => useIsWeatherSceneRunning());
     // Then
     expect(result.current).toBe(false);
   });
@@ -62,14 +62,14 @@ describe('날씨 장면 시계', () => {
     // Given
     mockIsReducedMotion = true;
     // When
-    const { result } = await renderHook(() => useWeatherSceneClock());
+    const { result } = await renderHook(() => useIsWeatherSceneRunning());
     // Then
     expect(result.current).toBe(false);
   });
 
   test('화면이 사라지면 앱 상태 구독을 해제한다', async () => {
     // Given
-    const { unmount } = await renderHook(() => useWeatherSceneClock());
+    const { unmount } = await renderHook(() => useIsWeatherSceneRunning());
     // When
     await unmount();
     // Then

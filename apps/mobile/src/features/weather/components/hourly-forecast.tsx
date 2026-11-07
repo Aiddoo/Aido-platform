@@ -27,7 +27,7 @@ import {
   WEATHER_CONDITION_LABEL_KEYS,
 } from '../constants/weather-labels';
 import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
@@ -134,7 +134,7 @@ HourlyForecast.Summary = function Summary({
 }) {
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
-  const localTime = useLocalTimeLabel(dateFormat.timeZone, now);
+  const localTime = useFormatLocalTime(dateFormat.timeZone, now);
   const hourLabel = (date: Instant) => localTime(formatInstantHour(date, timeFormat, dateFormat));
 
   const sentence = match(summary)

@@ -16,7 +16,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import { useWeatherSceneClock } from '../../hooks/use-weather-scene-clock';
+import { useIsWeatherSceneRunning } from '../../hooks/use-is-weather-scene-running';
 import { getCelestialCenter } from '../../utils/weather-scene-particles';
 import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
@@ -85,7 +85,7 @@ export function WeatherSceneCanvas({
   const [layoutSize, setLayoutSize] = useState<SceneSize | null>(null);
   const { width, height } = layoutSize ?? window;
   const { theme } = useUniwind();
-  const isAnimating = useWeatherSceneClock();
+  const isAnimating = useIsWeatherSceneRunning();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
   const advanceTime = useCallback(
     (frame: FrameInfo) => {

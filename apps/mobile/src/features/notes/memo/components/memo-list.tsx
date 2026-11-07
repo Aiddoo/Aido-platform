@@ -1,5 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
+import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-note';
 import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -173,7 +173,7 @@ MemoList.Loading = function Loading() {
 MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
   const { t: tVoiceNote } = useTranslation('voiceNote');
-  const startVoiceNote = useVoiceNoteStart();
+  const startVoiceNote = useStartVoiceNote();
 
   return (
     <Flex flex={1} justify="center" align="center">

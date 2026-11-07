@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { resolveInitialAuthStatus } from '@src/bootstrap/auth/auth-boot';
-import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
+import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { emitSessionExpired } from '@src/core/events/session-expired';
@@ -888,7 +888,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
       schema: z.object({ content: z.string() }),
     });
     const { result } = await session.renderSession(() => {
-      useUserIdentity();
+      useSyncUserIdentity();
       return {
         status: useAuthStatus(),
         logout: useMutation(useLogoutMutationOptions()),
@@ -1311,7 +1311,7 @@ describe('만료 후 다시 로그인', () => {
   });
 
   const useReloginProbe = () => {
-    useUserIdentity();
+    useSyncUserIdentity();
     return { status: useAuthStatus(), login: useMutation(useEmailLoginMutationOptions()) };
   };
 

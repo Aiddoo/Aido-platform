@@ -3,9 +3,9 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
-import { useMarketingNotificationCategory } from '@src/features/notification/hooks/use-marketing-notification-category';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
+import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import type { NotificationType } from '@src/features/notification/schemas/notification.schema';
@@ -40,7 +40,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
     [queryClient],
   );
-  useMarketingNotificationCategory();
+  useRegisterMarketingNotificationCategory();
   usePushDeviceSync({
     authStatus: status,
     deviceTimeZone: currentTimeZone,

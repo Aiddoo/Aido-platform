@@ -21,7 +21,7 @@ import Animated, {
 import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../../constants/voice.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
-import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
+import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import { followLevel } from '../../utils/waveform.geometry';
 
 const BLEED = VOICE_EDGE_GLOW.blur * 3;
@@ -39,7 +39,7 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
   const angle = useSharedValue(0);
   const smoothed = useSharedValue(0);
 
-  useVoiceFrameCallback((frame) => {
+  useToggleableFrameCallback((frame) => {
     'worklet';
     const elapsed = frame.timeSincePreviousFrame ?? 0;
     const next = followLevel(smoothed.get(), level.get(), elapsed, VOICE_EDGE_GLOW);

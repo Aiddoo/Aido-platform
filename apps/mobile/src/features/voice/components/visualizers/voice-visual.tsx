@@ -33,7 +33,7 @@ import {
 } from '../../constants/voice.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
-import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
+import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import { addFrameTime, shouldUseLightOrb } from '../../utils/voice-frame-budget';
 import { followLevel } from '../../utils/waveform.geometry';
 
@@ -114,7 +114,7 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   );
   const isMoving = isActive && !isReducedMotion;
 
-  useVoiceFrameCallback((frame) => {
+  useToggleableFrameCallback((frame) => {
     'worklet';
     const frameMs = frame.timeSincePreviousFrame ?? 0;
     const elapsed = Math.min(VOICE_VISUAL.maxFrameMs, frameMs);

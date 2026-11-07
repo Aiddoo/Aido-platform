@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
-import { useMicrophonePermission } from './use-microphone-permission';
+import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
 
 interface UseDictationOptions {
@@ -28,7 +28,7 @@ function getSpeechErrorMessage(code: SpeechErrorCode) {
  */
 export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const speechRecognizer = useSpeechRecognizer();
-  const ensureMicrophonePermission = useMicrophonePermission();
+  const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const toast = useAppToast();
   const { resolvedLanguage } = useLanguage();
   const [isListening, setIsListening] = useState(false);

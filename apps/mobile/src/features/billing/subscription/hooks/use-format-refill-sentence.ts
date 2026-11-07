@@ -9,7 +9,7 @@ import { match } from 'ts-pattern';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
 
-export function useRefillSentence() {
+export function useFormatRefillSentence() {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
 

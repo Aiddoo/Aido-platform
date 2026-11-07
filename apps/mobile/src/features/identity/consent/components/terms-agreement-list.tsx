@@ -2,7 +2,7 @@ import { legalUrl } from '@src/shared/constants/legal-urls';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { SettingsListGroup } from '@src/shared/ui';
@@ -13,7 +13,7 @@ import { useGetConsentQueryOptions } from '../queries/consent.queries';
 export function TermsAgreementList() {
   const { t } = useTranslation('settings');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
   const dateFormatContext = useDateFormatContext();
 

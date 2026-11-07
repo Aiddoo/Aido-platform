@@ -12,7 +12,7 @@
 
 전송 경로: `track()`·`useTrack().trackEvent()` → `createFirebaseAnalytics` → `logEvent`. 자동 화면 수집은 꺼져 있고(`firebase.json`), `useScreenTracking`이 경로가 바뀔 때마다 `screen_view`를 보낸다.
 
-### 1-1. 사용자 식별·속성 (`bootstrap/hooks/use-user-identity.ts`)
+### 1-1. 사용자 식별·속성 (`bootstrap/hooks/use-sync-user-identity.ts`)
 
 | 항목                  | 값                                       | 비고                                                                 |
 | --------------------- | ---------------------------------------- | -------------------------------------------------------------------- |

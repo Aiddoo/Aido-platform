@@ -17,7 +17,7 @@ import {
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
-import { useVoiceFrameCallback } from '../../hooks/use-voice-frame-callback';
+import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import {
   appendLevelFrame,
   appendTimelineBar,
@@ -50,7 +50,7 @@ function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWav
 
   useEffect(() => () => cancelAnimation(shift), [shift]);
 
-  useVoiceFrameCallback((frame) => {
+  useToggleableFrameCallback((frame) => {
     'worklet';
     const next = appendLevelFrame(
       sampler.get(),

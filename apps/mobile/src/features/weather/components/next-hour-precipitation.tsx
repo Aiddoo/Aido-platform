@@ -27,9 +27,9 @@ import {
   type HourlyPrecipitationOutlook,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useFormatPrecipitationMessage } from '../hooks/use-format-precipitation-message';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
-import { usePrecipitationMessage } from '../hooks/use-precipitation-message';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { MinuteForecast } from '../schemas/weather-report.schema';
 import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
@@ -59,7 +59,7 @@ export function NextHourPrecipitation() {
     ],
   });
   const now = useMinuteNow();
-  const toMessage = usePrecipitationMessage({
+  const toMessage = useFormatPrecipitationMessage({
     timeZone: data.location.timezone,
     timeFormat: preference.timeFormat,
     now,
@@ -122,7 +122,7 @@ NextHourPrecipitation.HourlyFallback = function HourlyFallback({
 }) {
   const { t } = useTranslation('weather');
   const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useLocalTimeLabel(timeZone, now);
+  const localTime = useFormatLocalTime(timeZone, now);
   const iconSize = Math.round(FALLBACK_ICON_SIZE * useFontScaleRatio());
   const { hour, isOngoing } = outlook;
   const isSnow = WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);

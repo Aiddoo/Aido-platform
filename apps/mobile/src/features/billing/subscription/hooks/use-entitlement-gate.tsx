@@ -18,7 +18,7 @@ import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
-import { useRefillSentence } from './use-refill-sentence';
+import { useFormatRefillSentence } from './use-format-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';
 
@@ -131,7 +131,7 @@ export function useEntitlementGate(
 function useEntitlementGateCopy() {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
-  const getRefill = useRefillSentence();
+  const getRefill = useFormatRefillSentence();
 
   return useCallback(
     (

@@ -7,8 +7,8 @@ import { VoiceNoteRecordFooter } from '@src/features/voice/components/note/voice
 import { VoiceNoteRecordLanguageToggle } from '@src/features/voice/components/note/voice-note-record-language-toggle';
 import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
+import { useReadSpeechContext } from '@src/features/voice/hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
-import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
@@ -48,7 +48,7 @@ function VoiceNoteRecordScreen() {
   const toast = useAppToast();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const { maxSeconds, limitMs, notifyLimit } = useVoiceNoteRecordLimit();
-  const getSpeechContext = useSpeechContext();
+  const getSpeechContext = useReadSpeechContext();
   const [locale] = useRecognitionLanguage();
   const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
 

@@ -4,7 +4,7 @@ import benefitNotificationImage from '@assets/images/subscription/benefit-notifi
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -177,7 +177,7 @@ Paywall.RenewalNotice = function RenewalNotice() {
 
 Paywall.Terms = function Terms() {
   const { t } = useTranslation('subscription');
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
 
   return (

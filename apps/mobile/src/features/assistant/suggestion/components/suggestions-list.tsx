@@ -31,7 +31,7 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import { isSuggestionsPremiumRequired } from '../domains/suggestion.error';
-import { useHandleSuggestionMutationOptions } from '../queries/suggestion.mutations';
+import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import type { AiSuggestion } from '../schemas/suggestion.schema';
 
@@ -65,7 +65,7 @@ export function SuggestionsList() {
   const { t } = useTranslation('ai');
   usePrefetchQuery(useGetPreferenceQueryOptions());
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
-  const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
+  const dismissSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
 
   if (suggestions.length === 0) {
     return <SuggestionsList.Empty />;

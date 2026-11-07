@@ -25,7 +25,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
-import { useVoiceNoteStart } from './use-voice-note-start';
+import { useStartVoiceNote } from './use-start-voice-note';
 
 const ACCOUNT_ID = 'user-1';
 const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어 다시 안내해요.';
@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 function StartProbe() {
-  const start = useVoiceNoteStart();
+  const start = useStartVoiceNote();
 
   return (
     <Button
@@ -102,7 +102,7 @@ async function renderStart({
   return { speechRecognizer, analytics };
 }
 
-describe('useVoiceNoteStart', () => {
+describe('useStartVoiceNote', () => {
   beforeEach(() => {
     jest.mocked(router.push).mockClear();
   });

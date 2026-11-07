@@ -4,7 +4,7 @@ import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useShareView } from '@src/shared/hooks/use-share-view';
+import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -45,7 +45,7 @@ export function WeeklyAchievementCertificate() {
 
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewShotRef>(null);
-  const { shareCapture, isSharing } = useShareView(viewShotRef);
+  const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
 
   const badgeType = AchievementPolicy.getBadgeType(achievement);
   const badgeName = tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[badgeType]);

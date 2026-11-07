@@ -11,7 +11,7 @@ import { toUserAnalyticsProperties } from '@src/features/identity/user/utils/use
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-export function useUserIdentity(): void {
+export function useSyncUserIdentity(): void {
   const status = useAuthStatus();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();

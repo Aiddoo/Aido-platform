@@ -8,7 +8,7 @@ import { MyPagePaneLayout } from '@src/features/identity/user/components/mypage-
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -50,7 +50,7 @@ export default function MyPageScreen() {
 /** 넓은 화면의 메뉴 화면(`(mypage-menu)/_layout`)도 이 칸을 그려 들어가고 나올 때 왼쪽이 그대로다 */
 export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
   const { t } = useTranslation('user');
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
 
   return (
     <MyPagePaneLayout isSplit={isSplit} headerAction={<NotificationBell.Header />}>

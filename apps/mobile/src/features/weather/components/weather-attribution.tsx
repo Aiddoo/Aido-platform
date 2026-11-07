@@ -1,7 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatClockTime } from '@src/shared/date/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { AttributionInfo } from '../schemas/weather-report.schema';
 import { type AttributionBackground, toAttributionMark } from '../utils/to-attribution-mark';
@@ -48,7 +48,7 @@ interface WeatherAttributionProps {
  */
 export function WeatherAttribution({ background }: WeatherAttributionProps) {
   const { t } = useTranslation('weather');
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const [{ data }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.attribution },
@@ -57,7 +57,7 @@ export function WeatherAttribution({ background }: WeatherAttributionProps) {
   });
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
-  const localTime = useLocalTimeLabel(data.location.timezone, now);
+  const localTime = useFormatLocalTime(data.location.timezone, now);
   const { attribution } = data;
   const tone = attributionTone({ background });
 

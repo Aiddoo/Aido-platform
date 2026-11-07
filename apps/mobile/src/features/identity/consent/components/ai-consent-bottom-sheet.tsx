@@ -1,5 +1,5 @@
 import { legalUrl } from '@src/shared/constants/legal-urls';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -45,7 +45,7 @@ export function AiConsentBottomSheet({
   ...sheetProps
 }: AiConsentBottomSheetProps) {
   const { t } = useTranslation('ai');
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
   const updateConsent = useMutation(useUpdateAiDataSharingConsentMutationOptions());
 

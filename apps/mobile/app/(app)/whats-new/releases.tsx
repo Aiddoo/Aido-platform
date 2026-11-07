@@ -4,12 +4,12 @@ import {
   RELEASE_1_15_0,
 } from '@src/features/app-config/whats-new/constants/releases';
 import { WhatsNewPolicy } from '@src/features/app-config/whats-new/domains/whats-new.model';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { ReadableContent, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { ScrollView } from 'react-native';
 
 export default function WhatsNewReleasesRoute() {
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1">

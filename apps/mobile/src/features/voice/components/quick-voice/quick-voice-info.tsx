@@ -1,6 +1,6 @@
 import { QuotaChip } from '@src/features/billing/subscription/components/quota-chip';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useRefillSentence } from '@src/features/billing/subscription/hooks/use-refill-sentence';
+import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { toDateFormatLocale } from '@src/shared/date/date-format';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -18,7 +18,7 @@ export function QuickVoiceInfo() {
   const [isOpen, setIsOpen] = useState(false);
   // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
-  const getRefillSentence = useRefillSentence();
+  const getRefillSentence = useFormatRefillSentence();
 
   return (
     <HStack gap={8} align="center">

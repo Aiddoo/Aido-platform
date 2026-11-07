@@ -12,7 +12,7 @@ function getIsAppActive() {
   return AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
 }
 
-export function useWeatherSceneClock(): boolean {
+export function useIsWeatherSceneRunning(): boolean {
   const isFocused = useIsFocused();
   const isAppActive = useSyncExternalStore(subscribeAppState, getIsAppActive);
   const isReducedMotion = useReduceMotion();

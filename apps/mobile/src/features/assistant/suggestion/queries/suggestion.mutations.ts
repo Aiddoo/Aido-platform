@@ -25,7 +25,7 @@ interface HandleSuggestionParams {
   input: AiSuggestionActionInput;
 }
 
-export function useHandleSuggestionMutationOptions() {
+export function useActOnSuggestionMutationOptions() {
   const haptics = useHaptics();
   const suggestionService = useSuggestionService();
   const activationService = useActivationService();

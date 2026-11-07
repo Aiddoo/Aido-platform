@@ -1,6 +1,6 @@
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
-import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
+import { useRouteFriendQuery } from '@src/features/social/friend/hooks/use-route-friend-query';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 
@@ -16,7 +16,7 @@ interface FriendTodoNudgeActionProps {
 /** 친구 할 일 줄의 콕 버튼. 오늘의 끝나지 않은 할 일에만 보인다 */
 export function FriendTodoNudgeAction({ todo }: FriendTodoNudgeActionProps) {
   const { t } = useTranslation('friend');
-  const { data: friend } = useScreenFriend();
+  const { data: friend } = useRouteFriendQuery();
   const [selectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(

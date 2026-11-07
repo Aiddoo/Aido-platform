@@ -95,7 +95,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ### User
 
-`useUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다.
+`useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다.
 
 ### Session Replay
 
@@ -187,7 +187,7 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 - **허용 키 방식**: `extra`와 breadcrumb `data`는 `ALLOWED_CONTEXT_KEYS`(`memoId`, `status`, `code`, `durationMs`, `error`, `reason` 등)에 있는 키의 문자열·숫자·불리언만 남는다. 그 밖의 키(`content`, `transcript`, `title`, `email`, `accessToken`)와 객체·배열 값은 지운다. 새 context 키를 쓰면 허용 목록과 테스트에 먼저 더한다.
 - **문자열 패턴**: 이메일, `Bearer ...`, JWT, 40자 이상 토큰 모양은 `[email]`·`[token]`으로 바뀌고 500자로 자른다. 요청 ID(UUID 36자)는 그대로다.
 - `console` breadcrumb는 버린다(로거 context가 그대로 담긴다). 요청은 `data`·쿠키·`Authorization`을 지우고 URL 쿼리를 자른다. 사용자는 내부 id만 남긴다.
-- 사용자 태그는 내부 id뿐이고 비인증이 되면 `setUserId(null)`로 해제한다(`useUserIdentity`).
+- 사용자 태그는 내부 id뿐이고 비인증이 되면 `setUserId(null)`로 해제한다(`useSyncUserIdentity`).
 
 ## 이벤트 남발 금지
 

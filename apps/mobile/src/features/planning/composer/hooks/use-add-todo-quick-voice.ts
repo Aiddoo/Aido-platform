@@ -15,11 +15,11 @@ import {
 } from '@src/features/voice/domains/plan-request.model';
 import { VoiceNoteCaptionPolicy } from '@src/features/voice/domains/voice-note-caption.model';
 import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
-import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
+import { useEnsureMicrophonePermission } from '@src/features/voice/hooks/use-ensure-microphone-permission';
+import { useReadSpeechContext } from '@src/features/voice/hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
-import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
+import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-note';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
-import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/voice.mutations';
 import type { CapturedPlan } from '@src/features/voice/schemas/voice-capture.schema';
 import type { CreateQuickPlanInput } from '@src/features/voice/schemas/voice-plan.schema';
@@ -43,8 +43,8 @@ interface UseAddTodoQuickVoiceOptions {
 export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptions) {
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
   const aiConsent = useAiDataSharingConsentGate();
-  const ensureMicrophonePermission = useMicrophonePermission();
-  const getSpeechContext = useSpeechContext();
+  const ensureMicrophonePermission = useEnsureMicrophonePermission();
+  const getSpeechContext = useReadSpeechContext();
   const [locale, setLocale] = useRecognitionLanguage();
   const planRequest = useQuickPlanRequest({ aiConsent, onExit });
   const isUnmountedRef = useRef(false);
@@ -227,7 +227,7 @@ interface UseContinueAsVoiceNoteOptions {
 function useContinueAsVoiceNote({ session, locale, onExit }: UseContinueAsVoiceNoteOptions) {
   const idGenerator = useIdGenerator();
   const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
-  const startVoiceNote = useVoiceNoteStart();
+  const startVoiceNote = useStartVoiceNote();
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
 
   return () => {
@@ -265,7 +265,7 @@ function useContinueAsVoiceNote({ session, locale, onExit }: UseContinueAsVoiceN
 
 interface UseChangeRecognitionLocaleOptions {
   session: ReturnType<typeof useVoiceCaptureSession>;
-  ensureMicrophonePermission: ReturnType<typeof useMicrophonePermission>;
+  ensureMicrophonePermission: ReturnType<typeof useEnsureMicrophonePermission>;
   setLocale: (locale: SpeechLocale) => void;
 }
 

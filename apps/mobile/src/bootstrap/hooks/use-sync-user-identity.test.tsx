@@ -25,7 +25,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { z } from 'zod';
 
-import { useUserIdentity } from './use-user-identity';
+import { useSyncUserIdentity } from './use-sync-user-identity';
 
 const CURRENT_USER_ID = createCurrentUserDto().userId;
 
@@ -37,7 +37,7 @@ const createMemoDraftKey = (ownerId: string) =>
     schema: z.object({ content: z.string() }),
   });
 
-describe('useUserIdentity', () => {
+describe('useSyncUserIdentity', () => {
   let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
   let queryClient: QueryClient;
@@ -70,7 +70,7 @@ describe('useUserIdentity', () => {
     draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
 
     // When
-    await renderHook(useUserIdentity, { wrapper });
+    await renderHook(useSyncUserIdentity, { wrapper });
 
     // Then
     await waitFor(() =>
@@ -88,7 +88,7 @@ describe('useUserIdentity', () => {
     queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '이전 사용자 캐시');
 
     // When
-    await renderHook(useUserIdentity, { wrapper });
+    await renderHook(useSyncUserIdentity, { wrapper });
 
     // Then
     await waitFor(() => expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull());

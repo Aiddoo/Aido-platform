@@ -11,7 +11,7 @@ import { match } from 'ts-pattern';
 import { MOON_PHASE_LABEL_KEYS, SUN_EVENT_LABEL_KEYS } from '../constants/weather-labels';
 import { WeatherDetailPolicy } from '../domains/weather-detail.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { getSunArcPosition, isSunBelowHorizon, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import { WeatherCard } from './weather-card';
@@ -30,7 +30,7 @@ export function WeatherSunMoon() {
   });
   const now = useMinuteNow();
   const dateFormat = useLocationDateFormat(data.location.timezone);
-  const localTime = useLocalTimeLabel(data.location.timezone, now);
+  const localTime = useFormatLocalTime(data.location.timezone, now);
   const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
   const today = WeatherReportPolicy.findTodayForecast(data, now);
   if (today == null) {

@@ -2,13 +2,13 @@ import { Release1140Steps } from '@src/features/app-config/whats-new/components/
 import { Release1150Steps } from '@src/features/app-config/whats-new/components/release-1-15-0-steps';
 import { useWhatsNewParams } from '@src/features/app-config/whats-new/hooks/use-whats-new-params';
 import { RELEASE_ID } from '@src/features/app-config/whats-new/schemas/release.schema';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { match } from 'ts-pattern';
 
 export default function WhatsNewRoute() {
   const [{ releaseId }] = useWhatsNewParams();
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white">

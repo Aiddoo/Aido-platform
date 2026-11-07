@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 
-export function useMarketingNotificationCategory() {
+export function useRegisterMarketingNotificationCategory() {
   const logger = useLogger();
   const gateway = usePushNotificationGateway();
 

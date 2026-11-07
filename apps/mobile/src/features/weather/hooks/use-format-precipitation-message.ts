@@ -10,7 +10,7 @@ import {
   type PrecipitationWindow,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
-import { useLocalTimeLabel, useLocationDateFormat } from './use-location-date-format';
+import { useFormatLocalTime, useLocationDateFormat } from './use-location-date-format';
 
 export interface PrecipitationMessage {
   headline: string;
@@ -22,7 +22,7 @@ export interface PrecipitationMessage {
  * 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 말한다.
  * 위치 벽시계가 기기와 다르면 시각에 '현지'를 붙인다.
  */
-export function usePrecipitationMessage({
+export function useFormatPrecipitationMessage({
   timeZone,
   timeFormat,
   now,
@@ -33,7 +33,7 @@ export function usePrecipitationMessage({
 }) {
   const { t } = useTranslation('weather');
   const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useLocalTimeLabel(timeZone, now);
+  const localTime = useFormatLocalTime(timeZone, now);
 
   const formatMoment = (date: Instant, precision: PrecipitationPrecision) =>
     localTime(

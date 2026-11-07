@@ -10,7 +10,7 @@ import {
 } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 
-import { useVoiceNoteStart } from '../../hooks/use-voice-note-start';
+import { useStartVoiceNote } from '../../hooks/use-start-voice-note';
 
 interface VoiceNoteStartButtonProps {
   coachmarkPlacement: HintPopoverContentProps['placement'];
@@ -23,7 +23,7 @@ export function VoiceNoteStartButton({
 }: VoiceNoteStartButtonProps) {
   const { t } = useTranslation('voiceNote');
   const fontScaledSize = useFontScaledSize();
-  const start = useVoiceNoteStart();
+  const start = useStartVoiceNote();
   const layoutKey = useAdaptivePaneLayoutKey();
 
   return (

@@ -32,9 +32,9 @@ import {
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { FriendStrip } from '@src/features/social/friend/components/friend-strip';
-import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
+import { useRouteFriendQuery } from '@src/features/social/friend/hooks/use-route-friend-query';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
@@ -64,7 +64,7 @@ export default function FeedScreen() {
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
   const [{ sort, comment }] = useCommentParams();
   const [selectedDateKey] = useFeedDateKey();
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
   const openMyInvite = useOpenMyInvite();
   const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
 
@@ -155,7 +155,7 @@ function MyFeed() {
     hasPendingNavigation,
   });
   const weatherIntroduction = useWeatherIntroduction({ isStable });
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = useIsInviteAvailable();
   const whatsNew = useWhatsNewFeed({
     isStable,
     isWeatherIntroductionPending: weatherIntroduction.isPending,
@@ -231,7 +231,7 @@ function FriendFeedTodos() {
     isFetchNextPageError,
     error,
     fetchNextPage,
-  } = useScreenFriend();
+  } = useRouteFriendQuery();
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
   );
