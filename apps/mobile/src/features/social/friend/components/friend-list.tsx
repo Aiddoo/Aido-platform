@@ -1,8 +1,5 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
-import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import type { BlockTarget } from '@src/features/social/moderation/schemas/user-block.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
@@ -58,7 +55,18 @@ import type { FriendUser } from '../schemas/friend.schema';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
 import { UserList } from './user-list';
 
-export function FriendList() {
+interface FriendListInvite {
+  /** 초대받은 사람이 받는 프리미엄 일수. 빈 목록 안내 문구에 쓴다 */
+  welcomeDays: number;
+  open: () => void;
+}
+
+interface FriendListProps {
+  /** 초대를 쓸 수 있으면 빈 목록에서 링크로 데려오는 길을 먼저 보인다. 없으면 태그 찾기만 안내한다 */
+  invite?: FriendListInvite;
+}
+
+export function FriendList({ invite }: FriendListProps) {
   const { t } = useTranslation('friend');
   const {
     data,
@@ -109,7 +117,7 @@ export function FriendList() {
         </HStack>
       }
       renderItem={({ item }) => <FriendList.Item friend={item} />}
-      ListEmptyComponent={<FriendList.Empty />}
+      ListEmptyComponent={<FriendList.Empty invite={invite} />}
       ListFooterComponent={
         <InfiniteListFooter
           isFetchingNextPage={isFetchingNextPage}
@@ -306,14 +314,12 @@ FriendList.Loading = function Loading() {
 
 FriendList.Error = UserList.Error;
 
-FriendList.Empty = function Empty() {
+FriendList.Empty = function Empty({ invite }: FriendListProps) {
   const { t } = useTranslation(['friend', 'invite']);
   const push = useSingleTap(router.push);
-  const openMyInvite = useOpenMyInvite();
-  const isInviteAvailable = useInviteAvailability();
 
   // 초대를 쓸 수 있으면 링크로 데려오는 길을 먼저, 태그 찾기를 다음으로 보여 준다
-  if (isInviteAvailable) {
+  if (invite != null) {
     return (
       <UserList.Empty
         icon={
@@ -326,15 +332,11 @@ FriendList.Empty = function Empty() {
         }
         title={t('invite:entry.friendsEmptyTitle')}
         description={t('invite:entry.friendsEmptyDescription', {
-          days: InviteRewardPolicy.getWelcomePremiumDays(),
+          days: invite.welcomeDays,
         })}
         button={
           <VStack align="center" gap={4}>
-            <Result.Button
-              testID="friends-empty-invite"
-              color="primary"
-              onPress={() => openMyInvite('friends_empty')}
-            >
+            <Result.Button testID="friends-empty-invite" color="primary" onPress={invite.open}>
               {t('invite:entry.inviteFriends')}
             </Result.Button>
             <TextButton size="small" variant="underline" onPress={() => push('/friends/add')}>

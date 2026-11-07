@@ -5,8 +5,6 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
-import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
-import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -58,7 +56,12 @@ const DRAW_DISTANCE = 600;
  * 피드 위에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 친구 줄.
  * "나"는 왼쪽에 고정하고, 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다.
  */
-export function FriendStrip() {
+interface FriendStripProps {
+  /** 초대를 쓸 수 있을 때 친구가 없는 줄에서 초대로 데려가는 동작. 없으면 친구 찾기로 보낸다 */
+  onInvite?: () => void;
+}
+
+export function FriendStrip({ onInvite }: FriendStripProps) {
   const { t } = useTranslation('todo');
   const { t: tFriend } = useTranslation('friend');
   const listRef = useRef<FlashListRef<FriendUser>>(null);
@@ -94,7 +97,7 @@ export function FriendStrip() {
       </Box>
       <Divider />
       {friends.length === 0 ? (
-        <FriendStrip.Empty />
+        <FriendStrip.Empty onInvite={onInvite} />
       ) : (
         <>
           <FlashList
@@ -236,12 +239,11 @@ FriendStrip.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
  * 친구가 없으면 "나" 옆에서 초대(초대를 못 쓰면 친구 찾기)로 이끈다. 칸 높이는 친구가 있을 때와 같다.
  * 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
  */
-FriendStrip.Empty = function Empty() {
+FriendStrip.Empty = function Empty({ onInvite }: FriendStripProps) {
   const { t } = useTranslation('todo');
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
-  const openMyInvite = useOpenMyInvite();
-  const isInviteAvailable = useInviteAvailability();
+  const isInviteAvailable = onInvite != null;
   const layoutKey = useAdaptivePaneLayoutKey();
   const label = isInviteAvailable ? t('friendStrip.emptyInvite') : t('friendStrip.findFriends');
   const hint = isInviteAvailable
@@ -269,8 +271,8 @@ FriendStrip.Empty = function Empty() {
         accessibilityLabel={label}
         accessibilityHint={hint}
         onPress={() => {
-          if (isInviteAvailable) {
-            openMyInvite('friend_strip_empty');
+          if (onInvite != null) {
+            onInvite();
             return;
           }
           push('/friends/search');

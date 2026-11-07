@@ -11,6 +11,9 @@ import {
   type FriendListView,
   friendListViewSchema,
 } from '@src/features/social/friend/schemas/friend-params.schema';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
@@ -30,6 +33,8 @@ export default function FriendsScreen() {
   const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useFriendListViewParam();
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
+  const isInviteAvailable = useInviteAvailability();
+  const openMyInvite = useOpenMyInvite();
 
   const handleTabChange = useCallback(
     (value: string) => {
@@ -77,7 +82,16 @@ export default function FriendsScreen() {
             <FriendTabContent value={FRIEND_LIST_VIEW.friends}>
               <QueryErrorBoundary resetKeys={[view]} fallback={FriendList.Error}>
                 <Suspense fallback={<FriendList.Loading />}>
-                  <FriendList />
+                  <FriendList
+                    invite={
+                      isInviteAvailable
+                        ? {
+                            welcomeDays: InviteRewardPolicy.getWelcomePremiumDays(),
+                            open: () => openMyInvite('friends_empty'),
+                          }
+                        : undefined
+                    }
+                  />
                 </Suspense>
               </QueryErrorBoundary>
             </FriendTabContent>

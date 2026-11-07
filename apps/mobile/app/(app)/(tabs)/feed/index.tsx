@@ -39,6 +39,7 @@ import {
 import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
+import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { PokeBanner } from '@src/features/social/nudge/components/poke-banner';
 import { RemindNudgeButton } from '@src/features/social/nudge/components/remind-nudge-button';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
@@ -69,6 +70,8 @@ import { match, P } from 'ts-pattern';
 
 export default function FeedScreen() {
   const [friendId] = useFeedFriendParam();
+  const isInviteAvailable = useInviteAvailability();
+  const openMyInvite = useOpenMyInvite();
 
   return (
     <>
@@ -79,7 +82,11 @@ export default function FeedScreen() {
             <StyledSafeAreaView edges={['left', 'right']}>
               <QueryErrorBoundary fallback={FriendStrip.Error}>
                 <Suspense fallback={<FriendStrip.Loading />}>
-                  <FriendStrip />
+                  <FriendStrip
+                    onInvite={
+                      isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
+                    }
+                  />
                 </Suspense>
               </QueryErrorBoundary>
             </StyledSafeAreaView>

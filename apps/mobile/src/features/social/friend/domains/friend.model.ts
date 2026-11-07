@@ -6,6 +6,13 @@ import type { SearchedUser } from '../schemas/friend.schema';
 
 export type RequestState = 'friend' | 'pending' | 'none';
 
+/** 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길. 초대를 쓸 수 없으면 화면이 넘기지 않는다 */
+export interface FriendLimitInvite {
+  getDescription: (limit: number) => string;
+  actionLabel: string;
+  open: () => void;
+}
+
 export type FriendLimitDialog = { type: 'invite'; limit: number } | { type: 'subscribe' };
 
 /** 서버 경로 검증(userTagParamSchema)과 같은 규칙이다 */

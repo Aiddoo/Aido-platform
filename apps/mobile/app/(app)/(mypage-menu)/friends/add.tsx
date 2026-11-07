@@ -5,7 +5,7 @@ import {
   EMPTY_ADD_FRIEND_FORM_VALUES,
   USER_TAG_MAX_LENGTH,
 } from '@src/features/social/friend/schemas/add-friend-form.schema';
-import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/invite.queries';
+import { useFriendLimitInvite } from '@src/features/social/invite/hooks/use-friend-limit-invite';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -21,7 +21,7 @@ import {
   StyledSafeAreaView,
   Box,
 } from '@src/shared/ui';
-import { useMutation, usePrefetchQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { ScrollView } from 'react-native';
@@ -31,9 +31,8 @@ function AddFriendScreen() {
 
   const { t } = useTranslation('friend');
   const reportUnexpectedError = useReportUnexpectedError('friend');
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
-  // 친구 한도 안내에 초대로 자리를 늘리는 길을 보여 줄지 미리 알아 둔다
-  usePrefetchQuery(useGetInviteAvailabilityQueryOptions());
+  const friendLimitInvite = useFriendLimitInvite();
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ friendLimitInvite }));
 
   const form = useForm({
     resolver: zodResolver(addFriendFormSchema),

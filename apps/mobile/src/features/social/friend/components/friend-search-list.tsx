@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { FriendPolicy } from '../domains/friend.model';
+import { type FriendLimitInvite, FriendPolicy } from '../domains/friend.model';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
 import { useSendRequestByTagMutationOptions } from '../queries/friend.mutations';
@@ -24,7 +24,13 @@ import { useGetUserSearchQueryOptions } from '../queries/friend.queries';
 import type { SearchedUser } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
-export function FriendSearchList({ query }: { query: string }) {
+interface FriendSearchListProps {
+  query: string;
+  /** 친구 한도 안내에 덧붙일 초대 길. 초대를 쓸 수 없으면 없다 */
+  friendLimitInvite?: FriendLimitInvite;
+}
+
+export function FriendSearchList({ query, friendLimitInvite }: FriendSearchListProps) {
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
@@ -50,7 +56,9 @@ export function FriendSearchList({ query }: { query: string }) {
       keyboardDismissMode="on-drag"
       data={search.data?.pages.flatMap((page) => page.items) ?? []}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <FriendSearchList.Item user={item} />}
+      renderItem={({ item }) => (
+        <FriendSearchList.Item user={item} friendLimitInvite={friendLimitInvite} />
+      )}
       ListEmptyComponent={<FriendSearchList.Empty query={normalizedQuery} />}
       contentContainerStyle={USER_LIST_CONTENT_STYLE}
       hasNextPage={search.hasNextPage}
@@ -61,7 +69,13 @@ export function FriendSearchList({ query }: { query: string }) {
   );
 }
 
-FriendSearchList.Item = function Item({ user }: { user: SearchedUser }) {
+FriendSearchList.Item = function Item({
+  user,
+  friendLimitInvite,
+}: {
+  user: SearchedUser;
+  friendLimitInvite?: FriendLimitInvite;
+}) {
   const { t } = useTranslation('friend');
 
   return (
@@ -69,15 +83,23 @@ FriendSearchList.Item = function Item({ user }: { user: SearchedUser }) {
       displayName={user.name ?? t('fallbackName')}
       subtitle={formatUserHashtag(user.userTag)}
       profileImage={user.profileImage}
-      right={<FriendSearchList.Action key={user.id} user={user} />}
+      right={
+        <FriendSearchList.Action key={user.id} user={user} friendLimitInvite={friendLimitInvite} />
+      }
     />
   );
 };
 
 /** 목록이 행을 재활용해도 처리 중 상태가 다른 사용자로 넘어가지 않게 사용자마다 새로 만든다 */
-FriendSearchList.Action = function Action({ user }: { user: SearchedUser }) {
+FriendSearchList.Action = function Action({
+  user,
+  friendLimitInvite,
+}: {
+  user: SearchedUser;
+  friendLimitInvite?: FriendLimitInvite;
+}) {
   const { t } = useTranslation('friend');
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ friendLimitInvite }));
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
   const isProcessing = sendRequest.isPending || cancelRequest.isPending;
 

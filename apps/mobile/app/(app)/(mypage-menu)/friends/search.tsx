@@ -1,16 +1,14 @@
 import { FriendSearchList } from '@src/features/social/friend/components/friend-search-list';
-import { useGetInviteAvailabilityQueryOptions } from '@src/features/social/invite/queries/invite.queries';
+import { useFriendLimitInvite } from '@src/features/social/invite/hooks/use-friend-limit-invite';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Input, QueryErrorBoundary, SearchIcon, StyledSafeAreaView } from '@src/shared/ui';
-import { usePrefetchQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
   const [query, setQuery] = useState('');
-  // 친구 한도 안내에 초대로 자리를 늘리는 길을 보여 줄지 미리 알아 둔다
-  usePrefetchQuery(useGetInviteAvailabilityQueryOptions());
+  const friendLimitInvite = useFriendLimitInvite();
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
@@ -32,7 +30,7 @@ export default function SearchFriendScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         <Box flex={1} px={16}>
           <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
-            <FriendSearchList query={query} />
+            <FriendSearchList query={query} friendLimitInvite={friendLimitInvite} />
           </QueryErrorBoundary>
         </Box>
       </KeyboardAvoidingView>

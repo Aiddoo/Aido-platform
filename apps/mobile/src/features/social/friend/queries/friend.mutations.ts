@@ -5,9 +5,6 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { type FriendUser } from '@src/features/social/friend/schemas/friend.schema';
-import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited-friend.model';
-import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
-import { getCachedInviteAvailability } from '@src/features/social/invite/queries/invite-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -19,7 +16,7 @@ import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/re
 import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { FriendPolicy } from '../domains/friend.model';
+import { type FriendLimitInvite, FriendPolicy } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend.schema';
 import { invalidateFriends, patchSearchedUser } from './friend-cache';
 
@@ -170,7 +167,9 @@ export function useReorderFriendMutationOptions() {
   });
 }
 
-export function useSendRequestByTagMutationOptions() {
+export function useSendRequestByTagMutationOptions({
+  friendLimitInvite,
+}: { friendLimitInvite?: FriendLimitInvite } = {}) {
   const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -178,7 +177,6 @@ export function useSendRequestByTagMutationOptions() {
   const toast = useAppToast();
   const showFailure = useMutationFailure();
   const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
-  const openMyInvite = useOpenMyInvite();
 
   return mutationOptions({
     // 저장 후 떠나는 폼이라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 입력값을 남긴 채 안내한다
@@ -215,23 +213,18 @@ export function useSendRequestByTagMutationOptions() {
         const details = isApiError(err) ? err.details : undefined;
         gate.handleError(
           err,
-          match(
-            FriendPolicy.getFriendLimitDialog(
-              details,
-              getCachedInviteAvailability(queryClient),
-              knownLimit,
-            ),
-          )
-            .with({ type: 'invite' }, ({ limit }) => ({
-              description: t('invite:entry.friendLimitDescription', {
-                limit,
-                activeDays: InvitedFriendPolicy.getRequiredActiveDays(),
-              }),
-              alternativeAction: {
-                label: t('invite:entry.growFriendLimit'),
-                onPress: () => openMyInvite('friend_limit_dialog'),
-              },
-            }))
+          match(FriendPolicy.getFriendLimitDialog(details, friendLimitInvite != null, knownLimit))
+            .with({ type: 'invite' }, ({ limit }) =>
+              friendLimitInvite == null
+                ? {}
+                : {
+                    description: friendLimitInvite.getDescription(limit),
+                    alternativeAction: {
+                      label: friendLimitInvite.actionLabel,
+                      onPress: friendLimitInvite.open,
+                    },
+                  },
+            )
             .with({ type: 'subscribe' }, () => ({}))
             .exhaustive(),
         );
