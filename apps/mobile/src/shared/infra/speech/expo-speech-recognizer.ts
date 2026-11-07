@@ -152,7 +152,7 @@ function toRecognitionOptions({
     .exhaustive();
 }
 
-export const expoSpeechRecognizerGateway: SpeechRecognizer = {
+export const expoSpeechRecognizer: SpeechRecognizer = {
   getPermission: async (mode, locale) => {
     const isMicrophoneOnly = await usesMicrophoneOnlyPermission(mode, locale);
 

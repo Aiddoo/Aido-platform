@@ -1,6 +1,6 @@
 import { Directory, File } from 'expo-file-system';
 
-import { expoLocalFileSystemGateway } from './expo-local-file-system.gateway';
+import { expoLocalFileSystem } from './expo-local-file-system';
 
 const mockCreate = jest.fn();
 const mockList = jest.fn();
@@ -36,7 +36,7 @@ function createFile(fields: { name: string; size: number; modificationTime: numb
   return Object.assign(new File(`file:///documents/${fields.name}`), fields);
 }
 
-describe('expoLocalFileSystemGateway', () => {
+describe('expoLocalFileSystem', () => {
   beforeEach(() => {
     mockList.mockReset();
   });
@@ -46,7 +46,7 @@ describe('expoLocalFileSystemGateway', () => {
     const directory = ['voice-notes', 'user-1'];
 
     // When
-    const uri = expoLocalFileSystemGateway.ensureDirectory(directory);
+    const uri = expoLocalFileSystem.ensureDirectory(directory);
 
     // Then
     expect(uri).toBe('file:///documents/voice-notes/user-1');
@@ -62,7 +62,7 @@ describe('expoLocalFileSystemGateway', () => {
     ]);
 
     // When
-    const files = expoLocalFileSystemGateway.listFiles(['voice-notes']);
+    const files = expoLocalFileSystem.listFiles(['voice-notes']);
 
     // Then
     expect(files).toEqual([

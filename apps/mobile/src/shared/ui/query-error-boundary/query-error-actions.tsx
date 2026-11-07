@@ -2,8 +2,8 @@ import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { t, useTranslation } from '@src/shared/i18n';
-import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
-import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-linking.gateway';
+import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
+import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { buildSupportMailUrl, createDiagnosticCode } from '@src/shared/utils/support-mail';
 import { router } from 'expo-router';
@@ -34,7 +34,7 @@ function openBugReportInquiry() {
 export function openSupportMail() {
   const code = createDiagnosticCode({
     platform: process.env.EXPO_OS,
-    appVersion: expoApplicationMetadataGateway.getInstallation()?.currentVersion ?? null,
+    appVersion: expoNativeApplicationMetadataGateway.getInstallation()?.currentVersion ?? null,
     occurredAt: getNowInstant(),
   });
   const url = buildSupportMailUrl({

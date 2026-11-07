@@ -69,18 +69,18 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
-import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
-import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
-import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
-import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer.gateway';
-import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
-import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id.gateway';
-import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
+import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon-gateway';
+import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store-gateway';
+import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer-gateway';
+import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id-gateway';
+import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
+import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id-gateway';
+import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard-gateway';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
-import { expoLocalFileSystemGateway } from '@src/shared/infra/file-system/expo-local-file-system.gateway';
-import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics.gateway';
+import { expoLocalFileSystem } from '@src/shared/infra/file-system/expo-local-file-system';
+import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics-gateway';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
@@ -88,26 +88,24 @@ import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { createRefreshTokensRequest } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
-import { createKakaoShareGateway } from '@src/shared/infra/kakao/kakao-share.gateway';
-import {
-  expoExternalLinkGateway,
-  expoIncomingLinkGateway,
-} from '@src/shared/infra/linking/expo-linking.gateway';
+import { createKakaoSocialShareGateway } from '@src/shared/infra/kakao/kakao-social-share-gateway';
+import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
+import { expoIncomingLinkGateway } from '@src/shared/infra/linking/expo-incoming-link-gateway';
 import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
-import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
+import { expoLocationGateway } from '@src/shared/infra/location/expo-location-gateway';
 import {
   createCompositeLogger,
   createConsoleLogger,
   createSentryLogger,
   setGlobalLogger,
 } from '@src/shared/infra/logger';
-import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status.gateway';
-import { expoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification.gateway';
+import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status-gateway';
+import { expoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { createEnvironmentAnalytics } from '@src/shared/infra/observability/observability-env';
-import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases.gateway';
-import { systemShareGateway } from '@src/shared/infra/share/system-share.gateway';
-import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
-import { expoSpeechRecognizerGateway } from '@src/shared/infra/speech/expo-speech-recognizer.gateway';
+import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases-gateway';
+import { expoSystemShareGateway } from '@src/shared/infra/share/expo-system-share-gateway';
+import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth-gateway';
+import { expoSpeechRecognizer } from '@src/shared/infra/speech/expo-speech-recognizer';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { secureDeviceIdStore } from '@src/shared/infra/storage/secure-device-id-store';
@@ -174,7 +172,7 @@ export function DIProvider({
       }
     }
 
-    const installation = expoApplicationMetadataGateway.getInstallation();
+    const installation = expoNativeApplicationMetadataGateway.getInstallation();
     const appVersion = installation?.currentVersion ?? ENV.APP_VERSION;
     const appBuild = installation?.currentBuild;
     const publicKyInstance = createPublicClient({ appVersion, appBuild });
@@ -243,8 +241,8 @@ export function DIProvider({
       logger,
     });
     const inviteShareService = new InviteShareService({
-      socialShare: createKakaoShareGateway(ENV.KAKAO_NATIVE_APP_KEY),
-      systemShare: systemShareGateway,
+      socialShare: createKakaoSocialShareGateway(ENV.KAKAO_NATIVE_APP_KEY),
+      systemShare: expoSystemShareGateway,
       clipboard: expoClipboardGateway,
       errorReporter,
     });
@@ -333,10 +331,7 @@ export function DIProvider({
       logger,
       getTimeZone: getDeviceTimezone,
     });
-    const voiceRecordingRepository = createVoiceRecordingRepository(
-      expoLocalFileSystemGateway,
-      logger,
-    );
+    const voiceRecordingRepository = createVoiceRecordingRepository(expoLocalFileSystem, logger);
     const voiceNoteStorageService = new VoiceNoteStorageService(
       voiceNoteDraftRepository,
       voiceRecordingRepository,
@@ -366,7 +361,7 @@ export function DIProvider({
       errorReporter,
       haptics: expoHapticsGateway,
       idGenerator: expoIdGenerator,
-      speechRecognizer: expoSpeechRecognizerGateway,
+      speechRecognizer: expoSpeechRecognizer,
       purchasesGateway: revenueCatPurchasesGateway,
       pushNotificationGateway: expoPushNotificationGateway,
       tokenStore,
@@ -432,11 +427,11 @@ export function DIProvider({
       weatherIntroductionRepository: createWeatherIntroductionRepository(deviceSyncStorage),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
-      applicationMetadata: expoApplicationMetadataGateway,
+      applicationMetadata: expoNativeApplicationMetadataGateway,
       socialAuthGateway: expoSocialAuthGateway,
       appStoreListing: expoAppStoreGateway,
       externalLink: expoExternalLinkGateway,
-      systemShare: systemShareGateway,
+      systemShare: expoSystemShareGateway,
       incomingLink: expoIncomingLinkGateway,
       syncStorage: deviceSyncStorage,
       networkStatus: expoNetworkStatusGateway,

@@ -2,7 +2,7 @@ import { ENV } from '@src/shared/config/env';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 
-import { expoSocialAuthGateway } from './expo-social-auth.gateway';
+import { expoSocialAuthGateway } from './expo-social-auth-gateway';
 
 jest.mock('expo-web-browser', () => ({
   WebBrowserResultType: {

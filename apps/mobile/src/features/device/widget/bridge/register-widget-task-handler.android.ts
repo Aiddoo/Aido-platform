@@ -1,6 +1,6 @@
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
-import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-linking.gateway';
+import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { initErrorReporting } from '@src/shared/infra/observability/error-reporting';
 import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { AppState } from 'react-native';

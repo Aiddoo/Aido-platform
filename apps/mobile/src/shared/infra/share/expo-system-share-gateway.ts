@@ -2,7 +2,7 @@ import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 import * as Sharing from 'expo-sharing';
 import { Share } from 'react-native';
 
-export const systemShareGateway: SystemShareGateway = {
+export const expoSystemShareGateway: SystemShareGateway = {
   async share({ message, url, dialogTitle }) {
     // iOS는 url을 따로 받아 미리보기를 만들고, Android는 url을 무시해서 본문 다음 줄에 붙인다
     const result = await Share.share(

@@ -1,13 +1,13 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
-import { expoApplicationMetadataGateway } from './expo-application-metadata.gateway';
+import { expoNativeApplicationMetadataGateway } from './expo-native-application-metadata-gateway';
 
 jest.mock('expo-application', () => ({
   nativeApplicationVersion: '1.10.0',
   nativeBuildVersion: '123',
 }));
 
-describe('expoApplicationMetadataGateway (Android)', () => {
+describe('expoNativeApplicationMetadataGateway (Android)', () => {
   const originalEnvironment = Constants.executionEnvironment;
 
   afterEach(() => {
@@ -22,7 +22,7 @@ describe('expoApplicationMetadataGateway (Android)', () => {
       configurable: true,
       value: ExecutionEnvironment.Standalone,
     });
-    expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
+    expect(expoNativeApplicationMetadataGateway.getInstallation()).toEqual({
       platform: 'android',
       currentVersion: '1.10.0',
       currentBuild: '123',

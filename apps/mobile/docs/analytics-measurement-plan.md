@@ -147,7 +147,7 @@
 | `voice_plan_applied`            | `source` · `todo_count`·`memo_count`·`skipped_count`(int)                                                                                              | 저장. 핵심 전환                                                                                                         |
 | `voice_note_key_point_played`   | `position_bucket`                                                                                                                                      | 핵심 포인트를 눌러 그 지점부터 들음                                                                                     |
 
-`on_device` 값은 `expo-speech-recognizer.gateway.ts`의 `shouldRecognizeOnDevice`가 정한다.
+`on_device` 값은 `expo-speech-recognizer.ts`의 `shouldRecognizeOnDevice`가 정한다.
 
 | 플랫폼·모드       | 값                                                 | 이유                                                                                                                      |
 | ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |

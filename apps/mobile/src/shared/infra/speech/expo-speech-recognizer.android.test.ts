@@ -1,6 +1,6 @@
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 
-import { expoSpeechRecognizerGateway } from './expo-speech-recognizer.gateway';
+import { expoSpeechRecognizer } from './expo-speech-recognizer';
 
 jest.mock('expo-speech-recognition', () => ({
   ExpoSpeechRecognitionModule: {
@@ -13,7 +13,7 @@ jest.mock('expo-speech-recognition', () => ({
 
 const nativeModule = jest.mocked(ExpoSpeechRecognitionModule);
 
-describe('expoSpeechRecognizerGateway (Android)', () => {
+describe('expoSpeechRecognizer (Android)', () => {
   test('설치된 언어 모델로 기기 인식을 판단하고 없으면 받기를 제안한다', async () => {
     // Given
     nativeModule.getSupportedLocales.mockResolvedValueOnce({
@@ -22,7 +22,7 @@ describe('expoSpeechRecognizerGateway (Android)', () => {
     });
 
     // When
-    const capabilities = await expoSpeechRecognizerGateway.getCapabilities('ko-KR', 'note');
+    const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'note');
 
     // Then
     expect(capabilities.canRecognizeOnDevice).toBe(false);

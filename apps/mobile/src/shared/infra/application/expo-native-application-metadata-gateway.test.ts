@@ -1,6 +1,6 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
-import { expoApplicationMetadataGateway } from './expo-application-metadata.gateway';
+import { expoNativeApplicationMetadataGateway } from './expo-native-application-metadata-gateway';
 
 let mockNativeApplicationVersion: string | null = '1.10.0';
 let mockNativeBuildVersion: string | null = '123';
@@ -14,7 +14,7 @@ jest.mock('expo-application', () => ({
   },
 }));
 
-describe('expoApplicationMetadataGateway', () => {
+describe('expoNativeApplicationMetadataGateway', () => {
   const originalEnvironment = Constants.executionEnvironment;
   const originalExpoVersion = Constants.expoVersion;
 
@@ -44,11 +44,11 @@ describe('expoApplicationMetadataGateway', () => {
       configurable: true,
       value: ExecutionEnvironment.StoreClient,
     });
-    expect(expoApplicationMetadataGateway.getInstallation()).toBeUndefined();
+    expect(expoNativeApplicationMetadataGateway.getInstallation()).toBeUndefined();
   });
 
   it('expoVersion이 없는 SDK58 개발 빌드의 네이티브 버전을 읽는다', () => {
-    expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
+    expect(expoNativeApplicationMetadataGateway.getInstallation()).toEqual({
       platform: 'ios',
       currentVersion: '1.10.0',
       currentBuild: '123',
@@ -58,7 +58,7 @@ describe('expoApplicationMetadataGateway', () => {
   it('설치 버전을 알 수 없을 때 package 또는 OTA 버전으로 대체하지 않는다', () => {
     mockNativeApplicationVersion = null;
     mockNativeBuildVersion = null;
-    expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
+    expect(expoNativeApplicationMetadataGateway.getInstallation()).toEqual({
       platform: 'ios',
       currentVersion: undefined,
       currentBuild: undefined,

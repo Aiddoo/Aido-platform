@@ -16,7 +16,7 @@ function toEntry(file: File): LocalFileEntry {
   };
 }
 
-export const expoLocalFileSystemGateway: LocalFileSystem = {
+export const expoLocalFileSystem: LocalFileSystem = {
   ensureDirectory: (directory) => {
     const target = openDirectory(directory);
     target.create({ intermediates: true, idempotent: true });

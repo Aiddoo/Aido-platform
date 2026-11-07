@@ -9,7 +9,7 @@ import { useRegisterMarketingNotificationCategory } from '@src/features/notifica
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import type { NotificationType } from '@src/features/notification/schemas/notification.schema';
-import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification.gateway';
+import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';

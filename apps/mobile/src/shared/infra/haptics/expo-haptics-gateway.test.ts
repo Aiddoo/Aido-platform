@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 
-import { expoHapticsGateway } from './expo-haptics.gateway';
+import { expoHapticsGateway } from './expo-haptics-gateway';
 
 jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' },

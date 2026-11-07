@@ -993,16 +993,16 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 | `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/encrypted-draft-storage.ts`             |
 | `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                 | `storage/device-sync-storage.ts`                 |
 | `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/encrypted-draft-storage.ts`             |
-| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard.gateway.ts`            |
-| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `linking/expo-linking.gateway.ts`                |
-| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `linking/expo-linking.gateway.ts`                |
-| `SystemShareGateway`      | `share`·`canShareImage`·`shareImage`                                        | `share/system-share.gateway.ts`                  |
-| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location.gateway.ts`              |
-| `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases.gateway.ts`      |
-| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                       | `speech/expo-speech-recognizer.gateway.ts`       |
-| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken` 등                           | `notification/expo-push-notification.gateway.ts` |
-| `HapticsGateway`          | `selection`·`impact`·`notify`                                               | `haptics/expo-haptics.gateway.ts`                |
-| `NetworkStatusGateway`    | `subscribe`                                                                 | `network/expo-network-status.gateway.ts`         |
+| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard-gateway.ts`            |
+| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `X                                               |
+| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `X                                               |
+| `SystemShareGateway`      | `share`·`canShareImage`·`shareImage`                                        | `share/expo-system-share-gateway.ts`             |
+| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location-gateway.ts`              |
+| `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases-gateway.ts`      |
+| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                       | `speech/expo-speech-recognizer.ts`               |
+| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken` 등                           | `notification/expo-push-notification-gateway.ts` |
+| `HapticsGateway`          | `selection`·`impact`·`notify`                                               | `haptics/expo-haptics-gateway.ts`                |
+| `NetworkStatusGateway`    | `subscribe`                                                                 | `network/expo-network-status-gateway.ts`         |
 | `IdGenerator`             | `create`                                                                    | `id-generator/expo-id-generator.ts`              |
 | `Logger`                  | `debug`·`info`·`warn`·`error`                                               | `logger/`                                        |
 | `Analytics`               | `trackEvent`·`trackScreenView` 등                                           | `analytics/`                                     |
@@ -1031,7 +1031,7 @@ export interface ClipboardGateway {
   copy(text: string): Promise<void>;
 }
 
-// shared/infra/clipboard/expo-clipboard.gateway.ts
+// shared/infra/clipboard/expo-clipboard-gateway.ts
 import * as Clipboard from 'expo-clipboard';
 
 export const expoClipboardGateway: ClipboardGateway = {

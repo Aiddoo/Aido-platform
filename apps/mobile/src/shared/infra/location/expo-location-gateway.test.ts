@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 
-import { expoLocationGateway } from './expo-location.gateway';
+import { expoLocationGateway } from './expo-location-gateway';
 
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },

@@ -529,7 +529,7 @@ test('feature의 useAnalytics 직접 사용을 거부하고 bootstrap은 통과�
 test('shared/infra와 테스트의 SDK import는 통과한다', () => {
   withFixture(
     {
-      'apps/mobile/src/shared/infra/clipboard/expo-clipboard.gateway.ts': `
+      'apps/mobile/src/shared/infra/clipboard/expo-clipboard-gateway.ts': `
         import * as Clipboard from 'expo-clipboard';
       `,
       'apps/mobile/src/shared/infra/audio/use-audio-part-playlist.ts': `
@@ -941,7 +941,7 @@ test('어댑터 밖 테스트의 모듈 jest.mock을 앱 모듈과 SDK 모두 �
 test('어댑터 테스트는 SDK를 mock할 수 있고 앱 모듈은 mock할 수 없다', () => {
   withFixture(
     {
-      'apps/mobile/src/shared/infra/haptics/expo-haptics.gateway.test.ts': `
+      'apps/mobile/src/shared/infra/haptics/expo-haptics-gateway.test.ts': `
         jest.mock('expo-haptics', () => ({}));
       `,
       'apps/mobile/src/shared/infra/logger/sentry-logger.test.ts': `

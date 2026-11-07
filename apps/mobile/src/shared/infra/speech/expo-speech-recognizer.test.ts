@@ -2,7 +2,7 @@ import type { SpeechEvent, SpeechStartOptions } from '@src/core/ports/speech-rec
 import { PermissionStatus, type PermissionResponse } from 'expo';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 
-import { expoSpeechRecognizerGateway } from './expo-speech-recognizer.gateway';
+import { expoSpeechRecognizer } from './expo-speech-recognizer';
 
 type NativeListener = (event: unknown) => void;
 
@@ -61,7 +61,7 @@ function emitNative(eventName: string, event: unknown) {
   mockNativeListeners.get(eventName)?.(event);
 }
 
-describe('expoSpeechRecognizerGateway', () => {
+describe('expoSpeechRecognizer', () => {
   afterEach(() => {
     mockNativeListeners.clear();
     jest.clearAllMocks();
@@ -70,7 +70,7 @@ describe('expoSpeechRecognizerGateway', () => {
 
   test('받아쓰기는 지금처럼 한 번 말하면 끝나고 음량·녹음 옵션을 켜지 않는다', () => {
     // When
-    expoSpeechRecognizerGateway.start(START_OPTIONS);
+    expoSpeechRecognizer.start(START_OPTIONS);
 
     // Then
     const [options] = nativeModule.start.mock.calls[0] ?? [];
@@ -87,7 +87,7 @@ describe('expoSpeechRecognizerGateway', () => {
 
   test('긴 녹음은 기기 안에서 이어 듣고 문장부호·고유명사·16kHz 녹음 파일을 쓴다', () => {
     // When
-    expoSpeechRecognizerGateway.start({
+    expoSpeechRecognizer.start({
       ...START_OPTIONS,
       mode: 'note',
       hintWords: ['기획팀', '민지'],
@@ -119,7 +119,7 @@ describe('expoSpeechRecognizerGateway', () => {
   test('글자 없이 닫힌 구간은 세션 끝과 나눠 알린다', () => {
     // Given
     const events: SpeechEvent[] = [];
-    expoSpeechRecognizerGateway.subscribe((event) => events.push(event));
+    expoSpeechRecognizer.subscribe((event) => events.push(event));
 
     // When
     emitNative('nomatch', {});
@@ -131,7 +131,7 @@ describe('expoSpeechRecognizerGateway', () => {
   test('음량은 SDK 범위(-2..10)를 0..1로 바꾸고 범위 밖 값은 자른다', () => {
     // Given
     const events: SpeechEvent[] = [];
-    expoSpeechRecognizerGateway.subscribe((event) => events.push(event));
+    expoSpeechRecognizer.subscribe((event) => events.push(event));
 
     // When
     for (const value of [-2, 4, 10, 15]) {
@@ -150,7 +150,7 @@ describe('expoSpeechRecognizerGateway', () => {
   test('결과는 가장 그럴듯한 문장과 단어 구간을 앱 모양으로 넘긴다', () => {
     // Given
     const events: SpeechEvent[] = [];
-    expoSpeechRecognizerGateway.subscribe((event) => events.push(event));
+    expoSpeechRecognizer.subscribe((event) => events.push(event));
 
     // When
     emitNative('result', {
@@ -177,7 +177,7 @@ describe('expoSpeechRecognizerGateway', () => {
 
   test('구독을 끝내면 붙인 네이티브 리스너를 모두 뗀다', () => {
     // Given
-    const unsubscribe = expoSpeechRecognizerGateway.subscribe(jest.fn());
+    const unsubscribe = expoSpeechRecognizer.subscribe(jest.fn());
     const attachedCount = nativeModule.addListener.mock.calls.length;
 
     // When
@@ -190,7 +190,7 @@ describe('expoSpeechRecognizerGateway', () => {
   test('녹음 파일을 쓰기 시작하면 파일 주소를 알린다', () => {
     // Given
     const events: SpeechEvent[] = [];
-    expoSpeechRecognizerGateway.subscribe((event) => events.push(event));
+    expoSpeechRecognizer.subscribe((event) => events.push(event));
 
     // When
     emitNative('audiostart', { uri: 'file:///recording_a.wav', timestamp: 1 });
@@ -203,8 +203,8 @@ describe('expoSpeechRecognizerGateway', () => {
   describe('iOS 언어별 기능 확인', () => {
     test('기기 기본 언어는 기기 인식으로 보고 마이크 권한만 묻는다', async () => {
       // When
-      const capabilities = await expoSpeechRecognizerGateway.getCapabilities('ko-KR', 'note');
-      await expoSpeechRecognizerGateway.requestPermission('note', 'ko-KR');
+      const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'note');
+      await expoSpeechRecognizer.requestPermission('note', 'ko-KR');
 
       // Then
       expect(capabilities.canRecognizeOnDevice).toBe(true);
@@ -214,8 +214,8 @@ describe('expoSpeechRecognizerGateway', () => {
 
     test('빠른 말하기는 기기 기본 언어여도 서버 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
       // When
-      const capabilities = await expoSpeechRecognizerGateway.getCapabilities('ko-KR', 'quick');
-      await expoSpeechRecognizerGateway.requestPermission('quick', 'ko-KR');
+      const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'quick');
+      await expoSpeechRecognizer.requestPermission('quick', 'ko-KR');
 
       // Then
       expect(capabilities.canRecognizeOnDevice).toBe(false);
@@ -225,8 +225,8 @@ describe('expoSpeechRecognizerGateway', () => {
 
     test('기기 기본 언어가 아니면 네트워크 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
       // When
-      const capabilities = await expoSpeechRecognizerGateway.getCapabilities('en-US', 'note');
-      await expoSpeechRecognizerGateway.requestPermission('note', 'en-US');
+      const capabilities = await expoSpeechRecognizer.getCapabilities('en-US', 'note');
+      await expoSpeechRecognizer.requestPermission('note', 'en-US');
 
       // Then
       expect(capabilities.canRecognizeOnDevice).toBe(false);
@@ -237,7 +237,7 @@ describe('expoSpeechRecognizerGateway', () => {
 
     test('받아쓰기는 언어와 상관없이 음성 인식 권한까지 묻는다', async () => {
       // When
-      await expoSpeechRecognizerGateway.getPermission('dictation', 'ko-KR');
+      await expoSpeechRecognizer.getPermission('dictation', 'ko-KR');
 
       // Then
       expect(nativeModule.getPermissionsAsync).toHaveBeenCalledTimes(1);
@@ -279,7 +279,7 @@ describe('expoSpeechRecognizerGateway', () => {
         );
 
         // When
-        const permission = await expoSpeechRecognizerGateway.getPermission('dictation', 'ko-KR');
+        const permission = await expoSpeechRecognizer.getPermission('dictation', 'ko-KR');
 
         // Then
         expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing });
@@ -293,7 +293,7 @@ describe('expoSpeechRecognizerGateway', () => {
       );
 
       // When
-      const permission = await expoSpeechRecognizerGateway.getPermission('note', 'ko-KR');
+      const permission = await expoSpeechRecognizer.getPermission('note', 'ko-KR');
 
       // Then
       expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing: 'microphone' });

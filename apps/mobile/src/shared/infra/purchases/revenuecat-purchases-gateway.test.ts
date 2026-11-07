@@ -4,7 +4,7 @@ import Purchases, { PURCHASES_ERROR_CODE } from 'react-native-purchases';
 import {
   revenueCatPurchasesGateway,
   toPurchasesGatewayError,
-} from './revenuecat-purchases.gateway';
+} from './revenuecat-purchases-gateway';
 
 const mockLogOut = jest.fn(async () => undefined);
 

@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import {
   expoPushNotificationGateway,
   PUSH_TOKEN_ISSUE_TIMEOUT_MS,
-} from './expo-push-notification.gateway';
+} from './expo-push-notification-gateway';
 
 jest.mock('expo-notifications', () => ({
   IosAuthorizationStatus: {
