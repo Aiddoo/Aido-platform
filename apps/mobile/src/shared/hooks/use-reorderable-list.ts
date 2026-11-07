@@ -9,6 +9,14 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { getReorderInstruction, type ReorderInstruction } from '../utils/get-reorder-instruction';
 
+/**
+ * 행이 끌기를 여는 길게 누르기(Pressable 기본 500ms)보다 조금 늦게 끌기 제스처를 켠다.
+ * 바로 켜면 Android에서 행 위에서 시작한 스와이프를 끌기가 가져가 바깥 스크롤과 당겨서 새로고침이 멈춘다.
+ * 라이브러리 문서의 Refresh Control 항목이 권하는 값이다. 문서가 권하는 `panGesture`는 이 라이브러리 타입이
+ * gesture-handler 2의 `PanGesture`라 3의 `Gesture.Pan()`과 맞지 않아, 같은 일을 하는 `panActivateAfterLongPress`를 쓴다
+ */
+const DRAG_ACTIVATION_DELAY_MS = 520;
+
 interface ReorderedList<TItem, TId> {
   instruction: ReorderInstruction<TId>;
   items: TItem[];
@@ -74,6 +82,7 @@ export function useReorderableList<TItem, TId>({
 
   return {
     data,
+    panActivateAfterLongPress: DRAG_ACTIVATION_DELAY_MS,
     dragEnabled: !isPending,
     onReorder: handleReorder,
     onDragStart: () => {
