@@ -67,6 +67,9 @@ interface KeyboardBottomSheetProps {
   onDismissRequest?: () => void;
 }
 
+/** 열려 있는 시트 수. 키보드 컨트롤러는 전역이라 마지막으로 닫히는 시트만 다시 켠다 */
+let openSheetCount = 0;
+
 /**
  * 키보드 연동 BottomSheet. 바깥은 HeroUI Root·Portal이고 주변 Context는 시트 안에 둔다.
  *
@@ -180,8 +183,17 @@ export function KeyboardBottomSheet({
   );
 
   useLayoutEffect(() => {
-    setEnabled(!isOpen);
-    return () => setEnabled(true);
+    if (!isOpen) {
+      return;
+    }
+    openSheetCount += 1;
+    setEnabled(false);
+    return () => {
+      openSheetCount -= 1;
+      if (openSheetCount === 0) {
+        setEnabled(true);
+      }
+    };
   }, [isOpen, setEnabled]);
 
   useEffect(() => {

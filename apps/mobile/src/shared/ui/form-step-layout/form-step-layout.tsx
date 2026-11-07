@@ -28,7 +28,11 @@ export function FormStepLayout({
       bottomOffset={KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET}
       style={[{ flex: 1 }, style]}
       contentContainerStyle={[
-        { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 },
+        {
+          paddingHorizontal: 16,
+          paddingTop: 24,
+          paddingBottom: KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET,
+        },
         contentContainerStyle,
       ]}
       keyboardShouldPersistTaps="handled"

@@ -19,10 +19,10 @@ export const buttonVariants = tv({
 
   variants: {
     size: {
-      small: 'h-8 px-3 text-e1',
-      medium: 'h-10 px-4 text-b4',
-      large: 'h-12 px-5 text-b2',
-      xlarge: 'h-14 px-6 text-b1',
+      small: 'h-8 px-3',
+      medium: 'h-10 px-4',
+      large: 'h-12 px-5',
+      xlarge: 'h-14 px-6',
     },
     radius: {
       sm: 'rounded-md',

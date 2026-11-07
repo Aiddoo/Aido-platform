@@ -12,6 +12,11 @@ import { VStack } from '../v-stack';
 
 const HINT_MAX_WIDTH = 300;
 const HINT_SCREEN_INSET = 12;
+const CLOSE_BUTTON_SIZE = 20;
+const CLOSE_ICON_SIZE = 16;
+/** 닫기 버튼은 작게 그리고 손가락 닿는 자리를 넓힌다 */
+const CLOSE_HIT_SLOP = 14;
+const TITLE_ICON_SIZE = 18;
 /** `Popover.Content`의 기본 간격과 같다 */
 export const HINT_OFFSET = 9;
 
@@ -115,7 +120,7 @@ export function HintPopoverContent({
     bottomInset,
     offset,
   });
-  const closeSize = fontScaledSize(20);
+  const closeSize = fontScaledSize(CLOSE_BUTTON_SIZE);
   const descriptionText = description != null && (
     <Text
       size="b4"
@@ -129,14 +134,14 @@ export function HintPopoverContent({
   const closeButton = (
     <Popover.Close
       variant="ghost"
-      hitSlop={14}
+      hitSlop={CLOSE_HIT_SLOP}
       style={{ width: closeSize, height: closeSize }}
       accessibilityLabel={t('actions.close')}
       testID="hint-popover-close"
     >
       <CloseIcon
-        width={fontScaledSize(16)}
-        height={fontScaledSize(16)}
+        width={fontScaledSize(CLOSE_ICON_SIZE)}
+        height={fontScaledSize(CLOSE_ICON_SIZE)}
         colorClassName="text-gray-6"
       />
     </Popover.Close>
@@ -178,8 +183,8 @@ export function HintPopoverContent({
               <HStack gap={4} align="start">
                 {Icon != null && (
                   <Icon
-                    width={fontScaledSize(18)}
-                    height={fontScaledSize(18)}
+                    width={fontScaledSize(TITLE_ICON_SIZE)}
+                    height={fontScaledSize(TITLE_ICON_SIZE)}
                     colorClassName="text-main"
                   />
                 )}

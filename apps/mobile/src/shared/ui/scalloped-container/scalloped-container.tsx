@@ -22,9 +22,14 @@ export function ScallopedContainer({ children }: ScallopedContainerProps) {
 
   return (
     <Box onLayout={onLayout}>
-      {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}
+      {/* 폭을 재기 전에도 물결 자리를 잡아 첫 프레임 뒤에 내용이 밀리지 않게 한다 */}
+      <Box style={{ height: SCALLOP_RADIUS }}>
+        {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}
+      </Box>
       <Box style={{ backgroundColor: fill }}>{children}</Box>
-      {width > 0 && <ScallopEdge width={width} position="bottom" fill={fill} />}
+      <Box style={{ height: SCALLOP_RADIUS }}>
+        {width > 0 && <ScallopEdge width={width} position="bottom" fill={fill} />}
+      </Box>
     </Box>
   );
 }

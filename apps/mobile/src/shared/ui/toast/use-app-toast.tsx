@@ -1,7 +1,7 @@
 import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useToast } from 'heroui-native';
-import { type ReactNode, useCallback } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 
 import { AppToast, type AppToastAction, type AppToastVariant } from './app-toast';
 
@@ -18,7 +18,7 @@ export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
 }
 
 /** 문자열은 그대로, Error는 사용자 문구일 때만 쓴다. 파싱 오류 등은 폴백 문구로 바꾼다. */
-function getErrorMessage(
+function getToastErrorMessage(
   input: string | Error | undefined,
   fallback = t('common:toast.defaultError'),
 ): string {
@@ -86,7 +86,7 @@ export function useAppToast() {
 
   const error = useCallback(
     (labelOrError: string | Error | undefined, options?: ErrorToastOptions) => {
-      const message = getErrorMessage(labelOrError, options?.fallback);
+      const message = getToastErrorMessage(labelOrError, options?.fallback);
       toast(message, { ...options, variant: 'danger' });
     },
     [toast],
@@ -96,11 +96,8 @@ export function useAppToast() {
     heroUIToast.hide();
   }, [heroUIToast]);
 
-  return {
-    toast,
-    success,
-    warning,
-    error,
-    hide,
-  };
+  return useMemo(
+    () => ({ toast, success, warning, error, hide }),
+    [toast, success, warning, error, hide],
+  );
 }
