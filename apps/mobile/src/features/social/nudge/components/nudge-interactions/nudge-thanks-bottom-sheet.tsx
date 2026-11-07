@@ -1,5 +1,6 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -185,7 +186,10 @@ NudgeThanksBottomSheet.Error = function ErrorFallback({
   return (
     <VStack py={24}>
       <Result
-        title={hasChanged ? error.message : t('todo:interaction.thanksLoadError')}
+        title={
+          (hasChanged ? getUserFacingMessage(error) : undefined) ??
+          t('todo:interaction.thanksLoadError')
+        }
         button={
           <Result.Button onPress={hasChanged ? onClose : reset}>
             {t(hasChanged ? 'common:actions.close' : 'common:actions.retry')}
@@ -200,7 +204,7 @@ NudgeThanksBottomSheet.Loading = function Loading() {
   return (
     <VStack gap={20}>
       <TextSkeleton size="b3" className="w-full" />
-      <Box style={{ height: 72 }}>
+      <Box style={{ height: LIST_MIN_HEIGHT }}>
         <HStack align="center" gap={12} py={12}>
           <Skeleton className="size-10 rounded-full" />
           <TextSkeleton size="b3" className="w-24" />

@@ -18,6 +18,7 @@ import type {
   ReplyToNudgeInput,
   SendNudgeThanksInput,
 } from '../schemas/nudge-request.schema';
+import { invalidateNudgeInteractions } from './nudge-cache';
 
 export function useReplyToNudgeMutationOptions() {
   const haptics = useHaptics();
@@ -30,17 +31,17 @@ export function useReplyToNudgeMutationOptions() {
   return mutationOptions({
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
       unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
-    onSuccess: async (data, variables) => {
+    onSuccess: (data, variables) => {
       trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
       queryClient.setQueryData(NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }), data);
       emitNotificationsChanged();
-      await queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
+      invalidateNudgeInteractions(queryClient);
     },
     onError: (error) => {
       reportUnexpectedError(error);
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
+      invalidateNudgeInteractions(queryClient);
     },
   });
 }
@@ -56,18 +57,18 @@ export function useSendNudgeThanksMutationOptions() {
   return mutationOptions({
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
       unwrap(await todoNudgeService.sendThanks(todoId, input)),
-    onSuccess: async (recipientCount) => {
+    onSuccess: (recipientCount) => {
       if (recipientCount > 0) {
         trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
       }
       emitNotificationsChanged();
-      await queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
+      invalidateNudgeInteractions(queryClient);
     },
     onError: (error, { todoId }) => {
       reportUnexpectedError(error);
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
+      invalidateNudgeInteractions(queryClient);
       if (isNudgeTodoChangedError(error)) {
         invalidateTodoDetails(queryClient, { todoId });
       }
@@ -81,6 +82,7 @@ export function useSendRemindNudgeMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
 
   return mutationOptions({
     // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
@@ -96,6 +98,7 @@ export function useSendRemindNudgeMutationOptions() {
       trackEvent('remind_nudge_sent');
     },
     onError: (error) => {
+      reportUnexpectedError(error);
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
     },
@@ -109,6 +112,7 @@ export function useSendTodoNudgeMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
+  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
 
   return mutationOptions({
     networkMode: 'always',
@@ -121,12 +125,12 @@ export function useSendTodoNudgeMutationOptions() {
       trackEvent('nudge_sent');
     },
     onError: (error) => {
+      reportUnexpectedError(error);
+      haptics.notify('error');
       if (gate.promptIfBlockedError(error)) {
-        haptics.notify('error');
         return;
       }
 
-      haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
     },
   });

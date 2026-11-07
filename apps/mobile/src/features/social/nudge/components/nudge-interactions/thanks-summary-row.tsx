@@ -3,6 +3,7 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -21,7 +22,6 @@ import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useRef } from 'react';
 import Animated, {
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withSequence,
   withSpring,
@@ -176,7 +176,7 @@ ThanksSummaryRow.Error = function ErrorFallback({ reset, onInquiry }: ThanksSumm
 
 function useThanksCelebration(thankedRecipientCount: number) {
   const haptics = useHaptics();
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const scale = useSharedValue(1);
   const previousCount = useRef(thankedRecipientCount);
 
