@@ -987,6 +987,37 @@ test('Chip.Label을 거부하고 자식 Text는 허용한다', () => {
   );
 });
 
+test('Tabs.Label의 날글자를 거부하고 자식 Text는 허용한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/planning/category/components/bad-tab.tsx': `
+        import { Tabs } from 'heroui-native';
+        export function BadTab({ label }: { label: string }) {
+          return <Tabs.Trigger value="a"><Tabs.Label numberOfLines={1}>{label}</Tabs.Label></Tabs.Trigger>;
+        }
+      `,
+      'apps/mobile/src/features/planning/category/components/bad-literal-tab.tsx': `
+        import { Tabs } from 'heroui-native';
+        export function BadLiteralTab() {
+          return <Tabs.Trigger value="a"><Tabs.Label>글자</Tabs.Label></Tabs.Trigger>;
+        }
+      `,
+      'apps/mobile/src/features/planning/category/components/good-tab.tsx': `
+        import { Tabs } from 'heroui-native';
+        import { Text } from '@src/shared/ui';
+        export function GoodTab() {
+          return <Tabs.Trigger value="a"><Tabs.Label><Text size="b4">글자</Text></Tabs.Label></Tabs.Trigger>;
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /bad-tab\.tsx/u);
+      assert.match(errors.join('\n'), /bad-literal-tab\.tsx/u);
+    },
+  );
+});
+
 test('폼 모양을 어긴 import와 변수와 useForm 제네릭을 거부한다', () => {
   withFixture(
     {

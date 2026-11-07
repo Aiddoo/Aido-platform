@@ -11,6 +11,7 @@ import {
   QueryErrorBoundary,
   READABLE_CONTENT_MAX_WIDTH,
   ScreenScrollShadow,
+  SegmentTabTrigger,
   Text,
   VStack,
   WordWrapText,
@@ -168,19 +169,32 @@ VoiceNoteResult.TabList = function TabList({
     >
       <Tabs.List>
         <Tabs.Indicator />
-        <Tabs.Trigger value="summary" testID="voice-note-tab-summary">
-          <Tabs.Label numberOfLines={1}>{t('result.tabs.summary')}</Tabs.Label>
-        </Tabs.Trigger>
+        <SegmentTabTrigger
+          value="summary"
+          testID="voice-note-tab-summary"
+          size="b2"
+          numberOfLines={1}
+        >
+          {t('result.tabs.summary')}
+        </SegmentTabTrigger>
         {isCompact && (
-          <Tabs.Trigger value="todos" testID="voice-note-tab-todos">
-            <Tabs.Label numberOfLines={1}>
-              {t('result.tabs.todos', { amount: VoiceNotePolicy.getPlannedTodoCount(note) })}
-            </Tabs.Label>
-          </Tabs.Trigger>
+          <SegmentTabTrigger
+            value="todos"
+            testID="voice-note-tab-todos"
+            size="b2"
+            numberOfLines={1}
+          >
+            {t('result.tabs.todos', { amount: VoiceNotePolicy.getPlannedTodoCount(note) })}
+          </SegmentTabTrigger>
         )}
-        <Tabs.Trigger value="transcript" testID="voice-note-tab-transcript">
-          <Tabs.Label numberOfLines={1}>{t('result.tabs.transcript')}</Tabs.Label>
-        </Tabs.Trigger>
+        <SegmentTabTrigger
+          value="transcript"
+          testID="voice-note-tab-transcript"
+          size="b2"
+          numberOfLines={1}
+        >
+          {t('result.tabs.transcript')}
+        </SegmentTabTrigger>
       </Tabs.List>
     </Tabs>
   );

@@ -147,6 +147,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                   |
 | RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
 | `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                      |
+| `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                   |
 | 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                     |
 | 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                 |
 

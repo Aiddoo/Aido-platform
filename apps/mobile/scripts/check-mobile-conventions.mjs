@@ -1437,6 +1437,14 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       });
     }
 
+    if (isRawTextTabsLabel(node)) {
+      findings.push({
+        rule: 'tabs-label',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} Tabs.Label의 날글자는 앱 글꼴을 따르지 않습니다. SegmentTabTrigger, LineTabTrigger를 쓰거나 자식 <Text>로 넣으세요.`,
+      });
+    }
+
     if (isFormShapeViolation(node)) {
       findings.push({
         rule: 'form-shape',
@@ -1557,6 +1565,22 @@ function isChipLabelElement(node) {
     ts.isIdentifier(node.tagName.expression) &&
     node.tagName.expression.text === 'Chip' &&
     node.tagName.name.text === 'Label'
+  );
+}
+
+function isRawTextTabsLabel(node) {
+  if (
+    !ts.isJsxElement(node) ||
+    !ts.isPropertyAccessExpression(node.openingElement.tagName) ||
+    !ts.isIdentifier(node.openingElement.tagName.expression) ||
+    node.openingElement.tagName.expression.text !== 'Tabs' ||
+    node.openingElement.tagName.name.text !== 'Label'
+  ) {
+    return false;
+  }
+  return node.children.some(
+    (child) =>
+      ts.isJsxExpression(child) || (ts.isJsxText(child) && !child.containsOnlyTriviaWhiteSpaces),
   );
 }
 

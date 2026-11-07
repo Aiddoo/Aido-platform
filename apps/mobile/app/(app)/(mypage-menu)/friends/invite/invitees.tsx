@@ -13,6 +13,7 @@ import {
   Box,
   QueryErrorBoundary,
   ReadableContent,
+  SegmentTabTrigger,
   StyledSafeAreaView,
   TextSkeleton,
 } from '@src/shared/ui';
@@ -98,12 +99,12 @@ function InvitedFriendFilterTabs({
     <Tabs value={value} onValueChange={handleValueChange} variant="primary" {...props}>
       <Tabs.List>
         <Tabs.Indicator />
-        <Tabs.Trigger value="all" testID="invitees-tab-all">
-          <Tabs.Label>{t('friendList.tab.all', { count: totalCount })}</Tabs.Label>
-        </Tabs.Trigger>
-        <Tabs.Trigger value="waiting" testID="invitees-tab-waiting">
-          <Tabs.Label>{t('friendList.tab.waiting', { count: myInvite.waitingCount })}</Tabs.Label>
-        </Tabs.Trigger>
+        <SegmentTabTrigger value="all" testID="invitees-tab-all" size="b2">
+          {t('friendList.tab.all', { count: totalCount })}
+        </SegmentTabTrigger>
+        <SegmentTabTrigger value="waiting" testID="invitees-tab-waiting" size="b2">
+          {t('friendList.tab.waiting', { count: myInvite.waitingCount })}
+        </SegmentTabTrigger>
       </Tabs.List>
     </Tabs>
   );
@@ -118,10 +119,10 @@ InvitedFriendFilterTabs.Loading = function Loading() {
       <Tabs.List>
         <Tabs.Indicator />
         <Tabs.Trigger value="all">
-          <TextSkeleton size="b3" className="w-14" />
+          <TextSkeleton size="b2" className="w-14" />
         </Tabs.Trigger>
         <Tabs.Trigger value="waiting">
-          <TextSkeleton size="b3" className="w-20" />
+          <TextSkeleton size="b2" className="w-20" />
         </Tabs.Trigger>
       </Tabs.List>
     </Tabs>
