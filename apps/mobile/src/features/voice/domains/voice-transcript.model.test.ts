@@ -2,7 +2,6 @@ import { createTranscript } from '../__tests__/voice.fixtures';
 import {
   appendFinalResult,
   applyResult,
-  getFinalText,
   getLowConfidenceWords,
   getTranscriptText,
   isTranscriptEmpty,
@@ -28,7 +27,7 @@ describe('voice-transcript.model', () => {
       });
 
       // Then
-      expect(getFinalText(transcript)).toBe('매일 아침 8시에 영양제');
+      expect(VoiceTranscriptPolicy.getFinalText(transcript)).toBe('매일 아침 8시에 영양제');
       expect(transcript.interim).toBe('월수금');
       expect(getTranscriptText(transcript)).toBe('매일 아침 8시에 영양제 월수금');
     });

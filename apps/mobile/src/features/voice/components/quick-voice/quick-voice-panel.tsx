@@ -31,7 +31,7 @@ import { match } from 'ts-pattern';
 
 import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
 import { VoiceCapturePolicy } from '../../domains/voice-capture.model';
-import { isTranscriptEmpty } from '../../domains/voice-transcript.model';
+import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { type CapturedPlan, type VoiceCaptureState } from '../../schemas/voice-capture.schema';
@@ -321,7 +321,7 @@ QuickVoicePanel.Failed = function Failed({
             () => t('failed.consentRequired'),
           )
           .when(
-            ({ transcript }) => isTranscriptEmpty(transcript),
+            ({ transcript }) => VoiceTranscriptPolicy.isTranscriptEmpty(transcript),
             () => t('failed.nothingHeard'),
           )
           .when(

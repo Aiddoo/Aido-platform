@@ -272,7 +272,7 @@ function isExpired(note: VoiceNote, now: Instant): boolean {
 }
 
 /** 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다 */
-export function isRecordingFileExpired(modifiedAt: Date | null, now: Instant): boolean {
+function isRecordingFileExpired(modifiedAt: Date | null, now: Instant): boolean {
   return (
     modifiedAt == null ||
     toEpochMs(now) - modifiedAt.getTime() >= VOICE_RECORDING_ORPHAN_RETENTION_MS
@@ -309,4 +309,5 @@ export const VoiceNotePolicy = {
   getDigestTitle,
   getRecordingSizeBytes,
   isExpired,
+  isRecordingFileExpired,
 } as const;

@@ -28,7 +28,7 @@ export function applyResult(transcript: VoiceTranscript, result: SpeechResult): 
     : replaceInterimResult(transcript, result.transcript);
 }
 
-export function getFinalText(transcript: VoiceTranscript): string {
+function getFinalText(transcript: VoiceTranscript): string {
   return transcript.sentences.join(' ');
 }
 
@@ -103,6 +103,7 @@ function splitLowConfidenceText(text: string, words: readonly string[]): Caption
 
 export const VoiceTranscriptPolicy = {
   getTranscriptText,
+  getFinalText,
   mergeHeardTextIntoTitle,
   splitLowConfidenceText,
   isTranscriptEmpty,

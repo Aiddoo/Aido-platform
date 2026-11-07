@@ -15,7 +15,6 @@ import {
   createDigestInput,
   createDigestMemo,
   hasNoPlannedTodos,
-  isRecordingFileExpired,
   VoiceNotePolicy,
   withDigestResult,
   withPlanDraft,
@@ -206,7 +205,7 @@ describe('isRecordingFileExpired', () => {
     const now = toInstant('2026-11-05T00:00:00.000Z');
 
     // When
-    const result = isRecordingFileExpired(null, now);
+    const result = VoiceNotePolicy.isRecordingFileExpired(null, now);
 
     // Then
     expect(result).toBe(true);
