@@ -28,15 +28,21 @@ import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
-import { MemoPolicy } from '../domains/memo.model';
 import { useSelectedMemoId } from '../hooks/use-memo-params';
 import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
 import type { Memo } from '../schemas/memo.schema';
+import { toMemoPreview } from '../utils/memo.view-model';
 
 const LOADING_ITEMS_PER_COLUMN = 2;
 const MAX_ENTERING_STAGGER_STEP = 8;
 const ENTERING_STAGGER_MS = 40;
 const ENTERING_DURATION_MS = 400;
+const LAYOUT_SPRING_DAMPING = 18;
+const LAYOUT_SPRING_STIFFNESS = 120;
+/** 두 열을 번갈아 채우므로 한 행은 항목 두 개만큼 늦게 나타난다 */
+const ENTERING_ROW_STAGGER_STEP = 2;
+const TITLE_LINE_COUNT_WITH_BODY = 2;
+const TITLE_LINE_COUNT_ALONE = 4;
 
 /** 펼친 화면에서는 목록 pane이 좁아 한 열로 보여준다. */
 function getColumnCount(windowSizeClass: WindowSizeClass) {
@@ -85,13 +91,15 @@ export function MemoList() {
                 .map((memo, rowIndex) => (
                   <Animated.View
                     key={memo.id}
-                    layout={LinearTransition.springify().damping(18).stiffness(120)}
+                    layout={LinearTransition.springify()
+                      .damping(LAYOUT_SPRING_DAMPING)
+                      .stiffness(LAYOUT_SPRING_STIFFNESS)}
                     entering={FadeInDown.delay(
-                      clamp(rowIndex * 2 + columnIndex, MAX_ENTERING_STAGGER_STEP) *
-                        ENTERING_STAGGER_MS,
-                    )
-                      .duration(ENTERING_DURATION_MS)
-                      .damping(15)}
+                      clamp(
+                        rowIndex * ENTERING_ROW_STAGGER_STEP + columnIndex,
+                        MAX_ENTERING_STAGGER_STEP,
+                      ) * ENTERING_STAGGER_MS,
+                    ).duration(ENTERING_DURATION_MS)}
                   >
                     <MemoList.Item memo={memo} />
                   </Animated.View>
@@ -117,7 +125,7 @@ MemoList.Item = function Item({ memo }: { memo: Memo }) {
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
   const selectMemo = useSingleTap(setSelectedMemoId);
   const dateFormatContext = useDateFormatContext();
-  const { title, body } = MemoPolicy.getMemoPreview(memo);
+  const { title, body } = toMemoPreview(memo);
 
   return (
     <PressableFeedback onPress={() => selectMemo(memo.id)} className="rounded-2xl">
@@ -134,7 +142,7 @@ MemoList.Item = function Item({ memo }: { memo: Memo }) {
             className="flex-1"
             size="b3"
             weight="semibold"
-            numberOfLines={body.length > 0 ? 2 : 4}
+            numberOfLines={body.length > 0 ? TITLE_LINE_COUNT_WITH_BODY : TITLE_LINE_COUNT_ALONE}
             lineBreakStrategyIOS="hangul-word"
           >
             {title}
