@@ -1,5 +1,7 @@
 import type { Memo as MemoDto } from '@aido/api';
+import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
@@ -7,7 +9,7 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
-import { fromDate } from '@src/shared/date/instant';
+import { fromDate, toEpochMs } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
@@ -15,10 +17,13 @@ import { act, screen } from '@testing-library/react-native';
 import { toMemo } from '../apis/memo.mapper';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { Memo } from '../schemas/memo.schema';
+import { createMemoDraftKey } from '../utils/memo-draft';
+import { createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
 import {
   useConvertMemoToTodosMutationOptions,
   useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,
+  useSetMemoPinnedMutationOptions,
   useUpdateMemoMutationOptions,
 } from './memo.mutations';
 
@@ -113,6 +118,94 @@ describe('메모 수정 후 상세 cache', () => {
     expect(client.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId: 5 }))).toEqual(
       toMemo(updatedMemo),
     );
+  });
+});
+
+describe('메모 고정', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it('고정으로 수정 시각이 바뀌어도 쓰던 글자와 AI 요청 초안을 낡았다고 버리지 않는다', async () => {
+    // Given
+    const client = createTestQueryClient();
+    client.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+    client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemo(originalMemo));
+    const pinnedMemo: MemoDto = {
+      ...originalMemo,
+      isPinned: true,
+      updatedAt: '2026-10-02T00:05:00.000Z',
+    };
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: pinnedMemo }));
+    let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
+    let draftService: ReturnType<typeof useDraftService> | undefined;
+    function useMutationCapture() {
+      return useMutation(useSetMemoPinnedMutationOptions()).mutateAsync;
+    }
+    function Capture() {
+      mutateAsync = useMutationCapture();
+      draftService = useDraftService();
+      return null;
+    }
+    await renderUi(<Capture />, {
+      queryClient: client,
+      withLocalDate: true,
+      di: { httpClient, haptics: createHapticsGatewayStub(), analytics: createAnalyticsStub() },
+    });
+    const inputKey = createMemoDraftKey({ userId: 'account-1', memoId: 5 });
+    const requestKey = createMemoPlanRequestDraftKey({ userId: 'account-1', memoId: 5 });
+    const beforeEpoch = toEpochMs(toMemo(originalMemo).updatedAt);
+    draftService?.save(inputKey, { content: '쓰던 글' }, { sourceUpdatedAt: beforeEpoch });
+    draftService?.save(
+      requestKey,
+      {
+        fingerprint: 'f',
+        idempotencyKey: 'key-1',
+        input: { content: '처음 작성한 메모', categoryId: 1 },
+      },
+      { sourceUpdatedAt: beforeEpoch },
+    );
+
+    // When
+    await act(async () => {
+      await mutateAsync?.({ memoId: 5, isPinned: true });
+    });
+
+    // Then
+    const afterEpoch = toEpochMs(toMemo(pinnedMemo).updatedAt);
+    expect(draftService?.restore(inputKey, { sourceUpdatedAt: afterEpoch }).status).toBe(
+      'restored',
+    );
+    expect(draftService?.restore(requestKey, { sourceUpdatedAt: afterEpoch }).status).toBe(
+      'restored',
+    );
+  });
+
+  it('오프라인이면 멈춰 기다리지 않고 바로 실패해 안내한다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockRejectedValue(new NetworkError());
+    let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
+    function useMutationCapture() {
+      return useMutation(useSetMemoPinnedMutationOptions()).mutateAsync;
+    }
+    function Capture() {
+      mutateAsync = useMutationCapture();
+      return null;
+    }
+    await renderUi(<Capture />, {
+      withLocalDate: true,
+      di: { httpClient, haptics: createHapticsGatewayStub() },
+    });
+
+    // When
+    const result = mutateAsync?.({ memoId: 5, isPinned: true });
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
   });
 });
 

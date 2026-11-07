@@ -77,6 +77,19 @@ export function MemoConvertBottomSheet({
     }
   });
 
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  const handleTitleSubmit = () => {
+    if (isSubmitting) {
+      return;
+    }
+    if (title.trim().length === 0) {
+      onClose();
+
+      return;
+    }
+    handleSubmit();
+  };
+
   return (
     <KeyboardBottomSheet
       isOpen={isOpen}
@@ -110,7 +123,7 @@ export function MemoConvertBottomSheet({
               size="medium"
               renderErrorMessage={false}
               returnKeyType="done"
-              onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmit())}
+              onSubmitEditing={handleTitleSubmit}
             />
           )}
         />

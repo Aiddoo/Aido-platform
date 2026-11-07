@@ -76,6 +76,7 @@ import {
 } from '../queries/memo.mutations';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { memoFormSchema, type MemoFormValues } from '../schemas/memo-form.schema';
+import type { Memo } from '../schemas/memo.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
@@ -85,7 +86,10 @@ const MEMO_MORE_MENU_WIDTH = 220;
 interface MemoEditorToolbarProps {
   control: Control<MemoFormValues>;
   isEditing: boolean;
+  canSave: boolean;
   onSave: () => void;
+  /** 저장하지 않은 변경이 있으면 먼저 저장하고, 저장한 메모를 돌려준다. 저장에 실패하면 null */
+  onSaveChanges: () => Promise<Memo | null>;
   onBack: () => void;
   onConverted: () => void;
   onDelete: () => void;
@@ -138,16 +142,16 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
   const updateChangedContent = async (content: string) => {
     const trimmedContent = content.trim();
-    if (trimmedContent !== memo.content) {
-      await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
+    if (trimmedContent === memo.content) {
+      return memo;
     }
-    return trimmedContent;
+    return updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
   };
 
   const saveAndFinishEditing = form.handleSubmit(async ({ content }) => {
     try {
-      const savedContent = await updateChangedContent(content);
-      form.reset({ content: savedContent });
+      const savedMemo = await updateChangedContent(content);
+      form.reset({ content: savedMemo.content });
       discardDraft();
       setIsEditing(false);
       Keyboard.dismiss();
@@ -170,6 +174,23 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     onLeave();
   });
 
+  const saveChanges = async () => {
+    if (!canSave) {
+      return memo;
+    }
+    try {
+      const savedMemo = await updateChangedContent(form.getValues('content'));
+      form.reset({ content: savedMemo.content });
+      discardDraft();
+
+      return savedMemo;
+    } catch (error) {
+      reportUnexpectedError(error);
+
+      return null;
+    }
+  };
+
   const handleBack = () => {
     if (canSave) {
       saveAndLeave();
@@ -185,7 +206,9 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
         <Toolbar
           control={form.control}
           isEditing={isEditing}
+          canSave={canSave}
           onSave={() => saveAndFinishEditing()}
+          onSaveChanges={saveChanges}
           onBack={handleBack}
           onConverted={() => {
             onLeave();
@@ -232,23 +255,22 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
 MemoEditor.StackToolbar = function StackToolbar({
   control,
   isEditing,
+  canSave,
   onSave,
+  onSaveChanges,
   onBack,
   onConverted,
   onDelete,
 }: MemoEditorToolbarProps) {
   const { t } = useTranslation(['memo', 'common']);
-  const [memoId] = useMemoId();
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
-  const { isDirty, isSubmitting, isValid } = useFormState({ control });
-  const canSave = isDirty && isValid;
-  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
-  const aiParse = useMemoAiParse();
-  const convertToTodo = useMemoConvertToTodo(onConverted);
+  const { isSubmitting, isValid } = useFormState({ control });
+  const pin = useMemoPinAction();
+  const aiParse = useMemoAiParse(onSaveChanges);
+  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const { color: pinnedTint } = useResolveClassNames('text-main');
   const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
-  const pinLabel = t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin');
+  const pinLabel = t(pin.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin');
 
   return (
     <>
@@ -263,11 +285,11 @@ MemoEditor.StackToolbar = function StackToolbar({
 
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
-          icon={memo.isPinned ? MEMO_TOOLBAR_ICON.pinned : MEMO_TOOLBAR_ICON.pin}
+          icon={pin.isPinned ? MEMO_TOOLBAR_ICON.pinned : MEMO_TOOLBAR_ICON.pin}
           accessibilityLabel={pinLabel}
-          tintColor={memo.isPinned ? pinnedTint : undefined}
-          disabled={setPinned.isPending}
-          onPress={() => setPinned.mutate({ memoId, isPinned: !memo.isPinned })}
+          tintColor={pin.isPinned ? pinnedTint : undefined}
+          disabled={pin.isDisabled}
+          onPress={pin.toggle}
         >
           {pinLabel}
         </Stack.Toolbar.Button>
@@ -287,14 +309,14 @@ MemoEditor.StackToolbar = function StackToolbar({
             icon={MEMO_TOOLBAR_ICON.ai}
             disabled={aiParse.isDisabled}
             subtitle={aiParse.isParsing ? t('memo:detail.aiParsing') : (aiQuota ?? undefined)}
-            onPress={aiParse.handlePress}
+            onPress={aiParse.start}
           >
             {t('memo:detail.aiParse')}
           </Stack.Toolbar.MenuAction>
           <Stack.Toolbar.MenuAction
             icon={MEMO_TOOLBAR_ICON.convertToTodo}
-            disabled={convertToTodo.isDisabled}
-            onPress={convertToTodo.handlePress}
+            disabled={convertSheet.isDisabled}
+            onPress={convertSheet.open}
           >
             {t('memo:detail.convertToTodo')}
           </Stack.Toolbar.MenuAction>
@@ -310,24 +332,19 @@ MemoEditor.StackToolbar = function StackToolbar({
 MemoEditor.PaneToolbar = function PaneToolbar({
   control,
   isEditing,
+  canSave,
   onSave,
+  onSaveChanges,
   onConverted,
   onDelete,
 }: MemoEditorToolbarProps) {
-  const [memoId] = useMemoId();
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
-  const { isDirty, isSubmitting, isValid } = useFormState({ control });
-  const canSave = isDirty && isValid;
-  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
+  const { isSubmitting, isValid } = useFormState({ control });
+  const pin = useMemoPinAction();
 
   return (
     <Box className="bg-white">
       <HStack align="center" justify="end" gap={4} className="px-2">
-        <MemoPinButton
-          isPinned={memo.isPinned}
-          isDisabled={setPinned.isPending}
-          onPress={() => setPinned.mutate({ memoId, isPinned: !memo.isPinned })}
-        />
+        <MemoPinButton isPinned={pin.isPinned} isDisabled={pin.isDisabled} onPress={pin.toggle} />
         {isEditing && (
           <MemoSaveButton
             isHighlighted={canSave}
@@ -335,7 +352,7 @@ MemoEditor.PaneToolbar = function PaneToolbar({
             onPress={onSave}
           />
         )}
-        <MemoMoreMenu onConverted={onConverted} onDelete={onDelete} />
+        <MemoMoreMenu onSaveChanges={onSaveChanges} onConverted={onConverted} onDelete={onDelete} />
       </HStack>
 
       <Separator />
@@ -523,13 +540,14 @@ function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonPr
 
 /** 펼친 메모 탭의 ⋯. 항목과 순서는 Stack 화면의 네이티브 메뉴와 같다 */
 function MemoMoreMenu({
+  onSaveChanges,
   onConverted,
   onDelete,
-}: Pick<MemoEditorToolbarProps, 'onConverted' | 'onDelete'>) {
+}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDelete'>) {
   const { t } = useTranslation(['memo', 'common']);
   const [isOpen, setIsOpen] = useState(false);
-  const aiParse = useMemoAiParse();
-  const convertToTodo = useMemoConvertToTodo(onConverted);
+  const aiParse = useMemoAiParse(onSaveChanges);
+  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
   return (
@@ -559,14 +577,14 @@ function MemoMoreMenu({
             title={t('memo:detail.aiParse')}
             description={aiQuota}
             isDisabled={aiParse.isDisabled}
-            onPress={aiParse.handlePress}
+            onPress={aiParse.start}
           />
           <MenuActionItem
             testID="memo-convert-to-todo"
             Icon={CheckmarkIcon}
             title={t('memo:detail.convertToTodo')}
-            isDisabled={convertToTodo.isDisabled}
-            onPress={convertToTodo.handlePress}
+            isDisabled={convertSheet.isDisabled}
+            onPress={convertSheet.open}
           />
           <MenuActionItem
             Icon={TrashIcon}
@@ -633,17 +651,28 @@ function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogP
   );
 }
 
+/** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 고정 동작을 쓴다. */
+function useMemoPinAction() {
+  const [memoId] = useMemoId();
+  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
+
+  return {
+    isPinned: memo.isPinned,
+    isDisabled: setPinned.isPending,
+    toggle: () => setPinned.mutate({ memoId, isPinned: !memo.isPinned }),
+  };
+}
+
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 AI 정리 동작을 쓴다. */
-function useMemoAiParse() {
+function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) {
   const { t } = useTranslation('errors');
   const toast = useAppToast();
   const push = useSingleTap(router.push);
   const draftService = useDraftService();
   const { timeZone } = useDateFormatContext();
   const [memoId] = useMemoId();
-  const [{ data: memo }, { data: me }] = useSuspenseQueries({
-    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
-  });
+  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
   const parseMemo = useMutation(useParseMemoMutationOptions({ memoId }));
@@ -654,9 +683,9 @@ function useMemoAiParse() {
     categoriesQuery.data?.categories ?? [],
     null,
   );
-  const sourceUpdatedAt = toEpochMs(memo.updatedAt);
 
-  const handlePress = async () => {
+  const parseSavedMemo = async (savedMemo: Memo) => {
+    const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
     const draft = draftService.restore(
       createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
@@ -679,7 +708,7 @@ function useMemoAiParse() {
 
     try {
       await parseMemo.mutateAsync({
-        content: memo.content,
+        content: savedMemo.content,
         categoryId: defaultCategoryId,
         sourceUpdatedAt,
       });
@@ -700,41 +729,56 @@ function useMemoAiParse() {
 
       return;
     }
-    await handlePress();
+    await parseSavedMemo(savedMemo);
+  };
+
+  // 정리는 입력칸의 글자가 아니라 저장된 메모로 하므로 고치던 글자를 먼저 저장한다
+  const start = async () => {
+    const savedMemo = await onSaveChanges();
+    if (savedMemo == null) {
+      return;
+    }
+    await parseSavedMemo(savedMemo);
   };
 
   return {
-    handlePress,
+    start,
     isDisabled: defaultCategoryId == null || entitlementsQuery.isLoading || isParsing,
     isParsing,
   };
 }
 
-function useMemoConvertToTodo(onConverted: () => void) {
+function useOpenMemoConvertSheet({
+  onSaveChanges,
+  onConverted,
+}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted'>) {
   const today = useToday();
   const overlay = useOverlay();
-  const [memoId] = useMemoId();
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );
 
-  const handlePress = () => {
+  // 옮기기는 입력칸의 글자가 아니라 저장된 메모로 하므로 고치던 글자를 먼저 저장한다
+  const open = async () => {
     if (defaultCategoryId == null) {
+      return;
+    }
+    const savedMemo = await onSaveChanges();
+    if (savedMemo == null) {
       return;
     }
 
     overlay.open(({ isOpen, close, unmount }) => (
       <MemoConvertBottomSheet
-        memo={memo}
+        memo={savedMemo}
         selectedDate={today}
         categoryId={defaultCategoryId}
         isOpen={isOpen}
         onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
+        onOpenChange={(isSheetOpen) => {
+          if (!isSheetOpen) {
             close();
             unmount();
           }
@@ -744,5 +788,5 @@ function useMemoConvertToTodo(onConverted: () => void) {
     ));
   };
 
-  return { handlePress, isDisabled: defaultCategoryId == null };
+  return { open, isDisabled: defaultCategoryId == null };
 }

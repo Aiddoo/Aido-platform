@@ -26,6 +26,9 @@ import {
   toAnalyticsSource,
 } from '@src/features/voice/utils/voice-analytics';
 import { useTrack } from '@src/shared/analytics';
+import { toEpochMs } from '@src/shared/date/instant';
+import type { DraftKey } from '@src/shared/draft/draft.model';
+import type { DraftService } from '@src/shared/draft/draft.service';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
@@ -35,12 +38,19 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
+import type { Memo } from '../schemas/memo.schema';
+import { createMemoDraftKey } from '../utils/memo-draft';
 import {
   createMemoPlanDraftKey,
   createMemoPlanRequestDraftKey,
   prepareMemoPlanIdempotencyKey,
 } from '../utils/memo-plan-draft';
-import { invalidateMemos, replaceMemoInList } from './memo-cache';
+import {
+  invalidateMemoList,
+  invalidateMemoResourceLimit,
+  invalidateMemos,
+  replaceMemoInList,
+} from './memo-cache';
 
 export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
@@ -93,25 +103,57 @@ export function useUpdateMemoMutationOptions() {
     },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
     onSettled: (_memo, _error, { memoId }) => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
+      invalidateMemoList(queryClient);
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
     },
   });
 }
 
+/** 서버는 고정만 바꿔도 수정 시각을 바꾼다. 같은 내용의 초안이 낡았다고 버려지지 않게 기준 시각을 옮겨 저장한다 */
+function rebaseDraftSource<TValue>(
+  draftService: Pick<DraftService, 'restore' | 'save'>,
+  draftKey: DraftKey<TValue>,
+  { from, to }: { from: number; to: number },
+) {
+  const restored = draftService.restore(draftKey, { sourceUpdatedAt: from });
+  if (restored.status === 'restored') {
+    draftService.save(draftKey, restored.value, { sourceUpdatedAt: to });
+  }
+}
+
 export function useSetMemoPinnedMutationOptions() {
   const memoService = useMemoService();
+  const draftService = useDraftService();
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const { timeZone } = useDateFormatContext();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 버튼이 꺼진 채 남고 연결되는 순간 나도 모르게 실행된다. 바로 실패해 안내한다
+    networkMode: 'always',
     onMutate: () => haptics.impact('light'),
     mutationFn: async ({ memoId, isPinned }: { memoId: number; isPinned: boolean }) =>
       unwrap(await memoService.setPinned(memoId, isPinned)),
     onSuccess: async (memo, { memoId, isPinned }) => {
       await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+      const previousMemo = queryClient.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId }));
+      const accountId = getCachedMe(queryClient)?.id;
+      if (previousMemo != null && accountId != null) {
+        const source = { from: toEpochMs(previousMemo.updatedAt), to: toEpochMs(memo.updatedAt) };
+        rebaseDraftSource(draftService, createMemoDraftKey({ userId: accountId, memoId }), source);
+        rebaseDraftSource(
+          draftService,
+          createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
+          source,
+        );
+        rebaseDraftSource(
+          draftService,
+          createMemoPlanRequestDraftKey({ userId: accountId, memoId }),
+          source,
+        );
+      }
       queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
@@ -119,7 +161,9 @@ export function useSetMemoPinnedMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
     },
-    onSettled: () => invalidateMemos(queryClient),
+    onSettled: () => {
+      invalidateMemos(queryClient);
+    },
   });
 }
 
@@ -179,8 +223,8 @@ export function useConvertMemoToTodosMutationOptions() {
       toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });
+      invalidateMemoList(queryClient);
+      invalidateMemoResourceLimit(queryClient);
       invalidateTodos(queryClient);
     },
   });

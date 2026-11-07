@@ -2,6 +2,7 @@ import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createHttpClientStub,
@@ -12,7 +13,7 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 import { Keyboard } from 'react-native';
@@ -54,11 +55,16 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
     pageParams: [null],
   });
   const httpClient = createHttpClientStub();
-  httpClient.get.mockImplementation((url) =>
-    url === `v1/memos/${MEMO_ID}`
-      ? Promise.resolve(ok({ memo: SAVED_MEMO_DTO }))
-      : new Promise(() => undefined),
-  );
+  httpClient.get.mockImplementation((url) => {
+    if (url === `v1/memos/${MEMO_ID}`) {
+      return Promise.resolve(ok({ memo: SAVED_MEMO_DTO }));
+    }
+    if (url === 'v1/todo-categories') {
+      return Promise.resolve(ok(createTodoCategoryListDto()));
+    }
+
+    return new Promise(() => undefined);
+  });
   const onLeave = jest.fn();
 
   await renderUi(
@@ -130,6 +136,71 @@ describe('MemoEditor', () => {
     // Then
     await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
     expect(httpClient.patch).not.toHaveBeenCalled();
+  });
+
+  it('공백만 남기면 저장 버튼이 꺼지고 뒤로 가기는 요청 없이 떠난다', async () => {
+    // Given
+    const { httpClient, onLeave } = await renderEditor('stack');
+    await editContent('   ');
+
+    // When
+    await waitFor(() => expect(screen.getByLabelText('뒤로 가기')).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+    });
+
+    // Then
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(httpClient.patch).not.toHaveBeenCalled();
+  });
+
+  describe('고치던 글자가 있을 때 메뉴', () => {
+    it('할 일로 바꾸기는 고친 글자를 먼저 저장한 뒤 그 글자로 시트를 연다', async () => {
+      // Given
+      const { httpClient } = await renderEditor('stack');
+      httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      await editContent('고친 메모');
+      await waitFor(() =>
+        expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
+      );
+
+      await act(async () => {});
+
+      // When
+      await act(async () => {
+        fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+      });
+
+      // Then
+      await waitFor(() =>
+        expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`, {
+          content: '고친 메모',
+        }),
+      );
+      const sheet = await screen.findByTestId('memo-convert-sheet');
+      expect(within(sheet).getByDisplayValue('고친 메모')).toBeTruthy();
+    });
+
+    it('저장에 실패하면 시트를 열지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderEditor('stack');
+      httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+      await editContent('고친 메모');
+      await waitFor(() =>
+        expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
+      );
+
+      await act(async () => {});
+
+      // When
+      await act(async () => {
+        fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+      });
+
+      // Then
+      await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
+      expect(screen.queryByTestId('memo-convert-sheet')).toBeNull();
+    });
   });
 
   it('고친 글자가 있으면 뒤로 갈 때 저장한 뒤 떠난다', async () => {
