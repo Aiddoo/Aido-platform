@@ -15,7 +15,7 @@ import {
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
-import { ParseError } from '@src/shared/errors/infra-error';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { isTodoSeriesNotFoundError, TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import {
@@ -76,16 +76,12 @@ export class TodoService {
       },
     });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = todoListEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid getTodos response: ${parsed.error.message}`);
-    }
-
-    return ok(toTodoListResult(parsed.data));
+    return parseApiResponse(
+      result,
+      todoListEnvelopeSchema,
+      (data) => toTodoListResult(data),
+      '[TodoService] Invalid getTodos response',
+    );
   };
 
   /** 날짜 조건 없이 한 건씩만 읽어, 기간과 무관하게 할 일·완료한 할 일이 있는지 본다 */
@@ -121,18 +117,12 @@ export class TodoService {
       },
     });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = friendTodoListResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid getFriendTodos response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toFriendTodoListResult(parsed.data));
+    return parseApiResponse(
+      result,
+      friendTodoListResponseSchema,
+      (data) => toFriendTodoListResult(data),
+      '[TodoService] Invalid getFriendTodos response',
+    );
   };
 
   toggleTodoComplete = async (
@@ -141,33 +131,23 @@ export class TodoService {
   ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/complete`, body);
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = createTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid toggleTodoComplete response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      createTodoEnvelopeSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid toggleTodoComplete response',
+    );
   };
 
   createTodo = async (params: CreateTodoInput): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.post('v1/todos', params);
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = createTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid createTodo response: ${parsed.error.message}`);
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      createTodoEnvelopeSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid createTodo response',
+    );
   };
 
   updateTodo = async (
@@ -180,16 +160,12 @@ export class TodoService {
       toUpdateTodoRequest(input, options),
     );
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid updateTodo response: ${parsed.error.message}`);
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      updateTodoEnvelopeSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid updateTodo response',
+    );
   };
 
   updateTodoSchedule = async (
@@ -202,18 +178,12 @@ export class TodoService {
         ? await this.#httpClient.patch(`v1/todos/${todoId}`, toFollowingScheduleRequest(input))
         : await this.#httpClient.patch(`v1/todos/${todoId}/schedule`, input);
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid updateTodoSchedule response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      updateTodoEnvelopeSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid updateTodoSchedule response',
+    );
   };
 
   deleteTodo = async (todoId: number, scope?: TodoEditScope): Promise<Result<void, ApiError>> => {
@@ -222,16 +192,12 @@ export class TodoService {
         ? await this.#httpClient.delete(`v1/todos/${todoId}`)
         : await this.#httpClient.delete(`v1/todos/${todoId}`, { params: { scope } });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = deleteTodoResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid deleteTodo response: ${parsed.error.message}`);
-    }
-
-    return ok(undefined);
+    return parseApiResponse(
+      result,
+      deleteTodoResponseSchema,
+      () => undefined,
+      '[TodoService] Invalid deleteTodo response',
+    );
   };
 
   getDailyCompletions = async (
@@ -244,18 +210,12 @@ export class TodoService {
       params: { startDate, endDate },
     });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = dailyCompletionsRangeResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid getDailyCompletions response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toDailyCompletionsResult(parsed.data));
+    return parseApiResponse(
+      result,
+      dailyCompletionsRangeResponseSchema,
+      (data) => toDailyCompletionsResult(data),
+      '[TodoService] Invalid getDailyCompletions response',
+    );
   };
 
   /** 친구의 일일 완료 현황 — 공개(PUBLIC) 할 일 기준 집계 (친구 캘린더 마커용) */
@@ -270,18 +230,12 @@ export class TodoService {
       params: { startDate, endDate },
     });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = dailyCompletionsRangeResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid getFriendDailyCompletions response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toDailyCompletionsResult(parsed.data));
+    return parseApiResponse(
+      result,
+      dailyCompletionsRangeResponseSchema,
+      (data) => toDailyCompletionsResult(data),
+      '[TodoService] Invalid getFriendDailyCompletions response',
+    );
   };
 
   /** 하루의 할 일 요약 (홈 위젯 스냅샷) — 서버는 기기 시간대 기준 오늘·내일만 허용한다 */
@@ -291,18 +245,12 @@ export class TodoService {
   ): Promise<Result<TodoSummary, ApiError>> => {
     const result = await this.#httpClient.get('v1/todos/summary', { signal, params: { date } });
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = todoSummaryResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid getTodoSummary response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodoSummary(parsed.data));
+    return parseApiResponse(
+      result,
+      todoSummaryResponseSchema,
+      (data) => toTodoSummary(data),
+      '[TodoService] Invalid getTodoSummary response',
+    );
   };
 
   createRepeatingTodo = async (
@@ -310,22 +258,22 @@ export class TodoService {
   ): Promise<Result<{ todo: Todo; series: TodoSeries }, ApiError | TodoSeriesNotCreatedError>> => {
     const result = await this.#httpClient.post('v1/todos', toCreateRepeatingTodoRequest(draft));
 
-    if (!result.ok) {
-      return result;
+    const parsed = parseApiResponse(
+      result,
+      createTodoEnvelopeSchema,
+      (data) => data,
+      '[TodoService] Invalid createRepeatingTodo response',
+    );
+    if (!parsed.ok) {
+      return parsed;
     }
 
-    const parsed = createTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid createRepeatingTodo response: ${parsed.error.message}`,
-      );
-    }
-
-    if (parsed.data.series == null) {
+    const { todo, series } = parsed.value;
+    if (series == null) {
       return err(new TodoSeriesNotCreatedError());
     }
 
-    return ok({ todo: toTodo(parsed.data.todo), series: toTodoSeries(parsed.data.series) });
+    return ok({ todo: toTodo(todo), series: toTodoSeries(series) });
   };
 
   /** 규칙이 없는 옛 묶음과 경로가 없는 옛 서버는 없는 규칙으로 본다. 그 회차는 이 할 일만 고칠 수 있다 */
@@ -339,16 +287,12 @@ export class TodoService {
       return isTodoSeriesNotFoundError(result.error) ? ok(null) : result;
     }
 
-    const parsed = todoSeriesEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid getTodoSeries response: ${parsed.error.message}`);
-    }
-
     // 모르는 빈도면 규칙이 없는 것처럼 다룬다
-    return ok(
-      parsed.data.repeat == null
-        ? null
-        : toTodoSeries({ ...parsed.data, repeat: parsed.data.repeat }),
+    return parseApiResponse(
+      result,
+      todoSeriesEnvelopeSchema,
+      (data) => (data.repeat == null ? null : toTodoSeries({ ...data, repeat: data.repeat })),
+      '[TodoService] Invalid getTodoSeries response',
     );
   };
 
@@ -359,18 +303,12 @@ export class TodoService {
       toUpdateTodoRequest({}, { repeat: null }),
     );
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid stopTodoSeries response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      updateTodoEnvelopeSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid stopTodoSeries response',
+    );
   };
 
   reorderTodo = async (
@@ -379,16 +317,12 @@ export class TodoService {
   ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/reorder`, input);
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = reorderTodoEnvelopeSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid reorderTodo response: ${parsed.error.message}`);
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      reorderTodoEnvelopeSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid reorderTodo response',
+    );
   };
 
   getTodoDetails = async (
@@ -397,16 +331,12 @@ export class TodoService {
   ): Promise<Result<TodoDetails, ApiError>> => {
     const response = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
 
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = todoDetailsEnvelopeSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid todo details: ${parsed.error.message}`);
-    }
-
-    return ok(toTodoDetails(parsed.data));
+    return parseApiResponse(
+      response,
+      todoDetailsEnvelopeSchema,
+      (data) => toTodoDetails(data),
+      '[TodoService] Invalid todo details',
+    );
   };
 
   changeTodoCategory = async (
@@ -419,17 +349,11 @@ export class TodoService {
         ? await this.#httpClient.patch(`v1/todos/${todoId}`, toFollowingCategoryRequest(input))
         : await this.#httpClient.patch(`v1/todos/${todoId}/category`, input);
 
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updateTodoResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoService] Invalid changeTodoCategory response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toTodo(parsed.data.todo));
+    return parseApiResponse(
+      result,
+      updateTodoResponseSchema,
+      (data) => toTodo(data.todo),
+      '[TodoService] Invalid changeTodoCategory response',
+    );
   };
 }
