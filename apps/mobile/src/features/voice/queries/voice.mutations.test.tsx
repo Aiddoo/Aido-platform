@@ -15,7 +15,7 @@ import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { VoiceService } from '../apis/voice.service';
-import type { PlannedAction } from '../domains/voice-plan.model';
+import type { PlannedAction } from '../schemas/voice-plan.schema';
 import { useApplyActionPlanMutationOptions } from './voice.mutations';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };

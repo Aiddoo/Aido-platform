@@ -8,12 +8,12 @@ import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
+import { VoiceCapturePolicy } from '../domains/voice-capture.model';
 import {
   type VoiceCaptureFailureReason,
-  VoiceCapturePolicy,
   type VoiceCaptureState,
   type VoicePauseCause,
-} from '../domains/voice-capture.model';
+} from '../schemas/voice-capture.schema';
 import { getDurationBucket } from '../utils/voice-analytics';
 
 const PAUSE_CAUSE_PARAMS = {

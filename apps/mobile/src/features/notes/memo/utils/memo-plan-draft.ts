@@ -1,12 +1,16 @@
 import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
-import { createPlanReviewDraftKey } from '@src/features/voice/domains/plan-review-form.schema';
+import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import type { DraftService } from '@src/shared/draft/draft.service';
 
 import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';
 
 export function createMemoPlanDraftKey({ userId, memoId }: { userId: string; memoId: number }) {
-  return createPlanReviewDraftKey({ userId, scope: 'memo-plan', target: [memoId] });
+  return PlanReviewPolicy.createPlanReviewDraftKey({
+    userId,
+    scope: 'memo-plan',
+    target: [memoId],
+  });
 }
 
 /** 응답을 받지 못한 요청의 멱등 키. 앱을 다시 켜고 다시 눌러도 같은 키를 보내야 두 번 차감되지 않는다 */

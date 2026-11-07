@@ -1,7 +1,8 @@
 import { FlashList } from '@shopify/flash-list';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
+import { VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
+import { type VoiceNote } from '@src/features/voice/schemas/voice-note.schema';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateLabel } from '@src/shared/date/date-format';

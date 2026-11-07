@@ -8,20 +8,20 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
-import { createPlanReviewDraft } from './plan-review-form.schema';
+import { voiceNoteSchema } from '../schemas/voice-note.schema';
+import { voicePlanSchema } from '../schemas/voice-plan.schema';
+import { PlanReviewPolicy } from './plan-review.model';
 import {
   createDigestInput,
   createDigestMemo,
   hasNoPlannedTodos,
   VoiceNotePolicy,
-  voiceNoteSchema,
   withDigestResult,
   withPlanDraft,
 } from './voice-note.model';
-import { voicePlanSchema } from './voice-plan.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
-  createPlanReviewDraft(
+  PlanReviewPolicy.createPlanReviewDraft(
     voicePlanSchema.parse({
       planId: 'draft-1',
       source: 'voice-note',
@@ -252,7 +252,9 @@ describe('voiceNoteSchema 저장과 복원', () => {
 
   test('고친 카드까지 저장했다가 달력 날짜를 그대로 되살린다', () => {
     // Given
-    const note = createVoiceNoteFixture({ planDraft: createPlanReviewDraft(plan) });
+    const note = createVoiceNoteFixture({
+      planDraft: PlanReviewPolicy.createPlanReviewDraft(plan),
+    });
 
     // When
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
@@ -438,7 +440,10 @@ describe('VoiceNotePolicy.findRecordingIndexAt', () => {
       omittedTodoCount: 1,
       actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
     });
-    const note = withPlanDraft(createVoiceNoteFixture(), createPlanReviewDraft(plan));
+    const note = withPlanDraft(
+      createVoiceNoteFixture(),
+      PlanReviewPolicy.createPlanReviewDraft(plan),
+    );
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
     stored.planDraft.form.actions[0].title = '';
 

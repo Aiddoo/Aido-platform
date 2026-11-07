@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { voiceNoteDraftIdSchema } from '../domains/voice-note.model';
+import { voiceNoteDraftIdSchema } from './voice-note.schema';
 
 export const voiceNoteTabSchema = z.enum(['summary', 'todos', 'transcript']);
 

@@ -12,7 +12,7 @@ import { AppState, type AppStateStatus, Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
-import type { CapturedPlan } from '../domains/voice-capture.model';
+import type { CapturedPlan } from '../schemas/voice-capture.schema';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };

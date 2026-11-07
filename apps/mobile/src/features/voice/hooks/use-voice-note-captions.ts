@@ -5,7 +5,7 @@ import {
   VoiceNoteCaptionPolicy,
   type VoiceNoteCaptions,
 } from '../domains/voice-note-caption.model';
-import type { VoiceNote } from '../domains/voice-note.model';
+import type { VoiceNote } from '../schemas/voice-note.schema';
 
 interface UseVoiceNoteCaptionsOptions {
   /** 이어 듣는 초안. 없으면 빈 자막에서 시작한다 */

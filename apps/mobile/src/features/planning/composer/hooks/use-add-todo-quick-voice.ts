@@ -13,7 +13,6 @@ import {
   PlanRequestPolicy,
   type PreparedPlanRequest,
 } from '@src/features/voice/domains/plan-request.model';
-import type { CapturedPlan } from '@src/features/voice/domains/voice-capture.model';
 import { VoiceNoteCaptionPolicy } from '@src/features/voice/domains/voice-note-caption.model';
 import type { CreateQuickPlanInput } from '@src/features/voice/domains/voice-plan.model';
 import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
@@ -23,6 +22,7 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/voice.mutations';
+import type { CapturedPlan } from '@src/features/voice/schemas/voice-capture.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';

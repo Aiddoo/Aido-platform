@@ -5,7 +5,8 @@ import {
   VOICE_RECORDING_LATE_WAIT_MS,
   VOICE_RECORDING_SAVE_WAIT_MS,
 } from '../constants/voice-note.constants';
-import { VoiceNotePolicy, type VoiceNoteRecording } from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
+import { type VoiceNoteRecording } from '../schemas/voice-note.schema';
 import type { VoiceNoteStorageService } from './voice-note-storage.service';
 
 interface VoiceRecordingIntakeDeps {

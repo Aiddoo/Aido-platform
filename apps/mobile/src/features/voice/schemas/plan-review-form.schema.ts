@@ -1,17 +1,8 @@
 import { toDateKey } from '@src/shared/date/instant';
-import { createDraftKey } from '@src/shared/draft/draft.model';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { z } from 'zod';
 
-import {
-  type PlanSelection,
-  type PlannedAction,
-  plannedActionSchema,
-  type VoicePlan,
-  getDefaultSelection,
-  plannedMemoSchema,
-  plannedTodoSchema,
-} from './voice-plan.model';
+import { plannedMemoSchema, plannedTodoSchema } from './voice-plan.schema';
 
 const selectedField = { isSelected: z.boolean() };
 
@@ -30,32 +21,9 @@ export type PlanReviewFormValues = z.infer<typeof planReviewFormSchema>;
 export const planTodoEditFormSchema = z.object({ todo: planTodoFormSchema });
 export type PlanTodoEditFormValues = z.infer<typeof planTodoEditFormSchema>;
 
-export function createPlanReviewFormValues(
-  plan: VoicePlan,
-  selection: PlanSelection = getDefaultSelection(plan),
-): PlanReviewFormValues {
-  return {
-    actions: plan.actions.map((action) => ({
-      ...action,
-      isSelected: selection[action.actionId] === true,
-    })),
-  };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value != null;
 }
-
-export function toPlannedActions({ actions }: PlanReviewFormValues): PlannedAction[] {
-  return actions.map(({ isSelected: _isSelected, ...action }) => plannedActionSchema.parse(action));
-}
-
-export function toPlanSelection({
-  actions,
-}: {
-  actions: readonly { actionId: string; isSelected: boolean }[];
-}): PlanSelection {
-  return Object.fromEntries(actions.map((action) => [action.actionId, action.isSelected]));
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value != null;
 
 /**
  * 달력 날짜를 `Date`로 들던 때의 초안은 ISO 순간으로 남아 있고, 저장 때의 시간대는 기록되지 않았다.
@@ -100,35 +68,3 @@ export const planReviewDraftSchema = z
     };
   });
 export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
-
-export function createPlanReviewDraft(
-  plan: VoicePlan,
-  form: PlanReviewFormValues = createPlanReviewFormValues(plan),
-): PlanReviewDraft {
-  return { omittedTodoCount: plan.omittedTodoCount, form };
-}
-
-export function toVoicePlanFromDraft(
-  { planId, source, sourceMemoId }: Pick<VoicePlan, 'planId' | 'source' | 'sourceMemoId'>,
-  draft: PlanReviewDraft,
-): VoicePlan {
-  return {
-    planId,
-    source,
-    sourceMemoId,
-    actions: toPlannedActions(draft.form),
-    omittedTodoCount: draft.omittedTodoCount,
-  };
-}
-
-export function createPlanReviewDraftKey({
-  userId,
-  scope,
-  target,
-}: {
-  userId: string;
-  scope: 'memo-plan';
-  target: readonly (string | number)[];
-}) {
-  return createDraftKey({ ownerId: userId, scope, target, schema: planReviewDraftSchema });
-}

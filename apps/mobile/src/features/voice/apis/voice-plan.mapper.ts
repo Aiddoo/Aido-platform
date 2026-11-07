@@ -1,48 +1,33 @@
 import {
   type ApplyAction as ApplyActionDto,
   type ApplyActionPlanRequest,
-  actionPlanSchema,
+  PLANNED_ACTION_TYPES,
+  type PlannedAction as PlannedActionDto,
+  plannedActionSchema,
   type QuickPlanRequest,
   type VoiceNoteDigestRequest,
-  PLANNED_ACTION_TYPES,
-  plannedActionSchema,
-  quickPlanResponseSchema,
-  voiceNoteDigestResponseSchema,
 } from '@aido/api';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-series.mapper';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import {
   type CreateQuickPlanInput,
-  type PlannedAction,
   type QuickPlanResult,
-  type VoicePlan,
   type VoiceNoteDigestResult,
+} from '../domains/voice-plan.model';
+import type {
+  LenientActionPlan,
+  LenientQuickPlanResponse,
+  LenientVoiceNoteDigestResponse,
+} from '../schemas/voice-plan-response.schema';
+import {
+  type PlannedAction,
+  type VoicePlan,
   type VoicePlanSource,
   voicePlanSchema,
-} from '../domains/voice-plan.model';
-
-/**
- * 새 서버가 더한 모르는 행동 타입 하나 때문에 계획 전체를 버리지 않도록 행동은 느슨하게 받고,
- * 아는 타입만 {@link toVoicePlan}이 계약대로 검증한다.
- */
-const lenientActionPlanSchema = actionPlanSchema.extend({ actions: z.array(z.unknown()) });
-
-export const lenientQuickPlanResponseSchema = quickPlanResponseSchema.extend({
-  plan: lenientActionPlanSchema,
-});
-
-export const lenientVoiceNoteDigestResponseSchema = voiceNoteDigestResponseSchema.extend({
-  plan: lenientActionPlanSchema,
-});
-
-interface LenientActionPlan {
-  actions: readonly unknown[];
-  omittedTodoCount: number;
-}
+} from '../schemas/voice-plan.schema';
 
 const KNOWN_ACTION_TYPES: readonly string[] = PLANNED_ACTION_TYPES;
 
@@ -56,7 +41,7 @@ function isKnownAction(action: unknown) {
   );
 }
 
-const toPlannedAction = (dto: z.infer<typeof plannedActionSchema>): PlannedAction =>
+const toPlannedAction = (dto: PlannedActionDto): PlannedAction =>
   match(dto)
     .returnType<PlannedAction>()
     .with({ type: 'CREATE_TODO' }, (todo) => ({
@@ -103,7 +88,7 @@ export const toQuickPlanRequest = ({ text, source }: CreateQuickPlanInput): Quic
 });
 
 export function toQuickPlanResult(
-  dto: z.infer<typeof lenientQuickPlanResponseSchema>,
+  dto: LenientQuickPlanResponse,
   { planId, source }: { planId: string; source: 'quick-voice' | 'quick-text' },
 ): QuickPlanResult {
   return {
@@ -171,7 +156,7 @@ export const toVoiceNoteDigestRequest = ({
 });
 
 export function toVoiceNoteDigestResult(
-  dto: z.infer<typeof lenientVoiceNoteDigestResponseSchema>,
+  dto: LenientVoiceNoteDigestResponse,
   planId: string,
 ): VoiceNoteDigestResult {
   return {

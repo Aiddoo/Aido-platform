@@ -3,13 +3,10 @@ import type { Instant } from '@src/shared/date/instant';
 import { clamp, sumBy } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
-import {
-  createVoiceNote,
-  type VoiceNote,
-  type VoiceNoteSentence,
-  withSentences,
-} from './voice-note.model';
-import { getLowConfidenceWords, type VoiceTranscript } from './voice-transcript.model';
+import { type VoiceNote, type VoiceNoteSentence } from '../schemas/voice-note.schema';
+import { type VoiceTranscript } from '../schemas/voice-transcript.schema';
+import { createVoiceNote, withSentences } from './voice-note.model';
+import { getLowConfidenceWords } from './voice-transcript.model';
 
 /** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
 interface ProvisionalSentence {

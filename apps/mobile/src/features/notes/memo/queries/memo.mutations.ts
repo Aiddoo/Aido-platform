@@ -14,7 +14,7 @@ import { markAiDataSharingConsentRequired } from '@src/features/identity/consent
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
-import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-form.schema';
+import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
 import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
@@ -219,7 +219,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       if (accountId != null) {
         draftService.save(
           createMemoPlanDraftKey({ userId: accountId, memoId }),
-          createPlanReviewDraft(plan),
+          PlanReviewPolicy.createPlanReviewDraft(plan),
           { sourceUpdatedAt },
         );
       }

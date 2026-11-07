@@ -54,14 +54,12 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
-import {
-  type PlanReviewFormValues,
-  toPlanSelection,
-  toPlannedActions,
-} from '../../domains/plan-review-form.schema';
-import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
+import { PlanReviewPolicy } from '../../domains/plan-review.model';
+import { VoicePlanPolicy } from '../../domains/voice-plan.model';
 import { isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
+import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
+import { type VoicePlan } from '../../schemas/voice-plan.schema';
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
 
 const LOADING_ROW_COUNT = 3;
@@ -133,7 +131,7 @@ export function PlanReview({
   const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved }));
   const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
 
-  const selection = toPlanSelection({ actions });
+  const selection = PlanReviewPolicy.toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
   const headline = getPlanHeadline(plan, selection);
@@ -142,8 +140,8 @@ export function PlanReview({
   const handleApply = handleSubmit((values) => {
     const selected = VoicePlanPolicy.sortPlanActionsByGroup(
       VoicePlanPolicy.getSelectedActions(
-        { ...plan, actions: toPlannedActions(values) },
-        toPlanSelection(values),
+        { ...plan, actions: PlanReviewPolicy.toPlannedActions(values) },
+        PlanReviewPolicy.toPlanSelection(values),
       ),
       fallbackCategoryId,
     );

@@ -6,8 +6,8 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import type { VoiceNoteSentence } from '../../domains/voice-note.model';
 import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
+import type { VoiceNoteSentence } from '../../schemas/voice-note.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
 
 const AUTOSCROLL_THRESHOLD = 0.2;

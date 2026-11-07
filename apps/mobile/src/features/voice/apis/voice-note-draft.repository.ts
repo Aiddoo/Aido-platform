@@ -8,7 +8,7 @@ import {
   VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
   VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
 } from '../constants/voice-note.constants';
-import { type VoiceNote, voiceNoteSchema } from '../domains/voice-note.model';
+import { type VoiceNote, voiceNoteSchema } from '../schemas/voice-note.schema';
 
 const KEY_PREFIX = 'aido_voice_note_draft_v1:';
 const KEY_SEPARATOR = ':';

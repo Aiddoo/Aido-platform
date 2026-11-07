@@ -15,7 +15,7 @@ import {
   type PlannedAction,
   type VoicePlan,
   voicePlanSchema,
-} from '@src/features/voice/domains/voice-plan.model';
+} from '@src/features/voice/schemas/voice-plan.schema';
 import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';

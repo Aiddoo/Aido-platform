@@ -1,7 +1,7 @@
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 
-import type { VoiceCaptureFailureReason } from '../domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '../domains/voice.error';
+import type { VoiceCaptureFailureReason } from '../schemas/voice-capture.schema';
 
 type VoiceCaptureMode = 'quick' | 'note';
 export type VoiceCaptureEntry = 'add_todo_sheet' | 'memo_tab' | 'quick_voice_upgrade';

@@ -44,12 +44,13 @@ import {
 } from 'react-hook-form';
 import { ScrollView } from 'react-native-gesture-handler';
 
+import { VoicePlanPolicy } from '../../domains/voice-plan.model';
+import { type PlanTodoEditFormValues } from '../../schemas/plan-review-form.schema';
 import {
   planTodoEditFormSchema,
-  type PlanTodoEditFormValues,
   type PlanTodoFormValues,
-} from '../../domains/plan-review-form.schema';
-import { type PlannedTodo, VoicePlanPolicy } from '../../domains/voice-plan.model';
+} from '../../schemas/plan-review-form.schema';
+import { type PlannedTodo } from '../../schemas/voice-plan.schema';
 
 interface PlanTodoEditSheetProps {
   todo: PlanTodoFormValues;

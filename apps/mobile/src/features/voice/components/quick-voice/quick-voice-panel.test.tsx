@@ -5,7 +5,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
 import { createCaptureState, createTranscript } from '../../__tests__/voice.fixtures';
-import type { VoiceCaptureState } from '../../domains/voice-capture.model';
+import type { VoiceCaptureState } from '../../schemas/voice-capture.schema';
 import { QuickVoicePanel } from './quick-voice-panel';
 
 function Panel({

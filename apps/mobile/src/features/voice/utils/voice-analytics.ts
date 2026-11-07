@@ -3,7 +3,8 @@ import type {
   VoicePlanAnalyticsSource,
 } from '@src/features/voice/constants/voice.events';
 
-import { type VoicePlan, VoicePlanPolicy, type VoicePlanSource } from '../domains/voice-plan.model';
+import { VoicePlanPolicy } from '../domains/voice-plan.model';
+import { type VoicePlan, type VoicePlanSource } from '../schemas/voice-plan.schema';
 
 const SECONDS = { half: 30, threeMinutes: 180, tenMinutes: 600 } as const;
 

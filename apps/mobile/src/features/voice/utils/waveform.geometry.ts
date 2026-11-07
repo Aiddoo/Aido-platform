@@ -1,7 +1,7 @@
 import { range } from 'es-toolkit';
 
 import { WAVEFORM_BAR } from '../constants/voice-note.constants';
-import type { VoiceNoteSentence } from '../domains/voice-note.model';
+import type { VoiceNoteSentence } from '../schemas/voice-note.schema';
 
 const QUIET_LEVEL = 0.06;
 const SPEECH_BASE_LEVEL = 0.35;

@@ -1,12 +1,12 @@
 import { toInstant } from '@src/shared/date/instant';
 
+import { createVoiceNote } from '../domains/voice-note.model';
 import {
-  createVoiceNote,
   type VoiceNote,
   type VoiceNoteDigest,
   type VoiceNoteKeyPoint,
   type VoiceNoteSentence,
-} from '../domains/voice-note.model';
+} from '../schemas/voice-note.schema';
 
 export const createVoiceNoteSentence = (
   overrides: Partial<VoiceNoteSentence> = {},

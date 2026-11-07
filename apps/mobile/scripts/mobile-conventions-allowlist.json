@@ -47,7 +47,6 @@
       "apps/mobile/src/features/voice/apis/voice-plan.mapper.ts": 4,
       "apps/mobile/src/features/voice/apis/voice-recording.repository.ts": 2,
       "apps/mobile/src/features/voice/components/visualizers/voice-visual.tsx": 2,
-      "apps/mobile/src/features/voice/domains/plan-review-form.schema.ts": 1,
       "apps/mobile/src/features/voice/domains/voice-note-caption.model.ts": 1,
       "apps/mobile/src/features/voice/utils/format-media-time.ts": 1,
       "apps/mobile/src/features/voice/utils/voice-analytics.ts": 1,

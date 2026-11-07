@@ -21,16 +21,16 @@ import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { VoiceService } from '../../apis/voice.service';
+import { PlanReviewPolicy } from '../../domains/plan-review.model';
 import {
-  createPlanReviewFormValues,
   type PlanReviewFormValues,
   planReviewFormSchema,
-} from '../../domains/plan-review-form.schema';
+} from '../../schemas/plan-review-form.schema';
 import {
   type PlannedTodo,
   type VoicePlan,
   voicePlanIdSchema,
-} from '../../domains/voice-plan.model';
+} from '../../schemas/voice-plan.schema';
 import { PlanReview } from './plan-review';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
@@ -74,7 +74,7 @@ function PlanReviewScreen({
 }) {
   const form = useForm<PlanReviewFormValues>({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: createPlanReviewFormValues(plan),
+    defaultValues: PlanReviewPolicy.createPlanReviewFormValues(plan),
     mode: 'onChange',
   });
   useEffect(() => {

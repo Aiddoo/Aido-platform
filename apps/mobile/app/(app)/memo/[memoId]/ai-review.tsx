@@ -7,11 +7,9 @@ import { memoScreenParamsSchema } from '@src/features/notes/memo/schemas/memo-pa
 import { createMemoPlanDraftKey } from '@src/features/notes/memo/utils/memo-plan-draft';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
-import {
-  planReviewFormSchema,
-  toVoicePlanFromDraft,
-} from '@src/features/voice/domains/plan-review-form.schema';
-import { voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
+import { PlanReviewPolicy } from '@src/features/voice/domains/plan-review.model';
+import { planReviewFormSchema } from '@src/features/voice/schemas/plan-review-form.schema';
+import { voicePlanIdSchema } from '@src/features/voice/schemas/voice-plan.schema';
 import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
@@ -84,7 +82,7 @@ function AiReviewScreen() {
     <PlanReview
       className={PLAN_REVIEW_CLASS_NAME}
       form={form}
-      plan={toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
+      plan={PlanReviewPolicy.toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
       fallbackCategoryId={fallbackCategoryId}
       onApplied={() => {
         discardDraft();

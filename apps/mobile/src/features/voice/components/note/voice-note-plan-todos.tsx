@@ -12,10 +12,12 @@ import type { ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { planReviewFormSchema, toVoicePlanFromDraft } from '../../domains/plan-review-form.schema';
-import { type VoiceNote, VoiceNotePolicy } from '../../domains/voice-note.model';
-import { voicePlanIdSchema } from '../../domains/voice-plan.model';
+import { PlanReviewPolicy } from '../../domains/plan-review.model';
+import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
+import { type VoiceNote } from '../../schemas/voice-note.schema';
+import { voicePlanIdSchema } from '../../schemas/voice-plan.schema';
 import { PlanReview } from '../plan/plan-review';
 
 interface VoiceNotePlanTodosProps extends Pick<ComponentProps<typeof PlanReview>, 'className'> {
@@ -75,7 +77,7 @@ export function VoiceNotePlanTodos({ note, className }: VoiceNotePlanTodosProps)
         <PlanReview
           className={className}
           form={form}
-          plan={toVoicePlanFromDraft(
+          plan={PlanReviewPolicy.toVoicePlanFromDraft(
             {
               planId: voicePlanIdSchema.parse(draftId),
               source: 'voice-note',

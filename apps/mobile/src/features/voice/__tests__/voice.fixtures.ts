@@ -1,5 +1,6 @@
-import { voiceCaptureStateSchema, type VoiceCaptureState } from '../domains/voice-capture.model';
-import { createVoiceTranscript, type VoiceTranscript } from '../domains/voice-transcript.model';
+import { createVoiceTranscript } from '../domains/voice-transcript.model';
+import { voiceCaptureStateSchema, type VoiceCaptureState } from '../schemas/voice-capture.schema';
+import { type VoiceTranscript } from '../schemas/voice-transcript.schema';
 
 export function createTranscript(overrides: Partial<VoiceTranscript> = {}): VoiceTranscript {
   return createVoiceTranscript(overrides);

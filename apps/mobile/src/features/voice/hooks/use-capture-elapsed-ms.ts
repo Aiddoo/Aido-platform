@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 
 import { VOICE_CLOCK_TICK_MS } from '../constants/voice.constants';
-import { VoiceCapturePolicy, type VoiceCaptureState } from '../domains/voice-capture.model';
+import { VoiceCapturePolicy } from '../domains/voice-capture.model';
+import { type VoiceCaptureState } from '../schemas/voice-capture.schema';
 
 export function useCaptureElapsedMs(state: VoiceCaptureState): number {
   const [now, setNow] = useState(() => Date.now());

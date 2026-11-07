@@ -2,9 +2,10 @@ import { useIdGenerator, useVoiceNoteStorageService } from '@src/bootstrap/provi
 import { toInstant } from '@src/shared/date/instant';
 import { useMutation } from '@tanstack/react-query';
 
-import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../queries/voice.mutations';
+import { type VoiceNote } from '../schemas/voice-note.schema';
 import { useCurrentVoiceNote } from './use-current-voice-note';
 
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */

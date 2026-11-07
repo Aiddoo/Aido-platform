@@ -3,7 +3,7 @@ import {
   type PlannedTodo,
   voicePlanIdSchema,
   type VoicePlan,
-} from '../domains/voice-plan.model';
+} from '../schemas/voice-plan.schema';
 import { getPlanHeadline, type PlanHeadline } from './plan-headline.view-model';
 
 const todo = (overrides: Partial<PlannedTodo> = {}): PlannedTodo => ({

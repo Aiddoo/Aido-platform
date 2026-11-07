@@ -1,18 +1,18 @@
 import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
+import { type VoiceStallWatch } from '../schemas/voice-capture.schema';
+import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import {
   createVoiceCaptureState,
   createVoiceRecognizerLink,
   createVoiceStallWatch,
   reduceRecognizerLink,
   reduceVoiceCapture,
-  type VoiceStallWatch,
   VoiceCapturePolicy,
   withStallRestart,
   withTextHeard,
   withVolumeSample,
 } from './voice-capture.model';
-import { voicePlanSchema } from './voice-plan.model';
 
 const NOW = 100_000;
 

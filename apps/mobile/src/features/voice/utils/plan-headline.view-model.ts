@@ -1,4 +1,5 @@
-import { type PlanSelection, type VoicePlan, VoicePlanPolicy } from '../domains/voice-plan.model';
+import { type PlanSelection, VoicePlanPolicy } from '../domains/voice-plan.model';
+import { type VoicePlan } from '../schemas/voice-plan.schema';
 
 export type PlanHeadline =
   | { kind: 'todos'; count: number }

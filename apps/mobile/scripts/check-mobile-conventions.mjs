@@ -226,6 +226,7 @@ const CLIENT_OWNED_MODEL_PATHS = [
 /** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
 const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/notes/memo/',
+  'apps/mobile/src/features/voice/',
   'apps/mobile/src/features/support/inquiry/',
   'apps/mobile/src/features/insights/achievement/',
   'apps/mobile/src/features/device/activation/',

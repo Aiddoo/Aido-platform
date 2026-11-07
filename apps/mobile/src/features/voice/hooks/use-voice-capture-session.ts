@@ -19,7 +19,6 @@ import {
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
 import {
-  type CapturedPlan,
   createVoiceCaptureState,
   createVoiceRecognizerLink,
   reduceRecognizerLink,
@@ -27,11 +26,15 @@ import {
   type VoiceCaptureEvent,
   type VoiceCaptureSeed,
   VoiceCapturePolicy,
-  type VoiceCaptureState,
-  type VoicePauseCause,
   type VoiceRecognizerLinkEvent,
 } from '../domains/voice-capture.model';
-import { type VoiceTranscript, VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
+import { VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
+import {
+  type CapturedPlan,
+  type VoiceCaptureState,
+  type VoicePauseCause,
+} from '../schemas/voice-capture.schema';
+import { type VoiceTranscript } from '../schemas/voice-transcript.schema';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 

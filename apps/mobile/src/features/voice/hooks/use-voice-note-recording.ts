@@ -17,7 +17,8 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { VoiceRecordingIntake } from '../apis/voice-recording-intake';
-import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
+import { type VoiceNote } from '../schemas/voice-note.schema';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 import { useVoiceNoteCaptions } from './use-voice-note-captions';

@@ -2,10 +2,11 @@ import { useTranslation } from '@src/shared/i18n';
 import { Text, VStack } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
-import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
+import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { canRetryPlanFailure } from '../../domains/voice.error';
 import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteDigest, type VoiceNoteDigestFailure } from '../../hooks/use-voice-note-digest';
+import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { DigestProgress } from './digest-progress';
 import { DigestScanPreview } from './digest-scan-preview';
 import { SentenceCaptionList } from './sentence-caption-list';

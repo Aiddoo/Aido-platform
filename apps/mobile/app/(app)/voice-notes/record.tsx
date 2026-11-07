@@ -13,10 +13,7 @@ import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voic
 import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
 import { RecognitionLanguageToggle } from '@src/features/voice/components/quick-voice/recognition-language-toggle';
 import { VOICE_NOTE_LOG_EVENT } from '@src/features/voice/constants/voice-note-log-events';
-import {
-  VoiceCapturePolicy,
-  type VoiceCaptureState,
-} from '@src/features/voice/domains/voice-capture.model';
+import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
 import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
@@ -25,6 +22,7 @@ import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-no
 import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
+import { type VoiceCaptureState } from '@src/features/voice/schemas/voice-capture.schema';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';

@@ -1,9 +1,9 @@
-import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { z } from 'zod';
+
+import { speechLocaleSchema } from '../schemas/speech-locale.schema';
 
 const KEY_PREFIX = 'aido_recognition_language_v1';
-const speechLocaleSchema = z.enum(SPEECH_LOCALES);
 
 export interface RecognitionLanguageRepository {
   find(userId: string): SpeechLocale | undefined;

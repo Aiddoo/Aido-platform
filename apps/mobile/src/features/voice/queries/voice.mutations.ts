@@ -30,12 +30,9 @@ import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-
 
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
-import type {
-  PlannedAction,
-  VoicePlanSource,
-  CreateQuickPlanInput,
-} from '../domains/voice-plan.model';
+import type { CreateQuickPlanInput } from '../domains/voice-plan.model';
 import { getVoicePlanFailureCause } from '../domains/voice.error';
+import type { PlannedAction, VoicePlanSource } from '../schemas/voice-plan.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
 import { planInProgressRetryOptions } from './plan-in-progress-retry';
 import { reflectFeatureQuota } from './voice-plan-cache';
