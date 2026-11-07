@@ -110,7 +110,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 - **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고, 아래에서는 `activation-cache`만 쓴다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
 - **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
-- **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
+- **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일과 순수 변환인 `planning/todo/apis/todo-repeat.mapper`만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
 - **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
 - **`app/` 안 route 간 import**: `app/` 안 파일은 모두 route가 되어 공용 파일을 옆에 둘 수 없고, 조립 대상이 여러 층이면 feature로 내릴 수도 없다. 그래서 두 route가 같은 조립을 쓰면 한쪽 route 파일에서 이름 있는 export로 나눈다(`(mypage-menu)/_layout`이 `(tabs)/mypage/index`의 `MyPageMenuPane`을 쓴다). 같은 일이 또 생기면 공용 폴더를 만든다.
 
@@ -164,13 +164,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 | 규칙                              | 지금 코드                                                                                                                                           |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| utils 파일                        | 평탄한 `*.view-model.ts` 9개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                                  |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1)         |
+| utils 파일                        | 평탄한 `*.view-model.ts` 8개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                                  |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 22개. `safeParse(result.value)` 2곳이 남았다                                                                         |
 | [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트를 import하는 파일 3개(`shared/infra/http` 2, `shared/date/time-of-day`). `common`의 서브패스가 없어 남겼다 |
 | [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                         |
 | [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                         |
 | [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                      |
-| [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                        |
+| [층과 의존](#층과-의존)           | 양방향 6쌍, 허용 외 위층 import 없음                                                                                                                |
 | [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                                      |
 | 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                    |
 
