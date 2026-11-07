@@ -10,21 +10,6 @@ import { InviteRewardPolicy } from '../domains/invite-reward.model';
 /** 내 초대 화면에서 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */
 export function InviteRewardLines({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation('invite');
-  const lines = [
-    {
-      key: 'invitee',
-      label: t('myInvite.rewardInviteeLabel'),
-      value: t('myInvite.rewardInvitee', { days: InviteRewardPolicy.getWelcomePremiumDays() }),
-    },
-    {
-      key: 'inviter',
-      label: t('myInvite.rewardInviterLabel'),
-      value: t('myInvite.rewardInviter', {
-        activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-        days: InviteRewardPolicy.getInviterPremiumDays(),
-      }),
-    },
-  ];
 
   return (
     <VStack
@@ -32,23 +17,32 @@ export function InviteRewardLines({ className, ...props }: ComponentProps<typeof
       className={cn('rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4', className)}
       {...props}
     >
-      {lines.map((line) => (
-        <VStack
-          key={line.key}
-          gap={6}
-          accessible
-          accessibilityLabel={`${line.label}, ${line.value}`}
-        >
-          <Chip variant="soft" className="rounded-full bg-main/10 px-2.5 py-0.5">
-            <Text size="e1" weight="bold" tone="brand">
-              {line.label}
-            </Text>
-          </Chip>
-          <WordWrapText size="b3" shade={9}>
-            {line.value}
-          </WordWrapText>
-        </VStack>
-      ))}
+      <RewardLine
+        label={t('myInvite.rewardInviteeLabel')}
+        value={t('myInvite.rewardInvitee', { days: InviteRewardPolicy.getWelcomePremiumDays() })}
+      />
+      <RewardLine
+        label={t('myInvite.rewardInviterLabel')}
+        value={t('myInvite.rewardInviter', {
+          activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+          days: InviteRewardPolicy.getInviterPremiumDays(),
+        })}
+      />
+    </VStack>
+  );
+}
+
+function RewardLine({ label, value }: { label: string; value: string }) {
+  return (
+    <VStack gap={6} accessible accessibilityLabel={`${label}, ${value}`}>
+      <Chip variant="soft" className="rounded-full bg-main/10 px-2.5 py-0.5">
+        <Text size="e1" weight="bold" tone="brand">
+          {label}
+        </Text>
+      </Chip>
+      <WordWrapText size="b3" shade={9}>
+        {value}
+      </WordWrapText>
     </VStack>
   );
 }

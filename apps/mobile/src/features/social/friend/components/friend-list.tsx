@@ -45,11 +45,14 @@ import Animated, {
   LinearTransition,
 } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
+import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
-import { useRemoveFriendMutationOptions } from '../queries/friend.mutations';
-import { useReorderFriendMutationOptions } from '../queries/friend.mutations';
+import {
+  useRemoveFriendMutationOptions,
+  useReorderFriendMutationOptions,
+} from '../queries/friend.mutations';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
 import type { FriendUser } from '../schemas/friend.schema';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
@@ -212,10 +215,11 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
               />
             }
             contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
-            right={
-              !isEditMode ? (
+            right={match({ isEditMode, isActive })
+              .with({ isEditMode: false }, () => (
                 <FriendModerationMenu userId={friend.id} displayName={displayName} />
-              ) : !isActive ? (
+              ))
+              .with({ isEditMode: true, isActive: false }, () => (
                 <Animated.View
                   entering={FadeInRight.duration(ANIMATION.duration.normal)}
                   exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
@@ -232,8 +236,9 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
                     {t('actions.delete')}
                   </Button>
                 </Animated.View>
-              ) : null
-            }
+              ))
+              .with({ isEditMode: true, isActive: true }, () => null)
+              .exhaustive()}
           />
         </Animated.View>
       </HStack>

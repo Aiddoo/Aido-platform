@@ -51,6 +51,7 @@ import {
   calculatePawPrintBoardWidth,
   calculatePawPrintGrid,
   createPawPrintBoard,
+  MIN_CONNECTOR_WIDTH,
   PAW_PRINT_BOARD_SIZE,
   type PawPrintBoard,
   type PawPrintCell,
@@ -68,7 +69,6 @@ const PAW_PRINT_PRESS_SPRING = {
   reduceMotion: ReduceMotion.System,
 };
 const NEW_PAW_PRINT_STAGGER_MS = 160;
-const MIN_CONNECTOR_LENGTH = 12;
 
 /**
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
@@ -301,7 +301,7 @@ interface ConnectorProps {
 InvitePawPrintBoard.Connector = function Connector({
   isFilled,
   orientation = 'horizontal',
-  length = MIN_CONNECTOR_LENGTH,
+  length = MIN_CONNECTOR_WIDTH,
 }: ConnectorProps) {
   const patternId = useId();
   const { color } = useResolveClassNames(fishBoneVariants({ isFilled }));

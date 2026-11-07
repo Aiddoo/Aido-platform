@@ -69,12 +69,12 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
                 }),
               )
               .with('waiting', () =>
-                friend.activeDayCount === 0
-                  ? t('friendList.waitingNotStarted', {
-                      count: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-                    })
-                  : t('friendList.waiting', {
+                InvitedFriendPolicy.hasStartedActiveDays(friend)
+                  ? t('friendList.waiting', {
                       count: InvitedFriendPolicy.getActiveDaysLeft(friend),
+                    })
+                  : t('friendList.waitingNotStarted', {
+                      count: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
                     }),
               )
               .with('excluded', () =>

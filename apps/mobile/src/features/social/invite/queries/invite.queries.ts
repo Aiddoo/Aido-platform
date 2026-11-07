@@ -1,6 +1,7 @@
 import { type RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors';
 import { type Page } from '@src/shared/types/page.types';
 import {
@@ -37,7 +38,7 @@ export function useGetClipboardPresenceQueryOptions() {
 }
 
 // 운영 플래그라 자주 바뀌지 않는다. 진입점이 여러 곳이어도 한 번만 묻는다
-const AVAILABILITY_STALE_TIME_MS = 5 * 60 * 1000;
+const AVAILABILITY_STALE_TIME_MS = 5 * MINUTE_MS;
 
 export function useGetInviteAvailabilityQueryOptions() {
   const inviteService = useInviteService();
@@ -50,7 +51,7 @@ export function useGetInviteAvailabilityQueryOptions() {
 }
 
 // 코드 입력에서 확인한 미리보기를 초대 카드가 다시 부르지 않게 잠깐 둔다
-const INVITE_PREVIEW_STALE_TIME_MS = 60 * 1000;
+const INVITE_PREVIEW_STALE_TIME_MS = MINUTE_MS;
 
 export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: InviteCode }) {
   const inviteService = useInviteService();
@@ -63,7 +64,7 @@ export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: In
 }
 
 // 발자국은 친구가 할 일을 끝낼 때 바뀌어서 짧게만 재사용한다
-const INVITE_STALE_TIME_MS = 30 * 1000;
+const INVITE_STALE_TIME_MS = 30 * SECOND_MS;
 
 export function useGetInviteQueryOptions() {
   const inviteService = useInviteService();
@@ -170,7 +171,7 @@ export function useGetInvitedFriendCountInfiniteQueryOptions() {
 
 // 수락 응답은 다시 조회할 API가 없어 수락 mutation이 넣어 둔 값만 읽는다(skipToken이라 fetch하지 않는다).
 // 라우트 param으로 넘기면 결과 전체를 URL에 직렬화해야 하고 딥링크로 결과를 꾸며 열 수 있어 캐시로 넘긴다
-const REDEMPTION_RESULT_GC_TIME_MS = 10 * 60 * 1000;
+const REDEMPTION_RESULT_GC_TIME_MS = 10 * MINUTE_MS;
 
 /** inviterId가 null이면(형식이 틀린 링크) 넣어 둔 값이 없어 늘 비어 있다 */
 export function useGetRedemptionResultQueryOptions({ inviterId }: { inviterId: string | null }) {

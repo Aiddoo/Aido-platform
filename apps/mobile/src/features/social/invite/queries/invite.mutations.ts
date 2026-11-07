@@ -99,7 +99,7 @@ export function useRedeemInviteMutationOptions() {
     },
     onError: (redeemError) => {
       // 오류 경계로 가는 장애는 토스트를 함께 띄우지 않는다
-      if (!isBusinessRedeemError(redeemError)) {
+      if (!isBusinessError(redeemError)) {
         return;
       }
 
@@ -128,12 +128,8 @@ export function useRedeemInviteMutationOptions() {
         .exhaustive();
     },
     // 네트워크·서버 장애는 화면 오류 경계가 맡는다
-    throwOnError: (redeemError) => !isBusinessRedeemError(redeemError),
+    throwOnError: (redeemError) => !isBusinessError(redeemError),
   });
-}
-
-function isBusinessRedeemError(error: unknown) {
-  return isBusinessError(error);
 }
 
 export function useRotateInviteCodeMutationOptions() {

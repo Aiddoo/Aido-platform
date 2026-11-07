@@ -42,7 +42,7 @@ export interface PawPrintBoard {
 export const PAW_PRINT_BOARD_SIZE = 12;
 
 const PAW_PRINT_CELL_SIZE = 56;
-const MIN_CONNECTOR_WIDTH = 12;
+export const MIN_CONNECTOR_WIDTH = 12;
 // 생선 뼈 굵기(w-3·h-3)
 const FISH_BONE_THICKNESS = 12;
 const COMPACT_COLUMNS = 4;

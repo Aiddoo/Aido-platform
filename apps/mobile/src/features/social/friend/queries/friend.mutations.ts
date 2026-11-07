@@ -5,13 +5,13 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { type FriendUser } from '@src/features/social/friend/schemas/friend.schema';
+import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
-import { type Page } from '@src/shared/types/page.types';
+import type { Page } from '@src/shared/types/page.types';
 import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 

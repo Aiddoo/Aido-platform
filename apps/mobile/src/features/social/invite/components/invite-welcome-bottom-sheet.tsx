@@ -281,13 +281,6 @@ function WelcomeNotificationPrompt() {
   );
 }
 
-const FISH_BONES = [
-  { x: -78, y: -30, rotate: -35 },
-  { x: 80, y: -26, rotate: 30 },
-  { x: -86, y: 10, rotate: -70 },
-  { x: 84, y: 14, rotate: 60 },
-] as const;
-
 /** 인사하는 고양이와 튀어 오르는 생선 뼈. 한 번만 재생하고 transform·opacity만 바꾼다 */
 function WelcomeCat() {
   const isReducedMotion = useReducedMotion();
@@ -314,9 +307,10 @@ function WelcomeCat() {
 
   return (
     <Box className="h-[150px] w-full items-center justify-end">
-      {FISH_BONES.map((bone, index) => (
-        <FishBone key={index} progress={progress} {...bone} />
-      ))}
+      <FishBone progress={progress} x={-78} y={-30} rotate={-35} />
+      <FishBone progress={progress} x={80} y={-26} rotate={30} />
+      <FishBone progress={progress} x={-86} y={10} rotate={-70} />
+      <FishBone progress={progress} x={84} y={14} rotate={60} />
       <Image
         source={catHiImage}
         accessibilityIgnoresInvertColors

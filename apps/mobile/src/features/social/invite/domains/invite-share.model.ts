@@ -1,6 +1,5 @@
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
-import type { Invite } from '../schemas/invite.schema';
-import type { InviteCode } from '../schemas/invite.schema';
+import type { Invite, InviteCode } from '../schemas/invite.schema';
 
 /** shared: 보냈음, copied: 링크를 복사했음, dismissed: 공유 시트를 닫았음 */
 type InviteShareOutcome = 'shared' | 'copied' | 'dismissed';

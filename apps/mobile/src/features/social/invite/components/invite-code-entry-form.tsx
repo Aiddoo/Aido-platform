@@ -1,16 +1,5 @@
 import { useClipboard } from '@src/bootstrap/providers/di-context';
 import { isBusinessError } from '@src/core/errors/result';
-import { InviteCodeInput } from '@src/features/social/invite/components/invite-code-input';
-import {
-  type InvalidCharacterSummary,
-  InviteCodePolicy,
-  summarizeInvalidCharacters,
-  parseInviteCode,
-  toInviteCodeDraft,
-} from '@src/features/social/invite/domains/invite.model';
-import { useInviteParams } from '@src/features/social/invite/hooks/use-invite-params';
-import { useCheckInvitePreviewMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
-import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
@@ -32,6 +21,18 @@ import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type PropsWithChildren, useRef, useState } from 'react';
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
+
+import {
+  type InvalidCharacterSummary,
+  InviteCodePolicy,
+  summarizeInvalidCharacters,
+  parseInviteCode,
+  toInviteCodeDraft,
+} from '../domains/invite.model';
+import { useInviteParams } from '../hooks/use-invite-params';
+import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
+import { useGetClipboardPresenceQueryOptions } from '../queries/invite.queries';
+import { InviteCodeInput } from './invite-code-input';
 
 /** 코드 입력과 제출 버튼. 입력 위에 붙는 안내는 화면이 children으로 넘긴다 */
 export function InviteCodeEntryForm({ children }: PropsWithChildren) {

@@ -21,6 +21,10 @@ export function calculateActiveDaysLeft(activeDays: number, requiredDays: number
   return Math.max(requiredDays - activeDays, 0);
 }
 
+function hasStartedActiveDays(friend: Pick<InvitedFriend, 'activeDayCount'>) {
+  return friend.activeDayCount > 0;
+}
+
 function getActiveDaysLeft(friend: Pick<InvitedFriend, 'activeDayCount'>) {
   return calculateActiveDaysLeft(friend.activeDayCount, INVITE_QUALIFICATION.MIN_ACTIVE_DAYS);
 }
@@ -36,6 +40,7 @@ function getPawPrintState(friend: Pick<InvitedFriend, 'status'>) {
 }
 
 export const InvitedFriendPolicy = {
+  hasStartedActiveDays,
   getActiveDaysLeft,
   getPawPrintState,
 } as const;

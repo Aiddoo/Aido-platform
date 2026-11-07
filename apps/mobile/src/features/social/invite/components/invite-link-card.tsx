@@ -18,8 +18,10 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { createInviteShareContent } from '../domains/invite-share.model';
-import { useRotateInviteCodeMutationOptions } from '../queries/invite.mutations';
-import { useShareInviteMutationOptions } from '../queries/invite.mutations';
+import {
+  useRotateInviteCodeMutationOptions,
+  useShareInviteMutationOptions,
+} from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { getInviteShareCopy } from '../utils/invite-share-copy';
 

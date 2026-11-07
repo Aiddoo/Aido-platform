@@ -52,15 +52,15 @@ const END_REACHED_THRESHOLD = 2;
 /** 빠르게 넘길 때 새 칸을 그 프레임에 그리지 않도록 앞뒤 600pt(친구 8명쯤)를 미리 그려 둔다 */
 const DRAW_DISTANCE = 600;
 
-/**
- * 피드 위에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 친구 줄.
- * "나"는 왼쪽에 고정하고, 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다.
- */
 interface FriendStripProps {
   /** 초대를 쓸 수 있을 때 친구가 없는 줄에서 초대로 데려가는 동작. 없으면 친구 찾기로 보낸다 */
   onInvite?: () => void;
 }
 
+/**
+ * 피드 위에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 친구 줄.
+ * "나"는 왼쪽에 고정하고, 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다.
+ */
 export function FriendStrip({ onInvite }: FriendStripProps) {
   const { t } = useTranslation('friend');
   const listRef = useRef<FlashListRef<FriendUser>>(null);

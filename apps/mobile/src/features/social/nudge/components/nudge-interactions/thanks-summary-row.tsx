@@ -29,8 +29,10 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '../../queries/nudge.queries';
-import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
+import {
+  useGetNudgeInteractionAvailabilityQueryOptions,
+  useGetNudgeThanksPreviewInfiniteQueryOptions,
+} from '../../queries/nudge.queries';
 import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const VISIBLE_AVATAR_COUNT = 2;

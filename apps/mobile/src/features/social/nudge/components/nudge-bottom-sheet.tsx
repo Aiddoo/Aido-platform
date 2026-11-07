@@ -19,8 +19,10 @@ import type { ComponentProps } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
 import { useRemindNudgeParams } from '../hooks/use-remind-nudge-params';
-import { useSendRemindNudgeMutationOptions } from '../queries/nudge.mutations';
-import { useSendTodoNudgeMutationOptions } from '../queries/nudge.mutations';
+import {
+  useSendRemindNudgeMutationOptions,
+  useSendTodoNudgeMutationOptions,
+} from '../queries/nudge.mutations';
 import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
 
 export interface NudgeReceiver {

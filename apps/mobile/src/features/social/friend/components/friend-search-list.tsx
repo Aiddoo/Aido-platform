@@ -19,8 +19,10 @@ import { match } from 'ts-pattern';
 
 import { type FriendLimitInvite, FriendPolicy } from '../domains/friend.model';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
-import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
-import { useSendRequestByTagMutationOptions } from '../queries/friend.mutations';
+import {
+  useCancelRequestMutationOptions,
+  useSendRequestByTagMutationOptions,
+} from '../queries/friend.mutations';
 import { useGetUserSearchQueryOptions } from '../queries/friend.queries';
 import type { SearchedUser } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
