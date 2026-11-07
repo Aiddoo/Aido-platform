@@ -21,11 +21,6 @@ import {
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat } from './todo-repeat.mapper';
 
-/** 옛 서버 응답에는 벽시계 칸이 없다. 순간만 보관하고 시간대는 표시 때 정한다 */
-function toLocalTime({ scheduledTime, scheduledLocalTime }: TodoDto): string | null {
-  return scheduledTime == null ? null : (scheduledLocalTime ?? null);
-}
-
 export function toTodo(dto: TodoDto): Todo {
   return {
     id: dto.id,
@@ -34,7 +29,7 @@ export function toTodo(dto: TodoDto): Todo {
     endDate: dto.endDate,
     category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
     completed: dto.completed,
-    localTime: toLocalTime(dto),
+    localTime: dto.scheduledLocalTime ?? null,
     scheduledAt: toNullableInstant(dto.scheduledTime),
     isAllDay: dto.isAllDay,
     visibility: dto.visibility,

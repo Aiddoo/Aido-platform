@@ -262,7 +262,7 @@ describe('TodoPolicy.getLocalTime', () => {
     expect(newYork).toBe('10:00');
   });
 
-  it('벽시계가 없는 옛 응답은 보는 순간의 시간대로 계산한다', () => {
+  it('서버가 벽시계 칸을 비운 시간 행은 보는 순간의 시간대로 계산한다', () => {
     // Given
     const todo = { isAllDay: false, localTime: null, scheduledAt: instant };
 

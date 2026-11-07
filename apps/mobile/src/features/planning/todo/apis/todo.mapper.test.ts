@@ -25,20 +25,7 @@ describe('toTodo', () => {
     expect(result.title).toBe(dto.title);
   });
 
-  test('옛 서버 응답(칸 없음)은 시간대를 읽지 않고 순간만 보관한다', () => {
-    // Given
-    const instant = '2026-03-08T01:00:00.000Z';
-    const dto = createTodoDto({ scheduledTime: instant, scheduledLocalTime: undefined });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.localTime).toBeNull();
-    expect(result.scheduledAt).toBe(instant);
-  });
-
-  test('칸이 비어 있어도(재배포 전 옛 서버가 쓴 행) 순간만 보관한다', () => {
+  test('칸이 비어 있는 시간 행은 순간만 보관한다', () => {
     // Given
     const instant = '2026-03-08T01:00:00.000Z';
     const dto = createTodoDto({ scheduledTime: instant, scheduledLocalTime: null });
@@ -49,18 +36,6 @@ describe('toTodo', () => {
     // Then
     expect(result.localTime).toBeNull();
     expect(result.scheduledAt).toBe(instant);
-  });
-
-  test('시간 없는 할 일은 낡은 칸이 있어도 null이다', () => {
-    // Given
-    const dto = createTodoDto({ scheduledTime: null, scheduledLocalTime: '10:00' });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.localTime).toBeNull();
-    expect(result.scheduledAt).toBeNull();
   });
 
   test('isAllDay, completed, visibility 매핑', () => {

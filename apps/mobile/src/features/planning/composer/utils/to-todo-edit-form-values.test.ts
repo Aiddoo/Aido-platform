@@ -22,7 +22,7 @@ describe('수정 폼 기본값의 시각', () => {
     expect(values.scheduledTime).toBeNull();
   });
 
-  test('벽시계 칸이 없는 옛 응답은 보는 시간대로 계산하고, 칸이 있으면 시간대를 바꿔도 그대로다', () => {
+  test('서버가 벽시계 칸을 비운 시간 행은 보는 시간대로 계산하고, 칸이 있으면 시간대를 바꿔도 그대로다', () => {
     // Given
     const legacy = createParentTodo({
       localTime: null,
