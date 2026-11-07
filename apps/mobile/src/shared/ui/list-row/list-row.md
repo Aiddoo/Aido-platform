@@ -14,7 +14,7 @@ ListRow/
 ## 기본 사용법
 
 ```tsx
-import { ListRow } from '@src/shared/ui/list-row/list-row';
+import { ListRow } from '@src/shared/ui';
 
 // 기본 사용
 <ListRow

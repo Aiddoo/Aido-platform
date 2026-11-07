@@ -7,8 +7,8 @@
 ## 사용법
 
 ```tsx
-import { Grid } from '@src/shared/ui/grid/grid';
-import { GridItem } from '@src/shared/ui/grid/grid-item';
+import { Grid } from '@src/shared/ui';
+import { GridItem } from '@src/shared/ui';
 
 <Grid columns={3} gap={8}>
   <GridItem>아이템 1</GridItem>

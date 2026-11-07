@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { TextButton } from '@src/shared/ui/text-button/text-button';
+import { TextButton } from '@src/shared/ui';
 
 <TextButton onPress={() => {}}>더보기</TextButton>
 <TextButton variant="arrow" onPress={() => {}}>자세히 보기</TextButton>

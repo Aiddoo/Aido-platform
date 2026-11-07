@@ -11,7 +11,7 @@
 ### 취소 + 확인 (기본)
 
 ```tsx
-import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
+import { ConfirmDialog } from '@src/shared/ui';
 
 <ConfirmDialog
   isOpen={isOpen}

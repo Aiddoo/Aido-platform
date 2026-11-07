@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { Input } from '@src/shared/ui/input/input';
+import { Input } from '@src/shared/ui';
 
 // 기본
 <Input value={email} onChange={setEmail} placeholder="이메일을 입력하세요" />
@@ -114,7 +114,7 @@ BottomSheet 내부에서 키보드를 제대로 처리하기 위한 Input 래퍼
 ### 사용법
 
 ```tsx
-import { BottomSheetInput } from '@src/shared/ui/input';
+import { BottomSheetInput } from '@src/shared/ui';
 
 // BottomSheet 내부에서 사용
 <BottomSheet>

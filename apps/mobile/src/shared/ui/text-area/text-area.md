@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { TextArea } from '@src/shared/ui/text-area';
+import { TextArea } from '@src/shared/ui';
 
 // 기본
 <TextArea value={message} onChange={setMessage} placeholder="내용을 입력하세요" />

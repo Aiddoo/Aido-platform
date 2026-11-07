@@ -7,7 +7,7 @@ heroui `Button`(`feedbackVariant="scale"`) 위에 앱의 높이 4종, 색, `isLo
 ## 사용법
 
 ```tsx
-import { Button } from '@src/shared/ui/button/button';
+import { Button } from '@src/shared/ui';
 
 // 기본 사용 - 텍스트만
 <Button>버튼</Button>
@@ -31,7 +31,7 @@ import { Button } from '@src/shared/ui/button/button';
 ### 사용법
 
 ```tsx
-import { KeyboardAdaptiveButton } from '@src/shared/ui/button/keyboard-adaptive-button';
+import { KeyboardAdaptiveButton } from '@src/shared/ui';
 
 <KeyboardAdaptiveButton onPress={handleSubmit}>회원가입</KeyboardAdaptiveButton>;
 ```
