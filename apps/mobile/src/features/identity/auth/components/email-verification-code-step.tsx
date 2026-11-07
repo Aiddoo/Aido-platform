@@ -4,13 +4,11 @@ import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shar
 import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 
+import { getResendCooldownAfterError } from '../domains/auth.error';
 import { useCooldown } from '../hooks/use-cooldown';
 import { verificationCodeSchema } from '../schemas/verify-email-params.schema';
 import { maskEmail } from '../utils/mask-email';
-import {
-  getResendCooldownAfterError,
-  getResendCooldownAfterSuccess,
-} from '../utils/resend-cooldown';
+import { getResendCooldownAfterSuccess } from '../utils/resend-cooldown';
 import { VerificationCodeInput } from './verification-code-input';
 
 interface EmailVerificationCodeStepProps extends Pick<

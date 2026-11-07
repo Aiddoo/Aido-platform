@@ -1,4 +1,3 @@
-import { ErrorCode } from '@aido/api/errors';
 import {
   useAuthService,
   useHaptics,
@@ -12,7 +11,6 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -23,7 +21,15 @@ import { match } from 'ts-pattern';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import { isLoginCancelledError } from '../domains/auth.error';
+import {
+  isEmailAlreadyRegisteredError,
+  isEmailNotVerifiedError,
+  isLoginCancelledError,
+  isPasswordMismatchError,
+  isVerificationAttemptsExceededError,
+  isVerificationCodeExpiredError,
+  isVerificationCodeInvalidError,
+} from '../domains/auth.error';
 import { toOAuthProvider, toOAuthProviderSlug } from '../domains/oauth.model';
 import { useAuthSession } from '../hooks/use-auth-session';
 import type {
@@ -76,7 +82,7 @@ export function useEmailLoginMutationOptions() {
       trackEvent('auth_login', { method: 'email' });
     },
     onError: (error, variables) => {
-      if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
+      if (isEmailNotVerifiedError(error)) {
         haptics.notify('error');
         push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });
         return;
@@ -229,7 +235,7 @@ export function useDeleteAccountMutationOptions() {
       signOut();
     },
     onError: (error) => {
-      if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
+      if (isPasswordMismatchError(error)) {
         haptics.notify('error');
         toast.error(t('auth:toasts.passwordMismatch'));
         return;
@@ -258,7 +264,7 @@ export function useRegisterMutationOptions() {
       }
     },
     onError: (error) => {
-      if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501)) {
+      if (isEmailAlreadyRegisteredError(error)) {
         haptics.notify('error');
         toast.error(t('auth:toasts.alreadyRegistered'), {
           action: {
@@ -335,10 +341,10 @@ export function useResetPasswordMutationOptions() {
       replace('/(auth)/email-login');
     },
     onError: (error) => {
-      const codeMessage = match(isApiError(error) ? error.code : null)
-        .with(ErrorCode.VERIFY_0751, () => t('auth:toasts.codeInvalid'))
-        .with(ErrorCode.VERIFY_0752, () => t('auth:toasts.codeExpired'))
-        .with(ErrorCode.VERIFY_0754, () => t('auth:toasts.codeAttemptsExceeded'))
+      const codeMessage = match(error)
+        .when(isVerificationCodeInvalidError, () => t('auth:toasts.codeInvalid'))
+        .when(isVerificationCodeExpiredError, () => t('auth:toasts.codeExpired'))
+        .when(isVerificationAttemptsExceededError, () => t('auth:toasts.codeAttemptsExceeded'))
         .otherwise(() => null);
       if (codeMessage != null) {
         haptics.notify('error');
@@ -368,7 +374,7 @@ export function useChangePasswordMutationOptions() {
       goBack();
     },
     onError: (error) => {
-      if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
+      if (isPasswordMismatchError(error)) {
         haptics.notify('error');
         toast.error(t('auth:toasts.currentPasswordMismatch'));
         return;

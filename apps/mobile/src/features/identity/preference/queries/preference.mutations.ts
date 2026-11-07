@@ -1,14 +1,13 @@
-import { ErrorCode } from '@aido/api/errors';
 import { useHaptics, usePreferenceService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
+import { isInvalidTimeRangeError, isPremiumReminderTimeError } from '../domains/preference.error';
 import type { Preference, PreferenceChange } from '../schemas/preference.schema';
 
 type UpdatePreferenceArgs = PreferenceChange & {
@@ -18,13 +17,10 @@ type UpdatePreferenceArgs = PreferenceChange & {
 
 /** 서버가 설정 값을 거절한 이유 중 사용자에게 우리 문구로 알리는 것 */
 function getRejectionMessage(error: unknown) {
-  if (!isApiError(error)) {
-    return undefined;
-  }
-  if (error.hasCode(ErrorCode.PREFERENCE_1701)) {
+  if (isPremiumReminderTimeError(error)) {
     return t('auth:toasts.premiumReminderTime');
   }
-  if (error.hasCode(ErrorCode.PREFERENCE_1702)) {
+  if (isInvalidTimeRangeError(error)) {
     return t('auth:toasts.invalidTimeRange');
   }
   return undefined;

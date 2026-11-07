@@ -1,5 +1,5 @@
 import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useConsentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type {
@@ -8,19 +8,16 @@ import type {
 } from '@src/features/identity/consent/schemas/consent.schema';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
-import { isApiError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export function useUpdateAiDataSharingConsentMutationOptions() {
-  const haptics = useHaptics();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const toast = useAppToast();
+  const showFailure = useMutationFailure(t('ai:consent.saveFailed'));
 
   return mutationOptions({
     // 오프라인에 멈춰 있으면 시트의 버튼이 돌기만 하고 나중에도 누를 수 없다. 바로 실패해 시트를 그대로 둔다
@@ -61,13 +58,10 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     },
 
     onError: (error, _input, context) => {
-      haptics.notify('error');
       if (context?.previousData != null) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
-      toast.error(isApiError(error) ? error.message : undefined, {
-        fallback: t('ai:consent.saveFailed'),
-      });
+      showFailure(error);
     },
   });
 }
