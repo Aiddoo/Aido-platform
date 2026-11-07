@@ -40,15 +40,17 @@ function VoiceStorageScreen() {
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const [usage, setUsage] = useState(() => storage.getRecordingUsage(me.id));
 
-  const handleRemoveOne = async (draftId: string) => {
-    const isConfirmed = await confirmDialog.open({
-      title: t('voiceStorage.removeOneTitle'),
+  const confirmRemoval = (title: string) =>
+    confirmDialog.open({
+      title,
       description: t('voiceStorage.removeDescription'),
       confirmLabel: t('voiceStorage.removeConfirm'),
       confirmColor: 'danger',
       cancelLabel: t('voiceStorage.removeCancel'),
     });
-    if (isConfirmed) {
+
+  const handleRemoveOne = async (draftId: string) => {
+    if (await confirmRemoval(t('voiceStorage.removeOneTitle'))) {
       storage.removeRecordings(me.id, draftId);
       setUsage(storage.getRecordingUsage(me.id));
       trackEvent('settings_changed', { setting: 'voice_storage', value: 'remove_one' });
@@ -56,14 +58,7 @@ function VoiceStorageScreen() {
   };
 
   const handleRemoveAll = async () => {
-    const isConfirmed = await confirmDialog.open({
-      title: t('voiceStorage.removeAllTitle'),
-      description: t('voiceStorage.removeDescription'),
-      confirmLabel: t('voiceStorage.removeConfirm'),
-      confirmColor: 'danger',
-      cancelLabel: t('voiceStorage.removeCancel'),
-    });
-    if (isConfirmed) {
+    if (await confirmRemoval(t('voiceStorage.removeAllTitle'))) {
       storage.removeAllRecordings(me.id);
       setUsage(storage.getRecordingUsage(me.id));
       trackEvent('settings_changed', { setting: 'voice_storage', value: 'remove_all' });
