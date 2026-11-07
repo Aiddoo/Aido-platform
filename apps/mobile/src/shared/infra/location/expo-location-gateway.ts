@@ -12,6 +12,8 @@ import { toPlaceName } from './place-name';
 const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * MINUTE_MS;
 const LAST_KNOWN_LOCATION_ACCURACY_METERS = 5_000;
 const FRESH_LOCATION_TIMEOUT_MS = 10 * SECOND_MS;
+const LAST_KNOWN_LOCATION_READ_TIMEOUT_MS = 2 * SECOND_MS;
+const REVERSE_GEOCODE_TIMEOUT_MS = 5 * SECOND_MS;
 
 function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> {
   return new Promise((resolve, reject) => {
@@ -95,7 +97,7 @@ async function getPlace(coordinates: LocationCoordinates, signal: AbortSignal) {
   const places = await waitForNativeResult(
     Location.reverseGeocodeAsync(coordinates),
     signal,
-    5_000,
+    REVERSE_GEOCODE_TIMEOUT_MS,
     [],
   );
   const place = places[0];
@@ -125,7 +127,7 @@ export const expoLocationGateway: LocationGateway = {
         requiredAccuracy: LAST_KNOWN_LOCATION_ACCURACY_METERS,
       }),
       signal,
-      2_000,
+      LAST_KNOWN_LOCATION_READ_TIMEOUT_MS,
       null,
     );
     if (signal.aborted) {

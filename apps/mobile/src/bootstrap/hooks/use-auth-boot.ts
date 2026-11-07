@@ -55,7 +55,7 @@ export function useAuthBoot(): void {
     [authSessionStore, tokenStore, errorReporter],
   );
 
-  // 앱 시작 시 초기 인증 상태 결정 (읽기만 한다 — auth-boot.ts의 불변식 참조)
+  // 앱 시작 시 초기 인증 상태 결정 (읽기만 한다 — resolveInitialAuthStatus의 불변식 참조)
   useEffect(() => {
     let cancelled = false;
     resolveBoot(() => cancelled);

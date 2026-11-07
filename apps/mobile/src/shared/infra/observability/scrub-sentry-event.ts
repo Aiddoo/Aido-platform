@@ -65,10 +65,10 @@ function stripQuery(url: string): string {
 
 /** 이메일·토큰 모양을 가리고 길이를 자른다 */
 export function scrubText(text: string): string {
-  let scrubbed = text;
-  for (const [pattern, replacement] of TEXT_PATTERNS) {
-    scrubbed = scrubbed.replace(pattern, replacement);
-  }
+  const scrubbed = TEXT_PATTERNS.reduce(
+    (current, [pattern, replacement]) => current.replace(pattern, replacement),
+    text,
+  );
   return scrubbed.length > MAX_TEXT_LENGTH ? `${scrubbed.slice(0, MAX_TEXT_LENGTH)}…` : scrubbed;
 }
 
