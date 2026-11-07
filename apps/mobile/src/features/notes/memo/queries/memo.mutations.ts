@@ -232,7 +232,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
           { sourceUpdatedAt },
         );
       }
-      // 1.15.0 이전 서버는 응답에 한도를 싣지 않아 다시 묻는다
+      // 서버가 한도를 읽지 못해 싣지 않았으면 다시 묻는다
       reflectFeatureQuota(queryClient, featureQuota);
     },
     onError: (error) => {

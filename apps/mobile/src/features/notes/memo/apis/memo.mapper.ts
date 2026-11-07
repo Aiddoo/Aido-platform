@@ -5,8 +5,6 @@ import {
   type Memo as MemoDto,
   type MemoListResponse,
   type MemoResourceLimitResponse,
-  type ParseMemoResponse,
-  type ParsedMemoTodo,
 } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
@@ -21,7 +19,12 @@ import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import type { Memo, MemoPage, MemoResourceLimit } from '../schemas/memo.schema';
+import type {
+  Memo,
+  MemoPage,
+  MemoResourceLimit,
+  ParseMemoPlanResponse,
+} from '../schemas/memo.schema';
 
 export function toMemo(dto: MemoDto): Memo {
   return {
@@ -78,42 +81,33 @@ function isSingleWeekend(repeat: TodoRepeat, startDate: string): boolean {
   );
 }
 
-/** 1.15.0 서버는 `repeat`을 주고, 이전 서버는 요일+종료일(`recurrence`)만 준다 */
-function toParsedMemoRepeat({ repeat, recurrence, startDate }: ParsedMemoTodo): TodoRepeat | null {
-  const parsed: TodoRepeat | null =
-    repeat != null
-      ? toRepeat(repeat)
-      : recurrence == null
-        ? null
-        : {
-            frequency: 'WEEKLY',
-            interval: 1,
-            weekdays: recurrence.daysOfWeek,
-            end: { type: 'UNTIL', date: recurrence.endDate },
-          };
+function toParsedMemoRepeat({
+  repeat,
+  startDate,
+}: ParseMemoPlanResponse['data']['todos'][number]): TodoRepeat | null {
+  const parsed = repeat == null ? null : toRepeat(repeat);
   return parsed != null && isSingleWeekend(parsed, startDate) ? null : parsed;
 }
 
-export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse): VoicePlan {
+export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
   const actions = dto.data.todos.map((todo, index): PlannedAction => ({
     type: 'create-todo',
     actionId: `memo-todo-${index}`,
     title: todo.title,
     startDate: todo.startDate,
-    endDate: todo.repeat != null || todo.recurrence != null ? null : todo.endDate,
+    endDate: todo.repeat != null ? null : todo.endDate,
     scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
     repeat: toParsedMemoRepeat(todo),
     visibility: null,
     items: todo.items,
     categoryId: todo.categoryId,
-    // 1.15.0 이전 서버는 겹침을 판정하지 않는다
-    duplicateOfTodoId: todo.duplicateOfTodoId ?? null,
+    duplicateOfTodoId: todo.duplicateOfTodoId,
   }));
   return voicePlanSchema.parse({
     planId,
     source: 'memo',
     sourceMemoId: null,
     actions,
-    omittedTodoCount: dto.meta.omittedTodoCount ?? 0,
+    omittedTodoCount: dto.meta.omittedTodoCount,
   });
 }

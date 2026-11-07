@@ -178,7 +178,12 @@ describe('toVoicePlanFromParsedMemo', () => {
       startDate: '2026-11-07',
       endDate: '2026-11-08',
       isRecurring: true,
-      recurrence: { daysOfWeek: ['SAT', 'SUN'], endDate: '2026-11-08' },
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['SAT', 'SUN'],
+        end: { type: 'UNTIL', date: '2026-11-08' },
+      },
     }));
 
     // When
@@ -195,7 +200,12 @@ describe('toVoicePlanFromParsedMemo', () => {
       ...todo,
       startDate: '2026-11-07',
       isRecurring: true,
-      recurrence: { daysOfWeek: ['SAT', 'SUN'], endDate: '2026-11-29' },
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['SAT', 'SUN'],
+        end: { type: 'UNTIL', date: '2026-11-29' },
+      },
     }));
 
     // When
@@ -214,7 +224,12 @@ describe('toVoicePlanFromParsedMemo', () => {
       ...todo,
       isRecurring: true,
       endDate: '2026-03-10',
-      recurrence: { daysOfWeek: ['MON'], endDate: '2026-04-01' },
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['MON'],
+        end: { type: 'UNTIL', date: '2026-04-01' },
+      },
     }));
 
     // When
@@ -228,8 +243,8 @@ describe('toVoicePlanFromParsedMemo', () => {
   test.each([
     { why: '서버가 겹침을 알려 주면 그 할 일을 가리킨다', duplicateOfTodoId: 41, expected: 41 },
     {
-      why: '이전 서버처럼 칸이 없으면 겹치지 않은 것으로 본다',
-      duplicateOfTodoId: undefined,
+      why: '서버가 겹침이 없다고 하면 겹치지 않은 것으로 본다',
+      duplicateOfTodoId: null,
       expected: null,
     },
   ])('$why', ({ duplicateOfTodoId, expected }) => {
@@ -244,13 +259,12 @@ describe('toVoicePlanFromParsedMemo', () => {
     expect(plan.actions[0]).toMatchObject({ duplicateOfTodoId: expected });
   });
 
-  test('서버가 준 repeat이 있으면 격주·매월도 그대로 쓴다', () => {
+  test('서버가 준 repeat은 격주·매월도 그대로 쓴다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({
       ...todo,
       isRecurring: true,
-      recurrence: { daysOfWeek: ['MON'], endDate: '2026-04-01' },
       repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } },
     }));
 

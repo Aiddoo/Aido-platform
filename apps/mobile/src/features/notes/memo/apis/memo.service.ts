@@ -5,7 +5,6 @@ import {
   memoListResponseSchema,
   memoMutationResponseSchema,
   memoResourceLimitResponseSchema,
-  parseMemoResponseSchema,
 } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -21,6 +20,7 @@ import { noop } from 'es-toolkit';
 
 import type { ParsedMemoPlan } from '../domains/memo.model';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
+import { parseMemoPlanResponseSchema } from '../schemas/memo.schema';
 import {
   toConvertMemoToTodosRequest,
   toMemo,
@@ -126,7 +126,7 @@ export class MemoService {
         { content, categoryId },
         { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: PARSE_MEMO_TIMEOUT_MS },
       ),
-      parseMemoResponseSchema,
+      parseMemoPlanResponseSchema,
       (dto) => {
         try {
           return {

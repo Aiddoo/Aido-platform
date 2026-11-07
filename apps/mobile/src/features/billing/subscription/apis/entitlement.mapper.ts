@@ -64,7 +64,7 @@ function isLimitedErrorCode(code: string): code is LimitedErrorCode {
 
 export interface LimitedFeature {
   feature: EntitlementFeature;
-  /** 서버가 오류와 함께 준 현재 한도. 1.15.0 이전 서버나 상세가 없는 코드는 null이다 */
+  /** 서버가 오류와 함께 준 현재 한도. 상세를 싣지 않는 코드는 null이다 */
   featureQuota: FeatureQuota | null;
 }
 

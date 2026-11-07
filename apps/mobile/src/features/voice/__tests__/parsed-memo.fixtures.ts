@@ -1,6 +1,6 @@
-import type { ParseMemoResponse } from '@aido/api';
+import type { ParseMemoPlanResponse } from '@src/features/notes/memo/schemas/memo.schema';
 
-const generateParseMemoResponseDto = (): ParseMemoResponse => ({
+const generateParseMemoResponseDto = (): ParseMemoPlanResponse => ({
   success: true,
   data: {
     todos: [
@@ -12,6 +12,8 @@ const generateParseMemoResponseDto = (): ParseMemoResponse => ({
         isAllDay: true,
         isRecurring: false,
         recurrence: null,
+        repeat: null,
+        duplicateOfTodoId: null,
         categoryId: 1,
         items: [{ title: '슬라이드' }],
       },
@@ -21,12 +23,13 @@ const generateParseMemoResponseDto = (): ParseMemoResponse => ({
     model: 'gemini',
     processingTimeMs: 150,
     tokenUsage: { input: 50, output: 30 },
+    omittedTodoCount: 0,
   },
 });
 
 export const createParseMemoResponseDto = (
-  overrides?: Partial<ParseMemoResponse>,
-): ParseMemoResponse => ({
+  overrides?: Partial<ParseMemoPlanResponse>,
+): ParseMemoPlanResponse => ({
   ...generateParseMemoResponseDto(),
   ...overrides,
 });
