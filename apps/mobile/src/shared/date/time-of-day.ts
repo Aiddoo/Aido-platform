@@ -15,21 +15,13 @@ export function parseMinute(time: string): number {
   return Number(time.split(':')[1]);
 }
 
-/** 유효한 시간 문자열이면 그대로, 아니면 fallback (fallback은 항상 유효한 상수라고 가정) */
-export function resolveTimeOrFallback(time: string | undefined, fallbackTime: string): string {
-  return time != null && isValidHHmm(time) ? time : fallbackTime;
-}
-
-export function withTime(date: Date, hour: number, minute: number): Date {
+function withTime(date: Date, hour: number, minute: number): Date {
   return dayjs(date).hour(hour).minute(minute).second(0).millisecond(0).toDate();
 }
 
-export function isTwelveHour(timeFormat: TimeFormat): boolean {
-  return timeFormat === 'TWELVE_HOUR';
-}
-
+/** 시간 문자열이 없거나 유효하지 않으면 fallbackTime을 쓴다(fallbackTime은 항상 유효한 상수라고 가정) */
 export function getDateWithTime(date: Date, time: string | undefined, fallbackTime: string): Date {
-  const safe = resolveTimeOrFallback(time, fallbackTime);
+  const safe = time != null && isValidHHmm(time) ? time : fallbackTime;
   return withTime(date, parseHour(safe), parseMinute(safe));
 }
 
@@ -47,7 +39,7 @@ export function getPickerLocale(
   resolvedLanguage: 'ko' | 'en',
   timeFormat: TimeFormat = 'TWELVE_HOUR',
 ): string {
-  if (!isTwelveHour(timeFormat)) {
+  if (timeFormat !== 'TWELVE_HOUR') {
     return 'en_GB';
   }
   return resolvedLanguage === 'en' ? 'en_US' : 'ko';

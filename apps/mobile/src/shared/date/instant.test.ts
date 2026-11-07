@@ -5,7 +5,6 @@ import {
   getNowInstant,
   getZonedHour,
   hasSameWallClock,
-  isBefore,
   toDateKey,
   toEpochMs,
   toHHmm,
@@ -130,31 +129,41 @@ describe('toEpochMs — 초안 sourceUpdatedAt 호환', () => {
   });
 });
 
-describe('isBefore, diffMs — 오프셋이 달라도 순간으로 비교한다', () => {
+describe('diffMs', () => {
   const seoulNine = toInstant('2026-10-02T09:00:00+09:00');
   const utcFive = toInstant('2026-10-02T05:00:00Z');
 
   it('문자열 사전순과 다른 순서도 순간으로 판단한다', () => {
-    // Given 사전순으로는 서울 표기가 뒤지만 실제로는 UTC 5시보다 5시간 빠르다
-    expect(seoulNine > utcFive).toBe(true);
+    // Given
+    const isLexicallyLater = seoulNine > utcFive;
 
-    // When & Then
-    expect(isBefore(seoulNine, utcFive)).toBe(true);
-    expect(isBefore(utcFive, seoulNine)).toBe(false);
+    // When
+    const difference = diffMs(seoulNine, utcFive);
+
+    // Then
+    // 사전순으로는 서울 표기가 뒤지만 실제로는 UTC 5시보다 5시간 빠르다
+    expect(isLexicallyLater).toBe(true);
+    expect(difference).toBe(-5 * 60 * 60 * 1000);
   });
 
-  it('같은 순간은 앞서지 않고 차이는 0이다', () => {
+  it('같은 순간은 오프셋이 달라도 차이가 0이다', () => {
     // Given
     const utc = toInstant('2026-10-02T00:00:00Z');
+    const seoulNineAm = toInstant('2026-10-02T09:00:00+09:00');
 
-    // When & Then
-    expect(isBefore(seoulNine, utc)).toBe(false);
-    expect(diffMs(seoulNine, utc)).toBe(0);
+    // When
+    const difference = diffMs(seoulNineAm, utc);
+
+    // Then
+    expect(difference).toBe(0);
   });
 
   it('차이는 앞 값에서 뒤 값을 뺀 밀리초다', () => {
-    // When & Then
-    expect(diffMs(utcFive, seoulNine)).toBe(5 * 60 * 60 * 1000);
+    // When
+    const difference = diffMs(utcFive, seoulNine);
+
+    // Then
+    expect(difference).toBe(5 * 60 * 60 * 1000);
   });
 });
 

@@ -61,11 +61,6 @@ export function toEpochMs(instant: Instant): number {
   return Date.parse(instant);
 }
 
-/** 문자열 사전순이 아니라 순간으로 비교한다. 오프셋이 달라도 맞다 */
-export function isBefore(instant: Instant, other: Instant): boolean {
-  return toEpochMs(instant) < toEpochMs(other);
-}
-
 /** 앞 값에서 뒤 값을 뺀 밀리초 */
 export function diffMs(instant: Instant, other: Instant): number {
   return toEpochMs(instant) - toEpochMs(other);
