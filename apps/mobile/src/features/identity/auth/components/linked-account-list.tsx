@@ -15,9 +15,8 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
 import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
-import { Fragment, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
@@ -27,62 +26,96 @@ import {
 } from '../queries/auth.mutations';
 import { useGetLinkedAccountsQueryOptions } from '../queries/auth.queries';
 import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
-import { getProviderState } from '../utils/get-provider-state';
 
-interface ProviderRowConfig {
+export function LinkedAccountList() {
+  return (
+    <SettingsListGroup>
+      <ProviderRow
+        provider="KAKAO"
+        slug="kakao"
+        icon={<KakaoIcon width={18} height={18} />}
+        iconClassName="bg-yellow-300"
+      />
+
+      <SettingsListGroup.Separator />
+
+      <ProviderRow
+        provider="GOOGLE"
+        slug="google"
+        icon={<GoogleIcon width={18} height={18} />}
+        iconClassName="bg-white border border-gray-2"
+      />
+
+      {process.env.EXPO_OS === 'ios' && (
+        <>
+          <SettingsListGroup.Separator />
+
+          <ProviderRow
+            provider="APPLE"
+            slug="apple"
+            icon={<AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />}
+            iconClassName="bg-apple-button dark:bg-apple-button-dark"
+          />
+        </>
+      )}
+
+      <SettingsListGroup.Separator />
+
+      <ProviderRow
+        provider="NAVER"
+        slug="naver"
+        icon={<NaverIcon width={18} height={18} colorClassName="text-white" />}
+        iconClassName="bg-success"
+      />
+    </SettingsListGroup>
+  );
+}
+
+LinkedAccountList.Loading = function Loading() {
+  return (
+    <SettingsListGroup>
+      <SkeletonGroup isLoading isSkeletonOnly>
+        <ProviderRow.Skeleton />
+
+        <SettingsListGroup.Separator />
+
+        <ProviderRow.Skeleton />
+
+        {process.env.EXPO_OS === 'ios' && (
+          <>
+            <SettingsListGroup.Separator />
+
+            <ProviderRow.Skeleton />
+          </>
+        )}
+
+        <SettingsListGroup.Separator />
+
+        <ProviderRow.Skeleton />
+      </SkeletonGroup>
+    </SettingsListGroup>
+  );
+};
+
+interface ProviderRowProps {
   provider: OAuthProvider;
   slug: OAuthProviderSlug;
   icon: ReactNode;
   iconClassName: string;
 }
 
-const PROVIDER_ROWS: readonly ProviderRowConfig[] = [
-  {
-    provider: 'KAKAO',
-    slug: 'kakao',
-    icon: <KakaoIcon width={18} height={18} />,
-    iconClassName: 'bg-yellow-300',
-  },
-  {
-    provider: 'GOOGLE',
-    slug: 'google',
-    icon: <GoogleIcon width={18} height={18} />,
-    iconClassName: 'bg-white border border-gray-2',
-  },
-  ...(process.env.EXPO_OS === 'ios'
-    ? [
-        {
-          provider: 'APPLE',
-          slug: 'apple',
-          icon: <AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />,
-          iconClassName: 'bg-apple-button dark:bg-apple-button-dark',
-        } satisfies ProviderRowConfig,
-      ]
-    : []),
-  {
-    provider: 'NAVER',
-    slug: 'naver',
-    icon: <NaverIcon width={18} height={18} colorClassName="text-white" />,
-    iconClassName: 'bg-success',
-  },
-];
-
-export function LinkedAccountList() {
+function ProviderRow({ provider, slug, icon, iconClassName }: ProviderRowProps) {
   const { t } = useTranslation(['auth', 'common']);
   const { data: linkedAccounts } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
-  const {
-    mutate: link,
-    isPending: isLinking,
-    variables: linkingSlug,
-  } = useMutation(useLinkAccountMutationOptions());
-  const {
-    mutate: unlink,
-    isPending: isUnlinking,
-    variables: unlinkingProvider,
-  } = useMutation(useUnlinkAccountMutationOptions());
+  const { mutate: link, isPending: isLinking } = useMutation(useLinkAccountMutationOptions());
+  const { mutate: unlink, isPending: isUnlinking } = useMutation(useUnlinkAccountMutationOptions());
   const confirmDialog = useConfirmDialog();
+  const isLinked = linkedAccounts.accounts.some(
+    (account) => account.provider === provider && account.linked,
+  );
+  const isPending = isLinking || isUnlinking;
 
-  const requestUnlink = async (provider: OAuthProvider) => {
+  const requestUnlink = async () => {
     const isConfirmed = await confirmDialog.open({
       title: t('linkedAccounts.unlinkDialogTitle'),
       description: t('linkedAccounts.unlinkDialogMessage', {
@@ -97,77 +130,6 @@ export function LinkedAccountList() {
   };
 
   return (
-    <SettingsListGroup>
-      {PROVIDER_ROWS.map(({ provider, slug, icon, iconClassName }, index) => {
-        const { isLinked, isPending } = getProviderState({
-          accounts: linkedAccounts.accounts,
-          provider,
-          slug,
-          linkingSlug: isLinking ? linkingSlug : undefined,
-          unlinkingProvider: isUnlinking ? unlinkingProvider : undefined,
-        });
-
-        return (
-          <Fragment key={provider}>
-            {index > 0 && <SettingsListGroup.Separator />}
-            <ProviderRow
-              icon={icon}
-              iconClassName={iconClassName}
-              label={getOAuthProviderLabel(provider)}
-              isLinked={isLinked}
-              isPending={isPending}
-              canUnlink={linkedAccounts.canUnlink}
-              onLink={() => link(slug)}
-              onUnlink={() => requestUnlink(provider)}
-            />
-          </Fragment>
-        );
-      })}
-    </SettingsListGroup>
-  );
-}
-
-const PROVIDER_ROW_COUNT = PROVIDER_ROWS.length;
-
-LinkedAccountList.Loading = function Loading() {
-  return (
-    <SettingsListGroup>
-      <SkeletonGroup isLoading isSkeletonOnly>
-        {range(PROVIDER_ROW_COUNT).map((index) => (
-          <Fragment key={`linked-account-skeleton-${index}`}>
-            <ProviderRow.Skeleton />
-            {index < PROVIDER_ROW_COUNT - 1 && <SettingsListGroup.Separator />}
-          </Fragment>
-        ))}
-      </SkeletonGroup>
-    </SettingsListGroup>
-  );
-};
-
-interface ProviderRowProps {
-  icon: ReactNode;
-  iconClassName: string;
-  label: string;
-  isLinked: boolean;
-  isPending: boolean;
-  canUnlink: boolean;
-  onLink: () => void;
-  onUnlink: () => void;
-}
-
-function ProviderRow({
-  icon,
-  iconClassName,
-  label,
-  isLinked,
-  isPending,
-  canUnlink,
-  onLink,
-  onUnlink,
-}: ProviderRowProps) {
-  const { t } = useTranslation('auth');
-
-  return (
     <ListRow
       horizontalPadding="medium"
       verticalPadding="large"
@@ -179,7 +141,7 @@ function ProviderRow({
       contents={
         <VStack gap={2}>
           <Text size="b3" weight="medium">
-            {label}
+            {getOAuthProviderLabel(provider)}
           </Text>
           <Chip
             variant="soft"
@@ -204,12 +166,17 @@ function ProviderRow({
           </Box>
         ))
         .with({ isPending: false, isLinked: true }, () => (
-          <Button size="small" variant="weak" onPress={onUnlink} isDisabled={!canUnlink}>
+          <Button
+            size="small"
+            variant="weak"
+            onPress={requestUnlink}
+            isDisabled={!linkedAccounts.canUnlink}
+          >
             {t('linkedAccounts.unlink')}
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button size="small" onPress={onLink}>
+          <Button size="small" onPress={() => link(slug)}>
             {t('linkedAccounts.connect')}
           </Button>
         ))
