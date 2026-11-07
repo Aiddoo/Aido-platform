@@ -6,7 +6,6 @@ import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
 import { Box } from '../box';
-import { ListRowImage } from './list-row-image';
 import { ListRowTexts } from './list-row-texts';
 
 const listRowVariants = tv({
@@ -102,4 +101,3 @@ export function ListRow({
 }
 
 ListRow.Texts = ListRowTexts;
-ListRow.Image = ListRowImage;
