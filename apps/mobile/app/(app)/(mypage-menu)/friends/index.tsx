@@ -6,11 +6,7 @@ import { ReceivedRequestList } from '@src/features/social/friend/components/rece
 import { SentRequestList } from '@src/features/social/friend/components/sent-request-list';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
 import { useFriendListViewParam } from '@src/features/social/friend/hooks/use-friend-list-view-param';
-import {
-  FRIEND_LIST_VIEW,
-  type FriendListView,
-  friendListViewSchema,
-} from '@src/features/social/friend/schemas/friend-params.schema';
+import { FRIEND_LIST_VIEW } from '@src/features/social/friend/schemas/friend-params.schema';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
@@ -19,7 +15,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, LineTabTrigger, QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Stack, router } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { type ReactNode, Suspense, useCallback } from 'react';
+import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 const SEARCH_ICON = process.env.EXPO_OS === 'ios' ? 'magnifyingglass' : Search;
@@ -35,20 +31,6 @@ export default function FriendsScreen() {
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
   const isInviteAvailable = useInviteAvailability();
   const openMyInvite = useOpenMyInvite();
-
-  const handleTabChange = useCallback(
-    (value: string) => {
-      const parsed = friendListViewSchema.safeParse(value);
-      if (!parsed.success) {
-        return;
-      }
-      setView(parsed.data);
-      if (parsed.data !== FRIEND_LIST_VIEW.friends) {
-        setIsEditMode(false);
-      }
-    },
-    [setView, setIsEditMode],
-  );
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
@@ -70,7 +52,7 @@ export default function FriendsScreen() {
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
 
-      <Tabs value={view} onValueChange={handleTabChange} variant="secondary" className="flex-1">
+      <Tabs value={view} onValueChange={setView} variant="secondary" className="flex-1">
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
@@ -79,55 +61,43 @@ export default function FriendsScreen() {
           <LineTabTrigger value={FRIEND_LIST_VIEW.sender}>{t('tabs.sent')}</LineTabTrigger>
         </Tabs.List>
 
-        {match(view)
-          .with(FRIEND_LIST_VIEW.friends, () => (
-            <FriendTabContent value={FRIEND_LIST_VIEW.friends}>
-              <QueryErrorBoundary resetKeys={[view]} fallback={FriendList.Error}>
-                <Suspense fallback={<FriendList.Loading />}>
-                  <FriendList
-                    invite={
-                      isInviteAvailable
-                        ? {
-                            welcomeDays: InviteRewardPolicy.getWelcomePremiumDays(),
-                            open: () => openMyInvite('friends_empty'),
-                          }
-                        : undefined
-                    }
-                  />
-                </Suspense>
-              </QueryErrorBoundary>
-            </FriendTabContent>
-          ))
-          .with(FRIEND_LIST_VIEW.receiver, () => (
-            <FriendTabContent value={FRIEND_LIST_VIEW.receiver}>
-              <QueryErrorBoundary resetKeys={[view]} fallback={ReceivedRequestList.Error}>
-                <Suspense fallback={<ReceivedRequestList.Loading />}>
-                  <ReceivedRequestList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </FriendTabContent>
-          ))
-          .with(FRIEND_LIST_VIEW.sender, () => (
-            <FriendTabContent value={FRIEND_LIST_VIEW.sender}>
-              <QueryErrorBoundary resetKeys={[view]} fallback={SentRequestList.Error}>
-                <Suspense fallback={<SentRequestList.Loading />}>
-                  <SentRequestList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </FriendTabContent>
-          ))
-          .exhaustive()}
+        <Tabs.Content value={view} className="flex-1">
+          <Box flex={1} px={16}>
+            {match(view)
+              .with(FRIEND_LIST_VIEW.friends, () => (
+                <QueryErrorBoundary resetKeys={[view]} fallback={FriendList.Error}>
+                  <Suspense fallback={<FriendList.Loading />}>
+                    <FriendList
+                      invite={
+                        isInviteAvailable
+                          ? {
+                              welcomeDays: InviteRewardPolicy.getWelcomePremiumDays(),
+                              open: () => openMyInvite('friends_empty'),
+                            }
+                          : undefined
+                      }
+                    />
+                  </Suspense>
+                </QueryErrorBoundary>
+              ))
+              .with(FRIEND_LIST_VIEW.receiver, () => (
+                <QueryErrorBoundary resetKeys={[view]} fallback={ReceivedRequestList.Error}>
+                  <Suspense fallback={<ReceivedRequestList.Loading />}>
+                    <ReceivedRequestList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              ))
+              .with(FRIEND_LIST_VIEW.sender, () => (
+                <QueryErrorBoundary resetKeys={[view]} fallback={SentRequestList.Error}>
+                  <Suspense fallback={<SentRequestList.Loading />}>
+                    <SentRequestList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              ))
+              .exhaustive()}
+          </Box>
+        </Tabs.Content>
       </Tabs>
     </StyledSafeAreaView>
-  );
-}
-
-function FriendTabContent({ value, children }: { value: FriendListView; children: ReactNode }) {
-  return (
-    <Tabs.Content value={value} className="flex-1">
-      <Box flex={1} px={16}>
-        {children}
-      </Box>
-    </Tabs.Content>
   );
 }

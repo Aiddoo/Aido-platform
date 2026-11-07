@@ -81,15 +81,12 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   return (
     <CategorySelectInput
       value={defaultCategoryId}
-      onChange={async (categoryId) => {
-        const accepted = await handleSuggestionMutation
-          .mutateAsync({ suggestionId: suggestion.id, input: { action: 'accept', categoryId } })
-          .catch(() => null);
-
-        if (accepted) {
-          onClose({ type: 'back-then-replace', href: '/feed' });
-        }
-      }}
+      onChange={(categoryId) =>
+        handleSuggestionMutation.mutate(
+          { suggestionId: suggestion.id, input: { action: 'accept', categoryId } },
+          { onSuccess: () => onClose({ type: 'back-then-replace', href: '/feed' }) },
+        )
+      }
       submitLabel={t('suggestions.category.submit')}
       isLoading={handleSuggestionMutation.isPending}
     />

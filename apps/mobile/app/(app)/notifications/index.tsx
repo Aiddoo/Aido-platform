@@ -5,12 +5,8 @@ import { UnreadNotificationCard } from '@src/features/notification/components/un
 import { NotificationPolicy } from '@src/features/notification/domains/notification.model';
 import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
 import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
-import { notificationCategorySchema } from '@src/features/notification/schemas/notification.schema';
 import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
-import {
-  nudgeDirectionSchema,
-  type NudgeDirection,
-} from '@src/features/social/nudge/schemas/nudge-interaction.schema';
+import type { NudgeDirection } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -38,22 +34,10 @@ export default function NotificationsScreen() {
   );
   const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
 
-  const handleCategoryChange = (value: string) => {
-    const parsed = notificationCategorySchema.safeParse(value);
-    if (parsed.success) {
-      setCategory(parsed.data);
-    }
-  };
-
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <ReadableContent flex={1}>
-        <Tabs
-          value={category}
-          onValueChange={handleCategoryChange}
-          variant="secondary"
-          className="flex-1"
-        >
+        <Tabs value={category} onValueChange={setCategory} variant="secondary" className="flex-1">
           <Tabs.List className="border-b border-gray-2 w-full">
             <Tabs.Indicator className="h-[2px]" />
 
@@ -112,20 +96,13 @@ function DirectionTabs({
   onValueChange,
 }: {
   value: NudgeDirection;
-  onValueChange: (direction: NudgeDirection) => void;
+  onValueChange: (direction: string) => void;
 }) {
   const { t } = useTranslation('notification');
 
-  const handleValueChange = (nextValue: string) => {
-    const parsed = nudgeDirectionSchema.safeParse(nextValue);
-    if (parsed.success) {
-      onValueChange(parsed.data);
-    }
-  };
-
   return (
     <Box px={16} pt={12} pb={4}>
-      <Tabs value={value} onValueChange={handleValueChange} variant="primary">
+      <Tabs value={value} onValueChange={onValueChange} variant="primary">
         <Tabs.List className="self-start">
           <Tabs.Indicator />
           <SegmentTabTrigger value="received">{t('directions.received')}</SegmentTabTrigger>
