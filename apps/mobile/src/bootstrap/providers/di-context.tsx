@@ -173,7 +173,9 @@ export const useLocationGateway = () => useDI().locationGateway;
 export const useClipboard = () => useDI().clipboard;
 export const useNetworkStatus = () => useDI().networkStatus;
 export const useTokenStore = () => useDI().tokenStore;
-export const useAuthSessionStore = () => useDI().authSessionStore;
+export function useAuthSessionStore() {
+  return useDI().authSessionStore;
+}
 export const useSessionEpoch = () => useDI().sessionEpoch;
 export const useSessionCleanupService = () => useDI().sessionCleanupService;
 export const useSessionRevocationService = () => useDI().sessionRevocationService;

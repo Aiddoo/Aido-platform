@@ -1,6 +1,4 @@
 import type { Logger } from '@src/core/ports/logger';
-import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
-import type { PendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
@@ -23,9 +21,10 @@ interface SessionCleanupPorts {
   persistedQueryCache: SessionPersistedQueryCache;
   drafts: Pick<DraftService, 'removeAll'>;
   voiceNotes: Pick<VoiceNoteStorageService, 'removeAll'>;
-  deviceTimezone: Pick<DeviceTimezoneService, 'clear'>;
-  /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다 */
-  pendingRedemption: Pick<PendingRedemptionRepository, 'clear'>;
+  /** 위층 기능이라 조립하는 곳이 넘긴다 */
+  deviceTimezone: { clear(): void };
+  /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다. 위층 기능이라 조립하는 곳이 넘긴다 */
+  pendingRedemption: { clear(): void };
   /** 계정별 안내 기록. 위층 기능이라 조립하는 곳이 넘긴다 */
   accountGuides: readonly { removeAccount(accountId: string): void }[];
   logger: Pick<Logger, 'warn'>;

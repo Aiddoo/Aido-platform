@@ -1,6 +1,8 @@
+import type { ApiError } from '@src/core/errors/api-error';
+import type { Result } from '@src/core/errors/result';
+import type { RequestConfig } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { TokenStore } from '@src/core/ports/token-store';
-import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { getErrorMessage } from '@src/shared/errors';
 
 import type { AuthService } from '../apis/auth.service';
@@ -13,7 +15,10 @@ export const LOGOUT_REQUEST_TIMEOUT_MS = 3_000;
 interface LogOutDeviceParams {
   isOnline: boolean;
   authService: Pick<AuthService, 'logout' | 'clearLocalSession'>;
-  pushDeviceService: Pick<PushDeviceService, 'unregister'>;
+  /** 위층 기능이라 조립하는 곳이 넘긴다 */
+  pushDeviceService: {
+    unregister(config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>>;
+  };
   tokenStore: Pick<TokenStore, 'readRefreshToken'>;
   sessionRevocationService: Pick<SessionRevocationService, 'record'>;
   logger: Logger;
