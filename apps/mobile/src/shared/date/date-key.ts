@@ -39,6 +39,10 @@ export function getDayOfMonth(dateKey: string): number {
   return parseDateKey(dateKey).date();
 }
 
+export function getYearOfDateKey(dateKey: string): number {
+  return parseDateKey(dateKey).year();
+}
+
 export function getDaysInDateKeyMonth(dateKey: string): number {
   return parseDateKey(dateKey).daysInMonth();
 }

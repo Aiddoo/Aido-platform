@@ -126,7 +126,7 @@ function shouldRegisterPushAutomatically({
   }
   const isDeferredCohort =
     config == null
-      ? toEpochMs(user.createdAt) >= new Date(PUSH_REGISTRATION_DEFERRED_SINCE).getTime()
+      ? toEpochMs(user.createdAt) >= Date.parse(PUSH_REGISTRATION_DEFERRED_SINCE)
       : isNewUserCohort(config, user);
   if (!isDeferredCohort) {
     return true;

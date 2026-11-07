@@ -1,9 +1,10 @@
 import { createLocalFileSystemFake } from '@src/shared/__tests__';
+import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import { createVoiceRecordingRepository } from './voice-recording.repository';
 
-const NOW = new Date('2026-12-05T00:00:00.000Z');
+const NOW = toInstant('2026-12-05T00:00:00.000Z');
 const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createRepository() {
@@ -90,7 +91,7 @@ describe('VoiceRecordingRepository', () => {
     files.addFile(OWNER_DIRECTORY, 'orphan-old.wav', { modifiedAt: old });
     files.addFile(OWNER_DIRECTORY, 'referenced-old.wav', { modifiedAt: old });
     files.addFile(OWNER_DIRECTORY, 'orphan-new.wav', {
-      modifiedAt: new Date(NOW.getTime() - 10 * 60 * 1_000),
+      modifiedAt: new Date(toEpochMs(NOW) - 10 * 60 * 1_000),
     });
 
     // When

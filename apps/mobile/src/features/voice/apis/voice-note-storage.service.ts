@@ -1,4 +1,4 @@
-import { toEpochMs } from '@src/shared/date/instant';
+import { getNowInstant, type Instant, toEpochMs } from '@src/shared/date/instant';
 import { orderBy, partition, sumBy } from 'es-toolkit';
 
 import { VoiceNotePolicy } from '../domains/voice-note.model';
@@ -16,12 +16,12 @@ export interface VoiceNoteRecordingUsage {
 export class VoiceNoteStorageService {
   readonly drafts: VoiceNoteDraftRepository;
   readonly recordings: VoiceRecordingRepository;
-  readonly #now: () => Date;
+  readonly #now: () => Instant;
 
   constructor(
     drafts: VoiceNoteDraftRepository,
     recordings: VoiceRecordingRepository,
-    now: () => Date = () => new Date(),
+    now: () => Instant = getNowInstant,
   ) {
     this.drafts = drafts;
     this.recordings = recordings;

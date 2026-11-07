@@ -3,6 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import { getNowInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -30,7 +31,7 @@ function buildContext(
   return {
     t: translate,
     locale: toResolvedLanguage(i18n.language),
-    now: new Date(),
+    now: getNowInstant(),
     timeZone,
     weekCompletions,
     userId,

@@ -1,4 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { t, useTranslation } from '@src/shared/i18n';
 import { logger } from '@src/shared/infra/logger/global-logger';
@@ -32,7 +33,7 @@ export const openSupportMail = () => {
   const code = createDiagnosticCode({
     platform: process.env.EXPO_OS,
     appVersion: Application.nativeApplicationVersion,
-    occurredAt: new Date(),
+    occurredAt: getNowInstant(),
   });
   const url = buildSupportMailUrl({
     subject: t('common:errorBoundary.mailSubject', { code }),

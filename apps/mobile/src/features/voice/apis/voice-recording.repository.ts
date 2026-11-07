@@ -1,5 +1,6 @@
 import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file-system';
 import type { Logger } from '@src/core/ports/logger';
+import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
@@ -28,7 +29,11 @@ export interface VoiceRecordingRepository {
   /** 파일 이름별 크기(바이트) */
   getFileSizes(accountId: string): Record<string, number>;
   removeOwned(accountId: string): void;
-  removeExpired(accountId: string, now: Date, referencedFileNames: ReadonlySet<string>): string[];
+  removeExpired(
+    accountId: string,
+    now: Instant,
+    referencedFileNames: ReadonlySet<string>,
+  ): string[];
   removeAllExceptOwner(accountId: string): void;
   removeAll(): void;
 }

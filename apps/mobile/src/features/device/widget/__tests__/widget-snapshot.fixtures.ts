@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 
@@ -11,7 +13,7 @@ export function buildWidgetSnapshotContext(
   return {
     t: echoTranslate,
     locale: 'ko',
-    now: new Date('2026-07-12T09:00:00.000Z'),
+    now: toInstant('2026-07-12T09:00:00.000Z'),
     timeZone: 'Asia/Seoul',
     ...overrides,
   };

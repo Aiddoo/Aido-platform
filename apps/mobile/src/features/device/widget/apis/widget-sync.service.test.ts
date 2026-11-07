@@ -1,4 +1,5 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { toInstant } from '@src/shared/date/instant';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import type { WidgetSnapshotContext, WidgetSummaryInput } from './widget-snapshot.mapper';
@@ -20,7 +21,7 @@ function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
 const context: WidgetSnapshotContext = {
   t: (key) => key,
   locale: 'ko',
-  now: new Date('2026-07-12T09:00:00.000Z'),
+  now: toInstant('2026-07-12T09:00:00.000Z'),
   timeZone: 'Asia/Seoul',
 };
 
@@ -161,7 +162,7 @@ describe('WidgetSyncService', () => {
     await service.syncSummary({ today: summary }, context);
     await service.syncSummary(
       { today: summary },
-      { ...context, now: new Date('2026-07-12T09:01:00.000Z') },
+      { ...context, now: toInstant('2026-07-12T09:01:00.000Z') },
     );
 
     // Then

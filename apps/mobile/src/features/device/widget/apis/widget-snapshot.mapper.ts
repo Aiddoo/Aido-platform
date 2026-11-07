@@ -4,6 +4,7 @@ import {
   type DateFormatContext,
 } from '@src/shared/date/date-format';
 import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
+import type { Instant } from '@src/shared/date/instant';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
 
@@ -56,7 +57,7 @@ export type WidgetTranslateFn = (
 export interface WidgetSnapshotContext {
   t: WidgetTranslateFn;
   locale: ResolvedLanguage;
-  now: Date;
+  now: Instant;
   /** 쓰기 시점의 기기 시간대. 표시 내용이 같아도 바뀌면 iOS timeline의 자정 경계를 다시 써야 한다. */
   timeZone: string;
   userId?: string;
@@ -107,7 +108,7 @@ export function toWidgetSnapshot(
   const todaySnapshot = toWidgetDaySnapshot(today, context);
   return {
     version: 2,
-    updatedAtIso: context.now.toISOString(),
+    updatedAtIso: context.now,
     days:
       tomorrow == null ? [todaySnapshot] : [todaySnapshot, toWidgetDaySnapshot(tomorrow, context)],
   };
@@ -182,7 +183,7 @@ export function toLoggedOutWidgetSnapshot(
 ): WidgetSnapshot {
   return {
     version: 2,
-    updatedAtIso: context.now.toISOString(),
+    updatedAtIso: context.now,
     days: [
       {
         state: 'loggedOut',

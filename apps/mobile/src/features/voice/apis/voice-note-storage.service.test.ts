@@ -7,7 +7,7 @@ import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
 import { VoiceNoteStorageService } from './voice-note-storage.service';
 import { createVoiceRecordingRepository } from './voice-recording.repository';
 
-const NOW = new Date('2026-12-05T00:00:00.000Z');
+const NOW = toInstant('2026-12-05T00:00:00.000Z');
 const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createService() {

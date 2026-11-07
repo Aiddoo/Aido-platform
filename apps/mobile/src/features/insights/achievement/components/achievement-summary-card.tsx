@@ -1,11 +1,12 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
+import { getYearOfDateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -44,10 +45,10 @@ const CERTIFICATE_LINE_COUNT = 4;
 const LOADING_STAT_COUNT = 3;
 
 export function AchievementSummaryCard() {
-  const today = useToday();
+  const todayKey = useTodayKey();
   usePrefetchQuery(useGetMeQueryOptions());
   const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
-    useGetWeeklyAchievementsInfiniteQueryOptions({ year: today.getFullYear() }),
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: getYearOfDateKey(todayKey) }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const fontScaledSize = useFontScaledSize();
