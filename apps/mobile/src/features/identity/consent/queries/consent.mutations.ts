@@ -10,6 +10,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -72,11 +73,13 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 }
 
 export function useUpdateMarketingConsentMutationOptions() {
-  const haptics = useHaptics();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
+  const showFailure = useMutationFailure(t('auth:toasts.settingsChangeFailed'));
 
   return mutationOptions({
+    // 오프라인에 멈춰 있으면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
+    networkMode: 'always',
     mutationFn: async (input: ConsentAgreement) => {
       const result = await consentService.updateMarketingConsent(input);
       return unwrap(result);
@@ -112,21 +115,22 @@ export function useUpdateMarketingConsentMutationOptions() {
       });
     },
 
-    onError: (_error, _input, context) => {
-      haptics.notify('error');
-
+    onError: (error, _input, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
+      showFailure(error);
     },
   });
 }
 
 export function useUpdateMarketingPushConsentMutationOptions() {
-  const haptics = useHaptics();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
+  const showFailure = useMutationFailure(t('auth:toasts.settingsChangeFailed'));
+
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentService.updateMarketingPushConsent(input)),
     onMutate: async (input) => {
@@ -147,11 +151,11 @@ export function useUpdateMarketingPushConsentMutationOptions() {
         old ? { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt } : old,
       );
     },
-    onError: (_error, _input, context) => {
-      haptics.notify('error');
+    onError: (error, _input, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
+      showFailure(error);
     },
   });
 }
