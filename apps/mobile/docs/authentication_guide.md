@@ -30,9 +30,23 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 | `null`               | `unauthenticated`                                 |
 | throw (기기 잠김)    | `locked`: 판정을 미루고 `AppState` 복귀 시 재판정 |
 
-- 잠금이 아닌 읽기 실패는 그대로 던진다. `AuthProvider`가 관측하고 미인증으로 폴백한다. 토큰은 지우지 않으므로 다음 실행에 회복할 수 있다. `locked`로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다.
+- 잠금이 아닌 읽기 실패는 그대로 던진다. `useAuthBoot`가 관측하고 미인증으로 폴백한다. 토큰은 지우지 않으므로 다음 실행에 회복할 수 있다. `locked`로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다.
 - `locked`를 `unauthenticated`로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. iOS `getItemAsync`는 잠금 중 `null`이 아니라 throw한다.
 - 첫 실행 플래그와 부팅 세션 검증은 두지 않는다. 플래그는 위 오판을 만들고, 부팅 검증은 얻는 것 없이 강제 로그아웃 표면만 넓힌다. 첫 인증 요청의 401 경로가 어차피 갱신한다.
+
+## 인증 상태 (`features/identity/auth/domains/auth-session.model.ts`)
+
+상태는 순수 전이 함수 `transitionAuthSession`과 DI가 소유하는 저장소(`apis/auth-session.store.ts`)가 관리한다. 화면은 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn()`, `signOut()`으로 쓴다.
+
+| 이벤트           | 반영되는 상태       | 결과                                      |
+| ---------------- | ------------------- | ----------------------------------------- |
+| `bootResolved`   | `loading`, `locked` | 판정 결과. 토큰 없음은 미인증(`none`)     |
+| `bootFailed`     | `loading`, `locked` | 미인증(`boot-failed`). 토큰은 지우지 않음 |
+| `signedIn`       | 전부                | `authenticated`                           |
+| `signedOut`      | 전부                | 미인증(`signed-out`). 초안까지 지움       |
+| `sessionExpired` | `authenticated`     | 미인증(`expired`). 초안을 남김            |
+
+시작 판정, 잠금 해제 재판정, 만료 구독, 커밋 뒤 정리는 `bootstrap/hooks/use-auth-boot.ts`가 맡는다. `QueryErrorBoundary` 아래에 두면 오류 화면에서 만료 구독이 끊기므로 `AuthBootProvider`에서 부른다.
 
 ## 토큰 갱신 (`shared/infra/http/token-refresher.ts`, `token-refresh-hook.ts`)
 
@@ -59,7 +73,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 `refresh-rejected`는 서버의 `ErrorCode`를 그대로 실어 보낸다. 401 하나로 뭉개면 "세션이 만료됐다"와 "앱이 토큰 패밀리를 태우고 있다"를 구분할 수 없다. severity는 [observability.md](../.claude/observability.md#severity)를 본다.
 
-이미 로그아웃된 앱이 낸 401은 세션 만료가 아니다. `AuthProvider`가 `authenticated`일 때만 `session_expired`를 보낸다. 없으면 로그인한 적 없는 유저의 이벤트가 진짜 세션 유실을 묻는다.
+이미 로그아웃된 앱이 낸 401은 세션 만료가 아니다. `useAuthBoot`가 `authenticated`일 때만 `session_expired`를 보낸다. 없으면 로그인한 적 없는 유저의 이벤트가 진짜 세션 유실을 묻는다.
 
 ## 401은 ErrorBoundary로 새지 않는다
 

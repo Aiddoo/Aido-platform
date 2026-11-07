@@ -1,4 +1,4 @@
-import { AuthProvider } from '@src/bootstrap/providers/auth-provider';
+import { AuthBootProvider } from '@src/bootstrap/providers/auth-boot-provider';
 import { DIProvider } from '@src/bootstrap/providers/di-provider';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
@@ -64,7 +64,7 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                   >
                     <OnlineManagerProvider>
                       <LocalDateProvider>
-                        <AuthProvider>
+                        <AuthBootProvider>
                           <RevenueCatProvider>
                             <NotificationProvider>
                               <ReservedRegionsProvider style={{ flex: 1 }}>
@@ -83,7 +83,7 @@ export function AppProviders({ children, encryptedStorageBootstrap }: AppProvide
                               </ReservedRegionsProvider>
                             </NotificationProvider>
                           </RevenueCatProvider>
-                        </AuthProvider>
+                        </AuthBootProvider>
                       </LocalDateProvider>
                     </OnlineManagerProvider>
                   </DIProvider>

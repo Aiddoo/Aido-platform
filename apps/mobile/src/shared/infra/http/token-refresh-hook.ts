@@ -101,7 +101,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     return match(outcome)
       .with({ kind: 'refreshed' }, ({ accessToken }) => forceRetryWithToken(request, accessToken))
       .with({ kind: 'invalid' }, async ({ details }) => {
-        // 살아있다고 믿던 세션이었는지는 AuthProvider가 판단한다(로그아웃 상태의 401은 잡음).
+        // 살아있다고 믿던 세션이었는지는 useAuthBoot가 판단한다(로그아웃 상태의 401은 잡음).
         await endSession(details);
         return response;
       })

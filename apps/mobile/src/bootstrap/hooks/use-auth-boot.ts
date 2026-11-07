@@ -1,18 +1,13 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
-import {
-  useWidgetSnapshotSync,
-  type WidgetSyncAuthState,
-} from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
 import { isAuthBootPending } from '@src/features/identity/auth/domains/auth-session.model';
-import { usePendingRevocationFlush } from '@src/features/identity/auth/hooks/use-pending-revocation-flush';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
-import { type PropsWithChildren, useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
-import { resolveInitialAuthStatus } from './auth-boot';
+import { resolveInitialAuthStatus } from '../providers/auth-boot';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
 import {
   useAnalytics,
@@ -20,9 +15,13 @@ import {
   useErrorReporter,
   useSessionCleanupService,
   useTokenStore,
-} from './di-context';
+} from '../providers/di-context';
 
-export function AuthProvider({ children }: PropsWithChildren) {
+/**
+ * 시작 판정, 잠금 해제 재판정, 세션 만료 구독, 커밋 뒤 정리를 맡는다.
+ * `AuthGateLayout`에 두면 `QueryErrorBoundary` 아래라 오류 화면에서 만료 구독이 끊긴다.
+ */
+export function useAuthBoot(): void {
   const authSessionStore = useAuthSessionStore();
   const tokenStore = useTokenStore();
   const errorReporter = useErrorReporter();
@@ -109,18 +108,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     });
   }, [authSessionStore, errorReporter, analytics]);
 
-  usePendingRevocationFlush();
-
-  // 홈 위젯 스냅샷 동기화 — 인증 상태를 아는 이 Provider가 유일한 통합 지점
-  // (팀 규칙: 크로스커팅 리스너는 상태 주인 Provider에 통합, null-render 컴포넌트 금지)
-  const widgetSyncAuthState: WidgetSyncAuthState =
-    status === 'authenticated'
-      ? 'authenticated'
-      : status === 'unauthenticated'
-        ? 'unauthenticated'
-        : 'resolving';
-  useWidgetSnapshotSync(widgetSyncAuthState);
-
   // 캐시 비우기는 **커밋 이후**여야 한다.
   //
   // 만료 리스너에서 같은 tick에 clear()하면, 아직 마운트된 인증 화면의 useSuspenseQuery들이
@@ -136,6 +123,4 @@ export function AuthProvider({ children }: PropsWithChildren) {
       sessionCleanupService.afterSessionEnded();
     }
   }, [authSession, sessionCleanupService]);
-
-  return children;
 }

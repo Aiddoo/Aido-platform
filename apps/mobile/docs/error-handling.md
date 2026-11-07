@@ -203,7 +203,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`AuthErrors.fromE
 | 영구 오류 (키체인 손상, entitlement 오설정) | **원본 오류 그대로 throw**                     |
 | 저장된 값 파싱 실패                         | `null` (손상된 항목 하나가 부팅을 막지 않는다) |
 
-"지금 못 읽는다"를 "토큰이 없다"로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. 반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다. 그래서 일시적 오류만 이 타입으로 승격하고, 영구 오류는 `AuthProvider`가 관측하고 미인증으로 폴백한다. 벤더 에러 판별(OSStatus 메시지 매칭)은 `secure-storage.ts`에만 두고, `auth-boot.ts`는 `isKeychainLockedError()`만 안다.
+"지금 못 읽는다"를 "토큰이 없다"로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. 반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다. 그래서 일시적 오류만 이 타입으로 승격하고, 영구 오류는 `useAuthBoot`가 관측하고 미인증으로 폴백한다. 벤더 에러 판별(OSStatus 메시지 매칭)은 `secure-storage.ts`에만 두고, `auth-boot.ts`는 `isKeychainLockedError()`만 안다.
 
 ## 던져진 값 다루기: toError / getErrorMessage
 

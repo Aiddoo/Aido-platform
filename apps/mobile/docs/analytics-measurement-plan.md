@@ -41,7 +41,7 @@
 | `auth_login`                                  | `method`: 위와 같다                                                      | 이메일 로그인, 소셜 기존 계정            | 로그인          |
 | `auth_logout` / `auth_account_deleted`        | –                                                                        | 로그아웃 / 탈퇴                          | 이탈 신호       |
 | `auth_social_linked` / `auth_social_unlinked` | `provider`                                                               | 계정 연결 설정                           | 계정 연동       |
-| `session_expired`                             | `reason`: `refresh-rejected`·`invalid-refresh-response`·`tokens-missing` | `auth-provider`                          | 비자발 로그아웃 |
+| `session_expired`                             | `reason`: `refresh-rejected`·`invalid-refresh-response`·`tokens-missing` | `use-auth-boot`                          | 비자발 로그아웃 |
 
 **할 일 / 카테고리**
 

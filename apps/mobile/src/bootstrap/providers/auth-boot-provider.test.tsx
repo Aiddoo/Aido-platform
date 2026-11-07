@@ -35,7 +35,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, type AppStateStatus, Text } from 'react-native';
 import { z } from 'zod';
 
-import { AuthProvider } from './auth-provider';
+import { AuthBootProvider } from './auth-boot-provider';
 import { StaticDIProvider } from './di-context';
 import {
   createQueryCacheStorage,
@@ -64,7 +64,7 @@ const LogoutProbe = () => {
   );
 };
 
-describe('AuthProvider', () => {
+describe('AuthBootProvider', () => {
   let tokenStore: ReturnType<typeof createMockTokenStore>;
   let errorReporter: jest.Mocked<ErrorReporter>;
   let analytics: ReturnType<typeof createAnalyticsStub>;
@@ -108,7 +108,7 @@ describe('AuthProvider', () => {
   });
 
   const renderProvider = async () => {
-    // AuthProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
+    // AuthBootProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
     const todoService = new TodoService(createHttpClientStub());
     const userHttpClient = createHttpClientStub();
     userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
@@ -144,10 +144,10 @@ describe('AuthProvider', () => {
       >
         <QueryClientProvider client={queryClient}>
           <LocalDateProvider>
-            <AuthProvider>
+            <AuthBootProvider>
               <StatusProbe />
               <LogoutProbe />
-            </AuthProvider>
+            </AuthBootProvider>
           </LocalDateProvider>
         </QueryClientProvider>
       </StaticDIProvider>,

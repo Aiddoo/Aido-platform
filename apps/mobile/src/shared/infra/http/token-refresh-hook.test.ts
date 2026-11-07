@@ -143,7 +143,7 @@ describe('createTokenRefreshHook', () => {
   });
 
   it('로컬에 토큰이 없으면 tokens-missing으로 세션을 종료한다', async () => {
-    // Given — 이미 로그아웃된 앱의 401. 잡음 여부 판단은 AuthProvider의 몫이다.
+    // Given — 이미 로그아웃된 앱의 401. 잡음 여부 판단은 useAuthBoot의 몫이다.
     tokenStore.readAccessToken.mockResolvedValue(null);
     refresh.mockResolvedValue({ kind: 'invalid', details: { reason: 'tokens-missing' } });
     const response = createFakeResponse(401);

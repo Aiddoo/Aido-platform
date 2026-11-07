@@ -15,7 +15,7 @@ provider class가 바뀌면 사용자가 홈 화면에 둔 위젯이 사라지�
 | bridge                         | iOS timeline / Android snapshot·HeadlessJS / 미지원 플랫폼 경계   |
 | components/widgets.ios.tsx     | 격리된 SwiftUI renderer (`expo-widgets`)                          |
 | components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                   |
-| hooks                          | AuthProvider가 소유하는 계정·날짜(오늘·내일)·언어 동기화          |
+| hooks                          | AuthBootProvider가 소유하는 계정·날짜(오늘·내일)·언어 동기화      |
 
 위젯은 네트워크·인증 저장소에 접근하지 않는다. 변경은 앱에서 검증한 표시용 snapshot으로만
 전달한다. snapshot은 오늘과 (받을 수 있으면) 내일 요약을 담는다. iOS는 [지금: 오늘] →

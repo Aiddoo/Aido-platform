@@ -18,7 +18,7 @@ AuthService.openKakaoLogin()                  # openGoogleLogin·openNaverLogin�
   → WebBrowser.openAuthSessionAsync(GET {API}/v1/auth/{provider}/start?redirect_uri&mode=login, redirectUri)
   → 서버가 공급자 인증을 끝내고 redirectUri로 일회용 code를 돌려준다
   → POST v1/auth/exchange { code }
-  → 토큰 저장, setStatus('authenticated')
+  → 토큰 저장, signIn()
 ```
 
 - `redirectUri`는 `makeRedirectUri({ scheme: ENV.SCHEME, path: 'auth/{provider}' })`다. scheme은 환경별로 다르다(`app.config.ts`). 서버가 `start-oauth-authorization.use-case.ts`의 허용 패턴으로 검사하므로 scheme을 바꾸면 거기도 고친다.
