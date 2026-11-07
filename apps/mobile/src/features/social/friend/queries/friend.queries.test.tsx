@@ -7,7 +7,7 @@ import type { PropsWithChildren } from 'react';
 
 import { createSearchUsersDto } from '../__tests__/friend.fixtures';
 import { FriendService } from '../apis/friend.service';
-import { useGetUserSearchQueryOptions } from './friend.queries';
+import { useGetUserSearchInfiniteQueryOptions } from './friend.queries';
 
 const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
   const queryClient = createTestQueryClient();
@@ -22,14 +22,14 @@ const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
   );
 };
 
-describe('useGetUserSearchQueryOptions', () => {
+describe('useGetUserSearchInfiniteQueryOptions', () => {
   test('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const wrapper = createWrapper(httpClient);
 
     // When
-    await renderHook(() => useInfiniteQuery(useGetUserSearchQueryOptions({ query: 'a' })), {
+    await renderHook(() => useInfiniteQuery(useGetUserSearchInfiniteQueryOptions({ query: 'a' })), {
       wrapper,
     });
 
@@ -45,7 +45,7 @@ describe('useGetUserSearchQueryOptions', () => {
 
     // When
     const { result } = await renderHook(
-      () => useInfiniteQuery(useGetUserSearchQueryOptions({ query: '홍길동' })),
+      () => useInfiniteQuery(useGetUserSearchInfiniteQueryOptions({ query: '홍길동' })),
       {
         wrapper,
       },
@@ -57,7 +57,7 @@ describe('useGetUserSearchQueryOptions', () => {
       params: { q: '홍길동', cursor: undefined, limit: undefined },
       signal: expect.any(AbortSignal),
     });
-    const firstItem = result.current.data?.pages[0]?.items[0];
+    const firstItem = result.current.data?.[0];
     expect(firstItem?.name).toBe('홍길동');
     expect(firstItem?.isFriend).toBe(false);
   });

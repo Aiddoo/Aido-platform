@@ -23,7 +23,7 @@ import {
   useCancelRequestMutationOptions,
   useSendRequestByTagMutationOptions,
 } from '../queries/friend.mutations';
-import { useGetUserSearchQueryOptions } from '../queries/friend.queries';
+import { useGetUserSearchInfiniteQueryOptions } from '../queries/friend.queries';
 import type { SearchedUser } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
@@ -37,7 +37,7 @@ export function FriendSearchList({ query, openFriendLimitInvite }: FriendSearchL
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
-  const options = useGetUserSearchQueryOptions({ query: normalizedQuery });
+  const options = useGetUserSearchInfiniteQueryOptions({ query: normalizedQuery });
   const search = useInfiniteQuery({
     ...options,
     enabled: options.enabled && isSettled,
@@ -57,7 +57,7 @@ export function FriendSearchList({ query, openFriendLimitInvite }: FriendSearchL
       // 검색 중에는 키보드가 떠 있으므로 첫 탭이 키보드를 내리는 데 먹히지 않게 하고, 끌면 내린다
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      data={search.data?.pages.flatMap((page) => page.items) ?? []}
+      data={search.data ?? []}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
         <FriendSearchList.Item user={item} openFriendLimitInvite={openFriendLimitInvite} />
@@ -143,7 +143,7 @@ FriendSearchList.Loading = function Loading() {
   return <UserList.Loading hasSubtitle right={<Skeleton className="h-8 w-12 rounded-xl" />} />;
 };
 
-FriendSearchList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+FriendSearchList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['friend', 'common']);
   return (
     <VStack flex={1} p={24}>

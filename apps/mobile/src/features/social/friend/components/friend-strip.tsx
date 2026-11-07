@@ -77,7 +77,7 @@ export function FriendStrip({ onInvite }: FriendStripProps) {
     isFetchNextPageError,
   } = useSuspenseInfiniteQuery(friendsQueryOptions);
 
-  const friends = friendPages.pages.flatMap((page) => page.items);
+  const { items: friends } = friendPages;
 
   const handleEndReached = () => {
     if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) {
@@ -217,7 +217,7 @@ FriendStrip.Loading = function Loading() {
   );
 };
 
-FriendStrip.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['friend', 'common']);
   const { height } = useFriendStripItemSize();
 

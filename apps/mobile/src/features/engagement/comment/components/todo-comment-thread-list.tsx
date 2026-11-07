@@ -99,7 +99,7 @@ export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThrea
     }),
   );
   const { threads, anchor } = threadsQuery.data;
-  const [isRefreshing, refresh] = useRefresh(
+  const [isRefreshing, handleRefresh] = useRefresh(
     useCallback(
       () =>
         Promise.all([
@@ -130,7 +130,7 @@ export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThrea
       ListHeaderComponent={
         <>
           {header}
-          {threads.length > 0 && <DoubleTapHint />}
+          {threads.length > 0 && <DoubleTapHint className="mx-4 mb-1 mt-3" />}
           {threadsQuery.hasPreviousPage && (
             <LoadPrevious
               isLoading={threadsQuery.isFetchingPreviousPage}
@@ -147,7 +147,7 @@ export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThrea
       isFetchNextPageError={threadsQuery.isFetchNextPageError}
       fetchNextPage={threadsQuery.fetchNextPage}
       refreshing={isRefreshing}
-      onRefresh={refresh}
+      onRefresh={handleRefresh}
     />
   );
 }
@@ -279,17 +279,23 @@ function LoadPrevious({ isLoading, onPress }: { isLoading: boolean; onPress: () 
 }
 
 /** 계정당 한 번. 처음 두 번 탭하거나 닫으면 다시 보이지 않는다 */
-function DoubleTapHint() {
+function DoubleTapHint({ className }: { className?: string }) {
   const { data: user } = useQuery(useGetMeQueryOptions());
 
   if (user == null) {
     return null;
   }
 
-  return <DoubleTapHint.Contents accountId={user.id} />;
+  return <DoubleTapHint.Contents accountId={user.id} className={className} />;
 }
 
-DoubleTapHint.Contents = function Contents({ accountId }: { accountId: string }) {
+DoubleTapHint.Contents = function Contents({
+  accountId,
+  className,
+}: {
+  accountId: string;
+  className?: string;
+}) {
   const { t } = useTranslation('todoComment');
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind: 'comment-double-tap' });
@@ -302,7 +308,7 @@ DoubleTapHint.Contents = function Contents({ accountId }: { accountId: string })
     <InlineAlert
       accessibilityRole="alert"
       testID="todo-comment-double-tap-hint"
-      className="mx-4 mb-1 mt-3"
+      className={className}
       image={<PulsingHeart />}
       description={t('hint.doubleTap')}
       onClose={() => {

@@ -315,7 +315,7 @@ SuggestionsList.Loading = function Loading() {
   );
 };
 
-SuggestionsList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+SuggestionsList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
   if (isSuggestionsPremiumRequired(error)) {

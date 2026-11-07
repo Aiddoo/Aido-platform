@@ -71,7 +71,7 @@ function Loading({
   );
 }
 
-function ErrorState({ reset }: QueryErrorFallbackProps) {
+function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation();
   return <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />;
 }
@@ -85,4 +85,4 @@ function Empty(props: ComponentProps<typeof Result>) {
 }
 
 /** 사용자 행 목록의 행, 로딩, 오류, 빈 상태. 목록 자체는 InfiniteList가 맡는다 */
-export const UserList = { Item, Loading, Error: ErrorState, Empty };
+export const UserList = { Item, Loading, Error: ErrorFallback, Empty };

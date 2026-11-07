@@ -45,7 +45,7 @@ export function NotificationList() {
     );
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
   const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
-  const [refreshing, onRefresh] = useRefresh(refetch);
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   return (
     <InfiniteList
@@ -54,8 +54,8 @@ export function NotificationList() {
       isFetchingNextPage={isFetchingNextPage}
       isFetchNextPageError={isFetchNextPageError}
       fetchNextPage={fetchNextPage}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
@@ -80,7 +80,7 @@ export function NotificationList() {
 
 NotificationList.Loading = NotificationListRow.Loading;
 
-NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
 
   return (

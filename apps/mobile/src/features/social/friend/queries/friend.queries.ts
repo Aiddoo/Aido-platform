@@ -12,6 +12,14 @@ import { findFriendById } from '../utils/find-friend-by-id';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;
 
+function selectItems<TItem, TPageParam>(data: InfiniteData<Page<TItem>, TPageParam>) {
+  return data.pages.flatMap((page) => page.items);
+}
+
+function selectItemsWithTotal<TItem, TPageParam>(data: InfiniteData<Page<TItem>, TPageParam>) {
+  return { items: selectItems(data), totalCount: data.pages[0]?.totalCount ?? 0 };
+}
+
 type FriendPages = InfiniteData<Page<FriendUser>, string | undefined>;
 
 export function useGetFriendsInfiniteQueryOptions() {
@@ -29,12 +37,13 @@ export function useGetFriendsInfiniteQueryOptions() {
 
       return lastPage.items[lastPage.items.length - 1]?.followId;
     },
+    select: selectItemsWithTotal,
     ...PERSISTED_QUERY_OPTIONS,
   });
 }
 
 /** 친구 목록 캐시에서 한 사람을 읽는다. 아직 불러오지 않은 페이지에 있으면 null이다 */
-export function useGetFriendQueryOptions({ friendId }: { friendId: string }) {
+export function useGetFriendInfiniteQueryOptions({ friendId }: { friendId: string }) {
   const select = useCallback(
     (friendPages: FriendPages) => findFriendById(friendPages.pages, friendId),
     [friendId],
@@ -43,7 +52,7 @@ export function useGetFriendQueryOptions({ friendId }: { friendId: string }) {
   return infiniteQueryOptions({ ...useGetFriendsInfiniteQueryOptions(), select });
 }
 
-export function useGetReceivedRequestsQueryOptions() {
+export function useGetReceivedRequestsInfiniteQueryOptions() {
   const friendService = useFriendService();
 
   return infiniteQueryOptions({
@@ -58,10 +67,11 @@ export function useGetReceivedRequestsQueryOptions() {
 
       return lastPage.items[lastPage.items.length - 1]?.id;
     },
+    select: selectItemsWithTotal,
   });
 }
 
-export function useGetSentRequestsQueryOptions() {
+export function useGetSentRequestsInfiniteQueryOptions() {
   const friendService = useFriendService();
 
   return infiniteQueryOptions({
@@ -76,6 +86,7 @@ export function useGetSentRequestsQueryOptions() {
 
       return lastPage.items[lastPage.items.length - 1]?.id;
     },
+    select: selectItemsWithTotal,
   });
 }
 
@@ -85,7 +96,7 @@ interface SearchUsersPageParam {
 
 const INITIAL_SEARCH_USERS_PAGE_PARAM: SearchUsersPageParam = {};
 
-export function useGetUserSearchQueryOptions({ query }: { query: string }) {
+export function useGetUserSearchInfiniteQueryOptions({ query }: { query: string }) {
   const friendService = useFriendService();
   const trimmed = query.trim();
 
@@ -102,5 +113,6 @@ export function useGetUserSearchQueryOptions({ query }: { query: string }) {
 
       return { cursor: lastPage.nextCursor };
     },
+    select: selectItems,
   });
 }

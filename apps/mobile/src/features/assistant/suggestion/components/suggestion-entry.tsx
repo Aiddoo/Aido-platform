@@ -116,7 +116,7 @@ SuggestionEntry.Loading = function Loading() {
   return <InfoCard label={t('feed.loading')} />;
 };
 
-SuggestionEntry.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+SuggestionEntry.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('todo');
   return <InfoCard label={t('feed.suggestionsRetry')} onPress={reset} />;
 };

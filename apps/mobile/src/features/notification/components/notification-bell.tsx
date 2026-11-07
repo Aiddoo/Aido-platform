@@ -100,7 +100,7 @@ NotificationBell.Loading = function Loading() {
   );
 };
 
-NotificationBell.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+NotificationBell.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return (
     <PressableFeedback onPress={reset} hitSlop={8} className="rounded-xl p-2">
       <BellIcon width={24} height={24} colorClassName="text-gray-4" />

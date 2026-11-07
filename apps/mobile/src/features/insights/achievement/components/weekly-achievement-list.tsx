@@ -42,7 +42,7 @@ export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievement
   const queryClient = useQueryClient();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
-  const [refreshing, onRefresh] = useRefresh(() =>
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
     invalidateWeeklyAchievements(queryClient, { year }),
   );
 
@@ -63,8 +63,8 @@ export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievement
       isFetchingNextPage={isFetchingNextPage}
       isFetchNextPageError={isFetchNextPageError}
       fetchNextPage={fetchNextPage}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
     />
   );
 }
@@ -150,7 +150,7 @@ WeeklyAchievementList.Loading = function Loading() {
   );
 };
 
-WeeklyAchievementList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+WeeklyAchievementList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
   return (

@@ -87,11 +87,10 @@ export function FriendList({ invite }: FriendListProps) {
     fetchNextPage,
   });
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
-  const [refreshing, onRefresh] = useRefresh(refetch);
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
 
-  const friends = data.pages.flatMap((page) => page.items);
-  const totalCount = data.pages[0]?.totalCount ?? 0;
+  const { items: friends, totalCount } = data;
 
   const reorderableList = useReorderableList({
     items: friends,
@@ -132,8 +131,8 @@ export function FriendList({ invite }: FriendListProps) {
       onEndReachedThreshold={0.5}
       refreshControl={
         <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
           tintColor={refreshTint}
           colors={refreshTint == null ? undefined : [refreshTint]}
         />

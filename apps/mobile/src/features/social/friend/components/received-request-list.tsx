@@ -8,18 +8,17 @@ import {
   useAcceptRequestMutationOptions,
   useRejectRequestMutationOptions,
 } from '../queries/friend.mutations';
-import { useGetReceivedRequestsQueryOptions } from '../queries/friend.queries';
+import { useGetReceivedRequestsInfiniteQueryOptions } from '../queries/friend.queries';
 import type { FriendRequest } from '../schemas/friend.schema';
 import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function ReceivedRequestList() {
   const { t } = useTranslation('friend');
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
-    useSuspenseInfiniteQuery(useGetReceivedRequestsQueryOptions());
-  const [refreshing, onRefresh] = useRefresh(refetch);
+    useSuspenseInfiniteQuery(useGetReceivedRequestsInfiniteQueryOptions());
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
-  const requests = data.pages.flatMap((page) => page.items);
-  const totalCount = data.pages[0]?.totalCount ?? 0;
+  const { items: requests, totalCount } = data;
 
   return (
     <InfiniteList
@@ -39,8 +38,8 @@ export function ReceivedRequestList() {
       isFetchingNextPage={isFetchingNextPage}
       isFetchNextPageError={isFetchNextPageError}
       fetchNextPage={fetchNextPage}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
     />
   );
 }
