@@ -33,24 +33,27 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
-import { Controller, useFormContext, type UseFormReturn, useWatch } from 'react-hook-form';
+import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useResolveClassNames } from 'uniwind';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 
+type ComposerForm = UseFormReturn<AddTodoFormValues>;
+
 interface TodoComposerChipsProps {
+  form: ComposerForm;
   isSeriesOccurrence?: boolean;
   canChangeRepeat?: boolean;
 }
 
-/** 할 일을 만드는 시트가 함께 쓰는 칩 줄. 폼은 시트 안의 FormProvider에서 읽는다 */
+/** 할 일을 만드는 시트가 함께 쓰는 칩 줄. 시트가 가진 폼을 받아 읽고 바꾼다 */
 export function TodoComposerChips({
+  form,
   isSeriesOccurrence = false,
   canChangeRepeat = true,
 }: TodoComposerChipsProps) {
   const overlay = useOverlay();
-  const form = useFormContext<AddTodoFormValues>();
 
   return (
     // RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다
@@ -61,14 +64,16 @@ export function TodoComposerChips({
       style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
       contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
     >
-      <DateChip isSeriesOccurrence={isSeriesOccurrence} />
-      <TimeChip />
-      {canChangeRepeat && <RepeatChip onPress={() => openTodoRepeatPicker(overlay, form)} />}
-      <VisibilityChip />
+      <DateChip form={form} isSeriesOccurrence={isSeriesOccurrence} />
+      <TimeChip form={form} />
+      {canChangeRepeat && (
+        <RepeatChip form={form} onPress={() => openTodoRepeatPicker(overlay, form)} />
+      )}
+      <VisibilityChip form={form} />
       {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
       <QueryErrorBoundary fallback={() => null}>
         <Suspense fallback={<ActionChip.Loading />}>
-          <CategoryChip />
+          <CategoryChip form={form} />
         </Suspense>
       </QueryErrorBoundary>
     </ScrollView>
@@ -145,13 +150,19 @@ export function TodoComposerSubmitButton({
   );
 }
 
-function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
+function DateChip({
+  form,
+  isSeriesOccurrence,
+}: {
+  form: ComposerForm;
+  isSeriesOccurrence: boolean;
+}) {
   const { t } = useTranslation('common');
   const overlay = useOverlay();
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
-  const { control, getValues, setFocus, setValue } = useFormContext<AddTodoFormValues>();
-  const [startDate, endDate] = useWatch({ control, name: ['startDate', 'endDate'] });
+  const { getValues, setFocus, setValue } = form;
+  const [startDate, endDate] = useWatch({ control: form.control, name: ['startDate', 'endDate'] });
   const startDateKey = toDateKey(startDate, dateFormatContext.timeZone);
   const endDateKey = endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone);
   const singleDayLabel =
@@ -219,12 +230,12 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
   );
 }
 
-function TimeChip() {
+function TimeChip({ form }: { form: ComposerForm }) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const { control, setFocus, setValue } = useFormContext<AddTodoFormValues>();
+  const { setFocus, setValue } = form;
   const [startDate, scheduledTime, isAllDay] = useWatch({
-    control,
+    control: form.control,
     name: ['startDate', 'scheduledTime', 'isAllDay'],
   });
   const displayedTime = isAllDay ? null : scheduledTime;
@@ -271,11 +282,13 @@ function TimeChip() {
   );
 }
 
-function RepeatChip({ onPress }: Pick<ComponentProps<typeof ActionChip>, 'onPress'>) {
+function RepeatChip({
+  form,
+  onPress,
+}: Pick<ComponentProps<typeof ActionChip>, 'onPress'> & { form: ComposerForm }) {
   const { t } = useTranslation('todo');
   const dateFormatContext = useDateFormatContext();
-  const { control } = useFormContext<AddTodoFormValues>();
-  const repeat = useWatch({ control, name: 'repeat' });
+  const repeat = useWatch({ control: form.control, name: 'repeat' });
 
   return (
     <ActionChip
@@ -292,13 +305,12 @@ function RepeatChip({ onPress }: Pick<ComponentProps<typeof ActionChip>, 'onPres
   );
 }
 
-function VisibilityChip() {
+function VisibilityChip({ form }: { form: ComposerForm }) {
   const { t } = useTranslation('todo');
-  const { control } = useFormContext<AddTodoFormValues>();
 
   return (
     <Controller
-      control={control}
+      control={form.control}
       name="visibility"
       render={({ field: { value, onChange } }) => {
         const isPrivate = TodoPolicy.isPrivate({ visibility: value });
@@ -321,17 +333,17 @@ function VisibilityChip() {
   );
 }
 
-function CategoryChip() {
+function CategoryChip({ form }: { form: ComposerForm }) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const { control, setFocus } = useFormContext<AddTodoFormValues>();
+  const { setFocus } = form;
   const {
     data: { categories },
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
     <Controller
-      control={control}
+      control={form.control}
       name="categoryId"
       render={({ field: { value: categoryId, onChange } }) => {
         const category = categories.find(({ id }) => id === categoryId);

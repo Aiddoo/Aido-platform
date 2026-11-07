@@ -27,7 +27,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
-import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -63,6 +63,8 @@ import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
 import { RepeatHintLine } from './repeat-hint-line';
 
+type RepeatForm = UseFormReturn<TodoRepeatFormValues>;
+
 interface RepeatPickerValue {
   startDate: Instant;
   repeat: TodoRepeat | null;
@@ -80,7 +82,7 @@ export function TodoRepeatPickerContent({
   onCancel,
 }: TodoRepeatPickerContentProps) {
   const { timeZone } = useDateFormatContext();
-  const methods = useForm({
+  const form = useForm({
     resolver: zodResolver(createTodoRepeatFormSchema(timeZone)),
     defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat, timeZone),
     mode: 'onChange',
@@ -88,20 +90,24 @@ export function TodoRepeatPickerContent({
   const picker = useDatePicker({ startDate: toDate(value.startDate) });
 
   return (
-    <FormProvider {...methods}>
-      <SheetHeaderLayout
-        gap={20}
-        header={
-          <TodoRepeatPickerContent.RepeatPickerHeader onChange={onChange} onCancel={onCancel} />
-        }
-        footer={<TodoRepeatPickerContent.RepeatPeriodFooter value={value} onChange={onChange} />}
-      >
-        <VStack gap={20}>
-          <TodoRepeatPickerContent.DayOfWeekSelector />
-          <TodoRepeatPickerContent.RepeatFormCalendar picker={picker} />
-        </VStack>
-      </SheetHeaderLayout>
-    </FormProvider>
+    <SheetHeaderLayout
+      gap={20}
+      header={
+        <TodoRepeatPickerContent.RepeatPickerHeader
+          form={form}
+          onChange={onChange}
+          onCancel={onCancel}
+        />
+      }
+      footer={
+        <TodoRepeatPickerContent.RepeatPeriodFooter form={form} value={value} onChange={onChange} />
+      }
+    >
+      <VStack gap={20}>
+        <TodoRepeatPickerContent.DayOfWeekSelector form={form} />
+        <TodoRepeatPickerContent.RepeatFormCalendar form={form} picker={picker} />
+      </VStack>
+    </SheetHeaderLayout>
   );
 }
 
@@ -185,35 +191,34 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
 /** 값을 바꿀 때마다 스키마를 다시 돌려 확인 버튼(isValid)이 따라오게 한다 */
 const VALIDATE = { shouldValidate: true } as const;
 
-function useApplyRepeatFormValues() {
-  const { setValue } = useFormContext<TodoRepeatFormValues>();
-
-  return (next: TodoRepeatFormValues) => {
-    setValue('startDate', next.startDate, VALIDATE);
-    setValue('weekdays', next.weekdays, VALIDATE);
-    setValue('interval', next.interval, VALIDATE);
-    setValue('isMonthly', next.isMonthly, VALIDATE);
-    setValue('monthDay', next.monthDay, VALIDATE);
-    setValue('endType', next.endType, VALIDATE);
-    setValue('untilDate', next.untilDate, VALIDATE);
-  };
+function applyRepeatFormValues(form: RepeatForm, next: TodoRepeatFormValues) {
+  form.setValue('startDate', next.startDate, VALIDATE);
+  form.setValue('weekdays', next.weekdays, VALIDATE);
+  form.setValue('interval', next.interval, VALIDATE);
+  form.setValue('isMonthly', next.isMonthly, VALIDATE);
+  form.setValue('monthDay', next.monthDay, VALIDATE);
+  form.setValue('endType', next.endType, VALIDATE);
+  form.setValue('untilDate', next.untilDate, VALIDATE);
 }
 
-TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector() {
+TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector({
+  form,
+}: {
+  form: RepeatForm;
+}) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
-  const { control, getValues } = useFormContext<TodoRepeatFormValues>();
   const [weekdays, interval, isMonthly] = useWatch({
-    control,
+    control: form.control,
     name: ['weekdays', 'interval', 'isMonthly'],
   });
   const monthDay = useWatch({
-    control,
+    control: form.control,
     compute: (values) => getTodoRepeatFormMonthDay(values, timeZone),
   });
   const isPresetSelected = (days: readonly DayOfWeek[]) =>
     isTodoRepeatFormPreset({ isMonthly, interval, weekdays }, days);
-  const applyFormValues = useApplyRepeatFormValues();
+  const applyFormValues = (next: TodoRepeatFormValues) => applyRepeatFormValues(form, next);
 
   return (
     <VStack gap={12}>
@@ -225,20 +230,20 @@ TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector() {
         <TodoRepeatPickerContent.PresetChip
           label={t('picker.presetDaily')}
           isSelected={isPresetSelected(DAYS_OF_WEEK)}
-          onPress={() => applyFormValues(withTodoRepeatFormPreset(getValues(), DAYS_OF_WEEK))}
+          onPress={() => applyFormValues(withTodoRepeatFormPreset(form.getValues(), DAYS_OF_WEEK))}
         />
         <TodoRepeatPickerContent.PresetChip
           label={t('picker.presetWeekdays')}
           isSelected={isPresetSelected(TODO_REPEAT_WEEKDAYS)}
           onPress={() =>
-            applyFormValues(withTodoRepeatFormPreset(getValues(), TODO_REPEAT_WEEKDAYS))
+            applyFormValues(withTodoRepeatFormPreset(form.getValues(), TODO_REPEAT_WEEKDAYS))
           }
         />
         <TodoRepeatPickerContent.PresetChip
           label={t('picker.presetWeekends')}
           isSelected={isPresetSelected(TODO_REPEAT_WEEKEND_DAYS)}
           onPress={() =>
-            applyFormValues(withTodoRepeatFormPreset(getValues(), TODO_REPEAT_WEEKEND_DAYS))
+            applyFormValues(withTodoRepeatFormPreset(form.getValues(), TODO_REPEAT_WEEKEND_DAYS))
           }
         />
         {DAYS_OF_WEEK.map((day) => (
@@ -246,39 +251,38 @@ TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector() {
             key={day}
             day={day}
             isSelected={!isMonthly && weekdays.includes(day)}
-            onPress={() => applyFormValues(withTodoRepeatFormDayToggled(getValues(), day))}
+            onPress={() => applyFormValues(withTodoRepeatFormDayToggled(form.getValues(), day))}
           />
         ))}
         <TodoRepeatPickerContent.PresetChip
           label={t('picker.presetBiweekly')}
           isSelected={!isMonthly && interval === 2}
-          onPress={() => applyFormValues(withTodoRepeatFormBiweeklyToggled(getValues()))}
+          onPress={() => applyFormValues(withTodoRepeatFormBiweeklyToggled(form.getValues()))}
         />
         <TodoRepeatPickerContent.PresetChip
           label={t('picker.presetMonthly', { day: monthDay })}
           isSelected={isMonthly}
-          onPress={() => applyFormValues(withTodoRepeatFormMonthlyToggled(getValues()))}
+          onPress={() => applyFormValues(withTodoRepeatFormMonthlyToggled(form.getValues()))}
         />
       </ScrollView>
-      <TodoRepeatPickerContent.RepeatSummary />
+      <TodoRepeatPickerContent.RepeatSummary form={form} />
     </VStack>
   );
 };
 
-TodoRepeatPickerContent.RepeatSummary = function RepeatSummary() {
+TodoRepeatPickerContent.RepeatSummary = function RepeatSummary({ form }: { form: RepeatForm }) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
-  const { control } = useFormContext<TodoRepeatFormValues>();
   const [weekdays, interval, isMonthly] = useWatch({
-    control,
+    control: form.control,
     name: ['weekdays', 'interval', 'isMonthly'],
   });
   const monthDay = useWatch({
-    control,
+    control: form.control,
     compute: (values) => getTodoRepeatFormMonthDay(values, timeZone),
   });
   const issue = useWatch({
-    control,
+    control: form.control,
     compute: (values) => getTodoRepeatFormIssue(values, timeZone),
   });
   const days = formatDaysOfWeek(weekdays);
@@ -318,20 +322,21 @@ TodoRepeatPickerContent.RepeatSummary = function RepeatSummary() {
 };
 
 interface RepeatPickerHeaderProps {
+  form: RepeatForm;
   onChange: (value: RepeatPickerValue) => void;
   onCancel: () => void;
 }
 
 TodoRepeatPickerContent.RepeatPickerHeader = function RepeatPickerHeader({
+  form,
   onChange,
   onCancel,
 }: RepeatPickerHeaderProps) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
-  const { control, handleSubmit } = useFormContext<TodoRepeatFormValues>();
-  const { isValid } = useFormState({ control });
+  const { isValid } = useFormState({ control: form.control });
 
-  const handleConfirm = handleSubmit((values) => {
+  const handleConfirm = form.handleSubmit((values) => {
     onChange({ startDate: values.startDate, repeat: toTodoRepeat(values, timeZone) });
   });
 
@@ -346,21 +351,25 @@ TodoRepeatPickerContent.RepeatPickerHeader = function RepeatPickerHeader({
 };
 
 interface RepeatFormCalendarProps {
+  form: RepeatForm;
   picker: ReturnType<typeof useDatePicker>;
 }
 
 TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
+  form,
   picker,
 }: RepeatFormCalendarProps) {
   const { timeZone } = useDateFormatContext();
-  const { control, getValues } = useFormContext<TodoRepeatFormValues>();
   const [startDate, endType, untilDate] = useWatch({
-    control,
+    control: form.control,
     name: ['startDate', 'endType', 'untilDate'],
   });
-  const repeat = useWatch({ control, compute: (values) => toTodoRepeat(values, timeZone) });
+  const repeat = useWatch({
+    control: form.control,
+    compute: (values) => toTodoRepeat(values, timeZone),
+  });
   const firstOccurrenceKey = useWatch({
-    control,
+    control: form.control,
     compute: (values) => getTodoRepeatFormFirstOccurrenceKey(values, timeZone),
   });
   const today = useToday();
@@ -394,10 +403,12 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
   /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
   const displayStartDate = toDate(hasOccurrenceInPeriod ? firstOccurrenceKey : startDate);
 
-  const applyFormValues = useApplyRepeatFormValues();
   // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
   const handleCalendarPress = (date: Date) => {
-    applyFormValues(withTodoRepeatFormCalendarDate(getValues(), date, today, timeZone));
+    applyRepeatFormValues(
+      form,
+      withTodoRepeatFormCalendarDate(form.getValues(), date, today, timeZone),
+    );
   };
 
   return (
@@ -414,23 +425,24 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
 };
 
 interface RepeatPeriodFooterProps {
+  form: RepeatForm;
   value: RepeatPickerValue;
   onChange: (value: RepeatPickerValue) => void;
 }
 
 TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
+  form,
   value,
   onChange,
 }: RepeatPeriodFooterProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const { control, setValue } = useFormContext<TodoRepeatFormValues>();
   const dateFormatContext = useDateFormatContext();
   const [startDate, endType, untilDate, count] = useWatch({
-    control,
+    control: form.control,
     name: ['startDate', 'endType', 'untilDate', 'count'],
   });
   const firstOccurrenceKey = useWatch({
-    control,
+    control: form.control,
     compute: (values) => {
       const repeat = toTodoRepeat(values, dateFormatContext.timeZone);
       return repeat == null
@@ -444,7 +456,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
   const formatMonthDay = (date: Date | Instant) =>
     formatDateKeyLabel(toDateKey(date, dateFormatContext.timeZone), 'monthDay', dateFormatContext);
   const isMonthDayClamped = useWatch({
-    control,
+    control: form.control,
     compute: (values) => {
       const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, dateFormatContext.timeZone);
       return repeat != null && TodoRepeatPolicy.isRepeatMonthDayClamped(repeat);
@@ -453,8 +465,8 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
   const periodStart = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);
 
   const handleForeverPress = () => {
-    setValue('endType', endType === 'NEVER' ? 'UNTIL' : 'NEVER', VALIDATE);
-    setValue('untilDate', null, VALIDATE);
+    form.setValue('endType', endType === 'NEVER' ? 'UNTIL' : 'NEVER', VALIDATE);
+    form.setValue('untilDate', null, VALIDATE);
   };
 
   return (

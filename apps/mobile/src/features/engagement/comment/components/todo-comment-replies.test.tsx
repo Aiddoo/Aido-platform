@@ -15,7 +15,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Pressable } from 'react-native';
 
 import {
@@ -30,6 +30,7 @@ import { NEW_TODO_COMMENT_FORM_VALUES } from '../schemas/todo-comment-form.schem
 import type { TodoCommentThread } from '../schemas/todo-comment.schema';
 import { INITIAL_TODO_COMMENT_PAGE_PARAM } from '../utils/todo-comment-page-params';
 import { TodoCommentExpansionProvider, useExpandThread } from './todo-comment-expansion';
+import { TodoCommentFormProvider } from './todo-comment-form-context';
 import { TodoCommentReplies } from './todo-comment-replies';
 import { TodoCommentRevealProvider } from './todo-comment-reveal';
 
@@ -53,14 +54,14 @@ function PostedReplyThread({ thread }: { thread: TodoCommentThread }) {
   const composer = useForm({ defaultValues: NEW_TODO_COMMENT_FORM_VALUES });
 
   return (
-    <FormProvider {...composer}>
+    <TodoCommentFormProvider form={composer}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
           <PostReplyButton threadCommentId={thread.comment.id} />
           <TodoCommentReplies thread={thread} anchor={null} />
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
-    </FormProvider>
+    </TodoCommentFormProvider>
   );
 }
 

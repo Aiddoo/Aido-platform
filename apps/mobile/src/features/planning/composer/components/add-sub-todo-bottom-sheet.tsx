@@ -34,13 +34,12 @@ import {
   VStack,
   IconButton,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Separator, Skeleton, Spinner } from 'heroui-native';
 import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -159,11 +158,11 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
-  const { control, handleSubmit, reset, setValue } = useForm({
+  const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: subTodo?.title ?? '' },
   });
-  const draftTitle = useWatch({ control, name: 'title' });
+  const draftTitle = useWatch({ control: form.control, name: 'title' });
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
@@ -174,7 +173,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
 
   const isSubmitDisabled = !draftTitle.trim() || isBusy;
 
-  const submitSubTodo = handleSubmit(async (values) => {
+  const submitSubTodo = form.handleSubmit(async (values) => {
     const title = values.title.trim();
     if (!title || isBusy) {
       return;
@@ -200,7 +199,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
     }
 
     if (subTodo == null) {
-      reset();
+      form.reset();
     }
     onClose();
   });
@@ -221,15 +220,17 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
 
   return (
     <VStack gap={12}>
-      <FormField control={control} name="title">
-        {({ value, onChange }) => (
+      <Controller
+        control={form.control}
+        name="title"
+        render={({ field }) => (
           <BottomSheetInput
             ref={inputRef}
             testID="sub-todo-input"
             autoFocus
             placeholder={t('subTodo.placeholder')}
-            value={value}
-            onChange={onChange}
+            value={field.value}
+            onChange={field.onChange}
             maxLength={subTodoFormSchema.shape.title.maxLength ?? undefined}
             size="medium"
             renderErrorMessage={false}
@@ -237,7 +238,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
             onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitSubTodo())}
           />
         )}
-      </FormField>
+      />
 
       <Separator thickness={1} className="bg-gray-2" />
 
@@ -262,7 +263,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
         <Box className="flex-1" />
 
         <SpeechTooltip />
-        <DictationButton value={draftTitle} onChange={(text) => setValue('title', text)} />
+        <DictationButton value={draftTitle} onChange={(text) => form.setValue('title', text)} />
         <PressableFeedback
           testID="sub-todo-submit"
           isDisabled={isSubmitDisabled}

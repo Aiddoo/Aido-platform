@@ -35,7 +35,7 @@ import {
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
-import { Controller, FormProvider, useForm, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
@@ -248,33 +248,32 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
         </VStack>
       }
     >
-      <FormProvider {...form}>
-        <VStack gap={12} testID="todo-add-sheet">
-          <Controller
-            control={form.control}
-            name="title"
-            render={({ field: { onChange, value, ref } }) => (
-              <BottomSheetInput
-                ref={ref}
-                autoFocus
-                placeholder={t('add.placeholder')}
-                value={value}
-                onChange={onChange}
-                maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
-                size="medium"
-                renderErrorMessage={false}
-                returnKeyType="done"
-                onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
-              />
-            )}
-          />
+      <VStack gap={12} testID="todo-add-sheet">
+        <Controller
+          control={form.control}
+          name="title"
+          render={({ field: { onChange, value, ref } }) => (
+            <BottomSheetInput
+              ref={ref}
+              autoFocus
+              placeholder={t('add.placeholder')}
+              value={value}
+              onChange={onChange}
+              maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
+              size="medium"
+              renderErrorMessage={false}
+              returnKeyType="done"
+              onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+            />
+          )}
+        />
 
-          <TodoComposerChips
-            isSeriesOccurrence={TodoPolicy.isRecurringTodo(todo)}
-            canChangeRepeat={canChangeRepeat}
-          />
-        </VStack>
-      </FormProvider>
+        <TodoComposerChips
+          form={form}
+          isSeriesOccurrence={TodoPolicy.isRecurringTodo(todo)}
+          canChangeRepeat={canChangeRepeat}
+        />
+      </VStack>
     </KeyboardBottomSheet>
   );
 }

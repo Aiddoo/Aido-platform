@@ -14,7 +14,7 @@ import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } fro
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { Controller, FormProvider, useForm, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { useConvertMemoToTodosMutationOptions } from '../queries/memo.mutations';
 import type { Memo } from '../schemas/memo.schema';
@@ -93,30 +93,28 @@ export function MemoConvertBottomSheet({
         </VStack>
       }
     >
-      <FormProvider {...form}>
-        <VStack gap={12} testID="memo-convert-sheet">
-          <Controller
-            control={form.control}
-            name="title"
-            render={({ field: { value, onChange, ref } }) => (
-              <BottomSheetInput
-                ref={ref}
-                autoFocus
-                placeholder={t('add.placeholder')}
-                value={value}
-                onChange={onChange}
-                maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
-                size="medium"
-                renderErrorMessage={false}
-                returnKeyType="done"
-                onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmit())}
-              />
-            )}
-          />
+      <VStack gap={12} testID="memo-convert-sheet">
+        <Controller
+          control={form.control}
+          name="title"
+          render={({ field: { value, onChange, ref } }) => (
+            <BottomSheetInput
+              ref={ref}
+              autoFocus
+              placeholder={t('add.placeholder')}
+              value={value}
+              onChange={onChange}
+              maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
+              size="medium"
+              renderErrorMessage={false}
+              returnKeyType="done"
+              onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmit())}
+            />
+          )}
+        />
 
-          <TodoComposerChips />
-        </VStack>
-      </FormProvider>
+        <TodoComposerChips form={form} />
+      </VStack>
     </KeyboardBottomSheet>
   );
 }

@@ -132,9 +132,7 @@
   },
   "forbidden-name": {
     "reason": "규칙을 넣기 전부터 있던 이름. 해당 컴포넌트를 고칠 때 역할 이름으로 바꾼다",
-    "entries": {
-      "apps/mobile/src/features/social/invite/components/invited-friend-summary.tsx": 1
-    }
+    "entries": {}
   },
   "feature-bidirectional": {
     "reason": "끊지 못한 쌍. 항목마다 이유를 적고 새 쌍은 막는다",

@@ -3,12 +3,15 @@ import { todoCommentContentSchema } from '@aido/api';
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
-import { type TodoComment, todoCommentSchema } from './todo-comment.schema';
+import type { TodoComment } from './todo-comment.schema';
+
+// 고른 댓글은 서버가 준 값을 그대로 들고 있어 다시 읽지 않는다. 입력과 출력의 타입을 같게 둔다
+const todoCommentTargetSchema = z.custom<TodoComment>();
 
 const todoCommentComposerModeSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('new') }),
-  z.object({ type: z.literal('reply'), target: todoCommentSchema }),
-  z.object({ type: z.literal('edit'), target: todoCommentSchema }),
+  z.object({ type: z.literal('reply'), target: todoCommentTargetSchema }),
+  z.object({ type: z.literal('edit'), target: todoCommentTargetSchema }),
 ]);
 export type TodoCommentComposerMode = z.infer<typeof todoCommentComposerModeSchema>;
 

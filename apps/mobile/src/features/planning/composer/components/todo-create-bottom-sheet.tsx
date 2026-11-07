@@ -41,14 +41,7 @@ import {
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect, useState } from 'react';
-import {
-  Controller,
-  FormProvider,
-  useForm,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form';
+import { Controller, useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
@@ -299,99 +292,96 @@ function TodoCreateForm({
         ) : undefined
       }
     >
-      <FormProvider {...form}>
-        {match(voice.state)
-          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
-            <QuickVoicePanel
+      {match(voice.state)
+        .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
+          <QuickVoicePanel
+            state={voice.state}
+            level={voice.level}
+            isQuiet={voice.isQuiet}
+            locale={voice.locale}
+            onLocaleChange={voice.setLocale}
+            onFinish={voice.finish}
+            onCancel={voice.cancel}
+            onResume={voice.resume}
+            onContinueAsVoiceNote={voice.continueAsVoiceNote}
+          />
+        ))
+        .with({ status: 'planning' }, () => (
+          <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
+        ))
+        .with({ status: 'review' }, ({ plan, isCharged }) => (
+          <TodoCreateVoiceReview
+            form={form}
+            plan={plan}
+            isCharged={isCharged}
+            onMemoChanged={onMemoChanged}
+            onApplied={onClose}
+            onRestart={voice.restart}
+            onTypeInstead={voice.typeInstead}
+          />
+        ))
+        .otherwise(() => (
+          <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
+            <QuickVoicePanel.Failed
               state={voice.state}
-              level={voice.level}
-              isQuiet={voice.isQuiet}
-              locale={voice.locale}
-              onLocaleChange={voice.setLocale}
-              onFinish={voice.finish}
-              onCancel={voice.cancel}
+              isConsentRequired={voice.isConsentRequired}
+              isTypedTextKept={voice.isTypedTextKept}
               onResume={voice.resume}
-              onContinueAsVoiceNote={voice.continueAsVoiceNote}
+              onRetryPlanning={voice.retryPlanning}
             />
-          ))
-          .with({ status: 'planning' }, () => (
-            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
-          ))
-          .with({ status: 'review' }, ({ plan, isCharged }) => (
-            <TodoCreateVoiceReview
-              plan={plan}
-              isCharged={isCharged}
-              onMemoChanged={onMemoChanged}
-              onApplied={onClose}
-              onRestart={voice.restart}
-              onTypeInstead={voice.typeInstead}
+
+            <Controller
+              control={form.control}
+              name="title"
+              render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
+                voice.state.status === 'failed' ? (
+                  // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
+                  // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
+                  <BottomSheetTextArea
+                    ref={ref}
+                    autoFocus={!voice.isRestarting}
+                    placeholder={t('add.placeholder')}
+                    value={value}
+                    onChange={onChange}
+                    isInvalid={error != null}
+                    errorMessage={
+                      error == null
+                        ? undefined
+                        : resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+                    }
+                    growsWithContent
+                    textSize="b3"
+                    preserveErrorSpace={false}
+                    className="min-h-12 max-h-28"
+                    returnKeyType="done"
+                    submitBehavior="submit"
+                    onFocus={() => setIsTitleFocused(true)}
+                    onBlur={() => setIsTitleFocused(false)}
+                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+                  />
+                ) : (
+                  <BottomSheetInput
+                    ref={ref}
+                    // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
+                    autoFocus={!isVoiceHintRequested && !isVoiceHintPending && !voice.isRestarting}
+                    onFocus={() => setIsTitleFocused(true)}
+                    onBlur={() => setIsTitleFocused(false)}
+                    placeholder={t('add.placeholder')}
+                    value={value}
+                    onChange={onChange}
+                    maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
+                    size="medium"
+                    renderErrorMessage={false}
+                    returnKeyType="done"
+                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+                  />
+                )
+              }
             />
-          ))
-          .otherwise(() => (
-            <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
-              <QuickVoicePanel.Failed
-                state={voice.state}
-                isConsentRequired={voice.isConsentRequired}
-                isTypedTextKept={voice.isTypedTextKept}
-                onResume={voice.resume}
-                onRetryPlanning={voice.retryPlanning}
-              />
 
-              <Controller
-                control={form.control}
-                name="title"
-                render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
-                  voice.state.status === 'failed' ? (
-                    // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
-                    // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
-                    <BottomSheetTextArea
-                      ref={ref}
-                      autoFocus={!voice.isRestarting}
-                      placeholder={t('add.placeholder')}
-                      value={value}
-                      onChange={onChange}
-                      isInvalid={error != null}
-                      errorMessage={
-                        error == null
-                          ? undefined
-                          : resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
-                      }
-                      growsWithContent
-                      textSize="b3"
-                      preserveErrorSpace={false}
-                      className="min-h-12 max-h-28"
-                      returnKeyType="done"
-                      submitBehavior="submit"
-                      onFocus={() => setIsTitleFocused(true)}
-                      onBlur={() => setIsTitleFocused(false)}
-                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
-                    />
-                  ) : (
-                    <BottomSheetInput
-                      ref={ref}
-                      // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
-                      autoFocus={
-                        !isVoiceHintRequested && !isVoiceHintPending && !voice.isRestarting
-                      }
-                      onFocus={() => setIsTitleFocused(true)}
-                      onBlur={() => setIsTitleFocused(false)}
-                      placeholder={t('add.placeholder')}
-                      value={value}
-                      onChange={onChange}
-                      maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
-                      size="medium"
-                      renderErrorMessage={false}
-                      returnKeyType="done"
-                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
-                    />
-                  )
-                }
-              />
-
-              <TodoComposerChips />
-            </VStack>
-          ))}
-      </FormProvider>
+            <TodoComposerChips form={form} />
+          </VStack>
+        ))}
     </KeyboardBottomSheet>
   );
 }
@@ -399,12 +389,11 @@ function TodoCreateForm({
 type TodoCreateVoiceReviewProps = Omit<
   ComponentProps<typeof QuickVoicePanel.Review>,
   'fallbackCategoryId'
->;
+> & { form: UseFormReturn<AddTodoFormValues> };
 
 /** 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다 */
-function TodoCreateVoiceReview(props: TodoCreateVoiceReviewProps) {
-  const { control } = useFormContext<AddTodoFormValues>();
-  const categoryId = useWatch({ control, name: 'categoryId' });
+function TodoCreateVoiceReview({ form, ...props }: TodoCreateVoiceReviewProps) {
+  const categoryId = useWatch({ control: form.control, name: 'categoryId' });
 
   return (
     <QueryErrorBoundary>

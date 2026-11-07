@@ -13,10 +13,9 @@ import {
   useSheetRoute,
   Image,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
-import { FormProvider, useForm, useFormState } from 'react-hook-form';
+import { Controller, useForm, useFormState } from 'react-hook-form';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
@@ -108,17 +107,16 @@ function NudgeMessageSheet({
 }: NudgeMessageSheetProps) {
   const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
   const { t } = useTranslation('todo');
-  const formMethods = useForm({
+  const form = useForm({
     resolver: zodResolver(nudgeFormSchema),
     defaultValues: { message: '' },
     mode: 'onChange',
   });
-  const { control, handleSubmit, reset } = formMethods;
-  const { isSubmitting, isValid } = useFormState({ control });
+  const { isSubmitting, isValid } = useFormState({ control: form.control });
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      reset();
+      form.reset();
     }
     onOpenChange(open);
   };
@@ -134,52 +132,52 @@ function NudgeMessageSheet({
 
   return (
     <KeyboardBottomSheet {...sheetProps} onOpenChange={handleOpenChange}>
-      <FormProvider {...formMethods}>
-        <VStack gap={16} pb={16}>
-          <VStack gap={2}>
-            <Text size="b3" shade={6}>
-              {caption}
-            </Text>
-            <H4>{t('nudge.sheetTitle')}</H4>
-          </VStack>
-
-          <Box>
-            <Image
-              source={aidoBannerImage}
-              className="absolute right-4 size-[72px] -translate-y-11"
-              contentFit="contain"
-            />
-            <FormField control={control} name="message">
-              {({ onChange, value }, { error }) => (
-                <BottomSheetTextArea
-                  label={t('nudge.to', { name: receiver.displayName })}
-                  isInvalid={!!error}
-                  placeholder={placeholder}
-                  value={value ?? ''}
-                  onChange={onChange}
-                  className="z-10 min-h-0 h-[80px]"
-                  errorMessage={
-                    error == null
-                      ? undefined
-                      : t('form.nudgeMessageMax', { count: TodoNudgePolicy.maxMessageLength })
-                  }
-                />
-              )}
-            </FormField>
-          </Box>
-
-          <Button
-            color="primary"
-            size="large"
-            display="block"
-            onPress={() => handleSubmit(handleSubmitNudge)()}
-            isDisabled={!isValid}
-            isLoading={isSubmitting}
-          >
-            {t('nudge.send')}
-          </Button>
+      <VStack gap={16} pb={16}>
+        <VStack gap={2}>
+          <Text size="b3" shade={6}>
+            {caption}
+          </Text>
+          <H4>{t('nudge.sheetTitle')}</H4>
         </VStack>
-      </FormProvider>
+
+        <Box>
+          <Image
+            source={aidoBannerImage}
+            className="absolute right-4 size-[72px] -translate-y-11"
+            contentFit="contain"
+          />
+          <Controller
+            control={form.control}
+            name="message"
+            render={({ field, fieldState }) => (
+              <BottomSheetTextArea
+                label={t('nudge.to', { name: receiver.displayName })}
+                isInvalid={fieldState.error != null}
+                placeholder={placeholder}
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                className="z-10 min-h-0 h-[80px]"
+                errorMessage={
+                  fieldState.error == null
+                    ? undefined
+                    : t('form.nudgeMessageMax', { count: TodoNudgePolicy.maxMessageLength })
+                }
+              />
+            )}
+          />
+        </Box>
+
+        <Button
+          color="primary"
+          size="large"
+          display="block"
+          onPress={() => form.handleSubmit(handleSubmitNudge)()}
+          isDisabled={!isValid}
+          isLoading={isSubmitting}
+        >
+          {t('nudge.send')}
+        </Button>
+      </VStack>
     </KeyboardBottomSheet>
   );
 }

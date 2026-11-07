@@ -20,7 +20,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
-import { Controller, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
@@ -52,6 +52,7 @@ import {
 } from '../../utils/todo-comment-draft';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { useExpandThread } from '../todo-comment-expansion';
+import { useTodoCommentForm } from '../todo-comment-form-context';
 
 const SEND_ICON_SIZE = 18;
 const CLOSE_ICON_SIZE = 16;
@@ -81,7 +82,7 @@ export function TodoCommentForm({
 }: TodoCommentFormProps) {
   const { todoId } = useTodoScreenParams();
   const { height: viewportHeight } = useWindowDimensions();
-  const { control, setFocus, getValues, reset } = useFormContext<TodoCommentFormValues>();
+  const { control, setFocus, getValues, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const isSubmitting = useIsTodoCommentSubmitting();
@@ -198,7 +199,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const expandThread = useExpandThread();
-  const { handleSubmit, reset } = useFormContext<TodoCommentFormValues>();
+  const { handleSubmit, reset } = useTodoCommentForm();
   const createCommentChain = useMutation(useCreateTodoCommentChainMutationOptions({ todoId }));
   const updateComment = useMutation(useUpdateTodoCommentMutationOptions({ todoId }));
   const preparedSubmissionRef = useRef<PreparedTodoCommentSubmission | null>(null);
@@ -268,7 +269,7 @@ function ComposerDraft({ userId, mode }: { userId: string; mode: TodoCommentComp
   const { todoId } = useTodoScreenParams();
   const { t } = useTranslation('todoComment');
   const toast = useAppToast();
-  const { subscribe, setValue } = useFormContext<TodoCommentFormValues>();
+  const { subscribe, setValue } = useTodoCommentForm();
   const draftKey = createTodoCommentDraftKey({ userId, todoId, mode });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(draftKey, {
     sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(mode),
@@ -311,7 +312,7 @@ function TargetBanner({
   isSubmitting: boolean;
 }) {
   const { t } = useTranslation('todoComment');
-  const { reset } = useFormContext<TodoCommentFormValues>();
+  const { reset } = useTodoCommentForm();
 
   if (mode.type === 'new') {
     return null;
@@ -370,7 +371,7 @@ function CommentField({
   onFocus: () => void;
 }) {
   const { t } = useTranslation('todoComment');
-  const { control } = useFormContext<TodoCommentFormValues>();
+  const { control } = useTodoCommentForm();
 
   return (
     <Controller
@@ -435,7 +436,7 @@ function RemoveFieldButton({
 /** 쓴 글이 있을 때만 이어 쓰기를 보여 작성 바가 평소에는 한 줄로 남는다 */
 function AppendButton({ isSubmitting, onPress }: { isSubmitting: boolean; onPress: () => void }) {
   const { t } = useTranslation('todoComment');
-  const { control } = useFormContext<TodoCommentFormValues>();
+  const { control } = useTodoCommentForm();
   const { isValid } = useFormState({ control, name: 'items' });
   const hasContent = useWatch({ control, name: 'items', compute: hasEveryContent });
 
@@ -470,7 +471,7 @@ function SubmitButton({
   onSubmit: () => Promise<void>;
 }) {
   const { t } = useTranslation('todoComment');
-  const { control } = useFormContext<TodoCommentFormValues>();
+  const { control } = useTodoCommentForm();
   const hasContent = useWatch({
     control,
     name: 'items',

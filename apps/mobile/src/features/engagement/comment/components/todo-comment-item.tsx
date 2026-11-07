@@ -37,7 +37,6 @@ import { compact } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Menu, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { type ComponentRef, type ReactNode, type RefObject, useRef, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -54,13 +53,10 @@ import {
   useDeleteTodoCommentMutationOptions,
   useSetTodoCommentLikeMutationOptions,
 } from '../queries/todo-comment.mutations';
-import {
-  type TodoCommentFormValues,
-  toReplyFormValues,
-  toEditFormValues,
-} from '../schemas/todo-comment-form.schema';
+import { toReplyFormValues, toEditFormValues } from '../schemas/todo-comment-form.schema';
 import type { TodoComment } from '../schemas/todo-comment.schema';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
+import { useTodoCommentForm } from './todo-comment-form-context';
 import {
   popTodoCommentLikeButton,
   TodoCommentHeartBurst,
@@ -341,7 +337,7 @@ function ReplyButton({
   const { t } = useTranslation('todoComment');
   const { todoId } = useTodoScreenParams();
   const { trackEvent } = useTrack();
-  const { reset } = useFormContext<TodoCommentFormValues>();
+  const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
 
   if (!TodoCommentPolicy.canReplyToComment(comment)) {
@@ -388,7 +384,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const logger = useLogger();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
-  const { reset } = useFormContext<TodoCommentFormValues>();
+  const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const author = comment.author;

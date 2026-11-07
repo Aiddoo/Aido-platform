@@ -3,7 +3,7 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { useFocusEffect } from 'expo-router';
 import { type PropsWithChildren, useCallback } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
@@ -13,6 +13,7 @@ import {
   todoCommentFormSchema,
 } from '../schemas/todo-comment-form.schema';
 import { TodoCommentExpansionProvider } from './todo-comment-expansion';
+import { TodoCommentFormProvider } from './todo-comment-form-context';
 import { TodoCommentRevealProvider } from './todo-comment-reveal';
 
 interface TodoCommentSessionProps extends PropsWithChildren {
@@ -29,14 +30,14 @@ export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps
   });
 
   return (
-    <FormProvider {...form}>
+    <TodoCommentFormProvider form={form}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
           <BackAndKeyboardEffects onExit={onExit} />
           {children}
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
-    </FormProvider>
+    </TodoCommentFormProvider>
   );
 }
 

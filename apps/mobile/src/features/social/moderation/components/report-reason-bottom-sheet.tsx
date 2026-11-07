@@ -19,15 +19,7 @@ import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import {
-  type Control,
-  Controller,
-  FormProvider,
-  useForm,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form';
+import { type Control, Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { isReportTargetUnavailable } from '../domains/moderation.error';
 import { useReportContentMutationOptions } from '../queries/moderation.mutations';
@@ -107,34 +99,31 @@ export function ReportReasonBottomSheet({
         <SubmitButton control={form.control} onPress={() => form.handleSubmit(handleReport)()} />
       }
     >
-      <FormProvider {...form}>
-        <VStack gap={16} pb={16} testID="report-reason-sheet">
-          <VStack gap={2}>
-            <Text size="b3" shade={7}>
-              {t(TARGET_CAPTION_KEYS[target.targetType])}
-            </Text>
-            <H4>{t('report.title')}</H4>
-          </VStack>
-
-          <ReasonField />
-
-          <VStack gap={6}>
-            <DetailField />
-            <DetailLengthCounter />
-          </VStack>
-
-          <Text size="e1" shade={7}>
-            {t('report.notice')}
+      <VStack gap={16} pb={16} testID="report-reason-sheet">
+        <VStack gap={2}>
+          <Text size="b3" shade={7}>
+            {t(TARGET_CAPTION_KEYS[target.targetType])}
           </Text>
+          <H4>{t('report.title')}</H4>
         </VStack>
-      </FormProvider>
+
+        <ReasonField control={form.control} />
+
+        <VStack gap={6}>
+          <DetailField control={form.control} />
+          <DetailLengthCounter control={form.control} />
+        </VStack>
+
+        <Text size="e1" shade={7}>
+          {t('report.notice')}
+        </Text>
+      </VStack>
     </KeyboardBottomSheet>
   );
 }
 
-function ReasonField() {
+function ReasonField({ control }: { control: Control<UserReportFormInput> }) {
   const { t } = useTranslation('moderation');
-  const { control } = useFormContext<UserReportFormInput>();
 
   return (
     <Controller
@@ -169,9 +158,8 @@ function ReasonField() {
   );
 }
 
-function DetailField() {
+function DetailField({ control }: { control: Control<UserReportFormInput> }) {
   const { t } = useTranslation('moderation');
-  const { control } = useFormContext<UserReportFormInput>();
 
   return (
     <Controller
@@ -195,8 +183,8 @@ function DetailField() {
 }
 
 /** 상세 내용 길이만 구독해 글자를 칠 때 시트 전체가 다시 그려지지 않게 한다 */
-function DetailLengthCounter() {
-  const detail = useWatch<UserReportFormInput, 'detail'>({ name: 'detail' });
+function DetailLengthCounter({ control }: { control: Control<UserReportFormInput> }) {
+  const detail = useWatch({ control, name: 'detail' });
   const { locale } = useDateFormatContext();
 
   return (

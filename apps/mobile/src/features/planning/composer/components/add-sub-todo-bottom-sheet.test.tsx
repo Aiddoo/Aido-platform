@@ -1,4 +1,5 @@
-import { ok } from '@src/core/errors/result';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import {
@@ -197,5 +198,53 @@ describe('AddSubTodoBottomSheet 추가 모드', () => {
       );
     });
     pendingPost.settle();
+  });
+
+  it('추가에 실패하면 적은 제목을 그대로 두고 다시 보낼 수 있다', async () => {
+    // Given
+    const viewingDate = '2026-03-09';
+    const httpClient = createHttpClientStub();
+    httpClient.post.mockResolvedValue(
+      err(new ApiError('SERVER', '잠시 후 다시 시도해주세요', 500)),
+    );
+    const todo = createParentTodo({ startDate: viewingDate, endDate: viewingDate });
+    const queryClient = createTestQueryClient({
+      defaultOptions: { queries: { staleTime: Infinity } },
+    });
+    queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: viewingDate }), {
+      todos: [todo],
+      hasNext: false,
+      nextCursor: null,
+    });
+    jest
+      .mocked(useLocalSearchParams)
+      .mockReturnValue({ todoId: String(todo.id), date: viewingDate });
+    await renderUi(
+      <LocalDateProvider>
+        <OverlayProvider>
+          <AddSubTodoBottomSheet mode="create" />
+        </OverlayProvider>
+      </LocalDateProvider>,
+      {
+        di: {
+          subTodoService: new SubTodoService(httpClient),
+          logger,
+          todoService: new TodoService(httpClient),
+          analytics: createAnalyticsStub(),
+          errorReporter: createMockErrorReporter(),
+          speechRecognizer: createSpeechRecognizerStub(),
+        },
+        queryClient,
+      },
+    );
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '첫 항목');
+
+    // When
+    await fireEvent.press(submitButton());
+
+    // Then
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(submitButton()).toBeEnabled());
+    expect(screen.getByTestId('sub-todo-input').props.value).toBe('첫 항목');
   });
 });

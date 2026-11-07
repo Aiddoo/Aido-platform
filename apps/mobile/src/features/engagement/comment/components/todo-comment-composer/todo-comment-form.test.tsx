@@ -5,11 +5,12 @@ import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 
 import { createTodoComment, TODO_ID } from '../../__tests__/todo-comment.fixtures';
 import { todoCommentFormSchema, toEditFormValues } from '../../schemas/todo-comment-form.schema';
 import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
+import { TodoCommentFormProvider } from '../todo-comment-form-context';
 import { TodoCommentRevealProvider } from '../todo-comment-reveal';
 import { TodoCommentForm } from './todo-comment-form';
 
@@ -34,13 +35,13 @@ function EditingForm() {
   });
 
   return (
-    <FormProvider {...form}>
+    <TodoCommentFormProvider form={form}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
           <TodoCommentForm author={{ name: '나', profileImage: null }} userId="user-1" />
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
-    </FormProvider>
+    </TodoCommentFormProvider>
   );
 }
 
