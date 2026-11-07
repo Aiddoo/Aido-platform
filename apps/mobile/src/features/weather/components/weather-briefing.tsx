@@ -114,7 +114,7 @@ export function WeatherBriefing() {
   );
 
   return (
-    <WeatherBriefing.Content
+    <WeatherBriefing.Contents
       briefing={briefing}
       hourly={report.hourly}
       now={now}
@@ -123,7 +123,7 @@ export function WeatherBriefing() {
   );
 }
 
-WeatherBriefing.Content = function Content({
+WeatherBriefing.Contents = function Contents({
   briefing,
   hourly,
   now,

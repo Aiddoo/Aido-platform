@@ -259,7 +259,7 @@ function createCloudClusters(): Puff[][] {
   );
 }
 
-export function cloudSpriteRect(variant: number) {
+export function createCloudSpriteRect(variant: number) {
   return Skia.XYWHRect(
     0,
     (variant % CLOUD_VARIANTS) * CLOUD_SPRITE.height,

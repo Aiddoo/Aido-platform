@@ -73,7 +73,7 @@ export function WeatherRescheduleSheet() {
           )}
         >
           <Suspense fallback={<RescheduleLoading />}>
-            <RescheduleContent form={form} onEmpty={() => sheet.close()} />
+            <RescheduleTodoList form={form} onEmpty={() => sheet.close()} />
           </Suspense>
         </QueryErrorBoundary>
       )}
@@ -81,7 +81,7 @@ export function WeatherRescheduleSheet() {
   );
 }
 
-function RescheduleContent({
+function RescheduleTodoList({
   form,
   onEmpty,
 }: {
@@ -111,7 +111,7 @@ function RescheduleContent({
         : [
             WeatherBriefingPolicy.toBriefingTodo(todo, {
               date: todayKey,
-              timeZone: timeZone,
+              timeZone,
             }),
           ];
     }),
@@ -156,7 +156,7 @@ function RescheduleContent({
             todo={todo}
             options={WeatherBriefingPolicy.getRescheduleOptions(report.hourly, todo, {
               now,
-              timeZone: timeZone,
+              timeZone,
               reason,
             })}
             reason={reason}

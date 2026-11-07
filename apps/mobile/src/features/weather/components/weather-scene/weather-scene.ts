@@ -314,7 +314,7 @@ function normalizeCloudCover(percent: number, range: readonly [number, number]):
   return clamp(percent / 100, min, max);
 }
 
-function precipitationAngle(wind: number): number {
+function getPrecipitationAngle(wind: number): number {
   return clampUnit(wind) * WEATHER_SCENE_MAX_PRECIPITATION_ANGLE;
 }
 
@@ -359,7 +359,7 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
       kind: profile.precipitation,
       density,
       speed: profile.speed,
-      angle: isDry ? 0 : precipitationAngle(wind),
+      angle: isDry ? 0 : getPrecipitationAngle(wind),
     },
     wind,
     atmosphere: profile.atmosphere,
