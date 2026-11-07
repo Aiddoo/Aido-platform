@@ -1,7 +1,7 @@
 import { successEnvelopeSchema } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import type { HttpClient, RequestConfig } from '@src/core/ports/http';
+import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { HTTPError, type KyInstance, type Options } from 'ky';
 

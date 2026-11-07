@@ -19,7 +19,7 @@ import {
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import type { HttpClient, RequestConfig } from '@src/core/ports/http';
+import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import type { AppleSignInResult, SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { TokenStore } from '@src/core/ports/token-store';
 import { BusinessError } from '@src/shared/errors/business-error';

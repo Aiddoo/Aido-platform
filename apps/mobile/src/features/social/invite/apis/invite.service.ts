@@ -5,8 +5,8 @@ import {
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
-import type { HttpClient } from '@src/core/ports/http';
-import type { InstallationIdGateway } from '@src/core/ports/installation-id';
+import type { HttpClient } from '@src/core/ports/http-client';
+import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { Instant } from '@src/shared/date/instant';
 import { BusinessError } from '@src/shared/errors/business-error';

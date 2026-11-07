@@ -1,4 +1,4 @@
-import type { InstallReferrerGateway } from '@src/core/ports/install-referrer';
+import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
 const INSTALL_REFERRER_CHECKED_KEY = 'aido_install_referrer_checked_v1';

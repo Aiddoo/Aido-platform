@@ -1,24 +1,9 @@
 import { useExternalLink, useLogger } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
-import { useCallback, useRef } from 'react';
+import { useRef } from 'react';
 
-import { OPEN_URL_LOG_EVENT } from '../observability/open-url-log-events';
+import { OPEN_URL_LOG_EVENT } from './open-url-log-events';
 import { useSingleTap } from './use-single-tap';
-
-export function useOpenAppSettings() {
-  const externalLink = useExternalLink();
-  const logger = useLogger();
-
-  return useCallback(
-    () =>
-      externalLink
-        .openSettings()
-        .catch((error: unknown) =>
-          logger.warn(OPEN_URL_LOG_EVENT.SETTINGS_OPEN_FAILED, { error: getErrorMessage(error) }),
-        ),
-    [externalLink, logger],
-  );
-}
 
 /**
  * 약관·공지 같은 웹 문서를 앱 안 브라우저로 연다.

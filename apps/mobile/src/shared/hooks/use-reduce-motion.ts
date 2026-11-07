@@ -4,8 +4,8 @@ import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import { ACCESSIBILITY_LOG_EVENT } from '../observability/accessibility-log-events';
 import { createAccessibilitySettingStore } from '../stores/accessibility-setting-store';
+import { ACCESSIBILITY_LOG_EVENT } from './accessibility-log-events';
 
 const reduceMotion = createAccessibilitySettingStore({
   read: () => AccessibilityInfo.isReduceMotionEnabled(),

@@ -1,4 +1,4 @@
-import type { AppStoreListingGateway } from '@src/core/ports/app-store';
+import type { AppStoreListingGateway } from '@src/core/ports/app-store-gateway';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { createErrorReporterStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';

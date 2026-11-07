@@ -1,11 +1,11 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { ExternalLinkGateway } from '@src/core/ports/external-link';
-import type { HapticsGateway } from '@src/core/ports/haptics';
-import type { IncomingLinkGateway } from '@src/core/ports/incoming-link';
+import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
+import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
+import type { IncomingLinkGateway } from '@src/core/ports/incoming-link-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import type { SystemShareGateway } from '@src/core/ports/system-share';
+import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { createContext, use } from 'react';

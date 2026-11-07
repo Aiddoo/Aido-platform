@@ -1,4 +1,4 @@
-import type { NativeApplicationMetadata } from '@src/core/ports/native-application-metadata';
+import type { NativeApplicationMetadata } from '@src/core/ports/native-application-metadata-gateway';
 import { t } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 

@@ -1,7 +1,7 @@
 import { pushDeviceResponseSchema, type ReportPushDeviceInput } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
-import type { HttpClient, RequestConfig } from '@src/core/ports/http';
+import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';

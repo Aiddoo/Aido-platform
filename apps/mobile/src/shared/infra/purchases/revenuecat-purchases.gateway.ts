@@ -6,7 +6,7 @@ import {
   type PurchasesGateway,
   PurchasesGatewayError,
   type PurchaseStore,
-} from '@src/core/ports/purchases';
+} from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import Purchases, {
   type CustomerInfo,

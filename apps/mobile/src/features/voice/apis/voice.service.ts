@@ -2,7 +2,7 @@ import { applyActionPlanResponseSchema } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';

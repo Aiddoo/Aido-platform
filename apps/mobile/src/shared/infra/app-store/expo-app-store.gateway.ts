@@ -1,4 +1,7 @@
-import type { AppStoreListingGateway, AppStoreReviewGateway } from '@src/core/ports/app-store';
+import type {
+  AppStoreListingGateway,
+  AppStoreReviewGateway,
+} from '@src/core/ports/app-store-gateway';
 import * as Linking from 'expo-linking';
 import * as StoreReview from 'expo-store-review';
 

@@ -1,4 +1,4 @@
-import type { HapticsGateway } from '@src/core/ports/haptics';
+import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
 
 export const createHapticsStub = (): jest.Mocked<HapticsGateway> => ({
   selection: jest.fn(),

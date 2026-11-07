@@ -1,4 +1,4 @@
-import type { SystemShareGateway } from '@src/core/ports/system-share';
+import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 import * as Sharing from 'expo-sharing';
 import { Share } from 'react-native';
 

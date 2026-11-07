@@ -1,6 +1,6 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import { disabledQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';

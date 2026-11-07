@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import type { ClipboardGateway } from '@src/core/ports/clipboard';
+import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import { createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';

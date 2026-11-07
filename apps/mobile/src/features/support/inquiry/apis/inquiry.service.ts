@@ -1,5 +1,5 @@
 import { type CreateInquiryInput, createInquiryResponseSchema } from '@aido/api';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { toInquiryResult } from './inquiry.mapper';

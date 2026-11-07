@@ -1,6 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
-import type { PurchasesGateway } from '@src/core/ports/purchases';
+import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';

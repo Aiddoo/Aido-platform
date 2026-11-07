@@ -4,7 +4,7 @@ import {
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
 } from '@aido/api';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { type ConsentAgreement, consentEnvelopeSchema } from '../schemas/consent.schema';

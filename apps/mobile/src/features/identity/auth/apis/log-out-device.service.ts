@@ -1,6 +1,6 @@
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
-import type { RequestConfig } from '@src/core/ports/http';
+import type { RequestConfig } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';

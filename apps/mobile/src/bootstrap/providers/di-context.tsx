@@ -1,10 +1,10 @@
-import type { AppStoreListingGateway } from '@src/core/ports/app-store';
-import type { ClipboardGateway } from '@src/core/ports/clipboard';
+import type { AppStoreListingGateway } from '@src/core/ports/app-store-gateway';
+import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';
-import type { NetworkStatusGateway } from '@src/core/ports/network-status';
-import type { PurchasesGateway } from '@src/core/ports/purchases';
+import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
+import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
+import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';

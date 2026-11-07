@@ -3,7 +3,7 @@ import type {
   PurchaseOffering,
   PurchasePackage,
   PurchasePackageType,
-} from '@src/core/ports/purchases';
+} from '@src/core/ports/purchases-gateway';
 import { match } from 'ts-pattern';
 
 import { type CustomerInfo, customerInfoSchema } from '../schemas/customer-info.schema';

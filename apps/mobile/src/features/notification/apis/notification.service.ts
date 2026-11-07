@@ -5,7 +5,7 @@ import {
   notificationOpenedResponseSchema,
   unreadCountResponseSchema,
 } from '@aido/api';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { identity, withTimeout } from 'es-toolkit';

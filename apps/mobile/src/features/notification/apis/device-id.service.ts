@@ -1,6 +1,6 @@
 import type { DeviceIdStore } from '@src/core/ports/device-id-store';
 import type { IdGenerator } from '@src/core/ports/id-generator';
-import type { VendorIdGateway } from '@src/core/ports/vendor-id';
+import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 
 export class DeviceIdService {
   readonly #store: DeviceIdStore;

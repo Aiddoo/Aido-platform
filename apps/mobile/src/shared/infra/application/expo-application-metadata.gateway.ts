@@ -1,4 +1,4 @@
-import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';
+import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
 import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 

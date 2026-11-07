@@ -13,7 +13,7 @@ import {
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 

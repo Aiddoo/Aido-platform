@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import type { AccessTier } from '@aido/api';
 import { ok } from '@src/core/errors/result';
-import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases';
+import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases-gateway';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';

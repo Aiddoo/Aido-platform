@@ -1,4 +1,4 @@
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import {
   createHttpClientStub,
   createLoggerStub,

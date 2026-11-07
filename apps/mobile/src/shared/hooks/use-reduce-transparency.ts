@@ -3,8 +3,8 @@ import { logger } from '@src/shared/infra/logger/global-logger';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
-import { ACCESSIBILITY_LOG_EVENT } from '../observability/accessibility-log-events';
 import { createAccessibilitySettingStore } from '../stores/accessibility-setting-store';
+import { ACCESSIBILITY_LOG_EVENT } from './accessibility-log-events';
 
 const reduceTransparency = createAccessibilitySettingStore({
   read: () => AccessibilityInfo.isReduceTransparencyEnabled(),

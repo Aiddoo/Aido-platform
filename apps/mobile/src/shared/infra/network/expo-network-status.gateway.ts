@@ -1,4 +1,4 @@
-import type { NetworkStatusGateway } from '@src/core/ports/network-status';
+import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { addNetworkStateListener, getNetworkStateAsync, type NetworkState } from 'expo-network';

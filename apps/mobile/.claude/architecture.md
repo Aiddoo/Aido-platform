@@ -1024,7 +1024,7 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 ### 예: 클립보드
 
 ```typescript
-// core/ports/clipboard.ts
+// core/ports/clipboard-gateway.ts
 export interface ClipboardGateway {
   hasContent(): Promise<boolean>;
   paste(): Promise<string>;

@@ -1,4 +1,4 @@
-import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases';
+import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
 import Purchases, { PURCHASES_ERROR_CODE } from 'react-native-purchases';
 
 import {

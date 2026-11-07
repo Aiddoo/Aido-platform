@@ -1,6 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { NetworkStatusGateway } from '@src/core/ports/network-status';
+import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import { track } from '@src/shared/analytics/track';
 import { onlineManager } from '@tanstack/react-query';
 

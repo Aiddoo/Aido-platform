@@ -3,7 +3,7 @@ import type {
   PurchaseOffering,
   PurchasePackageResult,
   PurchasesGateway,
-} from '@src/core/ports/purchases';
+} from '@src/core/ports/purchases-gateway';
 
 const NO_SUBSCRIPTION: PurchaseStatus = { activeEntitlements: [] };
 

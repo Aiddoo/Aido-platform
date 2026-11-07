@@ -1,4 +1,4 @@
-import { PurchasesGatewayError } from '@src/core/ports/purchases';
+import { PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
 import { match } from 'ts-pattern';
 
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';

@@ -5,7 +5,7 @@ import type {
   SpeechMode,
 } from '@src/core/ports/speech-recognizer';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useOpenAppSettings } from '@src/shared/hooks/use-open-in-app-browser';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
 import { useCallback } from 'react';

@@ -1,4 +1,8 @@
-import type { HapticImpact, HapticNotification, HapticsGateway } from '@src/core/ports/haptics';
+import type {
+  HapticImpact,
+  HapticNotification,
+  HapticsGateway,
+} from '@src/core/ports/haptics-gateway';
 import { noop } from 'es-toolkit';
 import * as Haptics from 'expo-haptics';
 

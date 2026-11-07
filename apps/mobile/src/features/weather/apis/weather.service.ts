@@ -5,7 +5,7 @@ import {
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import type { RegisteredLocation } from '../schemas/weather-location.schema';

@@ -1,4 +1,4 @@
-import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
+import type { AppStoreReviewGateway } from '@src/core/ports/app-store-gateway';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 

@@ -1,4 +1,4 @@
-import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases';
+import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
 
 import { SubscriptionErrorCode } from '../domains/subscription.error';
 import { type StoreOperation, toSubscriptionError } from './subscription-error.mapper';

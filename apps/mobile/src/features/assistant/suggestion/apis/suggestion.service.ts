@@ -1,4 +1,4 @@
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 

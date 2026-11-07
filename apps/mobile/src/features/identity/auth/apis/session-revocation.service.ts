@@ -1,4 +1,4 @@
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { HOUR_MS } from '@src/shared/constants/time.constants';

@@ -1,4 +1,4 @@
-import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
+import type { AppStoreReviewGateway } from '@src/core/ports/app-store-gateway';
 import type { Instant } from '@src/shared/date/instant';
 
 import { type StoreReviewEligibility, StoreReviewPolicy } from '../domains/store-review.model';

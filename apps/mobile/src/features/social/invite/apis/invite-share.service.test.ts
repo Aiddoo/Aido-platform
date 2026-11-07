@@ -1,7 +1,7 @@
-import type { ClipboardGateway } from '@src/core/ports/clipboard';
+import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { SocialShareGateway } from '@src/core/ports/social-share';
-import type { SystemShareGateway } from '@src/core/ports/system-share';
+import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
+import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 
 import { InviteShareService } from './invite-share.service';
 

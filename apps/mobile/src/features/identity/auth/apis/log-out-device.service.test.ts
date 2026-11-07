@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import type { RequestConfig } from '@src/core/ports/http';
+import type { RequestConfig } from '@src/core/ports/http-client';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createLoggerStub } from '@src/shared/__tests__';
 import {

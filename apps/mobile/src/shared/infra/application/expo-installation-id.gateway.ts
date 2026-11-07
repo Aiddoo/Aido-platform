@@ -1,4 +1,4 @@
-import type { InstallationIdGateway } from '@src/core/ports/installation-id';
+import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import { SECURE_STORE_OPTIONS } from '@src/shared/infra/storage/secure-store-options';
 import { noop } from 'es-toolkit';
 import * as Application from 'expo-application';
