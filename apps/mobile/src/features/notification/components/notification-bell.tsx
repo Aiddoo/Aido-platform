@@ -1,6 +1,6 @@
 import NotificationsUnreadFill from '@assets/icons/material/notifications_unread_fill.xml';
 import Notifications from '@expo/material-symbols/notifications.xml';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

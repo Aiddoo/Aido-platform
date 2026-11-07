@@ -1,4 +1,4 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';

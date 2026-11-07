@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';

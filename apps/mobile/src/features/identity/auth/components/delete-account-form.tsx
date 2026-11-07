@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FormStepLayout, KeyboardAdaptiveButton, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';

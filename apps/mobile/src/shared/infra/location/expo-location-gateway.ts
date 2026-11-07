@@ -4,7 +4,7 @@ import {
   type LocationGateway,
   type LocationPermission,
 } from '@src/core/ports/location-gateway';
-import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import * as Location from 'expo-location';
 
 import { toPlaceName } from './place-name';

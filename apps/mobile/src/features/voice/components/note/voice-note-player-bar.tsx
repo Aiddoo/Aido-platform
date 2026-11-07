@@ -1,5 +1,5 @@
 import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
-import { SECOND_MS } from '@src/shared/constants/time.constants';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

@@ -1,4 +1,4 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { HStack, type Input, Text } from '@src/shared/ui';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';

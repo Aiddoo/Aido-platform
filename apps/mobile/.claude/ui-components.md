@@ -464,7 +464,7 @@ Expo 공식 스킬(expo-animation·native-ui·data-fetching·router·ui)을 따�
 React Native Reanimated 애니메이션에서 duration, delay 값은 **반드시** `ANIMATION` 상수를 사용합니다.
 
 ```tsx
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 
 // ✅ 올바름
 withTiming(value, { duration: ANIMATION.duration.slow });

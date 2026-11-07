@@ -1,4 +1,4 @@
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import {

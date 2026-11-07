@@ -1,4 +1,4 @@
-import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { getDayOfWeek } from '@src/shared/date/date-key';
 import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';

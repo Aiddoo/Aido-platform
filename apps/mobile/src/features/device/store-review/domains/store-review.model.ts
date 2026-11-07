@@ -1,4 +1,4 @@
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
 import { maxBy } from 'es-toolkit';
 

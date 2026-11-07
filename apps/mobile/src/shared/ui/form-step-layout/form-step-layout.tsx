@@ -1,4 +1,4 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import type { ComponentProps, ReactNode } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';

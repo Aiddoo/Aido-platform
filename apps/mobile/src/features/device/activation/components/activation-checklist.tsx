@@ -1,7 +1,7 @@
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { useInviteActivationStep } from '@src/features/social/invite/hooks/use-invite-activation-step';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';

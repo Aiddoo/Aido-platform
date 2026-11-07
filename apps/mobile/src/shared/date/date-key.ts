@@ -1,4 +1,4 @@
-import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import utc from 'dayjs/plugin/utc';

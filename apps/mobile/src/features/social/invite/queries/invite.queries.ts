@@ -1,7 +1,7 @@
 import type { RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 import type { Page } from '@src/shared/types/page.types';
 import {

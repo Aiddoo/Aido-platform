@@ -1,4 +1,4 @@
-import { SECOND_MS } from '@src/shared/constants/time.constants';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 
 const MINUTE_SECONDS = 60;
 const HOUR_SECONDS = 3_600;

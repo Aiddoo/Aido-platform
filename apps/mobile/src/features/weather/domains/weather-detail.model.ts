@@ -1,4 +1,4 @@
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
 import { round, sumBy } from 'es-toolkit';
 

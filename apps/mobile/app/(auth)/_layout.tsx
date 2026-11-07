@@ -1,4 +1,4 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';

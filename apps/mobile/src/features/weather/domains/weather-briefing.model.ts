@@ -1,5 +1,5 @@
 import { WEATHER_BRIEFING_RULES, type WeatherCondition } from '@aido/api/vocabulary';
-import { HOUR_MS } from '@src/shared/constants/time.constants';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {
   type Instant,

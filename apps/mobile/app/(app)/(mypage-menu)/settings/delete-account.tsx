@@ -1,5 +1,5 @@
 import { DeleteAccountForm } from '@src/features/identity/auth/components/delete-account-form';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, ReadableContent, Spacing, VStack, WordWrapText } from '@src/shared/ui';
 import Animated, { FadeIn } from 'react-native-reanimated';

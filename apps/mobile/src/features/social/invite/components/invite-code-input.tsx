@@ -1,6 +1,6 @@
 import { INVITE_CODE } from '@aido/api/vocabulary';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
+import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input-props';
 import { cn } from '@src/shared/utils/cn';
 import { noop, range } from 'es-toolkit';
 import { InputOTP, REGEXP_ONLY_DIGITS_AND_CHARS } from 'heroui-native';

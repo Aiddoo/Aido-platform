@@ -1,7 +1,7 @@
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
-import { HOUR_MS } from '@src/shared/constants/time.constants';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';

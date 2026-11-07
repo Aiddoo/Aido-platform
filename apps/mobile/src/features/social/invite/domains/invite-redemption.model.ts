@@ -5,7 +5,7 @@ import {
   REDEEM_OUTCOME,
 } from '@aido/api/vocabulary';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 

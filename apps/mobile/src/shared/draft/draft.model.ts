@@ -1,4 +1,4 @@
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { z } from 'zod';
 
 export const DRAFT_TTL_MS = 7 * DAY_MS;

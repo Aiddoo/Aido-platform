@@ -2,7 +2,7 @@ import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import type { BlockTarget } from '@src/features/social/moderation/schemas/user-block.schema';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';

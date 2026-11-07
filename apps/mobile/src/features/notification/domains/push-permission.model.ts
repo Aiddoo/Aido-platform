@@ -1,5 +1,5 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 

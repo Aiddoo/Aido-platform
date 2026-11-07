@@ -7,7 +7,7 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';

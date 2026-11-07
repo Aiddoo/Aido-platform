@@ -1,5 +1,5 @@
 import type { TIME_FORMATS } from '@aido/api/vocabulary';
-import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 

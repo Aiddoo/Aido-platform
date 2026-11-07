@@ -1,5 +1,5 @@
 import type { AudioPartPlaylistStatus } from '@src/core/ports/audio-part-playlist';
-import { SECOND_MS } from '@src/shared/constants/time.constants';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { clamp } from 'es-toolkit';
 
 import { VoiceNotePolicy } from '../domains/voice-note.model';

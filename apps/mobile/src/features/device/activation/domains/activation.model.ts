@@ -5,7 +5,7 @@ import {
 } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { TodoExistence } from '@src/features/planning/todo/schemas/todo.schema';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import type {

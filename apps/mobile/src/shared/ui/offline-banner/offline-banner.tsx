@@ -1,4 +1,4 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';

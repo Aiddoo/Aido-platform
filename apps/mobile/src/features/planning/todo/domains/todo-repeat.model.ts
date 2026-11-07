@@ -5,7 +5,7 @@ import {
   TODO_EDIT_SCOPES,
   TODO_SERIES_LIMITS,
 } from '@aido/api/vocabulary';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   diffDateKeysInDays,

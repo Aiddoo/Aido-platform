@@ -3,7 +3,7 @@ import {
   WEATHER_FROZEN_PRECIPITATION_TYPES,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import {
   type Instant,
   fromEpochMs,

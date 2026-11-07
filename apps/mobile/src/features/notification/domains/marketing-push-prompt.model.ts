@@ -1,5 +1,5 @@
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 
 import type { MarketingPushPromptState } from '../schemas/marketing-push-prompt.schema';

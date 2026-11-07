@@ -1,7 +1,7 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 import { z } from 'zod';
 

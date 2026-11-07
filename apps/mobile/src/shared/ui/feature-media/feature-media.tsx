@@ -1,4 +1,4 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { cn } from '@src/shared/utils/cn';
 import { Image, type ImageProps } from 'expo-image';

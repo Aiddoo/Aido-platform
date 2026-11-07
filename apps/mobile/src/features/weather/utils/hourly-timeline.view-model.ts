@@ -1,4 +1,4 @@
-import { HOUR_MS } from '@src/shared/constants/time.constants';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 

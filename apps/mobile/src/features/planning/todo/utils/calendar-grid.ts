@@ -1,4 +1,4 @@
-import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   diffDateKeysInDays,

@@ -1,5 +1,5 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';

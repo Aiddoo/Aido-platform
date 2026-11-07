@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
+import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input-props';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
