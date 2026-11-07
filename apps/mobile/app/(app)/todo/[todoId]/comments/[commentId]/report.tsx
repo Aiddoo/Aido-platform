@@ -1,8 +1,8 @@
 import { findCachedTodoComment } from '@src/features/engagement/comment/queries/todo-comment-cache';
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
-import { useCommentReportParams } from '@src/features/social/moderation/hooks/use-comment-report-params';
 import { commentReportParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -29,7 +29,7 @@ export default function CommentReportSheetRoute() {
 function CommentReportSheet() {
   const { t } = useTranslation('moderation');
   const queryClient = useQueryClient();
-  const { todoId, commentId } = useCommentReportParams();
+  const [{ todoId, commentId }] = useRouteParams(commentReportParamsSchema);
   const author = findCachedTodoComment({ queryClient, todoId, commentId })?.author;
 
   if (author == null) {

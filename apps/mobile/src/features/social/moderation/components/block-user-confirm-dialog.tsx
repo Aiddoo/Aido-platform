@@ -1,9 +1,10 @@
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 
-import { useBlockUserParams } from '../hooks/use-block-user-params';
 import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
+import { blockUserParamsSchema } from '../schemas/moderation-params.schema';
 
 /**
  * 차단 확인. 차단하는 동안 다이얼로그를 그대로 두고 확인 버튼만 불러오는 중으로 바꾼다.
@@ -11,7 +12,7 @@ import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
  */
 export function BlockUserConfirmDialog() {
   const { t } = useTranslation(['moderation', 'common']);
-  const { userId, name } = useBlockUserParams();
+  const [{ userId, name }] = useRouteParams(blockUserParamsSchema);
   const dialog = useSheetRoute('/feed');
   const blockUser = useMutation(useBlockUserMutationOptions());
 
