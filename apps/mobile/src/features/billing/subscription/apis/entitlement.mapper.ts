@@ -7,7 +7,7 @@ import {
 } from '@aido/api';
 import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
-import { toInstant } from '@src/shared/date/instant';
+import { toNullableInstant } from '@src/shared/date/instant';
 import { mapValues, pick } from 'es-toolkit';
 
 import {
@@ -26,7 +26,7 @@ export function toFeatureQuota(dto: FeatureQuotaDto): FeatureQuota {
     used: dto.used,
     remaining: dto.remaining,
     period: dto.period,
-    resetsAt: dto.resetsAt == null ? null : toInstant(dto.resetsAt),
+    resetsAt: toNullableInstant(dto.resetsAt),
     isFairUse: dto.isFairUse,
     perUse:
       dto.perUse == null

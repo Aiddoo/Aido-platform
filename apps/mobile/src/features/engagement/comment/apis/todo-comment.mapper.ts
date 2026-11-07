@@ -12,7 +12,7 @@ import type {
   TodoCommentV2,
 } from '@aido/api';
 import type { TodoCommentSort } from '@aido/api/vocabulary';
-import { toInstant } from '@src/shared/date/instant';
+import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import { TODO_COMMENT_PAGE_SIZE } from '../constants/todo-comment.constants';
 import type {
@@ -29,7 +29,7 @@ function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {
     ...dto,
     createdAt: toInstant(dto.createdAt),
-    editedAt: dto.editedAt == null ? null : toInstant(dto.editedAt),
+    editedAt: toNullableInstant(dto.editedAt),
   };
 }
 
@@ -53,7 +53,7 @@ export function toTodoCommentFromV1(todoId: number, dto: TodoCommentV1DTO): Todo
       canBlock: dto.viewer.canBlock ?? false,
     },
     createdAt: toInstant(dto.createdAt),
-    editedAt: dto.editedAt == null ? null : toInstant(dto.editedAt),
+    editedAt: toNullableInstant(dto.editedAt),
   };
 }
 

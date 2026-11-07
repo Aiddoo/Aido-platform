@@ -7,7 +7,7 @@ import {
   type TodoListResponse,
   type TodoSummaryResponse,
 } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { toNullableInstant } from '@src/shared/date/instant';
 
 import { TodoPolicy } from '../domains/todo.model';
 import {
@@ -35,7 +35,7 @@ export function toTodo(dto: TodoDto): Todo {
     category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
     completed: dto.completed,
     localTime: toLocalTime(dto),
-    scheduledAt: dto.scheduledTime == null ? null : toInstant(dto.scheduledTime),
+    scheduledAt: toNullableInstant(dto.scheduledTime),
     isAllDay: dto.isAllDay,
     visibility: dto.visibility,
     recurrenceGroupId: dto.recurrenceGroupId,
