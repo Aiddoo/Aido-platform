@@ -66,6 +66,9 @@
   "offlineBanner": {
     "message": "You're offline. We'll reload when you're back online."
   },
+  "pushChannel": {
+    "default": "General notifications"
+  },
   "toast": {
     "defaultError": "Something went wrong"
   },

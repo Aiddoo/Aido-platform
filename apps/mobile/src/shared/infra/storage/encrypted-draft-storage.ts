@@ -75,6 +75,7 @@ function migrateLegacyDrafts(target: EnumerableSyncStorage) {
       }
     }
   } finally {
+    // 복사에 실패해도 평문 저장소는 지운다. 옮기지 못한 초안보다 평문 초안을 기기에 남기지 않는 쪽이 우선이다
     deleteMMKV(LEGACY_DRAFT_STORAGE_ID);
   }
 }

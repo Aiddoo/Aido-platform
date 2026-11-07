@@ -1,4 +1,5 @@
 import type { PlaceName } from '@src/core/ports/location-gateway';
+import { deburr } from 'es-toolkit';
 import type { LocationGeocodedAddress } from 'expo-location';
 
 type PlaceNameSource = Pick<
@@ -6,15 +7,13 @@ type PlaceNameSource = Pick<
   'city' | 'district' | 'subregion' | 'region' | 'name'
 >;
 
-const COMBINING_MARKS = /[̀-ͯ]/g;
-
 function clean(value: string | null): string | null {
   const text = value?.normalize('NFC').trim();
   return text ? text : null;
 }
 
 function fold(value: string): string {
-  return value.normalize('NFD').replace(COMBINING_MARKS, '').toLowerCase();
+  return deburr(value).toLowerCase();
 }
 
 /**

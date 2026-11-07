@@ -6,13 +6,18 @@ import type {
   PushPermissionResponse,
 } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 import { withTimeout } from 'es-toolkit';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 
 import { PUSH_NOTIFICATION_LOG_EVENT } from './push-notification-log-events';
 
+/** 서버가 보내는 푸시의 채널 id와 같다. 바꾸면 기존 설치의 채널과 어긋난다 */
 const DEFAULT_CHANNEL_ID = 'default';
+/** Expo 알림 문서의 Android 기본 채널 값이다 */
+const CHANNEL_VIBRATION_PATTERN = [0, 250, 250, 250];
+const CHANNEL_LIGHT_COLOR = '#FF231F7C';
 
 /** APNs·FCM 등록이 끝나지 않으면 발급이 멈춘다. 다음 보고와 로그아웃이 기다리지 않게 끊는다 */
 export const PUSH_TOKEN_ISSUE_TIMEOUT_MS = 15_000;
@@ -64,10 +69,10 @@ export function registerForegroundNotificationPresentation() {
 async function ensureChannel(logger: Logger): Promise<void> {
   try {
     await Notifications.setNotificationChannelAsync(DEFAULT_CHANNEL_ID, {
-      name: DEFAULT_CHANNEL_ID,
+      name: t('common:pushChannel.default'),
       importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      vibrationPattern: CHANNEL_VIBRATION_PATTERN,
+      lightColor: CHANNEL_LIGHT_COLOR,
     });
   } catch (error) {
     logger.warn(PUSH_NOTIFICATION_LOG_EVENT.CHANNEL_SETUP_FAILED, {

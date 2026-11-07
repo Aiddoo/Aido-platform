@@ -63,6 +63,9 @@
   "offlineBanner": {
     "message": "오프라인이에요. 연결되면 자동으로 다시 불러와요"
   },
+  "pushChannel": {
+    "default": "기본 알림"
+  },
   "toast": {
     "defaultError": "문제가 생겼어요"
   },
