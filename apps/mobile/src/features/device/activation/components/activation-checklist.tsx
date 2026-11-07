@@ -111,9 +111,10 @@ function ActivationChecklistCollapse({
     );
   }, [isOpen, onCollapsed, progress]);
 
+  // Reanimated는 빠진 키를 되돌리지 않아 height를 명시해야 애니메이션 값이 굳지 않는다
   const animatedStyle = useAnimatedStyle(() =>
     progress.get() === 1
-      ? { opacity: 1 }
+      ? { height: 'auto', opacity: 1 }
       : { height: contentHeight.get() * progress.get(), opacity: progress.get() },
   );
 
