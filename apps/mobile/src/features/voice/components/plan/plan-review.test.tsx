@@ -1,7 +1,5 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
@@ -10,8 +8,7 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -21,7 +18,6 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { VoiceService } from '../../apis/voice.service';
 import {
   type PlanReviewFormValues,
   planReviewFormSchema,
@@ -124,16 +120,13 @@ async function renderPlan(
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
+      di: createTestDi({
+        httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        voiceService: new VoiceService(httpClient, createLoggerStub()),
         todoCategoryService: new TodoCategoryService(createHttpClientStub()),
         preferenceService: new PreferenceService(createHttpClientStub()),
-        activationService: new ActivationService(
-          createActivationProgressRepository(createMemorySyncStorage()),
-        ),
-      },
+      }),
       queryClient,
     },
   );

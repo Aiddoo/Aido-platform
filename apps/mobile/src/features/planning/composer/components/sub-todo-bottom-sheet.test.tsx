@@ -1,20 +1,19 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import {
   createParentTodo,
   createSubTodo,
 } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
-import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import type { TodoListResult } from '@src/features/planning/todo/schemas/todo.schema';
 import {
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
   createPendingResponse,
   createSpeechRecognizerStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -31,15 +30,6 @@ const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
 
 const logger = createLoggerStub();
-
-function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
-  return {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
-}
 
 async function renderEditSheet() {
   const httpClient = createHttpClientStub();
@@ -71,14 +61,13 @@ async function renderEditSheet() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
-        subTodoService: new SubTodoService(httpClient),
+      di: createTestDi({
+        httpClient,
         logger,
-        todoService: new TodoService(httpClient),
         analytics: createAnalyticsStub(),
-        errorReporter: createMockErrorReporter(),
+        errorReporter: createErrorReporterStub(),
         speechRecognizer: createSpeechRecognizerStub(),
-      },
+      }),
       queryClient,
     },
   );
@@ -189,14 +178,13 @@ describe('AddSubTodoBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: {
-          subTodoService: new SubTodoService(httpClient),
+        di: createTestDi({
+          httpClient,
           logger,
-          todoService: new TodoService(httpClient),
           analytics: createAnalyticsStub(),
-          errorReporter: createMockErrorReporter(),
+          errorReporter: createErrorReporterStub(),
           speechRecognizer: createSpeechRecognizerStub(),
-        },
+        }),
         queryClient,
       },
     );
@@ -240,14 +228,13 @@ describe('AddSubTodoBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: {
-          subTodoService: new SubTodoService(httpClient),
+        di: createTestDi({
+          httpClient,
           logger,
-          todoService: new TodoService(httpClient),
           analytics: createAnalyticsStub(),
-          errorReporter: createMockErrorReporter(),
+          errorReporter: createErrorReporterStub(),
           speechRecognizer: createSpeechRecognizerStub(),
-        },
+        }),
         queryClient,
       },
     );

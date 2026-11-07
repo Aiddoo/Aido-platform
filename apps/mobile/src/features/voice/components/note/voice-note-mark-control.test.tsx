@@ -3,11 +3,11 @@ import { ok } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -49,7 +49,7 @@ async function renderMarkControl({
     <Suspense>
       <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onPress} />
     </Suspense>,
-    { di: { coachmarkService, analytics, userService: new UserService(httpClient) } },
+    { di: createTestDi({ httpClient, coachmarkService, analytics }) },
   );
   await screen.findByTestId('voice-note-mark');
 

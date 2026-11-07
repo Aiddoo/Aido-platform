@@ -2,19 +2,12 @@ import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
-import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createMemo } from '@src/features/notes/memo/__tests__/memo.fixtures';
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createAnalyticsStub,
@@ -23,7 +16,7 @@ import {
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
-  createMemorySyncStorage,
+  createTestDi,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -36,7 +29,6 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
-import { VoiceService } from '../apis/voice.service';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixtures';
@@ -116,16 +108,8 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
-        voiceService: new VoiceService(httpClient, logger),
-        activationService: new ActivationService(
-          createActivationProgressRepository(createMemorySyncStorage()),
-        ),
-        entitlementService: new EntitlementService(httpClient, logger),
-        userService: new UserService(httpClient),
-        todoCategoryService: new TodoCategoryService(httpClient),
-        preferenceService: new PreferenceService(httpClient),
-        consentService: new ConsentService(httpClient),
+      di: createTestDi({
+        httpClient,
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMemoryStorage(),
         voiceNoteStorageService: storage,
@@ -133,7 +117,7 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
         logger,
-      },
+      }),
     },
   );
 

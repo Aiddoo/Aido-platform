@@ -3,11 +3,11 @@ import { ok } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -33,13 +33,7 @@ describe('KeyPointList', () => {
     await renderUi(
       <KeyPointList hasTimeCoachmark keyPoints={keyPoints} onPressKeyPoint={onPressKeyPoint} />,
       {
-        di: {
-          analytics,
-          userService: new UserService(httpClient),
-          coachmarkService: new CoachmarkService(
-            createCoachmarkRepository(createMemorySyncStorage()),
-          ),
-        },
+        di: createTestDi({ httpClient, analytics }),
       },
     );
     await waitFor(() =>
@@ -95,7 +89,7 @@ describe('KeyPointList', () => {
 
     // When
     await renderUi(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
-      di: { analytics, coachmarkService, userService: new UserService(httpClient) },
+      di: createTestDi({ httpClient, analytics, coachmarkService }),
     });
     await new Promise((resolve) => {
       setTimeout(resolve, 600);

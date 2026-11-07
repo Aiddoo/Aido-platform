@@ -5,7 +5,6 @@ import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/pu
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import type { CurrentUserResponse } from '@src/features/identity/user/schemas/user.schema';
 import {
@@ -14,6 +13,7 @@ import {
   createHttpClientStub,
   createLoggerStub,
   createPurchasesGatewayStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -23,7 +23,6 @@ import { onlineManager } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../../app/(app)/(mypage-menu)/settings/subscription';
-import { EntitlementService } from '../apis/entitlement.service';
 import { PurchasesSdkManager } from '../apis/purchases-sdk-manager';
 import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
@@ -103,16 +102,15 @@ async function renderSubscriptionScreen(
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
+      di: createTestDi({
+        httpClient,
         analytics,
         errorReporter: createErrorReporterStub(),
         logger: createLoggerStub(),
         purchasesSdkManager: sdkManager,
         subscriptionService: new SubscriptionService(sdkManager, purchases, createLoggerStub()),
-        entitlementService: new EntitlementService(httpClient, createLoggerStub()),
-        userService: new UserService(httpClient),
         applicationMetadata: { getInstallation: () => undefined },
-      },
+      }),
       queryClient,
     },
   );

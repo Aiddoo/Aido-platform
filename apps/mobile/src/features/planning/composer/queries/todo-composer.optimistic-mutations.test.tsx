@@ -1,7 +1,5 @@
 import { err, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
@@ -13,8 +11,6 @@ import {
   createTodoApiError,
   createTodoDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useReorderSubTodosMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
@@ -34,6 +30,7 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createPendingResponse,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -91,21 +88,17 @@ async function renderMutations() {
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
+      di: createTestDi({
+        httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         logger: createLoggerStub(),
-        subTodoService: new SubTodoService(httpClient),
-        todoService: new TodoService(httpClient),
-        activationService: new ActivationService(
-          createActivationProgressRepository(createMemorySyncStorage()),
-        ),
         storeReviewService: new StoreReviewService(
           createStoreReviewRepository(createMemorySyncStorage()),
           { isAvailable: async () => false, requestReview: async () => undefined },
           getNowInstant,
         ),
-      },
+      }),
     },
   );
 

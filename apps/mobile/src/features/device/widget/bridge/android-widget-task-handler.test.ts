@@ -1,5 +1,6 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { createErrorReporterStub } from '@src/shared/__tests__';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
@@ -17,12 +18,7 @@ function createHandler(isAppActive = false) {
   const navigationRepository = createWidgetNavigationRepository(storage);
   const openApp = jest.fn(async () => {});
   const renderStoredWidget = jest.fn();
-  const errorReporter: jest.Mocked<ErrorReporter> = {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
+  const errorReporter: jest.Mocked<ErrorReporter> = createErrorReporterStub();
   return {
     navigationRepository,
     openApp,

@@ -1,11 +1,11 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
@@ -37,7 +37,7 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
     <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명">
       <Text testID="target">마이크</Text>
     </CoachmarkPopover>,
-    { di: { coachmarkService, analytics, userService: new UserService(httpClient) } },
+    { di: createTestDi({ httpClient, coachmarkService, analytics }) },
   );
 
   return { analytics };
@@ -68,7 +68,7 @@ async function renderCoachmarkOnHiddenTab() {
     </CoachmarkPopover>
   );
   const { rerender } = await renderUi(coachmark(), {
-    di: { coachmarkService, analytics, userService: new UserService(httpClient) },
+    di: createTestDi({ httpClient, coachmarkService, analytics }),
   });
 
   return {
@@ -110,13 +110,7 @@ describe('CoachmarkPopover', () => {
         <Target />
       </CoachmarkPopover>,
       {
-        di: {
-          coachmarkService: new CoachmarkService(
-            createCoachmarkRepository(createMemorySyncStorage()),
-          ),
-          analytics: createAnalyticsStub(),
-          userService: new UserService(httpClient),
-        },
+        di: createTestDi({ httpClient, analytics: createAnalyticsStub() }),
       },
     );
     expect(onMount).toHaveBeenCalledTimes(1);
@@ -141,13 +135,7 @@ describe('CoachmarkPopover', () => {
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
       {
-        di: {
-          coachmarkService: new CoachmarkService(
-            createCoachmarkRepository(createMemorySyncStorage()),
-          ),
-          analytics,
-          userService: new UserService(httpClient),
-        },
+        di: createTestDi({ httpClient, analytics }),
       },
     );
     await act(async () => {
@@ -285,7 +273,7 @@ describe('CoachmarkPopover', () => {
       <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
-      { di: { coachmarkService, analytics, userService: new UserService(httpClient) } },
+      { di: createTestDi({ httpClient, coachmarkService, analytics }) },
     );
 
     // Then
@@ -329,7 +317,7 @@ describe('CoachmarkPopover', () => {
       </CoachmarkPopover>
     );
     const { rerender } = await renderUi(renderHint(false), {
-      di: { coachmarkService, analytics, userService: new UserService(httpClient) },
+      di: createTestDi({ httpClient, coachmarkService, analytics }),
     });
     await waitFor(() =>
       expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
@@ -370,7 +358,7 @@ describe('CoachmarkPopover', () => {
         </CoachmarkPopover>
       );
       const { rerender } = await renderUi(coachmark('2027-03-01'), {
-        di: { coachmarkService, analytics, userService: new UserService(httpClient) },
+        di: createTestDi({ httpClient, coachmarkService, analytics }),
       });
       await waitFor(() =>
         expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {

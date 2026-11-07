@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAnalyticsStub, createTestDi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,12 +36,7 @@ describe('피드 날짜 선택', () => {
     });
     const container = createTestDi({
       analytics: createAnalyticsStub(),
-      errorReporter: {
-        captureException: jest.fn(),
-        captureMessage: jest.fn(),
-        addBreadcrumb: jest.fn(),
-        setUserId: jest.fn(),
-      },
+      errorReporter: createErrorReporterStub(),
     });
     const wrapper = ({ children }: PropsWithChildren) => (
       <StaticDIProvider container={container}>

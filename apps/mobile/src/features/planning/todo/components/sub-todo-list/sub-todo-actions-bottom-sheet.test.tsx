@@ -1,10 +1,11 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import {
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
   createPendingResponse,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -14,19 +15,8 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.fixtures';
-import { SubTodoService } from '../../apis/sub-todo.service';
-import { TodoService } from '../../apis/todo.service';
 import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';
 import { SubTodoActionsBottomSheet } from './sub-todo-actions-bottom-sheet';
-
-function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
-  return {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
-}
 
 describe('SubTodoActionsBottomSheet', () => {
   it('지우는 동안 라벨이 바뀌고 다시 눌리지 않는다', async () => {
@@ -56,12 +46,11 @@ describe('SubTodoActionsBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: {
-          subTodoService: new SubTodoService(httpClient),
-          todoService: new TodoService(httpClient),
+        di: createTestDi({
+          httpClient,
           analytics: createAnalyticsStub(),
-          errorReporter: createMockErrorReporter(),
-        },
+          errorReporter: createErrorReporterStub(),
+        }),
         queryClient,
       },
     );

@@ -9,7 +9,6 @@ import {
   createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
@@ -20,7 +19,6 @@ import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-qu
 import { act, screen } from '@testing-library/react-native';
 
 import { toMemo } from '../apis/memo.mapper';
-import { MemoService } from '../apis/memo.service';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { Memo } from '../schemas/memo.schema';
 import {
@@ -55,11 +53,11 @@ async function updateMemo(client: QueryClient) {
   }
   const { unmount } = await renderUi(<CaptureOptions />, {
     queryClient: client,
-    di: {
-      memoService: new MemoService(httpClient, createLoggerStub()),
+    di: createTestDi({
+      httpClient,
       haptics: createHapticsStub(),
       analytics: createAnalyticsStub(),
-    },
+    }),
   });
   if (options == null) {
     throw new Error('mutation 옵션을 받지 못했다');

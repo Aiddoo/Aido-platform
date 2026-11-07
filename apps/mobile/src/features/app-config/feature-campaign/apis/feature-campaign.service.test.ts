@@ -1,18 +1,14 @@
 import { unwrap } from '@src/core/errors/result';
-import type { JsonFetcher } from '@src/core/ports/json-fetcher';
+import { createJsonFetcherStub } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 
 import { FeatureCampaignService } from './feature-campaign.service';
 
-const createMockJsonFetcher = (): jest.Mocked<JsonFetcher> => ({
-  get: jest.fn(),
-});
-
 describe('FeatureCampaignService', () => {
   it('원문 설정 응답을 검증하고 도메인 설정으로 반환한다', async () => {
     // Given
-    const fetcher = createMockJsonFetcher();
+    const fetcher = createJsonFetcherStub();
     fetcher.get.mockResolvedValue({
       enabled: true,
       campaignId: 'feature-discovery-2026-08',
@@ -37,7 +33,7 @@ describe('FeatureCampaignService', () => {
 
   it('응답 스키마가 다르면 ParseError를 던진다', async () => {
     // Given
-    const fetcher = createMockJsonFetcher();
+    const fetcher = createJsonFetcherStub();
     fetcher.get.mockResolvedValue({ data: { enabled: false } });
     const service = new FeatureCampaignService(fetcher);
 
@@ -47,7 +43,7 @@ describe('FeatureCampaignService', () => {
 
   it('네트워크 실패를 삼키지 않고 호출자에게 전파한다', async () => {
     // Given
-    const fetcher = createMockJsonFetcher();
+    const fetcher = createJsonFetcherStub();
     fetcher.get.mockRejectedValue(new Error('offline'));
     const service = new FeatureCampaignService(fetcher);
 

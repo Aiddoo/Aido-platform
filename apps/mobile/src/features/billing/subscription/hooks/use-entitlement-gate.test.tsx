@@ -7,7 +7,7 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -22,7 +22,6 @@ import {
   createFeatureQuotaDto,
   createLimitApiError,
 } from '../__tests__/entitlement.fixtures';
-import { EntitlementService } from '../apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { type EntitlementSnapshot } from '../schemas/entitlement.schema';
@@ -56,11 +55,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        entitlementService: new EntitlementService(httpClient, createLoggerStub()),
-      },
+      di: createTestDi({ httpClient, analytics, errorReporter: createErrorReporterStub() }),
       queryClient,
     },
   );

@@ -1,21 +1,13 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
-import {
-  createAnalyticsStub,
-  createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Button } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { VoiceService } from '../apis/voice.service';
 import type { PlannedAction } from '../schemas/voice-plan.schema';
 import { useApplyActionPlanMutationOptions } from './voice.mutations';
 
@@ -71,13 +63,7 @@ async function renderApply(
   const onMemoChanged = jest.fn();
 
   await renderUi(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
-    di: {
-      analytics,
-      voiceService: new VoiceService(httpClient, createLoggerStub()),
-      activationService: new ActivationService(
-        createActivationProgressRepository(createMemorySyncStorage()),
-      ),
-    },
+    di: createTestDi({ httpClient, analytics }),
     queryClient,
   });
   await fireEvent.press(screen.getByText('저장'));

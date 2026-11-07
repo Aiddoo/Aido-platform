@@ -1,12 +1,8 @@
 import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createAnalyticsStub,
@@ -17,6 +13,7 @@ import {
   createMemoryStorage,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
+  createTestDi,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -56,11 +53,8 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
-        entitlementService: new EntitlementService(httpClient, logger),
-        userService: new UserService(httpClient),
-        todoCategoryService: new TodoCategoryService(httpClient),
-        consentService: new ConsentService(httpClient),
+      di: createTestDi({
+        httpClient,
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
@@ -71,7 +65,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
         logger,
-      },
+      }),
     },
   );
   await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());

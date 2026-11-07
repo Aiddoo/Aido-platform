@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createAnalyticsStub, createTestDi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -16,12 +16,7 @@ const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 
 function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
-  return {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
+  return createErrorReporterStub();
 }
 
 describe('앱 로컬 날짜 Provider', () => {

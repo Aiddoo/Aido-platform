@@ -1,12 +1,8 @@
 import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
-import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
-import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
-import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
   createAnalyticsStub,
@@ -15,6 +11,7 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createPendingResponse,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -27,8 +24,6 @@ import { Text } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 
 import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.fixtures';
-import { SubTodoService } from '../../apis/sub-todo.service';
-import { TodoService } from '../../apis/todo.service';
 import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';
 import { updateCachedTodo } from '../../queries/todo-cache';
 import type { Todo } from '../../schemas/todo.schema';
@@ -62,23 +57,17 @@ async function renderTodoList(todo: Todo) {
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
+      di: createTestDi({
+        httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         logger: createLoggerStub(),
-        preferenceService: new PreferenceService(httpClient),
-        activationService: new ActivationService(
-          createActivationProgressRepository(createMemorySyncStorage()),
-        ),
         storeReviewService: new StoreReviewService(
           createStoreReviewRepository(createMemorySyncStorage()),
           { isAvailable: async () => false, requestReview: async () => undefined },
           getNowInstant,
         ),
-        subTodoService: new SubTodoService(httpClient),
-        todoService: new TodoService(httpClient),
-        todoCategoryService: new TodoCategoryService(httpClient),
-      },
+      }),
     },
   );
 

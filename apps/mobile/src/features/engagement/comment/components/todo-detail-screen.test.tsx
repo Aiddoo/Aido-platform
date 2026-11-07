@@ -10,6 +10,7 @@ import {
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import {
   createAnalyticsStub,
+  createClipboardGatewayStub,
   createHttpClientStub,
   createPendingResponse,
 } from '@src/shared/__tests__';
@@ -153,7 +154,7 @@ async function renderTodoDetail({
     di: createTestDi({
       httpClient,
       analytics,
-      clipboard: { hasContent: jest.fn(), paste: jest.fn(), copy: jest.fn() },
+      clipboard: createClipboardGatewayStub(),
     }),
   });
   await screen.findByTestId('todo-comment-input-0');

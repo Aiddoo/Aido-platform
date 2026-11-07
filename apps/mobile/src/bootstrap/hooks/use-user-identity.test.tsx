@@ -9,10 +9,11 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
-  createTestDi,
+  createErrorReporterStub,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -53,12 +54,7 @@ describe('useUserIdentity', () => {
       draftService,
       queryCacheStorage,
       analytics: createAnalyticsStub(),
-      errorReporter: {
-        captureException: jest.fn(),
-        captureMessage: jest.fn(),
-        addBreadcrumb: jest.fn(),
-        setUserId: jest.fn(),
-      },
+      errorReporter: createErrorReporterStub(),
       userService: new UserService(httpClient),
     });
     wrapper = ({ children }) => (

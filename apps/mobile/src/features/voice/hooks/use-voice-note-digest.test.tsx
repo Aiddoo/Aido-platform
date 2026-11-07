@@ -6,8 +6,6 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -15,6 +13,7 @@ import {
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
+  createTestDi,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -27,7 +26,6 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import { createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
-import { VoiceService } from '../apis/voice.service';
 import { VoiceNoteDigestButton } from '../components/note/voice-note-digest-button';
 import { useVoiceNoteDigest } from './use-voice-note-digest';
 
@@ -83,11 +81,8 @@ async function renderDigest() {
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
-        voiceService: new VoiceService(httpClient, logger),
-        entitlementService: new EntitlementService(httpClient, logger),
-        userService: new UserService(httpClient),
-        consentService: new ConsentService(httpClient),
+      di: createTestDi({
+        httpClient,
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         storage: createMemoryStorage(),
         voiceNoteStorageService: storage,
@@ -95,7 +90,7 @@ async function renderDigest() {
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
         logger,
-      },
+      }),
     },
   );
 

@@ -9,6 +9,7 @@ import {
 } from '@src/core/ports/location-gateway';
 import {
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
   createLoggerStub,
   createTestDi,
@@ -52,12 +53,7 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   }));
   httpClient.get.mockResolvedValue({ ok: true, value: createSeoulReportDto() });
   const logger = createLoggerStub();
-  const errorReporter: jest.Mocked<ErrorReporter> = {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
+  const errorReporter: jest.Mocked<ErrorReporter> = createErrorReporterStub();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
   const weatherService = new WeatherService(httpClient);

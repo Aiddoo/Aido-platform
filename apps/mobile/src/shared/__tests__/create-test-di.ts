@@ -3,6 +3,7 @@ import { disabledQueryCacheStorage } from '@src/bootstrap/query/query-cache-pers
 import type { HttpClient } from '@src/core/ports/http';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
+import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
@@ -29,6 +30,7 @@ import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
+import { VoiceService } from '@src/features/voice/apis/voice.service';
 import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -71,6 +73,8 @@ export function createTestDi({
 
   const dependencies: Partial<DIContainer> = {
     memoService: new MemoService(httpClient, logger),
+    voiceService: new VoiceService(httpClient, logger),
+    suggestionService: new SuggestionService(httpClient, logger),
     todoCategoryService: new TodoCategoryService(httpClient),
     todoCommentService: new TodoCommentService(httpClient),
     todoNudgeService: new TodoNudgeService(httpClient),

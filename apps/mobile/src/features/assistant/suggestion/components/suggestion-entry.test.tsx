@@ -2,20 +2,13 @@ import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import {
-  createErrorReporterStub,
-  createHttpClientStub,
-  createLoggerStub,
-} from '@src/shared/__tests__';
+import { createErrorReporterStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 
-import { SuggestionService } from '../apis/suggestion.service';
 import { SuggestionEntry } from './suggestion-entry';
 
 const RETRY_LABEL = '맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요';
@@ -39,12 +32,7 @@ describe('SuggestionEntry', () => {
 
     // When
     await renderUi(<SuggestionEntry />, {
-      di: {
-        suggestionService: new SuggestionService(httpClient, createLoggerStub()),
-        entitlementService: new EntitlementService(httpClient, createLoggerStub()),
-        userService: new UserService(httpClient),
-        errorReporter: createErrorReporterStub(),
-      },
+      di: createTestDi({ httpClient, errorReporter: createErrorReporterStub() }),
       queryClient,
     });
 
@@ -61,11 +49,7 @@ describe('SuggestionEntry', () => {
 
     // When
     await renderUi(<SuggestionEntry />, {
-      di: {
-        entitlementService: new EntitlementService(httpClient, createLoggerStub()),
-        userService: new UserService(httpClient),
-        errorReporter: createErrorReporterStub(),
-      },
+      di: createTestDi({ httpClient, errorReporter: createErrorReporterStub() }),
       queryClient,
     });
 

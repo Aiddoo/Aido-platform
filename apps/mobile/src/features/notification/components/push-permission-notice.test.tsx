@@ -2,17 +2,16 @@ import { createSessionEpoch } from '@src/core/session/session-epoch';
 import '@src/shared/i18n/init';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
-import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createLoggerStub,
   createPushNotificationGatewayStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -50,7 +49,8 @@ async function renderCard(
   queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
 
   await renderUi(<PushPermissionNotice />, {
-    di: {
+    di: createTestDi({
+      httpClient,
       pushPromptRepository: createPushPromptRepository(deviceSyncStorage),
       pushDeviceService: new PushDeviceService({
         gateway,
@@ -60,11 +60,9 @@ async function renderCard(
         getTimeZone: () => 'Asia/Seoul',
         sessionEpoch: createSessionEpoch(),
       }),
-      preferenceService: new PreferenceService(httpClient),
-      userService: new UserService(httpClient),
       analytics: createAnalyticsStub(),
       logger: createLoggerStub(),
-    },
+    }),
     queryClient,
   });
   return { gateway };

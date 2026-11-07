@@ -1,15 +1,12 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAnalyticsStub,
@@ -18,6 +15,7 @@ import {
   createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -88,10 +86,8 @@ async function renderStart({
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
-        userService: new UserService(httpClient),
-        consentService: new ConsentService(httpClient),
-        entitlementService: new EntitlementService(httpClient, logger),
+      di: createTestDi({
+        httpClient,
         coachmarkService: new CoachmarkService(coachmarkRepository),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
@@ -99,7 +95,7 @@ async function renderStart({
         analytics,
         errorReporter: createErrorReporterStub(),
         logger,
-      },
+      }),
     },
   );
 

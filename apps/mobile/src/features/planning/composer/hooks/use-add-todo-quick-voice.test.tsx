@@ -3,26 +3,22 @@ import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
-import { VoiceService } from '@src/features/voice/apis/voice.service';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
-  createMemorySyncStorage,
-  createAnalyticsStub,
   createHttpClientStub,
   createMemoryStorage,
+  createMemorySyncStorage,
   createSpeechRecognizerStub,
+  createTestDi,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
@@ -154,13 +150,9 @@ async function renderQuickVoice({
     </LocalDateProvider>,
     {
       queryClient,
-      di: {
+      di: createTestDi({
+        httpClient,
         voiceNoteStorageService: voiceNoteStorage,
-        voiceService: new VoiceService(httpClient, logger),
-        userService: new UserService(httpClient),
-        todoCategoryService: new TodoCategoryService(httpClient),
-        consentService: new ConsentService(httpClient),
-        entitlementService: new EntitlementService(httpClient, logger),
         coachmarkService: new CoachmarkService({
           isSeen: () => isCoachmarkSeen,
           markSeen: jest.fn(),
@@ -173,7 +165,7 @@ async function renderQuickVoice({
         haptics: createHapticsStub(),
         storage: createMemoryStorage(),
         logger,
-      },
+      }),
     },
   );
 

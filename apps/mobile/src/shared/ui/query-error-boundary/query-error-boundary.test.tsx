@@ -1,4 +1,5 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { createErrorReporterStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError, ServerError } from '@src/shared/errors';
 import { fireEvent } from '@testing-library/react-native';
@@ -10,12 +11,7 @@ import { OverlayProvider } from '../overlay/overlay-provider';
 import { useOverlay } from '../overlay/use-overlay';
 import { QueryErrorBoundary } from './query-error-boundary';
 
-const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  setUserId: jest.fn(),
-});
+const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => createErrorReporterStub();
 
 const Thrower = ({ error }: { error: Error }) => {
   throw error;

@@ -1,21 +1,12 @@
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { createErrorReporterStub } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import type { WidgetSnapshotContext, WidgetSummaryInput } from './widget-snapshot.mapper';
 import { WidgetSyncService } from './widget-sync.service';
 
-function createMockBridge(): jest.Mocked<WidgetBridge> {
+function createWidgetBridgeStub(): jest.Mocked<WidgetBridge> {
   return { writeSnapshot: jest.fn().mockResolvedValue(undefined) };
-}
-
-function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
-  return {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
 }
 
 const context: WidgetSnapshotContext = {
@@ -38,8 +29,8 @@ const summary: WidgetSummaryInput = {
 describe('WidgetSyncService', () => {
   it('요약을 스냅샷으로 변환해 브리지에 기록한다', async () => {
     // Given
-    const bridge = createMockBridge();
-    const errorReporter = createMockErrorReporter();
+    const bridge = createWidgetBridgeStub();
+    const errorReporter = createErrorReporterStub();
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When
@@ -57,9 +48,9 @@ describe('WidgetSyncService', () => {
 
   it('브리지 실패는 throw하지 않고 관측만 한다 (위젯 실패는 앱에 영향 없음)', async () => {
     // Given
-    const bridge = createMockBridge();
+    const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockRejectedValue(new Error('native failure'));
-    const errorReporter = createMockErrorReporter();
+    const errorReporter = createErrorReporterStub();
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When / Then
@@ -72,8 +63,8 @@ describe('WidgetSyncService', () => {
 
   it('로그아웃 시 loggedOut 스냅샷을 기록한다', async () => {
     // Given
-    const bridge = createMockBridge();
-    const errorReporter = createMockErrorReporter();
+    const bridge = createWidgetBridgeStub();
+    const errorReporter = createErrorReporterStub();
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When
@@ -90,9 +81,9 @@ describe('WidgetSyncService', () => {
 
   it('로그아웃 기록 실패도 throw하지 않는다', async () => {
     // Given
-    const bridge = createMockBridge();
+    const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockRejectedValue(new Error('native failure'));
-    const errorReporter = createMockErrorReporter();
+    const errorReporter = createErrorReporterStub();
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When / Then
@@ -113,12 +104,12 @@ describe('WidgetSyncService', () => {
     const writeStarted = new Promise<void>((resolve) => {
       announceWrite = resolve;
     });
-    const bridge = createMockBridge();
+    const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockImplementationOnce(async () => {
       announceWrite();
       await firstWrite;
     });
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
 
     // When
     const summaryWrite = service.syncSummary({ today: summary }, context);
@@ -136,8 +127,8 @@ describe('WidgetSyncService', () => {
 
   it('대기 중인 오래된 요약은 로그아웃보다 나중에 기록하지 않는다', async () => {
     // Given
-    const bridge = createMockBridge();
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const bridge = createWidgetBridgeStub();
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
 
     // When
     await Promise.all([
@@ -155,8 +146,8 @@ describe('WidgetSyncService', () => {
 
   it('표시 내용이 같으면 기록 시각만 달라져도 다시 쓰지 않는다', async () => {
     // Given
-    const bridge = createMockBridge();
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const bridge = createWidgetBridgeStub();
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
 
     // When
     await service.syncSummary({ today: summary }, context);
@@ -171,8 +162,8 @@ describe('WidgetSyncService', () => {
 
   it('표시 내용이 같아도 기기 시간대가 바뀌면 자정 경계를 다시 계산하도록 다시 쓴다', async () => {
     // Given: 서울에서 같은 날짜의 요약을 이미 기록했다
-    const bridge = createMockBridge();
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const bridge = createWidgetBridgeStub();
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
     await service.syncSummary({ today: summary }, context);
 
     // When: 같은 날짜 그대로 런던 시간대로 바뀐다
@@ -184,9 +175,9 @@ describe('WidgetSyncService', () => {
 
   it('기록에 실패한 같은 스냅샷은 다음 동기화에서 다시 시도한다', async () => {
     // Given
-    const bridge = createMockBridge();
+    const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockRejectedValueOnce(new Error('native failure'));
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
 
     // When
     await service.syncSummary({ today: summary }, context);
@@ -199,8 +190,8 @@ describe('WidgetSyncService', () => {
 
   it('번역 변환 실패도 인증 흐름으로 throw하지 않는다', async () => {
     // Given
-    const errorReporter = createMockErrorReporter();
-    const service = new WidgetSyncService(createMockBridge(), errorReporter);
+    const errorReporter = createErrorReporterStub();
+    const service = new WidgetSyncService(createWidgetBridgeStub(), errorReporter);
 
     // When / Then
     await expect(
@@ -219,8 +210,8 @@ describe('WidgetSyncService', () => {
 
   it('같은 표시 내용이어도 계정이 바뀌면 소유자와 함께 다시 기록한다', async () => {
     // Given
-    const bridge = createMockBridge();
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const bridge = createWidgetBridgeStub();
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
 
     // When
     await service.syncSummary({ today: summary }, { ...context, userId: 'previous-user' });
@@ -236,8 +227,8 @@ describe('WidgetSyncService', () => {
 
   it('로그아웃은 이전 컨텍스트의 계정 식별자를 위젯으로 전달하지 않는다', async () => {
     // Given
-    const bridge = createMockBridge();
-    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    const bridge = createWidgetBridgeStub();
+    const service = new WidgetSyncService(bridge, createErrorReporterStub());
 
     // When
     await service.syncLoggedOut(summary.date, { ...context, userId: 'previous-user' });

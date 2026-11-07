@@ -1,13 +1,12 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
+  createClipboardGatewayStub,
+  createErrorReporterStub,
   createHttpClientStub,
   createPendingResponse,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -24,7 +23,6 @@ import {
   createTodoCommentThread,
   TODO_ID,
 } from '../__tests__/todo-comment.fixtures';
-import { TodoCommentService } from '../apis/todo-comment.service';
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
 import { NEW_TODO_COMMENT_FORM_VALUES } from '../schemas/todo-comment-form.schema';
 import type { TodoCommentThread } from '../schemas/todo-comment.schema';
@@ -81,22 +79,13 @@ async function renderThreadWithReplies() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
-        todoCommentService: new TodoCommentService(httpClient),
+      di: createTestDi({
+        httpClient,
         analytics: createAnalyticsStub(),
-        userService: new UserService(httpClient),
-        coachmarkService: new CoachmarkService(
-          createCoachmarkRepository(createMemorySyncStorage()),
-        ),
-        clipboard: { hasContent: jest.fn(), paste: jest.fn(), copy: jest.fn() },
+        clipboard: createClipboardGatewayStub(),
         logger: createLoggerStub(),
-        errorReporter: {
-          captureException: jest.fn(),
-          captureMessage: jest.fn(),
-          addBreadcrumb: jest.fn(),
-          setUserId: jest.fn(),
-        },
-      },
+        errorReporter: createErrorReporterStub(),
+      }),
     },
   );
   view.queryClient.setQueryData(

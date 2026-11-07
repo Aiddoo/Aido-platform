@@ -16,6 +16,7 @@ import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
@@ -47,13 +48,6 @@ import { StaticDIProvider } from './di-context';
 const SEOUL_TIMEZONE = { timeZone: 'Asia/Seoul', offsetMinutes: 540 };
 const NEW_YORK_TIMEZONE = { timeZone: 'America/New_York', offsetMinutes: -240 };
 
-const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  setUserId: jest.fn(),
-});
-
 const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
 
 const LogoutProbe = () => {
@@ -83,7 +77,7 @@ describe('AuthBootProvider', () => {
     writeSnapshot = jest.fn().mockResolvedValue(undefined);
     requestRefresh = jest.fn();
     tokenStore = createMemoryTokenStore();
-    errorReporter = createMockErrorReporter();
+    errorReporter = createErrorReporterStub();
     analytics = createAnalyticsStub();
     queryClient = createTestQueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));

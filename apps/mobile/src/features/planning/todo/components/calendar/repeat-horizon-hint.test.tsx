@@ -7,10 +7,11 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
-  createErrorReporterStub,
-  createMemorySyncStorage,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient, renderUi } from '@src/shared/__tests__/render-ui';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
@@ -20,7 +21,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
 import { createTodoDto, createTodoListResponseDto } from '../../__tests__/todo.fixtures';
-import { TodoService } from '../../apis/todo.service';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
 const accountId = createCurrentUserDto().userId;
@@ -72,13 +72,13 @@ async function renderHint({
     );
   };
   const { rerender } = await renderUi(hint('2027-03-01'), {
-    di: {
+    di: createTestDi({
+      httpClient,
       coachmarkService,
       analytics,
       errorReporter: createErrorReporterStub(),
-      todoService: new TodoService(httpClient),
       userService,
-    },
+    }),
     queryClient,
   });
 
