@@ -41,7 +41,7 @@ export function TodoNudgeButton({
   };
 
   const handlePress = () => {
-    if (!gate.promptIfBlocked()) {
+    if (gate.promptIfBlocked()) {
       return;
     }
 

@@ -28,7 +28,7 @@ export function AppIconSelector() {
       return;
     }
 
-    if (AppIconPolicy.isPremiumIcon(key) && !gate.promptIfBlocked()) {
+    if (AppIconPolicy.isPremiumIcon(key) && gate.promptIfBlocked()) {
       return;
     }
 

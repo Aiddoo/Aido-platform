@@ -91,23 +91,23 @@ export function useEntitlementGate(
     };
 
     return {
-      /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 false다. 스냅샷을 아직 모르면 서버에 맡긴다 */
+      /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 true다(멈춘다). 스냅샷을 아직 모르면 서버에 맡긴다 */
       promptIfBlocked: (options?: EntitlementGateDialogOptions): boolean => {
         if (snapshot == null) {
-          return true;
+          return false;
         }
         return match(EntitlementPolicy.getAccessDecision(snapshot, feature, getNowInstant()))
-          .with('allow', () => true)
+          .with('allow', () => false)
           .with('limit-reached', 'locked', (decision) => {
             open(feature, decision, 'precheck', options);
-            return false;
+            return true;
           })
           .exhaustive();
       },
       promptLimit: (options?: EntitlementGateDialogOptions) => {
         open(feature, 'limit-reached', 'precheck', options);
       },
-      /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다. 그 밖의 오류는 부른 쪽이 처리한다 */
+      /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
       promptIfBlockedError: (error: unknown, options?: EntitlementGateDialogOptions): boolean => {
         const limited = findLimitedFeature(error);
         if (limited == null) {

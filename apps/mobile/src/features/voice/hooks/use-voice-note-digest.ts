@@ -53,7 +53,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
       return;
     }
     // 이미 키가 있으면 앞선 요청의 결과를 다시 받는 것이라 차감이 없다. 한도 판단은 서버에 맡긴다
-    if (note.digestRequest == null && !gate.promptIfBlocked()) {
+    if (note.digestRequest == null && gate.promptIfBlocked()) {
       return;
     }
 

@@ -173,7 +173,7 @@ function useNotificationPress(notification: Notification) {
 
     if (
       NotificationPolicy.isAiFeature(notification) &&
-      !gate.promptIfBlocked({ description: tGlobal('notification:list.premiumDescription') })
+      gate.promptIfBlocked({ description: tGlobal('notification:list.premiumDescription') })
     ) {
       return;
     }

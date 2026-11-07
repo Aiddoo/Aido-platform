@@ -9,7 +9,7 @@
 ```tsx
 const gate = useEntitlementGate('CUSTOM_REMINDER_TIME', { surface: 'reminder_settings' });
 
-<SettingsTimeInput onBeforeOpen={() => gate.promptIfBlocked()} />;
+<SettingsTimeInput onBeforeOpen={() => !gate.promptIfBlocked()} />;
 
 // mutation onError
 if (gate.promptIfBlockedError(error)) {

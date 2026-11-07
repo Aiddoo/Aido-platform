@@ -62,7 +62,7 @@ export function ReminderTimeInput({ label, description, period }: ReminderTimeIn
       timeFormat={preference.timeFormat}
       isDisabled={!preference.pushEnabled || updatePreference.isPending}
       accessory={isLocked ? <CrownIcon width={14} height={14} /> : undefined}
-      onBeforeOpen={() => gate.promptIfBlocked()}
+      onBeforeOpen={() => !gate.promptIfBlocked()}
     />
   );
 }
