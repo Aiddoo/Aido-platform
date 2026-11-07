@@ -1110,7 +1110,10 @@ function checkStrictNullishComparisons(sourceFile, repositoryRoot, errors) {
 
 // 앱의 Hermes(260318099.0.5)에서 실측해 없는 표준 메서드. TS lib에는 있어 typecheck를 통과하고 호출한 순간 앱에서만 죽는다.
 // 같은 시대의 toReversed·toSpliced·with·findLast·findLastIndex는 있다. jest.setup.ts도 같은 목록을 Node에서 지운다.
-const ROUTE_PARAMS_HOOK = 'apps/mobile/src/shared/hooks/use-route-params.ts';
+const SHARED_ROUTE_HOOKS = new Set([
+  'apps/mobile/src/shared/hooks/use-route-params.ts',
+  'apps/mobile/src/shared/hooks/use-view.ts',
+]);
 const ROUTE_PARAM_HOOK_FILE = /\/hooks\/use-[^/]*-params?\.tsx?$/u;
 
 function isRouterSetParamsCall(node) {
@@ -1152,7 +1155,7 @@ function checkRouteParamConventions(sourceFile, repositoryRoot, errors) {
   function visit(node) {
     if (
       isRouterSetParamsCall(node) &&
-      relativePath !== ROUTE_PARAMS_HOOK &&
+      !SHARED_ROUTE_HOOKS.has(relativePath) &&
       !ROUTE_PARAM_HOOK_FILE.test(relativePath)
     ) {
       errors.push(

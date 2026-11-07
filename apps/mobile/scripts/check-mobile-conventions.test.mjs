@@ -583,6 +583,7 @@ test('공용 훅과 파라미터 훅의 router.setParams, 테스트의 호출은
   withFixture(
     {
       'apps/mobile/src/shared/hooks/use-route-params.ts': `router.setParams({ date: undefined });`,
+      'apps/mobile/src/shared/hooks/use-view.ts': `router.setParams({ view: 'friends' });`,
       'apps/mobile/src/features/notification/hooks/use-notification-category-param.ts': `router.setParams({});`,
       'apps/mobile/src/features/planning/todo/hooks/use-feed-params.test.tsx': `router.setParams({});`,
     },
