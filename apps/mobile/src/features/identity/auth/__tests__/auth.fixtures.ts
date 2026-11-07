@@ -4,13 +4,12 @@ import type {
   DeleteAccountResponse,
   ForgotPasswordResponse,
   LinkedAccountsResponse,
-  RegisterResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
-import type { AuthTokens } from '../schemas/auth.schema';
+import type { AuthTokens, RegisterEnvelope } from '../schemas/auth.schema';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -40,12 +39,13 @@ export const createAuthTokens = (overrides?: Partial<AuthTokens>): AuthTokens =>
   ...overrides,
 });
 
-const generateRegisterDto = (): RegisterResponse => ({
+const generateRegisterDto = (): RegisterEnvelope => ({
   message: '인증 메일이 발송되었습니다.',
   email: 'test@example.com',
+  emailSent: true,
 });
 
-export const createRegisterDto = (overrides?: Partial<RegisterResponse>): RegisterResponse => ({
+export const createRegisterDto = (overrides?: Partial<RegisterEnvelope>): RegisterEnvelope => ({
   ...generateRegisterDto(),
   ...overrides,
 });

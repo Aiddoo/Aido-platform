@@ -5,7 +5,6 @@ import type {
   ForgotPasswordResponse,
   LinkedAccount as LinkedAccountDto,
   LinkedAccountsResponse,
-  RegisterResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
 } from '@aido/api';
@@ -16,6 +15,7 @@ import type {
   ChangePasswordResult,
   DeleteAccountResult,
   ForgotPasswordResult,
+  RegisterEnvelope,
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
@@ -34,12 +34,11 @@ export function toAuthTokens(dto: AuthTokensDto): AuthTokens {
   };
 }
 
-export function toRegisterResult(dto: RegisterResponse): RegisterResult {
+export function toRegisterResult(dto: RegisterEnvelope): RegisterResult {
   return {
     message: dto.message,
     email: dto.email,
-    // 구 서버 응답에는 없다. 그때는 예전처럼 보냈다고 본다
-    isEmailSent: dto.emailSent ?? true,
+    isEmailSent: dto.emailSent,
   };
 }
 

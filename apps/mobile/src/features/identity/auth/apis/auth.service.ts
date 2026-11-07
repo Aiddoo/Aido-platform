@@ -11,7 +11,6 @@ import {
   linkAccountResponseSchema,
   linkedAccountsResponseSchema,
   type RegisterInput,
-  registerResponseSchema,
   type ResendVerificationInput,
   resendVerificationResponseSchema,
   type ResetPasswordInput,
@@ -31,7 +30,7 @@ import { match } from 'ts-pattern';
 
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
 import { extractOAuthCode } from '../domains/oauth.model';
-import type { AuthTokens } from '../schemas/auth.schema';
+import { type AuthTokens, registerEnvelopeSchema } from '../schemas/auth.schema';
 import type {
   OAuthProvider,
   OAuthProviderSlug,
@@ -187,7 +186,7 @@ export class AuthService {
   register = async (input: RegisterInput) =>
     parseApiResponse(
       await this.#publicHttpClient.post('v1/auth/register', input),
-      registerResponseSchema,
+      registerEnvelopeSchema,
       toRegisterResult,
       '[AuthService] Invalid register response',
     );

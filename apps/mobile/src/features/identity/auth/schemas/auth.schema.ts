@@ -1,3 +1,4 @@
+import { registerResponseSchema } from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -22,6 +23,10 @@ const authTokensSchema = z.object({
   isNewUser: z.boolean().optional().default(false),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
+
+/** 지금 서버는 인증 메일을 담았는지를 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */
+export const registerEnvelopeSchema = registerResponseSchema.required({ emailSent: true });
+export type RegisterEnvelope = z.infer<typeof registerEnvelopeSchema>;
 
 const registerResultSchema = z.object({
   message: z.string(),
