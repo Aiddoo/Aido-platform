@@ -6,7 +6,7 @@ import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 import { match } from 'ts-pattern';
 
-import type { useDatePicker } from '../../hooks/use-date-picker';
+import type { DatePicker } from '../../hooks/use-date-picker';
 import {
   DAY_TYPE_TONE,
   getDatePickerDayStyle,
@@ -19,7 +19,7 @@ import { PickerMonthHeader } from '../picker-month-header';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 interface RepeatCalendarProps {
-  picker: ReturnType<typeof useDatePicker>;
+  picker: DatePicker;
   today: Date;
   startDate: Date;
   endDate: Date | null;

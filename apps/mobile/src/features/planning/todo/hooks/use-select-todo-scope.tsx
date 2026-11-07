@@ -1,12 +1,10 @@
 import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
-import { Box } from '@src/shared/ui';
-import { type PropsWithChildren, useState } from 'react';
+import { useState } from 'react';
 import { Keyboard } from 'react-native';
 
-import { TodoScopeSelectContent } from '../components/todo-scope-select-content';
 import type { TodoEditScope, TodoUpdateScope } from '../schemas/todo-repeat.schema';
 
-interface ScopeRequest {
+export interface ScopeRequest {
   action: 'edit' | 'delete';
   date: string;
   scopes: readonly TodoEditScope[];
@@ -45,29 +43,4 @@ export function useSelectTodoScope() {
     scopeRequest: request,
     settleScope: settle,
   };
-}
-
-type ScopeStep = Pick<ReturnType<typeof useSelectTodoScope>, 'scopeRequest' | 'settleScope'>;
-
-interface TodoScopeStepProps extends PropsWithChildren {
-  step: ScopeStep;
-}
-
-export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
-  const { scopeRequest, settleScope } = step;
-
-  return (
-    <>
-      <Box className={scopeRequest == null ? undefined : 'hidden'}>{children}</Box>
-      {scopeRequest != null && (
-        <TodoScopeSelectContent
-          action={scopeRequest.action}
-          date={scopeRequest.date}
-          scopes={scopeRequest.scopes}
-          onChange={settleScope}
-          onBack={() => settleScope(null)}
-        />
-      )}
-    </>
-  );
 }

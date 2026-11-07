@@ -16,12 +16,13 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
-import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
+import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useTodoParams } from '../../hooks/use-todo-params';
 import { useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
+import { TodoScopeStep } from '../todo-scope-step';
 import { TodoTimePickerContent } from '../todo-time-picker-content';
 
 type TodoTimeBottomSheetProps = Omit<

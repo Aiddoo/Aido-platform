@@ -31,7 +31,7 @@ import { type ComponentProps, type ComponentType, Suspense, useEffect } from 're
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
-import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
+import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useTodoParams } from '../../hooks/use-todo-params';
 import { useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
@@ -46,6 +46,7 @@ import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedu
 import { isSameDay } from '../../utils/calendar-day-comparison';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoActionRow } from '../todo-action-row';
+import { TodoScopeStep } from '../todo-scope-step';
 
 type TodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
