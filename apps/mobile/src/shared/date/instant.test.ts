@@ -1,6 +1,7 @@
 import {
   diffMs,
   fromDate,
+  fromWallClock,
   getNowInstant,
   getZonedHour,
   hasSameWallClock,
@@ -246,5 +247,21 @@ describe('getNowInstant', () => {
     expect(toHHmm(first, 'America/Los_Angeles')).toBe('01:30');
     expect(toHHmm(second, 'America/Los_Angeles')).toBe('01:30');
     expect(diffMs(second, first)).toBe(3_600_000);
+  });
+});
+
+describe('fromWallClock', () => {
+  it.each([
+    ['Asia/Seoul', '2026-10-01T05:30:00.000Z'],
+    ['America/Los_Angeles', '2026-10-01T21:30:00.000Z'],
+  ])('같은 벽시계도 %s에서는 다른 순간이다', (timeZone, iso) => {
+    // Given
+    const dateKey = '2026-10-01';
+
+    // When
+    const instant = fromWallClock(dateKey, '14:30', timeZone);
+
+    // Then
+    expect(new Date(instant).toISOString()).toBe(iso);
   });
 });

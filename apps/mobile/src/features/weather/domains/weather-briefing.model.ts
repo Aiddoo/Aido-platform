@@ -8,22 +8,17 @@ import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {
   type Instant,
   fromEpochMs,
+  fromWallClock,
   getZonedHour,
   toDate,
   toDateKey,
   toEpochMs,
 } from '@src/shared/date/instant';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
 import { maxBy, orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { isFrozenPrecipitation, isWetHour } from './weather-report.model';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
@@ -72,7 +67,7 @@ function toBriefingTodo(
     scheduledAt:
       todo.isAllDay || todo.localTime == null
         ? null
-        : fromEpochMs(dayjs.tz(`${date} ${todo.localTime}`, timeZone).valueOf()),
+        : fromWallClock(date, todo.localTime, timeZone),
     completed: todo.completed,
     subTodoProgress: todo.subTodoStats.total > 0 ? todo.subTodoStats : null,
   };
