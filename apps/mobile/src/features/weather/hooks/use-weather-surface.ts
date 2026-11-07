@@ -10,6 +10,9 @@ import { useOnSkyColor } from './use-on-sky-color';
 
 const DEFAULT_SKY: WeatherSceneSky = 'clearDay';
 const OPAQUE_DARK_CARD = 'rgb(30,33,40)';
+const LIGHT_CARD_ALPHA = 0.24;
+const LIGHT_NOW_RING_ALPHA = 0.55;
+const DARK_NOW_RING = 'rgba(10,14,24,0.6)';
 
 export type WeatherSurface = {
   /** 카드 면 색 */
@@ -46,17 +49,13 @@ export function useWeatherSurface(): WeatherSurface {
   const cardEdge = isDark ? darkEdge : lightEdge;
 
   if (isOpaque) {
-    return {
-      card: isDark ? OPAQUE_DARK_CARD : `rgb(${tint})`,
-      cardEdge,
-      nowRing: isDark ? OPAQUE_DARK_CARD : `rgb(${tint})`,
-      isOpaque,
-    };
+    const opaqueColor = isDark ? OPAQUE_DARK_CARD : `rgb(${tint})`;
+    return { card: opaqueColor, cardEdge, nowRing: opaqueColor, isOpaque };
   }
   return {
-    card: isDark ? darkCard : `rgba(${tint},0.24)`,
+    card: isDark ? darkCard : `rgba(${tint},${LIGHT_CARD_ALPHA})`,
     cardEdge,
-    nowRing: isDark ? 'rgba(10,14,24,0.6)' : `rgba(${tint},0.55)`,
+    nowRing: isDark ? DARK_NOW_RING : `rgba(${tint},${LIGHT_NOW_RING_ALPHA})`,
     isOpaque,
   };
 }

@@ -19,7 +19,10 @@ import { memo, type ReactNode } from 'react';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors';
+import {
+  PRECIPITATION_CHANCE_TEXT_CLASS,
+  VISIBLE_PRECIPITATION_CHANCE,
+} from '../constants/weather-colors';
 import {
   PRECIPITATION_SUBJECT_LABEL_KEYS,
   SKY_AFTER_KEYS,
@@ -41,8 +44,6 @@ import {
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
-/** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. */
-const VISIBLE_CHANCE = 20;
 /**
  * 모든 칸은 같은 폭으로 리듬을 맞춘다. 12시간제는 "오후 10시"가 15pt 그대로 들어가도록 넓히고,
  * 글자 배율에 비례해 늘린다.
@@ -52,6 +53,8 @@ const CELL_WIDTH = { TWELVE_HOUR: 70, TWENTY_FOUR_HOUR: 58 } as const satisfies 
   number
 >;
 const ICON_SIZE = 28;
+const INITIAL_RENDER_COUNT = 8;
+const LOADING_CELL_COUNT = 6;
 /** 시안 온도 줄 19/24 -0.4. 맞는 토큰이 없어 앱 글자 크기 비율만 곱한다. */
 const VALUE_TYPE = { fontSize: 19, lineHeight: 24, letterSpacing: -0.4 };
 
@@ -113,7 +116,7 @@ export function HourlyForecast() {
           data={timeline}
           keyExtractor={getTimelineKey}
           showsHorizontalScrollIndicator={false}
-          initialNumToRender={8}
+          initialNumToRender={INITIAL_RENDER_COUNT}
           className="mt-3"
           contentContainerClassName="px-1.5"
           renderItem={({ item }) => (
@@ -220,7 +223,7 @@ function HourCell({
   const unit = useTemperatureUnit();
   const time = isNow ? t('hourly.now') : formatInstantHour(hour.startsAt, timeFormat, dateFormat);
   const temperature = toDisplayTemperature(hour.temperature, unit);
-  const isChanceVisible = hour.precipitationChance >= VISIBLE_CHANCE;
+  const isChanceVisible = hour.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE;
   const labelMinScale = useMinimumFontScale('b3');
   const value = useHourlyValueTextStyle();
 
@@ -350,7 +353,7 @@ HourlyForecast.Loading = function Loading() {
     <WeatherCard className="px-0">
       <TextSkeleton size="b3" className="mx-4 w-48 opacity-40" />
       <Box className="flex-row px-1.5">
-        {range(6).map((index) => (
+        {range(LOADING_CELL_COUNT).map((index) => (
           <VStack key={index} align="center" gap={6} style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
             <TextSkeleton size="b3" className="w-8 opacity-40" />
             <Spacing size={ICON_SIZE} />

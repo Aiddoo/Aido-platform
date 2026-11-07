@@ -45,6 +45,8 @@ const AREA_EASING = Easing.out(Easing.ease);
 const LABEL_FONT = 'WantedSans-Medium';
 const AREA_GRADIENT_ID = 'next-hour-area';
 const FALLBACK_ICON_SIZE = 30;
+const TITLE_ICON_SIZE = 13;
+const GUIDE_LABEL_FONT_SIZE = 10;
 
 /**
  * 분 단위 예보가 있으면 그래프로, 없는 지역(국내 등)은 시간 단위 한 줄 카드로 알린다. 비 소식이 없으면 카드를 만들지 않는다.
@@ -89,7 +91,13 @@ export function NextHourPrecipitation() {
   return (
     <WeatherCard
       title={t('nextHour.title')}
-      icon={<WeatherRainIcon width={13} height={13} colorClassName="text-on-sky/[0.62]" />}
+      icon={
+        <WeatherRainIcon
+          width={TITLE_ICON_SIZE}
+          height={TITLE_ICON_SIZE}
+          colorClassName="text-on-sky/[0.62]"
+        />
+      }
       className="gap-0 pb-3"
     >
       <VStack gap={2} className="mt-1.5">
@@ -248,7 +256,7 @@ NextHourPrecipitation.Chart = function Chart({
             y={guide.y - 4}
             textAnchor="end"
             fill={guideLabelColor}
-            fontSize={10}
+            fontSize={GUIDE_LABEL_FONT_SIZE}
             fontFamily={LABEL_FONT}
           >
             {t(PRECIPITATION_LEVEL_LABEL_KEYS[guide.level])}

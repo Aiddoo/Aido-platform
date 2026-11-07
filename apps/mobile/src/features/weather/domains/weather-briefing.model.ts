@@ -23,6 +23,9 @@ const CHILLY_TEMPERATURE = WEATHER_BRIEFING_RULES.CHILLY_TEMPERATURE;
 const BEST_TIME_TOLERANCE = 1;
 /** 이 시각(위치 시간대) 이후 남은 할 일이 없으면 내일 아침 날씨를 알려 준다. */
 const EVENING_HOUR = WEATHER_BRIEFING_RULES.EVENING_HOUR;
+/** 새벽, 오전, 오후가 시작하는 시각(위치 시간대). 저녁은 EVENING_HOUR부터다. */
+const MORNING_START_HOUR = 6;
+const AFTERNOON_START_HOUR = 12;
 const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 'PARTLY_CLOUDY'];
 const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
   'CLOUDY',
@@ -195,10 +198,10 @@ export function getForecastTodos(
 }
 
 function toDayPart(hour: number): DayPart {
-  if (hour < 6) {
+  if (hour < MORNING_START_HOUR) {
     return 'dawn';
   }
-  if (hour < 12) {
+  if (hour < AFTERNOON_START_HOUR) {
     return 'morning';
   }
   return hour < EVENING_HOUR ? 'afternoon' : 'evening';
@@ -237,7 +240,7 @@ function toHotBriefing(
   }
   const hotHours = hourly.filter(
     (hour) =>
-      toEpochMs(hour.startsAt) >= toEpochMs(range.startsAt) &&
+      toEpochMs(range.startsAt) <= toEpochMs(hour.startsAt) &&
       toEpochMs(hour.startsAt) < toEpochMs(range.endsAt),
   );
   const peak = maxBy(hotHours, (hour) => hour.apparentTemperature);

@@ -52,6 +52,8 @@ const EDGE_MARGIN = 48;
 const BASE_SLANT = Math.atan(24 / 900);
 const FAR_DEPTH_BIAS = 1.6;
 const PACE = [0.62, 1];
+/** 입자마다 속도를 조금씩 달리해 줄이 맞아 보이지 않게 한다. */
+const PACE_JITTER = 0.12;
 const UNIT = [0, 1];
 
 type RainLayerProps = {
@@ -107,7 +109,7 @@ export function RainLayer({
     const base = index * PARTICLE_SEED_STRIDE;
     const depth = depths[index] ?? 0;
     const scale = interpolate(depth, UNIT, scaleRange) / PARTICLE_TEXTURE_SCALE;
-    const pace = interpolate(depth, UNIT, PACE) + 0.12 * (seeds[base + 2] ?? 0);
+    const pace = interpolate(depth, UNIT, PACE) + PACE_JITTER * (seeds[base + 2] ?? 0);
     const travelled = wrap(
       (seeds[base + 1] ?? 0) * travelHeight + time.get() * fallSpeed * pace,
       travelHeight,

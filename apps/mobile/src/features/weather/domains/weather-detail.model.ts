@@ -71,6 +71,8 @@ function getNextSunEvent(
   return null;
 }
 
+const MINUTES_PER_HOUR = 60;
+
 interface Duration {
   hours: number;
   minutes: number;
@@ -84,7 +86,10 @@ function getDaylightDuration(day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>
     0,
     Math.round((toEpochMs(day.sunset) - toEpochMs(day.sunrise)) / MINUTE_MS),
   );
-  return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
+  return {
+    hours: Math.floor(totalMinutes / MINUTES_PER_HOUR),
+    minutes: totalMinutes % MINUTES_PER_HOUR,
+  };
 }
 
 /** 오늘 다음 날짜(YYYY-MM-DD)의 예보. 예보 범위를 넘으면 null이다. */

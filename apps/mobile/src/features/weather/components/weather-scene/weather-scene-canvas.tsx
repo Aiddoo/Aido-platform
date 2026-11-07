@@ -1,4 +1,5 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
@@ -91,7 +92,7 @@ export function WeatherSceneCanvas({
     (frame: FrameInfo) => {
       'worklet';
       const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_FRAME_STEP_MS);
-      time.set(time.get() + step / 1000);
+      time.set(time.get() + step / SECOND_MS);
     },
     [time],
   );

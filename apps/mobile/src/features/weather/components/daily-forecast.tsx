@@ -23,7 +23,11 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import Animated, { Easing, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { PRECIPITATION_CHANCE_TEXT_CLASS, TODO_DOT_COLOR } from '../constants/weather-colors';
+import {
+  PRECIPITATION_CHANCE_TEXT_CLASS,
+  TODO_DOT_COLOR,
+  VISIBLE_PRECIPITATION_CHANCE,
+} from '../constants/weather-colors';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
@@ -45,8 +49,6 @@ import {
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
-/** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. */
-const VISIBLE_CHANCE = 20;
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
 /** 할 일 점을 찍을 날 수. 예보 일수와 같다. */
@@ -219,7 +221,7 @@ DailyForecast.Item = memo(function Item({
         </HStack>
         <VStack align="center" style={{ width: width('icon') }}>
           <WeatherIcon condition={day.condition} isDaylight width={ICON_SIZE} height={ICON_SIZE} />
-          {day.precipitationChance >= VISIBLE_CHANCE && (
+          {day.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE && (
             <Text
               size="e2"
               weight="semibold"

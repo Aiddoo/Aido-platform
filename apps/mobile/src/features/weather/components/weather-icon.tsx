@@ -19,6 +19,7 @@ const SUNSET_ORANGE = '#FFB35C';
 const MONO_STROKE_WIDTH = 1.9;
 const CARD_STROKE_WIDTH = 2.2;
 const CARD_ICON_SIZE = 13;
+const GLYPH_ICON_SIZE = 24;
 
 const PATH_PRECISION = 2;
 
@@ -299,8 +300,8 @@ WeatherIcon.Card = function Card({
 function GlyphIcon({
   glyph,
   variant = 'color',
-  width = 24,
-  height = 24,
+  width = GLYPH_ICON_SIZE,
+  height = GLYPH_ICON_SIZE,
   colorClassName = 'text-on-sky',
   ...props
 }: GlyphIconProps & { glyph: Glyph }) {

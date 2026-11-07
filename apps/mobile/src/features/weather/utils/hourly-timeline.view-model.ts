@@ -25,7 +25,7 @@ export function toHourlyTimeline(
   }
   const rangeEnd = toEpochMs(last.startsAt) + HOUR_MS;
   const isInRange = (date: Instant) =>
-    toEpochMs(date) > toEpochMs(now) && toEpochMs(date) < rangeEnd;
+    toEpochMs(now) < toEpochMs(date) && toEpochMs(date) < rangeEnd;
 
   const hourItems = hours.map((hour, index): HourlyTimelineItem => ({
     kind: 'hour',

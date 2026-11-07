@@ -15,6 +15,8 @@ import type { CurrentWeather, WeatherReport } from '../schemas/weather-report.sc
 import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
 
+const BADGE_ICON_SIZE = 18;
+
 function selectBadge(report: WeatherReport) {
   return {
     current: report.current,
@@ -76,8 +78,8 @@ WeatherForecastBadge.Item = function Item({
         <WeatherIcon
           condition={current.condition}
           isDaylight={current.isDaylight}
-          width={18}
-          height={18}
+          width={BADGE_ICON_SIZE}
+          height={BADGE_ICON_SIZE}
           variant="mono"
           colorClassName="text-gray-6"
         />
@@ -107,8 +109,8 @@ WeatherForecastBadge.Entry = function Entry() {
         <WeatherIcon
           condition="PARTLY_CLOUDY"
           isDaylight
-          width={18}
-          height={18}
+          width={BADGE_ICON_SIZE}
+          height={BADGE_ICON_SIZE}
           variant="mono"
           colorClassName="text-gray-6"
         />

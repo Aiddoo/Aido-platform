@@ -1,5 +1,8 @@
-import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
-import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api/vocabulary';
+import type {
+  WeatherCondition,
+  WeatherPrecipitationType,
+  WeatherRescheduleReason,
+} from '@aido/api/vocabulary';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
@@ -257,7 +260,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
       const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, now);
       const isInRange = (todo: ForecastTodo) =>
-        toEpochMs(todo.scheduledAt) >= toEpochMs(hours.startsAt) &&
+        toEpochMs(hours.startsAt) <= toEpochMs(todo.scheduledAt) &&
         toEpochMs(todo.scheduledAt) < toEpochMs(hours.endsAt);
       const isEmpty = todos.length === 0;
       return {

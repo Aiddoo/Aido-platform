@@ -52,15 +52,18 @@ function getUvLevel(uvIndex: number): UvLevel {
   return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
 }
 
+const FULL_TURN_DEGREES = 360;
 const COMPASS_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
+const DEGREES_PER_DIRECTION = FULL_TURN_DEGREES / COMPASS_DIRECTIONS.length;
 
 /** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
 function toCompassDirection(degrees: number | null): CompassDirection | null {
   if (degrees == null) {
     return null;
   }
-  const index = Math.round((((degrees % 360) + 360) % 360) / 45) % COMPASS_DIRECTIONS.length;
+  const normalized = ((degrees % FULL_TURN_DEGREES) + FULL_TURN_DEGREES) % FULL_TURN_DEGREES;
+  const index = Math.round(normalized / DEGREES_PER_DIRECTION) % COMPASS_DIRECTIONS.length;
   return COMPASS_DIRECTIONS[index] ?? null;
 }
 
@@ -81,22 +84,27 @@ function compareFeelsLike(
 export type VisibilityLevel = 'clear' | 'moderate' | 'poor';
 
 const METERS_PER_KILOMETER = 1000;
+const CLEAR_VISIBILITY_KM = 10;
+const MODERATE_VISIBILITY_KM = 5;
 
 function getVisibilityLevel(meters: number): VisibilityLevel {
   const kilometers = meters / METERS_PER_KILOMETER;
-  if (kilometers >= 10) {
+  if (kilometers >= CLEAR_VISIBILITY_KM) {
     return 'clear';
   }
-  return kilometers >= 5 ? 'moderate' : 'poor';
+  return kilometers >= MODERATE_VISIBILITY_KM ? 'moderate' : 'poor';
 }
+
+const OVERCAST_CLOUD_COVER = 80;
+const MOSTLY_CLOUDY_CLOUD_COVER = 40;
 
 export type CloudCoverLevel = 'overcast' | 'mostlyCloudy' | 'mostlyClear';
 
 function getCloudCoverLevel(cloudCover: number): CloudCoverLevel {
-  if (cloudCover >= 80) {
+  if (cloudCover >= OVERCAST_CLOUD_COVER) {
     return 'overcast';
   }
-  return cloudCover >= 40 ? 'mostlyCloudy' : 'mostlyClear';
+  return cloudCover >= MOSTLY_CLOUDY_CLOUD_COVER ? 'mostlyCloudy' : 'mostlyClear';
 }
 
 export type WindLevel = 'calm' | 'breeze' | 'strong';
