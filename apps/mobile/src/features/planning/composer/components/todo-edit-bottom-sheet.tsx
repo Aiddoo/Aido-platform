@@ -173,6 +173,7 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
           />
         </ModalBottomSheet>
       ),
+      { dismissedValue: null },
     );
     if (scope == null) {
       focusTitle();

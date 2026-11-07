@@ -6,7 +6,12 @@ import { OverlayContext } from './overlay-provider';
 
 export interface Overlay {
   open: (render: OverlayRender) => void;
-  openAsync: <T>(render: OverlayAsyncRender<T>) => Promise<T>;
+  openAsync: <T>(render: OverlayAsyncRender<T>, options: OverlayAsyncOptions<T>) => Promise<T>;
+}
+
+export interface OverlayAsyncOptions<T> {
+  /** 답 없이 사라졌을 때(부른 컴포넌트 unmount, 다시 열기, `resetKey`) 돌려줄 값 */
+  dismissedValue: T;
 }
 
 /**
@@ -46,7 +51,7 @@ export function useOverlay(): Overlay {
   }, [controller, id]);
 
   const mount = useCallback(
-    <T,>(render: OverlayAsyncRender<T>, onResolve: (value: T) => void) => {
+    <T,>(render: OverlayAsyncRender<T>, onResolve: (value: T) => void, dismissedValue: T) => {
       const generation = ++generationRef.current;
 
       controller.mount(
@@ -54,6 +59,7 @@ export function useOverlay(): Overlay {
         <OverlayItem<T>
           render={render}
           onResolve={onResolve}
+          dismissedValue={dismissedValue}
           onUnmount={() => {
             if (generationRef.current === generation) {
               controller.unmount(id);
@@ -67,14 +73,18 @@ export function useOverlay(): Overlay {
 
   const open = useCallback(
     (render: OverlayRender): void => {
-      mount<void>(({ close, ...props }) => render({ ...props, close: () => close() }), noop);
+      mount<void>(
+        ({ close, ...props }) => render({ ...props, close: () => close() }),
+        noop,
+        undefined,
+      );
     },
     [mount],
   );
 
   const openAsync = useCallback(
-    <T,>(render: OverlayAsyncRender<T>): Promise<T> =>
-      new Promise<T>((resolve) => mount(render, resolve)),
+    <T,>(render: OverlayAsyncRender<T>, { dismissedValue }: OverlayAsyncOptions<T>): Promise<T> =>
+      new Promise<T>((resolve) => mount(render, resolve, dismissedValue)),
     [mount],
   );
 

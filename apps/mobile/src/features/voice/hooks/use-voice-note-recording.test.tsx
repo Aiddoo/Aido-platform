@@ -433,6 +433,26 @@ describe('useVoiceNoteRecording', () => {
     );
   });
 
+  test('받기를 묻는 중에 화면이 내려가면 거절로 기억하지 않고 듣지도 않는다', async () => {
+    // Given
+    const offlineModelPromptRepository =
+      createOfflineModelPromptRepository(createMemorySyncStorage());
+    const { speechRecognizer } = await renderRecording({
+      canDownloadOnDeviceModel: true,
+      offlineModelPromptRepository,
+    });
+    await fireEvent.press(screen.getByTestId('start'));
+    await screen.findByText('나중에');
+
+    // When
+    await screen.unmount();
+    await act(async () => undefined);
+
+    // Then
+    expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(false);
+    expect(speechRecognizer.start).not.toHaveBeenCalled();
+  });
+
   test.each(['dialog-opened', 'unavailable', 'scheduled'] as const)(
     '받기를 고른 뒤 결과가 %s이면 다음 녹음에 다시 묻지 않는다',
     async (result) => {

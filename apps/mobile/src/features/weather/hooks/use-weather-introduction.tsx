@@ -31,7 +31,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
   const request = location.status === 'needsPermission' ? location.request : null;
 
   useEffect(() => {
-    if (!stable || !shouldIntroduce || request == null || hasClaimed.current) {
+    if (!stable || !shouldIntroduce || request == null) {
       return;
     }
     const task = requestIdleCallback(() => {
@@ -40,44 +40,52 @@ export function useWeatherIntroduction(): { isPending: boolean } {
       }
       hasClaimed.current = true;
       overlay
-        .openAsync<boolean>(({ isOpen, close, unmount }) => (
-          <ConfirmDialog
-            isOpen={isOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                close(false);
-                unmount();
-              }
-            }}
-            title={<ConfirmDialog.Title>{t('weather:introduction.title')}</ConfirmDialog.Title>}
-            description={
-              <ConfirmDialog.Description>
-                {t('weather:introduction.description')}
-              </ConfirmDialog.Description>
-            }
-            cancelButton={
-              <ConfirmDialog.CancelButton
-                onPress={() => {
+        .openAsync<boolean | null>(
+          ({ isOpen, close, unmount }) => (
+            <ConfirmDialog
+              isOpen={isOpen}
+              onOpenChange={(open) => {
+                if (!open) {
                   close(false);
                   unmount();
-                }}
-              >
-                {t('weather:introduction.later')}
-              </ConfirmDialog.CancelButton>
-            }
-            confirmButton={
-              <ConfirmDialog.ConfirmButton
-                onPress={() => {
-                  close(true);
-                  unmount();
-                }}
-              >
-                {t('weather:locationPrompt.register')}
-              </ConfirmDialog.ConfirmButton>
-            }
-          />
-        ))
+                }
+              }}
+              title={<ConfirmDialog.Title>{t('weather:introduction.title')}</ConfirmDialog.Title>}
+              description={
+                <ConfirmDialog.Description>
+                  {t('weather:introduction.description')}
+                </ConfirmDialog.Description>
+              }
+              cancelButton={
+                <ConfirmDialog.CancelButton
+                  onPress={() => {
+                    close(false);
+                    unmount();
+                  }}
+                >
+                  {t('weather:introduction.later')}
+                </ConfirmDialog.CancelButton>
+              }
+              confirmButton={
+                <ConfirmDialog.ConfirmButton
+                  onPress={() => {
+                    close(true);
+                    unmount();
+                  }}
+                >
+                  {t('weather:locationPrompt.register')}
+                </ConfirmDialog.ConfirmButton>
+              }
+            />
+          ),
+          { dismissedValue: null },
+        )
         .then((accepted) => {
+          // 답 없이 사라진 다이얼로그는 본 것이 아니다. 피드로 돌아오면 다시 권한다
+          if (accepted == null) {
+            hasClaimed.current = false;
+            return undefined;
+          }
           introductionService.markIntroductionSeen();
           setHasSeen(true);
           return accepted ? request() : undefined;

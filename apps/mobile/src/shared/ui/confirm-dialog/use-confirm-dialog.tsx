@@ -15,7 +15,7 @@ export interface ConfirmDialogOptions {
   confirmTestID?: string;
 }
 
-/** 확인 다이얼로그를 띄우고 사용자가 확인했는지 돌려준다. 닫기·취소는 false다. */
+/** 확인 다이얼로그를 띄우고 사용자가 확인했는지 돌려준다. 닫기·취소, 답 없이 사라짐은 false다. */
 export function useConfirmDialog() {
   const overlay = useOverlay();
 
@@ -29,45 +29,48 @@ export function useConfirmDialog() {
         cancelLabel,
         confirmTestID,
       }: ConfirmDialogOptions) =>
-        overlay.openAsync<boolean>(({ isOpen, close, unmount }) => {
-          const finish = (isConfirmed: boolean) => {
-            close(isConfirmed);
-            unmount();
-          };
+        overlay.openAsync<boolean>(
+          ({ isOpen, close, unmount }) => {
+            const finish = (isConfirmed: boolean) => {
+              close(isConfirmed);
+              unmount();
+            };
 
-          return (
-            <ConfirmDialog
-              isOpen={isOpen}
-              onOpenChange={(open) => {
-                if (!open) {
-                  finish(false);
+            return (
+              <ConfirmDialog
+                isOpen={isOpen}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    finish(false);
+                  }
+                }}
+                title={<ConfirmDialog.Title>{title}</ConfirmDialog.Title>}
+                description={
+                  description == null ? undefined : (
+                    <ConfirmDialog.Description>{description}</ConfirmDialog.Description>
+                  )
                 }
-              }}
-              title={<ConfirmDialog.Title>{title}</ConfirmDialog.Title>}
-              description={
-                description == null ? undefined : (
-                  <ConfirmDialog.Description>{description}</ConfirmDialog.Description>
-                )
-              }
-              cancelButton={
-                cancelLabel == null ? undefined : (
-                  <ConfirmDialog.CancelButton onPress={() => finish(false)}>
-                    {cancelLabel}
-                  </ConfirmDialog.CancelButton>
-                )
-              }
-              confirmButton={
-                <ConfirmDialog.ConfirmButton
-                  testID={confirmTestID}
-                  color={confirmColor}
-                  onPress={() => finish(true)}
-                >
-                  {confirmLabel}
-                </ConfirmDialog.ConfirmButton>
-              }
-            />
-          );
-        }),
+                cancelButton={
+                  cancelLabel == null ? undefined : (
+                    <ConfirmDialog.CancelButton onPress={() => finish(false)}>
+                      {cancelLabel}
+                    </ConfirmDialog.CancelButton>
+                  )
+                }
+                confirmButton={
+                  <ConfirmDialog.ConfirmButton
+                    testID={confirmTestID}
+                    color={confirmColor}
+                    onPress={() => finish(true)}
+                  >
+                    {confirmLabel}
+                  </ConfirmDialog.ConfirmButton>
+                }
+              />
+            );
+          },
+          { dismissedValue: false },
+        ),
     }),
     [overlay],
   );

@@ -247,6 +247,9 @@ function useOfflineModelOffer(accountId: string, isAbandoned: () => boolean) {
       confirmLabel: t('voiceNote:offlineModel.confirm'),
       cancelLabel: t('voiceNote:offlineModel.cancel'),
     });
+    if (isAbandoned()) {
+      return;
+    }
     if (!shouldDownload) {
       offlineModelPrompt.saveDeclined(accountId, startLocale);
       trackEvent('voice_offline_model_requested', { locale: startLocale, result: 'declined' });
