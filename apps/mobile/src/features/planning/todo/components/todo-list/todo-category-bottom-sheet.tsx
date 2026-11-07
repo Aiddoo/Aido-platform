@@ -2,6 +2,7 @@ import { CategorySelectInput } from '@src/features/planning/category/components/
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -56,6 +57,7 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;
 
@@ -88,16 +90,15 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
           if (scope === null) {
             return;
           }
-          const changed = await changeCategory
-            .mutateAsync({
+          try {
+            await changeCategory.mutateAsync({
               todoId: todo.id,
               input: { categoryId },
               ...(scope != null && { scope }),
-            })
-            .catch(() => null);
-
-          if (changed) {
+            });
             onClose();
+          } catch (error) {
+            reportUnexpectedError(error);
           }
         }}
       />

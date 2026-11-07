@@ -4,6 +4,7 @@ import {
   useSubTodoParams,
   useTodoSheetDateParam,
 } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -67,6 +68,7 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
   const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const isDeleting = deleteSubTodo.isPending;
 
   useEffect(() => {
@@ -84,12 +86,11 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
       return;
     }
 
-    const removed = await deleteSubTodo
-      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date })
-      .catch(() => null);
-
-    if (removed != null) {
+    try {
+      await deleteSubTodo.mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date });
       onClose();
+    } catch (error) {
+      reportUnexpectedError(error);
     }
   };
 

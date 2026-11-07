@@ -11,6 +11,7 @@ import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queri
 import type { SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
@@ -72,6 +73,7 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const title = useWatch({ control: form.control, name: 'title' });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const isBusy = updateSubTodo.isPending || deleteSubTodo.isPending;
   const isSubmitDisabled = !title.trim() || isBusy;
 
@@ -86,12 +88,16 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
       return;
     }
 
-    const saved = await updateSubTodo
-      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, title: trimmedTitle, date })
-      .catch(() => null);
-
-    if (saved != null) {
+    try {
+      await updateSubTodo.mutateAsync({
+        todoId: todo.id,
+        subTodoId: subTodo.id,
+        title: trimmedTitle,
+        date,
+      });
       onClose();
+    } catch (error) {
+      reportUnexpectedError(error);
     }
   });
 
@@ -100,12 +106,11 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
       return;
     }
 
-    const removed = await deleteSubTodo
-      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date })
-      .catch(() => null);
-
-    if (removed != null) {
+    try {
+      await deleteSubTodo.mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date });
       onClose();
+    } catch (error) {
+      reportUnexpectedError(error);
     }
   };
 

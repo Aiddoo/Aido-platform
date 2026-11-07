@@ -4,6 +4,7 @@ import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { Box, HStack, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -53,6 +54,7 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
   });
   const title = useWatch({ control: form.control, name: 'title' });
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
+  const reportUnexpectedError = useReportUnexpectedError('todo');
   const isSubmitDisabled = !title.trim() || addSubTodo.isPending;
 
   const submit = form.handleSubmit(async (values) => {
@@ -61,11 +63,11 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
       return;
     }
 
-    const saved = await addSubTodo
-      .mutateAsync({ todoId: todo.id, title: trimmedTitle, date })
-      .catch(() => null);
+    try {
+      await addSubTodo.mutateAsync({ todoId: todo.id, title: trimmedTitle, date });
+    } catch (error) {
+      reportUnexpectedError(error);
 
-    if (saved == null) {
       return;
     }
 
