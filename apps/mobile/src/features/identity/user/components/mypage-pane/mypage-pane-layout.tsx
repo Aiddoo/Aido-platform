@@ -11,7 +11,8 @@ interface MyPagePaneLayoutProps extends PropsWithChildren {
 }
 
 export function MyPagePaneLayout({ isSplit, headerAction, children }: MyPagePaneLayoutProps) {
-  const { scrollRef, handleScroll, topInset } = useMyPagePaneLayout();
+  const { scrollRef, handleScroll, handleContentSizeChange, handleScrollBeginDrag, topInset } =
+    useMyPagePaneLayout();
 
   return (
     <StyledSafeAreaView
@@ -35,6 +36,8 @@ export function MyPagePaneLayout({ isSplit, headerAction, children }: MyPagePane
         contentInsetAdjustmentBehavior="automatic"
         scrollEventThrottle={16}
         onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onScrollBeginDrag={handleScrollBeginDrag}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="px-4">
           {children}
