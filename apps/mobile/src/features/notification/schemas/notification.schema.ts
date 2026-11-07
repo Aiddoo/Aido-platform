@@ -16,18 +16,6 @@ export type NotificationType = z.infer<typeof notificationTypeSchema>;
 export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
 export type NotificationCategory = z.infer<typeof notificationCategorySchema>;
 
-/** 알림함 항목 라벨을 나누는 분류 */
-export type NotificationCategoryKey =
-  | 'friend'
-  | 'nudge'
-  | 'cheer'
-  | 'achievement'
-  | 'todo'
-  | 'reminder'
-  | 'ai'
-  | 'notice'
-  | 'social';
-
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 export type NotificationAction = z.infer<typeof notificationActionSchema>;

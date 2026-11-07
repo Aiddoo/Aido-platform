@@ -16,7 +16,7 @@ const baseNotification: Notification = {
   readAt: null,
 };
 
-describe('NotificationPolicy.canSelectDirection', () => {
+describe('canSelectDirection', () => {
   it.each([
     ['SOCIAL', true, true],
     ['SOCIAL', false, false],
@@ -33,8 +33,8 @@ describe('NotificationPolicy.canSelectDirection', () => {
   );
 });
 
-describe('NotificationPolicy.findReceivedCheer', () => {
-  test('받은 응원 알림은 신고할 응원과 보낸 친구를 돌려준다', () => {
+describe('findReceivedCheer', () => {
+  it('받은 응원 알림은 신고할 응원과 보낸 친구를 반환한다', () => {
     // When
     const cheer = NotificationPolicy.findReceivedCheer(baseNotification);
 
@@ -46,33 +46,48 @@ describe('NotificationPolicy.findReceivedCheer', () => {
     });
   });
 
-  test('보낸 사람 이름이 없는 이전 알림은 이름 없이 돌려준다', () => {
+  it('보낸 사람 이름이 없는 이전 알림은 이름 없이 반환한다', () => {
     // Given
     const legacy: Notification = { ...baseNotification, routing: undefined };
 
-    // When & Then
-    expect(NotificationPolicy.findReceivedCheer(legacy)?.senderName).toBeNull();
+    // When
+    const cheer = NotificationPolicy.findReceivedCheer(legacy);
+
+    // Then
+    expect(cheer?.senderName).toBeNull();
   });
 
-  test('응원 ID가 없는 이전 알림이나 다른 종류의 알림은 신고 대상이 아니다', () => {
+  it('응원 ID가 없는 이전 알림은 신고 대상이 아니다', () => {
     // Given
     const legacyCheer: Notification = { ...baseNotification, context: { friendId: 'cmsender' } };
+
+    // When
+    const cheer = NotificationPolicy.findReceivedCheer(legacyCheer);
+
+    // Then
+    expect(cheer).toBeNull();
+  });
+
+  it('응원이 아닌 다른 종류의 알림은 신고 대상이 아니다', () => {
+    // Given
     const nudge: Notification = { ...baseNotification, type: 'NUDGE_RECEIVED' };
 
-    // When & Then
-    expect(NotificationPolicy.findReceivedCheer(legacyCheer)).toBeNull();
-    expect(NotificationPolicy.findReceivedCheer(nudge)).toBeNull();
+    // When
+    const cheer = NotificationPolicy.findReceivedCheer(nudge);
+
+    // Then
+    expect(cheer).toBeNull();
   });
 });
 
-describe('NotificationPolicy.getResponseAction', () => {
+describe('getResponseAction', () => {
   const NOW = 1_000_000_000;
   const DEFAULT_TAP = {
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
     receivedAt: NOW,
   };
 
-  test.each(['loading', 'locked'] as const)(
+  it.each(['loading', 'locked'] as const)(
     '%s 상태에서는 계정 알림 처리를 인증 판정 뒤로 미룬다',
     (authStatus) => {
       // When
@@ -83,7 +98,7 @@ describe('NotificationPolicy.getResponseAction', () => {
     },
   );
 
-  test('미인증이면 로그인할 때까지 보관한다', () => {
+  it('미인증이면 로그인할 때까지 보관한다', () => {
     // When
     const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'unauthenticated',
@@ -94,7 +109,7 @@ describe('NotificationPolicy.getResponseAction', () => {
     expect(action).toEqual({ type: 'defer', reason: 'authentication-required' });
   });
 
-  test('인증됐으면 연다', () => {
+  it('인증됐으면 연다', () => {
     // When
     const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
@@ -105,44 +120,39 @@ describe('NotificationPolicy.getResponseAction', () => {
     expect(action).toEqual({ type: 'open' });
   });
 
-  test.each(['loading', 'locked', 'unauthenticated', 'authenticated'] as const)(
+  it.each(['loading', 'locked', 'unauthenticated', 'authenticated'] as const)(
     '%s 상태에서도 수신 거부는 바로 처리한다',
     (authStatus) => {
+      // Given
+      const optOutTap = { ...DEFAULT_TAP, actionIdentifier: 'MARKETING_OPT_OUT' };
+
       // When
-      const action = NotificationPolicy.getResponseAction(
-        { ...DEFAULT_TAP, actionIdentifier: 'MARKETING_OPT_OUT' },
-        { authStatus, now: NOW },
-      );
+      const action = NotificationPolicy.getResponseAction(optOutTap, { authStatus, now: NOW });
 
       // Then
       expect(action).toEqual({ type: 'optOut' });
     },
   );
 
-  test('10분이 지난 응답은 버린다', () => {
+  it('받은 지 정확히 10분이 지난 응답은 아직 연다', () => {
     // When
-    const atLimit = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
+    const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
       now: NOW + 10 * 60_000,
     });
-    const expired = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
+
+    // Then
+    expect(action).toEqual({ type: 'open' });
+  });
+
+  it('10분에서 1ms가 더 지난 응답은 버린다', () => {
+    // When
+    const action = NotificationPolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
       now: NOW + 10 * 60_000 + 1,
     });
 
     // Then
-    expect(atLimit).toEqual({ type: 'open' });
-    expect(expired).toEqual({ type: 'drop', reason: 'expired' });
-  });
-});
-
-describe('NotificationPolicy.getCategoryKey', () => {
-  test.each([
-    'INVITE_JOINED',
-    'INVITE_REWARDED',
-    'INVITE_PROGRESS',
-    'INVITE_QUALIFY_REMINDER',
-  ] as const)('초대 알림 %s는 알림함에서 친구 라벨로 보인다', (type) => {
-    expect(NotificationPolicy.getCategoryKey({ type })).toBe('friend');
+    expect(action).toEqual({ type: 'drop', reason: 'expired' });
   });
 });

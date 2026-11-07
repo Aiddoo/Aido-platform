@@ -24,6 +24,7 @@ import { Separator } from 'heroui-native';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 
+import { NOTIFICATION_TYPE_LABEL_KEYS } from '../constants/notification-labels';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
 import { useNotificationCategory } from '../hooks/use-notification-category-param';
@@ -132,7 +133,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
 
   return (
     <NotificationListRow
-      label={t(`categories.${NotificationPolicy.getCategoryKey(notification)}`)}
+      label={t(`categories.${NOTIFICATION_TYPE_LABEL_KEYS[notification.type]}`)}
       title={notification.title}
       body={notification.body}
       createdAt={notification.createdAt}
