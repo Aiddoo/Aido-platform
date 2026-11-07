@@ -1,4 +1,3 @@
-import { ErrorCode } from '@aido/api/errors';
 import {
   useActivationService,
   useHaptics,
@@ -13,6 +12,10 @@ import { invalidateTodoCategories } from '@src/features/planning/category/querie
 import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import {
+  isCategoryTodoLimitError,
+  isRecurringCategoryTodoLimitError,
+} from '@src/features/planning/todo/domains/todo.error';
 import {
   appendTodoToList,
   cancelTodoCompletionQueries,
@@ -37,7 +40,6 @@ import type {
 } from '@src/features/planning/todo/schemas/todo-request.schema';
 import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
@@ -133,7 +135,7 @@ export function useCreateTodoMutationOptions() {
         syncDailyCompletionWithList(queryClient, { date: context.startDate });
       }
 
-      if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
+      if (isCategoryTodoLimitError(error)) {
         haptics.notify('error');
         toast.error(t('todo:toast.categoryLimitReached'));
         return;
@@ -253,7 +255,7 @@ export function useCreateRecurringTodoMutationOptions() {
         return;
       }
 
-      if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
+      if (isRecurringCategoryTodoLimitError(error)) {
         haptics.notify('error');
         toast.error(t('todo:toast.recurringCategoryLimit'));
         return;
