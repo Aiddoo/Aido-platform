@@ -20,7 +20,6 @@ export function createPurchasesGatewayStub(): PurchasesGatewayStub {
   return {
     configure: jest.fn(),
     logIn: jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined),
-    isAnonymous: jest.fn<Promise<boolean>, []>().mockResolvedValue(false),
     logOut: jest.fn<Promise<void>, []>().mockResolvedValue(undefined),
     setAttributes: jest
       .fn<Promise<void>, Parameters<PurchasesGateway['setAttributes']>>()

@@ -6,6 +6,8 @@ import {
   toPurchasesGatewayError,
 } from './revenuecat-purchases.gateway';
 
+const mockLogOut = jest.fn(async () => undefined);
+
 jest.mock('react-native-purchases', () => ({
   ...jest.requireActual('react-native-purchases'),
   __esModule: true,
@@ -14,6 +16,8 @@ jest.mock('react-native-purchases', () => ({
     purchasePackage: jest.fn(),
     addCustomerInfoUpdateListener: jest.fn(),
     removeCustomerInfoUpdateListener: jest.fn(),
+    isAnonymous: jest.fn(),
+    logOut: () => mockLogOut(),
   },
 }));
 
@@ -96,6 +100,28 @@ describe('revenueCatPurchasesGateway', () => {
     // Then
     expect(result).toEqual({ type: 'package-not-found' });
     expect(purchases.purchasePackage).not.toHaveBeenCalled();
+  });
+
+  test('익명 사용자면 SDK 로그아웃을 부르지 않는다', async () => {
+    // Given
+    purchases.isAnonymous.mockResolvedValue(true);
+
+    // When
+    await revenueCatPurchasesGateway.logOut();
+
+    // Then
+    expect(mockLogOut).not.toHaveBeenCalled();
+  });
+
+  test('로그인한 사용자면 SDK 로그아웃을 부른다', async () => {
+    // Given
+    purchases.isAnonymous.mockResolvedValue(false);
+
+    // When
+    await revenueCatPurchasesGateway.logOut();
+
+    // Then
+    expect(mockLogOut).toHaveBeenCalledTimes(1);
   });
 
   test('고객 정보 구독을 끝내면 SDK에 붙인 같은 리스너를 뗀다', () => {

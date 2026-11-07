@@ -62,7 +62,7 @@ export interface PurchasesGateway {
   /** 초기화에 실패하면 throw한다 */
   configure(apiKey: string, options: { isDebugLogEnabled: boolean }): void;
   logIn(userId: string): Promise<void>;
-  isAnonymous(): Promise<boolean>;
+  /** 로그인하지 않은 상태면 아무것도 하지 않는다 */
   logOut(): Promise<void>;
   setAttributes(attributes: Record<string, string | null>): Promise<void>;
   setAnalyticsId(analyticsId: string): Promise<void>;

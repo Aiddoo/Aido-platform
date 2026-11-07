@@ -127,9 +127,11 @@ export const revenueCatPurchasesGateway: PurchasesGateway = {
     await Purchases.logIn(userId);
   },
 
-  isAnonymous: () => Purchases.isAnonymous(),
-
+  // 익명 사용자에게 SDK logOut을 부르면 오류가 나므로 로그인한 사용자일 때만 부른다
   logOut: async () => {
+    if (await Purchases.isAnonymous()) {
+      return;
+    }
     await Purchases.logOut();
   },
 

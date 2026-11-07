@@ -84,11 +84,6 @@ export class PurchasesSdkManager {
     }
 
     try {
-      const isAnonymous = await this.#purchases.isAnonymous();
-      if (isAnonymous) {
-        return;
-      }
-
       await this.#purchases.logOut();
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_LOGOUT_FAILED, {

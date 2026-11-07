@@ -1,11 +1,11 @@
 import { IS_PHYSICAL_DEVICE } from '@src/shared/infra/device/device-info';
 import { logger } from '@src/shared/infra/logger/global-logger';
+import { resolveRevenueCatApiKey } from '@src/shared/infra/purchases/revenuecat-api-key';
 import Constants from 'expo-constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { ENV_LOG_EVENT } from './env-log-events';
-import { resolveRevenueCatApiKey } from './revenuecat-api-key';
 
 const AppEnvSchema = z.enum(['development', 'preview', 'production']);
 type AppEnv = z.infer<typeof AppEnvSchema>;
