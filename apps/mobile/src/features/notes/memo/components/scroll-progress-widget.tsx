@@ -19,13 +19,13 @@ const TIMING = { fast: 250, normal: 400 } as const;
 interface ScrollProgressWidgetProps {
   progress: SharedValue<number>;
   onScrollToTop: () => void;
-  bottomOffset?: number;
+  bottomOffset: number;
 }
 
 export const ScrollProgressWidget = memo(function ScrollProgressWidget({
   progress,
   onScrollToTop,
-  bottomOffset = 50,
+  bottomOffset,
 }: ScrollProgressWidgetProps) {
   const { t } = useTranslation('memo');
   const surface = useResolveClassNames('bg-gray-2');
@@ -44,6 +44,8 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
       duration: TIMING.normal,
     }),
     opacity: withTiming(isVisible.value ? 1 : 0, { duration: TIMING.fast }),
+    // 투명한 동안에도 Android는 터치를 받아 아래 메모 카드의 탭을 가로챈다
+    pointerEvents: isVisible.value ? 'auto' : 'none',
     transform: [
       {
         translateY: withTiming(isVisible.value ? 0 : 20, { duration: TIMING.normal }),
@@ -57,6 +59,8 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
 
   const arrowOpacity = useAnimatedStyle(() => ({
     opacity: withTiming(isAtEnd.value ? 1 : 0, { duration: TIMING.fast }),
+    // 끝이 아닌 동안 투명한 화살표가 진행 막대의 터치를 받아 맨 위로 튀지 않게 한다
+    pointerEvents: isAtEnd.value ? 'auto' : 'none',
   }));
 
   const fillWidth = useAnimatedStyle(() => ({
@@ -117,7 +121,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   container: {
-    height: 56,
+    height: WIDGET_SIZE.collapsed,
     borderRadius: 28,
     borderWidth: 0.5,
   },
