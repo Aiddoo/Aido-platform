@@ -18,11 +18,14 @@ const RING_SIZE = 80;
 const RING_BORDER_WIDTH = 3;
 const DOT_SIZE = 14;
 const DOT_COUNT = 8;
-const DOT_ANGLE_STEP_DEG = 45;
+const DOT_ANGLE_STEP_DEG = 360 / DOT_COUNT;
 const DOT_ANGLE_OFFSET_DEG = 22;
 const DOT_FLIGHT_DISTANCE = 54;
 const DOT_FADE_DISTANCE = 66;
 const DOT_PEAK_PROGRESS = 0.6;
+
+/** 큰 하트가 튀는 스프링 단계 수(커짐, 되돌림, 제자리) */
+const SPRING_STEP_COUNT = 3;
 
 const BIG_HEART = {
   peakScale: 1.32,
@@ -106,7 +109,7 @@ export function playTodoCommentHeartBurst(
       withSpring(BIG_HEART.reboundScale, SPRING),
       withSpring(1, SPRING),
       withDelay(
-        BIG_HEART.holdUntilMs - BIG_HEART.appearMs * 3,
+        BIG_HEART.holdUntilMs - BIG_HEART.appearMs * SPRING_STEP_COUNT,
         withTiming(BIG_HEART.fadeScale, fade),
       ),
     ),

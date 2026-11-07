@@ -43,6 +43,7 @@ import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
+import { match, P } from 'ts-pattern';
 
 /** 제목(t3) 한 줄 높이. 여러 줄 제목에서도 체크박스를 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 28;
@@ -143,6 +144,18 @@ TodoDetailSummary.Schedule = function Schedule() {
   const { todo } = detail;
   const timeLabel = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isRecurring = TodoPolicy.isRecurringTodo(todo);
+  const dateLabel = match({
+    endDate: todo.endDate,
+    isMultiDay: TodoPolicy.isMultiDayTodo(todo),
+    isThisYear: isSameYearDateKey(todo.startDate, todayKey),
+  })
+    .with({ isMultiDay: true, endDate: P.string }, ({ endDate }) =>
+      formatDateKeyRange(todo.startDate, endDate, dateFormatContext),
+    )
+    .with({ isThisYear: true }, () =>
+      formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext),
+    )
+    .otherwise(() => formatDateKeyLabel(todo.startDate, 'fullDate', dateFormatContext));
 
   return (
     <VStack gap={6}>
@@ -171,13 +184,7 @@ TodoDetailSummary.Schedule = function Schedule() {
       <HStack gap={8} align="center" wrap="wrap">
         <CategoryHeaderPill label={todo.category.name} color={todo.category.color} />
         <Text size="e1" shade={6}>
-          {todo.endDate != null && TodoPolicy.isMultiDayTodo(todo)
-            ? formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext)
-            : formatDateKeyLabel(
-                todo.startDate,
-                isSameYearDateKey(todo.startDate, todayKey) ? 'monthDay' : 'fullDate',
-                dateFormatContext,
-              )}
+          {dateLabel}
         </Text>
       </HStack>
     </VStack>
@@ -267,11 +274,11 @@ TodoDetailSummary.Thanks = function Thanks() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
-  const isThankable = NudgeInteractionPolicy.canThankTodo(detail.todo, {
+  const canThank = NudgeInteractionPolicy.canThankTodo(detail.todo, {
     canEditTodo: detail.permissions.canEdit,
   });
 
-  if (!isThankable) {
+  if (!canThank) {
     return null;
   }
 

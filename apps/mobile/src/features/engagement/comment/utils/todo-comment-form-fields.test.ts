@@ -1,4 +1,6 @@
+import { createTodoComment } from '../__tests__/todo-comment.fixtures';
 import {
+  getComposerTarget,
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
@@ -80,5 +82,29 @@ describe('getTrimmedContents', () => {
 
     // Then
     expect(contents).toBeNull();
+  });
+});
+
+describe('getComposerTarget', () => {
+  it('새 글이면 대상이 없다', () => {
+    // When
+    const target = getComposerTarget({ type: 'new' });
+
+    // Then
+    expect(target).toBeNull();
+  });
+
+  it('답글과 수정은 고른 글을 대상으로 한다', () => {
+    // Given
+    const comment = createTodoComment();
+
+    // When
+    const targets = [
+      getComposerTarget({ type: 'reply', target: comment }),
+      getComposerTarget({ type: 'edit', target: comment }),
+    ];
+
+    // Then
+    expect(targets).toEqual([comment, comment]);
   });
 });

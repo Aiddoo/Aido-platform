@@ -52,8 +52,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import { TodoCommentComposerPolicy } from '../domains/todo-comment-composer.model';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
 import {
   useDeleteTodoCommentMutationOptions,
   useSetTodoCommentLikeMutationOptions,
@@ -64,8 +64,8 @@ import {
   toReplyFormValues,
 } from '../schemas/todo-comment-form.schema';
 import type { TodoComment } from '../schemas/todo-comment.schema';
+import { getComposerTarget } from '../utils/todo-comment-form-fields';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
-import { useTodoCommentForm } from './todo-comment-form-context';
 import {
   playTodoCommentHeartBurst,
   popTodoCommentLikeButton,
@@ -478,7 +478,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
     });
     if (isConfirmed) {
       // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
-      if (TodoCommentComposerPolicy.getComposerTarget(getValues('mode'))?.id === comment.id) {
+      if (getComposerTarget(getValues('mode'))?.id === comment.id) {
         reset(NEW_TODO_COMMENT_FORM_VALUES);
       }
       deleteComment.mutate({ comment });

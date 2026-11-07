@@ -37,6 +37,7 @@ import {
   isTodoCommentRejectedError,
 } from '../../domains/todo-comment.error';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
+import { useTodoCommentForm } from '../../hooks/use-todo-comment-form';
 import {
   useCreateTodoCommentChainMutationOptions,
   useUpdateTodoCommentMutationOptions,
@@ -57,37 +58,29 @@ import {
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
+  getComposerTarget,
 } from '../../utils/todo-comment-form-fields';
 import { getCommentFormMaxHeight } from '../../utils/todo-comment-form-layout';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { useExpandThread } from '../todo-comment-expansion';
-import { useTodoCommentForm } from '../todo-comment-form-context';
 
 const SEND_ICON_SIZE = 18;
 const CLOSE_ICON_SIZE = 16;
 const CLOSE_HIT_SLOP = 12;
 const TARGET_CONTENT_MAX_LINES = 1;
 
-type CommentFieldName = `items.${number}.content`;
-
 interface TodoCommentFormProps extends Omit<
   ComponentProps<typeof ScrollView>,
   'children' | 'keyboardShouldPersistTaps' | 'nestedScrollEnabled'
 > {
-  author: Pick<TodoCommentAuthor, 'name' | 'profileImage'>;
-  userId: string;
+  user: Pick<TodoCommentAuthor, 'name' | 'profileImage'> & { id: string };
 }
 
 /**
  * 키보드 위 작성기. 모드(새 댓글·답글·수정)와 입력값은 화면이 소유한 폼에 있고, 이 컴포넌트는 필요한 필드만 구독한다.
  * 이어 쓴 글은 같은 묶음에 차례로 붙는다.
  */
-export function TodoCommentForm({
-  author,
-  userId,
-  style,
-  ...scrollViewProps
-}: TodoCommentFormProps) {
+export function TodoCommentForm({ user, style, ...scrollViewProps }: TodoCommentFormProps) {
   const [todoId] = useTodoId();
   const { height: viewportHeight } = useWindowDimensions();
   const { control, setFocus, getValues, reset } = useTodoCommentForm();
@@ -96,8 +89,8 @@ export function TodoCommentForm({
   const isSubmitting = useIsTodoCommentSubmitting();
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
-  const submit = useTodoCommentSubmit({ userId });
-  const targetId = TodoCommentComposerPolicy.getComposerTarget(mode)?.id;
+  const submit = useTodoCommentSubmit({ userId: user.id });
+  const targetId = getComposerTarget(mode)?.id;
 
   const focusFieldAfterLayout = (index: number) => {
     if (pendingFocusFrameRef.current != null) {
@@ -149,22 +142,21 @@ export function TodoCommentForm({
       showsVerticalScrollIndicator={fields.length > 2}
     >
       <ComposerDraft
-        userId={userId}
+        userId={user.id}
         mode={mode}
-        key={createTodoCommentDraftKey({ userId, todoId, mode }).id}
+        key={createTodoCommentDraftKey({ userId: user.id, todoId, mode }).id}
       />
       <VStack gap={6}>
         <TargetBanner mode={mode} isSubmitting={isSubmitting} />
         <HStack gap={10} align="end" className="min-w-0 rounded-3xl bg-gray-2 py-1.5 ps-3 pe-1.5">
           <Box className="self-start pt-2">
-            <TodoCommentAuthorAvatar author={author} size="sm" />
+            <TodoCommentAuthorAvatar author={user} size="sm" />
           </Box>
           <VStack flex={1} className="min-w-0">
             {fields.map((field, index) => (
               <HStack key={field.id} gap={4} align="start" className="min-w-0">
                 <Box flex={1} className="min-w-0">
                   <CommentField
-                    name={`items.${index}.content`}
                     index={index}
                     fieldCount={fields.length}
                     mode={mode}
@@ -249,7 +241,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
           preparedSubmissionRef.current = submission;
           const chain = await createCommentChain.mutateAsync({
             input: submission.input,
-            target: TodoCommentComposerPolicy.getComposerTarget(writeMode),
+            target: getComposerTarget(writeMode),
           });
           preparedSubmissionRef.current = null;
           const threadCommentId = chain.comments[0]?.threadCommentId;
@@ -318,6 +310,7 @@ function TargetBanner({
   isSubmitting: boolean;
 }) {
   const { t } = useTranslation('todoComment');
+  const logger = useLogger();
   const { reset } = useTodoCommentForm();
 
   if (mode.type === 'new') {
@@ -350,7 +343,11 @@ function TargetBanner({
         accessibilityLabel={t('actions.closeComposer')}
         onPress={() => {
           reset(NEW_TODO_COMMENT_FORM_VALUES);
-          KeyboardController.dismiss().catch(noop);
+          KeyboardController.dismiss().catch((error) =>
+            logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
+              error: getErrorMessage(error),
+            }),
+          );
         }}
       >
         <CloseIcon width={CLOSE_ICON_SIZE} height={CLOSE_ICON_SIZE} colorClassName="text-gray-6" />
@@ -360,7 +357,6 @@ function TargetBanner({
 }
 
 function CommentField({
-  name,
   index,
   fieldCount,
   mode,
@@ -368,7 +364,6 @@ function CommentField({
   isSubmitting,
   onFocus,
 }: {
-  name: CommentFieldName;
   index: number;
   fieldCount: number;
   mode: TodoCommentComposerMode;
@@ -382,7 +377,7 @@ function CommentField({
   return (
     <Controller
       control={control}
-      name={name}
+      name={`items.${index}.content`}
       render={({ field: { value, onChange, onBlur, ref }, fieldState: { error } }) => (
         <TextArea
           ref={ref}

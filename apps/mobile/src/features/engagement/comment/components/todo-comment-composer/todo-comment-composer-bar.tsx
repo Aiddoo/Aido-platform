@@ -131,5 +131,5 @@ function ComposerInput() {
     );
   }
 
-  return <TodoCommentForm author={user} userId={user.id} />;
+  return <TodoCommentForm user={user} />;
 }

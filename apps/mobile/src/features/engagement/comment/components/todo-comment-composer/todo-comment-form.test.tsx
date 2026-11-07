@@ -6,9 +6,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 
 import { createTodoComment, TODO_ID } from '../../__tests__/todo-comment.fixtures';
+import { TodoCommentFormProvider } from '../../hooks/use-todo-comment-form';
 import { todoCommentFormSchema, toEditFormValues } from '../../schemas/todo-comment-form.schema';
 import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
-import { TodoCommentFormProvider } from '../todo-comment-form-context';
 import { TodoCommentRevealProvider } from '../todo-comment-reveal';
 import { TodoCommentForm } from './todo-comment-form';
 
@@ -36,7 +36,7 @@ function EditingForm() {
     <TodoCommentFormProvider form={form}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
-          <TodoCommentForm author={{ name: '나', profileImage: null }} userId="user-1" />
+          <TodoCommentForm user={{ id: 'user-1', name: '나', profileImage: null }} />
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
     </TodoCommentFormProvider>

@@ -1,4 +1,18 @@
-import type { TodoCommentFormValues } from '../schemas/todo-comment-form.schema';
+import { match } from 'ts-pattern';
+
+import type {
+  TodoCommentComposerMode,
+  TodoCommentFormValues,
+} from '../schemas/todo-comment-form.schema';
+import type { TodoComment } from '../schemas/todo-comment.schema';
+
+/** 작성기가 향한 글(답글 대상 또는 수정할 글). 새 글이면 null */
+export function getComposerTarget(mode: TodoCommentComposerMode): TodoComment | null {
+  return match(mode)
+    .with({ type: 'new' }, () => null)
+    .with({ type: 'reply' }, { type: 'edit' }, ({ target }) => target)
+    .exhaustive();
+}
 
 export function getFocusedCommentFieldIndexAfterRemoval(
   focusedIndex: number,
