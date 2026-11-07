@@ -33,17 +33,18 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 export default function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   // 권한을 기다리느라 화면 전체가 막히지 않게 한다. 영속 캐시가 있으면 첫 렌더부터 값이 있다
-  const entitlementsQuery = useQuery({ ...useGetEntitlementsQueryOptions(), throwOnError: false });
-  const canViewReports =
-    entitlementsQuery.data == null
-      ? undefined
-      : EntitlementPolicy.canUseFeature(entitlementsQuery.data, 'AI_REPORT');
+  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
+  const view = match(entitlementsQuery.data)
+    .with(P.nullish, () => (entitlementsQuery.isError ? 'error' : 'loading'))
+    .otherwise((entitlements) =>
+      EntitlementPolicy.canUseFeature(entitlements, 'AI_REPORT') ? 'premium' : 'free',
+    );
   const [reportType, setReportType] = useReportType();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiReports(queryClient));
 
@@ -59,7 +60,7 @@ export default function ReportsScreen() {
           <Spacing size={16} />
 
           <VStack gap={12}>
-            {canViewReports === true && <AiConsentNotice title={t('consent.notice.reports')} />}
+            {view === 'premium' && <AiConsentNotice title={t('consent.notice.reports')} />}
 
             <ScallopedContainer>
               <Box className="items-center px-5 pt-4">
@@ -69,8 +70,8 @@ export default function ReportsScreen() {
                   contentFit="contain"
                 />
                 <Spacing size={8} />
-                {match(canViewReports)
-                  .with(true, () => (
+                {match(view)
+                  .with('premium', () => (
                     <>
                       <H4
                         align="center"
@@ -84,7 +85,7 @@ export default function ReportsScreen() {
                       </Text>
                     </>
                   ))
-                  .with(false, () => (
+                  .with('free', () => (
                     <>
                       <H4
                         align="center"
@@ -98,20 +99,21 @@ export default function ReportsScreen() {
                       </Text>
                     </>
                   ))
-                  .with(undefined, () => (
+                  .with('loading', () => (
                     <>
                       <TextSkeleton size="t3" className="w-40" />
                       <TextSkeleton size="b4" className="w-56" />
                     </>
                   ))
+                  .with('error', () => null)
                   .exhaustive()}
               </Box>
 
               <Spacing size={16} />
 
               {/* 프리미엄 사용자가 매번 보는 줄이라 권한을 기다리는 동안에도 자리를 잡는다 */}
-              {match(canViewReports)
-                .with(true, () => (
+              {match(view)
+                .with('premium', () => (
                   <Box className="px-4">
                     <QueryErrorBoundary>
                       <Suspense fallback={<ReportStatusBanner.Loading />}>
@@ -120,12 +122,12 @@ export default function ReportsScreen() {
                     </QueryErrorBoundary>
                   </Box>
                 ))
-                .with(undefined, () => (
+                .with('loading', () => (
                   <Box className="px-4">
                     <ReportStatusBanner.Loading />
                   </Box>
                 ))
-                .with(false, () => null)
+                .with('free', 'error', () => null)
                 .exhaustive()}
 
               <Spacing size={12} />
@@ -152,22 +154,19 @@ export default function ReportsScreen() {
               <Spacing size={8} />
 
               <Box className="px-4 pb-4">
-                {match(canViewReports)
-                  .with(true, () => (
+                {match(view)
+                  .with('premium', () => (
                     <QueryErrorBoundary resetKeys={[reportType]}>
                       <Suspense fallback={<ReportRow.Loading />}>
                         <ReportList />
                       </Suspense>
                     </QueryErrorBoundary>
                   ))
-                  .with(false, () => <FreeReportPreview />)
-                  .with(undefined, () =>
-                    entitlementsQuery.isError ? (
-                      <QueryErrorFallback reset={() => entitlementsQuery.refetch()} />
-                    ) : (
-                      <ReportRow.Loading />
-                    ),
-                  )
+                  .with('free', () => <FreeReportPreview />)
+                  .with('loading', () => <ReportRow.Loading />)
+                  .with('error', () => (
+                    <QueryErrorFallback reset={() => entitlementsQuery.refetch()} />
+                  ))
                   .exhaustive()}
               </Box>
             </ScallopedContainer>
