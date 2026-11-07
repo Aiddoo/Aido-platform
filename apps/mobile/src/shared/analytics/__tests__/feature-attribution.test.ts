@@ -1,4 +1,4 @@
-import { createSyncStorageStub } from '@src/shared/__tests__';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { createAnalyticsStub } from '@src/shared/__tests__/create-analytics-stub';
 
 import {
@@ -12,7 +12,7 @@ describe('FeatureAttributionStore', () => {
 
   it('계정·기능별 CTA를 7일 동안 저장하고 일치하는 성공에서 한 번만 소비한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     const values = new Map<string, string>();
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
@@ -95,7 +95,7 @@ describe('FeatureAttributionStore', () => {
 
   it('다른 계정이나 다른 기능의 실제 행동은 attribution을 소비하지 않는다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     const values = new Map<string, string>();
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
@@ -115,7 +115,7 @@ describe('FeatureAttributionStore', () => {
 
   it('7일이 지난 attribution은 성공으로 집계하지 않고 제거한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     const values = new Map<string, string>();
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
@@ -141,7 +141,7 @@ describe('FeatureAttributionStore', () => {
 
   it('손상되거나 알 수 없는 기능의 저장값은 실패를 던지지 않고 삭제한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     storage.get.mockReturnValueOnce('{broken').mockReturnValueOnce(
       JSON.stringify({
         campaignId: 'feature-discovery-2026-08',
@@ -159,7 +159,7 @@ describe('FeatureAttributionStore', () => {
 
   it('실제 성공에서는 계정 ID 없이 캠페인과 기능만 한 번 전송한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     const values = new Map<string, string>();
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));

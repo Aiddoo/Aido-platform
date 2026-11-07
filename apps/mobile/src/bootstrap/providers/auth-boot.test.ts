@@ -1,13 +1,13 @@
-import { createMockTokenStore } from '@src/shared/__tests__';
+import { createMemoryTokenStore } from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
 
 import { resolveInitialAuthStatus } from './auth-boot';
 
 describe('앱 부팅 인증 판정 — 클라이언트는 세션을 먼저 끊지 않는다', () => {
-  let tokenStore: ReturnType<typeof createMockTokenStore>;
+  let tokenStore: ReturnType<typeof createMemoryTokenStore>;
 
   beforeEach(() => {
-    tokenStore = createMockTokenStore();
+    tokenStore = createMemoryTokenStore();
   });
 
   it('리프레시 토큰이 있으면 인증 상태로 시작한다', async () => {

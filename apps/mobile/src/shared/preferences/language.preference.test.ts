@@ -1,4 +1,4 @@
-import { createSyncStorageStub } from '@src/shared/__tests__';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 
 import {
   isLanguageMode,
@@ -23,7 +23,7 @@ describe('isLanguageMode', () => {
 describe('readLanguageMode', () => {
   it('저장된 값이 없으면 system을 반환한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     storage.get.mockReturnValue(undefined);
 
     // When
@@ -35,7 +35,7 @@ describe('readLanguageMode', () => {
 
   it.each(['system', 'ko', 'en'] as const)('%s가 저장되어 있으면 %s를 반환한다', (value) => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     storage.get.mockReturnValue(value);
 
     // When
@@ -47,7 +47,7 @@ describe('readLanguageMode', () => {
 
   it('유효하지 않은 값이 저장되어 있으면 system을 반환한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     storage.get.mockReturnValue('invalid');
 
     // When
@@ -61,7 +61,7 @@ describe('readLanguageMode', () => {
 describe('writeLanguageMode', () => {
   it('올바른 key와 value로 storage.set을 호출한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
 
     // When
     writeLanguageMode(storage, 'en');

@@ -1,16 +1,16 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
-import { createMockTokenStore } from '@src/shared/__tests__';
+import { createMemoryTokenStore } from '@src/shared/__tests__';
 
 import { createSessionManager } from './session-manager';
 
 describe('createSessionManager', () => {
-  let tokenStore: ReturnType<typeof createMockTokenStore>;
+  let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let received: SessionExpiredDetails[];
   let unsubscribe: () => void;
 
   beforeEach(() => {
-    tokenStore = createMockTokenStore();
+    tokenStore = createMemoryTokenStore();
     received = [];
     unsubscribe = subscribeSessionExpired((details) => received.push(details));
   });

@@ -210,7 +210,7 @@ describe('VoiceNoteDraftRepository', () => {
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1' }));
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-2' }));
     const before = repository.getSnapshot('user-1');
-    const getString = jest.spyOn(storage, 'get');
+    const getString = jest.spyOn(storage, 'get').mockClear();
 
     // When
     repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1', durationMs: 1_000 }));

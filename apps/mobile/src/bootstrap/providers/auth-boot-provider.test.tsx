@@ -17,7 +17,7 @@ import {
   createAnalyticsStub,
   createTestDiContainer,
   createHttpClientStub,
-  createMockTokenStore,
+  createMemoryTokenStore,
   createMemoryStorage,
   createMemorySyncStorage,
   createVoiceNoteStorageServiceFake,
@@ -65,7 +65,7 @@ const LogoutProbe = () => {
 };
 
 describe('AuthBootProvider', () => {
-  let tokenStore: ReturnType<typeof createMockTokenStore>;
+  let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let errorReporter: jest.Mocked<ErrorReporter>;
   let analytics: ReturnType<typeof createAnalyticsStub>;
   let queryClient: QueryClient;
@@ -81,7 +81,7 @@ describe('AuthBootProvider', () => {
     jest.useFakeTimers();
     writeSnapshot = jest.fn().mockResolvedValue(undefined);
     requestRefresh = jest.fn();
-    tokenStore = createMockTokenStore();
+    tokenStore = createMemoryTokenStore();
     errorReporter = createMockErrorReporter();
     analytics = createAnalyticsStub();
     queryClient = createTestQueryClient();

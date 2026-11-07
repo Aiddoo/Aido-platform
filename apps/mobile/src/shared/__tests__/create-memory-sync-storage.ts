@@ -1,19 +1,23 @@
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 
-export const createMemorySyncStorage = (): EnumerableSyncStorage => {
+/**
+ * 메모리에 저장하는 동기 저장소 fake. 실패나 정해진 값을 재현할 때만
+ * `storage.get.mockReturnValue`처럼 메서드를 덮어쓴다.
+ */
+export function createMemorySyncStorage(): jest.Mocked<EnumerableSyncStorage> {
   const values = new Map<string, string>();
 
   return {
-    get: (key) => values.get(key),
-    set: (key, value) => {
+    get: jest.fn((key: string) => values.get(key)),
+    set: jest.fn((key: string, value: string) => {
       values.set(key, value);
-    },
-    remove: (key) => {
+    }),
+    remove: jest.fn((key: string) => {
       values.delete(key);
-    },
-    keys: () => [...values.keys()],
-    clear: () => {
+    }),
+    keys: jest.fn(() => [...values.keys()]),
+    clear: jest.fn(() => {
       values.clear();
-    },
+    }),
   };
-};
+}

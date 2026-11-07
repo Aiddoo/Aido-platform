@@ -1,6 +1,6 @@
 import {
   createHttpClientStub,
-  createMockTokenStore,
+  createMemoryTokenStore,
   createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
 
@@ -21,13 +21,13 @@ import { AuthService } from './auth.service';
 describe('AuthService', () => {
   let publicHttpClient: ReturnType<typeof createHttpClientStub>;
   let authHttpClient: ReturnType<typeof createHttpClientStub>;
-  let tokenStore: ReturnType<typeof createMockTokenStore>;
+  let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let service: AuthService;
 
   beforeEach(() => {
     publicHttpClient = createHttpClientStub();
     authHttpClient = createHttpClientStub();
-    tokenStore = createMockTokenStore();
+    tokenStore = createMemoryTokenStore();
     service = new AuthService(
       publicHttpClient,
       authHttpClient,

@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createHttpClientStub, createMockTokenStore } from '@src/shared/__tests__';
+import { createHttpClientStub, createMemoryTokenStore } from '@src/shared/__tests__';
 import { ENV } from '@src/shared/config/env';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -53,7 +53,7 @@ const APPLE_CREDENTIAL = {
 describe('소셜 로그인', () => {
   let publicHttp: ReturnType<typeof createHttpClientStub>;
   let authHttp: ReturnType<typeof createHttpClientStub>;
-  let tokenStore: ReturnType<typeof createMockTokenStore>;
+  let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let service: AuthService;
 
   const openAuthSession = jest.mocked(WebBrowser.openAuthSessionAsync);
@@ -63,7 +63,7 @@ describe('소셜 로그인', () => {
     jest.clearAllMocks();
     publicHttp = createHttpClientStub();
     authHttp = createHttpClientStub();
-    tokenStore = createMockTokenStore();
+    tokenStore = createMemoryTokenStore();
     service = new AuthService(publicHttp, authHttp, tokenStore, expoSocialAuthGateway);
   });
 

@@ -1,9 +1,5 @@
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
-import {
-  createMemoryTokenStore,
-  createMockTokenStore,
-  createPendingResponse,
-} from '@src/shared/__tests__';
+import { createMemoryTokenStore, createPendingResponse } from '@src/shared/__tests__';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { TimeoutError as KyTimeoutError } from 'ky';
 
@@ -26,10 +22,10 @@ const respondWith = (response: Response): jest.MockedFunction<RefreshTokensReque
   jest.fn<Promise<Response>, [string]>().mockResolvedValue(response);
 
 describe('createTokenRefresher', () => {
-  let tokenStore: ReturnType<typeof createMockTokenStore>;
+  let tokenStore: ReturnType<typeof createMemoryTokenStore>;
 
   beforeEach(() => {
-    tokenStore = createMockTokenStore();
+    tokenStore = createMemoryTokenStore();
   });
 
   describe('갱신 성공', () => {

@@ -28,7 +28,7 @@ import { createErrorReporterStub } from './create-error-reporter-stub';
 import { createHttpClientStub } from './create-http-client-stub';
 import { createLoggerStub } from './create-logger-stub';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
-import { createMockTokenStore } from './create-mock-token-store';
+import { createMemoryTokenStore } from './create-memory-token-store';
 import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 
 type TestDiOverrides = Partial<DIContainer> & {
@@ -71,7 +71,7 @@ export function createTestDi({
     authService: new AuthService(
       httpClient,
       httpClient,
-      createMockTokenStore(),
+      createMemoryTokenStore(),
       createSocialAuthGatewayStub(),
     ),
     consentService: new ConsentService(httpClient),

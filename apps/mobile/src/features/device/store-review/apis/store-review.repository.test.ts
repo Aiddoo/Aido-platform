@@ -1,4 +1,4 @@
-import { createMemorySyncStorage, createSyncStorageStub } from '@src/shared/__tests__';
+import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { recordActiveDay, recordRequest } from '../domains/store-review.model';
@@ -85,7 +85,7 @@ describe('StoreReviewRepository', () => {
 
   it('손상된 저장값은 안전한 빈 상태로 복구한다', () => {
     // Given
-    const storage = createSyncStorageStub();
+    const storage = createMemorySyncStorage();
     storage.get.mockReturnValue('{broken');
 
     // When
