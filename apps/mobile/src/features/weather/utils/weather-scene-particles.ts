@@ -269,7 +269,7 @@ export function getShootingStarProgress(time: number): number {
   const start = hashToUnit(windowIndex * 3) * usable;
   const progress =
     (time - windowIndex * SHOOTING_STAR_WINDOW_SECONDS - start) / SHOOTING_STAR_DURATION_SECONDS;
-  return progress >= 0 && progress < 1 ? progress : -1;
+  return 0 <= progress && progress < 1 ? progress : -1;
 }
 
 export function getShootingStarWindow(time: number): number {

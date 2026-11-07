@@ -1,13 +1,5 @@
 import { Box } from '@src/shared/ui';
-import { useEffect } from 'react';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { css } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { SUN_COLORS } from '../constants/weather-colors';
@@ -30,6 +22,18 @@ const NIGHT_SUN_OPACITY = 0.45;
 const PULSE_DURATION_MS = 2600;
 const PULSE_MAX_SCALE = 2.6;
 const PULSE_START_OPACITY = 0.7;
+
+const SUN_PULSE = css.keyframes({
+  from: { opacity: PULSE_START_OPACITY, transform: [{ scale: 1 }] },
+  to: { opacity: 0, transform: [{ scale: PULSE_MAX_SCALE }] },
+});
+
+const SUN_PULSE_STYLE = {
+  animationName: SUN_PULSE,
+  animationDuration: PULSE_DURATION_MS,
+  animationTimingFunction: 'ease-out',
+  animationIterationCount: 'infinite',
+} as const;
 
 /** viewBox를 부모 폭에 맞춰 늘리고, 해 점은 늘어나도 둥글도록 퍼센트 자리에 따로 올린다. */
 export function WeatherSunArc({
@@ -122,31 +126,12 @@ export function WeatherSunArc({
 /** 시안 wxPulse: 해 점에서 퍼지는 빛. 동작 줄이기·화면 밖·앱 비활성에서는 멈춘다. */
 function SunPulse() {
   const isRunning = useIsWeatherSceneRunning();
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    if (!isRunning) {
-      cancelAnimation(progress);
-      progress.value = 0;
-      return;
-    }
-    progress.value = withRepeat(
-      withTiming(1, { duration: PULSE_DURATION_MS, easing: Easing.out(Easing.ease) }),
-      -1,
-    );
-    return () => cancelAnimation(progress);
-  }, [isRunning, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: isRunning ? PULSE_START_OPACITY * (1 - progress.value) : 0,
-    transform: [{ scale: 1 + (PULSE_MAX_SCALE - 1) * progress.value }],
-  }));
 
   return (
     <Animated.View
       pointerEvents="none"
       className="absolute inset-0 rounded-full"
-      style={[{ backgroundColor: SUN_COLORS.glow }, animatedStyle]}
+      style={[{ backgroundColor: SUN_COLORS.glow }, isRunning ? SUN_PULSE_STYLE : { opacity: 0 }]}
     />
   );
 }

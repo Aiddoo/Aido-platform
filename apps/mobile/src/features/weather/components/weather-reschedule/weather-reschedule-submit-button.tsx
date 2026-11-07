@@ -1,11 +1,10 @@
-import { useLogger } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useLogger } from '@src/bootstrap/providers/di-context';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
+import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as translate, useTranslation } from '@src/shared/i18n';
 import { Button } from '@src/shared/ui';
@@ -32,7 +31,7 @@ export function WeatherRescheduleSubmitButton({
   const toast = useAppToast();
   const queryClient = useQueryClient();
   const { timeZone } = useDateFormatContext();
-  const showFailure = useMutationFailure(translate('todo:toast.updateFailedRetry'));
+  const haptics = useHaptics();
   const logger = useLogger();
   const { trackEvent } = useTrack();
   const [{ todoIds, reason }] = useWeatherRescheduleParams();
@@ -51,7 +50,10 @@ export function WeatherRescheduleSubmitButton({
     invalidateTodos(queryClient);
     const [firstFailure] = failures;
     if (failures.length > 0) {
-      showFailure(firstFailure);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(firstFailure), {
+        fallback: translate('todo:toast.updateFailedRetry'),
+      });
     }
   };
 
