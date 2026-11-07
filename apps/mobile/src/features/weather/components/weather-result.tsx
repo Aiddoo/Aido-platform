@@ -4,6 +4,7 @@ import type { ImageSource } from 'expo-image';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
+import { LIGHT_BUTTON_TEXT_CLASS } from '../constants/weather-colors';
 import { WeatherMascot } from './weather-mascot';
 
 interface WeatherResultProps {
@@ -100,7 +101,7 @@ WeatherResult.Action = function Action({
         size="b1"
         weight="semibold"
         align="center"
-        className={tone === 'light' ? 'text-[#383838]' : 'text-on-sky'}
+        className={tone === 'light' ? LIGHT_BUTTON_TEXT_CLASS : 'text-on-sky'}
       >
         {children}
       </Text>

@@ -1,4 +1,4 @@
-import catAnchorImage from '@assets/images/cat_weather_anchor.png';
+import catAnchorImage from '@assets/images/weather/mascot-anchor.png';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import type { Instant } from '@src/shared/date/instant';
@@ -21,6 +21,7 @@ import { useEffect } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
+import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import {
@@ -47,7 +48,7 @@ import { WeatherLocationPrompt } from './weather-location-prompt';
 import { WeatherResult } from './weather-result';
 
 const HERO_TEXT_SHADOW = {
-  textShadowColor: 'rgba(0,0,0,0.08)',
+  textShadowColor: HERO_TEXT_SHADOW_COLOR,
   textShadowOffset: { width: 0, height: 1 },
   textShadowRadius: 12,
 } as const;

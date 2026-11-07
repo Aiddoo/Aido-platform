@@ -25,13 +25,13 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PRECIPITATION_CHANCE_TEXT_CLASS, TODO_DOT_COLOR } from '../constants/weather-colors';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
-import { getTemperatureColor } from '../constants/weather-temperature-colors';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
+import { getTemperatureColor } from '../utils/get-temperature-color';
 import {
   type TemperatureBar,
   toTemperatureBars,

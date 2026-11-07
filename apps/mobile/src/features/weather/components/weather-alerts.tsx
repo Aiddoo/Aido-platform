@@ -7,9 +7,11 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, Box, HStack, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 
+import { ALERT_GLYPH_BACKGROUND_CLASS } from '../constants/weather-colors';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
@@ -101,7 +103,12 @@ WeatherAlerts.Item = function Item({
     >
       <WeatherCard tone="alert">
         <HStack gap={12} align="center">
-          <Box className="size-[34px] items-center justify-center rounded-full bg-[rgba(255,170,90,0.28)]">
+          <Box
+            className={cn(
+              'size-[34px] items-center justify-center rounded-full',
+              ALERT_GLYPH_BACKGROUND_CLASS,
+            )}
+          >
             <WeatherIcon.Warning width={GLYPH_SIZE} height={GLYPH_SIZE} />
           </Box>
           <VStack flex={1} gap={1}>

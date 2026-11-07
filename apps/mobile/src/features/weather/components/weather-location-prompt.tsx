@@ -1,6 +1,6 @@
-import catAnchorImage from '@assets/images/cat_weather_anchor.png';
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import catSuggestionImage from '@assets/images/ido_cat_suggestion.webp';
+import catAnchorImage from '@assets/images/weather/mascot-anchor.png';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
