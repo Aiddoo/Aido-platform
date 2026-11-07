@@ -11,7 +11,7 @@ import {
 } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListViewParam } from '@src/features/social/friend/hooks/use-friend-list-view-param';
+import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
 import { useInvitedFriendsViewParam } from '@src/features/social/invite/hooks/use-invited-friends-view-param';
 import { useVoiceNoteTab } from '@src/features/voice/hooks/use-voice-note-params';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
@@ -150,7 +150,7 @@ describe('공개 URL 계약', () => {
 
   it('탭 값은 ?키=값 그대로 쓴다', async () => {
     // Given
-    const friends = await renderRouteHook(() => useFriendListViewParam(), { url: '/friends' });
+    const friends = await renderRouteHook(() => useFriendListView(), { url: '/friends' });
 
     // When
     await friends.run(([_view, setView]) => setView('receiver'));

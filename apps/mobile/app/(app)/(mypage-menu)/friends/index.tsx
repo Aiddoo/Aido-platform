@@ -5,14 +5,23 @@ import { FriendList } from '@src/features/social/friend/components/friend-list';
 import { ReceivedRequestList } from '@src/features/social/friend/components/received-request-list';
 import { SentRequestList } from '@src/features/social/friend/components/sent-request-list';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListViewParam } from '@src/features/social/friend/hooks/use-friend-list-view-param';
-import { FRIEND_LIST_VIEW } from '@src/features/social/friend/schemas/friend-params.schema';
+import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
+import {
+  FRIEND_LIST_VIEW,
+  friendListViewSchema,
+} from '@src/features/social/friend/schemas/friend-params.schema';
 import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, LineTabTrigger, QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
+import {
+  Box,
+  LineTabTrigger,
+  QueryErrorBoundary,
+  StyledSafeAreaView,
+  ViewTabs,
+} from '@src/shared/ui';
 import { Stack, router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
@@ -27,7 +36,7 @@ export default function FriendsScreen() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['friend', 'common']);
-  const [view, setView] = useFriendListViewParam();
+  const [view, setView] = useFriendListView();
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
   const isInviteAvailable = useInviteAvailability();
   const openMyInvite = useOpenMyInvite();
@@ -52,7 +61,13 @@ export default function FriendsScreen() {
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
 
-      <Tabs value={view} onValueChange={setView} variant="secondary" className="flex-1">
+      <ViewTabs
+        schema={friendListViewSchema}
+        value={view}
+        onValueChange={setView}
+        variant="secondary"
+        className="flex-1"
+      >
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
@@ -97,7 +112,7 @@ export default function FriendsScreen() {
               .exhaustive()}
           </Box>
         </Tabs.Content>
-      </Tabs>
+      </ViewTabs>
     </StyledSafeAreaView>
   );
 }

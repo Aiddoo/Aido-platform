@@ -4,24 +4,17 @@ import { useCallback } from 'react';
 import {
   FRIEND_LIST_VIEW,
   friendListParamsSchema,
-  friendListViewSchema,
+  type FriendListView,
 } from '../schemas/friend-params.schema';
 
-/** 친구 화면의 탭. 탭이 주는 값을 검증하고, 친구 탭이 아닌 곳으로 옮기면 편집 모드를 함께 끈다 */
-export function useFriendListViewParam() {
+/** 친구 화면의 탭. 친구 탭이 아닌 곳으로 옮기면 편집 모드를 함께 끈다 */
+export function useFriendListView() {
   const [{ view }, setParams] = useRouteParams(friendListParamsSchema);
   const setView = useCallback(
-    (value: string) => {
-      const parsed = friendListViewSchema.safeParse(value);
-      if (!parsed.success) {
-        return;
-      }
+    (next: FriendListView) =>
       setParams(
-        parsed.data === FRIEND_LIST_VIEW.friends
-          ? { view: parsed.data }
-          : { view: parsed.data, isEditing: undefined },
-      );
-    },
+        next === FRIEND_LIST_VIEW.friends ? { view: next } : { view: next, isEditing: undefined },
+      ),
     [setParams],
   );
 
