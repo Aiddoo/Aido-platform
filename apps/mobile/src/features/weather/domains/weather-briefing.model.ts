@@ -9,7 +9,7 @@ import {
   toDateKey,
   toEpochMs,
 } from '@src/shared/date/instant';
-import { maxBy } from 'es-toolkit';
+import { maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
@@ -155,16 +155,12 @@ function toHourRange(
     const hour = hourly[index];
     return hour != null && isIncluded(hour);
   };
-  let first = anchor;
-  let last = anchor;
-  while (isRunAt(first - 1)) {
-    first -= 1;
-  }
-  while (isRunAt(last + 1)) {
-    last += 1;
-  }
-  const startHour = hourly[first] ?? anchorHour;
-  const endHour = hourly[last] ?? anchorHour;
+  const hoursBefore = takeWhile(range(1, anchor + 1), (offset) => isRunAt(anchor - offset)).length;
+  const hoursAfter = takeWhile(range(1, hourly.length - anchor), (offset) =>
+    isRunAt(anchor + offset),
+  ).length;
+  const startHour = hourly[anchor - hoursBefore] ?? anchorHour;
+  const endHour = hourly[anchor + hoursAfter] ?? anchorHour;
   return {
     startsAt: startHour.startsAt,
     endsAt: fromEpochMs(toEpochMs(endHour.startsAt) + HOUR_MS),
