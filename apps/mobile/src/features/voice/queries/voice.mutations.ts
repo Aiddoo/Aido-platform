@@ -7,6 +7,7 @@ import {
   findErrorFeatureQuota,
   isNotChargedError,
 } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import type { EntitlementFeature } from '@src/features/billing/subscription/schemas/entitlement.schema';
@@ -25,7 +26,6 @@ import { NetworkError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import type { EntitlementGateSurface } from '@src/shared/observability/telemetry-keys';
 import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-query';
 
 import type { PreparedPlanRequest } from '../domains/plan-request.model';

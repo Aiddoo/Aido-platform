@@ -5,7 +5,7 @@ import type {
   SpeechMode,
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
-import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
+import type { VoiceCaptureEntry } from '@src/features/voice/constants/voice.events';
 import { noop } from 'es-toolkit';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState } from 'react-native';

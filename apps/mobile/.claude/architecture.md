@@ -889,7 +889,7 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | `Analytics`               | `trackEvent`·`trackScreenView` 등                                           | `analytics/`                                     |
 | `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                         | `error-reporter/`                                |
 
-`core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
+`core/`는 `shared`와 feature를 import하지 않는다. 포트가 쓰는 관측 키와 오류 타입은 `core/observability/telemetry-keys`, `core/errors`에 있다.
 
 ### 케이스별 사용법
 

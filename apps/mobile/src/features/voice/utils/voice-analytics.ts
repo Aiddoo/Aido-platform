@@ -1,7 +1,7 @@
 import type {
   VoiceDurationBucket,
   VoicePlanAnalyticsSource,
-} from '@src/shared/observability/telemetry-keys';
+} from '@src/features/voice/constants/voice.events';
 
 import { type VoicePlan, VoicePlanPolicy, type VoicePlanSource } from '../domains/voice-plan.model';
 

@@ -1,11 +1,11 @@
 import { useErrorReporter, useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechErrorCode, SpeechLocale, SpeechMode } from '@src/core/ports/speech-recognizer';
-import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
 import type {
   VoiceCaptureEntry,
   VoiceCaptureOutcome,
-} from '@src/shared/observability/telemetry-keys';
+} from '@src/features/voice/constants/voice.events';
+import { useTrack } from '@src/shared/analytics';
+import { getErrorMessage } from '@src/shared/errors';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import {

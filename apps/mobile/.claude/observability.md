@@ -34,12 +34,12 @@
 
 ## Analytics
 
-- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 아직 옮기지 않은 이벤트는 `shared/observability/telemetry-keys.ts`의 `LegacyEventMap`에 있고 옮기는 대로 줄인다. `useTrack`·`track`은 둘을 합친 `TrackedEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 앱 tsconfig와 테스트 tsconfig 모두에서 인식된다. Sentry feature·태그 키·breadcrumb 카테고리의 원본은 `telemetry-keys.ts`다.
+- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 아직 옮기지 않은 이벤트는 `shared/observability/telemetry-keys.ts`의 `LegacyEventMap`에 있고 옮기는 대로 줄인다. `useTrack`·`track`은 둘을 합친 `TrackedEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 앱 tsconfig와 테스트 tsconfig 모두에서 인식된다. Sentry feature·태그 키·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 이벤트 이름과 payload가 컴파일 때 검증되지 않기 때문이다.
 
 ```ts
-// telemetry-keys.ts의 AuthEventMap
+// identity/auth/constants/auth.events.ts의 AppEventMap
 session_expired: {
   reason: SessionExpiredReason;
 }
@@ -218,6 +218,6 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 | 전송 입구·분류    | `shared/infra/observability/capture-error.ts`, `shared/errors/classify-error-report.ts`                                                    |
 | 개인정보 걸러내기 | `shared/infra/observability/scrub-sentry-event.ts`                                                                                         |
 | 테스트 stub       | `shared/__tests__/create-logger-stub.ts`, `create-error-reporter-stub.ts`                                                                  |
-| 카탈로그·파사드   | `shared/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                          |
+| 카탈로그·파사드   | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                            |
 | 환경별 구현·DI    | `shared/infra/observability-env.ts`, `bootstrap/providers/di-provider.tsx`                                                                 |
 | 계측 지점         | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |

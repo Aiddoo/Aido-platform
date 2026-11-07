@@ -1,12 +1,12 @@
+import type {
+  EntitlementGateSurface,
+  LimitReachedTrigger,
+} from '@src/features/billing/subscription/constants/subscription.events';
 import { useTrack } from '@src/shared/analytics';
 import { toInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import type {
-  EntitlementGateSurface,
-  LimitReachedTrigger,
-} from '@src/shared/observability/telemetry-keys';
 import { PremiumDialog, type PremiumDialogProps, useOverlay } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
