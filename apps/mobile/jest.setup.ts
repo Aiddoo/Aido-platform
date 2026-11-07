@@ -81,7 +81,7 @@ if (windowDescriptor) {
 
 jest.mock('react-native-svg', () => {
   const mockSvg = require('react-native-reanimated/src/mock-svg');
-  return { ...mockSvg, default: mockSvg.Svg };
+  return { ...mockSvg, default: mockSvg.Svg, Pattern: mockSvg.G };
 });
 
 // 화면을 먼저 정리(unmount)한 뒤 테스트 QueryClient를 비운다.
