@@ -1,0 +1,131 @@
+import type { AirQuality, CurrentWeather } from '../schemas/weather-report.schema';
+
+function getGradeIndex(value: number, upperBounds: readonly number[]): number {
+  const index = upperBounds.findIndex((bound) => value <= bound);
+  return index === -1 ? upperBounds.length : index;
+}
+
+export type AirPollutant = 'pm10' | 'pm25';
+
+export type AirQualityGrade = 'good' | 'moderate' | 'bad' | 'veryBad';
+
+const AIR_QUALITY_GRADES = [
+  'good',
+  'moderate',
+  'bad',
+  'veryBad',
+] as const satisfies readonly AirQualityGrade[];
+/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다. */
+export const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
+export const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
+
+const POLLUTANT_UPPER_BOUNDS = {
+  pm10: PM10_UPPER_BOUNDS,
+  pm25: PM25_UPPER_BOUNDS,
+} as const satisfies Record<AirPollutant, readonly number[]>;
+
+/** 오염 물질 하나의 등급. 그 물질의 값이 없으면 null이다. */
+function getPollutantGrade(
+  airQuality: Pick<AirQuality, AirPollutant>,
+  pollutant: AirPollutant,
+): AirQualityGrade | null {
+  const value = airQuality[pollutant];
+  if (value == null) {
+    return null;
+  }
+  return AIR_QUALITY_GRADES[getGradeIndex(value, POLLUTANT_UPPER_BOUNDS[pollutant])] ?? null;
+}
+
+export type UvLevel = 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme';
+
+const UV_LEVELS = [
+  'low',
+  'moderate',
+  'high',
+  'veryHigh',
+  'extreme',
+] as const satisfies readonly UvLevel[];
+/** WHO 자외선 지수 기준. 각 값 이하가 해당 단계다. */
+const UV_UPPER_BOUNDS = [2, 5, 7, 10] as const;
+
+function getUvLevel(uvIndex: number): UvLevel {
+  return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
+}
+
+const COMPASS_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
+export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
+
+/** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
+function toCompassDirection(degrees: number | null): CompassDirection | null {
+  if (degrees == null) {
+    return null;
+  }
+  const index = Math.round((((degrees % 360) + 360) % 360) / 45) % COMPASS_DIRECTIONS.length;
+  return COMPASS_DIRECTIONS[index] ?? null;
+}
+
+export type FeelsLikeComparison = 'colder' | 'similar' | 'warmer';
+/** 체감 온도와 실제 기온의 차이가 이 값(°C) 미만이면 비슷하다고 본다. */
+const FEELS_LIKE_SIMILAR_RANGE = 2;
+
+function compareFeelsLike(
+  current: Pick<CurrentWeather, 'temperature' | 'apparentTemperature'>,
+): FeelsLikeComparison {
+  const difference = current.apparentTemperature - current.temperature;
+  if (Math.abs(difference) < FEELS_LIKE_SIMILAR_RANGE) {
+    return 'similar';
+  }
+  return difference < 0 ? 'colder' : 'warmer';
+}
+
+export type VisibilityLevel = 'clear' | 'moderate' | 'poor';
+
+const METERS_PER_KILOMETER = 1000;
+
+function getVisibilityLevel(meters: number): VisibilityLevel {
+  const kilometers = meters / METERS_PER_KILOMETER;
+  if (kilometers >= 10) {
+    return 'clear';
+  }
+  return kilometers >= 5 ? 'moderate' : 'poor';
+}
+
+export type CloudCoverLevel = 'overcast' | 'mostlyCloudy' | 'mostlyClear';
+
+function getCloudCoverLevel(cloudCover: number): CloudCoverLevel {
+  if (cloudCover >= 80) {
+    return 'overcast';
+  }
+  return cloudCover >= 40 ? 'mostlyCloudy' : 'mostlyClear';
+}
+
+export type WindLevel = 'calm' | 'breeze' | 'strong';
+
+/** 보퍼트 풍력 1(실바람) 미만은 잔잔, 4(건들바람) 이상은 강하다고 본다. */
+const CALM_WIND_MPS = 1.5;
+const STRONG_WIND_MPS = 5.5;
+
+function getWindLevel(windSpeed: number): WindLevel {
+  if (windSpeed < CALM_WIND_MPS) {
+    return 'calm';
+  }
+  return windSpeed < STRONG_WIND_MPS ? 'breeze' : 'strong';
+}
+
+/** 상대 습도가 이 값(%) 이상이면 눅눅하다고 안내한다. */
+const MUGGY_HUMIDITY = 80;
+
+function isMuggy(humidity: number): boolean {
+  return humidity >= MUGGY_HUMIDITY;
+}
+
+export const WeatherIndicatorPolicy = {
+  getPollutantGrade,
+  getUvLevel,
+  toCompassDirection,
+  compareFeelsLike,
+  getVisibilityLevel,
+  getCloudCoverLevel,
+  getWindLevel,
+  isMuggy,
+} as const;

@@ -4,7 +4,7 @@ import {
   type AirPollutant,
   PM10_UPPER_BOUNDS,
   PM25_UPPER_BOUNDS,
-} from '../domains/weather-report.model';
+} from '../domains/weather-indicator.model';
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 
 /** 막대 끝에 점이 반쯤 잘리지 않도록 3%~97% 안에 둔다. */

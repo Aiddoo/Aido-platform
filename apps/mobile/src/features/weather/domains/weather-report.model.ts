@@ -13,8 +13,6 @@ import {
 } from '@src/shared/date/instant';
 
 import type {
-  AirQuality,
-  CurrentWeather,
   DailyForecastEntry,
   HourlyForecastEntry,
   NextHourForecast,
@@ -217,53 +215,6 @@ function isAlertInEffect(alert: WeatherAlert, now: Instant): boolean {
   return toEpochMs(alert.effectiveAt) <= toEpochMs(now);
 }
 
-export type AirPollutant = 'pm10' | 'pm25';
-
-export type AirQualityGrade = 'good' | 'moderate' | 'bad' | 'veryBad';
-
-const AIR_QUALITY_GRADES = [
-  'good',
-  'moderate',
-  'bad',
-  'veryBad',
-] as const satisfies readonly AirQualityGrade[];
-/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다. */
-export const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
-export const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
-
-function getGradeIndex(value: number, upperBounds: readonly number[]): number {
-  const index = upperBounds.findIndex((bound) => value <= bound);
-  return index === -1 ? upperBounds.length : index;
-}
-
-/** 미세먼지·초미세먼지 중 더 나쁜 등급. 두 값이 모두 없으면 null이다. */
-function getAirQualityGrade(airQuality: Pick<AirQuality, 'pm10' | 'pm25'>): AirQualityGrade | null {
-  const indexes = [
-    airQuality.pm10 == null ? null : getGradeIndex(airQuality.pm10, PM10_UPPER_BOUNDS),
-    airQuality.pm25 == null ? null : getGradeIndex(airQuality.pm25, PM25_UPPER_BOUNDS),
-  ].filter((index) => index != null);
-  if (indexes.length === 0) {
-    return null;
-  }
-  return AIR_QUALITY_GRADES[Math.max(...indexes)] ?? null;
-}
-
-export type UvLevel = 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme';
-
-const UV_LEVELS = [
-  'low',
-  'moderate',
-  'high',
-  'veryHigh',
-  'extreme',
-] as const satisfies readonly UvLevel[];
-/** WHO 자외선 지수 기준. 각 값 이하가 해당 단계다. */
-const UV_UPPER_BOUNDS = [2, 5, 7, 10] as const;
-
-function getUvLevel(uvIndex: number): UvLevel {
-  return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
-}
-
 type SunEvents =
   | { kind: 'regular'; sunrise: Instant | null; sunset: Instant | null }
   | { kind: 'polarDay' }
@@ -278,30 +229,6 @@ function getSunEvents(day: DailyForecastEntry, isDaylight: boolean): SunEvents {
     return { kind: isDaylight ? 'polarDay' : 'polarNight' };
   }
   return { kind: 'regular', sunrise: day.sunrise, sunset: day.sunset };
-}
-
-const COMPASS_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
-export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
-
-/** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
-function toCompassDirection(degrees: number | null): CompassDirection | null {
-  if (degrees == null) {
-    return null;
-  }
-  const index = Math.round((((degrees % 360) + 360) % 360) / 45) % COMPASS_DIRECTIONS.length;
-  return COMPASS_DIRECTIONS[index] ?? null;
-}
-
-export type FeelsLikeComparison = 'colder' | 'similar' | 'warmer';
-/** 체감 온도와 실제 기온의 차이가 이 값(°C) 미만이면 비슷하다고 본다. */
-const FEELS_LIKE_SIMILAR_RANGE = 2;
-
-function compareFeelsLike(current: CurrentWeather): FeelsLikeComparison {
-  const difference = current.apparentTemperature - current.temperature;
-  if (Math.abs(difference) < FEELS_LIKE_SIMILAR_RANGE) {
-    return 'similar';
-  }
-  return difference < 0 ? 'colder' : 'warmer';
 }
 
 /**
@@ -331,8 +258,4 @@ export const WeatherReportPolicy = {
   getActiveAlerts,
   isAlertInEffect,
   getSunEvents,
-  toCompassDirection,
-  compareFeelsLike,
-  getAirQualityGrade,
-  getUvLevel,
 } as const;

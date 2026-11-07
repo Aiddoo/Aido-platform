@@ -5,8 +5,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { AIR_METER_COLORS } from '../constants/weather-colors';
 import { AIR_GRADE_LABEL_KEYS, AIR_QUALITY_SOURCE_LABEL_KEYS } from '../constants/weather-labels';
-import { WeatherDetailPolicy } from '../domains/weather-detail.model';
-import { type AirPollutant, WeatherReportPolicy } from '../domains/weather-report.model';
+import { type AirPollutant, WeatherIndicatorPolicy } from '../domains/weather-indicator.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toAirMeterPosition } from '../utils/weather-bar.geometry';
 import { WeatherCard } from './weather-card';
@@ -38,9 +37,7 @@ export function WeatherAirQuality() {
       <HStack gap={16} className="mt-1.5">
         {POLLUTANTS.map((pollutant) => {
           const value = airQuality[pollutant];
-          const grade = WeatherReportPolicy.getAirQualityGrade(
-            WeatherDetailPolicy.getPollutant(airQuality, pollutant),
-          );
+          const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, pollutant);
           const label = t(`airQuality.${pollutant}`);
           const gradeLabel = grade == null ? t('details.noValue') : t(AIR_GRADE_LABEL_KEYS[grade]);
           const valueLabel =

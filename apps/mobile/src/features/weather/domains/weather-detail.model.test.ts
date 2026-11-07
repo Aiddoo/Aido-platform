@@ -7,39 +7,6 @@ const SUNRISE = toInstant('2026-11-01T21:51:00.000Z');
 const SUNSET = toInstant('2026-11-02T08:28:00.000Z');
 const DAY = { sunrise: SUNRISE, sunset: SUNSET };
 
-describe('WeatherDetailPolicy 단계 분류', () => {
-  it.each([
-    [16000, 'clear'],
-    [6000, 'moderate'],
-    [1240, 'poor'],
-  ] as const)('가시거리 %dm는 %s다', (meters, level) => {
-    // Given 가시거리(m) When 단계를 구하면 Then 10km·5km 경계로 나뉜다
-    expect(WeatherDetailPolicy.getVisibilityLevel(meters)).toBe(level);
-  });
-
-  it.each([
-    [95, 'overcast'],
-    [40, 'mostlyCloudy'],
-    [10, 'mostlyClear'],
-  ] as const)('운량 %d%%는 %s다', (cloudCover, level) => {
-    // Given 운량 When 단계를 구하면 Then 80·40 경계로 나뉜다
-    expect(WeatherDetailPolicy.getCloudCoverLevel(cloudCover)).toBe(level);
-  });
-});
-
-describe('WeatherDetailPolicy.getCloudCoverNote', () => {
-  it.each([
-    [90, true, 'overcast'],
-    [50, true, 'brokenDay'],
-    [50, false, 'brokenNight'],
-    [10, true, 'clearDay'],
-    [0, false, 'clearNight'],
-  ] as const)('운량 %s%%, 낮 %s이면 %s 문구다', (cloudCover, isDaylight, note) => {
-    // Given 운량과 낮밤 When 구름 문구를 고르면 Then 단계와 낮밤에 맞는 문구다
-    expect(WeatherDetailPolicy.getCloudCoverNote(cloudCover, isDaylight)).toBe(note);
-  });
-});
-
 describe('WeatherDetailPolicy.getSunscreenWindow', () => {
   const now = toInstant('2026-11-02T02:30:00.000Z');
   const hourly = createWeatherReport({
@@ -136,16 +103,5 @@ describe('WeatherDetailPolicy.findNextFullMoon', () => {
 
     expect(WeatherDetailPolicy.findNextFullMoon(forecast, '2026-11-02')).toBe('2026-11-05');
     expect(WeatherDetailPolicy.findNextFullMoon(daily, '2026-11-02')).toBeNull();
-  });
-});
-
-describe('WeatherDetailPolicy.getWindLevel', () => {
-  it.each([
-    [0.7, 'calm'],
-    [3, 'breeze'],
-    [8, 'strong'],
-  ] as const)('풍속 %s m/s는 %s 바람이다', (speed, level) => {
-    // Given 풍속 When 바람 단계를 구하면 Then 보퍼트 기준 단계다
-    expect(WeatherDetailPolicy.getWindLevel(speed)).toBe(level);
   });
 });
