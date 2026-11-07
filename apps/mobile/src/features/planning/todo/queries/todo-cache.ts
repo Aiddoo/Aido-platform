@@ -3,7 +3,7 @@ import type { Query, QueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { TodoPolicy } from '../domains/todo.model';
+import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import {
   type DailyCompletionsResult,
   type Todo,
@@ -178,7 +178,7 @@ export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: 
   }
   queryClient.setQueriesData<DailyCompletionsResult>(
     { queryKey: TODO_QUERY_KEYS.completionRanges() },
-    (old) => old && TodoPolicy.withDailyCompletionFromTodos(old, date, list.todos),
+    (old) => old && DailyCompletionPolicy.withDailyCompletionFromTodos(old, date, list.todos),
   );
 }
 

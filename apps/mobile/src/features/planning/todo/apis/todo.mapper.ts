@@ -9,7 +9,7 @@ import {
 } from '@aido/api';
 import { toNullableInstant } from '@src/shared/date/instant';
 
-import { TodoPolicy } from '../domains/todo.model';
+import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import {
   type DailyCompletionSummary,
   type DailyCompletionsResult,
@@ -56,7 +56,7 @@ function toDailyCompletionSummary(dto: DailyCompletionSummaryDTO): DailyCompleti
 export function toDailyCompletionsResult(
   dto: DailyCompletionsRangeResponse,
 ): DailyCompletionsResult {
-  return TodoPolicy.withMultiDayTodoSpans(
+  return DailyCompletionPolicy.withMultiDayTodoSpans(
     {
       completions: dto.completions.map(toDailyCompletionSummary),
       totalCompleteDays: dto.totalCompleteDays,
