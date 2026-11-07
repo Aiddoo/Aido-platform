@@ -111,7 +111,7 @@ export function useRouter() {
 }
 
 export function useNavigation() {
-  return { isFocused: () => true };
+  return { isFocused: () => true, getParent: () => undefined };
 }
 
 export function Redirect() {

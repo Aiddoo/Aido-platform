@@ -8,7 +8,6 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
 import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
@@ -65,17 +64,31 @@ export function MemoCreateForm() {
   );
 
   // mutate 콜백은 화면이 내려가면 불리지 않는다. 저장이 끝났는데 초안이 남지 않게 기다린 뒤에 지운다
-  const saveMemo = (onFailed: (error: unknown) => void) =>
-    form.handleSubmit(async ({ content }) => {
-      try {
-        await createMemo.mutateAsync({ content: content.trim() });
-        discardDraft();
+  const saveMemo = form.handleSubmit(async ({ content }) => {
+    try {
+      await createMemo.mutateAsync({ content: content.trim() });
+      discardDraft();
+      goBack();
+    } catch (error) {
+      reportUnexpectedError(error);
+    }
+  });
+
+  const saveAndLeave = form.handleSubmit(async ({ content }) => {
+    try {
+      await createMemo.mutateAsync({ content: content.trim() });
+      discardDraft();
+      goBack();
+    } catch (error) {
+      reportUnexpectedError(error);
+      // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
+      if (isConnectivityError(error)) {
         goBack();
-      } catch (error) {
-        reportUnexpectedError(error);
-        onFailed(error);
       }
-    });
+    }
+  });
+
+  const handleSave = useSingleTap(() => saveMemo());
 
   const handleBack = useSingleTap(async () => {
     if (!isValid) {
@@ -83,12 +96,7 @@ export function MemoCreateForm() {
 
       return;
     }
-    // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
-    await saveMemo((error) => {
-      if (isConnectivityError(error)) {
-        goBack();
-      }
-    })();
+    await saveAndLeave();
   });
 
   return (
@@ -108,7 +116,7 @@ export function MemoCreateForm() {
           variant="prominent"
           tintColor={saveTint}
           disabled={!isValid || isSubmitting}
-          onPress={() => saveMemo(noop)()}
+          onPress={handleSave}
         />
       </Stack.Toolbar>
 
