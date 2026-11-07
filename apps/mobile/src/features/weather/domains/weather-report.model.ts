@@ -264,8 +264,6 @@ function getUvLevel(uvIndex: number): UvLevel {
   return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
 }
 
-export type TemperatureUnit = 'celsius' | 'fahrenheit';
-
 type SunEvents =
   | { kind: 'regular'; sunrise: Instant | null; sunset: Instant | null }
   | { kind: 'polarDay' }

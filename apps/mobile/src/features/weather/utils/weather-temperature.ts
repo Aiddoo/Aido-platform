@@ -1,4 +1,4 @@
-import type { TemperatureUnit } from '../domains/weather-report.model';
+export type TemperatureUnit = 'celsius' | 'fahrenheit';
 
 const MINUS_SIGN = '−';
 
