@@ -69,5 +69,7 @@ export function useGetUnreadCountQueryOptions() {
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
     queryFn: async ({ signal }) => unwrap(await notificationService.getUnreadCount(signal)),
+    // 푸시를 받지 못하면 무효화가 오지 않아 낡은 수가 남는다. 화면을 열 때마다 다시 본다
+    staleTime: 0,
   });
 }
