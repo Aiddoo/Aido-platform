@@ -5,7 +5,7 @@ import { match } from 'ts-pattern';
 
 import { getMonthWeeks } from '../utils/calendar-grid';
 
-export interface DatePickerState {
+interface DatePickerState {
   startDate: Date;
   displayMonth: Date;
 }
@@ -15,10 +15,7 @@ type DatePickerAction =
   | { type: 'prevMonth'; timeZone: string }
   | { type: 'nextMonth'; timeZone: string };
 
-export function datePickerReducer(
-  state: DatePickerState,
-  action: DatePickerAction,
-): DatePickerState {
+function datePickerReducer(state: DatePickerState, action: DatePickerAction): DatePickerState {
   return match(action)
     .with({ type: 'selectDate' }, ({ date }) => ({ ...state, startDate: date }))
     .with({ type: 'prevMonth' }, ({ timeZone }) => ({
