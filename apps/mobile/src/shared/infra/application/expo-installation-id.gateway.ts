@@ -1,14 +1,10 @@
 import type { InstallationIdGateway } from '@src/core/ports/installation-id';
+import { SECURE_STORE_OPTIONS } from '@src/shared/infra/storage/secure-store-options';
 import { noop } from 'es-toolkit';
 import * as Application from 'expo-application';
 import * as SecureStore from 'expo-secure-store';
 
 const IOS_INSTALLATION_ID_KEY = 'aido_installation_id';
-
-// 다른 키체인 항목과 같은 조건이다. 키체인 항목은 앱을 지웠다 다시 설치해도 남는다.
-const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
-  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
-};
 
 /**
  * iOS IDFV는 같은 회사 앱이 모두 지워지면 재설치 때 바뀐다. 처음 읽은 IDFV를 키체인에 남겨 재설치 뒤에도
