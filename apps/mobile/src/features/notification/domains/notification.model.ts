@@ -75,8 +75,14 @@ function canSelectDirection(
   return category === NOTIFICATION_CATEGORY.SOCIAL && isNudgeInteractionAvailable;
 }
 
+/** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다 */
+function hasServerRecord(notificationId: number) {
+  return notificationId > 0;
+}
+
 export const NotificationPolicy = {
   canSelectDirection,
+  hasServerRecord,
   isAiFeature,
   findReceivedCheer,
   getResponseAction,

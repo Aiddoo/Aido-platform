@@ -9,8 +9,6 @@ import {
   type Notification,
   type NotificationListResult,
   type NotificationRouting,
-  type PushNotificationPayload,
-  pushNotificationPayloadSchema,
 } from '../schemas/notification.schema';
 
 export function toNotification(server: ServerNotification): Notification {
@@ -46,19 +44,7 @@ export function toNotificationListResult(
 ): NotificationListResult {
   return {
     notifications: server.notifications.map(toNotification),
-    unreadCount: server.unreadCount,
     hasMore: server.hasMore,
     nextCursor: server.nextCursor,
   };
-}
-
-export type PushNotificationPayloadResult =
-  | { success: true; payload: PushNotificationPayload }
-  | { success: false; error: Error };
-
-export function toPushNotificationPayload(data: unknown): PushNotificationPayloadResult {
-  const parsed = pushNotificationPayloadSchema.safeParse(data);
-  return parsed.success
-    ? { success: true, payload: parsed.data }
-    : { success: false, error: parsed.error };
 }

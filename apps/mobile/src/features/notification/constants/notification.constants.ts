@@ -7,6 +7,9 @@ export const NOTIFICATION_ENTRY_HOLD_MAX_MS = 3000;
  */
 export const NOTIFICATION_READ_BUDGET_MS = 800;
 
+/** 서버가 마케팅 푸시에 싣는 categoryId. 앱의 푸시 카테고리 등록이 같은 값을 쓴다 */
+export const MARKETING_CATEGORY_ID = 'MARKETING';
+
 /** 마케팅 푸시의 수신 거부 버튼. 서버 categoryId MARKETING과 앱 카테고리 등록이 함께 쓴다 */
 export const MARKETING_OPT_OUT_ACTION = 'MARKETING_OPT_OUT';
 

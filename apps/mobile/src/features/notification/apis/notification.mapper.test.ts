@@ -1,10 +1,7 @@
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
+import { pushNotificationPayloadSchema } from '../schemas/notification.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
-import {
-  toNotification,
-  toNotificationListResult,
-  toPushNotificationPayload,
-} from './notification.mapper';
+import { toNotification, toNotificationListResult } from './notification.mapper';
 
 beforeEach(() => {
   jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
@@ -120,7 +117,6 @@ describe('toNotificationListResult', () => {
     // Then
     expect(result.notifications).toHaveLength(2);
     expect(result.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
-    expect(result.unreadCount).toBe(1);
     expect(result.hasMore).toBe(false);
     expect(result.nextCursor).toBeNull();
   });
@@ -129,7 +125,6 @@ describe('toNotificationListResult', () => {
     // Given
     const dto = createNotificationListResponseDto({
       notifications: [],
-      unreadCount: 0,
     });
 
     // When
@@ -137,11 +132,10 @@ describe('toNotificationListResult', () => {
 
     // Then
     expect(result.notifications).toEqual([]);
-    expect(result.unreadCount).toBe(0);
   });
 });
 
-describe('toPushNotificationPayload', () => {
+describe('pushNotificationPayloadSchema', () => {
   const validData = {
     notificationId: 7,
     type: 'NUDGE_RECEIVED',
@@ -154,12 +148,12 @@ describe('toPushNotificationPayload', () => {
   it('계약에 맞는 data는 앱 모델로 읽고 모르는 키는 버린다', () => {
     // Given
     // When
-    const result = toPushNotificationPayload(validData);
+    const result = pushNotificationPayloadSchema.safeParse(validData);
 
     // Then
     expect(result).toEqual({
       success: true,
-      payload: {
+      data: {
         notificationId: 7,
         type: 'NUDGE_RECEIVED',
         action: { type: 'DEEP_LINK' },
@@ -174,7 +168,7 @@ describe('toPushNotificationPayload', () => {
     (data) => {
       // Given
       // When
-      const result = toPushNotificationPayload(data);
+      const result = pushNotificationPayloadSchema.safeParse(data);
 
       // Then
       expect(result.success).toBe(false);
@@ -194,14 +188,14 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
     };
 
     // When
-    const result = toPushNotificationPayload(data);
+    const result = pushNotificationPayloadSchema.safeParse(data);
 
     // Then
     if (!result.success) {
       throw new Error('Expected push payload');
     }
     expect(
-      resolveNotificationDestination(result.payload, {
+      resolveNotificationDestination(result.data, {
         today: '2026-11-05',
         windowSizeClass: 'compact',
       }),
@@ -234,58 +228,64 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
   });
 });
 
-describe('toPushNotificationPayload', () => {
+describe('pushNotificationPayloadSchema', () => {
   const BASE = { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'DEEP_LINK' } };
 
   it('navigation을 앱 모델로 넘긴다', () => {
     // When
-    const result = toPushNotificationPayload({ ...BASE, navigation: { kind: 'FRIEND_REQUESTS' } });
+    const result = pushNotificationPayloadSchema.safeParse({
+      ...BASE,
+      navigation: { kind: 'FRIEND_REQUESTS' },
+    });
 
     // Then
     expect(result).toMatchObject({
       success: true,
-      payload: { navigation: { kind: 'FRIEND_REQUESTS' } },
+      data: { navigation: { kind: 'FRIEND_REQUESTS' } },
     });
   });
 
   it('모르는 타입은 그 필드만 버린다', () => {
     // When
-    const result = toPushNotificationPayload({ ...BASE, type: 'NEW_KIND' });
+    const result = pushNotificationPayloadSchema.safeParse({ ...BASE, type: 'NEW_KIND' });
 
     // Then
-    expect(result).toMatchObject({ success: true, payload: { type: null, notificationId: 7 } });
+    expect(result).toMatchObject({ success: true, data: { type: null, notificationId: 7 } });
   });
 
   it('서버의 새 kind나 틀린 모양의 navigation은 버려 구 필드로 간다', () => {
     // When
-    const newKind = toPushNotificationPayload({ ...BASE, navigation: { kind: 'NEW_SCREEN' } });
-    const wrongShape = toPushNotificationPayload({
+    const newKind = pushNotificationPayloadSchema.safeParse({
+      ...BASE,
+      navigation: { kind: 'NEW_SCREEN' },
+    });
+    const wrongShape = pushNotificationPayloadSchema.safeParse({
       ...BASE,
       navigation: { kind: 'TODO', todoId: 'x' },
     });
 
     // Then
-    expect(newKind).toMatchObject({ success: true, payload: { type: 'FOLLOW_NEW' } });
-    expect(newKind.success && newKind.payload.navigation).toBeUndefined();
-    expect(wrongShape.success && wrongShape.payload.navigation).toBeUndefined();
+    expect(newKind).toMatchObject({ success: true, data: { type: 'FOLLOW_NEW' } });
+    expect(newKind.success && newKind.data.navigation).toBeUndefined();
+    expect(wrongShape.success && wrongShape.data.navigation).toBeUndefined();
   });
 
   it('읽음 ID와 액션이 깨져도 탭은 동작한다', () => {
     // When
-    const result = toPushNotificationPayload({ type: 'FOLLOW_NEW' });
+    const result = pushNotificationPayloadSchema.safeParse({ type: 'FOLLOW_NEW' });
 
     // Then
     expect(result).toMatchObject({
       success: true,
-      payload: { notificationId: 0, action: { type: 'DEEP_LINK' } },
+      data: { notificationId: 0, action: { type: 'DEEP_LINK' } },
     });
   });
 
   it('dispatchId는 앱 모델에 넣지 않는다', () => {
     // When
-    const result = toPushNotificationPayload({ ...BASE, dispatchId: 3 });
+    const result = pushNotificationPayloadSchema.safeParse({ ...BASE, dispatchId: 3 });
 
     // Then
-    expect(result.success && 'dispatchId' in result.payload).toBe(false);
+    expect(result.success && 'dispatchId' in result.data).toBe(false);
   });
 });

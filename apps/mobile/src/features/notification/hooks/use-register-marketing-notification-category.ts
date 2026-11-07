@@ -1,23 +1,27 @@
 import { useLogger, usePushNotification } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
-import { i18n } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import { useEffect } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
+import {
+  MARKETING_CATEGORY_ID,
+  MARKETING_OPT_OUT_ACTION,
+} from '../constants/notification.constants';
 
 export function useRegisterMarketingNotificationCategory() {
   const logger = useLogger();
   const gateway = usePushNotification();
+  const { t } = useTranslation('notification');
 
   useEffect(() => {
     gateway
       .setCategory({
-        identifier: 'MARKETING',
+        identifier: MARKETING_CATEGORY_ID,
         actions: [
           {
             identifier: MARKETING_OPT_OUT_ACTION,
-            title: i18n.t('notification:actions.marketingOptOut'),
+            title: t('actions.marketingOptOut'),
             opensAppToForeground: true,
           },
         ],
@@ -27,5 +31,5 @@ export function useRegisterMarketingNotificationCategory() {
           error: getErrorMessage(error),
         }),
       );
-  }, [gateway, logger]);
+  }, [gateway, logger, t]);
 }

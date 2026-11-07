@@ -5,10 +5,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { toPushNotificationPayload } from '../apis/notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { NotificationType } from '../schemas/notification.schema';
+import {
+  type NotificationType,
+  pushNotificationPayloadSchema,
+} from '../schemas/notification.schema';
+
+const FOREGROUND_SYNC_DELAY_MS = 1000;
 
 interface UseForegroundNotificationSyncOptions {
   isAuthenticated: boolean;
@@ -23,24 +27,37 @@ export function useForegroundNotificationSync({
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
   const logger = useLogger();
-  const syncNotification = useMemo(
-    () =>
-      debounce((notification?: ReceivedPushNotification) => {
-        const tasks: Promise<unknown>[] = [
-          queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
-          notificationService.syncBadgeCount(),
-        ];
-        const result = toPushNotificationPayload(notification?.data);
-        if (result.success && result.payload.type != null) {
-          tasks.push(invalidateByType(result.payload.type));
-        }
+  const syncNotification = useMemo(() => {
+    // 마지막 알림만 남기면 1초 안에 온 다른 타입의 화면이 옛 값으로 남으므로 받은 타입을 모은다
+    const pendingTypes = new Set<NotificationType>();
+    const flush = debounce(() => {
+      const types = [...pendingTypes];
+      pendingTypes.clear();
+      const tasks: Promise<unknown>[] = [
+        queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
+        notificationService.syncBadgeCount(),
+        ...types.map((type) => invalidateByType(type)),
+      ];
 
-        Promise.all(tasks).catch((error) =>
-          logger.error(NOTIFICATION_LOG_EVENT.FOREGROUND_HANDLER_FAILED, toError(error)),
-        );
-      }, 1000),
-    [invalidateByType, logger, notificationService, queryClient],
-  );
+      Promise.all(tasks).catch((error) =>
+        logger.error(NOTIFICATION_LOG_EVENT.FOREGROUND_HANDLER_FAILED, toError(error)),
+      );
+    }, FOREGROUND_SYNC_DELAY_MS);
+
+    return {
+      schedule: (notification?: ReceivedPushNotification) => {
+        const payload = pushNotificationPayloadSchema.safeParse(notification?.data);
+        if (payload.success && payload.data.type != null) {
+          pendingTypes.add(payload.data.type);
+        }
+        flush();
+      },
+      cancel: () => {
+        pendingTypes.clear();
+        flush.cancel();
+      },
+    };
+  }, [invalidateByType, logger, notificationService, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -54,7 +71,7 @@ export function useForegroundNotificationSync({
         return;
       }
 
-      syncNotification(notification);
+      syncNotification.schedule(notification);
     },
     [isAuthenticated, syncNotification],
   );

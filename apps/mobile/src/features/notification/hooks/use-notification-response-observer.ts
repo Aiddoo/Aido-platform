@@ -24,12 +24,14 @@ import {
 import { AppState } from 'react-native';
 
 import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
-import { toPushNotificationPayload } from '../apis/notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { NotificationPolicy } from '../domains/notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
-import type { PendingNotificationResponse } from '../schemas/notification.schema';
+import {
+  type PendingNotificationResponse,
+  pushNotificationPayloadSchema,
+} from '../schemas/notification.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
@@ -63,7 +65,7 @@ export function useNotificationResponseObserver(): void {
 
   useLayoutEffect(() => {
     const receive = (response: PushNotificationResponse) => {
-      const parsed = toPushNotificationPayload(response.data);
+      const parsed = pushNotificationPayloadSchema.safeParse(response.data);
       if (!parsed.success) {
         logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, {
           error: getErrorMessage(parsed.error),
@@ -73,7 +75,7 @@ export function useNotificationResponseObserver(): void {
       store.receive({
         id: response.id,
         actionIdentifier: response.actionIdentifier,
-        data: parsed.payload,
+        data: parsed.data,
         receivedAt: Date.now(),
       });
     };
@@ -267,7 +269,7 @@ function useOpenReadyEntry(
           error: getErrorMessage(error),
         });
       }
-      if (data.notificationId > 0) {
+      if (NotificationPolicy.hasServerRecord(data.notificationId)) {
         recordOpened(data.notificationId);
       }
     } catch (error) {

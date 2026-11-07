@@ -12,6 +12,7 @@ import { identity, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
 import { isForeignNotificationError } from '../domains/notification.error';
+import { NotificationPolicy } from '../domains/notification.model';
 import type { GetNotificationsQuery, NotificationOwnership } from '../schemas/notification.schema';
 import { toNotificationListResult } from './notification.mapper';
 
@@ -88,10 +89,10 @@ export class NotificationService {
 
   /**
    * 눌린 푸시를 읽음 처리하며 내 알림인지 본다. 예산 안에 답이 없어도 항상 끝난다.
-   * 0은 서버 알림 기록이 없는 푸시라 묻지 않는다.
+   * 서버 알림 기록이 없는 푸시는 묻지 않는다.
    */
   markAsReadAndCheckOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
-    if (notificationId === 0) {
+    if (!NotificationPolicy.hasServerRecord(notificationId)) {
       return 'ok';
     }
     try {

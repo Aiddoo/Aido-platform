@@ -10,12 +10,13 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import type { NotificationType } from '../schemas/notification.schema';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
 const UNREAD_COUNT = 5;
 
 async function setup(isAuthenticated: boolean) {
-  const invalidateByType = jest.fn(async () => {});
+  const invalidateByType = jest.fn(async (_type: NotificationType) => {});
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue({ ok: true, value: { unreadCount: UNREAD_COUNT } });
   const pushNotification = createPushNotificationGatewayStub();
@@ -70,6 +71,22 @@ describe('useForegroundNotificationSync', () => {
 
     // Then
     expect(invalidateByType).toHaveBeenCalledWith('FOLLOW_NEW');
+  });
+
+  it('1초 안에 타입이 다른 알림이 둘 오면 두 타입의 화면을 모두 다시 받는다', async () => {
+    // Given
+    const { result, invalidateByType } = await setup(true);
+
+    // When
+    result.current({ data: { notificationId: 1, type: 'FOLLOW_NEW' } });
+    result.current({ data: { notificationId: 2, type: 'CHEER_RECEIVED' } });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(invalidateByType.mock.calls.map(([type]) => type).sort()).toEqual([
+      'CHEER_RECEIVED',
+      'FOLLOW_NEW',
+    ]);
   });
 
   it('data가 계약에 맞지 않아도 목록과 배지는 맞춘다', async () => {
