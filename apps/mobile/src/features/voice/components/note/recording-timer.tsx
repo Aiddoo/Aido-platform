@@ -84,7 +84,7 @@ export function RecordingTimer({
         size="h1"
         weight="bold"
         align="center"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={timeMinimumFontScale}
         className="tabular-nums"
@@ -97,7 +97,7 @@ export function RecordingTimer({
           size="b4"
           shade={6}
           align="center"
-          maxLines={1}
+          numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={labelMinimumFontScale}
           className="tabular-nums"

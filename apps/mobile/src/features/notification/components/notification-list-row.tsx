@@ -47,7 +47,7 @@ export function NotificationListRow({
                   tone={isUnread ? 'brand' : 'neutral'}
                   shade={isUnread ? undefined : 5}
                   weight="medium"
-                  maxLines={1}
+                  numberOfLines={1}
                   className="shrink"
                 >
                   {label}
@@ -62,7 +62,7 @@ export function NotificationListRow({
                 top={title}
                 topProps={{ weight: isUnread ? 'semibold' : 'medium' }}
                 bottom={body}
-                bottomProps={{ size: 'b3', shade: isUnread ? 6 : 5, maxLines: 2 }}
+                bottomProps={{ size: 'b3', shade: isUnread ? 6 : 5, numberOfLines: 2 }}
               />
             </VStack>
           }

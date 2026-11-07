@@ -82,7 +82,7 @@ TodoDetailSummary.Owner = function Owner() {
   return (
     <HStack gap={6} align="center" testID="todo-detail-owner">
       <UserAvatar alt={ownerName} className="size-5" profileImage={detail.owner.profileImage} />
-      <Text size="e1" shade={6} maxLines={1} className="shrink">
+      <Text size="e1" shade={6} numberOfLines={1} className="shrink">
         {ownerName}
       </Text>
     </HStack>

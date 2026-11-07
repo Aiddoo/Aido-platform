@@ -23,6 +23,7 @@ export function useFetchNextPage({
 }: UseFetchNextPageParams) {
   const isRequestingRef = useRef(false);
   const previous = useRef({ isFetchingNextPage, isFetchNextPageError });
+  const canFetchNextPage = hasNextPage && !isFetchingNextPage;
 
   const request = () => {
     if (isRequestingRef.current) {
@@ -42,19 +43,19 @@ export function useFetchNextPage({
 
     // 재시도가 끝나며 풀린 오류는 화면이 이미 끝에 있어 FlashList가 다음 페이지를 이어서 부른다
     const isRecoveredByRefresh = wasError && !isFetchNextPageError && !wasFetching;
-    if (isRecoveredByRefresh && hasNextPage && !isFetchingNextPage) {
+    if (isRecoveredByRefresh && canFetchNextPage) {
       request();
     }
   });
 
   const fetchOnEndReached = () => {
-    if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) {
+    if (canFetchNextPage && !isFetchNextPageError) {
       request();
     }
   };
 
   const retry = () => {
-    if (hasNextPage && !isFetchingNextPage) {
+    if (canFetchNextPage) {
       request();
     }
   };

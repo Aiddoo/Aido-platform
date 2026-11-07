@@ -1,7 +1,7 @@
 import { Children, createContext, isValidElement, use } from 'react';
 
 import { Flex } from '../flex/flex';
-import { gridStartColumns } from './grid-layout';
+import { getGridStartColumns } from './grid-layout';
 import type { GridProps } from './grid.types';
 
 const GridContext = createContext(1);
@@ -34,7 +34,7 @@ export function Grid({
   const resolvedColumnGap = columnGap ?? gap ?? 0;
   const resolvedRowGap = rowGap ?? gap;
   const cells = Children.toArray(children);
-  const startColumns = gridStartColumns(cells.map(getColSpan), columns);
+  const startColumns = getGridStartColumns(cells.map(getColSpan), columns);
 
   return (
     <GridContext.Provider value={columns}>

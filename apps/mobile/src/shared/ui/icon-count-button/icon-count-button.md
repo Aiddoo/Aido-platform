@@ -5,8 +5,8 @@
 ## 구조
 
 ```
-IconCountButton/
-├── IconCountButton.tsx   # 컴포넌트 + 여백 상수
+icon-count-button/
+├── icon-count-button.tsx   # 컴포넌트 + 여백 상수
 └── index.ts
 ```
 

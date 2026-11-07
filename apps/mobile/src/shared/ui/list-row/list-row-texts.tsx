@@ -20,39 +20,20 @@ interface ListRowTexts2RowTypeA extends ListRowTexts2RowType {
   type: '2RowTypeA';
 }
 
-interface ListRowTexts3RowType extends ListRowTexts2RowType {
-  middle: ReactNode;
-  middleProps?: Omit<TextProps, 'children'>;
-}
-
-interface ListRowTexts3RowTypeA extends ListRowTexts3RowType {
-  type: '3RowTypeA';
-}
-
-export type ListRowTextsProps =
-  | ListRowTexts1RowTypeA
-  | ListRowTexts2RowTypeA
-  | ListRowTexts3RowTypeA;
+export type ListRowTextsProps = ListRowTexts1RowTypeA | ListRowTexts2RowTypeA;
 
 export function ListRowTexts(props: ListRowTextsProps) {
-  const { type, top, topProps } = props;
+  const { top, topProps } = props;
 
   return (
     <VStack gap={2} align="start">
       <Text size="b2" {...topProps}>
         {top}
       </Text>
-      {(type === '2RowTypeA' || type === '3RowTypeA') && (
-        <>
-          {type === '3RowTypeA' && (
-            <Text size="b3" shade={6} {...props.middleProps}>
-              {props.middle}
-            </Text>
-          )}
-          <Text size="e1" shade={5} {...props.bottomProps}>
-            {props.bottom}
-          </Text>
-        </>
+      {props.type === '2RowTypeA' && (
+        <Text size="e1" shade={5} {...props.bottomProps}>
+          {props.bottom}
+        </Text>
       )}
     </VStack>
   );
@@ -61,21 +42,14 @@ export function ListRowTexts(props: ListRowTextsProps) {
 interface ListRowTextsLoadingProps {
   type: ListRowTextsProps['type'];
   topProps?: TextSkeletonProps;
-  middleProps?: TextSkeletonProps;
   bottomProps?: TextSkeletonProps;
 }
 
-ListRowTexts.Loading = function Loading({
-  type,
-  topProps,
-  middleProps,
-  bottomProps,
-}: ListRowTextsLoadingProps) {
+ListRowTexts.Loading = function Loading({ type, topProps, bottomProps }: ListRowTextsLoadingProps) {
   return (
     <VStack gap={2} align="start">
       <TextSkeleton size="b2" className="w-24" {...topProps} />
-      {type === '3RowTypeA' && <TextSkeleton size="b3" className="w-32" {...middleProps} />}
-      {type !== '1RowTypeA' && <TextSkeleton size="e1" className="w-16" {...bottomProps} />}
+      {type === '2RowTypeA' && <TextSkeleton size="e1" className="w-16" {...bottomProps} />}
     </VStack>
   );
 };

@@ -86,7 +86,7 @@ export {
   SearchIcon,
   SendIcon,
   ShareIcon,
-  type StyledIconType,
+  type StyledIcon,
   StopIcon,
   SunIcon,
   TrashIcon,

@@ -236,7 +236,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
       <StyledSafeAreaView edges={['left', 'right']}>
         <HStack align="center" gap={8} className="px-4">
           <Box className="flex-1">
-            <H3 maxLines={1}>{t('tab.title')}</H3>
+            <H3 numberOfLines={1}>{t('tab.title')}</H3>
           </Box>
           <VoiceNoteStartButton />
           <QueryErrorBoundary fallback={MemoCreateButton.Error}>

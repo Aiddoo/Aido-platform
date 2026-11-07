@@ -192,7 +192,7 @@ TodoCommentReplies.Toggle = function Toggle({
         accessibilityLabel={text}
         onPress={onPress}
       >
-        <Text size="e1" shade={7} weight="medium" maxLines={1}>
+        <Text size="e1" shade={7} weight="medium" numberOfLines={1}>
           {text}
         </Text>
       </PressableFeedback>

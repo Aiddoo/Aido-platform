@@ -38,9 +38,12 @@ import { useResolveClassNames } from 'uniwind';
 
 import {
   HANDLE_HEIGHT,
+  SHARED_SHEET_STYLES,
   SHEET_ANIMATION_DURATION,
   SHEET_CONTENT_PADDING,
+  SHEET_FOOTER_PADDING_TOP,
   SHEET_INDEX,
+  SHEET_OVERLAY_OPACITY,
   SHEET_RADIUS,
 } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
@@ -101,21 +104,21 @@ export function KeyboardBottomSheet({
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
-  const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
+  const maxDynamicContentSize = getKeyboardSheetMaxHeight(windowHeight, topInset);
   const bottomPadding = getContentBottomPadding(insets.bottom);
   // 키보드 위로 시트가 끝까지 올라가 내용이 잘리는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄여 입력 칸이 들어갈
   // 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
   const isKeyboardShown = useSharedValue(false);
   const footerPaddingStyle = useAnimatedStyle(() => ({
     paddingBottom:
-      isKeyboardShown.get() && animatedPosition.get() <= topInset + 1
+      isKeyboardShown.get() && animatedPosition.get() <= topInset + SHEET_AT_TOP_TOLERANCE
         ? FOOTER_KEYBOARD_GAP
         : bottomPadding,
   }));
   // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다.
   // 키보드가 오르내릴 때 내용 높이가 바뀌어 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다.
   const [footerContentHeight, setFooterContentHeight] = useState(0);
-  const footerChromeHeight = FOOTER_PADDING_TOP + footerContentHeight;
+  const footerChromeHeight = SHEET_FOOTER_PADDING_TOP + footerContentHeight;
   const { scrollViewRef, handleScrollBeginDrag } = useScrollFocusedInputIntoView({
     isOpen,
     animatedPosition,
@@ -135,7 +138,7 @@ export function KeyboardBottomSheet({
       if (isClosingRef.current) {
         sheetRef.current?.forceClose();
       }
-    }, 500);
+    }, FORCE_CLOSE_RETRY_DELAY_MS);
   }, []);
 
   // 핸들러가 렌더마다 바뀌어도 backdrop 제스처가 다시 만들어지면 backdrop이 다시 마운트되어 누르던 탭을 놓친다
@@ -298,7 +301,7 @@ export function KeyboardBottomSheet({
             {...props}
             disappearsOnIndex={SHEET_INDEX.CLOSED}
             appearsOnIndex={SHEET_INDEX.OPEN}
-            opacity={0.5}
+            opacity={SHEET_OVERLAY_OPACITY}
             pressBehavior="none"
           />
         </View>
@@ -328,7 +331,7 @@ export function KeyboardBottomSheet({
     const nextHeight = Math.round(height);
     const prevHeight = lastContentHeightRef.current;
 
-    if (Math.abs(nextHeight - prevHeight) < 2) {
+    if (Math.abs(nextHeight - prevHeight) < MIN_CONTENT_HEIGHT_CHANGE) {
       return;
     }
 
@@ -359,7 +362,7 @@ export function KeyboardBottomSheet({
               style={{ marginLeft: margins.left, marginRight: margins.right }}
               backgroundComponent={DecoratedSheetBackground}
               backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
-              handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
+              handleIndicatorStyle={[SHARED_SHEET_STYLES.handleIndicator, handleIndicatorStyle]}
               backdropComponent={renderBackdrop}
               onAnimate={handleAnimate}
               onChange={handleSheetChange}
@@ -372,7 +375,11 @@ export function KeyboardBottomSheet({
                 onContentSizeChange={handleContentSizeChange}
                 contentContainerStyle={[
                   styles.content,
-                  { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
+                  {
+                    paddingBottom:
+                      bottomPadding +
+                      (footer == null ? 0 : footerChromeHeight + FOOTER_CONTENT_GAP),
+                  },
                 ]}
                 keyboardShouldPersistTaps="always"
                 showsVerticalScrollIndicator={false}
@@ -394,15 +401,20 @@ export function useKeyboardSheetBodyMaxHeight(): number {
   const { height: windowHeight } = useWindowDimensions();
 
   // gorhom의 maxDynamicContentSize는 손잡이까지 포함한 시트 높이라, 내용 높이에서는 손잡이를 한 번 더 뺀다
-  const sheetMaxHeight = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
-
   return (
-    sheetMaxHeight - HANDLE_HEIGHT - CONTENT_PADDING_TOP - getContentBottomPadding(insets.bottom)
+    getKeyboardSheetMaxHeight(windowHeight, topInset) -
+    HANDLE_HEIGHT -
+    CONTENT_PADDING_TOP -
+    getContentBottomPadding(insets.bottom)
   );
 }
 
+function getKeyboardSheetMaxHeight(windowHeight: number, topInset: number) {
+  return getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
+}
+
 function getContentBottomPadding(bottomInset: number) {
-  return (bottomInset || 20) + 4;
+  return (bottomInset || NO_SAFE_AREA_BOTTOM_PADDING) + SAFE_AREA_CONTENT_GAP;
 }
 
 const SheetDecorationContext = createContext<ReactNode>(null);
@@ -433,19 +445,21 @@ function DecoratedSheetBackground({ style }: BottomSheetBackgroundProps) {
 }
 
 const CONTENT_PADDING_TOP = 20;
-const FOOTER_PADDING_TOP = 12;
+const NO_SAFE_AREA_BOTTOM_PADDING = 20;
+const SAFE_AREA_CONTENT_GAP = 4;
+const FOOTER_CONTENT_GAP = 4;
 const FOOTER_KEYBOARD_GAP = 8;
+const FORCE_CLOSE_RETRY_DELAY_MS = 500;
+const MIN_CONTENT_HEIGHT_CHANGE = 2;
+const SHEET_AT_TOP_TOLERANCE = 1;
 
 const styles = StyleSheet.create({
-  handleIndicator: {
-    width: 36,
-  },
   content: {
     paddingTop: CONTENT_PADDING_TOP,
     paddingHorizontal: SHEET_CONTENT_PADDING,
   },
   footer: {
-    paddingTop: FOOTER_PADDING_TOP,
-    paddingHorizontal: 20,
+    paddingTop: SHEET_FOOTER_PADDING_TOP,
+    paddingHorizontal: SHEET_CONTENT_PADDING,
   },
 });

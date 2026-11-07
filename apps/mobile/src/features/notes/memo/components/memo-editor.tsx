@@ -553,7 +553,7 @@ function MemoMoreMenu({
         >
           <MenuActionItem
             testID="memo-ai-review"
-            icon={AiIcon}
+            Icon={AiIcon}
             title={t('memo:detail.aiParse')}
             description={aiQuota}
             isDisabled={aiParse.isDisabled}
@@ -561,13 +561,13 @@ function MemoMoreMenu({
           />
           <MenuActionItem
             testID="memo-convert-to-todo"
-            icon={CheckmarkIcon}
+            Icon={CheckmarkIcon}
             title={t('memo:detail.convertToTodo')}
             isDisabled={convertToTodo.isDisabled}
             onPress={convertToTodo.handlePress}
           />
           <MenuActionItem
-            icon={TrashIcon}
+            Icon={TrashIcon}
             title={t('common:actions.delete')}
             variant="danger"
             onPress={onDelete}

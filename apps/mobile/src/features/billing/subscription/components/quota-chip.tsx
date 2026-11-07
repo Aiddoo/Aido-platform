@@ -23,13 +23,19 @@ export function QuotaChip({
 
   return type === 'remaining' ? (
     <Chip size={size} variant={variant} color="accent" {...chipProps}>
-      <Text size="e1" weight="semibold" tone="brand" maxLines={1} className="shrink tabular-nums">
+      <Text
+        size="e1"
+        weight="semibold"
+        tone="brand"
+        numberOfLines={1}
+        className="shrink tabular-nums"
+      >
         {label}
       </Text>
     </Chip>
   ) : (
     <Chip size={size} variant={variant} color="default" {...chipProps}>
-      <Text size="e1" weight="semibold" shade={6} maxLines={1} className="shrink">
+      <Text size="e1" weight="semibold" shade={6} numberOfLines={1} className="shrink">
         {label}
       </Text>
     </Chip>

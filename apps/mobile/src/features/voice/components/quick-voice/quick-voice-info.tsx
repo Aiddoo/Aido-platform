@@ -37,7 +37,7 @@ export function QuickVoiceInfo() {
                 height={fontScaledSize(14)}
                 colorClassName="text-main"
               />
-              <Text size="e2" weight="medium" shade={6} maxLines={1} className="shrink">
+              <Text size="e2" weight="medium" shade={6} numberOfLines={1} className="shrink">
                 {t('info.label')}
               </Text>
               <InfoIcon

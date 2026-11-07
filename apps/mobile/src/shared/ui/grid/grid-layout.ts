@@ -21,7 +21,7 @@ function clampSpan(colSpan: number, columns: number) {
 }
 
 /** 순서대로 놓인 칸들의 시작 열. 남은 열에 들어가지 않으면 다음 줄 첫 열에서 시작한다 */
-export function gridStartColumns(colSpans: readonly number[], columns: number): number[] {
+export function getGridStartColumns(colSpans: readonly number[], columns: number): number[] {
   let cursor = 0;
 
   return colSpans.map((colSpan) => {
@@ -35,7 +35,7 @@ export function gridStartColumns(colSpans: readonly number[], columns: number): 
   });
 }
 
-export function gridItemLayout({
+export function getGridItemLayout({
   columns,
   columnGap,
   startColumn,

@@ -4,7 +4,7 @@ import { Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { cubicBezier } from 'react-native-reanimated';
 
-import type { StyledIconType } from '../icon';
+import type { StyledIcon } from '../icon';
 import { ListRow } from '../list-row/list-row';
 
 export interface IconRadioItemProps extends Omit<
@@ -12,7 +12,7 @@ export interface IconRadioItemProps extends Omit<
   'children'
 > {
   label: string;
-  Icon?: StyledIconType;
+  Icon?: StyledIcon;
   description?: string;
 }
 
@@ -41,7 +41,7 @@ export function IconRadioItem({ value, label, Icon, description, ...props }: Ico
             <Radio>
               {Icon ? (
                 <Radio.Indicator>
-                  <AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />
+                  <AnimatedIndicatorIcon Icon={Icon} isSelected={isSelected} />
                 </Radio.Indicator>
               ) : (
                 <Radio.Indicator />
@@ -56,22 +56,24 @@ export function IconRadioItem({ value, label, Icon, description, ...props }: Ico
   );
 }
 
-interface AnimatedThumbIconProps {
-  Icon: StyledIconType;
+interface AnimatedIndicatorIconProps {
+  Icon: StyledIcon;
   isSelected: boolean;
 }
 
 // 이전 withTiming의 Easing.out(Easing.quad)와 기본 Easing.inOut(Easing.quad) 곡선이다
 const SCALE_EASING = cubicBezier(0.5, 1, 0.89, 1);
 const OPACITY_EASING = cubicBezier(0.455, 0.03, 0.515, 0.955);
+const UNSELECTED_ICON_SCALE = 1.8;
+const INDICATOR_ICON_SIZE = 14;
 
-function AnimatedThumbIcon({ Icon, isSelected }: AnimatedThumbIconProps) {
+function AnimatedIndicatorIcon({ Icon, isSelected }: AnimatedIndicatorIconProps) {
   const isReduceMotionEnabled = useIsReduceMotionEnabled();
 
   return (
     <Animated.View
       style={{
-        transform: [{ scale: isSelected ? 1 : 1.8 }],
+        transform: [{ scale: isSelected ? 1 : UNSELECTED_ICON_SCALE }],
         opacity: isSelected ? 1 : 0,
         transitionProperty: ['transform', 'opacity'],
         transitionDuration: isReduceMotionEnabled
@@ -80,7 +82,7 @@ function AnimatedThumbIcon({ Icon, isSelected }: AnimatedThumbIconProps) {
         transitionTimingFunction: [SCALE_EASING, OPACITY_EASING],
       }}
     >
-      <Icon colorClassName="text-white" width={14} height={14} />
+      <Icon colorClassName="text-white" width={INDICATOR_ICON_SIZE} height={INDICATOR_ICON_SIZE} />
     </Animated.View>
   );
 }

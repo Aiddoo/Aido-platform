@@ -79,7 +79,7 @@ import { TextButton } from '@src/shared/ui';
 ## 스타일
 
 - 텍스트 색상: `shade={6}` (회색 계열)
-- 터치 피드백: HeroUI PressableFeedback 사용
+- 터치 피드백: heroui `LinkButton`의 크기 변화
 
 ## 사용 예시
 
@@ -87,13 +87,13 @@ import { TextButton } from '@src/shared/ui';
 // 로그인 화면 하단
 <HStack justify="center" gap={8}>
   <TextButton onPress={() => {}}>회원가입</TextButton>
-  <Divider orientation="vertical" />
+  <Separator orientation="vertical" />
   <TextButton onPress={() => {}}>이메일로 로그인</TextButton>
 </HStack>
 
 // 리스트 아이템
 <ListRow
-  contents={<ListRow.Texts top="설정" />}
+  contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
   right={<TextButton variant="arrow">변경</TextButton>}
 />
 ```

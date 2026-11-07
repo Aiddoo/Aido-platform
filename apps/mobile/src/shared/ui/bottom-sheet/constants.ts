@@ -20,6 +20,8 @@ export const SHEET_MAX_WIDTH = 560;
 export const SHEET_DETACHED_MARGIN = 16;
 export const SHEET_RADIUS = 32;
 export const SHEET_CONTENT_PADDING = 20;
+export const SHEET_FOOTER_PADDING_TOP = 12;
+export const SHEET_OVERLAY_OPACITY = 0.5;
 
 export const SHARED_SHEET_STYLES = StyleSheet.create({
   detached: {

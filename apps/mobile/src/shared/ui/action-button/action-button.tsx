@@ -2,7 +2,6 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import type { PressableProps } from 'react-native';
 
 import type { StyledIcon } from '../icon/create-styled-icon';
 import { Text } from '../text';
@@ -10,14 +9,10 @@ import { Text } from '../text';
 const ICON_SIZE = 16;
 const ICON_FONT_SCALE_RATIO = 0.3;
 
-interface ActionButtonProps extends Omit<
-  ComponentProps<typeof PressableFeedback>,
-  'children' | 'onPress'
-> {
+interface ActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   icon: ReactNode;
   label: string;
   isActive?: boolean;
-  onPress?: PressableProps['onPress'];
 }
 
 export function ActionButton({
@@ -39,11 +34,7 @@ export function ActionButton({
       {...props}
     >
       {icon}
-      <Text
-        size="e1"
-        weight="medium"
-        {...(isActive ? { tone: 'brand' as const } : { shade: 6 as const })}
-      >
+      <Text size="e1" weight="medium" tone={isActive ? 'brand' : 'neutral'} shade={6}>
         {label}
       </Text>
     </PressableFeedback>
@@ -67,5 +58,3 @@ ActionButton.Icon = function Icon({
 
   return <IconComponent width={size} height={size} colorClassName={colorClassName} />;
 };
-
-export type { ActionButtonProps };

@@ -6,7 +6,7 @@ import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/applicat
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
-import { buildSupportMailUrl } from '@src/shared/utils/support-mail';
+import { createSupportMailUrl } from '@src/shared/utils/support-mail';
 import { router } from 'expo-router';
 
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
@@ -38,7 +38,7 @@ export function openSupportMail() {
     appVersion: expoNativeApplicationMetadataGateway.getInstallation()?.currentVersion ?? null,
     occurredAt: getNowInstant(),
   });
-  const url = buildSupportMailUrl({
+  const url = createSupportMailUrl({
     subject: t('common:errorBoundary.mailSubject', { code }),
     body: t('common:errorBoundary.mailBody', { code }),
   });

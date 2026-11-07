@@ -20,6 +20,4 @@ export interface ButtonProps extends Omit<
   display?: ButtonDisplay;
   radius?: ButtonRadius;
   isLoading?: boolean;
-  isDisabled?: boolean;
-  className?: string;
 }

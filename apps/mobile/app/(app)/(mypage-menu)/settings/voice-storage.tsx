@@ -157,17 +157,17 @@ VoiceStorageScreen.Row = function Row({
   return (
     <HStack gap={12} align="center" px={16} py={12} testID="voice-storage-row">
       <VStack flex={1} gap={2}>
-        <Text size="b3" weight="medium" maxLines={1}>
+        <Text size="b3" weight="medium" numberOfLines={1}>
           {VoiceNotePolicy.getDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
         </Text>
-        <Text size="e1" shade={6} maxLines={1} className="tabular-nums">
+        <Text size="e1" shade={6} numberOfLines={1} className="tabular-nums">
           {tVoiceNote('result.meta', {
             date: formatDateLabel(note.createdAt, 'monthDay', dateFormatContext),
             duration: formatMediaTime(note.durationMs),
           })}
         </Text>
       </VStack>
-      <Text size="b4" shade={7} maxLines={1} className="tabular-nums">
+      <Text size="b4" shade={7} numberOfLines={1} className="tabular-nums">
         {formatFileSize(bytes, dateFormatContext.locale)}
       </Text>
       <IconButton

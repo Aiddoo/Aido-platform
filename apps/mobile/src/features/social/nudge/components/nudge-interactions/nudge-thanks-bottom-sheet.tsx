@@ -182,7 +182,7 @@ NudgeThanksBottomSheet.Recipient = function Recipient({
   return (
     <HStack align="center" gap={12} py={12}>
       <UserAvatar alt={recipient.name} className="size-10" profileImage={recipient.profileImage} />
-      <Text size="b3" className="shrink" maxLines={2}>
+      <Text size="b3" className="shrink" numberOfLines={2}>
         {recipient.name}
       </Text>
     </HStack>

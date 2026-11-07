@@ -46,12 +46,12 @@ function AdaptivePaneLayout({ primary, secondary, compactPane = 'primary' }: Ada
   const windowSizeClass = useWindowSizeClass();
   const fold = findVerticalFold(useReservedRegions());
   const isCompact = windowSizeClass === 'compact';
-  const showsPrimary = !isCompact || compactPane === 'primary';
-  const showsSecondary = !isCompact || compactPane === 'secondary';
+  const isPrimaryVisible = !isCompact || compactPane === 'primary';
+  const isSecondaryVisible = !isCompact || compactPane === 'secondary';
 
   return (
     <HStack flex={1}>
-      {showsPrimary && (
+      {isPrimaryVisible && (
         <Pane
           slot="primary"
           isSplit={!isCompact}
@@ -70,7 +70,7 @@ function AdaptivePaneLayout({ primary, secondary, compactPane = 'primary' }: Ada
         ) : (
           <Box style={{ width: fold.frame.width }} />
         ))}
-      {showsSecondary && (
+      {isSecondaryVisible && (
         <Pane slot="secondary" isSplit={!isCompact} style={{ flex: 1 }}>
           {secondary}
         </Pane>

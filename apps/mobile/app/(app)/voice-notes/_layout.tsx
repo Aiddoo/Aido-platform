@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 
 export default function VoiceNotesLayout() {
   const { t } = useTranslation('voiceNote');
-  const screenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
+  const screenOptions = useStackScreenOptions({ hasContentBackground: true });
   const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
   // 화면이 뜨기 전에도 닫을 수 있게 레이아웃이 먼저 둔다. 녹음이 시작되면 화면의 툴바가 묻고 닫는 동작으로 덮는다
   const closeToolbar = useStackBackToolbar({

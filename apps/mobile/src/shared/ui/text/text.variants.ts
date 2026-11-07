@@ -1,6 +1,6 @@
 import { tv } from '@src/shared/utils/tv';
 
-import type { TextSize } from './text.types';
+import type { TextShade, TextSize } from './text.types';
 
 export const TEXT_SIZE_CLASSES = {
   display: 'text-display',
@@ -80,7 +80,7 @@ export const textVariants = tv({
   },
 });
 
-export const shadeClasses: Record<number, string> = {
+export const TEXT_SHADE_CLASSES = {
   1: 'text-gray-1',
   2: 'text-gray-2',
   3: 'text-gray-3',
@@ -91,4 +91,4 @@ export const shadeClasses: Record<number, string> = {
   8: 'text-gray-8',
   9: 'text-gray-9',
   10: 'text-gray-10',
-};
+} satisfies Record<TextShade, string>;

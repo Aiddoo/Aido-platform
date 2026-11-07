@@ -43,7 +43,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
       contents={
         <VStack gap={2} className="flex-1">
           <HStack align="center" gap={6}>
-            <Text size="b2" weight="semibold" maxLines={1} className="shrink">
+            <Text size="b2" weight="semibold" numberOfLines={1} className="shrink">
               {displayName}
             </Text>
             <Text size="b4" shade={6} className="tabular-nums tracking-[0.3px]">
@@ -54,7 +54,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
           <Text
             size="b4"
             shade={6}
-            maxLines={2}
+            numberOfLines={2}
             lineBreakStrategyIOS="hangul-word"
             textBreakStrategy="highQuality"
           >
@@ -151,7 +151,7 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
         })}
       >
         <FishIcon width={16} height={10} colorClassName="text-main" />
-        <Text size="e1" weight="bold" tone="brand" maxLines={1} className="tabular-nums">
+        <Text size="e1" weight="bold" tone="brand" numberOfLines={1} className="tabular-nums">
           {t('friendList.chipWaiting', { count: InvitedFriendPolicy.getActiveDaysLeft(friend) })}
         </Text>
       </Box>

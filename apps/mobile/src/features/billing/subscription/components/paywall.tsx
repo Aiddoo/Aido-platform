@@ -2,7 +2,7 @@ import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsin
 import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.webp';
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
-import { legalUrl } from '@src/shared/constants/legal-urls';
+import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,7 +20,7 @@ import {
   MicIcon,
   PersonIcon,
   Spacing,
-  type StyledIconType,
+  type StyledIcon,
   Text,
   VStack,
 } from '@src/shared/ui';
@@ -187,7 +187,7 @@ Paywall.Terms = function Terms() {
         size="e2"
         shade={5}
         underline
-        onPress={() => openUrl(legalUrl('terms', resolvedLanguage))}
+        onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
       >
         {t('paywall.termsLink')}
       </Text>
@@ -196,7 +196,7 @@ Paywall.Terms = function Terms() {
         size="e2"
         shade={5}
         underline
-        onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+        onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
       >
         {t('paywall.privacyLink')}
       </Text>
@@ -229,7 +229,7 @@ function BenefitCard({ title, description, image }: BenefitCardProps) {
 }
 
 interface AdditionalBenefitProps {
-  Icon: StyledIconType;
+  Icon: StyledIcon;
   title: string;
   description: string;
 }

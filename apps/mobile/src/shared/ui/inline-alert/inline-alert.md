@@ -23,7 +23,7 @@ import { Button, InlineAlert } from '@src/shared/ui';
 | ----------- | --------------------------------------------------- | -------------------------------------------------- |
 | title       | `ReactNode`                                         | 제목. 비우면 description만 있는 한 문장 안내다     |
 | description | `string`                                            | 설명                                               |
-| image       | `ReactNode`                                         | 제목 앞 그림. 없으면 `status`에 맞는 기본 표시     |
+| image       | `ReactNode`                                         | 제목 앞 그림. 없으면 기본 표시, `null`이면 안 그림 |
 | action      | `ReactNode`                                         | 설명 아래 행동                                     |
 | onPress     | `() => void`                                        | 닫기 버튼을 뺀 자리 전체가 눌린다                  |
 | pressLabel  | `string`                                            | 눌리는 자리의 스크린 리더 이름                     |

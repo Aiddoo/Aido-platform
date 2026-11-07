@@ -43,6 +43,7 @@ import { Popover, PressableFeedback } from 'heroui-native';
 hint-popover/
 ├── hint-popover.tsx
 ├── hint-popover.md
+├── hint-popover.test.ts
 └── index.ts
 ```
 

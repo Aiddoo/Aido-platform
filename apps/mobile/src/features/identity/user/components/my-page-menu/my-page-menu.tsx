@@ -16,7 +16,7 @@ import {
   PawIcon,
   PersonIcon,
   SettingsListGroup,
-  type StyledIconType,
+  type StyledIcon,
 } from '@src/shared/ui';
 import type { ComponentProps, ReactNode } from 'react';
 
@@ -32,7 +32,7 @@ type MyPageMenuItemProps = Omit<
   'onPress' | 'className' | 'icon' | 'isSelected'
 > & {
   pathname: MyPageMenuPathname;
-  Icon: StyledIconType;
+  Icon: StyledIcon;
 };
 
 function MyPageMenuItem({ pathname, Icon, ...props }: MyPageMenuItemProps) {
@@ -48,7 +48,7 @@ function MyPageMenuItem({ pathname, Icon, ...props }: MyPageMenuItemProps) {
   );
 }
 
-function MyPageMenuIcon({ Icon }: { Icon: StyledIconType }) {
+function MyPageMenuIcon({ Icon }: { Icon: StyledIcon }) {
   const fontScaledSize = useFontScaledSize();
 
   return (

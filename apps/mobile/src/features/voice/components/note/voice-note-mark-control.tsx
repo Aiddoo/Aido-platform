@@ -66,7 +66,7 @@ export function VoiceNoteMarkControl({
                   size="e1"
                   tone={isMarked ? 'brand' : 'neutral'}
                   shade={isMarked ? undefined : 7}
-                  maxLines={1}
+                  numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.8}
                   className="shrink tabular-nums"

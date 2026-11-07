@@ -1,4 +1,4 @@
-import { gridItemLayout, gridStartColumns } from './grid-layout';
+import { getGridItemLayout, getGridStartColumns } from './grid-layout';
 
 /** 컨테이너 폭 W에서 각 칸의 [안쪽 시작, 안쪽 끝]을 구한다 */
 function contentRanges(
@@ -7,21 +7,21 @@ function contentRanges(
   columnGap: number,
   colSpans: number[],
 ): [number, number][] {
-  const starts = gridStartColumns(colSpans, columns);
+  const starts = getGridStartColumns(colSpans, columns);
 
   return colSpans.map((colSpan, index) => {
     const startColumn = starts[index] ?? 0;
-    const layout = gridItemLayout({ columns, columnGap, startColumn, colSpan });
+    const layout = getGridItemLayout({ columns, columnGap, startColumn, colSpan });
     const outerLeft = (width * startColumn) / columns;
     const outerWidth = (width * Number.parseFloat(layout.width)) / 100;
     return [outerLeft + layout.paddingLeft, outerLeft + outerWidth - layout.paddingRight];
   });
 }
 
-describe('gridStartColumns', () => {
+describe('getGridStartColumns', () => {
   it('열 수만큼 채우면 다음 줄 첫 열로 돌아간다', () => {
     // When
-    const starts = gridStartColumns([1, 1, 1, 1, 1], 2);
+    const starts = getGridStartColumns([1, 1, 1, 1, 1], 2);
 
     // Then
     expect(starts).toEqual([0, 1, 0, 1, 0]);
@@ -29,7 +29,7 @@ describe('gridStartColumns', () => {
 
   it('남은 열에 colSpan이 들어가지 않으면 다음 줄에서 시작한다', () => {
     // When
-    const starts = gridStartColumns([1, 1, 2, 1], 3);
+    const starts = getGridStartColumns([1, 1, 2, 1], 3);
 
     // Then
     expect(starts).toEqual([0, 1, 0, 2]);
@@ -37,17 +37,17 @@ describe('gridStartColumns', () => {
 
   it('열 수를 넘는 colSpan은 한 줄 전체를 차지한다', () => {
     // When
-    const starts = gridStartColumns([5, 1], 3);
+    const starts = getGridStartColumns([5, 1], 3);
 
     // Then
     expect(starts).toEqual([0, 0]);
   });
 });
 
-describe('gridItemLayout', () => {
+describe('getGridItemLayout', () => {
   it('간격이 없으면 padding 없이 퍼센트 폭만 준다', () => {
     // When
-    const layout = gridItemLayout({ columns: 3, columnGap: 0, startColumn: 1, colSpan: 1 });
+    const layout = getGridItemLayout({ columns: 3, columnGap: 0, startColumn: 1, colSpan: 1 });
 
     // Then
     expect(layout).toEqual({

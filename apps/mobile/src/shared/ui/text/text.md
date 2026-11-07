@@ -2,12 +2,10 @@
 
 타이포그래피를 위한 기본 텍스트 컴포넌트입니다.
 
-## 설치
-
-이 컴포넌트는 `@aido/mobile` 앱에 포함되어 있습니다.
+## 가져오기
 
 ```tsx
-import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
+import { Text, H1, H2, H3, H4 } from '@src/shared/ui';
 ```
 
 ## 기본 사용법
@@ -25,7 +23,7 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 | `size`          | `'display' \| 'h1' \| 't1' \| 't2' \| 't3' \| 'b1' \| 'b2' \| 'b3' \| 'b4' \| 'e1' \| 'e2'`  | `'b3'`      | 텍스트 크기                            |
 | `weight`        | `'normal' \| 'medium' \| 'semibold' \| 'bold'`                                               | `'normal'`  | 폰트 굵기                              |
 | `align`         | `'left' \| 'center' \| 'right'`                                                              | `'left'`    | 텍스트 정렬                            |
-| `maxLines`      | `number`                                                                                     | -           | 최대 줄 수 (numberOfLines)             |
+| `numberOfLines` | `number`                                                                                     | -           | 최대 줄 수 (React Native 원본 prop)    |
 | `strikethrough` | `boolean`                                                                                    | `false`     | 취소선                                 |
 | `underline`     | `boolean`                                                                                    | `false`     | 밑줄                                   |
 | `className`     | `string`                                                                                     | -           | 추가 Tailwind 클래스                   |
@@ -107,25 +105,6 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 <H4>부제목</H4>
 ```
 
-### emphasize
-
-브랜드 색상으로 강조합니다.
-
-```tsx
-<H1 emphasize>강조된 제목</H1>
-```
-
-### headline (H1 전용)
-
-상단에 작은 라벨을 추가합니다.
-
-```tsx
-<H1 headline="STEP 1">회원가입</H1>
-// 결과:
-// STEP 1  (작은 브랜드 색상 라벨)
-// 회원가입 (큰 제목)
-```
-
 ## 스타일 조합 예시
 
 ```tsx
@@ -153,7 +132,7 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 </Text>
 
 // 최대 2줄로 제한
-<Text maxLines={2}>
+<Text numberOfLines={2}>
   긴 텍스트가 2줄을 넘으면 말줄임표로 표시됩니다...
 </Text>
 ```

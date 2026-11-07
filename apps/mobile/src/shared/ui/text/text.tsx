@@ -3,7 +3,7 @@ import { cn } from '@src/shared/utils/cn';
 import { Text as RNText } from 'react-native';
 
 import type { TextProps } from './text.types';
-import { shadeClasses, textVariants } from './text.variants';
+import { TEXT_SHADE_CLASSES, textVariants } from './text.variants';
 
 export function Text({
   tone,
@@ -11,7 +11,6 @@ export function Text({
   weight,
   size,
   align,
-  maxLines,
   strikethrough,
   underline,
   className,
@@ -21,7 +20,7 @@ export function Text({
   const { resolveSize } = useFontScale();
   const resolvedSize = resolveSize(size ?? 'b3');
   const isNeutralTone = tone === 'neutral' || tone == null;
-  const shadeClass = isNeutralTone && shade ? shadeClasses[shade] : '';
+  const shadeClass = isNeutralTone && shade ? TEXT_SHADE_CLASSES[shade] : '';
 
   return (
     <RNText
@@ -30,7 +29,6 @@ export function Text({
         shadeClass,
         className,
       )}
-      numberOfLines={maxLines}
       {...props}
       allowFontScaling={false}
     >

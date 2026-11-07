@@ -265,7 +265,7 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
           <MenuActionItem
-            icon={FlagIcon}
+            Icon={FlagIcon}
             title={t('menu.report')}
             onPress={() => {
               const target = UserReportPolicy.createProfileReportTarget({ userId });
@@ -276,7 +276,7 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
             }}
           />
           <MenuActionItem
-            icon={BlockIcon}
+            Icon={BlockIcon}
             title={t('block.action')}
             variant="danger"
             onPress={() =>

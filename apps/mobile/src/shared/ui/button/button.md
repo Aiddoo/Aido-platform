@@ -99,7 +99,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui';
 
 | Display  | 설명                           | CSS            |
 | -------- | ------------------------------ | -------------- |
-| `inline` | 콘텐츠 크기만큼                | `self-start`   |
+| `inline` | 콘텐츠 크기만큼                | 없음           |
 | `block`  | 부모 컨테이너 너비에 맞게 확장 | `self-stretch` |
 | `full`   | 전체 너비                      | `w-full`       |
 
@@ -121,7 +121,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui';
 
 ### 비활성화 상태
 
-`isDisabled`가 `true`면 버튼이 비활성화되고 투명도가 적용됩니다.
+`isDisabled`가 `true`면 버튼이 비활성화되고 면이 회색으로, 글자가 흐리게 바뀝니다.
 
 ```tsx
 <Button isDisabled>비활성화</Button>
@@ -139,7 +139,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui';
 <Button aria-label="계정 삭제 - 주의 필요" color="danger">삭제</Button>
 
 // 로딩 중 추가 정보
-<Button isLoading aria-label="데이터 저장 중" />
+<Button isLoading aria-label="데이터 저장 중">저장</Button>
 ```
 
 ## 자동 텍스트 스타일링

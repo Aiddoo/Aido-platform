@@ -152,7 +152,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 긴 안내 글                     | `WordWrapText`                       | iOS·Android 모두 단어 중간에서 끊지 않는다 |
 | 가상화 목록 행, 행이 많은 목록 | `lineBreakStrategyIOS="hangul-word"` | 행마다 단어 수만큼 뷰가 늘지 않게 한다     |
 
-- 줄 수 제한(`maxLines`)이나 글자 선택이 필요하면 `WordWrapText`를 쓰지 않는다.
+- 줄 수 제한(`numberOfLines`)이나 글자 선택이 필요하면 `WordWrapText`를 쓰지 않는다.
 - 말로 메모 자막은 문장 하나가 행이고 문장 단위로 가상화해 `WordWrapText`를 쓴다.
 
 ## 메뉴 항목: `MenuActionItem`
@@ -484,8 +484,6 @@ withTiming(value, { duration: 200 });
 | `ANIMATION.duration.slow`     | 300ms | 느린 전환                                 |
 | `ANIMATION.duration.emphasis` | 600ms | 한 번 눈길을 끄는 강조(새 알림 종 흔들기) |
 | `ANIMATION.delay.short`       | 50ms  | 짧은 지연                                 |
-| `ANIMATION.delay.medium`      | 100ms | 중간 지연                                 |
-| `ANIMATION.delay.long`        | 200ms | 긴 지연                                   |
 
 ---
 

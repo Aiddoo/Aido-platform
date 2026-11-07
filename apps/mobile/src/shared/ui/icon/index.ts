@@ -1,4 +1,4 @@
-export { type StyledIcon as StyledIconType } from './create-styled-icon';
+export type { StyledIcon } from './create-styled-icon';
 export {
   AiIcon,
   AppleIcon,

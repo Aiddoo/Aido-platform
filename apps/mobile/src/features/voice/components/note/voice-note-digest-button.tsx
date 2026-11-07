@@ -37,7 +37,7 @@ export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigest
       {cost != null && (
         <HStack gap={4} align="center" justify="center">
           <AiIcon width={14} height={14} colorClassName="text-main" />
-          <Text size="e1" shade={6} maxLines={1} testID="voice-note-digest-cost">
+          <Text size="e1" shade={6} numberOfLines={1} testID="voice-note-digest-cost">
             {cost}
           </Text>
         </HStack>

@@ -37,10 +37,10 @@ import { ActionButton, CalendarIcon } from '@src/shared/ui';
 ## 파일 구조
 
 ```
-ActionButton/
-├── ActionButton.tsx   # 컴포넌트 구현
-├── ActionButton.md    # 문서
-└── index.ts         # export
+action-button/
+├── action-button.tsx   # 컴포넌트 구현
+├── action-button.md    # 문서
+└── index.ts            # export
 ```
 
 ## heroui `Chip`으로 옮기지 않은 이유

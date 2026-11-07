@@ -12,7 +12,7 @@ export function QueryErrorFallback({
   reset,
   onInquiry,
 }: Pick<QueryErrorFallbackProps, 'reset'> & { onInquiry?: () => void }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
 
   return (
     <Result

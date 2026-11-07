@@ -130,7 +130,7 @@ MemoList.Item = function Item({ memo }: { memo: Memo }) {
             className="flex-1"
             size="b3"
             weight="semibold"
-            maxLines={body.length > 0 ? 2 : 4}
+            numberOfLines={body.length > 0 ? 2 : 4}
             lineBreakStrategyIOS="hangul-word"
           >
             {title}
@@ -138,7 +138,7 @@ MemoList.Item = function Item({ memo }: { memo: Memo }) {
           {memo.isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
         </HStack>
         {body.length > 0 && (
-          <Text size="b4" shade={6} maxLines={3} lineBreakStrategyIOS="hangul-word">
+          <Text size="b4" shade={6} numberOfLines={3} lineBreakStrategyIOS="hangul-word">
             {body}
           </Text>
         )}

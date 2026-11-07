@@ -149,9 +149,9 @@ function TodoModerationMenu() {
           width={180}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          <MenuActionItem icon={FlagIcon} title={t('menu.report')} onPress={moderation.report} />
+          <MenuActionItem Icon={FlagIcon} title={t('menu.report')} onPress={moderation.report} />
           <MenuActionItem
-            icon={BlockIcon}
+            Icon={BlockIcon}
             title={t('block.action')}
             variant="danger"
             onPress={moderation.block}

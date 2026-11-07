@@ -117,7 +117,7 @@ TodoRepeatPickerContent.PresetChip = function PresetChip({
       <Text
         size="b4"
         weight="medium"
-        maxLines={1}
+        numberOfLines={1}
         className={isSelected ? 'text-white' : undefined}
         shade={isSelected ? undefined : 7}
       >

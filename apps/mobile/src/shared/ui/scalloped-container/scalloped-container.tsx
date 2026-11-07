@@ -1,3 +1,4 @@
+import { range } from 'es-toolkit';
 import { type ReactNode, useCallback, useState } from 'react';
 import { type ColorValue, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -42,23 +43,17 @@ function ScallopEdge({
   const actualWidth = count * radius * 2;
   const offset = (width - actualWidth) / 2;
 
-  let pathData: string;
-
-  if (position === 'top') {
-    pathData = `M 0,${radius} L 0,0 L ${offset},0`;
-    for (let index = 0; index < count; index++) {
+  const { innerY, outerY, sweepFlag } =
+    position === 'top'
+      ? { innerY: radius, outerY: 0, sweepFlag: 0 }
+      : { innerY: 0, outerY: radius, sweepFlag: 1 };
+  const arcs = range(count)
+    .map((index) => {
       const x = offset + (index + 1) * radius * 2;
-      pathData += ` A ${radius},${radius} 0 0,0 ${x},0`;
-    }
-    pathData += ` L ${width},0 L ${width},${radius} Z`;
-  } else {
-    pathData = `M 0,0 L 0,${radius} L ${offset},${radius}`;
-    for (let index = 0; index < count; index++) {
-      const x = offset + (index + 1) * radius * 2;
-      pathData += ` A ${radius},${radius} 0 0,1 ${x},${radius}`;
-    }
-    pathData += ` L ${width},${radius} L ${width},0 Z`;
-  }
+      return ` A ${radius},${radius} 0 0,${sweepFlag} ${x},${outerY}`;
+    })
+    .join('');
+  const pathData = `M 0,${innerY} L 0,${outerY} L ${offset},${outerY}${arcs} L ${width},${outerY} L ${width},${innerY} Z`;
 
   return (
     <Svg width={width} height={radius} viewBox={`0 0 ${width} ${radius}`}>

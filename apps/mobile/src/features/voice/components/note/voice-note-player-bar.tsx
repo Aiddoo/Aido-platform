@@ -129,7 +129,7 @@ export function VoiceNotePlayerBar({
         }}
         className="flex-1"
       />
-      <Text size="e1" shade={7} maxLines={1} className="tabular-nums">
+      <Text size="e1" shade={7} numberOfLines={1} className="tabular-nums">
         {shownText} / {durationText}
       </Text>
     </HStack>

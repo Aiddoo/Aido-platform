@@ -31,18 +31,9 @@ export interface TextProps extends Omit<RNTextProps, 'style'> {
   weight?: TextWeight;
   size?: TextSize;
   align?: TextAlign;
-  maxLines?: number;
   strikethrough?: boolean;
   underline?: boolean;
   className?: string;
   style?: RNTextProps['style'];
   children?: React.ReactNode;
-}
-
-export interface HeadingProps extends TextProps {
-  emphasize?: boolean;
-}
-
-export interface H1Props extends HeadingProps {
-  headline?: string;
 }

@@ -188,7 +188,7 @@ FriendStrip.Item = memo(function Item({
             shade={isSelected ? 9 : 6}
             weight={isSelected ? 'semibold' : 'normal'}
             align="center"
-            maxLines={1}
+            numberOfLines={1}
             className="w-full"
           >
             {name}
@@ -223,7 +223,7 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 
   return (
     <HStack px={16} gap={8} align="center" style={{ height }}>
-      <Text size="b4" shade={6} maxLines={2} className="flex-1">
+      <Text size="b4" shade={6} numberOfLines={2} className="flex-1">
         {t('friend:list.loadFailed')}
       </Text>
       <VStack align="center" gap={2}>
@@ -447,7 +447,7 @@ function ActionCell({ icon, label }: { icon: ReactNode; label: string }) {
         </AvatarRing>
       }
       label={
-        <Text size="e1" shade={6} align="center" maxLines={1} className="w-full">
+        <Text size="e1" shade={6} align="center" numberOfLines={1} className="w-full">
           {label}
         </Text>
       }

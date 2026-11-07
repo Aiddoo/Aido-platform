@@ -26,7 +26,7 @@ export function NudgeTodoButton() {
       <HStack align="center" gap={12} className="w-full">
         <PawIcon width={28} height={28} colorClassName="text-main" />
         <VStack flex={1} gap={4}>
-          <Text size="b3" weight="semibold" maxLines={3}>
+          <Text size="b3" weight="semibold" numberOfLines={3}>
             {nudge.todoTitle ?? t('interaction.unavailableTodo')}
           </Text>
           <Text size="e1" shade={5}>

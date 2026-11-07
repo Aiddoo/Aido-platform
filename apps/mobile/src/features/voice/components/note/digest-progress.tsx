@@ -71,13 +71,13 @@ function DigestStep({ label, status, detail }: DigestStepProps) {
         size="b3"
         weight={status === 'doing' ? 'semibold' : 'normal'}
         shade={10}
-        maxLines={1}
+        numberOfLines={1}
         className="shrink"
       >
         {label}
       </Text>
       {detail != null && (
-        <Text size="e1" shade={6} maxLines={1} className="ml-auto tabular-nums">
+        <Text size="e1" shade={6} numberOfLines={1} className="ml-auto tabular-nums">
           {detail}
         </Text>
       )}

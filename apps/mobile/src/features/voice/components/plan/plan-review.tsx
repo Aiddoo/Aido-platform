@@ -495,7 +495,7 @@ PlanReview.MemoRow = function PlanMemoRow({
       top={
         <TodoLabel
           isChecked={false}
-          maxLines={1}
+          numberOfLines={1}
           className={cn(!memo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
         >
           {label}

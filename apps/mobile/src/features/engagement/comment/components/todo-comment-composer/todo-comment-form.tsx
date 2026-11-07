@@ -331,11 +331,11 @@ function TargetBanner({
   return (
     <HStack align="center" gap={8} px={8} className="min-w-0" testID="todo-comment-composer-target">
       <VStack flex={1} className="min-w-0">
-        <Text size="e1" shade={7} weight="medium" maxLines={1}>
+        <Text size="e1" shade={7} weight="medium" numberOfLines={1}>
           {label}
         </Text>
         {mode.type === 'reply' && mode.target.content != null && (
-          <Text size="e1" shade={6} maxLines={TARGET_CONTENT_MAX_LINES}>
+          <Text size="e1" shade={6} numberOfLines={TARGET_CONTENT_MAX_LINES}>
             {mode.target.content}
           </Text>
         )}

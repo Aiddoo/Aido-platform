@@ -50,7 +50,7 @@ route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으
 ```
 
 `ConfirmDialog` 같은 다이얼로그는 버튼 배치를 그대로 두고 설명 자리에 `QueryErrorActions.Inquiry`를 둡니다.
-누르면 `onOpenChange(false)`로 닫은 뒤 `openBugReportInquiry()`로 이동합니다.
+`onPress`를 넘기지 않으면 바로 문의 화면으로 이동하고, 먼저 닫아야 하는 곳은 닫은 뒤 이동하는 `onPress`를 넘깁니다.
 
 ## 예상한 상태(404)
 
@@ -83,7 +83,6 @@ query-error-boundary/
 ├── query-error-boundary.tsx       # 컴포넌트
 ├── query-error-fallback.tsx       # 기본 fallback(다시 시도 + 문의하기)
 ├── query-error-actions.tsx        # 다시 시도 + 문의하기 버튼, 문의 href·시트 exit
-├── query-error-actions.test.tsx   # 버튼·시트 exit 테스트
 ├── query-error-boundary.test.tsx  # 테스트
 ├── query-error-boundary.md        # 이 문서
 └── index.ts                       # 배럴

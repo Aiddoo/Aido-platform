@@ -230,7 +230,7 @@ function ThanksSummaryCard({ variant, left, title, description, action }: Thanks
 
 function CardTitle({ children }: { children: string }) {
   return (
-    <Text size="b3" weight="semibold" shade={9} maxLines={2}>
+    <Text size="b3" weight="semibold" shade={9} numberOfLines={2}>
       {children}
     </Text>
   );

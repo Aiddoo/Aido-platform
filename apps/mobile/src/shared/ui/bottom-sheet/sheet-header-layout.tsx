@@ -6,7 +6,7 @@ import { VStack } from '../v-stack/v-stack';
 import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './constants';
 import { SheetScrollArea } from './sheet-scroll-area';
 
-export const SheetBodyHostContext = createContext(false);
+export const SheetFixedHeaderContext = createContext(false);
 
 interface SheetHeaderLayoutProps {
   header: ReactNode;
@@ -16,9 +16,9 @@ interface SheetHeaderLayoutProps {
 }
 
 export function SheetHeaderLayout({ header, footer, gap, children }: SheetHeaderLayoutProps) {
-  const isScrollDelegated = use(SheetBodyHostContext);
+  const hasFixedHeader = use(SheetFixedHeaderContext);
 
-  if (!isScrollDelegated) {
+  if (!hasFixedHeader) {
     return (
       <VStack gap={gap}>
         {header}

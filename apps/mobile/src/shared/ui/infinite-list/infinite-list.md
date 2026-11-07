@@ -54,6 +54,7 @@ infinite-list/
 ├── infinite-list.tsx
 ├── use-fetch-next-page.ts
 ├── use-fetch-next-page.test.ts
+├── infinite-list-footer.test.tsx
 ├── infinite-list.md
 └── index.ts
 ```

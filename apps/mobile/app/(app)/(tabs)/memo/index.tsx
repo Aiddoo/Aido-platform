@@ -49,7 +49,7 @@ export default function MemoScreen() {
             <StyledSafeAreaView edges={['left', 'right']}>
               <HStack align="center" gap={HEADER_GAP} className="px-4">
                 <Box className="flex-1">
-                  <H3 maxLines={1}>{t('tab.title')}</H3>
+                  <H3 numberOfLines={1}>{t('tab.title')}</H3>
                 </Box>
                 {/* 아래로 펴면 첫 메모를 덮는다. 좁으면 제목 자리, 넓으면 그 자리가 좁아 새 메모 버튼 건너 상세 칸에 편다 */}
                 <VoiceNoteStartButton

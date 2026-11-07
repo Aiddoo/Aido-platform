@@ -7,7 +7,7 @@ import { Text } from '../text/text';
 
 export type AppToastVariant = 'default' | 'success' | 'warning' | 'danger';
 
-interface AppToastAction {
+export interface AppToastAction {
   label: string;
   onPress?: () => void;
 }
@@ -25,7 +25,7 @@ interface AppToastProps {
 
 const ICON_SIZE = 20;
 
-const variantIconMap: Record<AppToastVariant, ReactNode | null> = {
+const VARIANT_ICON_MAP: Record<AppToastVariant, ReactNode> = {
   default: null,
   success: <ToastSuccessIcon width={ICON_SIZE} height={ICON_SIZE} />,
   warning: <ToastWarningIcon width={ICON_SIZE} height={ICON_SIZE} />,
@@ -40,7 +40,7 @@ export function AppToast({
   action,
   toastProps,
 }: AppToastProps) {
-  const resolvedIcon = icon ?? variantIconMap[variant];
+  const resolvedIcon = icon ?? VARIANT_ICON_MAP[variant];
 
   return (
     <Toast {...toastProps} className="bg-transparent p-0">

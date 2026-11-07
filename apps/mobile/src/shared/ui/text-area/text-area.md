@@ -128,9 +128,10 @@ import { TextArea } from '@src/shared/ui';
 
 ## 파일 구조
 
-| 파일                   | 역할                                                   |
-| ---------------------- | ------------------------------------------------------ |
-| `TextArea.tsx`         | 여러 줄 입력 컴포넌트                                  |
-| `TextArea.types.ts`    | 타입 정의 (`TextAreaProps`, `TextAreaVariant`)         |
-| `TextArea.variants.ts` | Tailwind 스타일 (variant/상태)                         |
-| `index.ts`             | Export: `TextArea`, `TextAreaProps`, `TextAreaVariant` |
+| 파일                         | 역할                                           |
+| ---------------------------- | ---------------------------------------------- |
+| `text-area.tsx`              | 여러 줄 입력 컴포넌트                          |
+| `text-area.types.ts`         | 타입 정의 (`TextAreaProps`, `TextAreaVariant`) |
+| `text-area.variants.ts`      | Tailwind 스타일 (variant/상태)                 |
+| `bottom-sheet-text-area.tsx` | BottomSheet용 TextArea 래퍼                    |
+| `index.ts`                   | Export: `TextArea`, `BottomSheetTextArea`      |

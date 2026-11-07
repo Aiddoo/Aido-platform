@@ -3,7 +3,7 @@ import { useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 export default function FeedLayout() {
-  const screenOptions = useStackScreenOptions({ fillContent: true });
+  const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 
   return (
     <Stack

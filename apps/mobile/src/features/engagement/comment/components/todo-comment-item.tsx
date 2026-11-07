@@ -161,7 +161,13 @@ function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }
   return (
     <HStack gap={4} align="start" className="min-w-0">
       <HStack wrap="wrap" gap={4} align="center" className="min-w-0 flex-1 gap-y-px">
-        <Text size="b4" weight="semibold" maxLines={1} ellipsizeMode="tail" className="max-w-full">
+        <Text
+          size="b4"
+          weight="semibold"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          className="max-w-full"
+        >
           {name}
         </Text>
         {userTag != null && <Meta text={`#${userTag}`} isShrinkable />}
@@ -182,7 +188,7 @@ function Meta({ text, isShrinkable = false }: { text: string; isShrinkable?: boo
     <Text
       size="e1"
       shade={7}
-      maxLines={1}
+      numberOfLines={1}
       ellipsizeMode="tail"
       className={isShrinkable ? 'min-w-0 shrink' : 'shrink-0 tabular-nums'}
     >
@@ -459,7 +465,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
         >
           {TodoCommentPolicy.canEditComment(comment) && (
             <MenuActionItem
-              icon={EditIcon}
+              Icon={EditIcon}
               title={t('actions.edit')}
               testID="todo-comment-edit"
               onPress={() => {
@@ -470,7 +476,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           )}
           {TodoCommentPolicy.canCopyComment(comment) && (
             <MenuActionItem
-              icon={CopyIcon}
+              Icon={CopyIcon}
               title={t('actions.copy')}
               testID="todo-comment-copy"
               onPress={copyContent}
@@ -479,7 +485,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           {hasPrimaryActions && hasSecondaryActions && <Separator className="my-1" />}
           {TodoCommentPolicy.canDeleteComment(comment) && (
             <MenuActionItem
-              icon={TrashIcon}
+              Icon={TrashIcon}
               title={t('actions.delete')}
               variant="danger"
               testID="todo-comment-delete"
@@ -488,7 +494,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           )}
           {TodoCommentPolicy.canReportComment(comment) && (
             <MenuActionItem
-              icon={FlagIcon}
+              Icon={FlagIcon}
               title={t('actions.report')}
               testID="todo-comment-report"
               onPress={() =>
@@ -501,7 +507,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           )}
           {author != null && TodoCommentPolicy.canBlockCommentAuthor(comment) && (
             <MenuActionItem
-              icon={BlockIcon}
+              Icon={BlockIcon}
               title={t('actions.block', { name: authorName })}
               variant="danger"
               testID="todo-comment-block"

@@ -42,7 +42,6 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
     mode: 'onChange',
   });
   const stepper = useStepper<ChangePasswordStepContexts>({
-    id: 'change-password',
     initial: { step: 'currentPassword', context: {} },
   });
   const reportUnexpectedError = useReportUnexpectedError('auth');

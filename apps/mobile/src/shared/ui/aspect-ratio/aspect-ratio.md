@@ -6,7 +6,7 @@
 ## 사용법
 
 ```tsx
-import { AspectRatio } from '@src/shared/ui';
+import { AspectRatio } from '@src/shared/ui/aspect-ratio';
 
 <AspectRatio ratio={9 / 16} className="overflow-hidden rounded-3xl bg-gray-2">
   <Image source={source} contentFit="cover" style={StyleSheet.absoluteFill} />

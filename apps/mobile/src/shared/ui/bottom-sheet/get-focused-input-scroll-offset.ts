@@ -49,33 +49,13 @@ export interface FocusedInputScrollInput extends ScrollLayout {
  * 위아래 여백까지 다 들어가지 않으면 입력 칸 전체가 footer 위에 오는 쪽(아래)을 우선하고,
  * 입력 자체도 들어가지 않을 만큼 좁으면 커서가 있는 입력 위쪽을 맞춘다.
  */
-export function getFocusedInputScrollOffset({
-  viewport,
-  content,
-  input,
-  bottomInset,
-  marginAbove,
-  marginBelow,
-}: FocusedInputScrollInput): number | null {
-  const inputBottom = input.top + input.height;
-  if (input.top < content.top || inputBottom > content.top + content.height) {
+export function getFocusedInputScrollOffset(layout: FocusedInputScrollInput): number | null {
+  const { viewport, content, input } = layout;
+  if (input.top < content.top || input.top + input.height > content.top + content.height) {
     return null;
   }
 
-  const visibleBottom = viewport.top + viewport.height - bottomInset;
-  const overflowBelow = inputBottom + marginBelow - visibleBottom;
-  const overflowAbove = viewport.top + marginAbove - input.top;
-  const fitsInput = input.height <= visibleBottom - viewport.top;
-
-  let delta = 0;
-  if (!fitsInput) {
-    delta = input.top - viewport.top;
-  } else if (overflowBelow > 0) {
-    delta = overflowBelow;
-  } else if (overflowAbove > 0) {
-    // 아래 여백을 지키는 범위에서만 되돌린다
-    delta = Math.max(-overflowAbove, overflowBelow);
-  }
+  const delta = getScrollDelta(layout);
   if (delta === 0) {
     return null;
   }
@@ -84,4 +64,30 @@ export function getFocusedInputScrollOffset({
   const maxOffset = Math.max(0, content.height - viewport.height);
   const nextOffset = clamp(currentOffset + delta, 0, maxOffset);
   return Math.abs(nextOffset - currentOffset) < 1 ? null : nextOffset;
+}
+
+function getScrollDelta({
+  viewport,
+  input,
+  bottomInset,
+  marginAbove,
+  marginBelow,
+}: FocusedInputScrollInput): number {
+  const visibleBottom = viewport.top + viewport.height - bottomInset;
+  if (input.height > visibleBottom - viewport.top) {
+    return input.top - viewport.top;
+  }
+
+  const overflowBelow = input.top + input.height + marginBelow - visibleBottom;
+  if (overflowBelow > 0) {
+    return overflowBelow;
+  }
+
+  const overflowAbove = viewport.top + marginAbove - input.top;
+  if (overflowAbove > 0) {
+    // 아래 여백을 지키는 범위에서만 되돌린다
+    return Math.max(-overflowAbove, overflowBelow);
+  }
+
+  return 0;
 }

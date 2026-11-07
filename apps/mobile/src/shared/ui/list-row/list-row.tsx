@@ -1,73 +1,52 @@
 import { HStack } from '@src/shared/ui/h-stack';
 import { cn } from '@src/shared/utils/cn';
+import { tv } from '@src/shared/utils/tv';
 import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
+import type { VariantProps } from 'tailwind-variants';
 
 import { Box } from '../box';
 import { ListRowTexts } from './list-row-texts';
 
-export type ListRowVerticalPadding = 'small' | 'medium' | 'large' | 'xlarge';
-export type ListRowHorizontalPadding = 'small' | 'medium' | 'none';
-export type ListRowBorder = 'indented' | 'none';
-export type ListRowAlignment = 'top' | 'center';
+const listRowVariants = tv({
+  variants: {
+    verticalPadding: {
+      small: 'py-1',
+      medium: 'py-2',
+      large: 'py-4',
+      xlarge: 'py-5',
+    },
+    horizontalPadding: {
+      none: '',
+      small: 'px-2',
+      medium: 'px-4',
+    },
+    isDisabled: {
+      true: 'opacity-40',
+    },
+  },
 
-export interface ListRowProps extends Omit<ViewProps, 'children'> {
+  defaultVariants: {
+    verticalPadding: 'medium',
+    horizontalPadding: 'none',
+  },
+});
+
+export interface ListRowProps
+  extends Omit<ViewProps, 'children'>, VariantProps<typeof listRowVariants> {
   left?: ReactNode;
   contents?: ReactNode;
   right?: ReactNode;
-  verticalPadding?: ListRowVerticalPadding;
-  horizontalPadding?: ListRowHorizontalPadding;
-  border?: ListRowBorder;
-  leftAlignment?: ListRowAlignment;
-  rightAlignment?: ListRowAlignment;
-  isDisabled?: boolean;
   className?: string;
-}
-
-function listRowVariants({
-  verticalPadding = 'medium',
-  horizontalPadding = 'none',
-  border = 'none',
-  isDisabled = false,
-}: {
-  verticalPadding?: ListRowVerticalPadding;
-  horizontalPadding?: ListRowHorizontalPadding;
-  border?: ListRowBorder;
-  isDisabled?: boolean;
-}) {
-  const paddingY = {
-    small: 'py-1',
-    medium: 'py-2',
-    large: 'py-4',
-    xlarge: 'py-5',
-  }[verticalPadding];
-
-  const paddingX = {
-    none: '',
-    small: 'px-2',
-    medium: 'px-4',
-  }[horizontalPadding];
-
-  const borderClass = border === 'indented' ? 'border-b border-gray-3' : '';
-  const disabledClass = isDisabled ? 'opacity-40' : '';
-
-  return cn(paddingY, paddingX, borderClass, disabledClass);
-}
-
-function listRowSlotVariants({ alignment = 'center' }: { alignment?: ListRowAlignment }) {
-  return cn('flex', alignment === 'top' ? 'items-start' : 'items-center');
 }
 
 export function ListRow({
   left,
   contents,
   right,
-  verticalPadding = 'medium',
-  horizontalPadding = 'none',
-  border = 'none',
-  leftAlignment = 'center',
-  rightAlignment = 'center',
-  isDisabled = false,
+  verticalPadding,
+  horizontalPadding,
+  isDisabled,
   className,
   ...props
 }: ListRowProps) {
@@ -75,15 +54,12 @@ export function ListRow({
     <HStack
       align="center"
       gap={12}
-      className={cn(
-        listRowVariants({ verticalPadding, horizontalPadding, border, isDisabled }),
-        className,
-      )}
+      className={cn(listRowVariants({ verticalPadding, horizontalPadding, isDisabled }), className)}
       {...props}
     >
-      {left && <Box className={listRowSlotVariants({ alignment: leftAlignment })}>{left}</Box>}
+      {left && <Box className="flex items-center">{left}</Box>}
       {contents && <Box className="flex-1">{contents}</Box>}
-      {right && <Box className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</Box>}
+      {right && <Box className="flex items-center">{right}</Box>}
     </HStack>
   );
 }

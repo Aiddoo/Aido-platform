@@ -190,7 +190,7 @@ QuickVoicePanel.Planning = function Planning({
   return (
     <SheetPanel
       center={
-        <Text size="b4" weight="semibold" shade={7} maxLines={1}>
+        <Text size="b4" weight="semibold" shade={7} numberOfLines={1}>
           {t('planning.title')}
         </Text>
       }

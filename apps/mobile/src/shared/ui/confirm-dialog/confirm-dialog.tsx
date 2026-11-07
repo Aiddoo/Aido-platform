@@ -12,7 +12,7 @@ import { cloneElement, isValidElement, type ReactNode } from 'react';
 
 import type { ConfirmDialogProps } from './confirm-dialog.types';
 
-function asFullWidthAction(action: ReactNode): ReactNode {
+function withFullWidth(action: ReactNode): ReactNode {
   return isValidElement<ButtonProps>(action) ? cloneElement(action, { display: 'full' }) : action;
 }
 
@@ -25,8 +25,6 @@ export function ConfirmDialog({
   confirmButton,
   secondaryButton,
 }: ConfirmDialogProps) {
-  const { fontScale } = useFontScale();
-  const isStackedActions = fontScale === 'xlarge' && cancelButton != null;
   const portalTarget = usePortalTarget();
 
   return (
@@ -44,7 +42,6 @@ export function ConfirmDialog({
               {description}
             </VStack>
             <ConfirmDialogActions
-              isStacked={isStackedActions}
               cancelButton={cancelButton}
               confirmButton={confirmButton}
               secondaryButton={secondaryButton}
@@ -59,19 +56,20 @@ export function ConfirmDialog({
 type ConfirmDialogActionsProps = Pick<
   ConfirmDialogProps,
   'cancelButton' | 'confirmButton' | 'secondaryButton'
-> & { isStacked: boolean };
+>;
 
 function ConfirmDialogActions({
-  isStacked,
   cancelButton,
   confirmButton,
   secondaryButton,
 }: ConfirmDialogActionsProps) {
+  const { fontScale } = useFontScale();
+
   if (secondaryButton != null) {
     return (
       <VStack gap={8} className="w-full">
-        <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
-        <Box className="w-full">{asFullWidthAction(secondaryButton)}</Box>
+        <Box className="w-full">{withFullWidth(confirmButton)}</Box>
+        <Box className="w-full">{withFullWidth(secondaryButton)}</Box>
         {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
       </VStack>
     );
@@ -79,11 +77,11 @@ function ConfirmDialogActions({
   if (cancelButton == null) {
     return <HStack className="w-full justify-end">{confirmButton}</HStack>;
   }
-  if (isStacked) {
+  if (fontScale === 'xlarge') {
     return (
       <VStack gap={8} className="w-full">
-        <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
-        <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>
+        <Box className="w-full">{withFullWidth(confirmButton)}</Box>
+        <Box className="w-full">{withFullWidth(cancelButton)}</Box>
       </VStack>
     );
   }

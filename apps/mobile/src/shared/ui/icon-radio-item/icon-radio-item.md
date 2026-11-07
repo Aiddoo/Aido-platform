@@ -22,7 +22,7 @@ import { RadioGroup } from 'heroui-native';
 | ------------- | ---------------------------------------------------------- | ------ | ------------------------------------------- |
 | `value`       | `string`                                                   | -      | 라디오 값 (`RadioGroup.Item`)               |
 | `label`       | `string`                                                   | -      | 행 제목                                     |
-| `Icon`        | `StyledIconType`                                           | -      | 선택 시 인디케이터에 나타나는 아이콘 (선택) |
+| `Icon`        | `StyledIcon`                                               | -      | 선택 시 인디케이터에 나타나는 아이콘 (선택) |
 | `description` | `string`                                                   | -      | 보조 설명 (선택)                            |
 | 그 외         | `Omit<ComponentProps<typeof RadioGroup.Item>, 'children'>` | -      | `isDisabled` 등 원본 props                  |
 

@@ -13,17 +13,16 @@ iOS는 커스텀 뷰(`headerLeft`/`headerRight`, `Stack.Toolbar.View`)를 레일
 배경·그림자·제목 글꼴·틴트·뒤로가기 표시를 한 번에 맞춘 screenOptions를 돌려줍니다. `header`는 덮어쓰지 않습니다.
 
 ```tsx
-const screenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
+const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 
 <Stack screenOptions={screenOptions}>
   <Stack.Screen name="index" options={{ title: t('titles.index') }} />
 </Stack>;
 ```
 
-| 옵션          | 타입         | 기본값     | 설명                         |
-| ------------- | ------------ | ---------- | ---------------------------- |
-| `background`  | `'bg-white'` | `bg-white` | 헤더 배경                    |
-| `fillContent` | `boolean`    | `false`    | 화면 배경도 같은 색으로 채움 |
+| 옵션                   | 타입      | 기본값  | 설명                                      |
+| ---------------------- | --------- | ------- | ----------------------------------------- |
+| `hasContentBackground` | `boolean` | `false` | 화면 배경도 헤더와 같은 `bg-white`로 채움 |
 
 ## useStackBackToolbar
 
@@ -77,6 +76,7 @@ stack-header/
 ├── use-stack-back-toolbar.tsx    # 중첩 Stack 첫 화면의 뒤로가기
 ├── stack-back-icon.ts            # 플랫폼별 뒤로가기 아이콘
 ├── stack-close-icon.ts           # 플랫폼별 닫기 아이콘
+├── stack-more-icon.ts            # 플랫폼별 더 보기·메뉴 항목 아이콘
 ├── stack-header.md               # 이 문서
 └── index.ts                      # 배럴
 ```

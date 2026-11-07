@@ -9,7 +9,7 @@ import { fadeTo, springTo } from './steps-motion';
 const DOT_SIZE = 10;
 const DOT_SPACING = 20;
 const BAR_PADDING = 20;
-const BAR_HEIGHT = DOT_SIZE + 20;
+const BAR_HEIGHT = DOT_SIZE + BAR_PADDING;
 
 interface StepsDotsProps {
   index: number;

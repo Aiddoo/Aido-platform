@@ -79,7 +79,7 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
           </HStack>
 
           {report.hasActivity && report.aiSummary && (
-            <Text size="b4" shade={7} maxLines={2}>
+            <Text size="b4" shade={7} numberOfLines={2}>
               {report.aiSummary}
             </Text>
           )}

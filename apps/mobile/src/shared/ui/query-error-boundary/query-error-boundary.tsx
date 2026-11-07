@@ -90,7 +90,6 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
               .exhaustive();
           }}
           fallbackRender={({ error, resetErrorBoundary }) =>
-            // 컴포넌트로 렌더한다 — 그냥 호출하면 fallback 안의 훅이 자기 자리를 못 찾는다.
             fallback ? (
               <Fallback render={fallback} error={error} reset={resetErrorBoundary} />
             ) : (

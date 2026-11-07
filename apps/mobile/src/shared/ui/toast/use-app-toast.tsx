@@ -3,18 +3,13 @@ import { t } from '@src/shared/i18n';
 import { useToast } from 'heroui-native';
 import { type ReactNode, useCallback } from 'react';
 
-import { AppToast, type AppToastVariant } from './app-toast';
-
-interface ToastAction {
-  label: string;
-  onPress?: () => void;
-}
+import { AppToast, type AppToastAction, type AppToastVariant } from './app-toast';
 
 export interface ToastOptions {
   description?: string;
   variant?: AppToastVariant;
   duration?: number | 'persistent';
-  action?: ToastAction;
+  action?: AppToastAction;
   icon?: ReactNode;
 }
 
@@ -23,7 +18,7 @@ export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
 }
 
 /** 문자열은 그대로, Error는 사용자 문구일 때만 쓴다. 파싱 오류 등은 폴백 문구로 바꾼다. */
-function extractErrorMessage(
+function getErrorMessage(
   input: string | Error | undefined,
   fallback = t('common:toast.defaultError'),
 ): string {
@@ -64,7 +59,7 @@ export function useAppToast() {
           <AppToast
             label={label}
             description={options?.description}
-            variant={options?.variant ?? 'default'}
+            variant={options?.variant}
             icon={options?.icon}
             action={options?.action}
             toastProps={props}
@@ -91,7 +86,7 @@ export function useAppToast() {
 
   const error = useCallback(
     (labelOrError: string | Error | undefined, options?: ErrorToastOptions) => {
-      const message = extractErrorMessage(labelOrError, options?.fallback);
+      const message = getErrorMessage(labelOrError, options?.fallback);
       toast(message, { ...options, variant: 'danger' });
     },
     [toast],

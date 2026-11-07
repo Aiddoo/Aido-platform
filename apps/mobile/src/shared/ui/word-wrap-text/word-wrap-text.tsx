@@ -7,7 +7,7 @@ import { splitRunsIntoWords, type TextRun } from './split-text-words';
 
 interface WordWrapTextProps extends Omit<
   ComponentProps<typeof Text>,
-  'children' | 'lineBreakStrategyIOS' | 'maxLines'
+  'children' | 'lineBreakStrategyIOS' | 'numberOfLines'
 > {
   children: string | readonly TextRun[];
 }

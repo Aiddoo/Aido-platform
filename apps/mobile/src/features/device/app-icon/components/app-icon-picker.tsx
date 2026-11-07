@@ -87,7 +87,7 @@ AppIconPicker.Item = function Item({ icon, isLocked, ...props }: AppIconPickerIt
             size="b4"
             weight={isSelected ? 'semibold' : 'normal'}
             shade={isSelected ? 9 : 6}
-            maxLines={1}
+            numberOfLines={1}
           >
             {label}
           </Text>

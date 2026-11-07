@@ -48,7 +48,7 @@ export function VoiceNoteStartButton({
       >
         <HStack gap={6} align="center">
           <MicIcon width={20} height={20} colorClassName="text-gray-8" />
-          <Text size="b4" weight="semibold" shade={8} maxLines={1}>
+          <Text size="b4" weight="semibold" shade={8} numberOfLines={1}>
             {t('start.shortLabel')}
           </Text>
         </HStack>

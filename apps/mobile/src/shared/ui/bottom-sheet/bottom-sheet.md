@@ -172,24 +172,39 @@ const sheet = useSheetRoute('/feed');
 
 ### BottomSheet
 
-| Prop           | 타입                        | 기본값 | 설명                       |
-| -------------- | --------------------------- | ------ | -------------------------- |
-| `isOpen`       | `boolean`                   | -      | 시트 열림 상태             |
-| `onOpenChange` | `(isOpen: boolean) => void` | -      | 열림/닫힘 상태 변경 콜백   |
-| `onCloseStart` | `() => void`                | -      | 닫기 시작 시 콜백 (선택)   |
-| `children`     | `ReactNode`                 | -      | 시트 내용                  |
-| `footer`       | `ReactNode`                 | -      | 시트 아래 고정 영역 (선택) |
+| Prop             | 타입                        | 기본값  | 설명                                                    |
+| ---------------- | --------------------------- | ------- | ------------------------------------------------------- |
+| `isOpen`         | `boolean`                   | -       | 시트 열림 상태                                          |
+| `onOpenChange`   | `(isOpen: boolean) => void` | -       | 열림/닫힘 상태 변경 콜백                                |
+| `onCloseStart`   | `() => void`                | -       | 닫기 시작 시 콜백 (선택)                                |
+| `children`       | `ReactNode`                 | -       | 시트 내용                                               |
+| `footer`         | `ReactNode`                 | -       | 시트 아래 고정 영역 (선택)                              |
+| `hasFixedHeader` | `boolean`                   | `false` | 내용이 `SheetHeaderLayout`으로 머리글을 고정한다 (선택) |
+
+### KeyboardBottomSheet
+
+| Prop                   | 타입                        | 기본값 | 설명                                                      |
+| ---------------------- | --------------------------- | ------ | --------------------------------------------------------- |
+| `isOpen`               | `boolean`                   | -      | 시트 열림 상태                                            |
+| `onOpenChange`         | `(isOpen: boolean) => void` | -      | 닫힘이 끝나면 `false`로 호출                              |
+| `onCloseStart`         | `() => void`                | -      | 닫기 시작 시 콜백 (선택)                                  |
+| `children`             | `ReactNode`                 | -      | 시트 내용                                                 |
+| `footer`               | `ReactNode`                 | -      | 시트 아래(키보드 위) 고정 영역 (선택)                     |
+| `backgroundDecoration` | `ReactNode`                 | -      | 시트 면 뒤에 까는 장식 (선택)                             |
+| `isContentPanEnabled`  | `boolean`                   | `true` | 내용을 끌어 시트를 움직일지 (선택)                        |
+| `onDismissRequest`     | `() => void`                | -      | 바깥 탭·Android 뒤로 가기에서 할 일. 없으면 닫는다 (선택) |
 
 ### ModalBottomSheet
 
-| Prop             | 타입                        | 기본값  | 설명                                                       |
-| ---------------- | --------------------------- | ------- | ---------------------------------------------------------- |
-| `isOpen`         | `boolean`                   | -       | 시트 열림 상태                                             |
-| `onOpenChange`   | `(isOpen: boolean) => void` | -       | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출 |
-| `onExit`         | `() => void`                | -       | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거    |
-| `children`       | `ReactNode`                 | -       | 시트 내용                                                  |
-| `footer`         | `ReactNode`                 | -       | 스크롤 영역 아래에 고정되는 영역 (주 동작 버튼, 선택)      |
-| `hasFixedHeader` | `boolean`                   | `false` | 내용이 `SheetHeaderLayout`으로 머리글을 고정한다 (선택)    |
+| Prop             | 타입                        | 기본값  | 설명                                                          |
+| ---------------- | --------------------------- | ------- | ------------------------------------------------------------- |
+| `isOpen`         | `boolean`                   | -       | 시트 열림 상태                                                |
+| `onOpenChange`   | `(isOpen: boolean) => void` | -       | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출    |
+| `onCloseStart`   | `() => void`                | -       | `onOpenChange`보다 먼저 호출. 아래 시트 입력 포커스 등 (선택) |
+| `onExit`         | `() => void`                | -       | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거       |
+| `children`       | `ReactNode`                 | -       | 시트 내용                                                     |
+| `footer`         | `ReactNode`                 | -       | 스크롤 영역 아래에 고정되는 영역 (주 동작 버튼, 선택)         |
+| `hasFixedHeader` | `boolean`                   | `false` | 내용이 `SheetHeaderLayout`으로 머리글을 고정한다 (선택)       |
 
 ## 파일 구조
 
@@ -206,6 +221,8 @@ bottom-sheet/
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
 ├── use-sheet-route.ts                 # 시트 route의 열림 상태와 한 번만 떠나기
 ├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
+├── use-scroll-focused-input-into-view.ts # 키보드와 함께 포커스된 입력까지 시트 내용을 스크롤
+├── get-focused-input-scroll-offset.ts # 키보드가 다 올라온 뒤의 배치와 스크롤 위치 계산
 ├── get-sheet-horizontal-margins.ts    # 주어진 영역 기준 최대 폭·가운데 정렬 여백
 ├── get-sheet-layout.ts                # reserved region·safe area로 좌우 여백, 위쪽 한계, 최대 높이 계산
 ├── use-sheet-layout.ts                # 위 계산에 창 크기·safe area·reserved region을 넣는 훅

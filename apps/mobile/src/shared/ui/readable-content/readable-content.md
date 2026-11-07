@@ -23,7 +23,6 @@ import { ReadableContent } from '@src/shared/ui';
 readable-content/
 ├── readable-content.tsx
 ├── readable-content.types.ts
-├── readable-content.test.tsx
 ├── index.ts
 └── readable-content.md
 ```

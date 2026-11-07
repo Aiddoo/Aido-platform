@@ -1,87 +1,40 @@
-import { Box } from '../box';
 import { Text } from './text';
-import type { H1Props, HeadingProps } from './text.types';
+import type { TextProps } from './text.types';
 
-export function H1({ headline, emphasize, className, children, ...props }: H1Props) {
-  if (headline) {
-    return (
-      <Box className={className}>
-        <Text size="e1" weight="medium" tone="brand" className="mb-1">
-          {headline}
-        </Text>
-        <Text
-          {...props}
-          size="h1"
-          weight="bold"
-          tone={emphasize ? 'brand' : 'neutral'}
-          shade={emphasize ? undefined : 10}
-          accessibilityRole="header"
-        >
-          {children}
-        </Text>
-      </Box>
-    );
-  }
-
+export function H1(props: TextProps) {
   return (
-    <Text
-      {...props}
-      size="h1"
-      weight="bold"
-      tone={emphasize ? 'brand' : 'neutral'}
-      shade={emphasize ? undefined : 10}
-      className={className}
-      accessibilityRole="header"
-    >
-      {children}
-    </Text>
+    <Text {...props} size="h1" weight="bold" tone="neutral" shade={10} accessibilityRole="header" />
   );
 }
 
-export function H2({ emphasize, className, children, ...props }: HeadingProps) {
+export function H2(props: TextProps) {
   return (
-    <Text
-      {...props}
-      size="t1"
-      weight="bold"
-      tone={emphasize ? 'brand' : 'neutral'}
-      shade={emphasize ? undefined : 10}
-      className={className}
-      accessibilityRole="header"
-    >
-      {children}
-    </Text>
+    <Text {...props} size="t1" weight="bold" tone="neutral" shade={10} accessibilityRole="header" />
   );
 }
 
-export function H3({ emphasize, className, children, ...props }: HeadingProps) {
+export function H3(props: TextProps) {
   return (
     <Text
       {...props}
       size="t2"
       weight="semibold"
-      tone={emphasize ? 'brand' : 'neutral'}
-      shade={emphasize ? undefined : 10}
-      className={className}
+      tone="neutral"
+      shade={10}
       accessibilityRole="header"
-    >
-      {children}
-    </Text>
+    />
   );
 }
 
-export function H4({ emphasize, className, children, ...props }: HeadingProps) {
+export function H4(props: TextProps) {
   return (
     <Text
       {...props}
       size="t3"
       weight="semibold"
-      tone={emphasize ? 'brand' : 'neutral'}
-      shade={emphasize ? undefined : 9}
-      className={className}
+      tone="neutral"
+      shade={9}
       accessibilityRole="header"
-    >
-      {children}
-    </Text>
+    />
   );
 }

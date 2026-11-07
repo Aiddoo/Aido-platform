@@ -40,7 +40,7 @@ export function RecordButton({ label, children, ...buttonProps }: RecordButtonPr
   return (
     <RecordButton.Column
       label={
-        <Text size="e1" shade={7} maxLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        <Text size="e1" shade={7} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
           {label}
         </Text>
       }

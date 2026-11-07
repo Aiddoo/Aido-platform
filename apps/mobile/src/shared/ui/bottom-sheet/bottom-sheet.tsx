@@ -33,13 +33,17 @@ import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
   SHEET_ANIMATION_DURATION,
+  SHEET_CONTENT_PADDING,
   SHEET_DETACHED_MARGIN,
+  SHEET_FOOTER_PADDING_TOP,
   SHEET_INDEX,
+  SHEET_OVERLAY_OPACITY,
+  SHEET_RADIUS,
 } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
 import { usePortalTarget } from './portal-target';
 import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
-import { SheetBodyHostContext } from './sheet-header-layout';
+import { SheetFixedHeaderContext } from './sheet-header-layout';
 import { useSheetLayout } from './use-sheet-layout';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -47,7 +51,6 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 // HeroUI 진행값은 열리기 전 0, 다 열리면 1, 스와이프로 닫히면 2다. 닫힌 시트가 정확히 0·2에 멈추지 않는 Android 기기가 있다
 const PROGRESS_EPSILON = 0.01;
 const PROGRESS_SWIPE_CLOSED = 2;
-const OVERLAY_OPACITY = 0.5;
 
 interface BottomSheetProps extends Omit<ComponentProps<typeof HeroBottomSheet>, 'children'> {
   onCloseStart?: () => void;
@@ -84,9 +87,10 @@ export function BottomSheet({
   const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
-  const bottomInset = insets.bottom || 16;
+  const bottomInset = insets.bottom || SHEET_DETACHED_MARGIN;
   const maxDynamicContentSize =
     getSheetMaxHeight(windowHeight, topInset, bottomInset) - HANDLE_HEIGHT;
+  const bodyMaxHeight = maxDynamicContentSize - HANDLE_HEIGHT;
 
   if (isOpen && !hasOpenRequest) {
     setHasOpenRequest(true);
@@ -154,20 +158,20 @@ export function BottomSheet({
           >
             <SheetMeasuredSignal onMeasured={() => setIsMeasured(true)} />
             {hasFixedHeader ? (
-              <SheetBodyHostContext value>
+              <SheetFixedHeaderContext value>
                 <View
                   style={[
                     SHARED_SHEET_STYLES.content,
                     styles.fixedBody,
-                    { maxHeight: maxDynamicContentSize - HANDLE_HEIGHT },
+                    { maxHeight: bodyMaxHeight },
                   ]}
                 >
                   {children}
                 </View>
-              </SheetBodyHostContext>
+              </SheetFixedHeaderContext>
             ) : (
               <BottomSheetScrollView
-                style={{ maxHeight: maxDynamicContentSize - HANDLE_HEIGHT }}
+                style={{ maxHeight: bodyMaxHeight }}
                 contentContainerStyle={[
                   SHARED_SHEET_STYLES.content,
                   footer != null && { paddingBottom: footerHeight },
@@ -191,7 +195,7 @@ function SheetOverlay() {
   const { isOpen, onOpenChange } = useBottomSheet();
   const { progress } = useBottomSheetAnimation();
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.get(), [0, 1, 2], [0, OVERLAY_OPACITY, 0]),
+    opacity: interpolate(progress.get(), [0, 1, 2], [0, SHEET_OVERLAY_OPACITY, 0]),
   }));
 
   return (
@@ -258,11 +262,11 @@ const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'black' },
   fixedBody: { flexShrink: 1 },
   footer: {
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    paddingTop: SHEET_FOOTER_PADDING_TOP,
+    paddingHorizontal: SHEET_CONTENT_PADDING,
+    paddingBottom: SHEET_CONTENT_PADDING,
+    borderBottomLeftRadius: SHEET_RADIUS,
+    borderBottomRightRadius: SHEET_RADIUS,
   },
 });
 

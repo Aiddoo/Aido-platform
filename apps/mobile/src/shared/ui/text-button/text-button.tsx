@@ -5,7 +5,6 @@ import { Box } from '../box';
 import { ArrowRightIcon } from '../icon';
 import { Text } from '../text/text';
 import type { TextButtonProps } from './text-button.types';
-import { textButtonVariants } from './text-button.variants';
 
 const TEXT_SIZE_MAP = {
   xsmall: 'e2',
@@ -38,7 +37,7 @@ export function TextButton({
   return (
     <LinkButton
       isDisabled={isDisabled}
-      className={cn(textButtonVariants({ size, variant }), className)}
+      className={cn('flex-row items-center justify-center gap-0 disabled:opacity-40', className)}
       {...props}
     >
       <Text size={TEXT_SIZE_MAP[size]} shade={6} underline={variant === 'underline'}>

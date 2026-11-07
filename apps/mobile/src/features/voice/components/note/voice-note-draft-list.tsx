@@ -103,10 +103,10 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
           <MicIcon width={20} height={20} colorClassName="text-gray-7" />
         </Box>
         <VStack flex={1} gap={4}>
-          <Text size="b3" weight="medium" maxLines={1}>
+          <Text size="b3" weight="medium" numberOfLines={1}>
             {title}
           </Text>
-          <Text size="e1" shade={6} maxLines={1} className="tabular-nums">
+          <Text size="e1" shade={6} numberOfLines={1} className="tabular-nums">
             {t('result.meta', {
               date: formatDateLabel(note.createdAt, 'monthDay', dateFormatContext),
               duration: formatMediaTime(note.durationMs),

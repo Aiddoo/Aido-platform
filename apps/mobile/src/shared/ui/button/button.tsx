@@ -48,11 +48,9 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
-  const disabled = isDisabled || isLoading;
+  const isInactive = isDisabled || isLoading;
   const isTextChild = typeof children === 'string';
-
-  const baseTextColor = TEXT_COLOR_MAP[variant][color];
-  const textColor = disabled ? `${baseTextColor} opacity-40` : baseTextColor;
+  const textColor = cn(TEXT_COLOR_MAP[variant][color], isInactive && 'opacity-40');
 
   const renderContent = () => {
     if (isLoading) {
@@ -72,9 +70,9 @@ export function Button({
     <HeroButton
       variant={HERO_VARIANT_MAP[variant][color]}
       feedbackVariant="scale"
-      isDisabled={disabled}
+      isDisabled={isInactive}
       className={cn(
-        buttonVariants({ size, variant, color, display, radius, isDisabled: disabled }),
+        buttonVariants({ size, variant, color, display, radius, isDisabled: isInactive }),
         className,
       )}
       {...props}

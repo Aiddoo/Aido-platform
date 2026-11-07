@@ -59,7 +59,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
         <Text
           size="h1"
           weight="bold"
-          maxLines={1}
+          numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.6}
           className="shrink tracking-[6px] tabular-nums"
@@ -94,7 +94,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
       </HStack>
 
       <HStack align="center" justify="between" gap={8}>
-        <Text size="b3" shade={7} maxLines={1} className="flex-1" selectable>
+        <Text size="b3" shade={7} numberOfLines={1} className="flex-1" selectable>
           {myInvite.link.replace(/^https?:\/\//, '')}
         </Text>
 
