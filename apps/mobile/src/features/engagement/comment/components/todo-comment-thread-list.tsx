@@ -17,7 +17,7 @@ import {
   Result,
   Text,
   VStack,
-  InlineNotice,
+  InlineAlert,
 } from '@src/shared/ui';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
@@ -299,7 +299,7 @@ DoubleTapHint.Contents = function Contents({ accountId }: { accountId: string })
   }
 
   return (
-    <InlineNotice
+    <InlineAlert
       accessibilityRole="alert"
       testID="todo-comment-double-tap-hint"
       className="mx-4 mb-1 mt-3"

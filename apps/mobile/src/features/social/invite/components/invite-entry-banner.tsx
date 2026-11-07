@@ -6,7 +6,7 @@ import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queri
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
-import { Button, Image, InlineNotice, Text } from '@src/shared/ui';
+import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
@@ -22,7 +22,7 @@ function selectUserId(user: User) {
 export function InviteEntryBanner({
   className,
   ...props
-}: Pick<ComponentProps<typeof InlineNotice>, 'className' | 'testID'>) {
+}: Pick<ComponentProps<typeof InlineAlert>, 'className' | 'testID'>) {
   const { t } = useTranslation('invite');
   const todayKey = useTodayKey();
   const inviteService = useInviteService();
@@ -50,7 +50,7 @@ export function InviteEntryBanner({
   }
 
   return (
-    <InlineNotice
+    <InlineAlert
       className={className}
       image={
         <Image

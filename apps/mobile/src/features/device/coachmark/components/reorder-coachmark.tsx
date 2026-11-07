@@ -3,7 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { getErrorMessage } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { InfoIcon, InlineNotice } from '@src/shared/ui';
+import { InfoIcon, InlineAlert } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
@@ -67,7 +67,7 @@ ReorderCoachmark.Contents = function Contents({
   }
 
   return (
-    <InlineNotice
+    <InlineAlert
       accessibilityRole="alert"
       image={
         <InfoIcon

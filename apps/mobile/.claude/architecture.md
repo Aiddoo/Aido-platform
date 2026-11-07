@@ -325,6 +325,8 @@ function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogP
 
 **Props는 예측할 수 있게 쓴다.** 원본을 확장하면 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. `ReturnType<typeof useX>`로 props를 만들지 않고 인터페이스를 적는다.
 
+**원본 이름을 접미사로 쓴다.** heroui-native 부품이나 `shared/ui` 부품을 확장하면 파일은 `{역할}-xxx.tsx`, 컴포넌트는 `{역할}Xxx`다(`unread-notification-card.tsx`). `Card`, `Chip`, `Popover`, `Dialog`, `Alert`, `Tabs`, `Menu`, `Avatar`, `Skeleton`, `Separator`, `Button`은 원본 이름이 접미사다. `RadioGroup`·`InputOTP`은 `{역할}-input.tsx`로 쓰고 `value`·`onValueChange`를 지킨다. `PressableFeedback`은 동작만 주므로 `{역할}-button.tsx`나 `{역할}-row.tsx`다. 이름이 `*-card`이면 heroui `Card`를 쓰고, 목록 행이면 `-row`로 쓴다.
+
 ```tsx
 // features/notes/memo/components/memo-editor.tsx
 interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
@@ -406,7 +408,7 @@ MemoList.Loading = function Loading() {
 | 데이터에 따라 생기는 줄(설명, 하위 항목) | 로딩에서 그리지 않아 끝날 때 위 내용이 밀리지 않게 한다                                                                                  |
 | 받은 뒤 나타나는 버튼·배너               | 자리를 먼저 비워 두거나(`MemoCreateButton.Loading`, `MemoEditor.PaneLoading`의 버튼 줄), 대부분 안 보이면 자리를 잡지 않고 이유를 적는다 |
 | 오류 문구                                | `preserveErrorSpace`로 자리 유지. 입력 칸이 밀리지 않는다                                                                                |
-| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useFontScaledSize`, 칩은 `ActionChip.Icon`                                                                       |
+| 이미지·아이콘                            | 크기 고정. 글꼴 배율은 `useFontScaledSize`, 칩은 `ActionButton.Icon`                                                                     |
 | 재조회                                   | 화면에 데이터가 있으면 fallback으로 바꾸지 않는다. 키가 바뀌는 전환은 `startTransition`을 검토한다                                       |
 | 시트                                     | 내용 높이 변화는 기존 시트 측정을 쓴다. 키보드는 `KeyboardBottomSheet`, `react-native-keyboard-controller`                               |
 | 넓은 화면 전환                           | `AdaptivePane`으로 재마운트 없이 유지                                                                                                    |

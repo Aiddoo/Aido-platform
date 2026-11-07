@@ -71,7 +71,13 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 | 쿼리 키 값     | `schemas/{name}-query-key.schema.ts`. `Params`는 route에만 쓴다    |
 | 초안 키        | `utils/{feature}-draft.ts`                                         |
 | 표시 값        | `utils/{name}.view-model.ts`                                       |
+| 좌표·도형 계산 | `utils/{name}.geometry.ts`                                         |
+| Mutation Keys  | `constants/{entity}-mutation-keys.ts`                              |
+| 로그 키        | `constants/{entity}-log-events.ts`                                 |
+| 분석 이벤트    | `constants/{entity}.events.ts`                                     |
 | 테스트 fixture | `__tests__/{entity}.fixtures.ts`                                   |
+
+파일 이름의 접두사는 그 파일이 다루는 entity 이름이다(`todo-comment.*`, `todo-category.*`). 같은 feature에서 다른 접두사를 쓰지 않는다.
 
 대부분의 feature를 이 모양으로 옮겼다. 남은 옛 패턴은 차이 목록에 적었다. 차이 목록: [아직 옮기지 않은 것](.claude/architecture.md#아직-옮기지-않은-것). 층과 허용 import: [층과 의존](.claude/architecture.md#층과-의존).
 

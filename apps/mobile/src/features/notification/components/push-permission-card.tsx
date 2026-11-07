@@ -2,7 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, InlineNotice } from '@src/shared/ui';
+import { Button, InlineAlert } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -76,7 +76,7 @@ PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps)
 
   return (
     <>
-      <InlineNotice
+      <InlineAlert
         className={className}
         image={null}
         title={t('permission.card.askTitle')}
@@ -108,7 +108,7 @@ PushPermissionCard.RequestSystem = function RequestSystem({
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
 
   return (
-    <InlineNotice
+    <InlineAlert
       className={className}
       image={null}
       title={t('permission.card.deniedTitle')}
@@ -144,7 +144,7 @@ PushPermissionCard.OpenSettings = function OpenSettings({ className, onDismiss }
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
 
   return (
-    <InlineNotice
+    <InlineAlert
       className={className}
       image={null}
       title={t('permission.card.deniedTitle')}
@@ -174,7 +174,7 @@ PushPermissionCard.EnableInApp = function EnableInApp({ className, onDismiss }: 
   const navigate = useSingleTap(router.navigate);
 
   return (
-    <InlineNotice
+    <InlineAlert
       className={className}
       image={null}
       title={t('permission.card.appOffTitle')}

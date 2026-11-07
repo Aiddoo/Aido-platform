@@ -1,7 +1,7 @@
 import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { InlineNotice, TextButton } from '@src/shared/ui';
+import { InlineAlert, TextButton } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAiDataSharingConsentGate } from '../hooks/use-ai-data-sharing-consent-gate';
@@ -26,7 +26,7 @@ export function AiConsentNotice({ title }: AiConsentNoticeProps) {
   }
 
   return (
-    <InlineNotice
+    <InlineAlert
       title={title}
       image={null}
       action={

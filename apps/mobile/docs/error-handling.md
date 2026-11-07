@@ -81,6 +81,13 @@ onError: (error) => {
 
 `toast.error(error, { fallback })`는 사용자 문구면 그 메시지를, 아니면 fallback을 보여 준다.
 
+## 서버 오류를 읽는 곳
+
+- 서버 오류는 `domains/{feature}.error.ts`의 이름 있는 판별 함수(`isLocationNotRegisteredError`)로만 읽는다. `*.error.ts` 밖에서 `isApiError`, `hasCode`, `error.status`를 직접 비교하지 않는다. 파일이 없으면 만든다. 공용 분류(`shared/errors`, 재시도 규칙, 오류 경계)만 예외다.
+- 연결 끊김·시간 초과 판별은 `shared/errors/infra-error.ts`의 `isConnectivityError` 하나다. feature에 같은 판별을 다시 만들지 않는다.
+- 일반 `throw new Error`는 Context 가드(`must be used within …`)와 어댑터의 환경 오류(모듈 없음)만 쓴다. 나머지는 `InfraError` 계열이나 `BusinessError`다. 전용 class는 추가 데이터가 있을 때만 이유 주석과 함께 둔다.
+- 오류 코드 문자열, 사용자 문구, Sentry severity 규칙은 바꾸지 않는다.
+
 ## Track 2: 기능 오류 (BusinessError)
 
 서버에 보내기 전에 Policy가 거부하거나(자기 자신에게 친구 요청, 한도 초과), 외부 SDK 오류를 도메인 언어로 바꿀 때 쓴다. 폼 형식 검증은 Zod + react-hook-form이 맡는다. `ApiError`와 별개다.

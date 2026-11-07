@@ -10,7 +10,7 @@ import { Text } from '../text';
 const ICON_SIZE = 16;
 const ICON_FONT_SCALE_RATIO = 0.3;
 
-interface ActionChipProps extends Omit<
+interface ActionButtonProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
   'children' | 'onPress'
 > {
@@ -20,13 +20,13 @@ interface ActionChipProps extends Omit<
   onPress?: PressableProps['onPress'];
 }
 
-export function ActionChip({
+export function ActionButton({
   icon,
   label,
   isActive = false,
   className,
   ...props
-}: ActionChipProps) {
+}: ActionButtonProps) {
   return (
     <PressableFeedback
       accessibilityRole="button"
@@ -51,11 +51,11 @@ export function ActionChip({
 }
 
 /** 칩과 같은 높이로 자리를 잡아 카테고리를 읽은 뒤 칩 줄이 밀리지 않게 한다 */
-ActionChip.Loading = function Loading({ className }: { className?: string }) {
+ActionButton.Loading = function Loading({ className }: { className?: string }) {
   return <Skeleton className={cn('h-8 w-24 rounded-full', className)} />;
 };
 
-ActionChip.Icon = function Icon({
+ActionButton.Icon = function Icon({
   as: IconComponent,
   colorClassName,
 }: {
@@ -68,4 +68,4 @@ ActionChip.Icon = function Icon({
   return <IconComponent width={size} height={size} colorClassName={colorClassName} />;
 };
 
-export type { ActionChipProps };
+export type { ActionButtonProps };

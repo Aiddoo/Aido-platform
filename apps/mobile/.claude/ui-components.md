@@ -56,7 +56,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `Steps`                                                                                    | 단계 진행 점(`Steps.Dots`)과 이전·다음 버튼(`Steps.Buttons`). 단계 상태는 `useStepper`                                                     | `src/shared/ui/steps/steps.md`                                 |
 | `IconButton`                                                                               | 아이콘만 있는 버튼. role·label 필수, 터치 44                                                                                               | `src/shared/ui/icon-button/icon-button.md`                     |
 | `InfiniteList`                                                                             | 서버 커서 목록(FlashList 확장). 하단 로딩·재시도·중복 호출 방지·당겨서 새로고침                                                            | `src/shared/ui/infinite-list/infinite-list.md`                 |
-| `InlineNotice`                                                                             | 흐름 안 배너(제목·설명·행동·닫기·이미지). 인라인 안내의 유일한 부품                                                                        | `src/shared/ui/inline-notice/inline-notice.md`                 |
+| `InlineAlert`                                                                              | 흐름 안 배너(제목·설명·행동·닫기·이미지). 인라인 안내의 유일한 부품                                                                        | `src/shared/ui/inline-alert/inline-alert.md`                   |
 | `Input`                                                                                    | 입력 필드                                                                                                                                  | `src/shared/ui/input/input.md`                                 |
 | `BottomSheetInput`                                                                         | BottomSheet 내부 입력 필드                                                                                                                 | `src/shared/ui/input/input.md`                                 |
 | `Spacing`                                                                                  | 간격 유틸리티                                                                                                                              | `src/shared/ui/spacing/spacing.md`                             |
@@ -88,7 +88,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `SheetRouteScreen`, `useSheetRoute`                                                        | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기                                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`                   |
 | `useStackScreenOptions`, `useStackBackToolbar`                                             | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기                                                                     | `src/shared/ui/stack-header/stack-header.md`                   |
 | `FormStepLayout`                                                                           | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)                                                                           | `src/shared/ui/form-step-layout/form-step-layout.md`           |
-| `ActionChip`                                                                               | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-chip/action-chip.md`                     |
+| `ActionButton`                                                                             | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-button/action-button.md`                 |
 | `ListRow`                                                                                  | 썸네일·텍스트가 있는 목록 행                                                                                                               | `src/shared/ui/list-row/list-row.md`                           |
 | `OverlayProvider`, `useOverlay`                                                            | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                                                                                 | `src/shared/ui/overlay/overlay.md`                             |
 | `PremiumDialog`                                                                            | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움                                                                | `src/shared/ui/premium-dialog/premium-dialog.md`               |
@@ -162,22 +162,22 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 이름만 보고 무엇을 하는지, 어떤 원본을 확장했는지 알 수 있게 짓는다.
 
-| 대상                   | 규칙                                                                     | 예                                                     |
-| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
-| 원본을 확장한 컴포넌트 | 원본 이름으로 끝난다                                                     | `TodoCreateBottomSheet`, `ConfirmDialog`, `ActionChip` |
-| 그 외 컴포넌트         | PascalCase, 대상 + 역할                                                  | `MemoList`, `MemoEditor`, `WeatherHero`                |
-| 값을 입력받는 컴포넌트 | `…Input`                                                                 | `BottomSheetInput`                                     |
-| 피커 내용              | `*PickerContent`, `value`/`onChange`/`onCancel`                          | `TodoDatePickerContent`                                |
-| 파일                   | kebab-case, 주 컴포넌트·훅과 같은 이름                                   | `memo-list.tsx`, `use-memo-params.ts`                  |
-| 이벤트 prop / 핸들러   | `onX` / `handleX`                                                        | `onLeave`, `handleBack`                                |
-| 불리언                 | `is`, `has`, `can`, `should`                                             | `isEditing`, `hasNextPage`                             |
-| 상태 훅                | `[value, setValue]`                                                      | `[selectedMemoId, setSelectedMemoId]`                  |
-| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지 | `canCreateMemo`, `getMemoPreview`                      |
-| 변환·생성·불변 갱신    | `toX`, `createX`, `withX`                                                | `toMemo`, `createMemoDraftKey`                         |
-| 상수                   | SCREAMING_SNAKE, 값의 뜻                                                 | `DEFAULT_PAGE_SIZE`, `EMPTY_MEMO_FORM_VALUES`          |
-| 타입, Props            | PascalCase, Props는 `XProps`                                             | `MemoEditorProps`                                      |
-| 스키마                 | camelCase + `Schema`, 타입은 `z.infer`                                   | `memoSchema`, `Memo`                                   |
-| 축약                   | 쓰지 않는다                                                              | `button`, `message`, `index`                           |
+| 대상                   | 규칙                                                                     | 예                                                       |
+| ---------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
+| 원본을 확장한 컴포넌트 | 원본 이름으로 끝난다                                                     | `TodoCreateBottomSheet`, `ConfirmDialog`, `ActionButton` |
+| 그 외 컴포넌트         | PascalCase, 대상 + 역할                                                  | `MemoList`, `MemoEditor`, `WeatherHero`                  |
+| 값을 입력받는 컴포넌트 | `…Input`                                                                 | `BottomSheetInput`                                       |
+| 피커 내용              | `*PickerContent`, `value`/`onChange`/`onCancel`                          | `TodoDatePickerContent`                                  |
+| 파일                   | kebab-case, 주 컴포넌트·훅과 같은 이름                                   | `memo-list.tsx`, `use-memo-params.ts`                    |
+| 이벤트 prop / 핸들러   | `onX` / `handleX`                                                        | `onLeave`, `handleBack`                                  |
+| 불리언                 | `is`, `has`, `can`, `should`                                             | `isEditing`, `hasNextPage`                               |
+| 상태 훅                | `[value, setValue]`                                                      | `[selectedMemoId, setSelectedMemoId]`                    |
+| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지 | `canCreateMemo`, `getMemoPreview`                        |
+| 변환·생성·불변 갱신    | `toX`, `createX`, `withX`                                                | `toMemo`, `createMemoDraftKey`                           |
+| 상수                   | SCREAMING_SNAKE, 값의 뜻                                                 | `DEFAULT_PAGE_SIZE`, `EMPTY_MEMO_FORM_VALUES`            |
+| 타입, Props            | PascalCase, Props는 `XProps`                                             | `MemoEditorProps`                                        |
+| 스키마                 | camelCase + `Schema`, 타입은 `z.infer`                                   | `memoSchema`, `Memo`                                     |
+| 축약                   | 쓰지 않는다                                                              | `button`, `message`, `index`                             |
 
 - **쓰지 않는 이름:** `Section`, `Body`, `Frame`, `Wrapper`, `Inner`, 역할 없는 `Content`. 위치만 뜻해 분리 근거가 되지 않는다. 시트 안쪽의 `XBottomSheet.Content`와 null을 좁혀 넘기는 `X.Contents`는 쓴다.
 - **네임스페이스:** `Item`, `Loading`, `Error`, `Empty`가 본체 없이는 의미가 없으면 본체 파일의 지역 컴포넌트나 compound member로 둔다.
@@ -187,7 +187,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 ## 도메인 다이얼로그와 안내 카드
 
 - 도메인 다이얼로그는 `ConfirmDialog`를 감싸 `Omit<ComponentProps<typeof ConfirmDialog>, 'title' | 'description' | 'cancelButton' | 'confirmButton' | 'secondaryButton'>`로 확장한다. `isOpen`/`onOpenChange`는 원본 그대로 받고 문구·버튼은 안에서 채운다(`PushPermissionDialog`). 사용법은 [confirm-dialog.md](../src/shared/ui/confirm-dialog/confirm-dialog.md)를 본다.
-- 안내 배너(`PushPermissionCard`, `MarketingPushOptInBanner`, `WhatsNewEntryCard`, `InviteEntryBanner`, `ReorderCoachmark`)는 `InlineNotice` 하나로 그린다. 기본 모양이 `rounded-xl bg-gray-1 px-4 py-3.5`다. 바깥 간격(`mx-4 mb-3`)은 컴포넌트가 아니라 Screen이 `className`으로 넘긴다.
+- 안내 배너(`PushPermissionCard`, `MarketingPushOptInBanner`, `WhatsNewEntryCard`, `InviteEntryBanner`, `ReorderCoachmark`)는 `InlineAlert` 하나로 그린다. 기본 모양이 `rounded-xl bg-gray-1 px-4 py-3.5`다. 바깥 간격(`mx-4 mb-3`)은 컴포넌트가 아니라 Screen이 `className`으로 넘긴다.
 
 ## 상태·글꼴 배율·시트 규칙
 
@@ -262,7 +262,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 | 대상                                                                                               | 이유                                                                                                                                                                                                                                |
 | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ActionChip`, 눌리는 칩(오늘 칩, 초대 코드 붙여넣기, 반복 프리셋·요일)                             | heroui `Chip`은 `PressableFeedback`이 아니라 `Pressable`이라 눌림 크기 변화가 사라진다. 요일 `TagGroup`은 프리셋·요일이 한 가로 `ScrollView`에서 폼 값으로 토글되는 구조와 맞지 않는다                                              |
+| `ActionButton`, 눌리는 칩(오늘 칩, 초대 코드 붙여넣기, 반복 프리셋·요일)                           | heroui `Chip`은 `PressableFeedback`이 아니라 `Pressable`이라 눌림 크기 변화가 사라진다. 요일 `TagGroup`은 프리셋·요일이 한 가로 `ScrollView`에서 폼 값으로 토글되는 구조와 맞지 않는다                                              |
 | 친구 검색 `SearchField`                                                                            | 안쪽 `Input`의 포커스 표시가 iOS outline·Android border로 앱 `Input`(테두리 `main`)과 다르고, 글꼴 5단계는 `resolveSize` 스타일을 따로 줘야 한다. `Input` 본체 교체 금지 목록의 이유(시트·키보드 회귀)와 같아 기기 비교 후에 옮긴다 |
 | 행 버튼 13곳 `ListGroup.Item`                                                                      | `ListRow`가 앱 글꼴·들여쓴 구분선·슬롯을 이미 맡는다. `ListGroup.Item`의 제목·설명은 heroui 글꼴이고 안쪽 여백 16이 달라 모양이 바뀐다                                                                                              |
 | 구분선 `border-t` 컨테이너(반복 푸터), `AdaptivePane`, `DashedDivider`, `Input`/`Tabs` 아래 테두리 | 컨테이너 테두리이거나 점선·교체 금지 대상이다                                                                                                                                                                                       |

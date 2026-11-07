@@ -1,9 +1,9 @@
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
-import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { tv } from '@src/shared/utils/tv';
 import { range } from 'es-toolkit';
-import { GlassView } from 'heroui-native';
-import type { ReactNode } from 'react';
+import { Card, GlassView } from 'heroui-native';
+import type { ComponentProps, ReactNode } from 'react';
 import { useUniwind } from 'uniwind';
 
 import { ALERT_SURFACE_COLORS } from '../constants/weather-colors';
@@ -14,7 +14,7 @@ const HAS_BACKDROP_BLUR = process.env.EXPO_OS === 'ios';
 
 const weatherCard = tv({
   slots: {
-    frame: 'grow overflow-hidden rounded-[22px] border-[0.5px]',
+    frame: 'grow gap-0 overflow-hidden rounded-[22px] border-[0.5px] p-0',
     body: 'grow gap-2',
   },
   variants: {
@@ -28,13 +28,16 @@ const weatherCard = tv({
 
 type WeatherCardTone = 'default' | 'alert';
 
-interface WeatherCardProps {
+interface WeatherCardProps extends Omit<
+  ComponentProps<typeof Card>,
+  'variant' | 'className' | 'children'
+> {
   title?: string;
   icon?: ReactNode;
   /** alert는 특보처럼 주의를 끄는 주황 유리 면이다. */
   tone?: WeatherCardTone;
   density?: 'default' | 'tile';
-  /** 카드 안쪽 여백·간격을 시안의 카드별 값으로 바꿀 때 쓴다. */
+  /** 카드 면이 아니라 안쪽(body) 여백·간격을 시안의 카드별 값으로 바꿀 때 쓴다. */
   className?: string;
   children: ReactNode;
 }
@@ -64,13 +67,20 @@ export function WeatherCard({
   density,
   className,
   children,
+  style,
+  ...cardProps
 }: WeatherCardProps) {
   const { background, edge, isOpaque } = useCardSurface(tone);
   const minimumFontScale = useMinimumFontScale('b4');
   const styles = weatherCard({ density });
 
   return (
-    <Box className={styles.frame()} style={{ borderColor: edge }}>
+    <Card
+      variant="transparent"
+      className={styles.frame()}
+      style={[{ borderColor: edge }, style]}
+      {...cardProps}
+    >
       {HAS_BACKDROP_BLUR && !isOpaque && (
         <GlassView intensity={GLASS_INTENSITY} tint="systemUltraThinMaterialDark" />
       )}
@@ -92,7 +102,7 @@ export function WeatherCard({
         )}
         {children}
       </VStack>
-    </Box>
+    </Card>
   );
 }
 

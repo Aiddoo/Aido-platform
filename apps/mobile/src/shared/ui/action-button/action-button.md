@@ -1,14 +1,14 @@
-# ActionChip
+# ActionButton
 
 선택 가능한 액션 칩 컴포넌트. 아이콘 + 라벨 조합으로 필터/옵션 선택에 사용.
 
 ## 사용법
 
 ```tsx
-import { ActionChip, CalendarIcon } from '@src/shared/ui';
+import { ActionButton, CalendarIcon } from '@src/shared/ui';
 
-<ActionChip
-  icon={<ActionChip.Icon as={CalendarIcon} colorClassName="text-main" />}
+<ActionButton
+  icon={<ActionButton.Icon as={CalendarIcon} colorClassName="text-main" />}
   label="오늘"
   isActive
   onPress={() => {}}
@@ -32,17 +32,17 @@ import { ActionChip, CalendarIcon } from '@src/shared/ui';
 
 ### 아이콘
 
-- `ActionChip.Icon`: 글꼴 배율에 맞춘 칩 아이콘 크기(`fontScaledSize(16, 0.3)`)를 칩이 정한다. 아이콘이 아닌 표시(카테고리 색 점)는 `icon`에 바로 넘긴다.
+- `ActionButton.Icon`: 글꼴 배율에 맞춘 칩 아이콘 크기(`fontScaledSize(16, 0.3)`)를 칩이 정한다. 아이콘이 아닌 표시(카테고리 색 점)는 `icon`에 바로 넘긴다.
 
 ## 파일 구조
 
 ```
-ActionChip/
-├── ActionChip.tsx   # 컴포넌트 구현
-├── ActionChip.md    # 문서
+ActionButton/
+├── ActionButton.tsx   # 컴포넌트 구현
+├── ActionButton.md    # 문서
 └── index.ts         # export
 ```
 
 ## heroui `Chip`으로 옮기지 않은 이유
 
-heroui `Chip`은 `Pressable`이라 눌림 크기 변화가 없고 role도 없다. `ActionChip`은 `PressableFeedback` 위에서 눌림, 고정 높이 32, role `button`을 함께 갖는다.
+heroui `Chip`은 `Pressable`이라 눌림 크기 변화가 없고 role도 없다. `ActionButton`은 `PressableFeedback` 위에서 눌림, 고정 높이 32, role `button`을 함께 갖는다.

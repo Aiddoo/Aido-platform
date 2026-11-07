@@ -1,10 +1,11 @@
 import { useWeatherService } from '@src/bootstrap/providers/di-context';
 import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import { isApiError, unwrap } from '@src/shared/errors';
+import { unwrap } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { isLocationUpdateRejectedError } from '../domains/weather.error';
 import { type Coordinates } from '../schemas/weather-location.schema';
 import { invalidateWeatherReports, setRegisteredWeatherLocation } from './weather-cache';
 
@@ -22,7 +23,7 @@ export function useUpdateWeatherLocationMutationOptions() {
       return invalidateWeatherReports(queryClient);
     },
     onError: (error) => {
-      if (isApiError(error)) {
+      if (isLocationUpdateRejectedError(error)) {
         toast.error(error.message);
         return;
       }

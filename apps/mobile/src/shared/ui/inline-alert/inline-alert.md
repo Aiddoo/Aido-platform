@@ -1,4 +1,4 @@
-# InlineNotice
+# InlineAlert
 
 흐름 안에서 할 일이나 상태를 알리는 배너의 유일한 부품이다. heroui `Alert` + `CloseButton` 위에 앱 글꼴 `<Text>`를 얹는다.
 특정 버튼을 가리키는 첫 안내(말풍선)는 `CoachmarkPopover`가 맡는다.
@@ -6,9 +6,9 @@
 ## 사용법
 
 ```tsx
-import { Button, InlineNotice } from '@src/shared/ui';
+import { Button, InlineAlert } from '@src/shared/ui';
 
-<InlineNotice
+<InlineAlert
   status="warning"
   title={t('notice.title')}
   description={t('notice.description')}
@@ -40,8 +40,8 @@ import { Button, InlineNotice } from '@src/shared/ui';
 ## 파일 구조
 
 ```
-inline-notice/
-├── inline-notice.tsx
-├── inline-notice.md
+inline-alert/
+├── inline-alert.tsx
+├── inline-alert.md
 └── index.ts
 ```

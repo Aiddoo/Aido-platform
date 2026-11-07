@@ -1,4 +1,4 @@
-export { ActionChip } from './action-chip';
+export { ActionButton } from './action-button';
 export { AdaptivePane, getPrimaryPaneWidth, useAdaptivePaneLayoutKey } from './adaptive-pane';
 export { Avatar } from './avatar';
 export { Barcode } from './barcode';
@@ -95,7 +95,7 @@ export { IconButton, type IconButtonProps } from './icon-button';
 export * from './icon-count-button';
 export { Image } from './image';
 export { InfiniteList, InfiniteListFooter, useFetchNextPage } from './infinite-list';
-export { InlineNotice } from './inline-notice';
+export { InlineAlert } from './inline-alert';
 export { BottomSheetInput, Input } from './input';
 export { ListRow, type ListRowProps } from './list-row';
 export { OfflineBanner } from './offline-banner';

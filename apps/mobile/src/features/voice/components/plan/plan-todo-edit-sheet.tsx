@@ -13,7 +13,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ActionChip,
+  ActionButton,
   BottomSheetInput,
   Box,
   Button,
@@ -166,8 +166,8 @@ function DateChip({ form }: PlanTodoChipProps) {
   };
 
   return (
-    <ActionChip
-      icon={<ActionChip.Icon as={CalendarIcon} colorClassName="text-main" />}
+    <ActionButton
+      icon={<ActionButton.Icon as={CalendarIcon} colorClassName="text-main" />}
       label={
         endDate == null ? singleDayLabel : formatDateKeyRange(startDate, endDate, dateFormatContext)
       }
@@ -216,9 +216,9 @@ function TimeChip({ form }: PlanTodoChipProps) {
   };
 
   return (
-    <ActionChip
+    <ActionButton
       icon={
-        <ActionChip.Icon
+        <ActionButton.Icon
           as={ClockIcon}
           colorClassName={scheduledTime == null ? 'text-gray-5' : 'text-main'}
         />
@@ -265,9 +265,9 @@ function RepeatChip({ form }: PlanTodoChipProps) {
   };
 
   return (
-    <ActionChip
+    <ActionButton
       icon={
-        <ActionChip.Icon
+        <ActionButton.Icon
           as={RepeatIcon}
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
@@ -285,12 +285,12 @@ function VisibilityChip({ form }: PlanTodoChipProps) {
   const isPrivate = TodoPolicy.isPrivate({ visibility });
 
   return (
-    <ActionChip
+    <ActionButton
       icon={
         isPrivate ? (
-          <ActionChip.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
+          <ActionButton.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
         ) : (
-          <ActionChip.Icon as={EyeIcon} colorClassName="text-gray-5" />
+          <ActionButton.Icon as={EyeIcon} colorClassName="text-gray-5" />
         )
       }
       label={isPrivate ? t('chip.private') : t('chip.public')}
@@ -332,7 +332,7 @@ function CategoryChip({
   };
 
   return (
-    <ActionChip
+    <ActionButton
       icon={
         <Box
           className={cn('size-2 rounded-full', category == null && 'bg-gray-5')}

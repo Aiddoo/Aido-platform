@@ -3,7 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { InlineNotice, Spacing, Text } from '@src/shared/ui';
+import { InlineAlert, Spacing, Text } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 import { match } from 'ts-pattern';
@@ -42,7 +42,7 @@ function Ending() {
 
   return (
     <>
-      <InlineNotice
+      <InlineAlert
         status="accent"
         accessibilityRole="summary"
         className="rounded-2xl bg-main/10"

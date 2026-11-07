@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { InlineNotice } from '@src/shared/ui';
+import { InlineAlert } from '@src/shared/ui';
 
 import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-prompt';
 
@@ -17,7 +17,7 @@ export function MarketingPushOptInBanner({ className }: MarketingPushOptInBanner
   }
 
   return (
-    <InlineNotice
+    <InlineAlert
       className={className}
       image={null}
       title={t('marketingOptIn.bannerTitle')}

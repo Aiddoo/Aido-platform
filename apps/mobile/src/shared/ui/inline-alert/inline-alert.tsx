@@ -13,9 +13,9 @@ const CLOSE_ICON_SIZE = 20;
 /** 닫기 버튼은 작게 그리고 손가락 닿는 자리는 44로 맞춘다 */
 const CLOSE_HIT_SLOP = 12;
 
-type InlineNoticeStatus = NonNullable<ComponentProps<typeof Alert>['status']>;
+type InlineAlertStatus = NonNullable<ComponentProps<typeof Alert>['status']>;
 
-export interface InlineNoticeProps extends Omit<ComponentProps<typeof Alert>, 'children'> {
+export interface InlineAlertProps extends Omit<ComponentProps<typeof Alert>, 'children'> {
   /** 강조 단어가 있으면 글자 조각을 넘긴다. 한 문장 안내는 비우고 description만 쓴다 */
   title?: ReactNode;
   description?: string;
@@ -36,7 +36,7 @@ export interface InlineNoticeProps extends Omit<ComponentProps<typeof Alert>, 'c
  * 흐름 안에서 할 일이나 상태를 알리는 배너. 첫 안내처럼 특정 버튼을 가리키는 말풍선은
  * `CoachmarkPopover`가 맡고, 그 밖의 인라인 안내는 모두 이 부품으로 한다.
  */
-export function InlineNotice({
+export function InlineAlert({
   status = 'default',
   title,
   description,
@@ -48,7 +48,7 @@ export function InlineNotice({
   closeLabel,
   className,
   ...props
-}: InlineNoticeProps) {
+}: InlineAlertProps) {
   const { t } = useTranslation('common');
   const fontScaledSize = useFontScaledSize();
 
@@ -113,7 +113,7 @@ export function InlineNotice({
   );
 }
 
-function getTextTone(status: InlineNoticeStatus): TextTone {
+function getTextTone(status: InlineAlertStatus): TextTone {
   return match(status)
     .with('default', () => 'neutral' as const)
     .with('accent', () => 'brand' as const)

@@ -14,7 +14,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ActionChip,
+  ActionButton,
   ArrowUpIcon,
   Box,
   CalendarIcon,
@@ -72,7 +72,7 @@ export function TodoComposerChips({
       <VisibilityChip form={form} />
       {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
       <QueryErrorBoundary fallback={() => null}>
-        <Suspense fallback={<ActionChip.Loading />}>
+        <Suspense fallback={<ActionButton.Loading />}>
           <CategoryChip form={form} />
         </Suspense>
       </QueryErrorBoundary>
@@ -219,8 +219,8 @@ function DateChip({
   };
 
   return (
-    <ActionChip
-      icon={<ActionChip.Icon as={CalendarIcon} colorClassName="text-main" />}
+    <ActionButton
+      icon={<ActionButton.Icon as={CalendarIcon} colorClassName="text-main" />}
       label={
         endDateKey == null || endDateKey === startDateKey
           ? singleDayLabel
@@ -270,9 +270,9 @@ function TimeChip({ form }: { form: ComposerForm }) {
   };
 
   return (
-    <ActionChip
+    <ActionButton
       icon={
-        <ActionChip.Icon
+        <ActionButton.Icon
           as={ClockIcon}
           colorClassName={displayedTime == null ? 'text-gray-5' : 'text-main'}
         />
@@ -287,15 +287,15 @@ function TimeChip({ form }: { form: ComposerForm }) {
 function RepeatChip({
   form,
   onPress,
-}: Pick<ComponentProps<typeof ActionChip>, 'onPress'> & { form: ComposerForm }) {
+}: Pick<ComponentProps<typeof ActionButton>, 'onPress'> & { form: ComposerForm }) {
   const { t } = useTranslation('todo');
   const dateFormatContext = useDateFormatContext();
   const repeat = useWatch({ control: form.control, name: 'repeat' });
 
   return (
-    <ActionChip
+    <ActionButton
       icon={
-        <ActionChip.Icon
+        <ActionButton.Icon
           as={RepeatIcon}
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
@@ -318,12 +318,12 @@ function VisibilityChip({ form }: { form: ComposerForm }) {
         const isPrivate = TodoPolicy.isPrivate({ visibility: value });
 
         return (
-          <ActionChip
+          <ActionButton
             icon={
               isPrivate ? (
-                <ActionChip.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
+                <ActionButton.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
               ) : (
-                <ActionChip.Icon as={EyeIcon} colorClassName="text-gray-5" />
+                <ActionButton.Icon as={EyeIcon} colorClassName="text-gray-5" />
               )
             }
             label={isPrivate ? t('chip.private') : t('chip.public')}
@@ -351,7 +351,7 @@ function CategoryChip({ form }: { form: ComposerForm }) {
         const category = categories.find(({ id }) => id === categoryId);
 
         return (
-          <ActionChip
+          <ActionButton
             icon={
               <Box
                 className={cn('size-2 rounded-full', category == null && 'bg-gray-5')}
