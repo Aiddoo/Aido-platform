@@ -22,6 +22,9 @@ const ICON_SIZE_MAP = {
   xlarge: 20,
 } as const;
 
+/** 글자 줄 높이만큼만 눌려 44pt에 못 미치므로, 모양은 두고 눌리는 범위만 넓힌다 */
+const HIT_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
+
 /**
  * heroui `LinkButton`(ghost, 높이·안쪽 여백 없음) 위에 글자 크기 5단계를 얹는다.
  * 글자는 앱 글꼴 설정을 따르도록 heroui 라벨 대신 자식 `Text`로 넣는다.
@@ -31,12 +34,14 @@ export function TextButton({
   size = 'medium',
   variant = 'clear',
   isDisabled = false,
+  hitSlop = HIT_SLOP,
   className,
   ...props
 }: TextButtonProps) {
   return (
     <LinkButton
       isDisabled={isDisabled}
+      hitSlop={hitSlop}
       className={cn('flex-row items-center justify-center gap-0 disabled:opacity-40', className)}
       {...props}
     >

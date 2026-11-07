@@ -25,6 +25,9 @@ interface AppToastProps {
 
 const ICON_SIZE = 20;
 
+/** 행동 버튼 높이가 44pt에 못 미치므로 모양은 두고 눌리는 범위만 위아래로 넓힌다 */
+const ACTION_HIT_SLOP = { top: 8, bottom: 8 };
+
 const VARIANT_ICON_MAP: Record<AppToastVariant, ReactNode> = {
   default: null,
   success: <ToastSuccessIcon width={ICON_SIZE} height={ICON_SIZE} />,
@@ -60,6 +63,8 @@ export function AppToast({
 
         {action && (
           <PressableFeedback
+            accessibilityRole="button"
+            hitSlop={ACTION_HIT_SLOP}
             onPress={() => {
               action.onPress?.();
               toastProps.hide();
