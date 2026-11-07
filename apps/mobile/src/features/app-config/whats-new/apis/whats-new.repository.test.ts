@@ -5,8 +5,8 @@ import { toInstant } from '@src/shared/date/instant';
 import {
   createWhatsNewRepository,
   parseReentryOpenedAt,
-  whatsNewReentryKey,
-  whatsNewSeenKey,
+  createWhatsNewReentryKey,
+  createWhatsNewSeenKey,
 } from './whats-new.repository';
 
 const identity = { userId: 'user-1', campaignId: 'feature-discovery-2026-08' };
@@ -43,10 +43,10 @@ describe('whats-new 본 기록', () => {
     const repository = createWhatsNewRepository(storage);
 
     // Then
-    expect(whatsNewSeenKey(identity)).toBe(
+    expect(createWhatsNewSeenKey(identity)).toBe(
       'aido_feature_discovery_seen_v1:user-1:feature-discovery-2026-08',
     );
-    expect(whatsNewReentryKey(identity)).toBe(
+    expect(createWhatsNewReentryKey(identity)).toBe(
       'aido_feature_discovery_reentry_v1:user-1:feature-discovery-2026-08',
     );
     expect(repository.claimSeen(identity, claimedAt)).toBe(false);
@@ -81,7 +81,7 @@ describe('whats-new 재진입 시각', () => {
 
     // Then
     expect(reclaimed).toBe(false);
-    expect(storage.get(whatsNewReentryKey(identity))).toBeUndefined();
+    expect(storage.get(createWhatsNewReentryKey(identity))).toBeUndefined();
   });
 
   it('한 계정·캠페인에서 닫아도 다른 계정과 새 캠페인의 기록은 남는다', () => {
@@ -98,8 +98,8 @@ describe('whats-new 재진입 시각', () => {
     repository.dismissReentry(identity);
 
     // Then
-    expect(storage.get(whatsNewReentryKey(otherUser))).toBe(claimedAt);
-    expect(storage.get(whatsNewReentryKey(nextCampaign))).toBe(claimedAt);
+    expect(storage.get(createWhatsNewReentryKey(otherUser))).toBe(claimedAt);
+    expect(storage.get(createWhatsNewReentryKey(nextCampaign))).toBe(claimedAt);
   });
 
   it('저장소에서 지우지 못해도 멈추지 않는다', () => {

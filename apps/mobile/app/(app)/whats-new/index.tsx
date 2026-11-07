@@ -7,16 +7,16 @@ import { ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { match } from 'ts-pattern';
 
 export default function WhatsNewRoute() {
-  const { releaseId, source } = useWhatsNewParams();
+  const { releaseId } = useWhatsNewParams();
   const isInviteAvailable = useInviteAvailability();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <ReadableContent flex={1} px={20} pb={16}>
         {match(releaseId)
-          .with(RELEASE_ID.v1_15_0, () => <Release1150Steps source={source} />)
+          .with(RELEASE_ID.v1_15_0, () => <Release1150Steps />)
           .with(RELEASE_ID.v1_14_0, () => (
-            <Release1140Steps source={source} isInviteAvailable={isInviteAvailable} />
+            <Release1140Steps isInviteAvailable={isInviteAvailable} />
           ))
           .exhaustive()}
       </ReadableContent>

@@ -15,11 +15,11 @@ import { useEffect, useRef } from 'react';
 
 import { WHATS_NEW_LOG_EVENT } from '../constants/whats-new-log-events';
 import type { Release } from '../schemas/release.schema';
-import type { FeatureHubSource } from '../schemas/whats-new-params.schema';
+import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 
 interface WhatsNewFlowInput {
   release: Pick<Release, 'id' | 'campaignId'>;
-  source: FeatureHubSource;
+  source: WhatsNewSource;
 }
 
 function goBack() {

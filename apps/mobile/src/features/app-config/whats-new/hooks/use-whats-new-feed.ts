@@ -12,8 +12,8 @@ import { useEffect, useMemo } from 'react';
 
 import {
   parseReentryOpenedAt,
-  whatsNewReentryKey,
-  whatsNewSeenKey,
+  createWhatsNewReentryKey,
+  createWhatsNewSeenKey,
 } from '../apis/whats-new.repository';
 import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
@@ -64,8 +64,8 @@ export function useWhatsNewFeed({
     [accountId, release],
   );
   const storedIdentity = identity ?? { userId: '', campaignId: '' };
-  const [seenAt] = useStoredString(whatsNewSeenKey(storedIdentity));
-  const [reentryOpenedAt] = useStoredString(whatsNewReentryKey(storedIdentity));
+  const [seenAt] = useStoredString(createWhatsNewSeenKey(storedIdentity));
+  const [reentryOpenedAt] = useStoredString(createWhatsNewReentryKey(storedIdentity));
   const canAutoOpen =
     isAuthenticated &&
     !isWeatherIntroductionPending &&

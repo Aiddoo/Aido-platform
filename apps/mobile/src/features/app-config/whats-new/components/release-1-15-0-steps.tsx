@@ -11,7 +11,7 @@ import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useStepFling } from '../hooks/use-step-fling';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
-import type { FeatureHubSource } from '../schemas/whats-new-params.schema';
+import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import { WhatsNewStep } from './whats-new-step';
 
 const STEP_COUNT = 2;
@@ -21,7 +21,8 @@ type Release1150StepMap = {
   voiceNote: object;
 };
 
-export function Release1150Steps({ source }: { source: FeatureHubSource }) {
+export function Release1150Steps() {
+  const { source } = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_15_0, source });
   const startVoiceNote = useVoiceNoteStart();

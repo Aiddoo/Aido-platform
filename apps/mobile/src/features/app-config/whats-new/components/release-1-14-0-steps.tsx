@@ -5,7 +5,7 @@ import { Box, HStack, Image, PawIcon, Spacing, Steps } from '@src/shared/ui';
 
 import { RELEASE_1_14_0 } from '../constants/releases';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
-import type { FeatureHubSource } from '../schemas/whats-new-params.schema';
+import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import { WhatsNewStep } from './whats-new-step';
 
 type Release1140StepMap = {
@@ -13,12 +13,12 @@ type Release1140StepMap = {
 };
 
 interface Release1140StepsProps {
-  source: FeatureHubSource;
   /** 초대가 꺼져 있으면 소개만 남기고 초대 화면으로 이어 주지 않는다 */
   isInviteAvailable: boolean;
 }
 
-export function Release1140Steps({ source, isInviteAvailable }: Release1140StepsProps) {
+export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
+  const { source } = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_14_0, source });
   const stepper = useStepper<Release1140StepMap>({

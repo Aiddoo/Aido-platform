@@ -20,9 +20,9 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
-import { createWhatsNewRepository, whatsNewSeenKey } from '../apis/whats-new.repository';
+import { createWhatsNewRepository, createWhatsNewSeenKey } from '../apis/whats-new.repository';
 import { RELEASE_1_15_0 } from '../constants/releases';
 import { Release1150Steps } from './release-1-15-0-steps';
 
@@ -30,6 +30,7 @@ const ACCOUNT_ID = 'user-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 async function renderSteps() {
+  jest.mocked(useLocalSearchParams).mockReturnValue({ source: 'auto' });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const analytics = createAnalyticsStub();
@@ -45,7 +46,7 @@ async function renderSteps() {
     }),
   );
 
-  const view = await renderUi(<Release1150Steps source="auto" />, {
+  const view = await renderUi(<Release1150Steps />, {
     queryClient,
     withLocalDate: true,
     withOverlay: true,
@@ -89,7 +90,9 @@ describe('Release1150Steps', () => {
       source: 'auto',
     });
     expect(
-      storage.get(whatsNewSeenKey({ userId: ACCOUNT_ID, campaignId: RELEASE_1_15_0.campaignId })),
+      storage.get(
+        createWhatsNewSeenKey({ userId: ACCOUNT_ID, campaignId: RELEASE_1_15_0.campaignId }),
+      ),
     ).toBeDefined();
   });
 

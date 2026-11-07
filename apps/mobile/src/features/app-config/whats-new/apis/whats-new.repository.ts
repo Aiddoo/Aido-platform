@@ -20,11 +20,11 @@ export interface WhatsNewRepository {
   removeAccount(userId: string): void;
 }
 
-export function whatsNewSeenKey({ userId, campaignId }: WhatsNewIdentity): string {
+export function createWhatsNewSeenKey({ userId, campaignId }: WhatsNewIdentity): string {
   return `${SEEN_KEY_PREFIX}:${userId}:${campaignId}`;
 }
 
-export function whatsNewReentryKey({ userId, campaignId }: WhatsNewIdentity): string {
+export function createWhatsNewReentryKey({ userId, campaignId }: WhatsNewIdentity): string {
   return `${REENTRY_KEY_PREFIX}:${userId}:${campaignId}`;
 }
 
@@ -46,11 +46,11 @@ export function createWhatsNewRepository(
      */
     claimSeen: (identity, at) => {
       try {
-        if (storage.get(whatsNewSeenKey(identity)) != null) {
+        if (storage.get(createWhatsNewSeenKey(identity)) != null) {
           return false;
         }
-        storage.set(whatsNewSeenKey(identity), at);
-        storage.set(whatsNewReentryKey(identity), at);
+        storage.set(createWhatsNewSeenKey(identity), at);
+        storage.set(createWhatsNewReentryKey(identity), at);
         return true;
       } catch {
         return false;
@@ -60,7 +60,7 @@ export function createWhatsNewRepository(
     /** 본 기록은 남아 다시 claim되지 않으므로 같은 캠페인의 카드는 돌아오지 않고, 새 캠페인은 자기 키로 보인다 */
     dismissReentry: (identity) => {
       try {
-        storage.remove(whatsNewReentryKey(identity));
+        storage.remove(createWhatsNewReentryKey(identity));
       } catch {
         // 지우지 못하면 카드가 그대로 남아 다시 닫을 수 있다
       }
