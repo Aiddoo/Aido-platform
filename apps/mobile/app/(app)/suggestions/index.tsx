@@ -12,72 +12,71 @@ import {
   StyledSafeAreaView,
   VStack,
 } from '@src/shared/ui';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-function SuggestionsScreen() {
+export default function SuggestionsScreen() {
   const { t } = useTranslation('ai');
-  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const queryClient = useQueryClient();
+  // 권한을 기다리느라 화면 전체가 막히지 않게 한다. 영속 캐시가 있으면 첫 렌더부터 값이 있다
+  const entitlementsQuery = useQuery({ ...useGetEntitlementsQueryOptions(), throwOnError: false });
+  const canViewSuggestions =
+    entitlementsQuery.data == null
+      ? undefined
+      : !EntitlementPolicy.isFeatureLocked(entitlementsQuery.data, 'AI_SUGGESTION');
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
   const { color: refreshTint } = useResolveClassNames('text-main');
 
-  const canViewSuggestions = !EntitlementPolicy.isFeatureLocked(entitlements, 'AI_SUGGESTION');
-
-  return (
-    <ScrollView
-      className="flex-1"
-      contentContainerClassName="grow pb-8"
-      refreshControl={
-        canViewSuggestions ? (
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={refreshTint}
-            colors={refreshTint == null ? undefined : [refreshTint]}
-          />
-        ) : undefined
-      }
-    >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
-        <ReadableContent className="grow px-4">
-          <Spacing size={16} />
-          {match(canViewSuggestions)
-            .with(true, () => (
-              <VStack gap={12}>
-                <AiConsentNotice title={t('consent.notice.suggestions')} />
-                <QueryErrorBoundary fallback={SuggestionsList.Error}>
-                  <Suspense fallback={<SuggestionsList.Loading />}>
-                    <SuggestionsList />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </VStack>
-            ))
-            .with(false, () => <SuggestionsList.PremiumPreview />)
-            .exhaustive()}
-        </ReadableContent>
-      </StyledSafeAreaView>
-    </ScrollView>
-  );
-}
-
-export default function SuggestionsRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense
-          fallback={
-            <ReadableContent className="px-4 pt-4">
-              <SuggestionsList.Loading />
-            </ReadableContent>
-          }
-        >
-          <SuggestionsScreen />
-        </Suspense>
-      </QueryErrorBoundary>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="grow pb-8"
+        refreshControl={
+          canViewSuggestions === true ? (
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={refreshTint}
+              colors={refreshTint == null ? undefined : [refreshTint]}
+            />
+          ) : undefined
+        }
+      >
+        <StyledSafeAreaView edges={['left', 'right']} className="grow">
+          <ReadableContent className="grow px-4">
+            <Spacing size={16} />
+
+            {match(canViewSuggestions)
+              .with(true, () => (
+                <VStack gap={12}>
+                  <AiConsentNotice title={t('consent.notice.suggestions')} />
+
+                  <QueryErrorBoundary fallback={SuggestionsList.Error}>
+                    <Suspense fallback={<SuggestionsList.Loading />}>
+                      <SuggestionsList />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                </VStack>
+              ))
+              .with(false, () => <SuggestionsList.PremiumPreview />)
+              .with(undefined, () =>
+                entitlementsQuery.isError ? (
+                  <SuggestionsList.Error
+                    error={entitlementsQuery.error}
+                    reset={() => entitlementsQuery.refetch()}
+                  />
+                ) : (
+                  <SuggestionsList.Loading />
+                ),
+              )
+              .exhaustive()}
+          </ReadableContent>
+        </StyledSafeAreaView>
+      </ScrollView>
     </StyledSafeAreaView>
   );
 }
