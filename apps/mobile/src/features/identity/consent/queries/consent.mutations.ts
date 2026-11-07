@@ -76,43 +76,24 @@ export function useUpdateMarketingConsentMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 있으면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
     networkMode: 'always',
-    mutationFn: async (input: ConsentAgreement) => {
-      const result = await consentService.updateMarketingConsent(input);
-      return unwrap(result);
-    },
-
+    mutationFn: async (input: ConsentAgreement) =>
+      unwrap(await consentService.updateMarketingConsent(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.consent() });
-
       const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent());
-
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          marketingAgreedAt: input.agreed ? getNowInstant() : null,
-        };
-      });
-
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
+        old == null ? old : { ...old, marketingAgreedAt: input.agreed ? getNowInstant() : null },
+      );
       return { previousData };
     },
-
     onSuccess: (data) => {
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          marketingAgreedAt: data.marketingAgreedAt,
-        };
-      });
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
+        old == null ? old : { ...old, marketingAgreedAt: data.marketingAgreedAt },
+      );
     },
 
     onError: (error, _input, context) => {
-      if (context?.previousData) {
+      if (context?.previousData != null) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
       haptics.notify('error');
@@ -146,11 +127,11 @@ export function useUpdateMarketingPushConsentMutationOptions() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
-        old ? { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt } : old,
+        old == null ? old : { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt },
       );
     },
     onError: (error, _input, context) => {
-      if (context?.previousData) {
+      if (context?.previousData != null) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
       haptics.notify('error');

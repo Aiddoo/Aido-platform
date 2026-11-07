@@ -12,7 +12,7 @@ import type { Preference, PreferenceChange } from '../schemas/preference.schema'
 
 type UpdatePreferenceArgs = PreferenceChange & {
   /** 여러 필드를 한 번에 바꾸는 토글을 설정 하나로 집계할 때 쓴다. */
-  trackAs?: 'weatherEnabled';
+  trackAs?: { setting: 'weatherEnabled'; value: boolean };
 };
 
 /** 서버가 설정 값을 거절한 이유 중 사용자에게 우리 문구로 알리는 것 */
@@ -51,10 +51,7 @@ export function useUpdatePreferenceMutationOptions() {
     },
     onSuccess: (data, { trackAs, ...change }) => {
       if (trackAs) {
-        trackEvent('settings_changed', {
-          setting: trackAs,
-          value: String(Object.values(change)[0]),
-        });
+        trackEvent('settings_changed', { setting: trackAs.setting, value: String(trackAs.value) });
       } else {
         for (const [setting, value] of Object.entries(change)) {
           trackEvent('settings_changed', { setting, value: String(value) });

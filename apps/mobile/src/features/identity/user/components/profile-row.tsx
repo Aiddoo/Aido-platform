@@ -40,7 +40,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
       await clipboard.copy(user.userTag);
       toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
     } catch {
-      toast.error(undefined, { fallback: t('profile.tagCopyFailed') });
+      toast.error(t('profile.tagCopyFailed'));
     }
   };
 

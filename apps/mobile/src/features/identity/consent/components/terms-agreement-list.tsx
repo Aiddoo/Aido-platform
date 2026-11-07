@@ -7,6 +7,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { compact } from 'es-toolkit';
 
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
@@ -25,12 +26,10 @@ export function TermsAgreementList() {
   };
 
   const getConsentDescription = (agreedAt: Instant | null) =>
-    [
+    compact([
       t('terms.agreedAt', { date: formatAgreedDate(agreedAt) }),
-      ...(consent.agreedTermsVersion
-        ? [t('terms.version', { version: consent.agreedTermsVersion })]
-        : []),
-    ].join('\n');
+      consent.agreedTermsVersion && t('terms.version', { version: consent.agreedTermsVersion }),
+    ]).join('\n');
 
   return (
     <SettingsListGroup>

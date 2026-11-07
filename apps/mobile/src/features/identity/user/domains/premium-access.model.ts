@@ -46,10 +46,11 @@ function isExpiringSoon(
   timeZone: string,
 ) {
   const daysLeft = getDaysLeft(access, now, timeZone);
+  if (access.endsAt == null || daysLeft == null) {
+    return false;
+  }
 
   return (
-    access.endsAt != null &&
-    daysLeft != null &&
     !hasRenewal(access) &&
     !hasPassed(access.endsAt, now) &&
     isWithinNoticeDays(daysLeft, PREMIUM_GRANT_ENDING_NOTICE_DAYS)

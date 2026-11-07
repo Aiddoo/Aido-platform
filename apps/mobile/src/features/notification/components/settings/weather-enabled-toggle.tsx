@@ -23,7 +23,7 @@ export function WeatherEnabledToggle() {
         updateMutation.mutate({
           weatherMorningEnabled: enabled,
           weatherEveningEnabled: enabled,
-          trackAs: 'weatherEnabled',
+          trackAs: { setting: 'weatherEnabled', value: enabled },
         })
       }
       isDisabled={!preference.pushEnabled || updateMutation.isPending}
