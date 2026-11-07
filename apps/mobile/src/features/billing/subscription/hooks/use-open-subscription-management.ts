@@ -9,8 +9,8 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 
-import { SubscriptionPolicy } from '../domains/subscription.model';
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
+import { createManagementUrl } from '../utils/subscription-links';
 import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 
 /** 스토어 구독 관리를 연다. 열지 못하면 문의로 잇는 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */
@@ -27,7 +27,7 @@ export function useOpenSubscriptionManagement() {
       process.env.EXPO_OS === 'android'
         ? await subscriptionService.getActiveStoreProductId('PLAY_STORE')
         : null;
-    const url = SubscriptionPolicy.getManagementUrl(process.env.EXPO_OS, {
+    const url = createManagementUrl(process.env.EXPO_OS, {
       productId,
       applicationId: applicationMetadata.getInstallation()?.applicationId ?? null,
     });

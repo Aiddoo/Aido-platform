@@ -15,8 +15,8 @@ type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'child
 export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const plans = availability.status === 'available' ? availability.offering.plans : [];
-  const monthlyPlan = plans.find((plan) => plan.planType === 'monthly');
-  const annualPlan = plans.find((plan) => plan.planType === 'annual');
+  const monthlyPlan = SubscriptionPolicy.findPlanByType(plans, 'monthly');
+  const annualPlan = SubscriptionPolicy.findPlanByType(plans, 'annual');
   const annualDiscountPercent =
     monthlyPlan && annualPlan
       ? SubscriptionPolicy.getAnnualDiscountPercent(monthlyPlan, annualPlan)

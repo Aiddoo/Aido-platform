@@ -16,6 +16,7 @@ import { EntitlementPolicy } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
+import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import { useRefillSentence } from './use-refill-sentence';
 
@@ -138,7 +139,7 @@ function useEntitlementGateCopy() {
       snapshot: EntitlementSnapshot | undefined,
     ): EntitlementGateCopy & { refill: string | null } => {
       const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
-      const premium = EntitlementPolicy.getPremiumBenefitAmounts();
+      const premium = getPremiumBenefitAmounts();
 
       const withRefill = (premiumBenefit: string) => {
         const refill = getRefill(snapshot, feature);

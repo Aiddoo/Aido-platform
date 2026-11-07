@@ -141,31 +141,6 @@ function shouldOfferPremium(snapshot: EntitlementSnapshot | undefined) {
   return snapshot == null || !hasFullAccess(snapshot);
 }
 
-const SECONDS_PER_MINUTE = 60;
-
-function getPremiumBenefitAmounts() {
-  return {
-    aiParse: PLAN_CATALOG.AI_PARSE.fairUse.premium,
-    voiceNote: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
-    voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium / SECONDS_PER_MINUTE,
-    category: PLAN_CATALOG.TODO_CATEGORY.premium,
-  } as const;
-}
-
-function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
-  return {
-    free: {
-      aiParse: getFreeLimit(snapshot, 'AI_PARSE'),
-      voiceNote: getFreeLimit(snapshot, 'VOICE_NOTE'),
-      voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.free / SECONDS_PER_MINUTE,
-      nudge: getFreeLimit(snapshot, 'NUDGE'),
-      friend: getFreeLimit(snapshot, 'FRIEND'),
-      category: getFreeLimit(snapshot, 'TODO_CATEGORY'),
-    },
-    premium: getPremiumBenefitAmounts(),
-  } as const;
-}
-
 export const EntitlementPolicy = {
   hasFullAccess,
   isFeatureLocked,
@@ -178,6 +153,5 @@ export const EntitlementPolicy = {
   withFeatureQuota,
   getBlockedDecision,
   shouldOfferPremium,
-  getPremiumBenefitAmounts,
-  getPlanBenefitAmounts,
+  getFreeLimit,
 } as const;
