@@ -11,7 +11,7 @@ interface TodoCommentSortBarProps extends Omit<
 > {
   value: TodoCommentSort;
   onChange: (value: TodoCommentSort) => void;
-  isPending?: boolean;
+  isLoading?: boolean;
 }
 
 function toSort(key: MenuKey | undefined): TodoCommentSort | null {
@@ -24,7 +24,7 @@ function toSort(key: MenuKey | undefined): TodoCommentSort | null {
 export function TodoCommentSortBar({
   value,
   onChange,
-  isPending = false,
+  isLoading = false,
   ...menuProps
 }: TodoCommentSortBarProps) {
   const { t } = useTranslation('todoComment');
@@ -39,15 +39,15 @@ export function TodoCommentSortBar({
       <Menu.Trigger asChild>
         <PressableFeedback
           className="min-h-11 flex-row items-center gap-1 ps-3"
-          isDisabled={isPending}
+          isDisabled={isLoading}
           accessibilityRole="button"
           accessibilityLabel={t('sort.label', { value: currentLabel })}
-          accessibilityState={{ expanded: isMenuOpen, busy: isPending, disabled: isPending }}
+          accessibilityState={{ expanded: isMenuOpen, busy: isLoading, disabled: isLoading }}
         >
           <Text size="b4" shade={6}>
             {currentLabel}
           </Text>
-          {isPending ? (
+          {isLoading ? (
             <Spinner size="sm" />
           ) : (
             <HStack className="rotate-90">

@@ -1,33 +1,10 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 
 import { RELEASES } from '../constants/releases';
 import type { ReleaseList } from '../schemas/release.schema';
 import { WhatsNewPolicy } from './whats-new.model';
-
-const createUser = (overrides: Partial<User> = {}): User => ({
-  id: 'user-1',
-  email: 'user@example.com',
-  name: '사용자',
-  profileImage: null,
-  userTag: 'MATT2025',
-  role: 'USER',
-  subscriptionStatus: 'FREE',
-  subscriptionExpiresAt: null,
-  providers: ['GOOGLE'],
-  premiumAccess: {
-    source: null,
-    endsAt: null,
-    periodEndsAt: null,
-    willRenew: false,
-    bankedDays: 0,
-    grantEndedAt: null,
-  },
-  isPremium: false,
-  createdAt: toInstant('2026-07-01T00:00:00.000Z'),
-  ...overrides,
-});
 
 const createEnabledConfig = (
   overrides: Partial<Extract<FeatureCampaignConfig, { enabled: true }>> = {},
@@ -43,7 +20,7 @@ const createEnabledConfig = (
 describe('shouldAutoOpen', () => {
   const eligibleInput = {
     config: createEnabledConfig(),
-    user: createUser(),
+    user: createUser({ createdAt: toInstant('2026-07-01T00:00:00.000Z') }),
     appVersion: '1.8.0',
     hasSeen: false,
   };

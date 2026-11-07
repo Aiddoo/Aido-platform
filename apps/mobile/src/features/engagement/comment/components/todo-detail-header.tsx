@@ -46,7 +46,7 @@ export function TodoDetailHeader() {
         <CommentCount />
         <TodoCommentSortBar
           value={sort}
-          isPending={sortChange.isPending}
+          isLoading={sortChange.isPending}
           onChange={(next) =>
             sortChange.prefetchThenCommit(next, () =>
               setCommentParams({ sort: next, comment: undefined }),

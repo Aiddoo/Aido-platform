@@ -89,21 +89,21 @@ export function patchCommentInReplyPages(
 export function findCommentInThreadPages(
   data: TodoCommentThreadPages | undefined,
   commentId: string,
-): TodoComment | undefined {
+): TodoComment | null {
   for (const thread of data?.pages.flatMap((page) => page.items) ?? []) {
     const comment = TodoCommentPolicy.findCommentInThread(thread, commentId);
     if (comment != null) {
       return comment;
     }
   }
-  return undefined;
+  return null;
 }
 
 export function findCommentInReplyPages(
   data: TodoCommentReplyPages | undefined,
   commentId: string,
-): TodoComment | undefined {
-  return data?.pages.flatMap((page) => page.items).find((reply) => reply.id === commentId);
+): TodoComment | null {
+  return data?.pages.flatMap((page) => page.items).find((reply) => reply.id === commentId) ?? null;
 }
 
 export function removeCommentFromThreadPages(

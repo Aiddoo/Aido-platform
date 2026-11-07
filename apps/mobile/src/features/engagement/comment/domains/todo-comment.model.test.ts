@@ -221,7 +221,7 @@ describe('leavesTombstoneOnDelete', () => {
   });
 });
 
-describe('withLikeToggled', () => {
+describe('withLiked', () => {
   it('같은 상태면 그대로 둔다', () => {
     // Given
     const liked = createTodoComment({
@@ -230,7 +230,7 @@ describe('withLikeToggled', () => {
     });
 
     // When
-    const same = TodoCommentPolicy.withLikeToggled(liked, true);
+    const same = TodoCommentPolicy.withLiked(liked, true);
 
     // Then
     expect(same).toBe(liked);
@@ -244,7 +244,7 @@ describe('withLikeToggled', () => {
     });
 
     // When
-    const unliked = TodoCommentPolicy.withLikeToggled(liked, false);
+    const unliked = TodoCommentPolicy.withLiked(liked, false);
 
     // Then
     expect(unliked.likeCount).toBe(0);

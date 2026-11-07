@@ -5,7 +5,10 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
-import { isTodoCommentRateLimited, isTodoCommentUnavailable } from '../domains/todo-comment.error';
+import {
+  isTodoCommentRateLimitedError,
+  isTodoCommentUnavailableError,
+} from '../domains/todo-comment.error';
 import { removeTodoCommentFromCaches } from '../queries/todo-comment-cache';
 import type { TodoComment } from '../schemas/todo-comment.schema';
 
@@ -29,7 +32,7 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
   const toast = useAppToast();
   const { t } = useTranslation('todoComment');
 
-  return (error: unknown, operation: TodoCommentMutationOperation, target?: TodoComment) => {
+  return (error: unknown, operation: TodoCommentMutationOperation, target?: TodoComment | null) => {
     const fallback = match(operation)
       .with('create', () => t('toasts.writeFailed'))
       .with('update', () => t('toasts.updateFailed'))
@@ -38,13 +41,13 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
       .exhaustive();
 
     match(error)
-      .when(isTodoCommentUnavailable, () => {
+      .when(isTodoCommentUnavailableError, () => {
         if (target != null) {
           removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
         }
         toast.warning(t('toasts.alreadyDeleted'));
       })
-      .when(isTodoCommentRateLimited, () => toast.warning(t('toasts.throttled')))
+      .when(isTodoCommentRateLimitedError, () => toast.warning(t('toasts.throttled')))
       .with(P.when(isApiError), (apiError) => {
         haptics.notify('error');
         toast.error(getUserFacingMessage(apiError), { fallback });

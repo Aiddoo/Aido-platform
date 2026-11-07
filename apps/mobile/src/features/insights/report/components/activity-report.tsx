@@ -23,7 +23,7 @@ import { router } from 'expo-router';
 import { Separator, Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { isReportUnavailable } from '../domains/ai-report.error';
+import { isReportUnavailableError } from '../domains/ai-report.error';
 import { AiReportPolicy } from '../domains/ai-report.model';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
@@ -353,7 +353,7 @@ ActivityReport.Loading = function Loading() {
 ActivityReport.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('ai');
 
-  if (!isReportUnavailable(error)) {
+  if (!isReportUnavailableError(error)) {
     return <QueryErrorFallback reset={reset} />;
   }
 

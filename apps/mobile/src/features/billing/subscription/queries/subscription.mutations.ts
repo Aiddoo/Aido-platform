@@ -38,9 +38,11 @@ export function usePurchaseMutationOptions() {
     // 서버가 결제를 반영할 때까지 기다리는 동안에도 결제 중으로 두어 버튼을 잠근다
     mutationFn: async (identifier: string) => {
       const hasStoreEntitlement = unwrap(await subscriptionService.purchase(identifier));
-      return hasStoreEntitlement && (await syncMeUntilStorePremium(queryClient));
+      const isReflected = hasStoreEntitlement && (await syncMeUntilStorePremium(queryClient));
+
+      return { isReflected };
     },
-    onSuccess: (isReflected, identifier, context) => {
+    onSuccess: ({ isReflected }, identifier, context) => {
       trackEvent('subscription_started', { product_id: identifier });
       haptics.notify('success');
       if (!isReflected) {

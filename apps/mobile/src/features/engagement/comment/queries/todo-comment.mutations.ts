@@ -203,7 +203,7 @@ export function useSetTodoCommentLikeMutationOptions({
         queryClient,
         todoId,
         commentId,
-        transform: (comment) => TodoCommentPolicy.withLikeToggled(comment, isLiked),
+        transform: (comment) => TodoCommentPolicy.withLiked(comment, isLiked),
       });
       return { snapshot, target };
     },

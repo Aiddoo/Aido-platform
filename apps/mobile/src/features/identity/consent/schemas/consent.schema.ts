@@ -11,7 +11,7 @@ export const consentEnvelopeSchema = consentResponseSchema.required({
 });
 export type ConsentEnvelope = z.infer<typeof consentEnvelopeSchema>;
 
-const consentSchema = z.object({
+export const consentSchema = z.object({
   termsAgreedAt: instantSchema.nullable(),
   privacyAgreedAt: instantSchema.nullable(),
   agreedTermsVersion: z.string().nullable(),

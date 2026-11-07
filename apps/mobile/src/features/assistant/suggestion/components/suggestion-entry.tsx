@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { isSuggestionsPremiumRequired } from '../domains/suggestion.error';
+import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 
 /**
@@ -59,7 +59,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   const { t } = useTranslation(['todo', 'ai']);
   const suggestionsQuery = useQuery({ ...useGetSuggestionsQueryOptions(), throwOnError: false });
 
-  if (isSuggestionsPremiumRequired(suggestionsQuery.error)) {
+  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
     return (
       <InfoCard
         label={t('ai:suggestions.toasts.premiumOnly')}

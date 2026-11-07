@@ -1,53 +1,13 @@
 import { useTranslation } from '@src/shared/i18n';
 import { Box, H3, Text, VStack } from '@src/shared/ui';
-import { type ReactNode, useCallback, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
-import { useResolveClassNames } from 'uniwind';
+import type { ReactNode } from 'react';
 
-/** 상장 느낌의 이중 SVG 라운드 테두리 */
+/** 상장 느낌의 이중 라운드 테두리. 바깥은 굵고 진하게, 안쪽은 가늘고 옅게 겹쳐 그린다 */
 function CertificateBorder({ children }: { children: ReactNode }) {
-  const { color } = useResolveClassNames('text-main');
-  const strokeColor = typeof color === 'string' ? color : undefined;
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  const handleLayout = useCallback((event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setSize({ width, height });
-  }, []);
-
   return (
-    <Box className="relative" onLayout={handleLayout}>
-      {size.width > 0 && size.height > 0 && (
-        <Box className="absolute inset-0">
-          <Svg width={size.width} height={size.height}>
-            <Rect
-              x={2}
-              y={2}
-              width={size.width - 4}
-              height={size.height - 4}
-              rx={2}
-              ry={2}
-              stroke={strokeColor}
-              strokeWidth={1.5}
-              fill="none"
-              strokeOpacity={0.6}
-            />
-            <Rect
-              x={7}
-              y={7}
-              width={size.width - 14}
-              height={size.height - 14}
-              rx={1}
-              ry={1}
-              stroke={strokeColor}
-              strokeWidth={0.5}
-              fill="none"
-              strokeOpacity={0.35}
-            />
-          </Svg>
-        </Box>
-      )}
+    <Box className="relative">
+      <Box className="absolute inset-[1.25px] rounded-[2px] border-[1.5px] border-main/60" />
+      <Box className="absolute inset-[6.75px] rounded-[1px] border-[0.5px] border-main/35" />
       <Box className="m-2">{children}</Box>
     </Box>
   );

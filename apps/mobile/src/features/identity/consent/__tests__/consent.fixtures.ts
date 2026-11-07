@@ -1,7 +1,12 @@
 import type { UpdateMarketingConsentResponse } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 
-import type { Consent, ConsentEnvelope } from '../schemas/consent.schema';
+import {
+  type Consent,
+  type ConsentEnvelope,
+  consentEnvelopeSchema,
+  consentSchema,
+} from '../schemas/consent.schema';
 
 const generateConsentDto = (): ConsentEnvelope => ({
   termsAgreedAt: '2026-01-01T00:00:00.000Z',
@@ -14,10 +19,9 @@ const generateConsentDto = (): ConsentEnvelope => ({
   aiDataSharingConsentVersion: null,
 });
 
-export const createConsentDto = (overrides?: Partial<ConsentEnvelope>): ConsentEnvelope => ({
-  ...generateConsentDto(),
-  ...overrides,
-});
+export function createConsentDto(overrides?: Partial<ConsentEnvelope>): ConsentEnvelope {
+  return consentEnvelopeSchema.parse({ ...generateConsentDto(), ...overrides });
+}
 
 const generateConsent = (): Consent => ({
   termsAgreedAt: toInstant('2026-01-01T00:00:00.000Z'),
@@ -30,10 +34,9 @@ const generateConsent = (): Consent => ({
   aiDataSharingConsentVersion: null,
 });
 
-export const createConsent = (overrides?: Partial<Consent>): Consent => ({
-  ...generateConsent(),
-  ...overrides,
-});
+export function createConsent(overrides?: Partial<Consent>): Consent {
+  return consentSchema.parse({ ...generateConsent(), ...overrides });
+}
 
 const generateUpdateMarketingConsentDto = (): UpdateMarketingConsentResponse => ({
   marketingAgreedAt: '2026-02-01T00:00:00.000Z',

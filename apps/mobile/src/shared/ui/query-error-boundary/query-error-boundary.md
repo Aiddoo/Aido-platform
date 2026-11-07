@@ -62,7 +62,7 @@ route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으
 <QueryErrorBoundary resetKeys={[id]} fallback={ActivityReport.Error}>
 ```
 
-`ActivityReport.Error`는 `isReportUnavailable(error)`(`domains/ai-report.error.ts`)일 때 "없음" 안내와 목록으로 가는 버튼을, 아니면 `QueryErrorFallback`을 그립니다. 판별은 화면이 아니라 feature의 `domains/{feature}.error.ts`에 둡니다.
+`ActivityReport.Error`는 `isReportUnavailableError(error)`(`domains/ai-report.error.ts`)일 때 "없음" 안내와 목록으로 가는 버튼을, 아니면 `QueryErrorFallback`을 그립니다. 판별은 화면이 아니라 feature의 `domains/{feature}.error.ts`에 둡니다.
 
 ## 오류 보고
 

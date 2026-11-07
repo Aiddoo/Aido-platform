@@ -64,7 +64,7 @@ export function findCachedTodoComment({
   queryClient,
   todoId,
   commentId,
-}: TodoCommentCacheParams & { commentId: string }): TodoComment | undefined {
+}: TodoCommentCacheParams & { commentId: string }): TodoComment | null {
   const fromReplies = queryClient
     .getQueriesData<TodoCommentReplyPages>(replyQueries(todoId))
     .map(([_queryKey, data]) => findCommentInReplyPages(data, commentId))
@@ -75,7 +75,8 @@ export function findCachedTodoComment({
     queryClient
       .getQueriesData<TodoCommentThreadPages>(threadQueries(todoId))
       .map(([_queryKey, data]) => findCommentInThreadPages(data, commentId))
-      .find((comment) => comment != null)
+      .find((comment) => comment != null) ??
+    null
   );
 }
 

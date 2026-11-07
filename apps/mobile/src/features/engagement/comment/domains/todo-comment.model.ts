@@ -97,7 +97,7 @@ function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
   return uniqBy(pages.flatMap((page) => page.items).toReversed(), (reply) => reply.id).toReversed();
 }
 
-function withLikeToggled(comment: TodoComment, isLiked: boolean): TodoComment {
+function withLiked(comment: TodoComment, isLiked: boolean): TodoComment {
   if (comment.viewer.isLiked === isLiked) {
     return comment;
   }
@@ -217,7 +217,7 @@ export const TodoCommentPolicy = {
   hasRepliesToShow,
   flattenThreads,
   flattenReplies,
-  withLikeToggled,
+  withLiked,
   withLikeResult,
   withContentEdited,
   withReplyAdded,

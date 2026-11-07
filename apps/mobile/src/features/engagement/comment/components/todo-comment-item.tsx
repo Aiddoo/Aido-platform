@@ -1,4 +1,4 @@
-import { useClipboard, useLogger } from '@src/bootstrap/providers/di-context';
+import { useClipboard, useHaptics, useLogger } from '@src/bootstrap/providers/di-context';
 import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
@@ -37,17 +37,22 @@ import { router } from 'expo-router';
 import { Menu, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { type ComponentRef, type ReactNode, type RefObject, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
+import {
+  GestureDetector,
+  useExclusiveGestures,
+  useLongPressGesture,
+  useTapGesture,
+} from 'react-native-gesture-handler';
 import Animated, {
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
-import { useCommentDoubleTap } from '../hooks/use-comment-double-tap';
 import {
   useDeleteTodoCommentMutationOptions,
   useSetTodoCommentLikeMutationOptions,
@@ -57,8 +62,10 @@ import type { TodoComment } from '../schemas/todo-comment.schema';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import { useTodoCommentForm } from './todo-comment-form-context';
 import {
+  playTodoCommentHeartBurst,
   popTodoCommentLikeButton,
   TodoCommentHeartBurst,
+  type TodoCommentHeartBurstValues,
   useTodoCommentHeartBurstValues,
 } from './todo-comment-heart-burst';
 import { useTodoCommentReveal } from './todo-comment-reveal';
@@ -67,6 +74,9 @@ const MENU_TRIGGER_ICON_SIZE = 18;
 
 const MENU_WIDTH = 200;
 const MORE_HIT_SLOP = 12;
+
+const DOUBLE_TAP_MAX_DELAY_MS = 300;
+const LONG_PRESS_MIN_DURATION_MS = 450;
 
 interface TodoCommentItemProps {
   comment: TodoComment;
@@ -137,24 +147,18 @@ TodoCommentItem.Loading = function Loading({ isReply = false }: { isReply?: bool
   );
 };
 
-function useCommentTimeLabel(comment: TodoComment) {
-  const { t } = useTranslation('todoComment');
-  const now = useMinuteNow();
-  const dateFormatContext = useDateFormatContext();
-
-  return compact([
-    formatRelativeTimeLabel(comment.createdAt, now, dateFormatContext),
-    comment.isEdited ? t('list.edited') : null,
-  ]).join(' · ');
-}
-
 /**
  * 이름·#태그·작성자 표시·시간은 한 줄에 놓다가 모자라면 줄바꿈하고, ⋯는 첫 줄 끝에 둔다.
  * 폭을 재서 나누지 않아 첫 화면 뒤에 줄 수가 바뀌며 밀리지 않는다.
  */
 function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }) {
   const { t } = useTranslation('todoComment');
-  const timeLabel = useCommentTimeLabel(comment);
+  const now = useMinuteNow();
+  const dateFormatContext = useDateFormatContext();
+  const timeLabel = compact([
+    formatRelativeTimeLabel(comment.createdAt, now, dateFormatContext),
+    comment.isEdited ? t('list.edited') : null,
+  ]).join(' · ');
   const userTag = comment.author?.userTag;
   const name = comment.author?.name ?? t('list.unknownUser');
 
@@ -212,14 +216,22 @@ function CommentText({
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
   );
-  const completeDoubleTapHint = useCompleteDoubleTapHint();
+  const { data: user } = useQuery(useGetMeQueryOptions());
+  const { trackEvent } = useTrack();
+  const [isHintPending, completeHint] = usePendingCoachmark({
+    accountId: user?.id ?? '',
+    kind: 'comment-double-tap',
+  });
   const mention = comment.replyTo?.authorName;
-  const gesture = useCommentDoubleTap({
+  const gesture = useCommentBodyGesture({
     burst,
     likeButtonScale,
     canLike: TodoCommentPolicy.canLikeComment(comment),
     onDoubleTap: () => {
-      completeDoubleTapHint();
+      if (user != null && isHintPending) {
+        completeHint();
+        trackEvent('todo_comment_hint_dismissed', { kind: 'double_tap', reason: 'used' });
+      }
       // 이미 좋아요면 하트만 다시 보이고 요청은 보내지 않는다
       if (!comment.viewer.isLiked) {
         likeComment.mutate({ isLiked: true, via: 'double_tap' });
@@ -250,21 +262,52 @@ function CommentText({
   );
 }
 
-function useCompleteDoubleTapHint() {
-  const { data: user } = useQuery(useGetMeQueryOptions());
-  const { trackEvent } = useTrack();
-  const [isPending, complete] = usePendingCoachmark({
-    accountId: user?.id ?? '',
-    kind: 'comment-double-tap',
+interface CommentBodyGestureOptions {
+  burst: TodoCommentHeartBurstValues;
+  likeButtonScale: SharedValue<number>;
+  canLike: boolean;
+  onDoubleTap: () => void;
+  onLongPress: () => void;
+}
+
+/**
+ * 본문 두 번 탭은 하트, 길게 누르기는 메뉴다. 둘은 서로 배타적이고 한 번 탭은 아무 동작도 하지 않는다.
+ * 애니메이션은 shared value로 UI 스레드에서만 돌고, 좋아요 요청과 진동만 JS로 넘긴다.
+ */
+function useCommentBodyGesture({
+  burst,
+  likeButtonScale,
+  canLike,
+  onDoubleTap,
+  onLongPress,
+}: CommentBodyGestureOptions) {
+  const haptics = useHaptics();
+  const isReducedMotion = useIsReduceMotionEnabled();
+  const lightImpact = () => haptics.impact('light');
+
+  const doubleTap = useTapGesture({
+    numberOfTaps: 2,
+    maxDelay: DOUBLE_TAP_MAX_DELAY_MS,
+    enabled: canLike,
+    onActivate: (event) => {
+      'worklet';
+      playTodoCommentHeartBurst(burst, { x: event.x, y: event.y, isReducedMotion });
+      if (!isReducedMotion) {
+        popTodoCommentLikeButton(likeButtonScale);
+      }
+      scheduleOnRN(lightImpact);
+      scheduleOnRN(onDoubleTap);
+    },
+  });
+  const longPress = useLongPressGesture({
+    minDuration: LONG_PRESS_MIN_DURATION_MS,
+    onActivate: () => {
+      'worklet';
+      scheduleOnRN(onLongPress);
+    },
   });
 
-  return () => {
-    if (user == null || !isPending) {
-      return;
-    }
-    complete();
-    trackEvent('todo_comment_hint_dismissed', { kind: 'double_tap', reason: 'used' });
-  };
+  return useExclusiveGestures(doubleTap, longPress);
 }
 
 function Placeholder({ state }: { state: 'deleted' | 'blockedAuthor' }) {

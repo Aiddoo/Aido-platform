@@ -14,18 +14,24 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
   return (
     <HStack gap={16} className="items-center">
-      <RuleItem satisfied={PasswordPolicy.hasLetter(value)} label={t('passwordRules.hasLetter')} />
-      <RuleItem satisfied={PasswordPolicy.hasNumber(value)} label={t('passwordRules.hasNumber')} />
       <RuleItem
-        satisfied={PasswordPolicy.hasMinLength(value)}
+        isSatisfied={PasswordPolicy.hasLetter(value)}
+        label={t('passwordRules.hasLetter')}
+      />
+      <RuleItem
+        isSatisfied={PasswordPolicy.hasNumber(value)}
+        label={t('passwordRules.hasNumber')}
+      />
+      <RuleItem
+        isSatisfied={PasswordPolicy.hasMinLength(value)}
         label={t('passwordRules.minLength', { count: PASSWORD_RULES.MIN_LENGTH })}
       />
     </HStack>
   );
 }
 
-function RuleItem({ satisfied, label }: { satisfied: boolean; label: string }) {
-  const color = satisfied ? 'text-success' : 'text-gray-5';
+function RuleItem({ isSatisfied, label }: { isSatisfied: boolean; label: string }) {
+  const color = isSatisfied ? 'text-success' : 'text-gray-5';
 
   return (
     <HStack gap={4} className="items-center">

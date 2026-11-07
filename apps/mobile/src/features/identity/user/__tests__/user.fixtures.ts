@@ -1,7 +1,8 @@
 import type { UpdateProfileResponse } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
+import { toInstant } from '@src/shared/date/instant';
 
-import type { CurrentUserResponse } from '../schemas/user.schema';
+import { type CurrentUserResponse, type User, userSchema } from '../schemas/user.schema';
 
 const generateCurrentUserDto = (): CurrentUserResponse => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -26,12 +27,36 @@ const generateCurrentUserDto = (): CurrentUserResponse => ({
   isPremium: false,
 });
 
-export const createCurrentUserDto = (
+export function createCurrentUserDto(
   overrides?: Partial<CurrentUserResponse>,
-): CurrentUserResponse => ({
-  ...generateCurrentUserDto(),
-  ...overrides,
-});
+): CurrentUserResponse {
+  return { ...generateCurrentUserDto(), ...overrides };
+}
+
+export function createUser(overrides?: Partial<User>): User {
+  return userSchema.parse({
+    id: 'user-1',
+    email: 'test@example.com',
+    name: '테스트',
+    profileImage: null,
+    userTag: 'TEST2025',
+    role: 'USER',
+    subscriptionStatus: 'FREE',
+    subscriptionExpiresAt: null,
+    providers: ['CREDENTIAL'],
+    premiumAccess: {
+      source: null,
+      endsAt: null,
+      periodEndsAt: null,
+      willRenew: false,
+      bankedDays: 0,
+      grantEndedAt: null,
+    },
+    isPremium: false,
+    createdAt: toInstant('2026-01-01T09:00:00.000Z'),
+    ...overrides,
+  });
+}
 
 const generateUpdateProfileDto = (): UpdateProfileResponse => ({
   message: '프로필이 수정되었습니다.',

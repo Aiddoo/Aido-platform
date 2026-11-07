@@ -1,32 +1,5 @@
-import { toInstant } from '@src/shared/date/instant';
-
-import type { User } from '../schemas/user.schema';
+import { createUser } from '../__tests__/user.fixtures';
 import { UserPolicy } from './user.model';
-
-function createUser(overrides?: Partial<User>): User {
-  return {
-    id: 'test-id',
-    email: 'test@example.com',
-    name: '테스트',
-    profileImage: null,
-    userTag: 'TEST2025',
-    role: 'USER',
-    subscriptionStatus: 'FREE',
-    subscriptionExpiresAt: null,
-    providers: ['CREDENTIAL'],
-    premiumAccess: {
-      source: null,
-      endsAt: null,
-      periodEndsAt: null,
-      willRenew: false,
-      bankedDays: 0,
-      grantEndedAt: null,
-    },
-    isPremium: false,
-    createdAt: toInstant('2026-01-01T09:00:00.000Z'),
-    ...overrides,
-  };
-}
 
 describe('hasCredential', () => {
   it('CREDENTIAL provider가 있으면 true를 반환한다', () => {

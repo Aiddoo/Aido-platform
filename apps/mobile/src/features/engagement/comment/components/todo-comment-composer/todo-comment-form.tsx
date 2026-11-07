@@ -32,7 +32,10 @@ import {
   type PreparedTodoCommentSubmission,
   TodoCommentComposerPolicy,
 } from '../../domains/todo-comment-composer.model';
-import { getTodoCommentErrorStatus, isTodoCommentRejected } from '../../domains/todo-comment.error';
+import {
+  getTodoCommentErrorStatus,
+  isTodoCommentRejectedError,
+} from '../../domains/todo-comment.error';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
 import {
   useCreateTodoCommentChainMutationOptions,
@@ -257,7 +260,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
         .exhaustive();
       finish(mode);
     } catch (error) {
-      if (isTodoCommentRejected(error)) {
+      if (isTodoCommentRejectedError(error)) {
         preparedSubmissionRef.current = null;
       }
       logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {

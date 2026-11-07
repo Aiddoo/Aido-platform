@@ -30,7 +30,7 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
-import { isSuggestionsPremiumRequired } from '../domains/suggestion.error';
+import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import type { AiSuggestion } from '../schemas/suggestion.schema';
@@ -318,7 +318,7 @@ SuggestionsList.Loading = function Loading() {
 SuggestionsList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
-  if (isSuggestionsPremiumRequired(error)) {
+  if (isSuggestionsPremiumRequiredError(error)) {
     return <SuggestionsList.PremiumPreview />;
   }
 

@@ -177,7 +177,7 @@ features/engagement/comment/
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
   constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
   queries/ todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
-  hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-comment-double-tap.ts  use-is-todo-comment-submitting.ts  use-todo-comment-mutation-error-handler.ts
+  hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts  use-todo-comment-mutation-error-handler.ts
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx

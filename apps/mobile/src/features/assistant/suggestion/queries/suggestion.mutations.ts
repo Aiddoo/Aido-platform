@@ -15,7 +15,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SUGGESTION_LOG_EVENT } from '../constants/suggestion-log-events';
-import { isSuggestionUnavailable } from '../domains/suggestion.error';
+import { isSuggestionUnavailableError } from '../domains/suggestion.error';
 import type { AiSuggestionActionInput } from '../schemas/suggestion.schema';
 import { invalidateAiSuggestions } from './suggestion-cache';
 
@@ -58,7 +58,7 @@ export function useActOnSuggestionMutationOptions() {
         return;
       }
 
-      if (isSuggestionUnavailable(error)) {
+      if (isSuggestionUnavailableError(error)) {
         invalidateAiSuggestions(queryClient);
       } else if (!isApiError(error)) {
         logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
