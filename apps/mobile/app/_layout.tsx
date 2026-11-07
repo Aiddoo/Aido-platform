@@ -5,8 +5,8 @@ import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from '@src/bootstrap/root-error-boundar
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { reloadApp } from '@src/shared/infra/application/app-bundle';
+import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { logger } from '@src/shared/infra/logger/global-logger';
-import { createEnvironmentErrorReporter } from '@src/shared/infra/observability-env';
 import {
   initErrorReporting,
   wrapRootComponent,

@@ -78,6 +78,7 @@ import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
+import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { expoLocalFileSystemGateway } from '@src/shared/infra/file-system/expo-local-file-system.gateway';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics.gateway';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
@@ -101,10 +102,7 @@ import {
 } from '@src/shared/infra/logger';
 import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status.gateway';
 import { expoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification.gateway';
-import {
-  createEnvironmentAnalytics,
-  createEnvironmentErrorReporter,
-} from '@src/shared/infra/observability-env';
+import { createEnvironmentAnalytics } from '@src/shared/infra/observability-env';
 import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases.gateway';
 import { systemShareGateway } from '@src/shared/infra/share/system-share.gateway';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
