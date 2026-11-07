@@ -1,5 +1,6 @@
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
@@ -9,7 +10,6 @@ import ky, { type AfterResponseHook } from 'ky';
 import { match } from 'ts-pattern';
 
 import { getPathname } from './error-handler';
-import type { TokenRefresher } from './token-refresher';
 import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 /** 갱신 후 재시도된 요청 표시 — 재시도가 다시 401이어도 갱신을 반복하지 않는다 */

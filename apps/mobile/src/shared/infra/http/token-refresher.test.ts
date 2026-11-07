@@ -1,9 +1,10 @@
+import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createMemoryTokenStore, createPendingResponse } from '@src/shared/__tests__';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { TimeoutError as KyTimeoutError } from 'ky';
 
-import { createTokenRefresher, type RefreshTokensRequest } from './token-refresher';
+import { createTokenRefresher } from './token-refresher';
 
 // ok는 status에서 정해진다. 호출부의 ok는 읽는 사람을 위한 표시로 status와 같게 둔다.
 const createFakeResponse = (params: { ok: boolean; status: number; body?: unknown }): Response =>

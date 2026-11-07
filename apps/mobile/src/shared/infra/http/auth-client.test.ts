@@ -1,3 +1,4 @@
+import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createPendingResponse } from '@src/shared/__tests__';
@@ -9,7 +10,7 @@ import { createAuthClient } from './auth-client';
 import { recordApiFailureBreadcrumb } from './error-handler';
 import { KyHttpClient } from './ky-client';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
-import { createTokenRefresher, type RefreshTokensRequest } from './token-refresher';
+import { createTokenRefresher } from './token-refresher';
 
 /**
  * 인증 파이프라인 통합 테스트.

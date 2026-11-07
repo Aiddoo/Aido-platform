@@ -1,8 +1,8 @@
+import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { ENV } from '@src/shared/config/env';
 import ky from 'ky';
 
 import { type AppHeaderSource, createAppHeaders, setPerRequestHeaders } from './request-headers';
-import type { RefreshTokensRequest } from './token-refresher';
 
 /**
  * 서버의 토큰 재사용 grace(10초)보다 짧게 잡는다.

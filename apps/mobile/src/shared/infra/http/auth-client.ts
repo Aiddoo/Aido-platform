@@ -1,3 +1,4 @@
+import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { ENV } from '@src/shared/config/env';
@@ -6,7 +7,6 @@ import ky, { type KyInstance } from 'ky';
 import { recordApiFailureBreadcrumb } from './error-handler';
 import { createAppHeaders, setPerRequestHeaders } from './request-headers';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
-import type { TokenRefresher } from './token-refresher';
 
 interface AuthClientDeps {
   appVersion?: string;

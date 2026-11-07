@@ -1,4 +1,5 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { RefreshOutcome } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
 import { createMemoryTokenStore, runKyAfterResponseHook } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
@@ -6,7 +7,6 @@ import { errorReporter } from '@src/shared/infra/error-reporter/global-error-rep
 import { logger } from '@src/shared/infra/logger/global-logger';
 
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
-import type { RefreshOutcome } from './token-refresher';
 
 // ky v2 훅은 `new Request(request, ...)`로 재시도 요청을 재구성하므로 실제 Request/Response를 쓴다.
 const createFakeRequest = (headers: Record<string, string> = {}): Request =>

@@ -9,6 +9,7 @@ import type { PushNotificationGateway } from '@src/core/ports/push-notification-
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
+import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { SessionManager } from '@src/core/session/session-manager';
@@ -59,7 +60,6 @@ import type { WeatherIntroductionRepository } from '@src/features/weather/apis/w
 import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
-import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createContext, type PropsWithChildren, use } from 'react';
 
 import type { QueryCacheStorage } from './query-cache-persistence';
