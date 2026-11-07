@@ -924,14 +924,18 @@ export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
     mutationFn: async (values: MemoFormValues) => unwrap(await memoService.createMemo(values)),
     onSuccess: () => trackEvent('memo_created'),
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
+    },
     // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
     onSettled: () => {
       invalidateMemos(queryClient);
