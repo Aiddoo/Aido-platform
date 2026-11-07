@@ -32,7 +32,7 @@ export function AppVersionCheck() {
     }
 
     const input = { config: result.data, ...installation };
-    if (!AppVersionPolicy.canDecide(input)) {
+    if (!AppVersionPolicy.canCompareVersions(input)) {
       toast.error(t('checkFailed'));
       return;
     }

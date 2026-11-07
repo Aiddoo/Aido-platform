@@ -13,7 +13,7 @@ export interface AppVersionPolicyInput {
   currentVersion?: string;
 }
 
-interface DecidableInput {
+interface ComparableInput {
   config: EnabledAppVersionConfig;
   platform: AppVersionPlatform;
   currentVersion: string;
@@ -36,7 +36,7 @@ function compareVersions(current: string, latest: string) {
 }
 
 /** 점검이 켜져 있고 플랫폼과 두 버전이 모두 올바를 때만 판정한다. 아니면 어떤 안내도 하지 않는다 */
-function canDecide(input: AppVersionPolicyInput): input is DecidableInput {
+function canCompareVersions(input: AppVersionPolicyInput): input is ComparableInput {
   const { config, platform, currentVersion } = input;
   if (config?.enabled !== true || !appVersionPlatformSchema.safeParse(platform).success) {
     return false;
@@ -46,18 +46,18 @@ function canDecide(input: AppVersionPolicyInput): input is DecidableInput {
   return isValidVersion(currentVersion) && isValidVersion(latest);
 }
 
-function isBehindLatest(input: DecidableInput) {
+function isBehindLatest(input: ComparableInput) {
   return compareVersions(input.currentVersion, input.config.latestByPlatform[input.platform]) < 0;
 }
 
 /** 스토어에 더 새 버전이 있다 */
 function isOutdated(input: AppVersionPolicyInput) {
-  return canDecide(input) && isBehindLatest(input);
+  return canCompareVersions(input) && isBehindLatest(input);
 }
 
 /** 판정할 수 있고 이미 최신이거나 더 앞선 빌드다 */
 function isUpToDate(input: AppVersionPolicyInput) {
-  return canDecide(input) && !isBehindLatest(input);
+  return canCompareVersions(input) && !isBehindLatest(input);
 }
 
-export const AppVersionPolicy = { canDecide, isOutdated, isUpToDate } as const;
+export const AppVersionPolicy = { canCompareVersions, isOutdated, isUpToDate } as const;
