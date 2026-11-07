@@ -1421,6 +1421,14 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       });
     }
 
+    if (isWorkletWithParameterDefault(node)) {
+      findings.push({
+        rule: 'worklet-default',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} worklet 함수의 매개변수 기본값은 Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 오류가 납니다. 호출부가 값을 넘기세요.`,
+      });
+    }
+
     if (isChipLabelElement(node)) {
       findings.push({
         rule: 'chip-label',
@@ -1507,6 +1515,40 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
 
 const FORM_CONTEXT_IMPORTS = new Set(['FormProvider', 'useFormContext']);
 const FORM_VARIABLE_NAMES = new Set(['methods', 'formMethods']);
+
+function hasDefaultValue(binding) {
+  if (binding.initializer !== undefined) {
+    return true;
+  }
+  const name = binding.name;
+  return (
+    name !== undefined &&
+    (ts.isObjectBindingPattern(name) || ts.isArrayBindingPattern(name)) &&
+    name.elements.some((element) => ts.isBindingElement(element) && hasDefaultValue(element))
+  );
+}
+
+function isWorkletWithParameterDefault(node) {
+  if (
+    !(
+      ts.isFunctionDeclaration(node) ||
+      ts.isFunctionExpression(node) ||
+      ts.isArrowFunction(node) ||
+      ts.isMethodDeclaration(node)
+    ) ||
+    node.body === undefined ||
+    !ts.isBlock(node.body)
+  ) {
+    return false;
+  }
+  const hasWorkletDirective = node.body.statements.some(
+    (statement) =>
+      ts.isExpressionStatement(statement) &&
+      ts.isStringLiteral(statement.expression) &&
+      statement.expression.text === 'worklet',
+  );
+  return hasWorkletDirective && node.parameters.some(hasDefaultValue);
+}
 
 function isChipLabelElement(node) {
   return (

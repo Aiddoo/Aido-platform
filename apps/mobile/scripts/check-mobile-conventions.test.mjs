@@ -1016,3 +1016,39 @@ test('폼 모양을 어긴 import와 변수와 useForm 제네릭을 거부한다
     },
   );
 });
+
+test('worklet 함수의 매개변수 기본값을 거부하고 호출부가 넘기는 값은 허용한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/voice/utils/bad-worklet.ts': `
+        const LIMIT = 3;
+        export function append(bars: number[], max: number = LIMIT) {
+          'worklet';
+          return bars.slice(-max);
+        }
+        export const arrow = (value = LIMIT) => {
+          'worklet';
+          return value;
+        };
+        export function destructured({ gap = LIMIT }: { gap?: number }) {
+          'worklet';
+          return gap;
+        }
+      `,
+      'apps/mobile/src/features/voice/utils/good-worklet.ts': `
+        export function append(bars: number[], max: number) {
+          'worklet';
+          return bars.slice(-max);
+        }
+        export function plain(value = 3) {
+          return value;
+        }
+      `,
+    },
+    (errors) => {
+      const messages = errors.filter((error) => /매개변수 기본값/u.test(error));
+      assert.equal(messages.length, 3);
+      assert.match(messages.join('\n'), /bad-worklet/u);
+    },
+  );
+});
