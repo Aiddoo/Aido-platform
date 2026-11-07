@@ -1,3 +1,4 @@
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
 import { i18n } from '@src/shared/i18n';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -33,9 +34,10 @@ focusManager.setEventListener((handleFocus) => {
   return () => subscription.remove();
 });
 
-const MIN_STALE_TIME = 1000 * 60 * 5; // 5 minutes
-const MIN_GC_TIME = 1000 * 60 * 6; // 6 minutes
-const MAX_RETRY_DELAY = 5000; // 재시도 백오프 상한 5초 — 죽은 서버를 과하게 두드리지 않는다
+const MIN_STALE_TIME = 5 * MINUTE_MS;
+const MIN_GC_TIME = 6 * MINUTE_MS;
+/** 재시도 백오프 상한. 죽은 서버를 과하게 두드리지 않는다 */
+const MAX_RETRY_DELAY = 5 * SECOND_MS;
 
 /**
  * 상한 지수 백오프: 1s → 2s → 4s → 5s → 5s → 5s.
@@ -43,7 +45,7 @@ const MAX_RETRY_DELAY = 5000; // 재시도 백오프 상한 5초 — 죽은 서�
  * 서버 재시작(≈5-10초)을 덮어 재시도 화면 대신 로딩을 유지한다.
  */
 function retryDelay(attempt: number): number {
-  return Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY);
+  return Math.min(SECOND_MS * 2 ** attempt, MAX_RETRY_DELAY);
 }
 
 const queryClient = new QueryClient({

@@ -1325,6 +1325,19 @@ function checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryR
   }
 }
 
+const COMPONENT_WRAPPER_NAMES = new Set(['memo', 'forwardRef']);
+
+function isModuleArrowValue(value) {
+  if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) {
+    return true;
+  }
+  if (!ts.isCallExpression(value) || !COMPONENT_WRAPPER_NAMES.has(getCallName(value.expression))) {
+    return false;
+  }
+  const [render] = value.arguments;
+  return render !== undefined && ts.isArrowFunction(unwrapExpression(render));
+}
+
 /** 이미 있는 위반은 허용 목록의 수까지 두고 늘면 막는 규칙들. 찾은 것은 findings로 모은다 */
 function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRoot) {
   const isTest = isTestSource(relativePath);
@@ -1342,7 +1355,7 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       for (const declaration of statement.declarationList.declarations) {
         const value =
           declaration.initializer === undefined ? null : unwrapExpression(declaration.initializer);
-        if (value !== null && (ts.isArrowFunction(value) || ts.isFunctionExpression(value))) {
+        if (value !== null && isModuleArrowValue(value)) {
           findings.push({
             rule: 'module-arrow',
             key: relativePath,

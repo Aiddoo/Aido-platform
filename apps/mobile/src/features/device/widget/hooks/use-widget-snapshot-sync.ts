@@ -1,14 +1,16 @@
 import { useWidgetSyncService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import {
+  useGetDailyCompletionsQueryOptions,
+  useGetTodoSummaryQueryOptions,
+} from '@src/features/planning/todo/queries/todo.queries';
 import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
 import { getNowInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 import type {
   WidgetSnapshotContext,
@@ -128,35 +130,25 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     widgetSyncService,
   ]);
 
-  const latestRef = useRef<LatestWidgetSnapshot>({
-    data,
-    tomorrowData,
-    completions,
-    authState,
-    userId,
-    date,
-    timeZone: currentTimeZone,
-    tomorrowDate,
-  });
-  useEffect(() => {
-    latestRef.current = {
-      data,
-      tomorrowData,
-      completions,
+  const syncCurrent = useEffectEvent(() => {
+    syncLatest(widgetSyncService, {
       authState,
       userId,
       date,
       timeZone: currentTimeZone,
       tomorrowDate,
-    };
-  }, [data, tomorrowData, completions, authState, userId, date, currentTimeZone, tomorrowDate]);
+      data,
+      tomorrowData,
+      completions,
+    });
+  });
 
   useEffect(() => {
     const handleLanguageChanged = () => {
-      syncLatest(widgetSyncService, latestRef.current);
+      syncCurrent();
     };
 
     i18n.on('languageChanged', handleLanguageChanged);
     return () => i18n.off('languageChanged', handleLanguageChanged);
-  }, [widgetSyncService]);
+  }, []);
 }

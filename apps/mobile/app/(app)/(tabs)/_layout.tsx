@@ -11,6 +11,12 @@ export default function TabsLayout() {
   const inactiveStyle = useResolveClassNames('text-gray-6');
   const { t } = useTranslation();
 
+  const handleTabPress = ({ data }: { data: { isPrevented: boolean } }) => {
+    if (!data.isPrevented) {
+      haptics.selection();
+    }
+  };
+
   return (
     <NativeTabs
       tintColor={activeStyle.color}
@@ -18,42 +24,15 @@ export default function TabsLayout() {
       backgroundColor={backgroundStyle.backgroundColor}
       minimizeBehavior="never"
     >
-      <NativeTabs.Trigger
-        name="feed"
-        listeners={{
-          tabPress: ({ data }) => {
-            if (!data.isPrevented) {
-              haptics.selection();
-            }
-          },
-        }}
-      >
+      <NativeTabs.Trigger name="feed" listeners={{ tabPress: handleTabPress }}>
         <NativeTabs.Trigger.Label>{t('tabs.todo')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon src={NATIVE_TAB_ICON_SOURCES.todo} renderingMode="template" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger
-        name="memo"
-        listeners={{
-          tabPress: ({ data }) => {
-            if (!data.isPrevented) {
-              haptics.selection();
-            }
-          },
-        }}
-      >
+      <NativeTabs.Trigger name="memo" listeners={{ tabPress: handleTabPress }}>
         <NativeTabs.Trigger.Label>{t('tabs.memo')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon src={NATIVE_TAB_ICON_SOURCES.memo} renderingMode="template" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger
-        name="mypage"
-        listeners={{
-          tabPress: ({ data }) => {
-            if (!data.isPrevented) {
-              haptics.selection();
-            }
-          },
-        }}
-      >
+      <NativeTabs.Trigger name="mypage" listeners={{ tabPress: handleTabPress }}>
         <NativeTabs.Trigger.Label>{t('tabs.mypage')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon src={NATIVE_TAB_ICON_SOURCES.mypage} renderingMode="template" />
       </NativeTabs.Trigger>

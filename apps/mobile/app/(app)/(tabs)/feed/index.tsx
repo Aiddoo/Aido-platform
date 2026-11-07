@@ -65,6 +65,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { type PropsWithChildren, Suspense, useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
@@ -93,8 +94,15 @@ export default function FeedScreen() {
                 </Suspense>
               </QueryErrorBoundary>
             </StyledSafeAreaView>
+
             {match(friendId)
-              .with(P.string, (id) => <FriendFeed key={id} />)
+              .with(P.string, (id) => (
+                <QueryErrorBoundary key={id} fallback={FriendFeedTodos.Error}>
+                  <Suspense fallback={<FriendFeedTodos.Loading />}>
+                    <FriendFeedTodos />
+                  </Suspense>
+                </QueryErrorBoundary>
+              ))
               .with(undefined, () => <MyFeed />)
               .exhaustive()}
           </FeedListPane>
@@ -109,9 +117,10 @@ function MyFeed() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   const status = useAuthStatus();
+  const hasPendingNavigation = useHasPendingNotificationEntry();
   const isStable = useStableFeedForeground({
     isAuthenticated: status === 'authenticated',
-    hasPendingNavigation: useHasPendingNotificationEntry(),
+    hasPendingNavigation,
   });
   const weatherIntroduction = useWeatherIntroduction({ isStable });
   const isInviteAvailable = useInviteAvailability();
@@ -198,6 +207,7 @@ function AddTodoRequestEntry() {
     if (!isRequested || categoryId == null) {
       return;
     }
+
     const frameId = requestAnimationFrame(() => {
       setAction(undefined);
       router.push({ pathname: '/todo/new', params: { date: selectedDateKey, categoryId } });
@@ -256,16 +266,6 @@ function AddTodoRequestEntry() {
     .exhaustive();
 }
 
-function FriendFeed() {
-  return (
-    <QueryErrorBoundary fallback={FriendFeedTodos.Error}>
-      <Suspense fallback={<FriendFeedTodos.Loading />}>
-        <FriendFeedTodos />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
-
 function FriendFeedTodos() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
@@ -284,7 +284,7 @@ function FriendFeedTodos() {
     .with({ friend: P.nullish, isFetchNextPageError: true }, () => (
       <FriendFeedTodos.Error
         error={error}
-        reset={() => fetchNextPage({ cancelRefetch: false }).catch(() => undefined)}
+        reset={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
       />
     ))
     .with({ friend: P.nullish, hasNextPage: true }, () => <FriendFeedTodos.Loading />)
@@ -292,8 +292,8 @@ function FriendFeedTodos() {
     .with({ friend: P.nonNullable }, ({ friend }) => (
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
+        className="flex-1"
+        contentContainerClassName="grow"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
@@ -311,7 +311,7 @@ function FriendFeedTodos() {
 
           <Spacing size={16} />
 
-          <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+          <Box px={16} pb={24} className="grow">
             <QueryErrorBoundary
               resetKeys={[friend.id, selectedDateKey]}
               fallback={FriendTodoList.Error}
@@ -377,16 +377,20 @@ FriendFeedTodos.Loading = function Loading() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
+      className="flex-1"
+      contentContainerClassName="grow"
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
+
         <Spacing size={8} />
+
         <Box px={16}>
           <PokeBanner.Loading />
         </Box>
+
         <Spacing size={16} />
+
         <Box px={16}>
           <FriendTodoList.Loading />
         </Box>
@@ -399,12 +403,13 @@ FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
+      className="flex-1"
+      contentContainerClassName="grow"
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
-        <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+
+        <Box px={16} pb={24} className="grow">
           <FriendTodoList.Error {...props} />
         </Box>
       </StyledSafeAreaView>

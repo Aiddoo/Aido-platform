@@ -1,50 +1,30 @@
 import type { LogContext, Logger } from '@src/core/ports/logger';
 
 export function createCompositeLogger(loggers: Logger[]): Logger {
+  function forEachLogger(write: (logger: Logger) => void): void {
+    for (const logger of loggers) {
+      try {
+        write(logger);
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[CompositeLogger] failed:', error);
+        }
+      }
+    }
+  }
+
   return {
     debug(message: string, context?: LogContext): void {
-      for (const logger of loggers) {
-        try {
-          logger.debug(message, context);
-        } catch (error) {
-          if (__DEV__) {
-            console.warn('[CompositeLogger] failed:', error);
-          }
-        }
-      }
+      forEachLogger((logger) => logger.debug(message, context));
     },
     info(message: string, context?: LogContext): void {
-      for (const logger of loggers) {
-        try {
-          logger.info(message, context);
-        } catch (error) {
-          if (__DEV__) {
-            console.warn('[CompositeLogger] failed:', error);
-          }
-        }
-      }
+      forEachLogger((logger) => logger.info(message, context));
     },
     warn(message: string, context?: LogContext): void {
-      for (const logger of loggers) {
-        try {
-          logger.warn(message, context);
-        } catch (error) {
-          if (__DEV__) {
-            console.warn('[CompositeLogger] failed:', error);
-          }
-        }
-      }
+      forEachLogger((logger) => logger.warn(message, context));
     },
     error(message: string, error?: Error, context?: LogContext): void {
-      for (const logger of loggers) {
-        try {
-          logger.error(message, error, context);
-        } catch (error) {
-          if (__DEV__) {
-            console.warn('[CompositeLogger] failed:', error);
-          }
-        }
-      }
+      forEachLogger((logger) => logger.error(message, error, context));
     },
   };
 }

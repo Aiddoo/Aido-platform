@@ -4,13 +4,14 @@ import {
   type LocationGateway,
   type LocationPermission,
 } from '@src/core/ports/location-gateway';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
 import * as Location from 'expo-location';
 
 import { toPlaceName } from './place-name';
 
-const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * 60_000;
+const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * MINUTE_MS;
 const LAST_KNOWN_LOCATION_ACCURACY_METERS = 5_000;
-const FRESH_LOCATION_TIMEOUT_MS = 10_000;
+const FRESH_LOCATION_TIMEOUT_MS = 10 * SECOND_MS;
 
 function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> {
   return new Promise((resolve, reject) => {

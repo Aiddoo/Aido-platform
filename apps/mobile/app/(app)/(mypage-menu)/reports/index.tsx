@@ -63,7 +63,7 @@ function ReportsScreen() {
             <Box className="items-center px-5 pt-4">
               <Image
                 source={require('@assets/images/ido_cat_suggestion.webp')}
-                style={{ width: 100, height: 100 }}
+                className="size-[100px]"
                 contentFit="contain"
               />
               <Spacing size={8} />

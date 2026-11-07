@@ -16,6 +16,7 @@ import {
   useState,
 } from 'react';
 import { useColorScheme } from 'react-native';
+import { match } from 'ts-pattern';
 import { Uniwind, useResolveClassNames } from 'uniwind';
 
 export type { ThemeMode };
@@ -37,8 +38,10 @@ export function ThemeProvider({ children, syncStorage = mmkvSyncStorage }: Theme
   const systemColorScheme = useColorScheme();
   const [mode, setMode] = useState<ThemeMode>(() => readThemeMode(syncStorage));
 
-  const resolvedTheme: ResolvedTheme =
-    mode === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : mode;
+  const resolvedTheme = match<ThemeMode, ResolvedTheme>(mode)
+    .with('system', () => (systemColorScheme === 'dark' ? 'dark' : 'light'))
+    .with('light', 'dark', (explicitMode) => explicitMode)
+    .exhaustive();
 
   useEffect(() => {
     Uniwind.setTheme(mode);

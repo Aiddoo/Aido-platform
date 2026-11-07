@@ -28,7 +28,7 @@ function SuggestionsScreen() {
   return (
     <ScrollView
       className="flex-1"
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
+      contentContainerClassName="grow pb-8"
       refreshControl={
         canViewSuggestions ? (
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />

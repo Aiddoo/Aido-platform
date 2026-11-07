@@ -29,12 +29,12 @@ import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
-import type { ReactNode } from 'react';
-import { Fragment, memo, Suspense, useCallback, useState } from 'react';
+import { Fragment, memo, type ReactNode, Suspense, useCallback, useState } from 'react';
 import { match } from 'ts-pattern';
 
 function LinkedAccountsScreen() {
   const { t } = useTranslation('auth');
+
   return (
     <SettingsScreenLayout gap={8}>
       <Text size="b4" shade={6} className="px-2">
@@ -67,6 +67,10 @@ function LinkedAccountsList() {
     isPending: isUnlinking,
     variables: unlinkingProvider,
   } = useMutation(useUnlinkAccountMutationOptions());
+  const [unlinkTarget, setUnlinkTarget] = useState<{
+    provider: OAuthProvider;
+    label: string;
+  } | null>(null);
 
   const getProviderRowState = (provider: OAuthProvider, slug: OAuthProviderSlug) =>
     getProviderState({
@@ -77,11 +81,6 @@ function LinkedAccountsList() {
       unlinkingProvider: isUnlinking ? unlinkingProvider : undefined,
     });
 
-  const [unlinkTarget, setUnlinkTarget] = useState<{
-    provider: OAuthProvider;
-    label: string;
-  } | null>(null);
-
   const handleUnlinkConfirm = () => {
     if (!unlinkTarget) {
       return;
@@ -90,13 +89,6 @@ function LinkedAccountsList() {
     setUnlinkTarget(null);
     unlink(target.provider);
   };
-
-  const handleLink = useCallback(
-    (slug: OAuthProviderSlug) => {
-      link(slug);
-    },
-    [link],
-  );
 
   const handleUnlinkRequest = useCallback((provider: OAuthProvider, label: string) => {
     setUnlinkTarget({ provider, label });
@@ -113,7 +105,7 @@ function LinkedAccountsList() {
           label={t('providers.KAKAO')}
           {...getProviderRowState('KAKAO', 'kakao')}
           canUnlink={linkedAccounts.canUnlink}
-          onLink={handleLink}
+          onLink={link}
           onUnlinkRequest={handleUnlinkRequest}
         />
         <SettingsCard.Separator />
@@ -125,7 +117,7 @@ function LinkedAccountsList() {
           label={t('providers.GOOGLE')}
           {...getProviderRowState('GOOGLE', 'google')}
           canUnlink={linkedAccounts.canUnlink}
-          onLink={handleLink}
+          onLink={link}
           onUnlinkRequest={handleUnlinkRequest}
         />
         {process.env.EXPO_OS === 'ios' && (
@@ -141,7 +133,7 @@ function LinkedAccountsList() {
               label={t('providers.APPLE')}
               {...getProviderRowState('APPLE', 'apple')}
               canUnlink={linkedAccounts.canUnlink}
-              onLink={handleLink}
+              onLink={link}
               onUnlinkRequest={handleUnlinkRequest}
             />
           </>
@@ -155,7 +147,7 @@ function LinkedAccountsList() {
           label={t('providers.NAVER')}
           {...getProviderRowState('NAVER', 'naver')}
           canUnlink={linkedAccounts.canUnlink}
-          onLink={handleLink}
+          onLink={link}
           onUnlinkRequest={handleUnlinkRequest}
         />
       </SettingsCard>

@@ -4,6 +4,7 @@ import {
 } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
+import { maxBy } from 'es-toolkit';
 
 import { WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
 import type { Release, ReleaseList } from '../schemas/release.schema';
@@ -128,9 +129,7 @@ function findReleaseByCampaign<T extends Pick<Release, 'campaignId'>>(
 function getLatestRelease<T extends Pick<Release, 'releasedOn'>>(
   releases: readonly [T, ...T[]],
 ): T {
-  return releases.reduce((latest, release) =>
-    release.releasedOn > latest.releasedOn ? release : latest,
-  );
+  return maxBy(releases, (release) => Date.parse(release.releasedOn));
 }
 
 function isReleaseAvailable(

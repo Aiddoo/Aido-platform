@@ -1,4 +1,5 @@
 import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+import { minBy } from 'es-toolkit';
 
 import { addDaysToDateKey } from './date-key';
 import { toDateKey } from './instant';
@@ -79,8 +80,8 @@ export function getNextLocalMidnight(now: Date, timeZone: string): Date {
   const secondGuessMs = wallMidnightMs - getTimeZoneOffsetMs(firstGuessMs, timeZone);
   const startsNextDate = (instantMs: number) =>
     instantMs > now.getTime() && toDateKey(new Date(instantMs), timeZone) === nextDateKey;
-  const candidates = [firstGuessMs, secondGuessMs].filter(startsNextDate).sort((a, b) => a - b);
-  return new Date(candidates[0] ?? Math.max(firstGuessMs, secondGuessMs));
+  const earliestStart = minBy([firstGuessMs, secondGuessMs].filter(startsNextDate), (ms) => ms);
+  return new Date(earliestStart ?? Math.max(firstGuessMs, secondGuessMs));
 }
 
 export function millisecondsUntilNextLocalMidnight(now: Date, timeZone: string): number {

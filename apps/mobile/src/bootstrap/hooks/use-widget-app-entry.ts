@@ -4,6 +4,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
+import { toError } from '@src/shared/errors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
@@ -80,9 +81,7 @@ export function useWidgetAppEntry() {
           message: 'initial widget destination restored',
         });
       } catch (error) {
-        errorReporter.captureException(error instanceof Error ? error : new Error(String(error)), {
-          feature: 'widget',
-        });
+        errorReporter.captureException(toError(error), { feature: 'widget' });
       }
     },
   );

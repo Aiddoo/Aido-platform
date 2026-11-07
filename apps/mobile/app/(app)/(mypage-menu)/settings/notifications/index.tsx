@@ -27,6 +27,7 @@ function NotificationSettingsScreen() {
   const dateFormatContext = useDateFormatContext();
 
   const isPushDisabled = !preference.pushEnabled;
+  const isWeatherEnabled = PreferencePolicy.isWeatherEnabled(preference);
 
   return (
     <>
@@ -57,8 +58,8 @@ function NotificationSettingsScreen() {
         <SettingsCard.Item
           label={t('settings.weatherLabel')}
           value={
-            <SummaryText isEnabled={PreferencePolicy.isWeatherEnabled(preference)}>
-              {PreferencePolicy.isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
+            <SummaryText isEnabled={isWeatherEnabled}>
+              {isWeatherEnabled ? t('settings.on') : t('settings.off')}
             </SummaryText>
           }
           onPress={() => push('/settings/notifications/weather')}

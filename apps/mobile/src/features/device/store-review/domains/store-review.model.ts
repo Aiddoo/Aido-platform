@@ -1,5 +1,6 @@
 import { DAY_MS } from '@src/shared/constants/time.constants';
-import { type Instant, diffMs } from '@src/shared/date/instant';
+import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
+import { maxBy } from 'es-toolkit';
 
 import {
   STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
@@ -49,11 +50,7 @@ function hasEnoughActiveDays(state: Pick<StoreReviewState, 'activeDays'>) {
 }
 
 function getLastRequestedAt(state: Pick<StoreReviewState, 'requestedAt'>) {
-  return state.requestedAt.reduce<Instant | undefined>(
-    (latest, requestedAt) =>
-      latest == null || diffMs(requestedAt, latest) > 0 ? requestedAt : latest,
-    undefined,
-  );
+  return maxBy(state.requestedAt, toEpochMs);
 }
 
 function isCoolingDown(state: Pick<StoreReviewState, 'requestedAt'>, now: Instant) {

@@ -315,6 +315,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
     );
   }
 
+  const weekendColors: Record<number, string> = { 0: '#FF5858', 6: '#2598E8' };
   const renderWeekDay = (day?: NonNullable<WidgetProps['weekDays']>[number], index = 0) => {
     if (!day) {
       return null;
@@ -325,7 +326,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 10, design: 'rounded' }),
-            foregroundColor(index === 0 ? '#FF5858' : index === 6 ? '#2598E8' : palette.muted),
+            foregroundColor(weekendColors[index] ?? palette.muted),
           ]}
         >
           {day.weekdayLabel}

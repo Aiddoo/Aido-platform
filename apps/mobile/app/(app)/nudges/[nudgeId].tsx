@@ -28,7 +28,7 @@ export default function NudgeDetailRoute() {
             <Suspense fallback={<NudgeDetail.Loading />}>
               <NudgeModerationToolbar nudgeId={params.data.nudgeId} />
 
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+              <ScrollView contentContainerClassName="grow">
                 <StyledSafeAreaView edges={['left', 'right']} className="p-6" testID="nudge-detail">
                   <NudgeSummary nudgeId={params.data.nudgeId} />
 

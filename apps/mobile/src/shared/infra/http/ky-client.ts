@@ -119,10 +119,8 @@ export class KyHttpClient implements HttpClient {
           throw new ServerError(response.status, error.request.headers.get(REQUEST_ID_HEADER));
         }
 
-        // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다
-        // (`response.json()` 재호출 불가). 미리 파싱된 값에서 서버 에러 코드를 읽는다.
-        const parsed: unknown = error.data;
-        const envelope = errorEnvelopeSchema.safeParse(parsed);
+        // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다(`response.json()` 재호출 불가)
+        const envelope = errorEnvelopeSchema.safeParse(error.data);
         const body = envelope.success ? envelope.data : undefined;
         const candidateCode = body?.error.code;
         const code =

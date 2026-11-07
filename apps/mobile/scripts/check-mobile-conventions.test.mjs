@@ -62,9 +62,13 @@ test('컴포넌트 inline props의 댓글 식별자도 거부한다', () => {
     {
       'apps/mobile/src/features/engagement/comment/components/TodoConversation.tsx': `
         export function TodoConversation({ todoId }: { todoId: string }) { return null }
-        export const ReplyComposer = memo(
-          ({ anchorCommentId }: { anchorCommentId: string }) => null,
-        );
+        export const ReplyComposer = memo(function ReplyComposer({
+          anchorCommentId,
+        }: {
+          anchorCommentId: string;
+        }) {
+          return null;
+        });
       `,
     },
     (errors) => {
@@ -799,6 +803,25 @@ test('모듈 수준 화살표를 거부하고 function 선언과 지역 화살�
           const local = () => null;
           return local;
         }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /todo-card\.tsx:2/u);
+      assert.match(errors.join('\n'), /todo-card\.tsx:3/u);
+    },
+  );
+});
+
+test('memo와 forwardRef에 넘긴 화살표 컴포넌트를 거부하고 function 표현식은 통과한다', () => {
+  withFixture(
+    {
+      [FEED_TODO]: `
+        export const Card = memo(({ title }) => title);
+        export const Row = forwardRef((props, ref) => null);
+        export const Cell = memo(function Cell({ title }) {
+          return title;
+        });
       `,
     },
     (errors) => {

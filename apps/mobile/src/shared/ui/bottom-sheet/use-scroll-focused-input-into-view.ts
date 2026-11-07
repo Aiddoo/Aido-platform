@@ -7,6 +7,7 @@ import {
   TextInput,
 } from 'react-native';
 import {
+  clamp,
   scrollTo,
   type SharedValue,
   useAnimatedReaction,
@@ -31,6 +32,7 @@ interface ScrollPlan {
   fromOffset: number;
   toOffset: number;
 }
+
 // iOS는 키보드가 움직이기 시작할 때(willShow) 알려 주지만, 그때는 아직 입력의 onFocus가 JS에 오지 않았다
 const MAX_FOCUS_WAIT_FRAMES = 30;
 
@@ -97,8 +99,9 @@ export function useScrollFocusedInputIntoView({
       if (plan == null || position === previous) {
         return;
       }
-      const progress = Math.min(
-        Math.max((position - plan.fromPosition) / (plan.toPosition - plan.fromPosition), 0),
+      const progress = clamp(
+        (position - plan.fromPosition) / (plan.toPosition - plan.fromPosition),
+        0,
         1,
       );
       scrollTo(

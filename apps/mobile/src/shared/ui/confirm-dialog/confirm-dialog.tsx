@@ -26,8 +26,9 @@ export function ConfirmDialog({
   secondaryButton,
 }: ConfirmDialogProps) {
   const { fontScale } = useFontScale();
-  const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
+  const isStackedActions = fontScale === 'xlarge' && cancelButton != null;
   const portalTarget = usePortalTarget();
+
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal {...portalTarget}>
@@ -42,29 +43,55 @@ export function ConfirmDialog({
               {title}
               {description}
             </VStack>
-            {secondaryButton != null ? (
-              <VStack gap={8} className="w-full">
-                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
-                <Box className="w-full">{asFullWidthAction(secondaryButton)}</Box>
-                {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
-              </VStack>
-            ) : cancelButton && stackActions ? (
-              <VStack gap={8} className="w-full">
-                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
-                <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>
-              </VStack>
-            ) : cancelButton ? (
-              <HStack gap={8} className="w-full">
-                <Box className="flex-1">{cancelButton}</Box>
-                <Box className="flex-1">{confirmButton}</Box>
-              </HStack>
-            ) : (
-              <HStack className="w-full justify-end">{confirmButton}</HStack>
-            )}
+            <ConfirmDialogActions
+              isStacked={isStackedActions}
+              cancelButton={cancelButton}
+              confirmButton={confirmButton}
+              secondaryButton={secondaryButton}
+            />
           </VStack>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog>
+  );
+}
+
+type ConfirmDialogActionsProps = Pick<
+  ConfirmDialogProps,
+  'cancelButton' | 'confirmButton' | 'secondaryButton'
+> & { isStacked: boolean };
+
+function ConfirmDialogActions({
+  isStacked,
+  cancelButton,
+  confirmButton,
+  secondaryButton,
+}: ConfirmDialogActionsProps) {
+  if (secondaryButton != null) {
+    return (
+      <VStack gap={8} className="w-full">
+        <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
+        <Box className="w-full">{asFullWidthAction(secondaryButton)}</Box>
+        {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
+      </VStack>
+    );
+  }
+  if (cancelButton == null) {
+    return <HStack className="w-full justify-end">{confirmButton}</HStack>;
+  }
+  if (isStacked) {
+    return (
+      <VStack gap={8} className="w-full">
+        <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
+        <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>
+      </VStack>
+    );
+  }
+  return (
+    <HStack gap={8} className="w-full">
+      <Box className="flex-1">{cancelButton}</Box>
+      <Box className="flex-1">{confirmButton}</Box>
+    </HStack>
   );
 }
 
