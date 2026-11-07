@@ -4,7 +4,6 @@ export {
   createAppStoreListingGatewayStub,
   createAppStoreReviewGatewayStub,
 } from './create-app-store-gateway-stub';
-export { createAudioPartPlaylistStub } from './create-audio-part-playlist-stub';
 export { createClipboardGatewayStub } from './create-clipboard-gateway-stub';
 export {
   createInstallReferrerGatewayStub,

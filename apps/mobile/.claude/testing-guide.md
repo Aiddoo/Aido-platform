@@ -156,7 +156,6 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `SocialAuthGateway`                    | `createSocialAuthGatewayStub()`                                                                    |
 | `SpeechRecognizer`                     | `createSpeechRecognizerStub()`                                                                     |
 | `TokenRefresher`                       | `createTokenRefresherStub()`                                                                       |
-| `AudioPartPlaylist`                    | `createAudioPartPlaylistStub(status)`                                                              |
 
 **stub 기본값 규칙.** 기본은 정상 기기와 빈 데이터다(알림을 허용했고, 클립보드는 비었고, 요금제와 구독은 없고, 사용자는 로그인 창을 닫는다). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표·장소)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 같은 포트의 모든 도구가 이 규칙을 따른다. 어긋난 기본값이 필요하면 테스트가 반환된 `jest.fn`을 바꾼다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
 
