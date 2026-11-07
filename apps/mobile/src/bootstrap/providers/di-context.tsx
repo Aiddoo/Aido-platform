@@ -133,7 +133,7 @@ export interface DIContainer extends SharedDependencies {
   voiceNoteStorageService: VoiceNoteStorageService;
 }
 
-export const DIContext = createContext<DIContainer | null>(null);
+const DIContext = createContext<DIContainer | null>(null);
 
 interface StaticDIProviderProps extends PropsWithChildren {
   container: DIContainer;

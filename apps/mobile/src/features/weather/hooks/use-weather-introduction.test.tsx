@@ -8,6 +8,7 @@ import {
   createMemorySyncStorage,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
@@ -32,6 +33,14 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function FeedScreen({ path, isStable }: { path: string; isStable: boolean }) {
+  return (
+    <OverlayProvider resetKey={path}>
+      <Probe isStable={isStable} />
+    </OverlayProvider>
+  );
+}
+
 async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {}) {
   const gateway: jest.Mocked<LocationGateway> = {
     getPermission: jest.fn().mockResolvedValue(NOT_ASKED),
@@ -43,8 +52,7 @@ async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {
   const introductionService = new WeatherIntroductionService(
     createWeatherIntroductionRepository(createMemorySyncStorage()),
   );
-  const rendered = await renderUi(<Probe isStable />, {
-    withOverlay: true,
+  const rendered = await renderUi(<FeedScreen path="/feed" isStable />, {
     di: {
       locationGateway: gateway,
       weatherService: new WeatherService(createHttpClientStub()),
@@ -118,5 +126,25 @@ describe('useWeatherIntroduction', () => {
 
     // Then
     expect(introductionService.hasSeenIntroduction()).toBe(false);
+  });
+
+  it('다른 화면으로 가서 사라지면 피드로 돌아올 때 다시 권한다', async () => {
+    // Given
+    const { introductionService, rerender } = await setup();
+    await screen.findByText('나중에');
+
+    // When
+    await rerender(<FeedScreen path="/mypage" isStable={false} />);
+    await act(async () => undefined);
+
+    // Then
+    expect(screen.queryByText('나중에')).toBeNull();
+    expect(introductionService.hasSeenIntroduction()).toBe(false);
+
+    // When
+    await rerender(<FeedScreen path="/mypage" isStable />);
+
+    // Then
+    expect(await screen.findByText('나중에')).toBeTruthy();
   });
 });
