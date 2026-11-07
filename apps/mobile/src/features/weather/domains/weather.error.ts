@@ -9,18 +9,27 @@ export const WeatherErrorCode = {
 const SERVICE_UNAVAILABLE_STATUS = 503;
 
 /** 서버에 등록한 위치가 없을 때(WEATHER_1902)는 다시 시도 대신 위치 등록을 안내한다. */
-export const isLocationNotRegisteredError = (error: unknown): boolean =>
-  isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902);
+export function isLocationNotRegisteredError(error: unknown): boolean {
+  return isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902);
+}
 
 /** 공급자 장애(WEATHER_1901)는 503이라 HTTP 클라이언트가 ServerError로 던진다. */
-export const isWeatherProviderUnavailableError = (error: unknown): boolean =>
-  (error instanceof ServerError && error.statusCode === SERVICE_UNAVAILABLE_STATUS) ||
-  (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901));
+export function isWeatherProviderUnavailableError(error: unknown): boolean {
+  return (
+    (error instanceof ServerError && error.statusCode === SERVICE_UNAVAILABLE_STATUS) ||
+    (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901))
+  );
+}
 
 /** 연결이 정말 끊긴 경우만이다. 응답이 늦은 시간 초과는 연결 문제로 안내하지 않는다. */
-export const isOfflineError = (error: unknown): boolean => error instanceof NetworkError;
+export function isOfflineError(error: unknown): boolean {
+  return error instanceof NetworkError;
+}
 
-export const isTimeoutError = (error: unknown): boolean => error instanceof TimeoutError;
+export function isTimeoutError(error: unknown): boolean {
+  return error instanceof TimeoutError;
+}
 
-export const isConnectionError = (error: unknown): boolean =>
-  error instanceof NetworkError || error instanceof TimeoutError;
+export function isConnectionError(error: unknown): boolean {
+  return error instanceof NetworkError || error instanceof TimeoutError;
+}

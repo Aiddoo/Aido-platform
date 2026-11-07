@@ -224,7 +224,9 @@ export const usePurchasesSdkManager = () => useDI().purchasesSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
 export const useEntitlementService = () => useDI().entitlementService;
 export const useWeatherIntroductionRepository = () => useDI().weatherIntroductionRepository;
-export const useWeatherLocationService = () => useDI().weatherLocationService;
+export function useWeatherLocationService() {
+  return useDI().weatherLocationService;
+}
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
 export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;
