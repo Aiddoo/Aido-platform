@@ -1,3 +1,5 @@
+import { ApiError } from '@src/core/errors/api-error';
+
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
 import {
   NEW_TODO_COMMENT_FORM_VALUES,
@@ -149,5 +151,18 @@ describe('TodoCommentComposerPolicy.getBackAction', () => {
 
     // Then
     expect(result).toBe('blocked');
+  });
+
+  test.each([
+    { label: '400', error: new ApiError('X', '거절', 400), expected: true },
+    { label: '499', error: new ApiError('X', '거절', 499), expected: true },
+    { label: '500', error: new ApiError('X', '실패', 500), expected: false },
+    { label: '연결 실패', error: new Error('offline'), expected: false },
+  ])('$label 뒤에 새 멱등 키가 필요한지 판단한다', ({ error, expected }) => {
+    // Given & When
+    const needsNew = TodoCommentComposerPolicy.needsNewSubmissionAfterFailure(error);
+
+    // Then
+    expect(needsNew).toBe(expected);
   });
 });

@@ -58,7 +58,6 @@ const SEND_ICON_SIZE = 18;
 const CLOSE_ICON_SIZE = 16;
 const CLOSE_HIT_SLOP = 12;
 const TARGET_CONTENT_MAX_LINES = 1;
-const CLIENT_ERROR_STATUS = { min: 400, max: 500 } as const;
 
 type CommentFieldName = `items.${number}.content`;
 
@@ -251,12 +250,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
         .exhaustive();
       finish(mode);
     } catch (error) {
-      // 4xx는 같은 글을 다시 보내도 같은 결과라 새 멱등 키로 다시 보낼 수 있게 한다
-      if (
-        isApiError(error) &&
-        error.status >= CLIENT_ERROR_STATUS.min &&
-        error.status < CLIENT_ERROR_STATUS.max
-      ) {
+      if (TodoCommentComposerPolicy.needsNewSubmissionAfterFailure(error)) {
         preparedSubmissionRef.current = null;
       }
       logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {

@@ -56,7 +56,7 @@ const SELECT_HIT_SLOP = 12;
 /** 고르지 않은 행의 제목. 라이트 4.5:1, 다크 6:1 이상이라 흐려도 읽힌다 */
 const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-7 dark:text-gray-5';
 
-export interface PlanApplyRequest {
+interface PlanApplyRequest {
   idempotencyKey: string;
   fingerprint: string;
 }

@@ -1,4 +1,5 @@
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
+import { isApiError } from '@src/core/errors/api-error';
 import { match } from 'ts-pattern';
 
 import type {
@@ -91,6 +92,11 @@ function getBackAction(
     .otherwise(() => 'closeComposer');
 }
 
+/** 4xx는 같은 글을 다시 보내도 같은 결과라 새 멱등 키로 다시 보낼 수 있게 한다. 나머지는 같은 키로 재시도한다 */
+function needsNewSubmissionAfterFailure(error: unknown) {
+  return isApiError(error) && error.status >= 400 && error.status < 500;
+}
+
 export const TodoCommentComposerPolicy = {
   getBackAction,
   canChain,
@@ -99,5 +105,6 @@ export const TodoCommentComposerPolicy = {
   getComposerTarget,
   getReplyParentId,
   prepareSubmission,
+  needsNewSubmissionAfterFailure,
   getTrimmedContents,
 } as const;
