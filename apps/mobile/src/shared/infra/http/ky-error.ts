@@ -26,7 +26,7 @@ function isExpoFetchFailure(error: unknown) {
 function isSyntaxError(error: unknown): error is { message: string } {
   return (
     typeof error === 'object' &&
-    error !== null &&
+    error != null &&
     'name' in error &&
     error.name === 'SyntaxError' &&
     'message' in error &&

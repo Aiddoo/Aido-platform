@@ -46,7 +46,7 @@ function isBehindLatest(input: ComparableInput) {
   return difference != null && difference < 0;
 }
 
-export type AppVersionUpdateStatus = 'unknown' | 'outdated' | 'up-to-date';
+type AppVersionUpdateStatus = 'unknown' | 'outdated' | 'up-to-date';
 
 /** 판정할 수 없으면 `unknown`이다. 스토어에 더 새 버전이 있으면 `outdated`, 이미 최신이거나 더 앞선 빌드면 `up-to-date`다 */
 function getUpdateStatus(input: AppVersionPolicyInput): AppVersionUpdateStatus {
