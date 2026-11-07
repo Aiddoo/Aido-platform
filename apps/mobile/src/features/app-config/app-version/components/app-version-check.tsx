@@ -1,4 +1,5 @@
-import { useApplicationMetadata, useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
@@ -14,7 +15,7 @@ import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
 export function AppVersionCheck() {
   const { t } = useTranslation('appVersion');
   const applicationMetadata = useApplicationMetadata();
-  const errorReporter = useErrorReporter();
+  const reportUnexpectedError = useReportUnexpectedError('app_version');
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
   const installation = applicationMetadata.getInstallation();
@@ -25,14 +26,14 @@ export function AppVersionCheck() {
     const result = await query.refetch();
     if (result.isError || !result.data || !installation) {
       if (result.error) {
-        errorReporter.captureException(result.error, { feature: 'app_version' });
+        reportUnexpectedError(result.error);
       }
       toast.error(t('checkFailed'));
       return;
     }
 
     const input = { config: result.data, ...installation };
-    if (!AppVersionPolicy.canCompareVersions(input)) {
+    if (!AppVersionPolicy.isVersionComparable(input)) {
       toast.error(t('checkFailed'));
       return;
     }
@@ -43,7 +44,7 @@ export function AppVersionCheck() {
     }
 
     if (AppVersionPolicy.isUpToDate(input)) {
-      return confirmDialog.openAsync({
+      await confirmDialog.openAsync({
         title: t('latestTitle'),
         description: t('latestDescription'),
         confirmLabel: t('confirm'),

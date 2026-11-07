@@ -1,6 +1,5 @@
-import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { isApiError, isInfraError, toError } from '@src/shared/errors';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { useErrorReporter, useHaptics } from '@src/bootstrap/providers/di-context';
+import { getUserFacingMessage, isApiError, isInfraError, toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,8 +25,8 @@ const HTTP_METHOD = {
 export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number }) {
   const errorReporter = useErrorReporter();
   const queryClient = useQueryClient();
+  const haptics = useHaptics();
   const toast = useAppToast();
-  const showFailure = useMutationFailure();
   const { t } = useTranslation('todoComment');
 
   return (error: unknown, operation: TodoCommentMutationOperation, target?: TodoComment) => {
@@ -46,7 +45,10 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
         toast.warning(t('toasts.alreadyDeleted'));
       })
       .when(isTodoCommentRateLimited, () => toast.warning(t('toasts.throttled')))
-      .with(P.when(isApiError), (apiError) => showFailure(apiError, fallback))
+      .with(P.when(isApiError), (apiError) => {
+        haptics.notify('error');
+        toast.error(getUserFacingMessage(apiError), { fallback });
+      })
       .otherwise((unknownError) => {
         errorReporter.captureException(toError(unknownError), {
           feature: 'todo_comment',
@@ -56,7 +58,8 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
             ? (unknownError.statusCode ?? undefined)
             : undefined,
         });
-        showFailure(unknownError, fallback);
+        haptics.notify('error');
+        toast.error(getUserFacingMessage(unknownError), { fallback });
       });
   };
 }

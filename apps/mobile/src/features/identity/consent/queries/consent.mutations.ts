@@ -1,10 +1,11 @@
 import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { useConsentService } from '@src/bootstrap/providers/di-context';
+import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
@@ -12,10 +13,11 @@ import type { Consent, ConsentAgreement } from '../schemas/consent.schema';
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export function useUpdateAiDataSharingConsentMutationOptions() {
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const showFailure = useMutationFailure(t('ai:consent.saveFailed'));
 
   return mutationOptions({
     // 오프라인에 멈춰 있으면 시트의 버튼이 돌기만 하고 나중에도 누를 수 없다. 바로 실패해 시트를 그대로 둔다
@@ -59,15 +61,17 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
       if (context?.previousData != null) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('ai:consent.saveFailed') });
     },
   });
 }
 
 export function useUpdateMarketingConsentMutationOptions() {
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('auth:toasts.settingsChangeFailed'));
 
   return mutationOptions({
     // 오프라인에 멈춰 있으면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
@@ -111,15 +115,17 @@ export function useUpdateMarketingConsentMutationOptions() {
       if (context?.previousData) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
     },
   });
 }
 
 export function useUpdateMarketingPushConsentMutationOptions() {
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
-  const showFailure = useMutationFailure(t('auth:toasts.settingsChangeFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -147,7 +153,8 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       if (context?.previousData) {
         queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
       }
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
     },
   });
 }

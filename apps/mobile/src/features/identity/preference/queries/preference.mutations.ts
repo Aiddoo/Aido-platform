@@ -1,7 +1,7 @@
 import { useHaptics, usePreferenceService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +32,6 @@ export function useUpdatePreferenceMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.settingsChangeFailed'));
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
@@ -76,7 +75,8 @@ export function useUpdatePreferenceMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
     },
   });
 }

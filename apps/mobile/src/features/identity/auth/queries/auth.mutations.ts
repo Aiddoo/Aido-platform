@@ -7,7 +7,7 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -43,15 +43,15 @@ import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
 // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
 function useSocialLoginFailure(fallback = t('auth:toasts.loginFailed')) {
   const haptics = useHaptics();
-  const showFailure = useMutationFailure(fallback);
+  const toast = useAppToast();
 
   return (error: unknown) => {
+    haptics.notify('error');
     if (isLoginCancelledError(error)) {
-      haptics.notify('error');
       return;
     }
 
-    showFailure(error);
+    toast.error(getUserFacingMessage(error), { fallback });
   };
 }
 
@@ -63,7 +63,6 @@ export function useEmailLoginMutationOptions() {
   const { trackEvent } = useTrack();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.loginFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -83,7 +82,8 @@ export function useEmailLoginMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
     },
   });
 }
@@ -196,7 +196,6 @@ export function useDeleteAccountMutationOptions() {
   const { signOut } = useAuthSession();
   const queryClient = useQueryClient();
   const sessionCleanupService = useSessionCleanupService();
-  const showFailure = useMutationFailure(t('auth:toasts.deleteAccountFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -223,7 +222,8 @@ export function useDeleteAccountMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.deleteAccountFailed') });
     },
   });
 }
@@ -234,7 +234,6 @@ export function useRegisterMutationOptions() {
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.registerFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -259,15 +258,17 @@ export function useRegisterMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.registerFailed') });
     },
   });
 }
 
 export function useVerifyEmailMutationOptions() {
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const authService = useAuthService();
   const { signIn } = useAuthSession();
-  const showFailure = useMutationFailure(t('auth:toasts.codeInvalid'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -275,14 +276,17 @@ export function useVerifyEmailMutationOptions() {
     onSuccess: () => {
       signIn();
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.codeInvalid') });
+    },
   });
 }
 
 export function useResendVerificationMutationOptions() {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.codeResendFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -291,19 +295,26 @@ export function useResendVerificationMutationOptions() {
     onSuccess: () => {
       toast.success(t('auth:toasts.codeResent'));
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.codeResendFailed') });
+    },
   });
 }
 
 export function useForgotPasswordMutationOptions() {
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const authService = useAuthService();
-  const showFailure = useMutationFailure(t('auth:toasts.requestFailed'));
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: ForgotPasswordInput) =>
       unwrap(await authService.forgotPassword(input)),
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.requestFailed') });
+    },
   });
 }
 
@@ -312,7 +323,6 @@ export function useResetPasswordMutationOptions() {
   const replace = useSingleTap(router.replace);
   const authService = useAuthService();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.passwordResetFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -334,7 +344,8 @@ export function useResetPasswordMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.passwordResetFailed') });
     },
   });
 }
@@ -344,7 +355,6 @@ export function useChangePasswordMutationOptions() {
   const goBack = useSingleTap(router.back);
   const authService = useAuthService();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.passwordChangeFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -362,7 +372,8 @@ export function useChangePasswordMutationOptions() {
         return;
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.passwordChangeFailed') });
     },
   });
 }
@@ -392,11 +403,11 @@ export function useLinkAccountMutationOptions() {
 }
 
 export function useUnlinkAccountMutationOptions() {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.unlinkFailed'));
 
   return mutationOptions({
     networkMode: 'always',
@@ -411,6 +422,9 @@ export function useUnlinkAccountMutationOptions() {
         provider: toOAuthProviderSlug(provider),
       });
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.unlinkFailed') });
+    },
   });
 }

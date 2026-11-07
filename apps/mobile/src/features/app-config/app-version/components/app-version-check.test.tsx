@@ -1,11 +1,13 @@
-import type { AppStoreListingGateway } from '@src/core/ports/app-store-gateway';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
-import { createErrorReporterStub } from '@src/shared/__tests__';
-import { renderUi } from '@src/shared/__tests__/render-ui';
+import {
+  createAppStoreListingGatewayStub,
+  createErrorReporterStub,
+  createNativeApplicationMetadataGatewayStub,
+  renderUi,
+} from '@src/shared/__tests__';
 import { ServerError } from '@src/shared/errors/infra-error';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import { AppVersionService } from '../apis/app-version.service';
 import { AppVersionCheck } from './app-version-check';
 
 const ENABLED_RESPONSE = {
@@ -23,14 +25,17 @@ async function renderCheck({
   currentVersion?: string;
   openListing?: () => Promise<void>;
 }) {
-  const listing: jest.Mocked<AppStoreListingGateway> = { openListing: jest.fn() };
+  const listing = createAppStoreListingGatewayStub();
   listing.openListing.mockImplementation(openListing);
   const errorReporter = createErrorReporterStub();
   await renderUi(<AppVersionCheck />, {
     withOverlay: true,
     di: {
-      appVersionService: new AppVersionService(jsonFetcher),
-      applicationMetadata: { getInstallation: () => ({ platform: 'ios', currentVersion }) },
+      jsonFetcher,
+      applicationMetadata: createNativeApplicationMetadataGatewayStub({
+        platform: 'ios',
+        currentVersion,
+      }),
       appStoreListing: listing,
       errorReporter,
     },

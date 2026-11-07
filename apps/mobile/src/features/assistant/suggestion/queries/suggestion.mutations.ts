@@ -9,8 +9,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError, toError } from '@src/shared/errors';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage, isApiError, toError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -34,7 +33,6 @@ export function useActOnSuggestionMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
-  const showFailure = useMutationFailure(t('ai:suggestions.toasts.retryLater'));
 
   return mutationOptions({
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionParams) =>
@@ -66,7 +64,8 @@ export function useActOnSuggestionMutationOptions() {
         logger.error(SUGGESTION_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
       }
 
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });
 }
