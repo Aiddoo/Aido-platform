@@ -17,7 +17,7 @@ export interface InviteShareResult {
 }
 
 /** 호출부가 사용자 언어로 만들어 넘기는 공유 문구 */
-export interface InviteShareCopy {
+interface InviteShareCopy {
   kakaoTitle: string;
   kakaoDescription: string;
   kakaoButton: string;
