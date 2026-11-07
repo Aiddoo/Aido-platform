@@ -1,4 +1,4 @@
-import { registerResponseSchema } from '@aido/api';
+import { authTokensSchema as authTokensResponseSchema, registerResponseSchema } from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -19,10 +19,17 @@ const authTokensSchema = z.object({
   refreshToken: z.string(),
   userName: z.string().nullable(),
   userProfileImage: z.string().nullable(),
-  accountRestored: z.boolean().optional().default(false),
+  accountRestored: z.boolean(),
+  /** 소셜 로그인 응답에만 실린다. 이메일 로그인과 인증은 싣지 않아 기존 계정으로 본다 */
   isNewUser: z.boolean().optional().default(false),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
+
+/** 지금 서버는 복구 여부를 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */
+export const authTokensEnvelopeSchema = authTokensResponseSchema.required({
+  accountRestored: true,
+});
+export type AuthTokensEnvelope = z.infer<typeof authTokensEnvelopeSchema>;
 
 /** 지금 서버는 인증 메일을 담았는지를 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */
 export const registerEnvelopeSchema = registerResponseSchema.required({ emailSent: true });

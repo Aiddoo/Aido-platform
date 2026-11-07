@@ -1,5 +1,4 @@
 import type {
-  AuthTokens as AuthTokensDTO,
   ChangePasswordResponse,
   DeleteAccountResponse,
   ForgotPasswordResponse,
@@ -9,17 +8,20 @@ import type {
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
-import type { AuthTokens, RegisterEnvelope } from '../schemas/auth.schema';
+import type { AuthTokens, AuthTokensEnvelope, RegisterEnvelope } from '../schemas/auth.schema';
 
-const generateAuthTokensDto = (): AuthTokensDTO => ({
+const generateAuthTokensDto = (): AuthTokensEnvelope => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
   accessToken: 'access-token-jwt',
   refreshToken: 'refresh-token-jwt',
   name: '테스트',
   profileImage: 'https://example.com/avatar.jpg',
+  accountRestored: false,
 });
 
-export const createAuthTokensDto = (overrides?: Partial<AuthTokensDTO>): AuthTokensDTO => ({
+export const createAuthTokensDto = (
+  overrides?: Partial<AuthTokensEnvelope>,
+): AuthTokensEnvelope => ({
   ...generateAuthTokensDto(),
   ...overrides,
 });

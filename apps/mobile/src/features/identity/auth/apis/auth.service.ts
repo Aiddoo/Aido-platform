@@ -1,6 +1,5 @@
 import {
   type AppleMobileCallbackInput,
-  authTokensSchema,
   type ChangePasswordInput,
   changePasswordResponseSchema,
   type DeleteAccountInput,
@@ -30,7 +29,11 @@ import { match } from 'ts-pattern';
 
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
 import { extractOAuthCode } from '../domains/oauth.model';
-import { type AuthTokens, registerEnvelopeSchema } from '../schemas/auth.schema';
+import {
+  type AuthTokens,
+  authTokensEnvelopeSchema,
+  registerEnvelopeSchema,
+} from '../schemas/auth.schema';
 import type {
   OAuthProvider,
   OAuthProviderSlug,
@@ -79,7 +82,7 @@ export class AuthService {
   #saveTokens = async (response: Result<unknown, ApiError>) => {
     const result = parseApiResponse(
       response,
-      authTokensSchema,
+      authTokensEnvelopeSchema,
       toAuthTokens,
       '[AuthService] Invalid auth tokens response',
     );

@@ -78,7 +78,7 @@ describe('toAuthTokens', () => {
     expect(result.accountRestored).toBe(true);
   });
 
-  test('isNewUser가 없는 구버전 서버 응답은 기존 로그인으로 본다', () => {
+  test('isNewUser가 없는 이메일 로그인 응답은 기존 로그인으로 본다', () => {
     // Given
     const dto = createAuthTokensDto();
 

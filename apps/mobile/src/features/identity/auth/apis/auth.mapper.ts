@@ -1,5 +1,4 @@
 import type {
-  AuthTokens as AuthTokensDto,
   ChangePasswordResponse,
   DeleteAccountResponse,
   ForgotPasswordResponse,
@@ -12,6 +11,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import type {
   AuthTokens,
+  AuthTokensEnvelope,
   ChangePasswordResult,
   DeleteAccountResult,
   ForgotPasswordResult,
@@ -22,14 +22,14 @@ import type {
 } from '../schemas/auth.schema';
 import type { LinkedAccount, LinkedAccountsResult } from '../schemas/oauth.schema';
 
-export function toAuthTokens(dto: AuthTokensDto): AuthTokens {
+export function toAuthTokens(dto: AuthTokensEnvelope): AuthTokens {
   return {
     userId: dto.userId,
     accessToken: dto.accessToken,
     refreshToken: dto.refreshToken,
     userName: dto.name,
     userProfileImage: dto.profileImage,
-    accountRestored: dto.accountRestored ?? false,
+    accountRestored: dto.accountRestored,
     isNewUser: dto.isNewUser ?? false,
   };
 }
