@@ -40,7 +40,11 @@ export function createMarketingPushPromptRepository(
         lastPromptedAt: promptedAt,
         count: get().count + 1,
       };
-      storage.set(MARKETING_PUSH_PROMPT_KEY, JSON.stringify(next));
+      try {
+        storage.set(MARKETING_PUSH_PROMPT_KEY, JSON.stringify(next));
+      } catch {
+        // 저장하지 못하면 안내가 한 번 더 보일 뿐이다.
+      }
     },
   };
 }

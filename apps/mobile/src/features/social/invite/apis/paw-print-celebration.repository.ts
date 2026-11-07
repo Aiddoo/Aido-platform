@@ -18,6 +18,12 @@ export function createPawPrintCelebrationRepository(
 
   return {
     getCelebratedCount: (userId) => celebratedCountSchema.parse(storage.get(toKey(userId))),
-    setCelebratedCount: (userId, count) => storage.set(toKey(userId), String(count)),
+    setCelebratedCount: (userId, count) => {
+      try {
+        storage.set(toKey(userId), String(count));
+      } catch {
+        // 저장하지 못하면 축하가 한 번 더 보일 뿐이다.
+      }
+    },
   };
 }

@@ -20,6 +20,12 @@ export function parsePushPromptDismissedAt(saved: string | undefined): Instant |
 /** 알림 권한 안내를 닫은 시각을 계정마다 남긴다 */
 export function createPushPromptRepository(storage: SyncStorage): PushPromptRepository {
   return {
-    dismiss: (userId, dismissedAt) => storage.set(createPushPromptStorageKey(userId), dismissedAt),
+    dismiss: (userId, dismissedAt) => {
+      try {
+        storage.set(createPushPromptStorageKey(userId), dismissedAt);
+      } catch {
+        // 저장하지 못하면 다음에 한 번 더 물을 뿐이다.
+      }
+    },
   };
 }

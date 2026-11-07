@@ -14,7 +14,11 @@ export function createWeatherIntroductionRepository(
   return {
     hasSeenIntroduction: () => storage.get(INTRODUCTION_KEY) === 'seen',
     markIntroductionSeen: () => {
-      storage.set(INTRODUCTION_KEY, 'seen');
+      try {
+        storage.set(INTRODUCTION_KEY, 'seen');
+      } catch {
+        // 저장하지 못하면 소개가 한 번 더 보일 뿐이다.
+      }
     },
   };
 }

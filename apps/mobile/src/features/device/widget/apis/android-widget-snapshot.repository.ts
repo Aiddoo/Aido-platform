@@ -5,9 +5,9 @@ import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import { storedWidgetSnapshotSchema, type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 
 export interface AndroidWidgetSnapshotRepository {
-  getSnapshot: () => WidgetSnapshot | null;
-  getUserId: () => string | null;
-  writeSnapshot: (snapshot: WidgetSnapshot, userId: string | null) => void;
+  getSnapshot(): WidgetSnapshot | null;
+  getUserId(): string | null;
+  writeSnapshot(snapshot: WidgetSnapshot, userId: string | null): void;
 }
 
 export function createAndroidWidgetSnapshotRepository(

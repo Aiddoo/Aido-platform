@@ -13,6 +13,12 @@ export function createAllDoneBannerStorageKey(userId: string): string {
 /** "오늘은 그만 보기"를 계정마다 하루 한 칸만 남긴다(날짜가 바뀌면 이전 기록을 덮어쓴다) */
 export function createAllDoneBannerRepository(storage: SyncStorage): AllDoneBannerRepository {
   return {
-    dismiss: (userId, dateKey) => storage.set(createAllDoneBannerStorageKey(userId), dateKey),
+    dismiss: (userId, dateKey) => {
+      try {
+        storage.set(createAllDoneBannerStorageKey(userId), dateKey);
+      } catch {
+        // 저장하지 못하면 배너가 한 번 더 보일 뿐이다.
+      }
+    },
   };
 }
