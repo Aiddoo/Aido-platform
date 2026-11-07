@@ -107,7 +107,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
             ...(scope != null && { scope }),
             input: {
               startDate: toDateKey(editValues.startDate, timeZone),
-              endDate: editValues.endDate ? toDateKey(editValues.endDate, timeZone) : null,
+              endDate: editValues.endDate == null ? null : toDateKey(editValues.endDate, timeZone),
               scheduledTime: isAllDay ? null : scheduledTime,
               isAllDay,
             },

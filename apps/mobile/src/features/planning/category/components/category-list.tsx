@@ -41,8 +41,7 @@ export function CategoryList() {
       data={data.categories}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <CategoryList.EditItem category={item} />}
-      style={{ ...containerBgStyle, borderRadius: 16 }}
-      contentContainerStyle={{ padding: 8 }}
+      style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
     />
   );
 }
