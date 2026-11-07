@@ -15,6 +15,7 @@ import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   DashedDivider,
   H4,
+  QueryErrorActions,
   QueryErrorBoundary,
   Result,
   ShareIcon,
@@ -220,10 +221,7 @@ WeeklyAchievementCertificate.Error = function ErrorState({ reset }: QueryErrorFa
   return (
     <Certificate>
       <Spacing size={16} />
-      <Result
-        title={t('errorBoundary.title')}
-        button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
-      />
+      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
     </Certificate>
   );
 };

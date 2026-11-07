@@ -13,6 +13,7 @@ import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   InfiniteList,
   NotiIcon,
+  QueryErrorActions,
   Result,
   VStack,
   type QueryErrorFallbackProps,
@@ -85,7 +86,7 @@ NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
     <VStack flex={1} p={24}>
       <Result
         title={t('notification:list.loadError')}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+        button={<QueryErrorActions onRetry={reset} />}
       />
     </VStack>
   );

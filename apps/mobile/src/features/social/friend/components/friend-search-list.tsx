@@ -6,6 +6,7 @@ import {
   Button,
   CheckIcon,
   InfiniteList,
+  QueryErrorActions,
   Result,
   SearchIcon,
   VStack,
@@ -140,10 +141,7 @@ FriendSearchList.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
   const { t } = useTranslation(['friend', 'common']);
   return (
     <VStack flex={1} p={24}>
-      <Result
-        title={t('friend:search.loadError')}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
-      />
+      <Result title={t('friend:search.loadError')} button={<QueryErrorActions onRetry={reset} />} />
     </VStack>
   );
 };

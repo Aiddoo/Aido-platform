@@ -11,6 +11,7 @@ import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   InfiniteList,
   NotiIcon,
+  QueryErrorActions,
   Result,
   VStack,
   type QueryErrorFallbackProps,
@@ -72,7 +73,7 @@ SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackPr
         title={t(
           isDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
         )}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+        button={<QueryErrorActions onRetry={reset} />}
       />
     </VStack>
   );
