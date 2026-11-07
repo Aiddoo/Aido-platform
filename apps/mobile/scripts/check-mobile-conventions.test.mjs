@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import test from 'node:test';
 
-import { checkMobileConventions } from './check-mobile-conventions.mjs';
+import { checkMobileConventions, shrinkAllowlist } from './check-mobile-conventions.mjs';
 
 function write(root, relativePath, contents) {
   const path = resolve(root, relativePath);
@@ -12,13 +12,13 @@ function write(root, relativePath, contents) {
   writeFileSync(path, contents);
 }
 
-function withFixture(files, assertion) {
+function withFixture(files, assertion, allowlist) {
   const root = mkdtempSync(resolve(tmpdir(), 'aido-mobile-conventions-'));
   try {
     for (const [path, contents] of Object.entries(files)) {
       write(root, path, contents);
     }
-    assertion(checkMobileConventions(root));
+    assertion(checkMobileConventions(root, allowlist));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -148,7 +148,7 @@ test('컴포넌트의 인라인 query 옵션을 거부한다', () => {
     {
       'apps/mobile/src/features/engagement/comment/components/TodoConversation.tsx': `
         export function TodoConversation() {
-          return useInfiniteQuery({ queryKey: ['comments'], queryFn: getComments });
+          return useInfiniteQuery({ queryKey: COMMENT_QUERY_KEYS.all, queryFn: getComments });
         }
       `,
     },
@@ -313,15 +313,15 @@ test('utils 폴더로 옮긴 TSX와 React Native UI 테스트도 거부한다', 
 test('다른 피처를 상대경로로 import하면 거부하고 절대경로는 통과한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/planning/todo/components/todo-detail-card.tsx': `
-        import { TodoNudgeButton } from '../../../social/nudge/components/todo-nudge-button';
-        import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-query-keys';
-        import { TodoRow } from './todo-row';
+      'apps/mobile/src/features/social/nudge/components/nudge-card.tsx': `
+        import { TodoRow } from '../../../planning/todo/components/todo-row';
+        import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+        import { NudgeRow } from './nudge-row';
       `,
     },
     (errors) => {
       assert.equal(errors.length, 1);
-      assert.match(errors[0], /@src\/features\/social\/nudge/u);
+      assert.match(errors[0], /@src\/features\/planning\/todo/u);
     },
   );
 });
@@ -633,6 +633,333 @@ test('react-native의 Image import를 거부하고 공용 Image는 통과한다'
     (errors) => {
       assert.equal(errors.length, 1);
       assert.match(errors[0], /shared\/ui/u);
+    },
+  );
+});
+
+const FEED_TODO = 'apps/mobile/src/features/planning/todo/components/todo-card.tsx';
+const NUDGE_CARD = 'apps/mobile/src/features/social/nudge/components/nudge-card.tsx';
+
+test('shared가 feature나 bootstrap을 import하면 거부하고 테스트 도구는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/hooks/use-thing.ts': `
+        import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
+        import { useLogger } from '@src/bootstrap/providers/di-context';
+      `,
+      'apps/mobile/src/shared/__tests__/create-thing.ts': `
+        import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /use-thing\.ts:2/u);
+      assert.match(errors.join('\n'), /use-thing\.ts:3/u);
+    },
+  );
+});
+
+test('core가 shared를 import하면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/core/ports/thing.ts': `
+        import type { Result } from '@src/shared/errors/result';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /core는 @src\/shared/u);
+    },
+  );
+});
+
+test('위층 코드 import를 거부하고 타입, 모델, cache는 통과한다', () => {
+  withFixture(
+    {
+      [FEED_TODO]: `
+        import { NudgeButton } from '@src/features/social/nudge/components/nudge-button';
+        import type { Nudge } from '@src/features/social/nudge/schemas/nudge.schema';
+        import { type NudgeReply } from '@src/features/social/nudge/schemas/nudge-reply.schema';
+        import { NudgePolicy } from '@src/features/social/nudge/domains/nudge.model';
+        import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /todo-card\.tsx:2/u);
+      assert.match(errors[0], /위층 social\/nudge/u);
+    },
+  );
+});
+
+test('아래 층과 같은 층의 코드 import는 한 방향이면 통과한다', () => {
+  withFixture(
+    {
+      [NUDGE_CARD]: `
+        import { useGetTodoQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+        import { FriendRow } from '@src/features/social/friend/components/friend-row';
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('서로 import하면 타입만이어도 거부하고 허용 목록에 있으면 통과한다', () => {
+  const files = {
+    [NUDGE_CARD]: `import type { Friend } from '@src/features/social/friend/schemas/friend.schema';`,
+    'apps/mobile/src/features/social/friend/components/friend-row.tsx': `
+      import type { Nudge } from '@src/features/social/nudge/schemas/nudge.schema';
+    `,
+  };
+  withFixture(files, (errors) => {
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /social\/friend와 social\/nudge가 서로/u);
+  });
+  withFixture(
+    files,
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+    {
+      'feature-bidirectional': {
+        entries: { 'social/friend <-> social/nudge': { count: 1, reason: '시험' } },
+      },
+    },
+  );
+});
+
+test('층이 정해지지 않은 feature를 import하면 거부한다', () => {
+  withFixture(
+    {
+      [NUDGE_CARD]: `import { thing } from '@src/features/payments/refund/utils/thing';`,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /payments의 층이 정해지지/u);
+    },
+  );
+});
+
+test('금지한 컴포넌트 이름을 거부하고 shared와 소문자 이름은 통과한다', () => {
+  withFixture(
+    {
+      [FEED_TODO]: `
+        function TodoBody() { return null; }
+        const TileFrame = styled(View);
+        TodoCard.Section = function Section() { return null; };
+        function WeatherBlocks() { return null; }
+        function NoteWrapper() { return null; }
+        function toBody() { return null; }
+        function TodoCard() { return null; }
+      `,
+      'apps/mobile/src/shared/ui/card/card.tsx': `function CardBody() { return null; }`,
+    },
+    (errors) => {
+      assert.equal(errors.length, 5);
+      for (const name of ['TodoBody', 'TileFrame', 'Section:', 'WeatherBlocks', 'NoteWrapper']) {
+        assert.match(errors.join('\n'), new RegExp(name, 'u'));
+      }
+    },
+  );
+});
+
+test('Facade의 별칭, 인라인 함수, 모델의 this를 거부하고 같은 이름은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        function isPinned(memo) { return memo.isPinned; }
+        function getTitle(memo) { return memo.title; }
+        export const MemoPolicy = {
+          isPinned,
+          getTitle: getTitle,
+          getName: getTitle,
+          isEmpty: (memo) => memo.title === '',
+          count() { return this.isPinned; },
+        } as const;
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 4);
+      assert.match(errors.join('\n'), /별칭\(getName: getTitle\)/u);
+      assert.match(errors.join('\n'), /함수를 Facade 안에/u);
+      assert.match(errors.join('\n'), /메서드를 Facade 안에/u);
+      assert.match(errors.join('\n'), /this/u);
+    },
+  );
+});
+
+test('모듈 수준 화살표를 거부하고 function 선언과 지역 화살표는 통과한다', () => {
+  withFixture(
+    {
+      [FEED_TODO]: `
+        export const useThing = () => null;
+        const helper = function () {};
+        export function useOther() {
+          const local = () => null;
+          return local;
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /todo-card\.tsx:2/u);
+      assert.match(errors.join('\n'), /todo-card\.tsx:3/u);
+    },
+  );
+});
+
+test('허용 목록은 파일별 수까지만 허용하고 늘거나 줄면 알린다', () => {
+  const files = {
+    [FEED_TODO]: `
+      export const useThing = () => null;
+      export const useOther = () => null;
+    `,
+  };
+  const allowed = (count) => ({
+    'module-arrow': { reason: '시험', entries: { [FEED_TODO]: count } },
+  });
+  withFixture(
+    files,
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+    allowed(2),
+  );
+  withFixture(
+    files,
+    (errors) => {
+      assert.equal(errors.length, 2);
+    },
+    allowed(1),
+  );
+  withFixture(
+    files,
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /허용 목록을 줄이세요/u);
+    },
+    allowed(3),
+  );
+  withFixture(
+    {},
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /이제 없습니다/u);
+    },
+    allowed(2),
+  );
+});
+
+test('shrinkAllowlist는 줄어든 수만 반영하고 새 위반은 넣지 않는다', () => {
+  // Given
+  const allowlist = {
+    'module-arrow': {
+      reason: '시험',
+      entries: { 'a.ts': 3, 'b.ts': 1, 'gone.ts': 2, pair: { count: 1, reason: '이유' } },
+    },
+  };
+  const findings = [
+    { rule: 'module-arrow', key: 'a.ts' },
+    { rule: 'module-arrow', key: 'b.ts' },
+    { rule: 'module-arrow', key: 'b.ts' },
+    { rule: 'module-arrow', key: 'new.ts' },
+    { rule: 'module-arrow', key: 'pair' },
+  ];
+
+  // When
+  const shrunk = shrinkAllowlist(findings, allowlist);
+
+  // Then
+  assert.deepEqual(shrunk, {
+    'module-arrow': {
+      reason: '시험',
+      entries: { 'a.ts': 1, 'b.ts': 1, pair: { count: 1, reason: '이유' } },
+    },
+  });
+});
+
+test('테스트의 앱 모듈 jest.mock을 거부하고 라이브러리 mock은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/hooks/use-memo.test.tsx': `
+        jest.mock('@src/shared/analytics', () => ({}));
+        jest.mock('expo-router', () => ({}));
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /jest\.mock/u);
+    },
+  );
+});
+
+test('RN ActivityIndicator와 Alert.alert를 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/app/(app)/thing.tsx': `
+        import { ActivityIndicator, Alert, View } from 'react-native';
+        export function thing() { Alert.alert('제목'); }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /ActivityIndicator/u);
+      assert.match(errors.join('\n'), /Alert\.alert/u);
+    },
+  );
+});
+
+test('화면의 역할 비교를 거부하고 모델은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/app/(app)/thing.tsx': `
+        export function isAdmin(me) { return me.role === USER_ROLE.ADMIN; }
+      `,
+      'apps/mobile/src/features/identity/user/domains/user.model.ts': `
+        export function isAdmin(user) { return user.role === USER_ROLE.ADMIN; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /thing\.tsx/u);
+    },
+  );
+});
+
+test('query-keys 밖의 queryKey 배열을 거부하고 키 파일과 테스트는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/queries/memo.queries.ts': `
+        export function useThing() { return { queryKey: ['memos'] }; }
+        export function useOther() { return { queryKey: MEMO_QUERY_KEYS.all }; }
+      `,
+      'apps/mobile/src/features/notes/memo/constants/memo-query-keys.ts': `
+        export function memoKey() { return { queryKey: ['memos'] }; }
+      `,
+      'apps/mobile/src/features/notes/memo/queries/memo.queries.test.ts': `
+        const options = { queryKey: ['memos'] };
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /memo\.queries\.ts/u);
+    },
+  );
+});
+
+test('xxxOf 함수 이름을 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        export function titleOf(memo) { return memo.title; }
+        export function getTitle(memo) { return memo.title; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /titleOf/u);
     },
   );
 });

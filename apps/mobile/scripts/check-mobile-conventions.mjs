@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -1068,6 +1068,51 @@ function checkRouteParamConventions(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+// 층이 낮을수록 아래다. core·shared(0)가 맨 아래, app·bootstrap이 맨 위다. 표의 근거는 .claude/architecture.md#층과-의존.
+const FEATURE_LAYERS = new Map([
+  ['identity/auth', 1],
+  ['identity/user', 1],
+  ['identity/preference', 1],
+  ['identity/consent', 1],
+  ['billing/subscription', 1],
+  ['support/inquiry', 1],
+  ['app-config/app-version', 1],
+  ['app-config/feature-campaign', 1],
+  ['device/app-icon', 1],
+  ['planning/todo', 2],
+  ['planning/category', 2],
+  ['device/coachmark', 2],
+  ['device/store-review', 2],
+  ['voice', 3],
+  ['engagement/comment', 3],
+  ['social/friend', 3],
+  ['social/nudge', 3],
+  ['social/moderation', 3],
+  ['assistant/suggestion', 3],
+  ['insights/achievement', 3],
+  ['insights/report', 3],
+  ['app-config/whats-new', 3],
+  ['device/widget', 3],
+  ['planning/composer', 4],
+  ['notes/memo', 4],
+  ['weather', 4],
+  ['notification', 4],
+  ['social/invite', 4],
+  ['device/activation', 4],
+]);
+// 다른 층 어디서든 가져와도 되는 것: 타입, Policy가 있는 모델, 캐시 무효화 함수
+const ANY_LAYER_IMPORT_PATTERN = /\/(?:domains\/[^/]+\.model|queries\/[^/]+-cache)$/u;
+const FORBIDDEN_COMPONENT_NAME = /(?:Body|Bodies|Frames?|Sections?|Blocks?|Wrappers?)$/u;
+const XXX_OF_NAME = /^[a-z][A-Za-z0-9]*[a-z0-9]Of$/u;
+const POLICY_NAME = /Policy$/u;
+const QUERY_KEY_FILE = /\/constants\/[^/]*query-keys\.ts$/u;
+const ROLE_CONSTANTS = new Set(['USER_ROLE', 'PREMIUM_SOURCE']);
+const ALLOWLIST_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  'mobile-conventions-allowlist.json',
+);
+const EMPTY_ALLOWLIST = {};
+
 const HERMES_MISSING_METHODS = new Map([
   ['toSorted', 'es-toolkit의 sortBy'],
   ['fromAsync', 'for await'],
@@ -1092,7 +1137,454 @@ function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
-export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
+function loadAllowlist() {
+  return JSON.parse(readFileSync(ALLOWLIST_PATH, 'utf8'));
+}
+
+function getAllowedCount(entry) {
+  return typeof entry === 'number' ? entry : (entry?.count ?? 0);
+}
+
+function getImportedFeaturePath(moduleName, fileName) {
+  if (moduleName.startsWith('@src/features/')) {
+    return `/src/features/${moduleName.slice('@src/features/'.length)}`;
+  }
+  if (moduleName.startsWith('.')) {
+    const resolved = resolve(dirname(fileName), moduleName).replaceAll('\\', '/');
+    const index = resolved.indexOf('/src/features/');
+    return index === -1 ? null : resolved.slice(index);
+  }
+  return null;
+}
+
+function isTypeOnlyStatement(statement) {
+  if (ts.isExportDeclaration(statement)) {
+    return statement.isTypeOnly;
+  }
+  const clause = statement.importClause;
+  if (clause === undefined) {
+    return false;
+  }
+  if (clause.isTypeOnly) {
+    return true;
+  }
+  const { name, namedBindings } = clause;
+  return (
+    name === undefined &&
+    namedBindings !== undefined &&
+    ts.isNamedImports(namedBindings) &&
+    namedBindings.elements.length > 0 &&
+    namedBindings.elements.every((element) => element.isTypeOnly)
+  );
+}
+
+function getModuleStatements(sourceFile) {
+  return sourceFile.statements.filter(
+    (statement) =>
+      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+      statement.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(statement.moduleSpecifier),
+  );
+}
+
+/** core는 아무것도 보지 않고, shared는 core만 본다. 테스트 도구는 조립을 위해 위층을 볼 수 있다 */
+function checkLowerLayerImports(sourceFile, relativePath, errors, repositoryRoot) {
+  const forbidden = relativePath.startsWith('apps/mobile/src/core/')
+    ? ['@src/shared', '@src/features', '@src/bootstrap']
+    : relativePath.startsWith('apps/mobile/src/shared/')
+      ? ['@src/features', '@src/bootstrap']
+      : [];
+  for (const statement of getModuleStatements(sourceFile)) {
+    const moduleName = statement.moduleSpecifier.text;
+    const target = forbidden.find(
+      (root) => moduleName === root || moduleName.startsWith(`${root}/`),
+    );
+    if (target !== undefined) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} ${relativePath.split('/')[3]}는 ${target}를 import하지 않습니다. 포트와 타입을 core로 옮기거나 값을 인자로 받으세요.`,
+      );
+    }
+  }
+}
+
+function collectFeatureImports(sourceFile, findings, featureEdges, errors, repositoryRoot) {
+  const owner = getFeatureName(sourceFile.fileName);
+  if (owner === null) {
+    return;
+  }
+  for (const statement of getModuleStatements(sourceFile)) {
+    const importedPath = getImportedFeaturePath(
+      statement.moduleSpecifier.text,
+      sourceFile.fileName,
+    );
+    const target = importedPath === null ? null : getFeatureName(importedPath);
+    if (target === null || target === owner) {
+      continue;
+    }
+    if (!featureEdges.has(owner)) {
+      featureEdges.set(owner, new Set());
+    }
+    featureEdges.get(owner).add(target);
+    const location = getLocation(sourceFile, statement, repositoryRoot);
+    const ownerLayer = FEATURE_LAYERS.get(owner);
+    const targetLayer = FEATURE_LAYERS.get(target);
+    if (ownerLayer === undefined || targetLayer === undefined) {
+      errors.push(
+        `${location} ${ownerLayer === undefined ? owner : target}의 층이 정해지지 않았습니다. FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더하세요.`,
+      );
+      continue;
+    }
+    if (
+      ownerLayer < targetLayer &&
+      !isTypeOnlyStatement(statement) &&
+      !ANY_LAYER_IMPORT_PATTERN.test(importedPath)
+    ) {
+      findings.push({
+        rule: 'feature-upward',
+        key: `${owner} -> ${target}`,
+        message: `${location} 위층 ${target}의 코드를 import합니다. 위층에서 가져와도 되는 것은 타입, 모델(Policy), *-cache입니다. app/에서 조립하거나 슬롯으로 넘기세요.`,
+      });
+    }
+  }
+}
+
+function collectBidirectionalFindings(featureEdges, findings) {
+  for (const [owner, targets] of featureEdges) {
+    for (const target of targets) {
+      if (owner < target && featureEdges.get(target)?.has(owner)) {
+        findings.push({
+          rule: 'feature-bidirectional',
+          key: `${owner} <-> ${target}`,
+          message: `${owner}와 ${target}가 서로 import합니다. 한쪽을 끊거나 이유를 적어 허용 목록에 더하세요.`,
+        });
+      }
+    }
+  }
+}
+
+function getDeclaredComponentName(node) {
+  if (ts.isFunctionDeclaration(node) && node.name !== undefined) {
+    return node.name.text;
+  }
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer !== undefined &&
+    (ts.isArrowFunction(node.initializer) ||
+      ts.isFunctionExpression(node.initializer) ||
+      ts.isCallExpression(node.initializer))
+  ) {
+    return node.name.text;
+  }
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    ts.isPropertyAccessExpression(node.left) &&
+    (ts.isFunctionExpression(node.right) || ts.isArrowFunction(node.right))
+  ) {
+    return node.left.name.text;
+  }
+  return null;
+}
+
+function unwrapExpression(expression) {
+  let current = expression;
+  while (
+    ts.isAsExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
+    ts.isParenthesizedExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryRoot) {
+  const object = node.initializer === undefined ? null : unwrapExpression(node.initializer);
+  if (object === null || !ts.isObjectLiteralExpression(object)) {
+    return;
+  }
+  const push = (member, problem) =>
+    findings.push({
+      rule: 'policy-facade',
+      key: relativePath,
+      message: `${getLocation(sourceFile, member, repositoryRoot)} ${node.name.text}: ${problem}. Facade는 모듈 수준 함수를 같은 이름으로 모으기만 합니다.`,
+    });
+  for (const member of object.properties) {
+    if (ts.isMethodDeclaration(member)) {
+      push(member, '메서드를 Facade 안에 정의했습니다');
+      continue;
+    }
+    if (!ts.isPropertyAssignment(member)) {
+      continue;
+    }
+    const value = unwrapExpression(member.initializer);
+    if (ts.isIdentifier(value) && value.text !== getPropertyName(member.name)) {
+      push(member, `별칭(${getPropertyName(member.name)}: ${value.text})을 썼습니다`);
+    } else if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) {
+      push(member, '함수를 Facade 안에 정의했습니다');
+    }
+  }
+}
+
+/** 이미 있는 위반은 허용 목록의 수까지 두고 늘면 막는 규칙들. 찾은 것은 findings로 모은다 */
+function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRoot) {
+  const isTest = isTestSource(relativePath);
+  const isFeatureOrScreen =
+    relativePath.startsWith('apps/mobile/src/features/') ||
+    relativePath.startsWith('apps/mobile/app/');
+  const isDomain = relativePath.includes('/domains/');
+  const isDeclaration = relativePath.endsWith('.d.ts');
+
+  if (!isTest && !isDeclaration) {
+    for (const statement of sourceFile.statements) {
+      if (!ts.isVariableStatement(statement)) {
+        continue;
+      }
+      for (const declaration of statement.declarationList.declarations) {
+        const value =
+          declaration.initializer === undefined ? null : unwrapExpression(declaration.initializer);
+        if (value !== null && (ts.isArrowFunction(value) || ts.isFunctionExpression(value))) {
+          findings.push({
+            rule: 'module-arrow',
+            key: relativePath,
+            message: `${getLocation(sourceFile, declaration, repositoryRoot)} 모듈 수준 함수는 function 선언으로 씁니다.`,
+          });
+        }
+      }
+    }
+  }
+
+  function visit(node) {
+    if (isTest) {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        node.expression.expression.text === 'jest' &&
+        node.expression.name.text === 'mock' &&
+        node.arguments[0] !== undefined &&
+        ts.isStringLiteral(node.arguments[0]) &&
+        node.arguments[0].text.startsWith('@src/')
+      ) {
+        findings.push({
+          rule: 'jest-mock-src',
+          key: relativePath,
+          message: `${getLocation(sourceFile, node, repositoryRoot)} 앱 모듈을 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderUi를 쓰세요.`,
+        });
+      }
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const componentName = isFeatureOrScreen ? getDeclaredComponentName(node) : null;
+    if (
+      componentName !== null &&
+      isComponentName(componentName) &&
+      FORBIDDEN_COMPONENT_NAME.test(componentName)
+    ) {
+      findings.push({
+        rule: 'forbidden-name',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} ${componentName}: Body, Frame, Section, Blocks, Wrapper로 끝나는 컴포넌트 이름을 쓰지 않습니다. 역할이 드러나는 이름을 짓거나 스크린에 펼치세요.`,
+      });
+    }
+
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      POLICY_NAME.test(node.name.text)
+    ) {
+      checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryRoot);
+    }
+    if (node.kind === ts.SyntaxKind.ThisKeyword && isDomain && !isInsideClass(node)) {
+      findings.push({
+        rule: 'policy-facade',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} 모델에서 this를 쓰지 않습니다. Facade가 아니라 함수를 직접 부르세요.`,
+      });
+    }
+
+    if (
+      (ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node)) &&
+      node.name !== undefined &&
+      ts.isIdentifier(node.name) &&
+      XXX_OF_NAME.test(node.name.text)
+    ) {
+      findings.push({
+        rule: 'xxx-of-name',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} ${node.name.text}: xxxOf 대신 동사로 시작하는 이름을 씁니다.`,
+      });
+    }
+
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === 'react-native' &&
+      node.importClause?.namedBindings !== undefined &&
+      ts.isNamedImports(node.importClause.namedBindings) &&
+      node.importClause.namedBindings.elements.some(
+        (element) => (element.propertyName ?? element.name).text === 'ActivityIndicator',
+      )
+    ) {
+      findings.push({
+        rule: 'rn-ui-import',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} react-native의 ActivityIndicator 대신 heroui-native의 Spinner를 씁니다.`,
+      });
+    }
+
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === 'Alert' &&
+      node.expression.name.text === 'alert'
+    ) {
+      findings.push({
+        rule: 'rn-ui-import',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} Alert.alert 대신 useConfirmDialog를 씁니다.`,
+      });
+    }
+
+    if (
+      !isDomain &&
+      ts.isBinaryExpression(node) &&
+      STRICT_EQUALITY_OPERATORS.has(node.operatorToken.kind) &&
+      [node.left, node.right].some(
+        (side) =>
+          ts.isPropertyAccessExpression(side) &&
+          ts.isIdentifier(side.expression) &&
+          ROLE_CONSTANTS.has(side.expression.text),
+      )
+    ) {
+      findings.push({
+        rule: 'role-comparison',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} 역할과 프리미엄 출처 판별은 Policy에 둡니다.`,
+      });
+    }
+
+    if (
+      ts.isPropertyAssignment(node) &&
+      getPropertyName(node.name) === 'queryKey' &&
+      ts.isArrayLiteralExpression(node.initializer) &&
+      !QUERY_KEY_FILE.test(relativePath)
+    ) {
+      findings.push({
+        rule: 'query-key-location',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} 쿼리 키는 constants/{feature}-query-keys.ts에서 만듭니다.`,
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
+function isInsideClass(node) {
+  let current = node.parent;
+  while (current !== undefined) {
+    if (ts.isClassLike(current)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+/** 찾은 수를 허용 목록과 견준다. 늘면 위반이고, 줄면 목록도 줄이게 해 고친 뒤 다시 늘지 않게 한다 */
+function applyAllowlist(findings, allowlist, errors) {
+  const grouped = new Map();
+  for (const finding of findings) {
+    const key = `${finding.rule}\u0000${finding.key}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+    grouped.get(key).push(finding);
+  }
+  for (const [groupKey, group] of grouped) {
+    const [rule, key] = groupKey.split('\u0000');
+    const allowed = getAllowedCount(allowlist[rule]?.entries?.[key]);
+    if (group.length > allowed) {
+      errors.push(...group.map(({ message }) => message));
+    } else if (group.length < allowed) {
+      errors.push(
+        `허용 목록을 줄이세요(${rule}: ${key} ${allowed} → ${group.length}). pnpm check:conventions --shrink-allowlist`,
+      );
+    }
+  }
+  for (const [rule, { entries = {} }] of Object.entries(allowlist)) {
+    for (const key of Object.keys(entries)) {
+      if (!grouped.has(`${rule}\u0000${key}`)) {
+        errors.push(
+          `허용 목록을 줄이세요(${rule}: ${key}는 이제 없습니다). pnpm check:conventions --shrink-allowlist`,
+        );
+      }
+    }
+  }
+}
+
+/** 통합 뒤 줄어든 수만 목록에 반영한다. 새 위반이나 늘어난 수는 넣지 않아 검사가 그대로 막는다 */
+export function shrinkAllowlist(findings, allowlist) {
+  const counts = new Map();
+  for (const { rule, key } of findings) {
+    const id = `${rule}\u0000${key}`;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return Object.fromEntries(
+    Object.entries(allowlist).map(([rule, { entries = {}, ...group }]) => [
+      rule,
+      {
+        ...group,
+        entries: Object.fromEntries(
+          Object.entries(entries).flatMap(([key, entry]) => {
+            const found = counts.get(`${rule}\u0000${key}`) ?? 0;
+            const allowed = getAllowedCount(entry);
+            if (found === 0) {
+              return [];
+            }
+            const count = Math.min(found, allowed);
+            return [[key, typeof entry === 'number' ? count : { ...entry, count }]];
+          }),
+        ),
+      },
+    ]),
+  );
+}
+
+export function collectArchitectureFindings(repositoryRoot, errors) {
+  const findings = [];
+  const featureEdges = new Map();
+  for (const file of ['apps/mobile/src', 'apps/mobile/app'].flatMap((root) =>
+    getSourceFiles(repositoryRoot, root),
+  )) {
+    const relativePath = relative(repositoryRoot, file).replaceAll('\\', '/');
+    const sourceFile = ts.createSourceFile(
+      file,
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+    collectRatchetFindings(sourceFile, relativePath, findings, repositoryRoot);
+    if (!isTestSource(relativePath)) {
+      checkLowerLayerImports(sourceFile, relativePath, errors, repositoryRoot);
+      collectFeatureImports(sourceFile, findings, featureEdges, errors, repositoryRoot);
+    }
+  }
+  collectBidirectionalFindings(featureEdges, findings);
+  return findings;
+}
+
+export function checkMobileConventions(
+  repositoryRoot = REPOSITORY_ROOT,
+  allowlist = repositoryRoot === REPOSITORY_ROOT ? loadAllowlist() : EMPTY_ALLOWLIST,
+) {
   const errors = [];
 
   for (const forbiddenPath of FORBIDDEN_ROUTE_PATHS) {
@@ -1163,6 +1655,8 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);
   }
 
+  applyAllowlist(collectArchitectureFindings(repositoryRoot, errors), allowlist, errors);
+
   const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];
   for (const file of nullishRoots.flatMap((root) => getSourceFiles(repositoryRoot, root))) {
     if (file.endsWith('.d.ts') || file.includes('/generated/')) {
@@ -1182,6 +1676,14 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
 }
 
 function run() {
+  if (process.argv.includes('--shrink-allowlist')) {
+    const shrunk = shrinkAllowlist(
+      collectArchitectureFindings(REPOSITORY_ROOT, []),
+      loadAllowlist(),
+    );
+    writeFileSync(ALLOWLIST_PATH, `${JSON.stringify(shrunk, null, 2)}\n`);
+  }
+
   const errors = checkMobileConventions();
   if (errors.length === 0) {
     process.stdout.write('모바일 컨벤션 검사에 통과했습니다.\n');
