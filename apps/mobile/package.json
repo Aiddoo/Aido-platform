@@ -39,7 +39,6 @@
     "maestro:release-1.13.0:smoke": "bash maestro/release-1.13.0/run.sh smoke",
     "maestro:screens": "node --no-warnings maestro/screenshots-1.13.0/scripts/demo-seed.ts",
     "maestro:screens:capture": "bash maestro/screenshots-1.13.0/capture.sh",
-    "native:prebuild": "expo prebuild --clean",
     "submit:production": "eas submit --profile production --platform all --latest",
     "submit:production:android": "eas submit --profile production --platform android --latest",
     "submit:production:ios": "eas submit --profile production --platform ios --latest",
