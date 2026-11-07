@@ -18,7 +18,7 @@ interface Release1140StepsProps {
 }
 
 export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
-  const { source } = useWhatsNewParams();
+  const [{ source }] = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_14_0, source });
   const stepper = useStepper<Release1140StepMap>({

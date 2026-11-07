@@ -22,7 +22,7 @@ type Release1150StepMap = {
 };
 
 export function Release1150Steps() {
-  const { source } = useWhatsNewParams();
+  const [{ source }] = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_15_0, source });
   const startVoiceNote = useVoiceNoteStart();
