@@ -8,8 +8,8 @@ const COOLDOWN_DAYS = 14;
 /** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */
 const MAX_PROMPT_COUNT = 3;
 
-function isNotAgreedToMarketingPush(consent: Pick<Consent, 'marketingPushAgreedAt'>): boolean {
-  return consent.marketingPushAgreedAt == null;
+function hasAgreedToMarketingPush(consent: Pick<Consent, 'marketingPushAgreedAt'>): boolean {
+  return consent.marketingPushAgreedAt != null;
 }
 
 function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
@@ -36,7 +36,7 @@ function shouldPrompt(
   }
 
   return (
-    isNotAgreedToMarketingPush(consent) &&
+    !hasAgreedToMarketingPush(consent) &&
     isUnderPromptLimit(promptState) &&
     hasCooldownElapsed(promptState, now)
   );
