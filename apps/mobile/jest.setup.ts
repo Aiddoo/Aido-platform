@@ -93,6 +93,24 @@ afterEach(async () => {
   clearTestQueryClients();
 });
 
+// 세션 정리가 캐시를 비운 뒤 화면이 내려가면 캐시에 없는 쿼리에 정리 타이머가 걸려 위 비우기로 취소할 수 없다.
+// 저장 쿼리의 gcTime은 하루라 Jest 종료를 붙잡으므로 TanStack 타이머가 프로세스를 잡지 않게 한다.
+const { timeoutManager } = require('@tanstack/react-query');
+timeoutManager.setTimeoutProvider({
+  setTimeout: (callback: () => void, delay: number) => {
+    const timer = setTimeout(callback, delay);
+    timer.unref?.();
+    return timer;
+  },
+  clearTimeout: (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer),
+  setInterval: (callback: () => void, delay: number) => {
+    const timer = setInterval(callback, delay);
+    timer.unref?.();
+    return timer;
+  },
+  clearInterval: (timer: ReturnType<typeof setInterval>) => clearInterval(timer),
+});
+
 const { resetExpoRouterMock } = require('./src/shared/__tests__/mocks/expo-router');
 beforeEach(() => {
   resetExpoRouterMock();
