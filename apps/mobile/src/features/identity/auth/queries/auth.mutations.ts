@@ -169,23 +169,26 @@ export function useLogoutMutationOptions() {
   return mutationOptions({
     // 오프라인에서도 멈추지 않고 바로 이 기기의 세션을 끝낸다
     networkMode: 'always',
-    mutationFn: () =>
-      logOutDevice({
-        isOnline: onlineManager.isOnline(),
-        authService,
-        pushDeviceService,
-        tokenStore,
-        sessionRevocationService,
-        logger,
-      }),
+    // 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다. 사용자가 나간 것으로 끝나도록 콜백에 두지 않는다.
+    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
+    mutationFn: async () => {
+      try {
+        await logOutDevice({
+          isOnline: onlineManager.isOnline(),
+          authService,
+          pushDeviceService,
+          tokenStore,
+          sessionRevocationService,
+          logger,
+        });
+      } finally {
+        trackEvent('auth_logout');
+        analytics.setUserId(null);
+        signOut();
+      }
+    },
     onError: () => {
       haptics.notify('error');
-    },
-    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
-    onSettled: () => {
-      trackEvent('auth_logout');
-      analytics.setUserId(null);
-      signOut();
     },
   });
 }

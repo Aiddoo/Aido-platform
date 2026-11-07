@@ -972,7 +972,7 @@ describe('토큰 만료', () => {
     await expect(tokenStore.readRefreshToken()).resolves.toBeNull();
   });
 
-  it('로그아웃 진행 중 세션 만료가 먼저 반영되면 지금은 초안을 남기고 로그아웃 이벤트도 없다', async () => {
+  it('로그아웃 진행 중 세션 만료가 먼저 반영돼도 초안을 지우고 로그아웃 이벤트를 남긴다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     const analytics = session.container.analytics;
@@ -1001,11 +1001,11 @@ describe('토큰 만료', () => {
     });
 
     // Then
-    expect(session.draftService.restore(memoDraftKey)).toEqual({
-      status: 'restored',
-      value: { content: '작성 중' },
-    });
-    expect(analytics.trackEvent).not.toHaveBeenCalledWith('auth_logout', undefined);
+    await waitFor(() =>
+      expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
+    );
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_logout', undefined);
+    expect(result.current.status).toBe('unauthenticated');
     await expect(session.tokenStore.readRefreshToken()).resolves.toBeNull();
   });
 
