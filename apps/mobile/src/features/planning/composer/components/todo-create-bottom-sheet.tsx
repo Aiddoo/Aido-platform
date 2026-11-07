@@ -16,7 +16,7 @@ import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick
 import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -100,7 +100,7 @@ TodoCreateBottomSheet.Form = function Form() {
     <TodoCreateForm
       defaultValues={{
         title: prefill.title ?? '',
-        startDate: toDate(date),
+        startDate: fromDate(toDate(date)),
         endDate: null,
         scheduledTime: prefill.time ?? null,
         isAllDay: prefill.time == null,

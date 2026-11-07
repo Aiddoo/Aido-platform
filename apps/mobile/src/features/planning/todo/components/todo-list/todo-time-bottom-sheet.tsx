@@ -2,7 +2,7 @@ import { toTodoEditFormValues } from '@src/features/planning/composer/utils/to-t
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { toDateKey } from '@src/shared/date/instant';
+import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -77,7 +77,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
   return (
     <TodoScopeStep step={scopeSelector}>
       <TodoTimePickerContent
-        date={editValues.startDate}
+        date={toDate(editValues.startDate)}
         value={{
           scheduledTime: editValues.scheduledTime,
           isAllDay: todo.isAllDay,

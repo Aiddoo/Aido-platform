@@ -5,11 +5,14 @@ import {
   getDayOfWeek,
   isSameMonthDateKey,
 } from '@src/shared/date/date-key';
-import { toDateKey } from '@src/shared/date/instant';
+import { fromDate, type Instant, toDateKey } from '@src/shared/date/instant';
 import type { CalendarViewMode } from '@src/shared/preferences/calendar-view-mode.preference';
 import dayjs from 'dayjs';
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
+
+/** 달력 날짜를 가리키는 값. Date는 달력 칸, Instant는 폼에 담긴 값이다 */
+type Day = Date | Instant;
 
 const SUNDAY = 0;
 const SATURDAY = 6;
@@ -28,40 +31,40 @@ export function getCalendarWeekBounds(date: Date, timeZone: string) {
   };
 }
 
-export function toNullableDate(date?: Date | string | number | null): Date | null {
+export function toNullableInstant(date?: Date | string | number | null): Instant | null {
   if (date == null) {
     return null;
   }
 
   const parsed = dayjs(date);
-  return parsed.isValid() ? parsed.toDate() : null;
+  return parsed.isValid() ? fromDate(parsed.toDate()) : null;
 }
 
-export function isSameDay(date1: Date, date2: Date, timeZone: string): boolean {
+export function isSameDay(date1: Day, date2: Day, timeZone: string): boolean {
   return toDateKey(date1, timeZone) === toDateKey(date2, timeZone);
 }
 
-export function isDateToday(date: Date, now: Date, timeZone: string): boolean {
+export function isDateToday(date: Day, now: Day, timeZone: string): boolean {
   return isSameDay(date, now, timeZone);
 }
 
-export function isSameMonth(date1: Date, date2: Date, timeZone: string): boolean {
+export function isSameMonth(date1: Day, date2: Day, timeZone: string): boolean {
   return isSameMonthDateKey(toDateKey(date1, timeZone), toDateKey(date2, timeZone));
 }
 
-export function isAfterDay(date1: Date, date2: Date, timeZone: string): boolean {
+export function isAfterDay(date1: Day, date2: Day, timeZone: string): boolean {
   return toDateKey(date1, timeZone) > toDateKey(date2, timeZone);
 }
 
-export function isBeforeDay(date1: Date, date2: Date, timeZone: string): boolean {
+export function isBeforeDay(date1: Day, date2: Day, timeZone: string): boolean {
   return toDateKey(date1, timeZone) < toDateKey(date2, timeZone);
 }
 
-export function isSunday(date: Date, timeZone: string): boolean {
+export function isSunday(date: Day, timeZone: string): boolean {
   return getDayOfWeek(toDateKey(date, timeZone)) === SUNDAY;
 }
 
-export function isSaturday(date: Date, timeZone: string): boolean {
+export function isSaturday(date: Day, timeZone: string): boolean {
   return getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY;
 }
 

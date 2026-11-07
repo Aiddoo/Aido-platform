@@ -1,7 +1,7 @@
 import { toTodoEditFormValues } from '@src/features/planning/composer/utils/to-todo-edit-form-values';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { toDateKey } from '@src/shared/date/instant';
+import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -73,7 +73,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
 
   return (
     <TodoDatePickerContent
-      value={editValues.startDate}
+      value={toDate(editValues.startDate)}
       onCancel={onClose}
       onChange={(startDate) => {
         const startDateKey = toDateKey(startDate, timeZone);

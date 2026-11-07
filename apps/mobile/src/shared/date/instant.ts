@@ -21,9 +21,19 @@ const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
 export const instantSchema = z.iso.datetime({ offset: true }).brand<'Instant'>();
 export type Instant = z.infer<typeof instantSchema>;
 
+/** 폼 값처럼 입력과 출력의 타입이 같아야 하는 곳의 순간 스키마. brand는 입력 타입에 남지 않아 따로 둔다 */
+export const instantFieldSchema = z.custom<Instant>(
+  (value) => instantSchema.safeParse(value).success,
+);
+
 /** 순간으로 읽을 수 없는 문자열은 던진다. 서버·저장소 경계에서 한 번만 부른다 */
 export function toInstant(value: string): Instant {
   return instantSchema.parse(value);
+}
+
+/** 선택기처럼 Date를 쓰는 경계에서 받은 값을 순간으로 바꾼다 */
+export function fromDate(date: Date): Instant {
+  return toInstant(date.toISOString());
 }
 
 /** 에포크 밀리초에서 순간을 만든다 */

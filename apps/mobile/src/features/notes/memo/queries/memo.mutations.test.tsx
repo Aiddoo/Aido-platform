@@ -11,6 +11,7 @@ import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { fromDate } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -192,7 +193,7 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       memoId: 5,
       values: {
         title: '메모',
-        startDate: new Date('2026-10-02T00:00:00.000Z'),
+        startDate: fromDate(new Date('2026-10-02T00:00:00.000Z')),
         endDate: null,
         scheduledTime: null,
         isAllDay: true,

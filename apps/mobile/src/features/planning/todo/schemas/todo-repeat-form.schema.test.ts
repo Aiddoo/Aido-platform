@@ -1,3 +1,5 @@
+import { fromDate } from '@src/shared/date/instant';
+
 import {
   getTodoRepeatFormIssue,
   createTodoRepeatFormSchema,
@@ -8,7 +10,7 @@ import {
 
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const todoRepeatFormSchema = createTodoRepeatFormSchema(TIME_ZONE);
-const THURSDAY = new Date(2026, 10, 5, 12);
+const THURSDAY = fromDate(new Date(2026, 10, 5, 12));
 
 const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
   startDate: THURSDAY,
@@ -28,7 +30,7 @@ describe('todoRepeatFormSchema', () => {
     ['날짜 종료인데 종료일 없음', { endType: 'UNTIL' }, 'until-required'],
     [
       '기간 안에 회차 없음',
-      { weekdays: ['MON'], endType: 'UNTIL', untilDate: new Date(2026, 10, 6, 12) },
+      { weekdays: ['MON'], endType: 'UNTIL', untilDate: fromDate(new Date(2026, 10, 6, 12)) },
       'no-occurrence',
     ],
   ];
@@ -64,7 +66,10 @@ describe('todoRepeatFormSchema', () => {
 
   test('끝이 있어도 회차가 있으면 확인할 수 있다', () => {
     // Given
-    const values = createValues({ endType: 'UNTIL', untilDate: new Date(2026, 10, 12, 12) });
+    const values = createValues({
+      endType: 'UNTIL',
+      untilDate: fromDate(new Date(2026, 10, 12, 12)),
+    });
 
     // When
     const result = todoRepeatFormSchema.safeParse(values);
@@ -77,7 +82,7 @@ describe('todoRepeatFormSchema', () => {
 describe('시간대에 따른 반복 규칙', () => {
   test('같은 순간도 시간대에 따라 매월 반복의 날짜와 요일이 달라진다', () => {
     // Given
-    const startDate = new Date('2026-11-06T15:30:00Z');
+    const startDate = fromDate(new Date('2026-11-06T15:30:00Z'));
     const values = createValues({ startDate, weekdays: [], isMonthly: true });
 
     // When
@@ -92,7 +97,7 @@ describe('시간대에 따른 반복 규칙', () => {
   test('말일에 시작한 매월 반복은 31일 규칙을 유지한다', () => {
     // Given
     const values = createValues({
-      startDate: new Date('2026-10-31T03:00:00Z'),
+      startDate: fromDate(new Date('2026-10-31T03:00:00Z')),
       weekdays: [],
       isMonthly: true,
     });
@@ -108,7 +113,7 @@ describe('시간대에 따른 반복 규칙', () => {
     // Given
     const values = createValues({
       endType: 'UNTIL',
-      untilDate: new Date('2026-11-19T15:30:00Z'),
+      untilDate: fromDate(new Date('2026-11-19T15:30:00Z')),
     });
 
     // When

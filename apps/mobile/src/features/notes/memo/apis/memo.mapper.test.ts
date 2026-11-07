@@ -1,6 +1,7 @@
 import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { createParseMemoResponseDto } from '@src/features/voice/__tests__/parsed-memo.fixtures';
+import { fromDate } from '@src/shared/date/instant';
 
 import { memoFormSchema } from '../schemas/memo-form.schema';
 import {
@@ -81,7 +82,7 @@ describe('메모 작성·수정 요청', () => {
 
 const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoFormValues => ({
   title: '수정한 메모 제목',
-  startDate: new Date(2026, 9, 2),
+  startDate: fromDate(new Date(2026, 9, 2)),
   endDate: null,
   scheduledTime: null,
   isAllDay: true,
@@ -147,7 +148,7 @@ describe('toConvertMemoToTodosRequest', () => {
       createFormData({
         isAllDay: false,
         scheduledTime: '13:30',
-        endDate: new Date(2026, 9, 3),
+        endDate: fromDate(new Date(2026, 9, 3)),
       }),
     );
 

@@ -5,10 +5,10 @@ import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/
 import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { toNullableDate } from '@src/features/planning/todo/utils/calendar-date';
+import { toNullableInstant } from '@src/features/planning/todo/utils/calendar-date';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
-import { toDateKey } from '@src/shared/date/instant';
+import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -180,8 +180,8 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
       },
       toDateKey(nextStartDate, dateFormatContext.timeZone),
     );
-    setValue('startDate', nextStartDate);
-    setValue('endDate', toNullableDate(nextEndDate));
+    setValue('startDate', fromDate(nextStartDate));
+    setValue('endDate', toNullableInstant(nextEndDate));
   };
 
   const handlePress = () => {
@@ -194,7 +194,7 @@ function DateChip({ isSeriesOccurrence }: { isSeriesOccurrence: boolean }) {
         onExit={unmount}
       >
         <TodoDatePickerContent
-          value={startDate}
+          value={toDate(startDate)}
           onChange={(nextStartDate) => {
             applyStartDate(nextStartDate);
             close();
@@ -241,7 +241,7 @@ function TimeChip() {
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
-              date={startDate}
+              date={toDate(startDate)}
               value={{ scheduledTime, isAllDay }}
               onChange={(nextTime) => {
                 setValue('scheduledTime', nextTime.scheduledTime);

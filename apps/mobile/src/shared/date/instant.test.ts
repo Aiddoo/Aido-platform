@@ -1,5 +1,6 @@
 import {
   diffMs,
+  fromDate,
   getZonedHour,
   hasSameWallClock,
   isBefore,
@@ -188,5 +189,28 @@ describe('Instant를 시간대로 읽기', () => {
     expect(toHHmm(second, 'America/Los_Angeles')).toBe('01:30');
     expect(toDateKey(first, 'America/Los_Angeles')).toBe('2026-11-01');
     expect(toDateKey(second, 'America/Los_Angeles')).toBe('2026-11-01');
+  });
+});
+
+describe('fromDate', () => {
+  it('Date를 같은 순간의 Instant로 바꾸고 다시 Date로 읽어도 같다', () => {
+    // Given
+    const date = new Date(2026, 10, 7, 23, 30);
+
+    // When
+    const instant = fromDate(date);
+
+    // Then
+    expect(toEpochMs(instant)).toBe(date.getTime());
+  });
+
+  it('자정 직전과 정각이 시간대에 따라 다른 날짜로 읽힌다', () => {
+    // Given
+    const beforeMidnight = fromDate(new Date('2026-10-01T14:59:59.999Z'));
+    const atMidnight = fromDate(new Date('2026-10-01T15:00:00.000Z'));
+
+    // When / Then
+    expect(toDateKey(beforeMidnight, 'Asia/Seoul')).toBe('2026-10-01');
+    expect(toDateKey(atMidnight, 'Asia/Seoul')).toBe('2026-10-02');
   });
 });

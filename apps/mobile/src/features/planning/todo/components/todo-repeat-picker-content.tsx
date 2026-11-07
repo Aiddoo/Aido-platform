@@ -9,7 +9,7 @@ import {
 } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -64,7 +64,7 @@ import { PickerHeader } from './picker-header';
 import { RepeatHintLine } from './repeat-hint-line';
 
 interface RepeatPickerValue {
-  startDate: Date;
+  startDate: Instant;
   repeat: TodoRepeat | null;
 }
 
@@ -85,7 +85,7 @@ export function TodoRepeatPickerContent({
     defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat, timeZone),
     mode: 'onChange',
   });
-  const picker = useDatePicker({ startDate: value.startDate });
+  const picker = useDatePicker({ startDate: toDate(value.startDate) });
 
   return (
     <FormProvider {...methods}>
@@ -381,7 +381,7 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
       ? TodoRepeatPolicy.getLastRepeatOccurrenceDateKey(repeat, startDateKey)
       : null;
   const endDate = match(endType)
-    .with('UNTIL', () => untilDate)
+    .with('UNTIL', () => (untilDate == null ? null : toDate(untilDate)))
     .with('COUNT', () => (lastOccurrenceKey == null ? null : toDate(lastOccurrenceKey)))
     .with('NEVER', () => null)
     .exhaustive();
@@ -392,7 +392,7 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
       untilDate == null ||
       firstOccurrenceKey <= toDateKey(untilDate, timeZone));
   /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
-  const displayStartDate = hasOccurrenceInPeriod ? toDate(firstOccurrenceKey) : startDate;
+  const displayStartDate = toDate(hasOccurrenceInPeriod ? firstOccurrenceKey : startDate);
 
   const applyFormValues = useApplyRepeatFormValues();
   // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
@@ -441,7 +441,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
           );
     },
   });
-  const formatMonthDay = (date: Date) =>
+  const formatMonthDay = (date: Date | Instant) =>
     formatDateKeyLabel(toDateKey(date, dateFormatContext.timeZone), 'monthDay', dateFormatContext);
   const isMonthDayClamped = useWatch({
     control,

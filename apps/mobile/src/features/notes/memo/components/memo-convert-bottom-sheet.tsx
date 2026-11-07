@@ -7,6 +7,7 @@ import {
 } from '@src/features/planning/composer/components/todo-composer-fields';
 import { addTodoFormSchema } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
+import { fromDate } from '@src/shared/date/instant';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
@@ -46,7 +47,7 @@ export function MemoConvertBottomSheet({
     resolver: zodResolver(addTodoFormSchema),
     defaultValues: {
       title: memo.content.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH),
-      startDate: selectedDate,
+      startDate: fromDate(selectedDate),
       endDate: null,
       scheduledTime: null,
       isAllDay: true,

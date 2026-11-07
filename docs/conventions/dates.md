@@ -44,7 +44,7 @@
 ## 3. 표시
 
 - 모바일 표시는 `apps/mobile/src/shared/date/date-format.ts`가 하고, 카탈로그 문구가 필요한 요일·주 헤더·상대 시간은 `date-labels.ts`가 한다. 모든 helper는 `DateFormatContext { locale, timeZone }`를 인자로 받고 `Intl.DateTimeFormat`에 둘을 명시한다. 달력 날짜는 `formatDateKeyLabel`, 순간은 `formatDateLabel`, 벽시계는 `formatTimeOfDay`다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
-- 할 일 시각은 앱 모델의 `Todo.localTime`(`HH:mm`) 하나만 표시·수정 기본값에 쓴다. 매퍼 `toTodo`가 `scheduledLocalTime`을 옮기고, 키가 없는 응답(옛 서버·옛 캐시)만 `scheduledTime`을 기기 시간대로 바꾼다. 화면에서 순간을 시각으로 바꾸지 않는다.
+- 할 일 시각은 `TodoPolicy.getLocalTime(todo, timeZone)` 하나만 표시·수정 기본값에 쓴다. 매퍼 `toTodo`는 시간대를 읽지 않고 `scheduledLocalTime`을 `localTime`으로, `scheduledTime`을 `scheduledAt`(Instant)으로 옮긴다. 벽시계 칸이 없는 응답(옛 서버·옛 캐시)만 `getLocalTime`이 보는 순간의 시간대로 `scheduledAt`을 읽는다.
 - 서버가 만드는 문구(푸시·이메일·AI)는 사용자 locale과 시간대를 함께 넘겨 만든다.
 
 ## 4. 테스트할 경계

@@ -4,7 +4,7 @@ import {
   isBeforeDay,
   isSameDay,
 } from '@src/features/planning/todo/utils/calendar-date';
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { without, xor } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -14,7 +14,7 @@ import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
 
 export function toTodoRepeatFormValues(
-  startDate: Date,
+  startDate: Instant,
   repeat: TodoRepeat | null,
   timeZone: string,
 ): TodoRepeatFormValues {
@@ -37,7 +37,7 @@ export function toTodoRepeatFormValues(
   const withEnd = {
     ...base,
     endType: repeat.end.type,
-    untilDate: repeat.end.type === 'UNTIL' ? toDate(repeat.end.date) : null,
+    untilDate: repeat.end.type === 'UNTIL' ? fromDate(toDate(repeat.end.date)) : null,
     count: repeat.end.type === 'COUNT' ? repeat.end.count : base.count,
   };
 
@@ -55,7 +55,7 @@ export function toTodoRepeatFormValues(
 
 function withTodoRepeatFormStartDate(
   values: TodoRepeatFormValues,
-  nextStartDate: Date,
+  nextStartDate: Instant,
   timeZone: string,
 ): TodoRepeatFormValues {
   const next = { ...values, startDate: nextStartDate, monthDay: null };
@@ -73,7 +73,7 @@ function withTodoRepeatFormStartDate(
   return {
     ...next,
     weekdays: adjusted.frequency === 'WEEKLY' ? adjusted.weekdays : next.weekdays,
-    untilDate: adjusted.end.type === 'UNTIL' ? toDate(adjusted.end.date) : next.untilDate,
+    untilDate: adjusted.end.type === 'UNTIL' ? fromDate(toDate(adjusted.end.date)) : next.untilDate,
   };
 }
 
@@ -156,13 +156,14 @@ export function withTodoRepeatFormCalendarDate(
     !isSameDay(date, values.startDate, timeZone);
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 
+  const picked = fromDate(date);
   if (isFirstOccurrence || hasPickedPeriod) {
-    return { ...withTodoRepeatFormStartDate(values, date, timeZone), untilDate: null };
+    return { ...withTodoRepeatFormStartDate(values, picked, timeZone), untilDate: null };
   }
   if (isAfterDay(date, values.startDate, timeZone)) {
-    return { ...values, endType: 'UNTIL', untilDate: date };
+    return { ...values, endType: 'UNTIL', untilDate: picked };
   }
   return isBeforeDay(date, values.startDate, timeZone)
-    ? withTodoRepeatFormStartDate(values, date, timeZone)
+    ? withTodoRepeatFormStartDate(values, picked, timeZone)
     : values;
 }

@@ -8,7 +8,7 @@ import { TodoTimePickerContent } from '@src/features/planning/todo/components/to
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -252,7 +252,7 @@ function RepeatChip() {
         onExit={unmount}
       >
         <TodoRepeatPickerContent
-          value={{ startDate: toDate(startDate), repeat }}
+          value={{ startDate: fromDate(toDate(startDate)), repeat }}
           onChange={(next) => {
             updateTodo(form, (current) =>
               VoicePlanPolicy.withRepeat(

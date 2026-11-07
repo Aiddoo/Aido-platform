@@ -1,6 +1,6 @@
 import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES, type DayOfWeek } from '@aido/api/vocabulary';
 import { getDayOfMonth } from '@src/shared/date/date-key';
-import { toDateKey } from '@src/shared/date/instant';
+import { instantFieldSchema, toDateKey } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -9,14 +9,14 @@ import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { type TodoRepeat, type TodoRepeatEnd } from '../schemas/todo-repeat.schema';
 
 const todoRepeatFormShape = z.object({
-  startDate: z.date(),
+  startDate: instantFieldSchema,
   weekdays: z.array(z.enum(DAYS_OF_WEEK)),
   interval: z.union([z.literal(1), z.literal(2)]),
   isMonthly: z.boolean(),
   /** 규칙이 가진 매월 며칠. 시작일을 옮기기 전까지 유지해 2월 28일 회차에서 열어도 31일 규칙이 그대로다. 없으면 시작일을 따른다 */
   monthDay: z.int().min(1).max(31).nullable(),
   endType: z.enum(TODO_REPEAT_END_TYPES),
-  untilDate: z.date().nullable(),
+  untilDate: instantFieldSchema.nullable(),
   count: z.int().min(TODO_REPEAT_COUNT.MIN).max(TODO_REPEAT_COUNT.MAX),
 });
 
