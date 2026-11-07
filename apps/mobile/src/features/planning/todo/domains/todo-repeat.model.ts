@@ -120,7 +120,7 @@ function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
     : { ...repeat, weekdays: sortWeekdays(repeat.weekdays) };
 }
 
-type TodoEditScopeDecision = 'not-repeating' | 'this-only' | 'ask' | 'ask-following-only';
+type TodoEditScopeDecision = 'no-scope' | 'this-only' | 'ask' | 'ask-following-only';
 
 interface TodoEditScopeInput {
   isSeries: boolean;
@@ -140,7 +140,7 @@ function getTodoEditScopeDecision({
 }: TodoEditScopeInput): TodoEditScopeDecision {
   // nullish-strict: repeat null은 반복 끝내기, 생략은 규칙 유지다
   if (!isSeries || repeat === null) {
-    return 'not-repeating';
+    return 'no-scope';
   }
   if (repeat != null) {
     return 'ask-following-only';

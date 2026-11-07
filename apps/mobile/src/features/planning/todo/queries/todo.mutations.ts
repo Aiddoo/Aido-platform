@@ -129,6 +129,8 @@ export function useChangeTodoCategoryMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 카테고리 변경 버튼이 로딩만 돈다. 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async ({ todoId, input, scope }: ChangeTodoCategoryMutationParams) => {
       const result = await todoService.changeTodoCategory(todoId, input, scope);
       return unwrap(result);
@@ -170,6 +172,8 @@ export function useDeleteTodoMutationOptions() {
   const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, scope }: DeleteTodoMutationParams) => {
       const result = await todoService.deleteTodo(todoId, scope);

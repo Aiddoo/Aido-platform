@@ -1,7 +1,6 @@
 import {
   type CreateTodoItemInput,
   type ReorderTodoItemsInput,
-  updateTodoResponseSchema,
   type UpdateTodoItemInput,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -9,6 +8,7 @@ import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
+import { updateTodoEnvelopeSchema } from '../schemas/todo-envelope.schema';
 import type { Todo } from '../schemas/todo.schema';
 import { toTodo } from './todo.mapper';
 
@@ -27,7 +27,7 @@ export class SubTodoService {
 
     return parseApiResponse(
       result,
-      updateTodoResponseSchema,
+      updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
       '[SubTodoService] Invalid addSubTodo response',
     );
@@ -42,7 +42,7 @@ export class SubTodoService {
 
     return parseApiResponse(
       result,
-      updateTodoResponseSchema,
+      updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
       '[SubTodoService] Invalid updateSubTodo response',
     );
@@ -53,7 +53,7 @@ export class SubTodoService {
 
     return parseApiResponse(
       result,
-      updateTodoResponseSchema,
+      updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
       '[SubTodoService] Invalid deleteSubTodo response',
     );
@@ -67,7 +67,7 @@ export class SubTodoService {
 
     return parseApiResponse(
       result,
-      updateTodoResponseSchema,
+      updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
       '[SubTodoService] Invalid reorderSubTodos response',
     );

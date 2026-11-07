@@ -12,7 +12,7 @@ import { RepeatHorizonHint } from './repeat-horizon-hint';
 
 /** 나의 일일 완료 현황을 표시하는 캘린더 */
 export function MyCalendar() {
-  const { rangeStart, rangeEnd } = useCalendarRange();
+  const [{ rangeStart, rangeEnd }] = useCalendarRange();
   const [viewMode] = useCalendarViewMode();
   const [selectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();

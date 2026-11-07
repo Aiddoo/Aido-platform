@@ -25,6 +25,19 @@ describe('SubTodoService', () => {
       expect(result.ok).toBe(true);
     });
 
+    it('응답에 모르는 반복 빈도가 있어도 저장은 성공으로 읽고 규칙만 비운다', async () => {
+      // Given
+      const { httpClient, service } = createSut();
+      const todo = { ...createTodoDto(), repeat: { frequency: 'YEARLY', end: { type: 'NEVER' } } };
+      httpClient.post.mockResolvedValue({ ok: true, value: { message: '추가됨', todo } });
+
+      // When
+      const result = await service.addSubTodo(1, { title: '새 항목' });
+
+      // Then
+      expect(result.ok && result.value.repeat).toBeNull();
+    });
+
     it('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const { httpClient, service } = createSut();

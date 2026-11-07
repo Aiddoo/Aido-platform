@@ -188,8 +188,8 @@ interface TodoListItemProps {
 TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
-  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
-  const selectTodo = useSingleTap(setSelectedTodoId);
+  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
+  const selectTodo = useSingleTap(openTodoDetail);
 
   const { t } = useTranslation('todo');
   const [date] = useFeedDateKey();
@@ -317,16 +317,13 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
           />
         </HStack>
       }
-      onPress={isOptimistic ? undefined : handleRowPress}
-      onLongPress={isOptimistic ? undefined : drag}
+      onPress={handleRowPress}
+      onLongPress={drag}
       isActive={isActive}
       isDisabled={isOptimistic}
     >
       {isExpanded && (
-        <SubTodoList
-          onAddPress={handleAddSubTodoPress}
-          isAddDisabled={!SubTodoPolicy.canAddSubTodo(todo)}
-        >
+        <SubTodoList onAddPress={handleAddSubTodoPress} canAdd={SubTodoPolicy.canAddSubTodo(todo)}>
           <NestedReorderableList
             {...subTodoReorderableList}
             dragEnabled={

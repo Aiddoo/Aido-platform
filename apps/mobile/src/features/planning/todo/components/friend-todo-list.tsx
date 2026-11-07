@@ -83,8 +83,8 @@ FriendTodoList.Item = function Item({
   action: ComponentType<{ todo: Todo }>;
 }) {
   const { t } = useTranslation('todo');
-  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
-  const selectTodo = useSingleTap(setSelectedTodoId);
+  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
+  const selectTodo = useSingleTap(openTodoDetail);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();

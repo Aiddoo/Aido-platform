@@ -112,6 +112,8 @@ function hasUpcomingTimedTodo(
 }
 
 /** 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다 */
+const MIN_REORDERABLE_COUNT = 2;
+
 function getOptimisticListDate(
   todo: Pick<Todo, 'startDate' | 'endDate'>,
   todayKey: string,
@@ -121,7 +123,7 @@ function getOptimisticListDate(
 
 /** 순서를 바꾸려면 같은 묶음에 할 일이 둘 이상 있어야 한다 */
 function canReorderTodos(todos: readonly Pick<Todo, 'id'>[]) {
-  return todos.length >= 2;
+  return todos.length >= MIN_REORDERABLE_COUNT;
 }
 
 export const TodoPolicy = {

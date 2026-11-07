@@ -64,7 +64,7 @@ export function TodoRepeatPickerContent({
     defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat, timeZone),
     mode: 'onChange',
   });
-  const picker = useDatePicker({ startDate: toDate(value.startDate) });
+  const picker = useDatePicker({ initialDate: toDate(value.startDate) });
 
   return (
     <SheetHeaderLayout
@@ -109,6 +109,7 @@ TodoRepeatPickerContent.PresetChip = function PresetChip({
       }}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
+      hitSlop={6}
       className={cn(
         'h-8 items-center justify-center rounded-4xl px-3',
         isSelected ? 'bg-main' : 'bg-gray-2',
@@ -149,6 +150,7 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
       }}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
+      hitSlop={6}
       className={cn(
         'size-8 items-center justify-center rounded-4xl',
         isSelected ? 'bg-main' : 'bg-gray-2',

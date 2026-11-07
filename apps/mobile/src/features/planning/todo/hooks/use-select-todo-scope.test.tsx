@@ -28,7 +28,7 @@ function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) =>
 
 async function renderSheet() {
   const onSettled = jest.fn();
-  await renderUi(
+  const { unmount } = await renderUi(
     <LocalDateProvider>
       <SheetProbe onSettled={onSettled} />
     </LocalDateProvider>,
@@ -38,7 +38,7 @@ async function renderSheet() {
   // 범위를 고를 때까지 끝나지 않는 핸들러라 기다리지 않는다
   fireEvent.press(screen.getByTestId('save')).catch(() => undefined);
   await screen.findByTestId('todo-scope-select');
-  return { onSettled };
+  return { onSettled, unmount };
 }
 
 describe('useSelectTodoScope', () => {
@@ -62,6 +62,17 @@ describe('useSelectTodoScope', () => {
     expect(onSettled).toHaveBeenCalledWith(null);
     expect(screen.getByTestId('title').props.value).toBe('장보기');
     expect(screen.queryByTestId('todo-scope-select')).toBeNull();
+  });
+
+  it('범위를 묻는 중에 시트가 닫히면 취소(null)로 끝나 저장 핸들러가 남지 않는다', async () => {
+    // Given
+    const { onSettled, unmount } = await renderSheet();
+
+    // When
+    await unmount();
+
+    // Then
+    expect(onSettled).toHaveBeenCalledWith(null);
   });
 
   it('범위를 고르면 그 범위로 한 번만 끝난다', async () => {

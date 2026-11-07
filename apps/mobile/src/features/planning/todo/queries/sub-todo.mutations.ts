@@ -77,6 +77,8 @@ export function useDeleteSubTodoMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId }: DeleteSubTodoParams) => {
       const result = await subTodoService.deleteSubTodo(todoId, subTodoId);
@@ -146,7 +148,7 @@ export function useReorderSubTodosMutationOptions() {
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
     },
-    onError: (_err, { todoId, date }, context) => {
+    onError: (_error, { todoId, date }, context) => {
       haptics.notify('error');
       const previousIds = context?.previousIds;
       if (previousIds != null) {

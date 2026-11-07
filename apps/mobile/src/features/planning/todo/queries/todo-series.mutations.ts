@@ -23,6 +23,8 @@ export function useStopTodoSeriesMutationOptions() {
   const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 반복 끝내기가 끝나지 않는다. 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async ({ todoId }: StopTodoSeriesMutationParams) =>
       unwrap(await todoService.stopTodoSeries(todoId)),
     onSuccess: () => {

@@ -12,7 +12,7 @@ export function useCalendarRange() {
   const [viewMode] = useCalendarViewMode();
   const { timeZone } = useDateFormatContext();
 
-  return useMemo(
+  const range = useMemo(
     () =>
       match(viewMode)
         .with('week', () => getWeekRange(selectedDate, timeZone))
@@ -20,4 +20,6 @@ export function useCalendarRange() {
         .exhaustive(),
     [viewMode, selectedDate, timeZone],
   );
+
+  return [range] as const;
 }

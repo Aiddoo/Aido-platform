@@ -276,19 +276,19 @@ describe('getTodoEditScopeDecision', () => {
 
   it.each([
     {
-      title: '시리즈가 아니고 반복 규칙이 없으면 not-repeating이다',
+      title: '시리즈가 아니고 반복 규칙이 없으면 no-scope이다',
       input: { isSeries: false, isDateOnly: false },
-      expected: 'not-repeating',
+      expected: 'no-scope',
     },
     {
-      title: '시리즈가 아니면 반복 규칙이 있어도 not-repeating이다',
+      title: '시리즈가 아니면 반복 규칙이 있어도 no-scope이다',
       input: { isSeries: false, repeat: rule, isDateOnly: false },
-      expected: 'not-repeating',
+      expected: 'no-scope',
     },
     {
-      title: '시리즈여도 반복 규칙이 null이면 not-repeating이다',
+      title: '시리즈여도 반복 규칙이 null이면 no-scope이다',
       input: { isSeries: true, repeat: null, isDateOnly: false },
-      expected: 'not-repeating',
+      expected: 'no-scope',
     },
     {
       title: '시리즈이고 반복 규칙이 있으면 이후 전체만 묻는다',

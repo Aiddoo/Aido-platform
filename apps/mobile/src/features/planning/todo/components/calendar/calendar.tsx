@@ -75,6 +75,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
           <CalendarHeaderText />
           <PressableFeedback
             onPress={() => setSelectedDate(today)}
+            hitSlop={8}
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>

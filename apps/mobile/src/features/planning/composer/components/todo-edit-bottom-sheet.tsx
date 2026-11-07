@@ -174,7 +174,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         }),
       )
         .returnType<Promise<TodoUpdateScope | null | undefined>>()
-        .with('not-repeating', async () => undefined)
+        .with('no-scope', async () => undefined)
         .with('this-only', async () => 'THIS_ONLY')
         .with('ask', () => selectEditScope(todo.startDate))
         .with('ask-following-only', () =>

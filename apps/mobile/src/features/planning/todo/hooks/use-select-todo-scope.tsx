@@ -1,5 +1,5 @@
 import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
 import type { TodoEditScope, TodoUpdateScope } from '../schemas/todo-repeat.schema';
@@ -17,6 +17,19 @@ export interface ScopeRequest {
  */
 export function useSelectTodoScope() {
   const [request, setRequest] = useState<ScopeRequest | null>(null);
+  const requestRef = useRef(request);
+
+  useLayoutEffect(() => {
+    requestRef.current = request;
+  });
+
+  // 범위를 묻는 중에 시트가 밖에서 닫히면 대기 중인 저장 핸들러가 영원히 남지 않게 취소로 끝낸다
+  useEffect(
+    () => () => {
+      requestRef.current?.resolve(null);
+    },
+    [],
+  );
 
   const selectScope = (
     action: ScopeRequest['action'],

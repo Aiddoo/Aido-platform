@@ -234,6 +234,19 @@ describe('TodoService', () => {
   // ── toggleTodoComplete ───────────────────────
 
   describe('toggleTodoComplete', () => {
+    it('응답에 모르는 반복 빈도가 있어도 완료 처리는 성공으로 읽고 규칙만 비운다', async () => {
+      // Given
+      const { httpClient, service } = createSut();
+      const todo = { ...createTodoDto(), repeat: { frequency: 'YEARLY', end: { type: 'NEVER' } } };
+      httpClient.patch.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
+
+      // When
+      const result = await service.toggleTodoComplete(1, { completed: true });
+
+      // Then
+      expect(result.ok && result.value.repeat).toBeNull();
+    });
+
     it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
       const { httpClient, service } = createSut();

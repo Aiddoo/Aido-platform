@@ -6,7 +6,7 @@ import { match } from 'ts-pattern';
 import { getMonthWeeks } from '../utils/calendar-grid';
 
 interface DatePickerState {
-  startDate: Date;
+  selectedDate: Date;
   displayMonth: Date;
 }
 
@@ -17,7 +17,7 @@ type DatePickerAction =
 
 function datePickerReducer(state: DatePickerState, action: DatePickerAction): DatePickerState {
   return match(action)
-    .with({ type: 'selectDate' }, ({ date }) => ({ ...state, startDate: date }))
+    .with({ type: 'selectDate' }, ({ date }) => ({ ...state, selectedDate: date }))
     .with({ type: 'prevMonth' }, ({ timeZone }) => ({
       ...state,
       displayMonth: addLocalMonths(state.displayMonth, -1, timeZone),
@@ -30,14 +30,15 @@ function datePickerReducer(state: DatePickerState, action: DatePickerAction): Da
 }
 
 interface UseDatePickerParams {
-  startDate: Date;
+  /** 처음 선택된 날짜이자 처음 보이는 달 */
+  initialDate: Date;
 }
 
-export function useDatePicker({ startDate }: UseDatePickerParams) {
+export function useDatePicker({ initialDate }: UseDatePickerParams) {
   const { timeZone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
-    startDate,
-    displayMonth: startDate,
+    selectedDate: initialDate,
+    displayMonth: initialDate,
   });
 
   const weeks = useMemo(
@@ -46,7 +47,7 @@ export function useDatePicker({ startDate }: UseDatePickerParams) {
   );
 
   return {
-    date: state.startDate,
+    selectedDate: state.selectedDate,
     displayMonth: state.displayMonth,
     weeks,
     selectDate: (date: Date) => dispatch({ type: 'selectDate', date }),

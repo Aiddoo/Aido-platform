@@ -21,6 +21,7 @@ import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import type { TodoUpdateScope } from '../../schemas/todo-repeat.schema';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoScopeStep } from '../todo-scope-step';
 import { TodoTimePickerContent } from '../todo-time-picker-content';
@@ -35,20 +36,18 @@ export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      {sheet.isOpen && (
-        <QueryErrorBoundary
-          fallback={(fallbackProps) => (
-            <TodoTimeBottomSheet.Error
-              {...fallbackProps}
-              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-            />
-          )}
-        >
-          <Suspense fallback={<TodoTimeBottomSheet.Loading />}>
-            <TodoTimeBottomSheet.TimeForm onClose={() => sheet.close()} />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <TodoTimeBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
+        <Suspense fallback={<TodoTimeBottomSheet.Loading />}>
+          <TodoTimeBottomSheet.TimeForm onClose={() => sheet.close()} />
+        </Suspense>
+      </QueryErrorBoundary>
     </BottomSheet>
   );
 }
@@ -94,24 +93,31 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
 
             return;
           }
-          const scope = TodoRepeatPolicy.hasRepeatRule(todo)
-            ? await selectEditScope(todo.startDate)
-            : undefined;
-          // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
+          const saveTime = (scope?: TodoUpdateScope) =>
+            updateSchedule.mutate({
+              todoId: todo.id,
+              changedField: 'time',
+              ...(scope != null && { scope }),
+              input: {
+                startDate: toDateKey(editValues.startDate, timeZone),
+                endDate:
+                  editValues.endDate == null ? null : toDateKey(editValues.endDate, timeZone),
+                scheduledTime: isAllDay ? null : scheduledTime,
+                isAllDay,
+              },
+            });
+          if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
+            saveTime();
+            onClose();
+
+            return;
+          }
+          const scope = await selectEditScope(todo.startDate);
+          // nullish-strict: null은 범위 선택에서 시트를 닫거나 뒤로 간 취소다
           if (scope === null) {
             return;
           }
-          updateSchedule.mutate({
-            todoId: todo.id,
-            changedField: 'time',
-            ...(scope != null && { scope }),
-            input: {
-              startDate: toDateKey(editValues.startDate, timeZone),
-              endDate: editValues.endDate == null ? null : toDateKey(editValues.endDate, timeZone),
-              scheduledTime: isAllDay ? null : scheduledTime,
-              isAllDay,
-            },
-          });
+          saveTime(scope);
           onClose();
         }}
       />

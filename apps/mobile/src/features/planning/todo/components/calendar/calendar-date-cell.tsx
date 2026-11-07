@@ -1,3 +1,4 @@
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { Box, Text } from '@src/shared/ui';
@@ -24,13 +25,17 @@ export const CalendarDateCell = memo(function CalendarDateCell({
 }: CalendarDateCellProps) {
   const [value, onChange] = useFeedDate();
   const today = useToday();
-  const { timeZone } = useDateFormatContext();
+  const dateFormatContext = useDateFormatContext();
+  const { timeZone } = dateFormatContext;
   const isSelected = isSameDay(date, value, timeZone);
   const dayType = getMonthViewDayType({ date, isSelected, today, timeZone });
   const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
     <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={formatDateLabel(date, 'fullDate', dateFormatContext)}
+      accessibilityState={{ selected: isSelected }}
       onPress={() => onChange(date)}
       style={{ height: CALENDAR_DATE_CELL_HEIGHT }}
       className={cn('flex-1 items-center justify-between py-1', className)}

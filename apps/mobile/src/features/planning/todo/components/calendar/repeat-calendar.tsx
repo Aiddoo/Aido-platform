@@ -1,3 +1,4 @@
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { Box, HStack, Text, VStack } from '@src/shared/ui';
@@ -124,7 +125,8 @@ const RepeatDateCell = memo(function RepeatDateCell({
   onPress,
 }: RepeatDateCellProps) {
   const dayOfMonth = date.getDate();
-  const { timeZone } = useDateFormatContext();
+  const dateFormatContext = useDateFormatContext();
+  const { timeZone } = dateFormatContext;
   const isDisabled = isBeforeDay(date, today, timeZone);
   const isSelected = isStart || isEnd;
   const dayType = getDatePickerDayType({ date, isSelected, today, timeZone });
@@ -133,6 +135,9 @@ const RepeatDateCell = memo(function RepeatDateCell({
 
   return (
     <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={formatDateLabel(date, 'fullDate', dateFormatContext)}
+      accessibilityState={{ selected: isSelected, disabled: isDisabled }}
       onPress={() => onPress(date)}
       isDisabled={isDisabled}
       className={cn(

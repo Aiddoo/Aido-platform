@@ -1,3 +1,4 @@
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { getDayOfWeek } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/date-labels';
 import { toDateKey } from '@src/shared/date/instant';
@@ -23,11 +24,11 @@ interface TodoDatePickerContentProps {
 }
 
 export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePickerContentProps) {
-  const picker = useDatePicker({ startDate: value });
+  const picker = useDatePicker({ initialDate: value });
   const { t } = useTranslation('todo');
 
   const handleConfirm = () => {
-    onChange(picker.date);
+    onChange(picker.selectedDate);
   };
 
   return (
@@ -63,13 +64,13 @@ function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
       <QuickDateRow
         label={t('picker.today')}
         date={todayStart}
-        isSelected={isSameDay(picker.date, todayStart, timeZone)}
+        isSelected={isSameDay(picker.selectedDate, todayStart, timeZone)}
         onChange={onChange}
       />
       <QuickDateRow
         label={t('picker.tomorrow')}
         date={tomorrowStart}
-        isSelected={isSameDay(picker.date, tomorrowStart, timeZone)}
+        isSelected={isSameDay(picker.selectedDate, tomorrowStart, timeZone)}
         onChange={onChange}
       />
     </VStack>
@@ -125,7 +126,7 @@ interface DatePickerCalendarProps {
 }
 
 function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
-  const { displayMonth, weeks, date: startDate, goToPrevMonth, goToNextMonth } = picker;
+  const { displayMonth, weeks, selectedDate, goToPrevMonth, goToNextMonth } = picker;
   const dateFormatContext = useDateFormatContext();
 
   return (
@@ -148,7 +149,7 @@ function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
                 <DatePickerDateCell
                   key={date.toISOString()}
                   date={date}
-                  startDate={startDate}
+                  selectedDate={selectedDate}
                   onPress={onDatePress}
                 />
               ) : (
@@ -164,20 +165,24 @@ function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
 
 interface DatePickerDateCellProps {
   date: Date;
-  startDate: Date;
+  selectedDate: Date;
   onPress: (date: Date) => void;
 }
 
-function DatePickerDateCell({ date, startDate, onPress }: DatePickerDateCellProps) {
+function DatePickerDateCell({ date, selectedDate, onPress }: DatePickerDateCellProps) {
   const dayOfMonth = date.getDate();
   const today = useToday();
-  const { timeZone } = useDateFormatContext();
-  const isSelected = isSameDay(date, startDate, timeZone);
+  const dateFormatContext = useDateFormatContext();
+  const { timeZone } = dateFormatContext;
+  const isSelected = isSameDay(date, selectedDate, timeZone);
   const dayType = getDatePickerDayType({ date, isSelected, today, timeZone });
   const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
     <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={formatDateLabel(date, 'fullDate', dateFormatContext)}
+      accessibilityState={{ selected: isSelected }}
       onPress={() => onPress(date)}
       className="relative h-[48px] flex-1 items-center justify-center"
     >

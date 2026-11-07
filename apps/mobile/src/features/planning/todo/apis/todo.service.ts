@@ -9,7 +9,6 @@ import {
   type ToggleTodoCompleteInput,
   todoSummaryResponseSchema,
   type UpdateTodoInput,
-  updateTodoResponseSchema,
   type UpdateTodoScheduleInput,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -137,7 +136,7 @@ export class TodoService {
 
     return parseApiResponse(
       result,
-      createTodoEnvelopeSchema,
+      updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
       '[TodoService] Invalid toggleTodoComplete response',
     );
@@ -325,7 +324,7 @@ export class TodoService {
 
     return parseApiResponse(
       result,
-      updateTodoResponseSchema,
+      updateTodoEnvelopeSchema,
       (data) => toTodo(data.todo),
       '[TodoService] Invalid changeTodoCategory response',
     );

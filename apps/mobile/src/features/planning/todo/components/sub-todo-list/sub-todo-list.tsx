@@ -13,18 +13,19 @@ import { TODO_ROW_ACCESSIBILITY_ACTION, TodoCheckbox, TodoLabel, TodoRow } from 
 interface SubTodoListProps {
   children: ReactNode;
   onAddPress: () => void;
-  isAddDisabled?: boolean;
+  /** false면 추가 줄을 그리지 않는다 */
+  canAdd: boolean;
 }
 
-export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoListProps) {
+export function SubTodoList({ children, onAddPress, canAdd }: SubTodoListProps) {
   const { t } = useTranslation('todo');
 
   return (
     <SubTodoIndent>
       {children}
 
-      {!isAddDisabled && (
-        <PressableFeedback onPress={onAddPress} className="py-1.5">
+      {canAdd && (
+        <PressableFeedback onPress={onAddPress} hitSlop={8} className="py-1.5">
           <HStack gap={8} align="center">
             <PlusIcon width={14} height={14} colorClassName="text-gray-4" />
             <Text size="e1" shade={5}>
@@ -94,7 +95,7 @@ SubTodoList.Item = function Item({
           onPress={isDisabled ? undefined : onMorePress}
         />
       }
-      onLongPress={isDisabled ? undefined : drag}
+      onLongPress={drag}
       isActive={isActive}
       isDisabled={isDisabled}
     />

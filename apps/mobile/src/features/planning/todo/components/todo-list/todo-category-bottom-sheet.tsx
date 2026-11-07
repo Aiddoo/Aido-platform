@@ -21,6 +21,7 @@ import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import type { TodoUpdateScope } from '../../schemas/todo-repeat.schema';
 import { TodoScopeStep } from '../todo-scope-step';
 
 type TodoCategoryBottomSheetProps = Omit<
@@ -33,20 +34,18 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      {sheet.isOpen && (
-        <QueryErrorBoundary
-          fallback={(fallbackProps) => (
-            <TodoCategoryBottomSheet.Error
-              {...fallbackProps}
-              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-            />
-          )}
-        >
-          <Suspense fallback={<TodoCategoryBottomSheet.Loading />}>
-            <TodoCategoryBottomSheet.CategoryForm onClose={() => sheet.close()} />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <TodoCategoryBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
+        <Suspense fallback={<TodoCategoryBottomSheet.Loading />}>
+          <TodoCategoryBottomSheet.CategoryForm onClose={() => sheet.close()} />
+        </Suspense>
+      </QueryErrorBoundary>
     </BottomSheet>
   );
 }
@@ -72,6 +71,19 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
     return null;
   }
 
+  const changeTodoCategory = async (input: { categoryId: number }, scope?: TodoUpdateScope) => {
+    try {
+      await changeCategory.mutateAsync({
+        todoId: todo.id,
+        input,
+        ...(scope != null && { scope }),
+      });
+      onClose();
+    } catch (error) {
+      reportUnexpectedError(error);
+    }
+  };
+
   return (
     <TodoScopeStep step={scopeSelector}>
       <CategorySelectInput
@@ -84,23 +96,17 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
 
             return;
           }
-          const scope = TodoRepeatPolicy.hasRepeatRule(todo)
-            ? await selectEditScope(todo.startDate)
-            : undefined;
-          // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
+          if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
+            await changeTodoCategory({ categoryId });
+
+            return;
+          }
+          const scope = await selectEditScope(todo.startDate);
+          // nullish-strict: null은 범위 선택에서 시트를 닫거나 뒤로 간 취소다
           if (scope === null) {
             return;
           }
-          try {
-            await changeCategory.mutateAsync({
-              todoId: todo.id,
-              input: { categoryId },
-              ...(scope != null && { scope }),
-            });
-            onClose();
-          } catch (error) {
-            reportUnexpectedError(error);
-          }
+          await changeTodoCategory({ categoryId }, scope);
         }}
       />
     </TodoScopeStep>

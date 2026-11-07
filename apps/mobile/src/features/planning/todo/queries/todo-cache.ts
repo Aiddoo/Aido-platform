@@ -224,7 +224,7 @@ export function invalidateFriendTodos(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() });
 }
 
-/** 피드 당겨서 새로고침 때 할 일 목록과 완료 통계를 다시 불러온다. */
+/** 피드의 할 일 목록과 완료 통계를 다시 불러온다. 피드 새로고침과 카테고리 수정이 쓴다. */
 export function invalidateFeedTodos(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),

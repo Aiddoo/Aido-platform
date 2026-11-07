@@ -11,8 +11,12 @@ import {
 
 import { getCalendarPageAtOffset } from '../../utils/calendar-pager.geometry';
 
-export const CALENDAR_TOTAL_PAGES = 521;
-export const CALENDAR_CENTER_PAGE = 260;
+/** 가운데(오늘이 있는 쪽)에서 양쪽으로 둘 쪽 수. 주 보기에서는 약 5년, 월 보기에서는 약 21년이다 */
+const CALENDAR_PAGE_RADIUS = 260;
+export const CALENDAR_TOTAL_PAGES = CALENDAR_PAGE_RADIUS * 2 + 1;
+export const CALENDAR_CENTER_PAGE = CALENDAR_PAGE_RADIUS;
+/** 이 쪽 수 안에서 옮길 때만 넘기는 애니메이션을 쓴다. 더 멀면 중간 쪽을 훑지 않고 바로 간다 */
+const MAX_ANIMATED_PAGE_JUMP = 2;
 const PAGES = range(CALENDAR_TOTAL_PAGES);
 
 interface CalendarPagerProps {
@@ -58,7 +62,7 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
     currentPageRef.current = value;
     flatListRef.current?.scrollToIndex({
       index: value,
-      animated: distance <= 2,
+      animated: distance <= MAX_ANIMATED_PAGE_JUMP,
     });
   }, [value]);
 

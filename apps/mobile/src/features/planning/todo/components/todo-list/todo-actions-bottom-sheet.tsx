@@ -115,6 +115,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
     return null;
   }
 
+  // 저장 중에는 같은 요청이 두 번 가거나 저장 중에 지우거나 고치러 들어가지 않게 모든 행을 잠근다
+  const isBusy =
+    deleteMutation.isPending || updateScheduleMutation.isPending || stopSeriesMutation.isPending;
   const editValues = toTodoScheduleValues(todo, dateFormatContext.timeZone);
   const isTodoToday = isSameDay(editValues.startDate, today, dateFormatContext.timeZone);
 
@@ -183,7 +186,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           icon={<EditIcon width={16} height={16} colorClassName="text-main" />}
           label={t('actions.edit')}
           hasArrow
-          isDisabled={deleteMutation.isPending}
+          isDisabled={isBusy}
           onPress={() =>
             onClose({
               type: 'replace',
@@ -196,7 +199,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           icon={<CalendarIcon width={16} height={16} colorClassName="text-main" />}
           label={t('actions.changeDate')}
           hasArrow
-          isDisabled={deleteMutation.isPending}
+          isDisabled={isBusy}
           onPress={() =>
             onClose({
               type: 'replace',
@@ -209,7 +212,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           icon={<ClockIcon width={16} height={16} colorClassName="text-main" />}
           label={t('actions.changeTime')}
           hasArrow
-          isDisabled={deleteMutation.isPending}
+          isDisabled={isBusy}
           onPress={() =>
             onClose({
               type: 'replace',
@@ -222,7 +225,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           icon={<ListIcon width={16} height={16} colorClassName="text-main" />}
           label={t('actions.changeCategory')}
           hasArrow
-          isDisabled={deleteMutation.isPending}
+          isDisabled={isBusy}
           onPress={() =>
             onClose({
               type: 'replace',
@@ -240,7 +243,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
             )
           }
           label={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
-          isDisabled={deleteMutation.isPending}
+          isDisabled={isBusy}
           onPress={handleScheduleToggle}
         />
 
@@ -248,7 +251,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           <TodoActionRow
             icon={<RepeatIcon width={16} height={16} colorClassName="text-main" />}
             label={t('actions.stopRepeat')}
-            isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}
+            isDisabled={isBusy}
             onPress={handleStopRepeat}
           />
         )}
@@ -257,7 +260,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
           label={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
           isDanger
-          isDisabled={deleteMutation.isPending}
+          isDisabled={isBusy}
           onPress={handleDelete}
         />
       </VStack>

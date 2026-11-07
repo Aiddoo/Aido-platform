@@ -39,7 +39,7 @@ export function PickerHeader({
         {title}
       </Text>
       <Box className="flex-1 items-end">
-        <PressableFeedback onPress={onConfirm} isDisabled={isConfirmDisabled}>
+        <PressableFeedback onPress={onConfirm} isDisabled={isConfirmDisabled} hitSlop={8}>
           <Text
             size="b2"
             weight="medium"

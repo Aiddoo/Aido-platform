@@ -33,20 +33,18 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      {sheet.isOpen && (
-        <QueryErrorBoundary
-          fallback={(fallbackProps) => (
-            <TodoDateBottomSheet.Error
-              {...fallbackProps}
-              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-            />
-          )}
-        >
-          <Suspense fallback={<TodoDateBottomSheet.Loading />}>
-            <TodoDateBottomSheet.DateForm onClose={() => sheet.close()} />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <TodoDateBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
+        <Suspense fallback={<TodoDateBottomSheet.Loading />}>
+          <TodoDateBottomSheet.DateForm onClose={() => sheet.close()} />
+        </Suspense>
+      </QueryErrorBoundary>
     </BottomSheet>
   );
 }

@@ -21,7 +21,7 @@ export function TodoActionRow({
   ...pressableProps
 }: TodoActionRowProps) {
   return (
-    <PressableFeedback {...pressableProps}>
+    <PressableFeedback accessibilityRole="button" {...pressableProps}>
       <ListRow
         horizontalPadding="medium"
         verticalPadding="medium"
