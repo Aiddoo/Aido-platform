@@ -1,7 +1,7 @@
 import { useLogger, useStoreReviewService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { getErrorMessage } from '@src/shared/errors';
-import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
@@ -22,7 +22,7 @@ export function useStoreReviewMoment() {
   const navigation = useNavigation();
   const logger = useLogger();
   const storeReviewService = useStoreReviewService();
-  const { currentLocalDateKey } = useLocalDate();
+  const todayKey = useTodayKey();
   const pendingRequestRef = useRef<AbortController | null>(null);
 
   // 화면이 내려가면 기다리던 요청의 타이머·AppState 구독을 정리한다
@@ -40,11 +40,11 @@ export function useStoreReviewMoment() {
       return;
     }
     try {
-      storeReviewService.recordActiveDay(accountId, currentLocalDateKey);
+      storeReviewService.recordActiveDay(accountId, todayKey);
     } catch (error) {
       logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, { error: getErrorMessage(error) });
     }
-  }, [currentLocalDateKey, logger, queryClient, storeReviewService]);
+  }, [todayKey, logger, queryClient, storeReviewService]);
 
   /** 실패는 안에서 기록하고 삼킨다. 호출부는 기다리지 않아도 된다 */
   const requestReviewAt = useCallback(

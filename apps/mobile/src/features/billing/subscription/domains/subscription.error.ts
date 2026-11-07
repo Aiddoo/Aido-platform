@@ -1,4 +1,4 @@
-import type { CodedError } from '@src/shared/errors';
+import { BusinessError } from '@src/shared/errors/business-error';
 
 export const SubscriptionErrorCode = {
   /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */
@@ -18,13 +18,14 @@ export const SubscriptionErrorCode = {
 export type SubscriptionErrorCode =
   (typeof SubscriptionErrorCode)[keyof typeof SubscriptionErrorCode];
 
-export class SubscriptionError extends Error implements CodedError {
-  override readonly name = 'SubscriptionError';
+export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
+  // Sentry breadcrumb 메시지가 오류 이름을 쓴다
+  override readonly name: string = 'SubscriptionError';
 
   constructor(
-    public readonly code: SubscriptionErrorCode,
+    code: SubscriptionErrorCode,
     /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
-    public readonly storeErrorCode: string | null = null,
+    readonly storeErrorCode: string | null = null,
   ) {
     super(code);
   }

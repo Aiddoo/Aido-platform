@@ -11,11 +11,11 @@ import {
 } from '@src/shared/ui';
 import { useCallback, useState } from 'react';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { type SignUpFormInput, signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { RevealedField } from './revealed-field';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
 const USER_INFO_STEPS = ['name', 'email'] as const;
@@ -61,16 +61,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
     <Box className="flex-1">
       <FormStepLayout title={t(STEP_DESCRIPTION_KEYS[step])}>
         {step === 'email' && (
-          <Animated.View
-            entering={FadeInUp.duration(ANIMATION.duration.slow)
-              .delay(ANIMATION.delay.short)
-              .withCallback((finished) => {
-                'worklet';
-                if (finished) {
-                  scheduleOnRN(focusEmailInput);
-                }
-              })}
-          >
+          <RevealedField onRevealed={focusEmailInput}>
             <Controller
               control={control}
               name="email"
@@ -105,7 +96,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
               )}
             />
             <Spacing size={20} />
-          </Animated.View>
+          </RevealedField>
         )}
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>

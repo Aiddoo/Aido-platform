@@ -7,12 +7,12 @@ import { useCallback, useRef, useState } from 'react';
 import { type FieldError } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
+import { RevealedField } from './revealed-field';
 
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
 type NewPasswordSubStep = (typeof NEW_PASSWORD_SUB_STEPS)[number];
@@ -76,16 +76,7 @@ export function NewPasswordStep({
     <Box className="flex-1">
       <FormStepLayout title={title}>
         {step === 'newPasswordConfirm' && (
-          <Animated.View
-            entering={FadeInUp.duration(ANIMATION.duration.slow)
-              .delay(ANIMATION.delay.short)
-              .withCallback((finished) => {
-                'worklet';
-                if (finished) {
-                  scheduleOnRN(focusConfirmInput);
-                }
-              })}
-          >
+          <RevealedField onRevealed={focusConfirmInput}>
             <VStack mb={8}>
               <PasswordInput
                 ref={newPasswordConfirmInputRef}
@@ -110,7 +101,7 @@ export function NewPasswordStep({
                 }}
               />
             </VStack>
-          </Animated.View>
+          </RevealedField>
         )}
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>

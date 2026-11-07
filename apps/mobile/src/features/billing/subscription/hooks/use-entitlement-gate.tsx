@@ -7,7 +7,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
 import { findLimitedFeature } from '../apis/entitlement.mapper';
@@ -15,7 +15,7 @@ import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/s
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { type EntitlementFeature, type EntitlementSnapshot } from '../schemas/entitlement.schema';
+import { type EntitlementFeature } from '../schemas/entitlement.schema';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import { useFormatRefillSentence } from './use-format-refill-sentence';
@@ -28,11 +28,6 @@ export type EntitlementGateDialogOptions = Partial<
   onSubscribe?: () => void;
 };
 
-interface EntitlementGateCopy {
-  title: string;
-  description: string;
-}
-
 export function useEntitlementGate(
   feature: EntitlementFeature,
   { surface }: { surface: EntitlementGateSurface },
@@ -42,7 +37,9 @@ export function useEntitlementGate(
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
-  const getCopy = useEntitlementGateCopy();
+  const { t } = useTranslation('subscription');
+  const dateFormatContext = useDateFormatContext();
+  const getRefill = useFormatRefillSentence();
 
   return useMemo(() => {
     const open = (
@@ -52,7 +49,74 @@ export function useEntitlementGate(
       { onSubscribe, title, description, alternativeAction }: EntitlementGateDialogOptions = {},
     ) => {
       const latest = getCachedEntitlements(queryClient) ?? snapshot;
-      const copy = getCopy(target, latest);
+      const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
+      const premium = getPremiumBenefitAmounts();
+      const withRefill = (premiumBenefit: string) => {
+        const refill = getRefill(latest, target);
+        return {
+          description: refill == null ? premiumBenefit : `${refill} ${premiumBenefit}`,
+          refill,
+        };
+      };
+      const copy = match(target)
+        .with('AI_PARSE', () => ({
+          title: t('gate.aiParseTitle'),
+          ...withRefill(
+            t('gate.aiParsePremium', {
+              amount: formatAmount(premium.aiParse),
+            }),
+          ),
+        }))
+        .with('VOICE_NOTE', () => ({
+          title: t('gate.voiceNoteTitle'),
+          ...withRefill(
+            t('gate.voiceNotePremium', {
+              amount: formatAmount(premium.voiceNote),
+              minutes: formatAmount(premium.voiceNoteMinutes),
+            }),
+          ),
+        }))
+        .with('NUDGE', () => ({
+          title: t('gate.nudgeTitle'),
+          ...withRefill(t('gate.nudgePremium')),
+        }))
+        .with('CHEER', () => ({
+          title: t('gate.cheerTitle'),
+          ...withRefill(t('gate.cheerPremium')),
+        }))
+        .with('FRIEND', () => ({
+          title: t('gate.friendTitle'),
+          ...withRefill(t('gate.friendPremium')),
+        }))
+        .with('TODO_CATEGORY', () => ({
+          title: t('gate.categoryTitle'),
+          ...withRefill(
+            t('gate.categoryPremium', {
+              amount: formatAmount(premium.category),
+            }),
+          ),
+        }))
+        .with('AI_REPORT', () => ({
+          title: t('gate.aiReportTitle'),
+          description: t('gate.aiReportDescription'),
+          refill: null,
+        }))
+        .with('AI_SUGGESTION', () => ({
+          title: t('gate.aiSuggestionTitle'),
+          description: t('gate.aiSuggestionDescription'),
+          refill: null,
+        }))
+        .with('CUSTOM_REMINDER_TIME', () => ({
+          title: t('gate.reminderTimeTitle'),
+          description: t('gate.reminderTimeDescription'),
+          refill: null,
+        }))
+        .with('APP_ICON', () => ({
+          title: t('gate.appIconTitle'),
+          description: t('gate.appIconDescription'),
+          refill: null,
+        }))
+        .exhaustive();
       const analyticsFeature = getPremiumGateAnalyticsFeature(target);
       const isLimitReached = decision === 'limit-reached';
       if (isLimitReached) {
@@ -125,90 +189,16 @@ export function useEntitlementGate(
         return true;
       },
     };
-  }, [feature, surface, snapshot, overlay, toast, trackEvent, queryClient, getCopy]);
-}
-
-function useEntitlementGateCopy() {
-  const { t } = useTranslation('subscription');
-  const dateFormatContext = useDateFormatContext();
-  const getRefill = useFormatRefillSentence();
-
-  return useCallback(
-    (
-      feature: EntitlementFeature,
-      snapshot: EntitlementSnapshot | undefined,
-    ): EntitlementGateCopy & { refill: string | null } => {
-      const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
-      const premium = getPremiumBenefitAmounts();
-
-      const withRefill = (premiumBenefit: string) => {
-        const refill = getRefill(snapshot, feature);
-        return {
-          description: refill == null ? premiumBenefit : `${refill} ${premiumBenefit}`,
-          refill,
-        };
-      };
-
-      return match(feature)
-        .with('AI_PARSE', () => ({
-          title: t('gate.aiParseTitle'),
-          ...withRefill(
-            t('gate.aiParsePremium', {
-              amount: formatAmount(premium.aiParse),
-            }),
-          ),
-        }))
-        .with('VOICE_NOTE', () => ({
-          title: t('gate.voiceNoteTitle'),
-          ...withRefill(
-            t('gate.voiceNotePremium', {
-              amount: formatAmount(premium.voiceNote),
-              minutes: formatAmount(premium.voiceNoteMinutes),
-            }),
-          ),
-        }))
-        .with('NUDGE', () => ({
-          title: t('gate.nudgeTitle'),
-          ...withRefill(t('gate.nudgePremium')),
-        }))
-        .with('CHEER', () => ({
-          title: t('gate.cheerTitle'),
-          ...withRefill(t('gate.cheerPremium')),
-        }))
-        .with('FRIEND', () => ({
-          title: t('gate.friendTitle'),
-          ...withRefill(t('gate.friendPremium')),
-        }))
-        .with('TODO_CATEGORY', () => ({
-          title: t('gate.categoryTitle'),
-          ...withRefill(
-            t('gate.categoryPremium', {
-              amount: formatAmount(premium.category),
-            }),
-          ),
-        }))
-        .with('AI_REPORT', () => ({
-          title: t('gate.aiReportTitle'),
-          description: t('gate.aiReportDescription'),
-          refill: null,
-        }))
-        .with('AI_SUGGESTION', () => ({
-          title: t('gate.aiSuggestionTitle'),
-          description: t('gate.aiSuggestionDescription'),
-          refill: null,
-        }))
-        .with('CUSTOM_REMINDER_TIME', () => ({
-          title: t('gate.reminderTimeTitle'),
-          description: t('gate.reminderTimeDescription'),
-          refill: null,
-        }))
-        .with('APP_ICON', () => ({
-          title: t('gate.appIconTitle'),
-          description: t('gate.appIconDescription'),
-          refill: null,
-        }))
-        .exhaustive();
-    },
-    [t, dateFormatContext, getRefill],
-  );
+  }, [
+    feature,
+    surface,
+    snapshot,
+    overlay,
+    toast,
+    trackEvent,
+    queryClient,
+    t,
+    dateFormatContext,
+    getRefill,
+  ]);
 }

@@ -2,19 +2,22 @@ import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-not
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Steps } from '@src/shared/ui';
+import { useMemo } from 'react';
 import { View } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { match } from 'ts-pattern';
 
 import { VOICE_NOTE_MEDIA, VOICE_TODO_MEDIA } from '../constants/release-1-15-0-media';
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
-import { useStepFling } from '../hooks/use-step-fling';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import { WhatsNewStep } from './whats-new-step';
 
 const STEP_COUNT = 2;
+
+/** 왼쪽 끝은 iOS 스와이프 뒤로 가기 자리라 밀어 넘기기에서 뺀다 */
+const SCREEN_EDGE_INSET = 24;
 
 type Release1150StepMap = {
   voiceTodo: object;
@@ -39,7 +42,19 @@ export function Release1150Steps() {
       .with('voiceNote', () => undefined)
       .exhaustive();
   };
-  const fling = useStepFling({ onNext: goNext, onBack: stepper.history.back });
+  // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다
+  const fling = useMemo(
+    () =>
+      Gesture.Race(
+        Gesture.Fling().direction(Directions.LEFT).runOnJS(true).onEnd(goNext),
+        Gesture.Fling()
+          .direction(Directions.RIGHT)
+          .hitSlop({ left: -SCREEN_EDGE_INSET })
+          .runOnJS(true)
+          .onEnd(stepper.history.back),
+      ),
+    [goNext, stepper.history.back],
+  );
 
   return (
     <>
