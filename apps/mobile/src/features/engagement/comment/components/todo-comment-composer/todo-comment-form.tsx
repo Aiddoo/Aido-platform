@@ -32,7 +32,7 @@ import {
   type PreparedTodoCommentSubmission,
   TodoCommentComposerPolicy,
 } from '../../domains/todo-comment-composer.model';
-import { getTodoCommentErrorStatus } from '../../domains/todo-comment.error';
+import { getTodoCommentErrorStatus, isTodoCommentRejected } from '../../domains/todo-comment.error';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
 import {
   useCreateTodoCommentChainMutationOptions,
@@ -50,7 +50,11 @@ import {
   createTodoCommentDraftKey,
   getTodoCommentDraftSourceUpdatedAt,
 } from '../../utils/todo-comment-draft';
-import { getFocusedCommentFieldIndexAfterRemoval } from '../../utils/todo-comment-form-fields';
+import {
+  getFocusedCommentFieldIndexAfterRemoval,
+  getTrimmedContents,
+  isComposerBlank,
+} from '../../utils/todo-comment-form-fields';
 import { getCommentFormMaxHeight } from '../../utils/todo-comment-form-layout';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { useExpandThread } from '../todo-comment-expansion';
@@ -115,7 +119,8 @@ export function TodoCommentForm({
 
   useEffect(() => {
     const subscription = KeyboardEvents.addListener('keyboardDidHide', () => {
-      if (TodoCommentComposerPolicy.shouldCloseOnKeyboardHide(getValues())) {
+      const { mode: currentMode, items } = getValues();
+      if (currentMode.type !== 'new' && isComposerBlank({ items })) {
         reset(NEW_TODO_COMMENT_FORM_VALUES);
       }
     });
@@ -218,7 +223,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   };
 
   return handleSubmit(async ({ mode, items }) => {
-    const contents = TodoCommentComposerPolicy.getTrimmedContents(items);
+    const contents = getTrimmedContents(items);
     if (contents == null) {
       return;
     }
@@ -252,7 +257,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
         .exhaustive();
       finish(mode);
     } catch (error) {
-      if (TodoCommentComposerPolicy.needsNewSubmissionAfterFailure(error)) {
+      if (isTodoCommentRejected(error)) {
         preparedSubmissionRef.current = null;
       }
       logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {

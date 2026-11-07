@@ -4,15 +4,8 @@ import { match } from 'ts-pattern';
 import type {
   TodoCommentChainInput,
   TodoCommentComposerMode,
-  TodoCommentFormValues,
 } from '../schemas/todo-comment-form.schema';
 import type { TodoComment } from '../schemas/todo-comment.schema';
-import { isTodoCommentRejected } from './todo-comment.error';
-
-/** 답글·수정을 쓰지 않은 채 키보드를 내리면(바깥 탭·뒤로가기) 작성기도 함께 닫는다. 쓴 글이 있으면 남긴다 */
-function shouldCloseOnKeyboardHide({ mode, items }: TodoCommentFormValues) {
-  return mode.type !== 'new' && items.every((item) => item.content.trim().length === 0);
-}
 
 function canChain(mode: TodoCommentComposerMode, itemCount: number) {
   return mode.type !== 'edit' && itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE;
@@ -68,43 +61,15 @@ function prepareSubmission({
   };
 }
 
-function getTrimmedContents(items: TodoCommentFormValues['items']): [string, ...string[]] | null {
-  const [first, ...rest] = items.map((item) => item.content.trim());
-  return first == null ? null : [first, ...rest];
-}
-
 /** 글자가 그대로면 서버에 보낼 것이 없다. 보낼 글은 앞뒤 공백을 지운 값이다 */
 function isSameAsOriginal(target: Pick<TodoComment, 'content'>, trimmedContent: string) {
   return target.content === trimmedContent;
 }
 
-type TodoCommentBackAction = 'blocked' | 'closeComposer' | 'native';
-
-/** 작성기가 열려 있으면 먼저 닫고, 아니면 화면을 닫는다. 보내는 중에는 초안을 지키려고 막는다 */
-function getBackAction(
-  mode: TodoCommentComposerMode,
-  isSubmitting: boolean,
-): TodoCommentBackAction {
-  return match({ type: mode.type, isSubmitting })
-    .returnType<TodoCommentBackAction>()
-    .with({ isSubmitting: true }, () => 'blocked')
-    .with({ type: 'new' }, () => 'native')
-    .otherwise(() => 'closeComposer');
-}
-
-/** 4xx는 같은 글을 다시 보내도 같은 결과라 새 멱등 키로 다시 보낼 수 있게 한다. 나머지는 같은 키로 재시도한다 */
-function needsNewSubmissionAfterFailure(error: unknown) {
-  return isTodoCommentRejected(error);
-}
-
 export const TodoCommentComposerPolicy = {
-  getBackAction,
   canChain,
   isSameAsOriginal,
-  shouldCloseOnKeyboardHide,
   getComposerTarget,
   getReplyParentId,
   prepareSubmission,
-  needsNewSubmissionAfterFailure,
-  getTrimmedContents,
 } as const;
