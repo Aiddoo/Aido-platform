@@ -1,11 +1,13 @@
 import type { CustomerInfo } from '../schemas/customer-info.schema';
 import { CustomerInfoPolicy } from './customer-info.model';
 
-const createCustomerInfo = (
+function createCustomerInfo(
   activeEntitlements: CustomerInfo['activeEntitlements'] = [],
-): CustomerInfo => ({ activeEntitlements });
+): CustomerInfo {
+  return { activeEntitlements };
+}
 
-describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
+describe('hasStoreEntitlement', () => {
   it('스토어에서 결제한 엔타이틀먼트가 있으면 true를 반환한다', () => {
     // Given
     const customerInfo = createCustomerInfo([
@@ -33,16 +35,19 @@ describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
   });
 
   it('활성 엔타이틀먼트가 없으면 false를 반환한다', () => {
+    // Given
+    const customerInfo = createCustomerInfo();
+
     // When
-    const result = CustomerInfoPolicy.hasStoreEntitlement(createCustomerInfo());
+    const result = CustomerInfoPolicy.hasStoreEntitlement(customerInfo);
 
     // Then
     expect(result).toBe(false);
   });
 });
 
-describe('CustomerInfoPolicy.findStoreProductId', () => {
-  it('그 스토어에서 결제한 활성 구독의 상품 id를 찾고, 없으면 null이다', () => {
+describe('findStoreProductId', () => {
+  it('그 스토어에서 결제한 활성 구독의 상품 id를 반환한다', () => {
     // Given
     const customerInfo = createCustomerInfo([
       { store: 'PROMOTIONAL', productIdentifier: 'rc_promo_premium' },
@@ -50,12 +55,22 @@ describe('CustomerInfoPolicy.findStoreProductId', () => {
     ]);
 
     // When
-    const productIds = [
-      CustomerInfoPolicy.findStoreProductId(customerInfo, 'PLAY_STORE'),
-      CustomerInfoPolicy.findStoreProductId(customerInfo, 'APP_STORE'),
-    ];
+    const productId = CustomerInfoPolicy.findStoreProductId(customerInfo, 'PLAY_STORE');
 
     // Then
-    expect(productIds).toEqual(['premium_monthly', null]);
+    expect(productId).toBe('premium_monthly');
+  });
+
+  it('다른 스토어에서 결제한 구독뿐이면 null을 반환한다', () => {
+    // Given
+    const customerInfo = createCustomerInfo([
+      { store: 'PLAY_STORE', productIdentifier: 'premium_monthly' },
+    ]);
+
+    // When
+    const productId = CustomerInfoPolicy.findStoreProductId(customerInfo, 'APP_STORE');
+
+    // Then
+    expect(productId).toBeNull();
   });
 });

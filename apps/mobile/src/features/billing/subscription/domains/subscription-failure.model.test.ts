@@ -3,7 +3,7 @@ import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@
 import { SubscriptionFailurePolicy } from './subscription-failure.model';
 import { SubscriptionErrors } from './subscription.error';
 
-describe('SubscriptionFailurePolicy.getFailureCause', () => {
+describe('getFailureCause', () => {
   it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getFailureCause>]>([
     ['기기 연결이 끊겨 내 정보를 받지 못하면', new NetworkError(), 'network'],
     ['내 정보 요청이 시간 초과되면', new TimeoutError(), 'network'],
@@ -20,11 +20,15 @@ describe('SubscriptionFailurePolicy.getFailureCause', () => {
     ['결제가 실패하면', SubscriptionErrors.purchaseFailed('2'), 'purchaseFailed'],
     ['복원이 실패하면', SubscriptionErrors.restoreFailed('7'), 'restoreFailed'],
   ])('%s 원인은 %s다', (_case, error, expected) => {
-    expect(SubscriptionFailurePolicy.getFailureCause(error)).toBe(expected);
+    // When
+    const cause = SubscriptionFailurePolicy.getFailureCause(error);
+
+    // Then
+    expect(cause).toBe(expected);
   });
 });
 
-describe('SubscriptionFailurePolicy.getStoreUnavailableKind', () => {
+describe('getStoreUnavailableKind', () => {
   it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getStoreUnavailableKind>]>([
     ['SDK가 초기화되지 않았으면 설정 문제로 본다', SubscriptionErrors.storeUnavailable(), 'setup'],
     ['스토어 설정 오류면 설정 문제로 본다', SubscriptionErrors.storeUnavailable('23'), 'setup'],
@@ -42,9 +46,9 @@ describe('SubscriptionFailurePolicy.getStoreUnavailableKind', () => {
     ['서버 오류는 스토어 상태가 아니다', new ServerError(503), null],
   ])('%s', (_case, error, expected) => {
     // When
-    const result = SubscriptionFailurePolicy.getStoreUnavailableKind(error);
+    const kind = SubscriptionFailurePolicy.getStoreUnavailableKind(error);
 
     // Then
-    expect(result).toBe(expected);
+    expect(kind).toBe(expected);
   });
 });

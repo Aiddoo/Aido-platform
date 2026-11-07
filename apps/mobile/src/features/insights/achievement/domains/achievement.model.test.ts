@@ -1,6 +1,6 @@
 import { AchievementPolicy } from './achievement.model';
 
-describe('AchievementPolicy.getBadgeType', () => {
+describe('getBadgeType', () => {
   it('완료율 100%는 빈틈없는 한 주 배지다', () => {
     // Given
     const achievement = { completionRate: 100 };
