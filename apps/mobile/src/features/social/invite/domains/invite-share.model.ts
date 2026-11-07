@@ -11,15 +11,24 @@ export interface InviteShareResult {
   outcome: InviteShareOutcome;
 }
 
+/** 호출부가 사용자 언어로 만들어 넘기는 공유 문구 */
+export interface InviteShareCopy {
+  kakaoTitle: string;
+  kakaoDescription: string;
+  kakaoButton: string;
+  message: string;
+  dialogTitle: string;
+}
+
 export interface InviteShareContent {
   inviteCode: InviteCode;
   link: string;
-  inviterName: string;
+  copy: InviteShareCopy;
 }
 
 export function createInviteShareContent(
   myInvite: Invite,
-  inviterName: string,
+  copy: InviteShareCopy,
 ): InviteShareContent {
-  return { inviteCode: myInvite.code, link: myInvite.link, inviterName };
+  return { inviteCode: myInvite.code, link: myInvite.link, copy };
 }

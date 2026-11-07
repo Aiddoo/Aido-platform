@@ -5,7 +5,17 @@ import type { SystemShareGateway } from '@src/core/ports/system-share';
 
 import { InviteShareService } from './invite-share.service';
 
-const content = { inviteCode: 'K7M2QX', link: 'https://aido.kr/i/K7M2QX', inviterName: '민지' };
+const content = {
+  inviteCode: 'K7M2QX',
+  link: 'https://aido.kr/i/K7M2QX',
+  copy: {
+    kakaoTitle: '민지님이 초대했어요',
+    kakaoDescription: '가입하면 프리미엄 7일',
+    kakaoButton: '받으러 가기',
+    message: '프리미엄 7일을 받아요',
+    dialogTitle: '초대 링크 공유',
+  },
+};
 
 function createService({
   isKakaoAvailable = true,

@@ -2,10 +2,8 @@ import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { SocialShareGateway } from '@src/core/ports/social-share';
 import type { SystemShareGateway } from '@src/core/ports/system-share';
-import { t } from '@src/shared/i18n';
 
 import { INVITE_SHARE_IMAGE } from '../constants/invite-share';
-import { InviteRewardPolicy } from '../domains/invite-reward.model';
 import type { InviteShareContent, InviteShareResult } from '../domains/invite-share.model';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
@@ -57,15 +55,13 @@ export class InviteShareService {
 
     try {
       await this.#socialShare.shareFeed({
-        title: t('invite:share.kakaoTitle', { name: content.inviterName }),
-        description: t('invite:share.kakaoDescription', {
-          days: InviteRewardPolicy.getWelcomePremiumDays(),
-        }),
+        title: content.copy.kakaoTitle,
+        description: content.copy.kakaoDescription,
         imageUrl: INVITE_SHARE_IMAGE.url,
         imageWidth: INVITE_SHARE_IMAGE.width,
         imageHeight: INVITE_SHARE_IMAGE.height,
         webUrl: content.link,
-        buttonTitle: t('invite:share.kakaoButton'),
+        buttonTitle: content.copy.kakaoButton,
         executionParams: { inviteCode: content.inviteCode },
       });
       return { channel: 'kakao', outcome: 'shared' };
@@ -84,9 +80,9 @@ export class InviteShareService {
   async #shareToSystem(content: InviteShareContent): Promise<InviteShareResult> {
     try {
       const isShared = await this.#systemShare.share({
-        message: t('invite:share.message', { count: InviteRewardPolicy.getWelcomePremiumDays() }),
+        message: content.copy.message,
         url: content.link,
-        dialogTitle: t('invite:share.dialogTitle'),
+        dialogTitle: content.copy.dialogTitle,
       });
       return { channel: 'system', outcome: isShared ? 'shared' : 'dismissed' };
     } catch {

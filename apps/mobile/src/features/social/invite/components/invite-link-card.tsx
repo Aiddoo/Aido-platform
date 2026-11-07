@@ -21,6 +21,7 @@ import { createInviteShareContent } from '../domains/invite-share.model';
 import { useRotateInviteCodeMutationOptions } from '../queries/invite.mutations';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import { getInviteShareCopy } from '../utils/invite-share-copy';
 
 /** 내 초대 코드와 링크. 코드는 길게 눌러 고를 수 있고 복사 버튼으로 링크를 복사한다 */
 export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VStack>) {
@@ -77,7 +78,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
           onPress={() =>
             share.mutate({
               channel: 'copy_link',
-              content: createInviteShareContent(myInvite, me.name),
+              content: createInviteShareContent(myInvite, getInviteShareCopy(me.name)),
             })
           }
         >

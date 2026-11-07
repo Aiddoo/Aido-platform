@@ -13,6 +13,7 @@ import { InvitedFriendPolicy } from '@src/features/social/invite/domains/invited
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useShareInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/invite.queries';
+import { getInviteShareCopy } from '@src/features/social/invite/utils/invite-share-copy';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -120,7 +121,10 @@ function InviteShareToolbar() {
             return;
           }
 
-          share.mutate({ channel: 'system', content: createInviteShareContent(myInvite, me.name) });
+          share.mutate({
+            channel: 'system',
+            content: createInviteShareContent(myInvite, getInviteShareCopy(me.name)),
+          });
         }}
       />
     </Stack.Toolbar>
