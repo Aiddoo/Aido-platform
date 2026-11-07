@@ -398,10 +398,6 @@ export function useVoiceCaptureSession({
       if (isUnmountedRef.current || getStatus() !== 'preparing') {
         return false;
       }
-      if (!capabilities.isAvailable) {
-        handleError('service-not-allowed');
-        return false;
-      }
       const isOnDevice = capabilities.canRecognizeOnDevice;
       startOptionsRef.current = {
         locale,
@@ -410,6 +406,10 @@ export function useVoiceCaptureSession({
         isOnDevice,
         recordingDirectory,
       };
+      if (!capabilities.isAvailable) {
+        handleError('service-not-allowed');
+        return false;
+      }
       startAfterRecognizerEnds();
       haptics.impact('light');
       telemetry.started(locale, isOnDevice);
@@ -425,8 +425,11 @@ export function useVoiceCaptureSession({
   };
 
   const resume = () => {
+    if (startOptionsRef.current == null) {
+      return;
+    }
     const { previous, next } = dispatch({ type: 'resume' });
-    if (previous === next || startOptionsRef.current == null) {
+    if (previous === next) {
       return;
     }
     startAfterRecognizerEnds();

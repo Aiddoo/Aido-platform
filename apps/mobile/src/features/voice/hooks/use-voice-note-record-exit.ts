@@ -2,8 +2,8 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useTranslation } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
-import { router } from 'expo-router';
-import { useEffect, useEffectEvent } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffectEvent } from 'react';
 import { BackHandler } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -79,10 +79,13 @@ export function useVoiceNoteRecordExit({
     requestClose();
     return true;
   });
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', closeOnBackPress);
-    return () => subscription.remove();
-  }, []);
+  // 구독 화면처럼 위에 쌓인 화면에서 이 화면이 뒤로 가기를 먼저 받지 않도록 포커스와 묶는다
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', closeOnBackPress);
+      return () => subscription.remove();
+    }, []),
+  );
 
   return { requestClose, requestFinish };
 }

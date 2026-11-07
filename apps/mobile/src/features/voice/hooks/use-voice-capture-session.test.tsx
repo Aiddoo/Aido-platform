@@ -1256,6 +1256,34 @@ describe('useVoiceCaptureSession', () => {
       expect(speechRecognizer.start).not.toHaveBeenCalled();
     });
 
+    it('인식을 쓸 수 없어 실패한 뒤 다시 시도하면 준비 화면에 갇히지 않고 인식기를 다시 시작한다', async () => {
+      // Given
+      const speechRecognizer = createSpeechRecognizerStub();
+      speechRecognizer.getCapabilities.mockResolvedValue({
+        isAvailable: false,
+        canRecognizeOnDevice: false,
+        canDownloadOnDeviceModel: false,
+        canSaveRecording: false,
+        canContinue: false,
+      });
+      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
+        di: {
+          speechRecognizer,
+          analytics: createAnalyticsStub(),
+          logger,
+          errorReporter: createErrorReporterStub(),
+        },
+      });
+      await fireEvent.press(screen.getByTestId('begin'));
+      await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
+
+      // When
+      await fireEvent.press(screen.getByTestId('resume'));
+
+      // Then
+      await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+    });
+
     it('멈춘 인식기를 다시 열면 이벤트와 breadcrumb으로 남긴다', async () => {
       // Given
       jest.useFakeTimers({ advanceTimers: true });
