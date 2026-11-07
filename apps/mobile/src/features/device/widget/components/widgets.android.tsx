@@ -28,6 +28,15 @@ const PAW_PATH =
   'M19.3629 7.76445C19.1461 7.24922 18.7859 6.87773 18.3211 6.69062L18.3148 6.68828C18.1033 6.60545 17.878 6.56305 17.6508 6.56328H17.6258C16.5617 6.5793 15.4754 7.48359 14.923 8.81367C14.518 9.78633 14.4715 10.8324 14.7988 11.6121C15.0152 12.1277 15.3762 12.4992 15.843 12.6863L15.848 12.6883C16.0596 12.7711 16.2849 12.8135 16.5121 12.8133C17.5863 12.8133 18.684 11.909 19.2465 10.5613C19.6465 9.58984 19.6906 8.54453 19.3629 7.76445ZM15.1113 13.5012C14.4977 13.1324 13.9176 12.7836 13.5387 12.157C12.4934 10.4227 11.8621 9.37578 10.207 9.37578C8.55195 9.37578 7.91914 10.4227 6.87148 12.157C6.4918 12.7844 5.91055 13.1336 5.29492 13.5039C4.58906 13.9281 3.85977 14.3664 3.54492 15.2289C3.4225 15.5398 3.36084 15.8713 3.36328 16.2055C3.36328 17.6098 4.45703 18.7523 5.80078 18.7523C6.49414 18.7523 7.23203 18.5121 8.01289 18.2578C8.76367 18.0133 9.53984 17.7605 10.2109 17.7605C10.882 17.7605 11.6562 18.0133 12.4043 18.2578C13.1836 18.5105 13.918 18.7508 14.6133 18.7508C15.9551 18.7508 17.0469 17.6082 17.0469 16.2039C17.048 15.8695 16.985 15.538 16.8613 15.2273C16.5465 14.3641 15.8168 13.9254 15.1113 13.5012ZM6.06641 8.00273C6.53125 8.58594 7.12109 8.90703 7.72734 8.90703C7.81011 8.90701 7.89275 8.90088 7.97461 8.88867C9.23906 8.70273 10.027 7.15977 9.76836 5.37305C9.66016 4.62188 9.37109 3.92227 8.95703 3.40352C8.49297 2.82148 7.90234 2.50078 7.29648 2.50078C7.21372 2.5008 7.13108 2.50694 7.04922 2.51914C5.78477 2.70508 4.99688 4.24805 5.25547 6.03477C5.36328 6.78477 5.65234 7.48359 6.06641 8.00273ZM12.4398 8.88867C12.5217 8.90088 12.6043 8.90701 12.6871 8.90703C13.2937 8.90703 13.8832 8.58594 14.348 8.00273C14.7617 7.48359 15.0492 6.78477 15.1586 6.03398C15.4172 4.24805 14.6293 2.70508 13.3648 2.51836C13.283 2.50616 13.2003 2.50002 13.1176 2.5C12.5117 2.50078 11.9211 2.82148 11.457 3.40352C11.043 3.92227 10.7539 4.62188 10.6461 5.37383C10.3875 7.15977 11.1754 8.70273 12.4398 8.88867ZM4.56602 12.6883L4.57148 12.6863C5.0375 12.4992 5.39805 12.1281 5.61406 11.6129C5.94141 10.8316 5.89531 9.78672 5.49102 8.81406C4.93125 7.46797 3.83398 6.56328 2.76094 6.56328C2.53371 6.56295 2.30844 6.60536 2.09688 6.68828L2.09141 6.69023C1.62656 6.87578 1.26602 7.24844 1.05 7.76367C0.722657 8.54492 0.768751 9.58984 1.17305 10.5625C1.73281 11.9086 2.83008 12.8133 3.90313 12.8133C4.12996 12.8135 4.35482 12.7711 4.56602 12.6883Z';
 const BRAND = WIDGET_BRAND_COLOR;
 
+/** 위젯 크기를 모를 때와 배율을 잴 때 기준이 되는 디자인 크기(dp) */
+const SMALL_WIDTH = 160;
+const WIDE_WIDTH = 340;
+const LARGE_HEIGHT = 380;
+const BASE_HEIGHT = 160;
+/** 중간·큰 위젯이 보이는 할 일 줄 수. maxRows는 크기를 가르는 값이라 줄 수와 따로 둔다 */
+const MEDIUM_ROW_COUNT = 2;
+const LARGE_ROW_COUNT = 4;
+
 type Palette = {
   background: ColorProp;
   foreground: ColorProp;
@@ -46,14 +55,12 @@ type Layout = {
   cardHeight: number;
   padding: number;
   contentWidth: number;
-  isSmall: boolean;
   isLarge: boolean;
 };
 
-function navigation(
+function toClickAction(
   layout: Layout,
-  destination?: string,
-  accessibilityLabel?: string,
+  { destination, label }: { destination?: string; label?: string },
 ): ClickActionProps {
   return {
     clickAction: ANDROID_WIDGET_NAVIGATION_ACTION,
@@ -61,7 +68,7 @@ function navigation(
       uri: destination ?? layout.props.openAppUrl ?? 'aido://feed?date=today',
       userId: layout.userId,
     },
-    accessibilityLabel,
+    accessibilityLabel: label,
   };
 }
 
@@ -170,7 +177,7 @@ function TodoRow({ layout, todo }: { layout: Layout; todo: WidgetProps['topTodos
   const color = isHexColor(todo.color) ? todo.color : BRAND;
   return (
     <FlexWidget
-      {...navigation(layout, todo.destination, todo.title)}
+      {...toClickAction(layout, { destination: todo.destination, label: todo.title })}
       style={{
         width: 'match_parent',
         height: (layout.isLarge ? 27 : 30) * scale,
@@ -212,7 +219,7 @@ function CreateButton({ layout }: { layout: Layout }) {
   const label = layout.props.addTodoLabel ?? layout.props.stateCta;
   return (
     <FlexWidget
-      {...navigation(layout, layout.props.addTodoUrl, label)}
+      {...toClickAction(layout, { destination: layout.props.addTodoUrl, label })}
       style={{
         backgroundColor: layout.palette.brandSurface,
         borderRadius: 9 * layout.scale,
@@ -237,7 +244,10 @@ function WeekDay({
   const { scale, palette } = layout;
   return (
     <FlexWidget
-      {...navigation(layout, day.destination, `${day.weekdayLabel} ${day.dayLabel}`)}
+      {...toClickAction(layout, {
+        destination: day.destination,
+        label: `${day.weekdayLabel} ${day.dayLabel}`,
+      })}
       style={{ width: layout.contentWidth / 7, alignItems: 'center', flexGap: 4 * scale }}
     >
       <Label
@@ -304,11 +314,10 @@ function Surface({
       }}
     >
       <FlexWidget
-        {...navigation(
-          layout,
-          undefined,
-          layout.props.state === 'data' ? layout.props.progressTitle : layout.props.stateTitle,
-        )}
+        {...toClickAction(layout, {
+          label:
+            layout.props.state === 'data' ? layout.props.progressTitle : layout.props.stateTitle,
+        })}
         style={{
           width: layout.width,
           height: layout.cardHeight,
@@ -450,7 +459,7 @@ function MediumSurface({ layout }: { layout: Layout }) {
           />
         ) : (
           props.topTodos
-            .slice(0, 2)
+            .slice(0, MEDIUM_ROW_COUNT)
             .map((todo, index) => <TodoRow key={todo.id ?? index} layout={layout} todo={todo} />)
         )}
         <FlexWidget style={{ flexDirection: 'row' }}>
@@ -463,7 +472,7 @@ function MediumSurface({ layout }: { layout: Layout }) {
 
 function LargeSurface({ layout }: { layout: Layout }) {
   const { props, palette, scale, contentWidth } = layout;
-  const visibleTodos = props.topTodos.slice(0, 4);
+  const visibleTodos = props.topTodos.slice(0, LARGE_ROW_COUNT);
   const hiddenTodoCount = Math.max(0, props.totalTodos - visibleTodos.length);
   return (
     <Surface layout={layout} style={{ flexGap: 8 * scale }}>
@@ -563,6 +572,22 @@ function LargeSurface({ layout }: { layout: Layout }) {
   );
 }
 
+const LIGHT_PALETTE: Palette = {
+  background: '#FFFFFF',
+  foreground: '#333333',
+  muted: '#8F8F8F',
+  track: '#EBEBEB',
+  brandSurface: '#FFF0EB',
+};
+
+const DARK_PALETTE: Palette = {
+  background: '#171310',
+  foreground: '#F5F5F5',
+  muted: '#B7B7B7',
+  track: '#333333',
+  brandSurface: '#3E2118',
+};
+
 export function renderAndroidWidget(
   props: WidgetProps,
   widgetInfo: WidgetInfo,
@@ -572,14 +597,18 @@ export function renderAndroidWidget(
   const isLarge = props.maxRows > 3;
   const resolveDimension = (value: number, fallback: number) =>
     Number.isFinite(value) && value > 0 ? value : fallback;
-  const width = resolveDimension(widgetInfo.width, isSmall ? 160 : 340);
-  const height = resolveDimension(widgetInfo.height, isLarge ? 380 : 160);
+  const width = resolveDimension(widgetInfo.width, isSmall ? SMALL_WIDTH : WIDE_WIDTH);
+  const height = resolveDimension(widgetInfo.height, isLarge ? LARGE_HEIGHT : BASE_HEIGHT);
   const aspectRatio = match({ isSmall, isLarge })
     .with({ isSmall: true }, () => 1)
     .with({ isLarge: true }, () => 0.97)
     .otherwise(() => 2.05);
   const cardHeight = Math.min(height, width / aspectRatio);
-  const scale = Math.min(1, width / (isSmall ? 160 : 340), cardHeight / (isLarge ? 380 : 160));
+  const scale = Math.min(
+    1,
+    width / (isSmall ? SMALL_WIDTH : WIDE_WIDTH),
+    cardHeight / (isLarge ? LARGE_HEIGHT : BASE_HEIGHT),
+  );
   // Include WidgetKit's content margins so all three cards keep the same visual spacing.
   const padding = (isSmall ? 28 : 32) * scale;
   const base = {
@@ -591,20 +620,10 @@ export function renderAndroidWidget(
     scale,
     padding,
     contentWidth: width - padding * 2,
-    isSmall,
     isLarge,
   };
-  const render = (dark: boolean) => {
-    const layout: Layout = {
-      ...base,
-      palette: {
-        background: dark ? '#171310' : '#FFFFFF',
-        foreground: dark ? '#F5F5F5' : '#333333',
-        muted: dark ? '#B7B7B7' : '#8F8F8F',
-        track: dark ? '#333333' : '#EBEBEB',
-        brandSurface: dark ? '#3E2118' : '#FFF0EB',
-      },
-    };
+  const render = (palette: Palette) => {
+    const layout: Layout = { ...base, palette };
     if (
       props.state === 'loggedOut' ||
       props.state === 'stale' ||
@@ -617,12 +636,12 @@ export function renderAndroidWidget(
     }
     return isLarge ? <LargeSurface layout={layout} /> : <MediumSurface layout={layout} />;
   };
-  const collection = (dark: boolean) => (
+  const collection = (palette: Palette) => (
     <FlexWidget style={{ width: 'match_parent', height: 'match_parent' }}>
       <ListWidget style={{ width: 'match_parent', height: 'match_parent' }}>
-        {render(dark)}
+        {render(palette)}
       </ListWidget>
     </FlexWidget>
   );
-  return { light: collection(false), dark: collection(true) };
+  return { light: collection(LIGHT_PALETTE), dark: collection(DARK_PALETTE) };
 }

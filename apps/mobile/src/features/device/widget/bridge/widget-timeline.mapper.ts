@@ -2,10 +2,10 @@ import { toDateKey } from '@src/shared/date/instant';
 import { getNextLocalMidnight } from '@src/shared/date/local-date-clock';
 import type { WidgetTimelineEntry } from 'expo-widgets';
 
+import { toWidgetProps } from '../apis/widget-props.mapper';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 import { type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
-import { toWidgetProps } from './widget-props.mapper';
 
 interface WidgetTimelineContext {
   now: Date;

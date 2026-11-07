@@ -84,6 +84,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             font({ size: 14, weight: 'semibold', design: 'rounded' }),
             foregroundColor(palette.foreground),
           ]}
+          // 첫 동기화 전에는 문구가 번들 Localizable.strings의 키라 markdown으로 시스템 언어 문구를 얻는다
           markdownEnabled={props.localizeStateCopy}
         >
           {props.stateTitle}
