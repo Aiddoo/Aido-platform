@@ -133,7 +133,7 @@ describe('useAiDataSharingConsentGate', () => {
       fireEvent.press(screen.getByText('듣기 전 확인'));
 
       // Then
-      await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
     });
 
     test('동의 상태가 캐시에 없으면 AI 시작도 막지 않고 서버 판단에 맡긴다', async () => {
@@ -145,7 +145,7 @@ describe('useAiDataSharingConsentGate', () => {
       fireEvent.press(screen.getByText('시작'));
 
       // Then
-      await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
     });
 
     test('캐시에 동의가 있으면 내 정보를 기다리지 않고 이어 간다', async () => {
@@ -157,7 +157,7 @@ describe('useAiDataSharingConsentGate', () => {
       fireEvent.press(screen.getByText('듣기 전 확인'));
 
       // Then
-      await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
     });
 
     test('캐시가 미응답이면 안내를 띄우고 동의 저장은 멈춰 있지 않고 바로 실패해 시트를 그대로 둔다', async () => {
@@ -192,7 +192,7 @@ describe('useAiDataSharingConsentGate', () => {
     const { authHttp } = await renderGate({});
     fireEvent.press(screen.getByText('듣기 전 확인'));
     fireEvent.press(await screen.findByTestId('ai-consent-later'));
-    await screen.findByText(JSON.stringify({ isAgreed: false, wasAsked: true }));
+    await screen.findByText(JSON.stringify({ hasAgreed: false, wasAsked: true }));
     await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
 
     // When
@@ -216,7 +216,7 @@ describe('useAiDataSharingConsentGate', () => {
     fireEvent.press(screen.getByTestId('ai-consent-later'));
 
     // Then
-    await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: true }));
+    await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: true }));
     expect(authHttp.patch).not.toHaveBeenCalled();
   });
 
@@ -229,13 +229,13 @@ describe('useAiDataSharingConsentGate', () => {
     fireEvent.press(screen.getByText('시작'));
     await screen.findByText(RENEWAL_NOTICE);
     fireEvent.press(screen.getByTestId('ai-consent-later'));
-    await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: true }));
+    await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: true }));
 
     // When
     fireEvent.press(screen.getByText('시작'));
 
     // Then
-    await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
   });
 
   test('내 정보를 아직 못 받았으면 받을 때까지 기다린 뒤 재안내를 보여 준다', async () => {
@@ -266,7 +266,7 @@ describe('useAiDataSharingConsentGate', () => {
     fireEvent.press(screen.getByText('듣기 전 확인'));
 
     // Then
-    await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
     expect(screen.queryByText(RENEWAL_NOTICE)).toBeNull();
   });
 
@@ -281,7 +281,7 @@ describe('useAiDataSharingConsentGate', () => {
     fireEvent.press(screen.getByText('시작'));
 
     // Then
-    await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
     await waitFor(() => expect(screen.queryByText(RENEWAL_NOTICE)).toBeNull());
   });
 });

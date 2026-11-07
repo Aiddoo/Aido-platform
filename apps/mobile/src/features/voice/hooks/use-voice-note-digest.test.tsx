@@ -56,7 +56,7 @@ function DigestProbe() {
       <Pressable testID="digest" onPress={() => digest()} />
       <Text testID="pending">{String(isPending)}</Text>
       <Text testID="failure">
-        {failure == null ? 'none' : `${failure.cause}:${failure.isNotCharged}`}
+        {failure == null ? 'none' : `${failure.cause}:${failure.isFreeOfCharge}`}
       </Text>
     </>
   );

@@ -22,7 +22,7 @@ const PLAN_ROW_COUNT = 2;
 
 interface PlanPickerProps {
   chosenPlanId: string | undefined;
-  onChoose: (planId: string) => void;
+  onChange: (planId: string) => void;
 }
 
 /** 스토어를 쓸 수 없으면 예상한 상태라 오류 경계 대신 요금제 자리에서 안내한다 */
@@ -45,7 +45,7 @@ export function PlanPicker(props: PlanPickerProps) {
 PlanPicker.Plans = function Plans({
   offering,
   chosenPlanId,
-  onChoose,
+  onChange,
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
   const [view] = useSubscriptionView();
   const { trackEvent } = useTrack();
@@ -58,7 +58,7 @@ PlanPicker.Plans = function Plans({
   return (
     <SubscriptionPlanInput
       value={SubscriptionPolicy.getSelectedPlan(offering, chosenPlanId)?.identifier}
-      onValueChange={onChoose}
+      onValueChange={onChange}
     />
   );
 };

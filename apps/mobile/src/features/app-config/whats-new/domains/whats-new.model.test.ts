@@ -40,7 +40,7 @@ const createEnabledConfig = (
   ...overrides,
 });
 
-describe('canAutoOpen', () => {
+describe('shouldAutoOpen', () => {
   const eligibleInput = {
     config: createEnabledConfig(),
     user: createUser(),
@@ -50,7 +50,7 @@ describe('canAutoOpen', () => {
 
   it('출시 전 가입한 사용자가 지원 버전에서 처음 보면 true를 반환한다', () => {
     // When
-    const result = WhatsNewPolicy.canAutoOpen(eligibleInput);
+    const result = WhatsNewPolicy.shouldAutoOpen(eligibleInput);
 
     // Then
     expect(result).toBe(true);
@@ -67,7 +67,7 @@ describe('canAutoOpen', () => {
     ['자동 열기 비활성', { config: createEnabledConfig({ autoOpen: false }) }],
   ])('%s 조건에서는 false를 반환한다', (_label, overrides) => {
     // When
-    const result = WhatsNewPolicy.canAutoOpen({ ...eligibleInput, ...overrides });
+    const result = WhatsNewPolicy.shouldAutoOpen({ ...eligibleInput, ...overrides });
 
     // Then
     expect(result).toBe(false);
@@ -96,25 +96,25 @@ describe('findReleaseByCampaign', () => {
     const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, 'feature-discovery-2026-08');
 
     // Then
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 });
 
-describe('isReleaseAvailable', () => {
+describe('canViewRelease', () => {
   it.each([
     [true, false, false],
     [true, true, true],
     [false, false, true],
   ])('초대 필요 %s, 초대 가능 %s이면 %s다', (requiresInvite, isInviteAvailable, expected) => {
     // When
-    const result = WhatsNewPolicy.isReleaseAvailable({ requiresInvite }, { isInviteAvailable });
+    const result = WhatsNewPolicy.canViewRelease({ requiresInvite }, { isInviteAvailable });
 
     // Then
     expect(result).toBe(expected);
   });
 });
 
-describe('isReentryVisible', () => {
+describe('shouldShowReentry', () => {
   const openedAt = toInstant('2026-11-01T00:00:00.000Z');
 
   it.each([
@@ -124,7 +124,7 @@ describe('isReentryVisible', () => {
     ['2026-10-31T23:59:59.000Z', true],
   ])('%s에는 %s다', (now, expected) => {
     // When
-    const result = WhatsNewPolicy.isReentryVisible(openedAt, toInstant(now));
+    const result = WhatsNewPolicy.shouldShowReentry(openedAt, toInstant(now));
 
     // Then
     expect(result).toBe(expected);
@@ -132,7 +132,7 @@ describe('isReentryVisible', () => {
 
   it('처음 본 기록이 없으면 보이지 않는다', () => {
     // When
-    const result = WhatsNewPolicy.isReentryVisible(null, openedAt);
+    const result = WhatsNewPolicy.shouldShowReentry(null, openedAt);
 
     // Then
     expect(result).toBe(false);

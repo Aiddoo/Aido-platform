@@ -50,12 +50,11 @@ export function useWhatsNewFeed({
 
   const campaignRelease = config?.enabled
     ? WhatsNewPolicy.findReleaseByCampaign(RELEASES, config.campaignId)
-    : undefined;
+    : null;
   const release =
-    campaignRelease != null &&
-    WhatsNewPolicy.isReleaseAvailable(campaignRelease, { isInviteAvailable })
+    campaignRelease != null && WhatsNewPolicy.canViewRelease(campaignRelease, { isInviteAvailable })
       ? campaignRelease
-      : undefined;
+      : null;
   const accountId = user?.id;
   const identity = useMemo(
     () =>
@@ -71,11 +70,11 @@ export function useWhatsNewFeed({
     syncStorage,
     createWhatsNewReentryKey(storedIdentity),
   );
-  const canAutoOpen =
+  const shouldAutoOpen =
     isAuthenticated &&
     !isWeatherIntroductionPending &&
     identity != null &&
-    WhatsNewPolicy.canAutoOpen({
+    WhatsNewPolicy.shouldAutoOpen({
       config,
       user,
       appVersion,
@@ -83,7 +82,7 @@ export function useWhatsNewFeed({
     });
 
   useEffect(() => {
-    if (!canAutoOpen || !isStable || identity == null || release == null) {
+    if (!shouldAutoOpen || !isStable || identity == null || release == null) {
       return;
     }
 
@@ -94,10 +93,11 @@ export function useWhatsNewFeed({
     });
 
     return () => cancelIdleCallback(task);
-  }, [canAutoOpen, identity, isStable, push, release, repository]);
+  }, [shouldAutoOpen, identity, isStable, push, release, repository]);
 
   const isReentryVisible =
-    identity != null && WhatsNewPolicy.isReentryVisible(parseReentryOpenedAt(reentryOpenedAt), now);
+    identity != null &&
+    WhatsNewPolicy.shouldShowReentry(parseReentryOpenedAt(reentryOpenedAt), now);
 
   const openFromReentry = () => {
     if (release != null) {

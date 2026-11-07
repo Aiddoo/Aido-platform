@@ -100,7 +100,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     }
     Keyboard.dismiss();
     const consent = await aiConsent.ensureAgreedBeforeListening();
-    if (!consent.isAgreed || isUnmountedRef.current) {
+    if (!consent.hasAgreed || isUnmountedRef.current) {
       return;
     }
     planRequest.rememberConsentAsked(consent.wasAsked);

@@ -25,7 +25,7 @@ export function useStartVoiceNote() {
       return;
     }
     const consent = await aiConsent.ensureAgreedBeforeListening();
-    if (!consent.isAgreed) {
+    if (!consent.hasAgreed) {
       return;
     }
     if (await ensureMicrophonePermission('note', locale)) {

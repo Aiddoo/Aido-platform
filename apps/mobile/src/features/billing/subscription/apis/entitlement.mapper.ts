@@ -69,6 +69,6 @@ export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
   return details.success ? toFeatureQuota(details.data.featureQuota) : null;
 }
 
-export function isNotChargedError(error: unknown): boolean {
+export function isFreeOfChargeError(error: unknown): boolean {
   return isApiError(error) && notChargedErrorDetailsSchema.safeParse(error.details).success;
 }

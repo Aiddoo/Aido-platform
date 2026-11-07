@@ -78,7 +78,7 @@ export function createWhatsNewRepository(
           }
           return (
             key.startsWith(`${REENTRY_KEY_PREFIX}:`) &&
-            !WhatsNewPolicy.isReentryVisible(parseReentryOpenedAt(storage.get(key)), now)
+            !WhatsNewPolicy.shouldShowReentry(parseReentryOpenedAt(storage.get(key)), now)
           );
         })
         .forEach((key) => storage.remove(key));

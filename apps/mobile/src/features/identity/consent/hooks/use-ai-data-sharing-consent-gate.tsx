@@ -19,7 +19,7 @@ import type { Consent } from '../schemas/consent.schema';
 export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;
 
 export interface AiConsentCheck {
-  readonly isAgreed: boolean;
+  readonly hasAgreed: boolean;
   readonly wasAsked: boolean;
 }
 
@@ -107,7 +107,7 @@ export function useAiDataSharingConsentGate() {
    * 이전 안내에 동의한 사람에게 바뀐 안내를 계정마다 한 번 보여 준다. 나중에를 눌러도 서버로 보내지 않아
    * 이전 동의가 그대로 남고, 하던 일은 이어진다. 철회는 설정 화면에서만 한다.
    */
-  const showRenewalOnce = async (consent: Consent, accountId?: string): Promise<boolean> => {
+  const promptRenewalOnce = async (consent: Consent, accountId?: string): Promise<boolean> => {
     if (accountId == null || !ConsentPolicy.shouldShowAiConsentRenewal(consent)) {
       return false;
     }
@@ -126,17 +126,17 @@ export function useAiDataSharingConsentGate() {
     // 동의 상태를 읽지 못하면 막지 않고 서버 판단에 맡긴다. 동의가 없으면 AI_1311로 다시 안내한다
     const consent = await readConsent();
     if (consent == null) {
-      return { isAgreed: true, wasAsked: false };
+      return { hasAgreed: true, wasAsked: false };
     }
     if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
-      const wasAsked = await showRenewalOnce(consent, getCachedMe(queryClient)?.id);
-      return { isAgreed: true, wasAsked };
+      const wasAsked = await promptRenewalOnce(consent, getCachedMe(queryClient)?.id);
+      return { hasAgreed: true, wasAsked };
     }
-    return { isAgreed: await requestAgreement(), wasAsked: true };
+    return { hasAgreed: await requestAgreement(), wasAsked: true };
   };
 
   /**
-   * 듣기 전에 동의를 받는다. 다 말한 뒤에 막히지 않게, 미응답이면 시작할 때마다 안내를 띄우고 [나중에]면 isAgreed는 false다.
+   * 듣기 전에 동의를 받는다. 다 말한 뒤에 막히지 않게, 미응답이면 시작할 때마다 안내를 띄우고 [나중에]면 hasAgreed는 false다.
    * 호출한 쪽은 그 자리에서 멈춘다. 이전 안내에 동의한 사람은 재안내에서 [나중에]를 눌러도 이어 간다.
    * 내 정보를 아직 못 받았으면 제한 시간까지 기다려, 마이크 권한처럼 뒤에 오는 단계가 안내를 앞지르지 않게 한다.
    */
@@ -150,23 +150,23 @@ export function useAiDataSharingConsentGate() {
       ),
     ]);
     if (consent == null) {
-      return { isAgreed: true, wasAsked: false };
+      return { hasAgreed: true, wasAsked: false };
     }
     if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
-      return { isAgreed: true, wasAsked: await showRenewalOnce(consent, me?.id) };
+      return { hasAgreed: true, wasAsked: await promptRenewalOnce(consent, me?.id) };
     }
-    const isAgreed = await requestAgreement();
-    if (!isAgreed) {
+    const hasAgreed = await requestAgreement();
+    if (!hasAgreed) {
       toast.toast(t('consent.notice.voice'));
     }
-    return { isAgreed, wasAsked: true };
+    return { hasAgreed, wasAsked: true };
   };
 
   /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */
-  const isAgreementRequired = (): boolean => {
+  const isConsentRequired = (): boolean => {
     const consent = queryClient.getQueryData(consentQueryOptions.queryKey);
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);
   };
 
-  return { ensureAgreed, ensureAgreedBeforeListening, requestAgreement, isAgreementRequired };
+  return { ensureAgreed, ensureAgreedBeforeListening, requestAgreement, isConsentRequired };
 }

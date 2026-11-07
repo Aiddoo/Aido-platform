@@ -82,7 +82,7 @@ VoiceNoteDigest.Failure = function Failure({ failure }: { failure: VoiceNoteDige
         {failure.cause === 'too-long' ? `${t('voiceNote:digest.tooLong')} ` : ''}
         {failure.cause === 'network' ? `${t('voiceNote:digest.offline')} ` : ''}
         {t('voiceNote:digest.kept')}
-        {failure.isNotCharged ? ` ${t('voiceNote:digest.notCharged')}` : ''}
+        {failure.isFreeOfCharge ? ` ${t('voiceNote:digest.notCharged')}` : ''}
       </Text>
     </VStack>
   );

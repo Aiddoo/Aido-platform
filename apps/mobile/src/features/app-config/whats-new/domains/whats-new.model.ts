@@ -18,8 +18,8 @@ interface AutoOpenInput {
 function findReleaseByCampaign<T extends Pick<Release, 'campaignId'>>(
   releases: readonly T[],
   campaignId: string,
-): T | undefined {
-  return releases.find((release) => release.campaignId === campaignId);
+): T | null {
+  return releases.find((release) => release.campaignId === campaignId) ?? null;
 }
 
 function getLatestRelease<T extends Pick<Release, 'releasedOn'>>(
@@ -28,7 +28,7 @@ function getLatestRelease<T extends Pick<Release, 'releasedOn'>>(
   return maxBy(releases, (release) => Date.parse(release.releasedOn));
 }
 
-function isReleaseAvailable(
+function canViewRelease(
   release: Pick<Release, 'requiresInvite'>,
   { isInviteAvailable }: { isInviteAvailable: boolean },
 ): boolean {
@@ -36,7 +36,7 @@ function isReleaseAvailable(
 }
 
 /** 출시 전에 가입했고, 켜진 캠페인을 지원하는 앱이고, 아직 보지 않았을 때만 자동으로 연다 */
-function canAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): boolean {
+function shouldAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): boolean {
   if (!config?.enabled || user == null) {
     return false;
   }
@@ -50,7 +50,7 @@ function canAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): bool
 }
 
 /** 현재 시각은 분 단위 시계라 방금 연 시각보다 앞설 수 있다. 그래도 바로 보이도록 아래 경계를 두지 않는다 */
-function isReentryVisible(openedAt: Instant | null, now: Instant): boolean {
+function shouldShowReentry(openedAt: Instant | null, now: Instant): boolean {
   return openedAt != null && diffMs(now, openedAt) < WHATS_NEW_REENTRY_WINDOW_MS;
 }
 
@@ -60,10 +60,10 @@ function hasUnseenRelease(releases: ReleaseList, seenCampaignIds: readonly strin
 }
 
 export const WhatsNewPolicy = {
-  canAutoOpen,
+  shouldAutoOpen,
   findReleaseByCampaign,
   getLatestRelease,
   hasUnseenRelease,
-  isReentryVisible,
-  isReleaseAvailable,
+  shouldShowReentry,
+  canViewRelease,
 } as const;

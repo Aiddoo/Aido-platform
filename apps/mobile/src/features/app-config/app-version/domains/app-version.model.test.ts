@@ -56,13 +56,13 @@ describe('isUpToDate', () => {
   });
 });
 
-describe('canCompareVersions', () => {
+describe('isVersionComparable', () => {
   it('점검이 켜져 있고 두 버전이 올바르면 true를 반환한다', () => {
     // Given
     const input = createInput('1.9.0', '1.9.1');
 
     // When
-    const result = AppVersionPolicy.canCompareVersions(input);
+    const result = AppVersionPolicy.isVersionComparable(input);
 
     // Then
     expect(result).toBe(true);
@@ -79,7 +79,7 @@ describe('canCompareVersions', () => {
     it('어떤 안내도 하지 않도록 모두 false를 반환한다', () => {
       // When
       const results = [
-        AppVersionPolicy.canCompareVersions(input),
+        AppVersionPolicy.isVersionComparable(input),
         AppVersionPolicy.isOutdated(input),
         AppVersionPolicy.isUpToDate(input),
       ];

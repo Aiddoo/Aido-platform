@@ -6,7 +6,7 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import {
   findErrorFeatureQuota,
-  isNotChargedError,
+  isFreeOfChargeError,
 } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
@@ -273,7 +273,7 @@ function usePlanFailureHandler(
 
     // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
     toast.error(t(`voicePlan:failure.${cause}.title`), {
-      description: isNotChargedError(error)
+      description: isFreeOfChargeError(error)
         ? `${t(`voicePlan:failure.${cause}.description`)} ${t('subscription:gate.notCharged')}`
         : t(`voicePlan:failure.${cause}.description`),
     });

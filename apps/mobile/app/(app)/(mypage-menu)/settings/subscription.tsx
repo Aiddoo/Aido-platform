@@ -15,6 +15,7 @@ import type { SubscriptionView } from '@src/features/billing/subscription/schema
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -72,7 +73,7 @@ SubscriptionScreen.Plans = function Plans() {
             <Box className="px-5 pb-5">
               <QueryErrorBoundary fallback={PlanPicker.Error}>
                 <Suspense fallback={<PlanPicker.Loading />}>
-                  <PlanPicker chosenPlanId={chosenPlanId} onChoose={setChosenPlanId} />
+                  <PlanPicker chosenPlanId={chosenPlanId} onChange={setChosenPlanId} />
                 </Suspense>
               </QueryErrorBoundary>
             </Box>
@@ -100,6 +101,7 @@ SubscriptionScreen.Receipt = function Receipt() {
   const { primaryAction } = useSubscriptionReceipt();
   const openSubscriptionManagement = useOpenSubscriptionManagement();
   const isOnline = useIsOnline();
+  const push = useSingleTap(router.push);
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -116,7 +118,7 @@ SubscriptionScreen.Receipt = function Receipt() {
           .with('subscribe', () => (
             <Button
               onPress={() =>
-                router.push({
+                push({
                   pathname: '/settings/subscription',
                   params: { view: 'plans' satisfies SubscriptionView },
                 })

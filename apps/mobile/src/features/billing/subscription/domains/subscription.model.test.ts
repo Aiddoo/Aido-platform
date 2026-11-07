@@ -69,7 +69,7 @@ describe('findPlanByType', () => {
     const plan = SubscriptionPolicy.findPlanByType([monthly], 'annual');
 
     // Then
-    expect(plan).toBeUndefined();
+    expect(plan).toBeNull();
   });
 });
 

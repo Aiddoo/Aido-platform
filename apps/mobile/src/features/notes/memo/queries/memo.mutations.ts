@@ -6,7 +6,7 @@ import {
   useMemoService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { isNotChargedError } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { isFreeOfChargeError } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
@@ -256,7 +256,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
 
       toast.error(getUserFacingMessage(error), {
         fallback: t('ai:suggestions.toasts.retryLater'),
-        description: isNotChargedError(error) ? t('subscription:gate.notCharged') : undefined,
+        description: isFreeOfChargeError(error) ? t('subscription:gate.notCharged') : undefined,
       });
     },
   });

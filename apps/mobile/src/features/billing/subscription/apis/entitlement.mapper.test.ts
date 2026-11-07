@@ -10,7 +10,11 @@ import {
   MONTHLY_RESETS_AT,
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../schemas/entitlement.schema';
-import { findLimitedFeature, isNotChargedError, toEntitlementSnapshot } from './entitlement.mapper';
+import {
+  findLimitedFeature,
+  isFreeOfChargeError,
+  toEntitlementSnapshot,
+} from './entitlement.mapper';
 
 describe('toEntitlementSnapshot', () => {
   it('초기화 시각을 Instant로 옮기고 모든 기능 한도를 옮긴다', () => {
@@ -118,7 +122,7 @@ describe('findLimitedFeature', () => {
   });
 });
 
-describe('isNotChargedError', () => {
+describe('isFreeOfChargeError', () => {
   it.each([
     [
       '차감하지 않았다고 알린 오류',
@@ -129,7 +133,7 @@ describe('isNotChargedError', () => {
     ['서버 오류가 아닌 값', new Error('network'), false],
   ] as const)('%s', (_case, error, expected) => {
     // When
-    const result = isNotChargedError(error);
+    const result = isFreeOfChargeError(error);
 
     // Then
     expect(result).toBe(expected);

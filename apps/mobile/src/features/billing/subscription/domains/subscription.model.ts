@@ -25,7 +25,7 @@ function findPlanByType(
   plans: readonly SubscriptionPlan[],
   planType: SubscriptionPlan['planType'],
 ) {
-  return plans.find((plan) => plan.planType === planType);
+  return plans.find((plan) => plan.planType === planType) ?? null;
 }
 
 export const SubscriptionPolicy = {

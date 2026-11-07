@@ -671,7 +671,7 @@ function useMemoAiParse() {
       return;
     }
     const consent = await aiConsent.ensureAgreed();
-    if (!consent.isAgreed) {
+    if (!consent.hasAgreed) {
       return;
     }
 
@@ -689,7 +689,7 @@ function useMemoAiParse() {
     }
 
     // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 동의 캐시가 미응답이 된다
-    if (!aiConsent.isAgreementRequired()) {
+    if (!aiConsent.isConsentRequired()) {
       return;
     }
     // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다

@@ -1,5 +1,5 @@
 import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
-import { isNotChargedError } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { isFreeOfChargeError } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
@@ -15,7 +15,7 @@ import { createPlanReviewDraft } from '../utils/plan-review-draft';
 export interface VoiceNoteDigestFailure {
   cause: VoicePlanFailureCause;
   /** 서버가 차감하지 않았다고 알렸을 때만 true다. 아니면 차감에 대해 말하지 않는다 */
-  isNotCharged: boolean;
+  isFreeOfCharge: boolean;
 }
 
 /**
@@ -94,7 +94,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
         }
       }
       const cause = getVoicePlanFailureCause(error);
-      setFailure(cause === 'limit' ? null : { cause, isNotCharged: isNotChargedError(error) });
+      setFailure(cause === 'limit' ? null : { cause, isFreeOfCharge: isFreeOfChargeError(error) });
     }
   };
 

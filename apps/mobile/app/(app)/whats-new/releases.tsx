@@ -18,7 +18,7 @@ export default function WhatsNewReleasesRoute() {
           <VStack gap={10}>
             <ReleaseRow release={RELEASE_1_15_0} />
 
-            {WhatsNewPolicy.isReleaseAvailable(RELEASE_1_14_0, { isInviteAvailable }) && (
+            {WhatsNewPolicy.canViewRelease(RELEASE_1_14_0, { isInviteAvailable }) && (
               <ReleaseRow release={RELEASE_1_14_0} />
             )}
           </VStack>
