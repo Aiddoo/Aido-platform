@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatDateKeyRange, formatHourLabel, type TimeFormat } from '@src/shared/date/date-format';
+import { formatDateKeyRange, formatHourLabel } from '@src/shared/date/date-format';
 import { getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -23,8 +23,8 @@ import { router } from 'expo-router';
 import { Separator, Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { isReportUnavailableError } from '../domains/ai-report.error';
-import { AiReportPolicy } from '../domains/ai-report.model';
+import { isReportUnavailableError } from '../domains/report.error';
+import { ReportPolicy } from '../domains/report.model';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
 
@@ -37,7 +37,6 @@ interface ActivityReportProps {
 }
 
 export function ActivityReport({ report }: ActivityReportProps) {
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   return (
     <ScallopedContainer>
       <Box className="px-5 pt-4 pb-2">
@@ -67,7 +66,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
           <>
             <DashedDivider />
             <Box className="py-4">
-              <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
+              <TimePatternSummary items={report.timePatterns} />
             </Box>
           </>
         )}
@@ -116,7 +115,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
 function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   const { stats } = report;
-  const rateDiff = AiReportPolicy.getCompletionRateChange(stats);
+  const rateDiff = ReportPolicy.getCompletionRateChange(stats);
 
   return (
     <VStack gap={16}>
@@ -208,7 +207,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
       </Text>
       <HStack justify="around">
         {items.map((item) => {
-          const level = AiReportPolicy.getCompletionLevel(item.rate);
+          const level = ReportPolicy.getCompletionLevel(item.rate);
 
           return (
             <VStack key={item.day} align="center" gap={4}>
@@ -237,14 +236,9 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
   );
 }
 
-function TimePatternSummary({
-  items,
-  timeFormat,
-}: {
-  items: AiReport['timePatterns'];
-  timeFormat: TimeFormat;
-}) {
+function TimePatternSummary({ items }: { items: AiReport['timePatterns'] }) {
   const { t } = useTranslation('ai');
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const topHours = orderBy(items, ['count'], ['desc']).slice(0, TOP_HOUR_COUNT);
 
@@ -262,7 +256,7 @@ function TimePatternSummary({
           <Separator orientation="vertical" className="h-3 bg-gray-3" />
 
           <Text size="b4" shade={8}>
-            {formatHourLabel(item.hour, timeFormat, dateFormatContext)}
+            {formatHourLabel(item.hour, preference.timeFormat, dateFormatContext)}
           </Text>
 
           <Text size="b4" shade={6}>

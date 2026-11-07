@@ -1,4 +1,4 @@
-import { AiReportPolicy } from './ai-report.model';
+import { ReportPolicy } from './report.model';
 
 describe('getCompletionRateChange', () => {
   it('지난 기간보다 오르거나 내린 만큼을 반환한다', () => {
@@ -6,7 +6,7 @@ describe('getCompletionRateChange', () => {
     const stats = { completionRate: 60, prevCompletionRate: 75 };
 
     // When
-    const change = AiReportPolicy.getCompletionRateChange(stats);
+    const change = ReportPolicy.getCompletionRateChange(stats);
 
     // Then
     expect(change).toBe(-15);
@@ -17,7 +17,7 @@ describe('getCompletionRateChange', () => {
     const stats = { completionRate: 60, prevCompletionRate: null };
 
     // When
-    const change = AiReportPolicy.getCompletionRateChange(stats);
+    const change = ReportPolicy.getCompletionRateChange(stats);
 
     // Then
     expect(change).toBeNull();
@@ -34,7 +34,7 @@ describe('getCompletionLevel', () => {
     [0, 'low'],
   ])('요일 완료율 %i%%는 %s 단계다', (rate, expected) => {
     // When
-    const level = AiReportPolicy.getCompletionLevel(rate);
+    const level = ReportPolicy.getCompletionLevel(rate);
 
     // Then
     expect(level).toBe(expected);

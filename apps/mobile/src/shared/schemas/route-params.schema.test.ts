@@ -1,8 +1,5 @@
 import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
-import {
-  isSampleReportId,
-  getSampleReport,
-} from '@src/features/insights/report/constants/sample-reports';
+import { isSampleReportId } from '@src/features/insights/report/constants/sample-reports';
 import { z } from 'zod';
 
 import { routeIdSchema, routeIntegerStringSchema } from './route-params.schema';
@@ -16,11 +13,9 @@ describe('route params', () => {
     (id) => {
       // When
       const isSample = isSampleReportId(id);
-      const report = getSampleReport(id);
 
       // Then
       expect(isSample).toBe(false);
-      expect(report.type).toBe('WEEKLY');
     },
   );
 

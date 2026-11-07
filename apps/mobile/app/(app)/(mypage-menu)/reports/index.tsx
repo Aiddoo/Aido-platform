@@ -5,11 +5,10 @@ import {
   FreeReportPreview,
   ReportList,
 } from '@src/features/insights/report/components/report-list';
-import { ReportRow } from '@src/features/insights/report/components/report-row';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
 import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report-labels';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
-import { invalidateAiReports } from '@src/features/insights/report/queries/report-cache';
+import { invalidateReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -46,7 +45,7 @@ export default function ReportsScreen() {
       EntitlementPolicy.canUseFeature(entitlements, 'AI_REPORT') ? 'premium' : 'free',
     );
   const [reportType, setReportType] = useReportType();
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiReports(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateReports(queryClient));
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
@@ -157,13 +156,13 @@ export default function ReportsScreen() {
                 {match(view)
                   .with('premium', () => (
                     <QueryErrorBoundary resetKeys={[reportType]}>
-                      <Suspense fallback={<ReportRow.Loading />}>
+                      <Suspense fallback={<ReportList.Loading />}>
                         <ReportList />
                       </Suspense>
                     </QueryErrorBoundary>
                   ))
                   .with('free', () => <FreeReportPreview />)
-                  .with('loading', () => <ReportRow.Loading />)
+                  .with('loading', () => <ReportList.Loading />)
                   .with('error', () => (
                     <QueryErrorFallback reset={() => entitlementsQuery.refetch()} />
                   ))

@@ -172,17 +172,17 @@ function buildMonthlySampleReport(): AiReport {
   };
 }
 
-const SAMPLE_REPORT_BUILDERS: Record<string, () => AiReport> = {
+type SampleReportId = (typeof SAMPLE_REPORT_IDS)[ReportType];
+
+const SAMPLE_REPORT_BUILDERS: Record<SampleReportId, () => AiReport> = {
   [SAMPLE_REPORT_IDS.WEEKLY]: buildWeeklySampleReport,
   [SAMPLE_REPORT_IDS.MONTHLY]: buildMonthlySampleReport,
 };
 
-export function isSampleReportId(id?: string): boolean {
-  return !!id && Object.hasOwn(SAMPLE_REPORT_BUILDERS, id);
+export function isSampleReportId(id: string): id is SampleReportId {
+  return Object.hasOwn(SAMPLE_REPORT_BUILDERS, id);
 }
 
-export function getSampleReport(id?: string): AiReport {
-  return (
-    (id && isSampleReportId(id) ? SAMPLE_REPORT_BUILDERS[id] : undefined) ?? buildWeeklySampleReport
-  )();
+export function getSampleReport(id: SampleReportId): AiReport {
+  return SAMPLE_REPORT_BUILDERS[id]();
 }

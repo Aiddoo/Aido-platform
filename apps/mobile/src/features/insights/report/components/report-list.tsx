@@ -1,8 +1,10 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, Text, VStack } from '@src/shared/ui';
+import { Box, Button, DashedDivider, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
+import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
@@ -13,6 +15,9 @@ import {
   useGetReportStatusQueryOptions,
 } from '../queries/report.queries';
 import { ReportRow } from './report-row';
+
+const LOADING_CARD_COUNT = 3;
+const LOADING_STAT_COUNT = 3;
 
 export function FreeReportPreview() {
   const push = useSingleTap(router.push);
@@ -76,3 +81,36 @@ function PremiumPendingPreview() {
     </VStack>
   );
 }
+
+ReportList.Loading = function Loading() {
+  return (
+    <VStack>
+      {range(LOADING_CARD_COUNT).map((i) => (
+        <Box key={i} className="py-3">
+          <VStack gap={10}>
+            <HStack justify="between" align="center">
+              <Skeleton className="h-6 w-12 rounded-full" />
+              <VStack align="end">
+                <TextSkeleton size="b4" className="w-24" />
+                <TextSkeleton size="e1" className="w-20" />
+              </VStack>
+            </HStack>
+            <HStack gap={20}>
+              {range(LOADING_STAT_COUNT).map((statIndex) => (
+                <VStack key={statIndex} gap={2} align="center">
+                  <TextSkeleton size="e1" className="w-12" />
+                  <TextSkeleton size="b2" className="w-16" />
+                </VStack>
+              ))}
+            </HStack>
+            <TextSkeleton size="b4" className="w-full" />
+            <Box className="items-end">
+              <TextSkeleton size="e1" className="w-16" />
+            </Box>
+          </VStack>
+          {i < LOADING_CARD_COUNT - 1 && <DashedDivider className="mt-3" />}
+        </Box>
+      ))}
+    </VStack>
+  );
+};

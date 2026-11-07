@@ -23,4 +23,4 @@ function getCompletionLevel(rate: number): CompletionLevel {
   return 'low';
 }
 
-export const AiReportPolicy = { getCompletionRateChange, getCompletionLevel } as const;
+export const ReportPolicy = { getCompletionRateChange, getCompletionLevel } as const;

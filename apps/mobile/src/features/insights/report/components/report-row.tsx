@@ -2,19 +2,15 @@ import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, TextButton, TextSkeleton, VStack, DashedDivider, Box } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack, DashedDivider, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/number-format';
-import { range } from 'es-toolkit';
 import { router } from 'expo-router';
-import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
+import { Chip, PressableFeedback } from 'heroui-native';
 
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
-
-const LOADING_CARD_COUNT = 3;
-const LOADING_STAT_COUNT = 3;
 
 interface ReportRowProps {
   report: AiReport;
@@ -28,12 +24,10 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
   const reportId = isSample ? SAMPLE_REPORT_IDS[report.type] : String(report.id);
+  const openReport = () => push({ pathname: '/reports/[reportId]', params: { reportId } });
 
   return (
-    <PressableFeedback
-      onPress={() => push({ pathname: '/reports/[reportId]', params: { reportId } })}
-      className="rounded-xl"
-    >
+    <PressableFeedback onPress={openReport} className="rounded-xl">
       <PressableFeedback.Highlight className="rounded-xl" />
       <Box className={cn('py-3', !report.hasActivity && 'opacity-50')}>
         <VStack gap={10}>
@@ -85,7 +79,7 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
           )}
 
           <Box className="items-end">
-            <TextButton size="small" variant="arrow">
+            <TextButton size="small" variant="arrow" onPress={openReport}>
               {t('report.card.viewDetail')}
             </TextButton>
           </Box>
@@ -109,36 +103,3 @@ function StatItem({ label, value }: { label: string; value: string }) {
     </VStack>
   );
 }
-
-ReportRow.Loading = function Loading() {
-  return (
-    <VStack>
-      {range(LOADING_CARD_COUNT).map((i) => (
-        <Box key={i} className="py-3">
-          <VStack gap={10}>
-            <HStack justify="between" align="center">
-              <Skeleton className="h-6 w-12 rounded-full" />
-              <VStack align="end">
-                <TextSkeleton size="b4" className="w-24" />
-                <TextSkeleton size="e1" className="w-20" />
-              </VStack>
-            </HStack>
-            <HStack gap={20}>
-              {range(LOADING_STAT_COUNT).map((statIndex) => (
-                <VStack key={statIndex} gap={2} align="center">
-                  <TextSkeleton size="e1" className="w-12" />
-                  <TextSkeleton size="b2" className="w-16" />
-                </VStack>
-              ))}
-            </HStack>
-            <TextSkeleton size="b4" className="w-full" />
-            <Box className="items-end">
-              <TextSkeleton size="e1" className="w-16" />
-            </Box>
-          </VStack>
-          {i < LOADING_CARD_COUNT - 1 && <DashedDivider className="mt-3" />}
-        </Box>
-      ))}
-    </VStack>
-  );
-};

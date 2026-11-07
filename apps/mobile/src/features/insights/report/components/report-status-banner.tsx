@@ -48,7 +48,7 @@ ReportStatusBanner.Loading = function Loading() {
           <TextSkeleton size="t3" className="w-12" />
         </VStack>
 
-        <Separator orientation="vertical" className="bg-gray-3" />
+        <Separator orientation="vertical" className="bg-gray-5" />
 
         <VStack gap={4} align="center" className="flex-1">
           <TextSkeleton size="b4" className="w-24" />

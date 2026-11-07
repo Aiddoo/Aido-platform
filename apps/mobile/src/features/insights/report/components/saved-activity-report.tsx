@@ -8,13 +8,13 @@ import { reportParamsSchema } from '../schemas/report-params.schema';
 import { ActivityReport } from './activity-report';
 
 export function SavedActivityReport() {
-  const [{ reportId: report }] = useRouteParams(reportParamsSchema);
+  const [{ reportId: reportRoute }] = useRouteParams(reportParamsSchema);
 
-  if (report.kind !== 'saved') {
+  if (reportRoute.kind !== 'saved') {
     return null;
   }
 
-  return <SavedActivityReport.Contents id={report.id} />;
+  return <SavedActivityReport.Contents id={reportRoute.id} />;
 }
 
 SavedActivityReport.Contents = function Contents({ id }: { id: number }) {
