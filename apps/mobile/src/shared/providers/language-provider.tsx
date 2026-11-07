@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { i18n } from '@src/shared/i18n';
+import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   type LanguageMode,
@@ -9,7 +10,6 @@ import {
   writeLanguageMode,
 } from '@src/shared/preferences/language.preference';
 import { noop } from 'es-toolkit';
-import { useLocales } from 'expo-localization';
 import {
   createContext,
   type PropsWithChildren,
@@ -28,9 +28,8 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-function useExpoDeviceLanguage(): string | null {
-  const [deviceLocale] = useLocales();
-  return deviceLocale.languageCode;
+function useSystemLanguage(): string | null {
+  return useSystemLocale().languageCode;
 }
 
 interface LanguageProviderProps extends PropsWithChildren {
@@ -42,7 +41,7 @@ interface LanguageProviderProps extends PropsWithChildren {
 export function LanguageProvider({
   children,
   syncStorage = mmkvSyncStorage,
-  useDeviceLanguage = useExpoDeviceLanguage,
+  useDeviceLanguage = useSystemLanguage,
 }: LanguageProviderProps) {
   const [languageMode, setLanguageModeState] = useState<LanguageMode>(() =>
     readLanguageMode(syncStorage),

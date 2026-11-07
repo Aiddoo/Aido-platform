@@ -8,7 +8,10 @@ import {
 } from '@src/shared/date/local-date-clock';
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
-import { type Calendar, useCalendars } from 'expo-localization';
+import {
+  type SystemCalendar,
+  useSystemCalendar,
+} from '@src/shared/infra/localization/device-locale';
 import {
   createContext,
   type PropsWithChildren,
@@ -22,14 +25,7 @@ import { AppState } from 'react-native';
 
 const LocalDateContext = createContext<LocalDateState | null>(null);
 
-type DeviceCalendar = Pick<Calendar, 'timeZone'>;
-
 const FALLBACK_TIME_ZONE = 'UTC';
-
-function useExpoDeviceCalendar(): DeviceCalendar {
-  const [calendar] = useCalendars();
-  return calendar;
-}
 
 function readLocalDateState(timeZone: string): LocalDateState {
   const now = new Date();
@@ -38,7 +34,7 @@ function readLocalDateState(timeZone: string): LocalDateState {
 
 interface LocalDateProviderProps extends PropsWithChildren {
   /** 기기 달력. 시간대·달력 설정이 바뀔 때마다 새 객체를 돌려준다. */
-  useDeviceCalendar?: () => DeviceCalendar;
+  useDeviceCalendar?: () => SystemCalendar;
 }
 
 /**
@@ -51,7 +47,7 @@ interface LocalDateProviderProps extends PropsWithChildren {
  */
 export function LocalDateProvider({
   children,
-  useDeviceCalendar = useExpoDeviceCalendar,
+  useDeviceCalendar = useSystemCalendar,
 }: LocalDateProviderProps) {
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();

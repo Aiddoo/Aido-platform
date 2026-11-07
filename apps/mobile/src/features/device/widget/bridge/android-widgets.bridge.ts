@@ -1,5 +1,5 @@
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
-import { getDeviceLanguage } from '@src/shared/i18n/device-language';
+import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
 import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
 import Constants from 'expo-constants';
 import { requestWidgetUpdate } from 'react-native-android-widget';

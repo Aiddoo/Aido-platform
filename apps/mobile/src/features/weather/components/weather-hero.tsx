@@ -6,6 +6,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
+import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
 import {
   Box,
   HStack,
@@ -16,7 +17,6 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
-import { useLocales } from 'expo-localization';
 import { useEffect } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
@@ -193,13 +193,9 @@ WeatherHero.LocationLabel = function LocationLabel({
   district: PlaceName['district'];
 }) {
   const { t, i18n } = useTranslation('weather');
-  const [deviceLocale] = useLocales();
+  const deviceLocale = useSystemLocale();
   const minimumFontScale = useMinimumFontScale('b4');
-  const country = getForeignCountryName(
-    { countryCode },
-    deviceLocale?.regionCode ?? null,
-    i18n.language,
-  );
+  const country = getForeignCountryName({ countryCode }, deviceLocale.regionCode, i18n.language);
   const area = compact([country, district]);
 
   return (

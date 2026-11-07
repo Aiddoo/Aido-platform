@@ -346,8 +346,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
     'apps/mobile/src/features/billing/subscription/hooks/use-open-subscription-management.ts',
     ['expo-linking', 'expo-application'],
   ],
-  ['apps/mobile/src/features/weather/components/weather-hero.tsx', ['expo-localization']],
-  ['apps/mobile/src/features/weather/hooks/use-temperature-unit.ts', ['expo-localization']],
   ['apps/mobile/src/features/weather/hooks/use-weather-location.ts', ['expo-linking']],
   [
     'apps/mobile/src/features/device/widget/bridge/android-widget-task-handler.ts',
@@ -356,9 +354,6 @@ const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/src/shared/hooks/use-open-url.ts', ['expo-linking', 'expo-web-browser']],
   ['apps/mobile/src/shared/hooks/use-share-view.ts', ['expo-sharing']],
   ['apps/mobile/src/shared/hooks/use-stable-feed-foreground.ts', ['expo-linking']],
-  ['apps/mobile/src/shared/i18n/device-language.ts', ['expo-localization']],
-  ['apps/mobile/src/shared/providers/language-provider.tsx', ['expo-localization']],
-  ['apps/mobile/src/shared/providers/local-date-provider.tsx', ['expo-localization']],
   [
     'apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx',
     ['expo-application', 'expo-linking'],
