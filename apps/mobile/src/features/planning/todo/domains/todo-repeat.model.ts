@@ -43,7 +43,7 @@ function hasSameWeekdays(weekdays: readonly DayOfWeek[], expected: readonly DayO
   return weekdays.length === expected.length && expected.every((day) => weekdays.includes(day));
 }
 
-export function getWeekday(dateKey: string): DayOfWeek {
+function getWeekday(dateKey: string): DayOfWeek {
   const weekday = getDayOfWeek(dateKey);
   return DAYS_OF_WEEK.find((day) => DAY_OF_WEEK_MAP[day] === weekday) ?? 'MON';
 }
@@ -255,6 +255,7 @@ function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean 
 }
 
 export const TodoRepeatPolicy = {
+  getWeekday,
   hasSameWeekdays,
   sortWeekdays,
   getRepeatKind,

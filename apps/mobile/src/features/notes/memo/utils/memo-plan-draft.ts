@@ -58,7 +58,7 @@ export function prepareMemoPlanIdempotencyKey(
 ): string {
   const draftKey = createMemoPlanRequestDraftKey({ userId, memoId });
   const restored = draftService.restore(draftKey, { sourceUpdatedAt });
-  const request = PlanRequestPolicy.prepare({
+  const request = PlanRequestPolicy.preparePlanRequest({
     previous: restored.status === 'restored' ? restored.value : null,
     input: { content, categoryId },
     createIdempotencyKey,

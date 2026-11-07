@@ -2,7 +2,7 @@ import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS } from '@src/shared/constants/time.constants';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
-import { chunk, maxBy, sumBy } from 'es-toolkit';
+import { chunk, maxBy, orderBy, sumBy } from 'es-toolkit';
 
 import {
   VOICE_NOTE_RETENTION_DAYS,
@@ -226,6 +226,11 @@ function hasText(note: VoiceNote): boolean {
   return note.sentences.some((sentence) => sentence.text.trim() !== '');
 }
 
+/** 글자가 있는 노트만 최근에 만든 것부터 보인다 */
+function getListedNotes(notes: readonly VoiceNote[]): VoiceNote[] {
+  return orderBy(notes.filter(hasText), [(note) => toEpochMs(note.createdAt)], ['desc']);
+}
+
 function canDigest(note: VoiceNote): boolean {
   return note.digest == null && hasText(note);
 }
@@ -294,6 +299,7 @@ export const VoiceNotePolicy = {
   withMemoSavedAt,
   withoutRecordings,
   hasText,
+  getListedNotes,
   hasNoPlannedTodos,
   hasAppliedOnlyMemo,
   canDigest,

@@ -48,6 +48,38 @@ const createPlannedTodo = (actionId: string, title: string) => ({
   duplicateOfTodoId: null,
 });
 
+describe('VoiceNotePolicy.getListedNotes', () => {
+  it('최근에 만든 노트부터 보인다', () => {
+    // Given
+    const older = createVoiceNoteFixture({
+      draftId: 'older',
+      createdAt: toInstant('2026-11-01T00:00:00.000Z'),
+    });
+    const newer = createVoiceNoteFixture({
+      draftId: 'newer',
+      createdAt: toInstant('2026-11-02T00:00:00.000Z'),
+    });
+
+    // When
+    const notes = VoiceNotePolicy.getListedNotes([older, newer]);
+
+    // Then
+    expect(notes.map((note) => note.draftId)).toEqual(['newer', 'older']);
+  });
+
+  it('글자가 없는 노트는 목록에서 뺀다', () => {
+    // Given
+    const empty = createVoiceNoteFixture({ draftId: 'empty', sentences: [] });
+    const spoken = createVoiceNoteFixture({ draftId: 'spoken' });
+
+    // When
+    const notes = VoiceNotePolicy.getListedNotes([empty, spoken]);
+
+    // Then
+    expect(notes.map((note) => note.draftId)).toEqual(['spoken']);
+  });
+});
+
 describe('VoiceNotePolicy.canDigest', () => {
   test('글자가 있고 아직 정리하지 않았으면 정리할 수 있다', () => {
     // Given

@@ -17,6 +17,7 @@ import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
 } from '@src/features/planning/todo/domains/todo.error';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
   cancelTodoCompletionQueries,
@@ -97,7 +98,7 @@ export function useCreateTodoMutationOptions() {
         localTime: input.scheduledTime ?? null,
         scheduledAt: null,
         isAllDay: input.isAllDay,
-        visibility: input.visibility ?? 'PUBLIC',
+        visibility: TodoPolicy.getVisibility(input),
         recurrenceGroupId: null,
         repeat: null,
         subTodos: [],
@@ -124,7 +125,7 @@ export function useCreateTodoMutationOptions() {
         is_recurring: false,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,
-        visibility: input.visibility ?? 'PUBLIC',
+        visibility: TodoPolicy.getVisibility(input),
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {

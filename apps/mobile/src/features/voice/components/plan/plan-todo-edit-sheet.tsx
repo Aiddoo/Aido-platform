@@ -295,7 +295,7 @@ function VisibilityChip({ form }: PlanTodoChipProps) {
         )
       }
       label={isPrivate ? t('chip.private') : t('chip.public')}
-      onPress={() => updateTodo(form, VoicePlanPolicy.withVisibilityToggled)}
+      onPress={() => updateTodo(form, TodoPolicy.withVisibilityToggled)}
     />
   );
 }

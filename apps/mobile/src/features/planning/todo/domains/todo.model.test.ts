@@ -172,3 +172,80 @@ describe('TodoPolicy.getOptimisticListDate', () => {
     expect(dates).toEqual(['2026-11-07', '2026-11-01']);
   });
 });
+
+describe('TodoPolicy.withVisibilityToggled', () => {
+  it.each([
+    ['PRIVATE', 'PUBLIC'],
+    ['PUBLIC', 'PRIVATE'],
+    [null, 'PRIVATE'],
+  ] as const)('공개 범위가 %s이면 %s로 바꾼다', (visibility, expected) => {
+    // When
+    const toggled = TodoPolicy.withVisibilityToggled({ visibility });
+
+    // Then
+    expect(toggled.visibility).toBe(expected);
+  });
+});
+
+describe('TodoPolicy.getVisibility', () => {
+  it.each([
+    [null, 'PUBLIC'],
+    [undefined, 'PUBLIC'],
+    ['PUBLIC', 'PUBLIC'],
+    ['PRIVATE', 'PRIVATE'],
+  ] as const)('공개 범위를 %s로 두면 %s로 본다', (visibility, expected) => {
+    // When
+    const result = TodoPolicy.getVisibility({ visibility });
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('TodoPolicy.hasScheduleChanged', () => {
+  it.each([
+    {
+      title: '시각이 같으면 바뀐 것이 아니다',
+      next: ['10:00', false],
+      previous: ['10:00', false],
+      expected: false,
+    },
+    {
+      title: '시각이 다르면 바뀐 것이다',
+      next: ['11:00', false],
+      previous: ['10:00', false],
+      expected: true,
+    },
+    {
+      title: '종일에서 시각으로 바꾸면 바뀐 것이다',
+      next: ['10:00', false],
+      previous: [null, true],
+      expected: true,
+    },
+    {
+      title: '시각에서 종일로 바꾸면 남은 시각이 같아도 바뀐 것이다',
+      next: ['10:00', true],
+      previous: ['10:00', false],
+      expected: true,
+    },
+    {
+      title: '종일끼리는 남은 시각 값이 달라도 바뀐 것이 아니다',
+      next: ['11:00', true],
+      previous: [null, true],
+      expected: false,
+    },
+  ] as const)('$title', ({ next, previous, expected }) => {
+    // Given
+    const [nextTime, nextIsAllDay] = next;
+    const [previousTime, previousIsAllDay] = previous;
+
+    // When
+    const result = TodoPolicy.hasScheduleChanged(
+      { scheduledTime: nextTime, isAllDay: nextIsAllDay },
+      { scheduledTime: previousTime, isAllDay: previousIsAllDay },
+    );
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

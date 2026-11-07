@@ -59,7 +59,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
 
     setFailure(null);
     const input = VoiceNotePolicy.createDigestInput(note);
-    const request = PlanRequestPolicy.prepare<VoiceNoteDigestInput>({
+    const request = PlanRequestPolicy.preparePlanRequest<VoiceNoteDigestInput>({
       previous:
         note.digestRequest == null
           ? null
@@ -86,7 +86,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
       if (abortController.signal.aborted) {
         return;
       }
-      saveRequest(PlanRequestPolicy.getAfterFailure(request, error));
+      saveRequest(PlanRequestPolicy.getRequestToRetry(request, error));
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

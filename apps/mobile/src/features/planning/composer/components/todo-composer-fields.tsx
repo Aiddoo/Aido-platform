@@ -328,7 +328,9 @@ function VisibilityChip({ form }: { form: ComposerForm }) {
               )
             }
             label={isPrivate ? t('chip.private') : t('chip.public')}
-            onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
+            onPress={() =>
+              onChange(TodoPolicy.withVisibilityToggled({ visibility: value }).visibility)
+            }
           />
         );
       }}

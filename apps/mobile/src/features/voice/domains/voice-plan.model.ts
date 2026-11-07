@@ -1,6 +1,5 @@
 import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { TodoRepeat } from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { groupBy, uniq } from 'es-toolkit';
@@ -48,7 +47,7 @@ function isDuplicateAction(action: PlannedAction) {
   return isTodoAction(action) && action.duplicateOfTodoId != null;
 }
 
-export function getDefaultSelection(plan: VoicePlan): PlanSelection {
+function getDefaultSelection(plan: VoicePlan): PlanSelection {
   return Object.fromEntries(
     plan.actions.map((action) => [action.actionId, !isDuplicateAction(action)]),
   );
@@ -85,11 +84,6 @@ export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo
   }
   const spanInDays = diffDateKeysInDays(todo.startDate, todo.endDate);
   return { ...todo, startDate, endDate: addDaysToDateKey(startDate, spanInDays) };
-}
-
-/** 공개 범위를 정하지 않은 할 일은 공개로 보고 비공개로 바꾼다 */
-function withVisibilityToggled<T extends Pick<PlannedTodo, 'visibility'>>(todo: T): T {
-  return { ...todo, visibility: TodoPolicy.isPrivate(todo) ? 'PUBLIC' : 'PRIVATE' };
 }
 
 function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
@@ -166,11 +160,11 @@ function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
 }
 
 export const VoicePlanPolicy = {
+  getDefaultSelection,
   isTodoAction,
   withRepeat,
   withStartDate,
   withScheduledTime,
-  withVisibilityToggled,
   isDuplicateAction,
   getSelectedActions,
   countSelectedTodos,

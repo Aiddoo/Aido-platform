@@ -172,7 +172,7 @@ function useQuickPlanRequest({ aiConsent, onExit }: UseQuickPlanRequestOptions) 
   useEffect(() => () => planAbortRef.current?.abort(), []);
 
   const send = async (text: string): Promise<CapturedPlan> => {
-    const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
+    const request = PlanRequestPolicy.preparePlanRequest<CreateQuickPlanInput>({
       previous: planRequestRef.current,
       input: { text, source: 'voice' },
       createIdempotencyKey: idGenerator.create,
@@ -190,7 +190,7 @@ function useQuickPlanRequest({ aiConsent, onExit }: UseQuickPlanRequestOptions) 
       planRequestRef.current = null;
       return { plan, isCharged: charged };
     } catch (error) {
-      planRequestRef.current = PlanRequestPolicy.getAfterFailure(request, error);
+      planRequestRef.current = PlanRequestPolicy.getRequestToRetry(request, error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

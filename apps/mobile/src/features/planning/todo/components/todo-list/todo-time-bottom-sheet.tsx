@@ -85,8 +85,10 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
         }}
         onCancel={onClose}
         onChange={async ({ scheduledTime, isAllDay }) => {
-          const isUnchanged =
-            isAllDay === todo.isAllDay && (isAllDay || scheduledTime === editValues.scheduledTime);
+          const isUnchanged = !TodoPolicy.hasScheduleChanged(
+            { isAllDay, scheduledTime },
+            { isAllDay: todo.isAllDay, scheduledTime: editValues.scheduledTime },
+          );
           if (isUnchanged) {
             onClose();
 

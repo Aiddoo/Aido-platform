@@ -1,6 +1,6 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
-import { getDefaultSelection, type PlanSelection } from '../domains/voice-plan.model';
+import { type PlanSelection, VoicePlanPolicy } from '../domains/voice-plan.model';
 import {
   createPlanReviewDraftSchema,
   type PlanReviewDraft,
@@ -14,7 +14,7 @@ import {
 
 export function createPlanReviewFormValues(
   plan: VoicePlan,
-  selection: PlanSelection = getDefaultSelection(plan),
+  selection: PlanSelection = VoicePlanPolicy.getDefaultSelection(plan),
 ): PlanReviewFormValues {
   return {
     actions: plan.actions.map((action) => ({

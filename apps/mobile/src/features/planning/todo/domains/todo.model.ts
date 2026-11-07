@@ -4,9 +4,29 @@ import { toHHmm } from '@src/shared/date/instant';
 import type { SubTodo } from '../schemas/sub-todo.schema';
 import type { Todo } from '../schemas/todo.schema';
 
-/** 비공개 할 일은 친구에게 보이지 않는다. 정하지 않은(null) 공개 범위는 서버 기본값인 공개로 본다 */
+/** 정하지 않은(null, 생략) 공개 범위는 서버 기본값인 공개로 본다 */
+function getVisibility(todo: { visibility?: Todo['visibility'] | null }): Todo['visibility'] {
+  return todo.visibility ?? 'PUBLIC';
+}
+
+/** 비공개 할 일은 친구에게 보이지 않는다 */
 function isPrivate(todo: { visibility: Todo['visibility'] | null }): boolean {
-  return todo.visibility === 'PRIVATE';
+  return getVisibility(todo) === 'PRIVATE';
+}
+
+function withVisibilityToggled<T extends { visibility: Todo['visibility'] | null }>(todo: T): T {
+  return { ...todo, visibility: isPrivate(todo) ? 'PUBLIC' : 'PRIVATE' };
+}
+
+/** 종일이 아닌 시각만 비교한다. 종일끼리는 남은 시각 값이 달라도 바뀐 것이 아니다 */
+function hasScheduleChanged(
+  next: Pick<Todo, 'isAllDay'> & { scheduledTime: string | null },
+  previous: Pick<Todo, 'isAllDay'> & { scheduledTime: string | null },
+): boolean {
+  return (
+    next.isAllDay !== previous.isAllDay ||
+    (!next.isAllDay && next.scheduledTime !== previous.scheduledTime)
+  );
 }
 
 /** 시트 route의 대상 할 일. 목록에서 사라졌으면(삭제·다른 날짜) null */
@@ -106,7 +126,10 @@ function canReorderTodos(todos: readonly Pick<Todo, 'id'>[]) {
 
 export const TodoPolicy = {
   canReorderTodos,
+  getVisibility,
   isPrivate,
+  withVisibilityToggled,
+  hasScheduleChanged,
   findTodo,
   findSubTodo,
   getOptimisticListDate,

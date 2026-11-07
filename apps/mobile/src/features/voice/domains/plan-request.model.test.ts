@@ -2,19 +2,19 @@ import { ApiError } from '@src/core/errors/api-error';
 
 import { PlanRequestPolicy } from './plan-request.model';
 
-describe('prepare', () => {
+describe('preparePlanRequest', () => {
   test('같은 내용을 다시 보내면 처음 키를 다시 쓴다', () => {
     // Given
     let count = 0;
     const createIdempotencyKey = () => `key-${++count}`;
-    const first = PlanRequestPolicy.prepare({
+    const first = PlanRequestPolicy.preparePlanRequest({
       previous: null,
       input: { text: '장보기' },
       createIdempotencyKey,
     });
 
     // When
-    const retry = PlanRequestPolicy.prepare({
+    const retry = PlanRequestPolicy.preparePlanRequest({
       previous: first,
       input: { text: '장보기' },
       createIdempotencyKey,
@@ -28,14 +28,14 @@ describe('prepare', () => {
     // Given
     let count = 0;
     const createIdempotencyKey = () => `key-${++count}`;
-    const first = PlanRequestPolicy.prepare({
+    const first = PlanRequestPolicy.preparePlanRequest({
       previous: null,
       input: { text: '장보기' },
       createIdempotencyKey,
     });
 
     // When
-    const edited = PlanRequestPolicy.prepare({
+    const edited = PlanRequestPolicy.preparePlanRequest({
       previous: first,
       input: { text: '장보기 우유' },
       createIdempotencyKey,
@@ -46,7 +46,7 @@ describe('prepare', () => {
   });
 });
 
-describe('getAfterFailure', () => {
+describe('getRequestToRetry', () => {
   const previous = { fingerprint: 'a', idempotencyKey: 'key-1', input: 'a' };
 
   test('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
@@ -54,7 +54,7 @@ describe('getAfterFailure', () => {
     const error = new ApiError('AI_1318', '오류', 422);
 
     // When
-    const next = PlanRequestPolicy.getAfterFailure(previous, error);
+    const next = PlanRequestPolicy.getRequestToRetry(previous, error);
 
     // Then
     expect(next).toBeNull();
@@ -65,7 +65,7 @@ describe('getAfterFailure', () => {
     const error = new ApiError('AI_1314', '처리 중', 409);
 
     // When
-    const next = PlanRequestPolicy.getAfterFailure(previous, error);
+    const next = PlanRequestPolicy.getRequestToRetry(previous, error);
 
     // Then
     expect(next).toBe(previous);
