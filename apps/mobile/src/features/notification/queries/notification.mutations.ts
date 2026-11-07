@@ -208,8 +208,18 @@ export function useRecordPushOpenedMutationOptions() {
         );
       return { epoch };
     },
+    // onMutate의 배지는 느린 망이나 오프라인이면 읽음 처리 전 수다. 서버가 처리한 뒤의 수로 다시 맞춘다
     onSuccess: (_opened, _notificationId, { epoch }) =>
-      sessionEpoch.current() === epoch ? invalidateNotifications(queryClient) : undefined,
+      sessionEpoch.current() === epoch
+        ? Promise.all([
+            invalidateNotifications(queryClient),
+            notificationService.syncBadgeCount().catch((error) =>
+              logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
+                error: getErrorMessage(error),
+              }),
+            ),
+          ])
+        : undefined,
     onError: (error) =>
       logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, {
         error: getErrorMessage(error),
