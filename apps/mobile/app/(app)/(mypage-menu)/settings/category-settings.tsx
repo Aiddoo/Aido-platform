@@ -1,7 +1,6 @@
 import { CategoryList } from '@src/features/planning/category/components/category-list';
 import {
   CATEGORY_SETTINGS_VIEW,
-  type CategorySettingsView,
   categorySettingsViewSchema,
 } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -25,12 +24,7 @@ import { PressableFeedback, Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const VIEW_LABEL_KEYS = {
-  edit: 'categorySettings.editTab',
-  reorder: 'categorySettings.reorderTab',
-} as const satisfies Record<CategorySettingsView, string>;
-
-function TodoCategorySettingsScreen() {
+export default function TodoCategorySettingsScreen() {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('settings');
   const push = useSingleTap(router.push);
@@ -51,8 +45,12 @@ function TodoCategorySettingsScreen() {
             >
               <Tabs.List>
                 <Tabs.Indicator />
-                <ViewTab view={CATEGORY_SETTINGS_VIEW.edit} />
-                <ViewTab view={CATEGORY_SETTINGS_VIEW.reorder} />
+                <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.edit}>
+                  {t('categorySettings.editTab')}
+                </SegmentTabTrigger>
+                <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.reorder}>
+                  {t('categorySettings.reorderTab')}
+                </SegmentTabTrigger>
               </Tabs.List>
             </ViewTabs>
 
@@ -82,12 +80,4 @@ function TodoCategorySettingsScreen() {
       </ReadableContent>
     </StyledSafeAreaView>
   );
-}
-
-export default TodoCategorySettingsScreen;
-
-function ViewTab({ view }: { view: CategorySettingsView }) {
-  const { t } = useTranslation('settings');
-
-  return <SegmentTabTrigger value={view}>{t(VIEW_LABEL_KEYS[view])}</SegmentTabTrigger>;
 }
