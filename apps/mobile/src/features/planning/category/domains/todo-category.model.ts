@@ -2,7 +2,7 @@ import type { TodoCategory, TodoCategoryWithCount } from '../schemas/todo-catego
 
 const MIN_REORDERABLE_COUNT = 2;
 
-/** 시트 route가 가리키는 카테고리. 목록에서 사라졌으면(삭제된 뒤) null */
+/** id가 가리키는 카테고리(시트 route, 칩, 분석이 쓴다). 목록에서 사라졌으면(삭제된 뒤) null */
 function findCategory<T extends Pick<TodoCategory, 'id'>>(
   categories: readonly T[],
   categoryId: number,
@@ -38,6 +38,11 @@ function isTodoMoveRequired(category: Pick<TodoCategoryWithCount, 'todoCount'>) 
   return category.todoCount > 0;
 }
 
+/** 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다 */
+function isOptimisticCategory(category: Pick<TodoCategory, 'id'>) {
+  return category.id < 0;
+}
+
 function canReorderCategories(categories: readonly Pick<TodoCategory, 'id'>[]) {
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
@@ -45,6 +50,7 @@ function canReorderCategories(categories: readonly Pick<TodoCategory, 'id'>[]) {
 export const TodoCategoryPolicy = {
   isTodoMoveRequired,
   canReorderCategories,
+  isOptimisticCategory,
   findCategory,
   getInitialCategoryId,
   hasChanges,

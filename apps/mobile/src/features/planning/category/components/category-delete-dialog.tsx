@@ -45,11 +45,11 @@ export function CategoryDeleteDialog({
     return null;
   }
 
-  const handleDelete = (moveToCategoryId?: number | null) => {
+  const handleDelete = (moveToCategoryId?: number) => {
     const params =
-      moveToCategoryId != null
-        ? { id: categoryId, query: { moveToCategoryId } }
-        : { id: categoryId };
+      moveToCategoryId == null
+        ? { id: categoryId }
+        : { id: categoryId, query: { moveToCategoryId } };
 
     deleteMutation.mutate(params, {
       onSuccess: () => {
@@ -113,7 +113,7 @@ interface CategoryMoveDeleteFormProps {
   category: TodoCategoryWithCount;
   otherCategories: TodoCategoryWithCount[];
   onCancel: () => void;
-  onDelete: (moveToCategoryId: number | null) => void;
+  onDelete: (moveToCategoryId: number) => void;
   isLoading: boolean;
 }
 
@@ -125,7 +125,7 @@ function CategoryMoveDeleteForm({
   isLoading,
 }: CategoryMoveDeleteFormProps) {
   const { t } = useTranslation('todo');
-  const [selectedValue, setSelectedValue] = useState(String(otherCategories[0]?.id));
+  const [selectedValue, setSelectedValue] = useState(String(otherCategories[0]?.id ?? ''));
   const selectedCategory = otherCategories.find(
     (candidate) => String(candidate.id) === selectedValue,
   );
@@ -155,7 +155,12 @@ function CategoryMoveDeleteForm({
 
       <DialogActions
         onCancel={onCancel}
-        onDelete={() => onDelete(selectedCategory?.id ?? null)}
+        onDelete={() => {
+          if (selectedCategory != null) {
+            onDelete(selectedCategory.id);
+          }
+        }}
+        isDisabled={selectedCategory == null}
         isLoading={isLoading}
       />
     </>
@@ -165,10 +170,11 @@ function CategoryMoveDeleteForm({
 interface DialogActionsProps {
   onCancel: () => void;
   onDelete: () => void;
+  isDisabled: boolean;
   isLoading: boolean;
 }
 
-function DialogActions({ onCancel, onDelete, isLoading }: DialogActionsProps) {
+function DialogActions({ onCancel, onDelete, isDisabled, isLoading }: DialogActionsProps) {
   const { t } = useTranslation('common');
 
   return (
@@ -181,6 +187,7 @@ function DialogActions({ onCancel, onDelete, isLoading }: DialogActionsProps) {
         size="medium"
         display="inline"
         onPress={onDelete}
+        isDisabled={isDisabled}
         isLoading={isLoading}
       >
         {t('actions.delete')}

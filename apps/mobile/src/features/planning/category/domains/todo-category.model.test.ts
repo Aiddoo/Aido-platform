@@ -103,3 +103,16 @@ describe('canReorderCategories', () => {
     expect(result).toBe(expected);
   });
 });
+
+describe('isOptimisticCategory', () => {
+  it.each([
+    { title: '서버 응답 전 임시 id(음수)는 임시 행이다', id: -1, expected: true },
+    { title: '저장된 카테고리는 임시 행이 아니다', id: 3, expected: false },
+  ])('$title', ({ id, expected }) => {
+    // When
+    const result = TodoCategoryPolicy.isOptimisticCategory({ id });
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

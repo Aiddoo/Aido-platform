@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { Flex } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { RadioGroup } from 'heroui-native';
@@ -13,6 +14,9 @@ interface CategoryColorInputProps extends Omit<
   onChange: (color: string) => void;
 }
 
+/** 32px 색 칸을 터치 기준 44px에 맞춘다 */
+const COLOR_ITEM_HIT_SLOP = 6;
+
 /** 카테고리 색상 팔레트에서 하나를 고르는 입력. 생성·수정 시트가 함께 쓴다. */
 export function CategoryColorInput({
   value,
@@ -20,6 +24,8 @@ export function CategoryColorInput({
   className,
   ...props
 }: CategoryColorInputProps) {
+  const { t } = useTranslation('todo');
+
   return (
     <RadioGroup
       value={value}
@@ -27,8 +33,16 @@ export function CategoryColorInput({
       className={cn('flex-row flex-wrap items-center justify-center gap-2.5', className)}
       {...props}
     >
-      {CATEGORY_COLORS.map((color) => (
-        <RadioGroup.Item key={color} value={color}>
+      {CATEGORY_COLORS.map((color, index) => (
+        <RadioGroup.Item
+          key={color}
+          value={color}
+          hitSlop={COLOR_ITEM_HIT_SLOP}
+          accessibilityLabel={t('category.colorOption', {
+            index: index + 1,
+            total: CATEGORY_COLORS.length,
+          })}
+        >
           {({ isSelected }) => (
             <Flex
               align="center"

@@ -1,8 +1,11 @@
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { BottomSheetInput, VStack } from '@src/shared/ui';
+import { BottomSheetInput, Flex, VStack } from '@src/shared/ui';
+import { range } from 'es-toolkit';
+import { Skeleton } from 'heroui-native';
 import { Controller, type Control } from 'react-hook-form';
 
+import { CATEGORY_COLORS } from '../constants/todo-category.constants';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import { CategoryColorInput } from './category-color-input';
 
@@ -48,3 +51,17 @@ export function CategoryFormFields({ control, onSubmit }: CategoryFormFieldsProp
     </VStack>
   );
 }
+
+/** 입력 칸과 색 칸의 자리를 같은 크기로 잡아 읽은 뒤 시트 높이가 튀지 않게 한다 */
+CategoryFormFields.Loading = function Loading() {
+  return (
+    <VStack gap={20}>
+      <Skeleton className="h-20 w-full rounded-xl" />
+      <Flex direction="row" wrap="wrap" align="center" justify="center" className="gap-2.5">
+        {range(CATEGORY_COLORS.length).map((index) => (
+          <Skeleton key={index} className="size-8 rounded-full" />
+        ))}
+      </Flex>
+    </VStack>
+  );
+};

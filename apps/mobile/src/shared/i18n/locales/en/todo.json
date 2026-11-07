@@ -193,6 +193,7 @@
     "to": "to. {{name}}"
   },
   "category": {
+    "colorOption": "Color {{index}} of {{total}}",
     "nameLabel": "Category name",
     "namePlaceholder": "Enter a category name",
     "deleteTitle": "Delete the {{name}} category?",

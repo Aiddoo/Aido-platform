@@ -83,7 +83,7 @@ CategoryEditBottomSheet.Contents = function Contents({
 CategoryEditBottomSheet.Loading = function Loading() {
   return (
     <VStack gap={40} pb={12}>
-      <Skeleton className="h-20 w-full rounded-xl" />
+      <CategoryFormFields.Loading />
       <Skeleton className="h-14 w-full rounded-xl" />
     </VStack>
   );

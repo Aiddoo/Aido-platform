@@ -14,6 +14,7 @@ import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys'
 import type { TodoCategoriesResult } from '../schemas/todo-category.schema';
 import {
   useCreateTodoCategoryMutationOptions,
+  useDeleteTodoCategoryMutationOptions,
   useUpdateTodoCategoryMutationOptions,
 } from './todo-category.mutations';
 
@@ -29,6 +30,7 @@ async function renderMutations() {
   const actions: {
     create?: ReturnType<typeof useCreate>;
     update?: ReturnType<typeof useUpdate>;
+    remove?: ReturnType<typeof useRemove>;
   } = {};
   function useCreate() {
     return useMutation(useCreateTodoCategoryMutationOptions());
@@ -36,7 +38,11 @@ async function renderMutations() {
   function useUpdate() {
     return useMutation(useUpdateTodoCategoryMutationOptions());
   }
+  function useRemove() {
+    return useMutation(useDeleteTodoCategoryMutationOptions());
+  }
   function Capture() {
+    actions.remove = useRemove();
     actions.create = useCreate();
     actions.update = useUpdate();
     return null;
@@ -53,6 +59,7 @@ async function renderMutations() {
     create: (input: { name: string; color: string }) => actions.create?.mutateAsync(input),
     update: (id: number, input: { name: string; color?: string }) =>
       actions.update?.mutateAsync({ id, input }),
+    remove: (id: number) => actions.remove?.mutateAsync({ id }),
   };
 }
 
@@ -86,6 +93,19 @@ describe('카테고리 저장', () => {
 
     // When
     const result = update(1, { name: '새 이름' });
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
+    expect(cached()).toEqual(CATEGORIES);
+  });
+
+  it('오프라인에서 지우기는 기다리지 않고 바로 실패해 목록을 되돌린다', async () => {
+    // Given
+    const { httpClient, cached, remove } = await renderMutations();
+    httpClient.delete.mockRejectedValue(new NetworkError());
+
+    // When
+    const result = remove(1);
 
     // Then
     await expect(result).rejects.toBeInstanceOf(NetworkError);

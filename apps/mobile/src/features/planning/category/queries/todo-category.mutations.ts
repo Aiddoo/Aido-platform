@@ -164,6 +164,8 @@ export function useDeleteTodoCategoryMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
+    networkMode: 'always',
     mutationFn: async ({ id, query }: DeleteTodoCategoryParams) =>
       unwrap(await todoCategoryService.deleteCategory(id, query)),
     onMutate: async ({ id }) => {

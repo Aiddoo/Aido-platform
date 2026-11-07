@@ -115,6 +115,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   const { t } = useTranslation('common');
   const push = useSingleTap(router.push);
   const deleteOverlay = useOverlay();
+  const isOptimistic = TodoCategoryPolicy.isOptimisticCategory(category);
 
   const openDeleteDialog = () => {
     deleteOverlay.open(({ isOpen, close, unmount }) => (
@@ -132,7 +133,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   };
 
   return (
-    <PressableFeedback className="rounded-xl">
+    <Box className="rounded-xl">
       <CategoryRow
         category={category}
         right={
@@ -142,6 +143,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
               color="dark"
               size="small"
               display="inline"
+              isDisabled={isOptimistic}
               onPress={() =>
                 push({
                   pathname: '/todo-categories/[categoryId]/edit',
@@ -156,6 +158,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
               color="danger"
               size="small"
               display="inline"
+              isDisabled={isOptimistic}
               onPress={openDeleteDialog}
             >
               {t('actions.delete')}
@@ -163,7 +166,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
           </HStack>
         }
       />
-    </PressableFeedback>
+    </Box>
   );
 };
 
@@ -175,7 +178,7 @@ CategoryList.ReorderItem = function ReorderItem({ category }: CategoryListItemPr
   return (
     <PressableFeedback
       onLongPress={drag}
-      isDisabled={isActive}
+      isDisabled={isActive || TodoCategoryPolicy.isOptimisticCategory(category)}
       className={cn('rounded-xl', isActive && 'bg-white shadow-md shadow-black/10')}
     >
       <CategoryRow

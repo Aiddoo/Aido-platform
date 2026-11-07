@@ -189,6 +189,7 @@
     "to": "to. {{name}}"
   },
   "category": {
+    "colorOption": "색상 {{index}}/{{total}}",
     "nameLabel": "카테고리 이름",
     "namePlaceholder": "카테고리 이름을 입력해주세요",
     "deleteTitle": "{{name}} 카테고리를 삭제할까요?",
