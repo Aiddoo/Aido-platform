@@ -140,12 +140,7 @@
   },
   "feature-upward": {
     "reason": "위층에서 타입, 모델, *-cache 밖의 코드를 가져오는 간선. 줄 수를 넘으면 막는다",
-    "entries": {
-      "planning/todo -> social/friend": {
-        "count": 1,
-        "reason": "친구 칸과 친구 달력이 친구 쿼리를 읽는다. 슬롯으로 app/에서 조립할 예정"
-      }
-    }
+    "entries": {}
   },
   "forbidden-name": {
     "reason": "규칙을 넣기 전부터 있던 이름. 해당 컴포넌트를 고칠 때 역할 이름으로 바꾼다",

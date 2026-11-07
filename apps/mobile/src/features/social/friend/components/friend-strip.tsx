@@ -3,8 +3,7 @@ import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
-import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
+import { useFeedFriendParam } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -35,7 +34,8 @@ import { PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
-import { useFeedFriendParam } from '../hooks/use-feed-params';
+import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
+import type { FriendUser } from '../schemas/friend.schema';
 import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll';
 
 /** 아바타 40 + 양쪽 선택 링 2 + 링 안쪽 여백 2. 선택 여부와 관계없이 늘 같은 크기다 */
