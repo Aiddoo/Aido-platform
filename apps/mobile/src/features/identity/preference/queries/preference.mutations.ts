@@ -65,7 +65,7 @@ export function useUpdatePreferenceMutationOptions() {
           trackEvent('settings_changed', { setting, value: String(value) });
         }
       }
-      // 서버 응답으로 캐시를 정확하게 업데이트 (invalidate 대신 직접 업데이트로 블링킹 방지)
+      // invalidate 대신 응답을 캐시에 직접 써서 다시 받는 동안의 깜빡임을 막는다
       queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
     },
     onError: (error, _change, context) => {

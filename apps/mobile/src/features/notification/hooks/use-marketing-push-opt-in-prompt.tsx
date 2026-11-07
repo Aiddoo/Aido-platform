@@ -14,11 +14,8 @@ import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-perm
 import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
 
 interface MarketingPushOptInPrompt {
-  /** 배너를 노출할지 여부 */
   isVisible: boolean;
-  /** 동의 시트를 연다 (탭) */
   open: () => void;
-  /** 배너를 닫고 쿨다운을 기록한다 (닫기 버튼) */
   dismiss: () => void;
 }
 

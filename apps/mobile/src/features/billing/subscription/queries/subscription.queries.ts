@@ -49,7 +49,7 @@ function reportStoreUnavailable(
     .exhaustive();
 }
 
-const OFFERINGS_STALE_TIME = 10 * 60 * 1000; // 10분
+const OFFERINGS_STALE_TIME = 10 * 60 * 1000;
 
 export function useGetOfferingsQueryOptions() {
   const subscriptionService = useSubscriptionService();

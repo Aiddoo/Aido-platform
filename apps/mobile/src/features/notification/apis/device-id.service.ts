@@ -19,7 +19,6 @@ export class DeviceIdService {
       return storedId;
     }
 
-    // 우선순위: iOS Vendor ID > Android ID > Random UUID
     const platformId = (await this.#vendorIdGateway.get()) ?? this.#idGenerator.create();
     const deviceId = `${process.env.EXPO_OS}_${platformId}`;
     await this.#store.save(deviceId);
