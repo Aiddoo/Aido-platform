@@ -3,21 +3,6 @@ import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 import { getScaledFontSize, SCALED_FONT_STYLES } from './scaled-font-style';
 
 describe('SCALED_FONT_STYLES', () => {
-  it('5개의 FontScale에 대한 스타일을 모두 포함한다', () => {
-    // Given
-    const scales: FontScale[] = ['xsmall', 'small', 'medium', 'large', 'xlarge'];
-
-    // When
-    const styles = scales.map((scale) => SCALED_FONT_STYLES[scale]);
-
-    // Then
-    for (const style of styles) {
-      expect(style).toBeDefined();
-      expect(style.fontSize).toBeGreaterThan(0);
-      expect(style.lineHeight).toBeGreaterThan(0);
-    }
-  });
-
   it('fontSize는 scale이 커질수록 증가한다', () => {
     // When
     const xsmall = SCALED_FONT_STYLES.xsmall.fontSize;

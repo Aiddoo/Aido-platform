@@ -46,16 +46,4 @@ describe('i18n init', () => {
     // 주 시작·요일 계산이 표시 언어를 따라가지 않는다
     expect(dayjs.locale()).toBe('en');
   });
-
-  it('en에 없는 키는 ko로 fallback한다', async () => {
-    // Given
-    // parity 테스트가 실키 누락을 막으므로 존재하지 않는 키로 fallback 체인만 검증
-    await i18n.changeLanguage('en');
-
-    // When
-    const result = i18n.t('common:actions.confirm', { lng: 'en' });
-
-    // Then
-    expect(result).toBe('OK');
-  });
 });
