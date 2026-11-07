@@ -13,17 +13,7 @@ import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  Box,
-  Button,
-  HStack,
-  SheetHeaderLayout,
-  Text,
-  VStack,
-  IconButton,
-} from '@src/shared/ui';
+import { Box, Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
@@ -50,7 +40,6 @@ import {
 } from '../utils/calendar-day';
 import {
   getTodoRepeatFormFirstOccurrenceKey,
-  hasSameWeekdays,
   isTodoRepeatFormPreset,
   toTodoRepeatFormValues,
   withTodoRepeatFormBiweeklyToggled,
@@ -61,6 +50,7 @@ import {
 } from '../utils/todo-repeat-form-values';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
+import { PickerMonthHeader } from './picker-month-header';
 import { RepeatHintLine } from './repeat-hint-line';
 
 type RepeatForm = UseFormReturn<TodoRepeatFormValues>;
@@ -299,11 +289,12 @@ TodoRepeatPickerContent.RepeatSummary = function RepeatSummary({ form }: { form:
       () => t('picker.repeatDaily'),
     )
     .when(
-      ({ weekdays: selected }) => hasSameWeekdays(selected, TODO_REPEAT_WEEKDAYS),
+      ({ weekdays: selected }) => TodoRepeatPolicy.hasSameWeekdays(selected, TODO_REPEAT_WEEKDAYS),
       () => t('picker.repeatWeekdays'),
     )
     .when(
-      ({ weekdays: selected }) => hasSameWeekdays(selected, TODO_REPEAT_WEEKEND_DAYS),
+      ({ weekdays: selected }) =>
+        TodoRepeatPolicy.hasSameWeekdays(selected, TODO_REPEAT_WEEKEND_DAYS),
       () => t('picker.repeatWeekends'),
     )
     .otherwise(() => t('picker.repeatWeekly', { days }));
@@ -445,6 +436,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
     control: form.control,
     compute: (values) => {
       const repeat = toTodoRepeat(values, dateFormatContext.timeZone);
+
       return repeat == null
         ? null
         : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
@@ -459,6 +451,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
     control: form.control,
     compute: (values) => {
       const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, dateFormatContext.timeZone);
+
       return repeat != null && TodoRepeatPolicy.isRepeatMonthDayClamped(repeat);
     },
   });
@@ -550,7 +543,6 @@ function RepeatCalendar({
   onDatePress,
 }: RepeatCalendarProps) {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
-  const { t: tCommon } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
   const { timeZone } = dateFormatContext;
   const hasDistinctRange =
@@ -558,29 +550,11 @@ function RepeatCalendar({
 
   return (
     <VStack gap={16}>
-      <HStack className="items-center justify-between" px={16}>
-        <IconButton
-          accessibilityLabel={tCommon('calendar.previousMonth')}
-          icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
-          className="min-h-0 min-w-0"
-          hitSlop={12}
-          onPress={goToPrevMonth}
-        />
-        <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-          {formatDateKeyLabel(
-            toDateKey(displayMonth, dateFormatContext.timeZone),
-            'yearMonth',
-            dateFormatContext,
-          )}
-        </Text>
-        <IconButton
-          accessibilityLabel={tCommon('calendar.nextMonth')}
-          icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
-          className="min-h-0 min-w-0"
-          hitSlop={12}
-          onPress={goToNextMonth}
-        />
-      </HStack>
+      <PickerMonthHeader
+        displayMonth={displayMonth}
+        onPreviousPress={goToPrevMonth}
+        onNextPress={goToNextMonth}
+      />
 
       <CalendarWeekdayHeader />
 
@@ -591,6 +565,7 @@ function RepeatCalendar({
             const isVisible = isSameMonth(date, displayMonth, timeZone);
             const isStart = isSameDay(date, startDate, timeZone);
             const isEnd = endDate != null && isSameDay(date, endDate, timeZone);
+
             return {
               date,
               isVisible,

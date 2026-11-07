@@ -19,11 +19,12 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton, Switch } from 'heroui-native';
 import { useState } from 'react';
+import { match } from 'ts-pattern';
 
 import { DEFAULT_TODO_TIME } from '../constants/todo-default-time';
 import { PickerHeader } from './picker-header';
 
-const isIOS = process.env.EXPO_OS === 'ios';
+const IS_IOS = process.env.EXPO_OS === 'ios';
 
 interface TodoTimeValue {
   scheduledTime: string | null;
@@ -44,7 +45,6 @@ export function TodoTimePickerContent({
   onChange,
   onCancel,
 }: TodoTimePickerContentProps) {
-  const draftDate = date;
   const { scheduledTime, isAllDay } = value;
   const { t } = useTranslation('todo');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -92,8 +92,8 @@ export function TodoTimePickerContent({
                 topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
               />
             }
-            right={
-              localIsAllDay ? (
+            right={match({ localIsAllDay, isIOS: IS_IOS })
+              .with({ localIsAllDay: true }, () => (
                 <PressableFeedback
                   onPress={() => setLocalIsAllDay(false)}
                   className="h-[34px] justify-center"
@@ -102,11 +102,13 @@ export function TodoTimePickerContent({
                     {t('picker.selectTime')}
                   </Text>
                 </PressableFeedback>
-              ) : isIOS ? (
+              ))
+              .with({ isIOS: true }, () => (
                 <Text size="b1" tone="brand" weight="medium">
                   {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
                 </Text>
-              ) : (
+              ))
+              .otherwise(() => (
                 <>
                   <PressableFeedback
                     onPress={() => setShowAndroidPicker(true)}
@@ -118,35 +120,34 @@ export function TodoTimePickerContent({
                   </PressableFeedback>
                   {showAndroidPicker && (
                     <DateTimePicker
-                      value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
+                      value={getDateWithTime(date, localTime, DEFAULT_TODO_TIME)}
                       mode="time"
                       display="spinner"
                       is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
-                      onChange={(_event, date) => {
+                      onChange={(_event, pickedTime) => {
                         setShowAndroidPicker(false);
-                        if (date) {
-                          setLocalTime(toHHmm(date, dateFormatContext.timeZone));
+                        if (pickedTime) {
+                          setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
                         }
                       }}
                     />
                   )}
                 </>
-              )
-            }
+              ))}
             horizontalPadding="medium"
             verticalPadding="medium"
             isDisabled={localIsAllDay}
           />
-          {!localIsAllDay && isIOS && (
+          {!localIsAllDay && IS_IOS && (
             <Box className="items-center">
               <DateTimePicker
-                value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
+                value={getDateWithTime(date, localTime, DEFAULT_TODO_TIME)}
                 mode="time"
                 display="spinner"
                 locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
-                onChange={(_event, date) => {
-                  if (date) {
-                    setLocalTime(toHHmm(date, dateFormatContext.timeZone));
+                onChange={(_event, pickedTime) => {
+                  if (pickedTime) {
+                    setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
                   }
                 }}
                 style={{ height: 216 }}

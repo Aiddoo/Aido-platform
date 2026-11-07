@@ -25,16 +25,10 @@ export function MyCalendar() {
     .with('week', () => TodoRepeatPolicy.isBeyondRepeatHorizon(selectedDateKey, todayKey))
     .exhaustive();
 
-  return (
-    <Calendar
-      completions={query.data}
-      status={
-        query.isError ? (
-          <Calendar.Error onRetry={() => query.refetch()} />
-        ) : isHorizonHintVisible ? (
-          <RepeatHorizonHint />
-        ) : undefined
-      }
-    />
-  );
+  const status = match({ isError: query.isError, isHorizonHintVisible })
+    .with({ isError: true }, () => <Calendar.Error onRetry={() => query.refetch()} />)
+    .with({ isHorizonHintVisible: true }, () => <RepeatHorizonHint />)
+    .otherwise(() => undefined);
+
+  return <Calendar completions={query.data} status={status} />;
 }

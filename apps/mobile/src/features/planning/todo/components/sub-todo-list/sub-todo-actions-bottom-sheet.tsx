@@ -7,12 +7,9 @@ import {
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowRightIcon,
   BottomSheet,
-  Box,
   EditIcon,
   INQUIRY_SHEET_EXIT,
-  ListRow,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -24,11 +21,12 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { useDeleteSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import { TodoActionRow } from '../todo-action-row';
 
 type SubTodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -97,7 +95,11 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
 
   return (
     <VStack gap={8}>
-      <PressableFeedback
+      <TodoActionRow
+        icon={<EditIcon width={16} height={16} colorClassName="text-main" />}
+        label={t('actions.edit')}
+        hasArrow
+        isDisabled={isDeleting}
         onPress={() =>
           onClose({
             type: 'replace',
@@ -107,41 +109,15 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
             },
           })
         }
-        isDisabled={isDeleting}
-      >
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-              <EditIcon width={16} height={16} colorClassName="text-main" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
-          }
-          right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-        />
-      </PressableFeedback>
+      />
 
-      <PressableFeedback onPress={handleDelete} isDisabled={isDeleting}>
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
-              <TrashIcon width={16} height={16} colorClassName="text-error" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={isDeleting ? t('actions.deleting') : t('actions.delete')}
-              topProps={{ size: 'b2', tone: 'danger' }}
-            />
-          }
-        />
-      </PressableFeedback>
+      <TodoActionRow
+        icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+        label={isDeleting ? t('actions.deleting') : t('actions.delete')}
+        isDanger
+        isDisabled={isDeleting}
+        onPress={handleDelete}
+      />
     </VStack>
   );
 };
@@ -161,6 +137,7 @@ SubTodoActionsBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}

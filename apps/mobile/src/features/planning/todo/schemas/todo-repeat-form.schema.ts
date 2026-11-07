@@ -1,4 +1,4 @@
-import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES, type DayOfWeek } from '@aido/api/vocabulary';
+import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES } from '@aido/api/vocabulary';
 import { getDayOfMonth } from '@src/shared/date/date-key';
 import { instantFieldSchema, toDateKey } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
@@ -22,17 +22,11 @@ const todoRepeatFormShape = z.object({
 
 export type TodoRepeatFormValues = z.input<typeof todoRepeatFormShape>;
 
-const WEEK_LENGTH = 7;
-
 export function getTodoRepeatFormMonthDay(
   { monthDay, startDate }: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>,
   timeZone: string,
 ): number {
   return monthDay ?? getDayOfMonth(toDateKey(startDate, timeZone));
-}
-
-function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
-  return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
 }
 
 function toTodoRepeatEnd(values: TodoRepeatFormValues, timeZone: string): TodoRepeatEnd | null {
@@ -66,14 +60,14 @@ export function toTodoRepeat(values: TodoRepeatFormValues, timeZone: string): To
     return null;
   }
 
-  if (values.interval === 1 && values.weekdays.length === WEEK_LENGTH) {
+  if (values.interval === 1 && values.weekdays.length === DAYS_OF_WEEK.length) {
     return { frequency: 'DAILY', end };
   }
 
   return {
     frequency: 'WEEKLY',
     interval: values.interval,
-    weekdays: sortWeekdays(values.weekdays),
+    weekdays: TodoRepeatPolicy.sortWeekdays(values.weekdays),
     end,
   };
 }

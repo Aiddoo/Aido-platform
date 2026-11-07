@@ -22,12 +22,20 @@ interface TodoCommentKeyboardScrollViewProps extends Omit<
   ref?: Ref<Reanimated.ScrollView>;
 }
 
-const isLegacyAndroidKeyboard =
+const IS_LEGACY_ANDROID_KEYBOARD =
   process.env.EXPO_OS === 'android' &&
   typeof Platform.Version === 'number' &&
   Platform.Version < 30;
-const keyboardDismissMode =
-  process.env.EXPO_OS === 'ios' ? 'interactive' : isLegacyAndroidKeyboard ? 'on-drag' : 'none';
+
+function getKeyboardDismissMode(): 'interactive' | 'on-drag' | 'none' {
+  if (process.env.EXPO_OS === 'ios') {
+    return 'interactive';
+  }
+
+  return IS_LEGACY_ANDROID_KEYBOARD ? 'on-drag' : 'none';
+}
+
+const KEYBOARD_DISMISS_MODE = getKeyboardDismissMode();
 
 export function TodoCommentKeyboardScrollView({
   keyboardLiftBehavior = 'whenAtEnd',
@@ -58,7 +66,7 @@ export function TodoCommentKeyboardScrollView({
       blankSpace={blankSpace}
       automaticallyAdjustContentInsets={false}
       contentInsetAdjustmentBehavior="never"
-      keyboardDismissMode={keyboardDismissMode}
+      keyboardDismissMode={KEYBOARD_DISMISS_MODE}
       keyboardShouldPersistTaps="handled"
       keyboardLiftBehavior={keyboardLiftBehavior}
       offset={keyboardBottomGap}

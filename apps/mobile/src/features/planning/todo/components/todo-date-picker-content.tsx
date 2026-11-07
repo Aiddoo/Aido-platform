@@ -1,21 +1,9 @@
 import { isSameDay, isSameMonth } from '@src/features/planning/todo/utils/calendar-date';
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { getWeekdayLabels } from '@src/shared/date/date-labels';
-import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  Box,
-  HStack,
-  ListRow,
-  SheetHeaderLayout,
-  Text,
-  VStack,
-  IconButton,
-} from '@src/shared/ui';
+import { Box, HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
@@ -24,6 +12,7 @@ import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
+import { PickerMonthHeader } from './picker-month-header';
 
 interface TodoDatePickerContentProps {
   value: Date;
@@ -134,34 +123,15 @@ interface DatePickerCalendarProps {
 
 function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
   const { displayMonth, weeks, date: startDate, goToPrevMonth, goToNextMonth } = picker;
-  const { t: tCommon } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
 
   return (
     <VStack gap={16}>
-      <HStack className="items-center justify-between" px={16}>
-        <IconButton
-          accessibilityLabel={tCommon('calendar.previousMonth')}
-          icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
-          className="min-h-0 min-w-0"
-          hitSlop={12}
-          onPress={goToPrevMonth}
-        />
-        <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-          {formatDateKeyLabel(
-            toDateKey(displayMonth, dateFormatContext.timeZone),
-            'yearMonth',
-            dateFormatContext,
-          )}
-        </Text>
-        <IconButton
-          accessibilityLabel={tCommon('calendar.nextMonth')}
-          icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
-          className="min-h-0 min-w-0"
-          hitSlop={12}
-          onPress={goToNextMonth}
-        />
-      </HStack>
+      <PickerMonthHeader
+        displayMonth={displayMonth}
+        onPreviousPress={goToPrevMonth}
+        onNextPress={goToNextMonth}
+      />
 
       <CalendarWeekdayHeader />
 

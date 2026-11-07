@@ -15,7 +15,6 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowUpIcon,
   BottomSheetInput,
   Box,
   HintPopoverContent,
@@ -34,19 +33,20 @@ import {
   VStack,
   IconButton,
 } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Popover, PressableFeedback, Separator, Skeleton, Spinner } from 'heroui-native';
+import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
-import { useAddSubTodoMutationOptions } from '../queries/todo-composer.mutations';
-import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
+import {
+  useAddSubTodoMutationOptions,
+  useUpdateSubTodoMutationOptions,
+} from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
+import { TodoComposerSubmitButton } from './todo-composer-fields';
 
 type AddSubTodoBottomSheetProps = Omit<
   ComponentProps<typeof KeyboardBottomSheet>,
@@ -138,6 +138,7 @@ AddSubTodoBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}
@@ -156,7 +157,6 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const { t } = useTranslation('todo');
   const date = useTodoSheetDateParam();
   const fontScaledSize = useFontScaledSize();
-  const { color: spinnerColor } = useResolveClassNames('text-white');
 
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
@@ -180,6 +180,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
     }
     if (subTodo != null && !SubTodoPolicy.hasTitleChanged(subTodo, title)) {
       onClose();
+
       return;
     }
 
@@ -264,29 +265,12 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
 
         <SpeechTooltip />
         <DictationButton value={draftTitle} onChange={(text) => form.setValue('title', text)} />
-        <PressableFeedback
+        <TodoComposerSubmitButton
           testID="sub-todo-submit"
           isDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitting}
           onPress={() => submitSubTodo()}
-          style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-          className={cn(
-            'items-center justify-center rounded-4xl',
-            isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
-          )}
-        >
-          {isSubmitting ? (
-            <Spinner
-              size="sm"
-              color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
-            />
-          ) : (
-            <ArrowUpIcon
-              width={fontScaledSize(18)}
-              height={fontScaledSize(18)}
-              colorClassName="text-white"
-            />
-          )}
-        </PressableFeedback>
+        />
       </HStack>
     </VStack>
   );

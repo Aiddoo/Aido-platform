@@ -39,8 +39,8 @@ function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
   return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
 }
 
-function hasSameWeekdays(a: readonly DayOfWeek[], b: readonly DayOfWeek[]): boolean {
-  return a.length === b.length && b.every((day) => a.includes(day));
+function hasSameWeekdays(weekdays: readonly DayOfWeek[], expected: readonly DayOfWeek[]): boolean {
+  return weekdays.length === expected.length && expected.every((day) => weekdays.includes(day));
 }
 
 export function getWeekday(dateKey: string): DayOfWeek {
@@ -107,8 +107,8 @@ function withRepeatStartDate(
 }
 
 /** 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다 */
-function hasSameRepeat(a: TodoRepeat | null, b: TodoRepeat | null): boolean {
-  return isEqual(normalizeRepeat(a), normalizeRepeat(b));
+function hasSameRepeat(repeat: TodoRepeat | null, other: TodoRepeat | null): boolean {
+  return isEqual(normalizeRepeat(repeat), normalizeRepeat(other));
 }
 
 function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
@@ -262,6 +262,8 @@ function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean 
 }
 
 export const TodoRepeatPolicy = {
+  hasSameWeekdays,
+  sortWeekdays,
   getRepeatKind,
   hasSameRepeat,
   isBeyondRepeatHorizon,

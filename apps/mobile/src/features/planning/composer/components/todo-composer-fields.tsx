@@ -114,7 +114,7 @@ export function openTodoRepeatPicker(
 
 interface TodoComposerSubmitButtonProps extends Pick<
   ComponentProps<typeof PressableFeedback>,
-  'isDisabled' | 'onPress'
+  'isDisabled' | 'onPress' | 'testID'
 > {
   isSubmitting: boolean;
 }
@@ -123,12 +123,14 @@ export function TodoComposerSubmitButton({
   isDisabled,
   isSubmitting,
   onPress,
+  testID,
 }: TodoComposerSubmitButtonProps) {
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
   return (
     <PressableFeedback
+      testID={testID}
       isDisabled={isDisabled}
       onPress={onPress}
       style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}

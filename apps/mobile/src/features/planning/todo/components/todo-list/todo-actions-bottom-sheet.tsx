@@ -8,15 +8,12 @@ import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowRightIcon,
   BottomSheet,
-  Box,
   CalendarIcon,
   ClockIcon,
   EditIcon,
   INQUIRY_SHEET_EXIT,
   ListIcon,
-  ListRow,
   MoveRightIcon,
   RepeatIcon,
   QueryErrorActions,
@@ -32,20 +29,23 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ComponentType, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
-import { useDeleteTodoMutationOptions } from '../../queries/todo.mutations';
-import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
+import {
+  useDeleteTodoMutationOptions,
+  useUpdateTodoScheduleMutationOptions,
+} from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import type { Todo } from '../../schemas/todo.schema';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
+import { TodoActionRow } from '../todo-action-row';
 
 type TodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -160,6 +160,7 @@ TodoActionsBottomSheet.Content = function Content({
         return;
       }
       deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
+
       return;
     }
 
@@ -177,179 +178,87 @@ TodoActionsBottomSheet.Content = function Content({
     <TodoScopeStep step={scopeSelector}>
       <VStack gap={8}>
         <Summary todo={todo} onClose={onClose} />
-        <PressableFeedback
+        <TodoActionRow
+          icon={<EditIcon width={16} height={16} colorClassName="text-main" />}
+          label={t('actions.edit')}
+          hasArrow
+          isDisabled={deleteMutation.isPending}
           onPress={() =>
             onClose({
               type: 'replace',
               href: { pathname: '/todo/[todoId]/edit', params: sheetParams },
             })
           }
-          isDisabled={deleteMutation.isPending}
-        >
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-                <EditIcon width={16} height={16} colorClassName="text-main" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
-            }
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-          />
-        </PressableFeedback>
+        />
 
-        <PressableFeedback
+        <TodoActionRow
+          icon={<CalendarIcon width={16} height={16} colorClassName="text-main" />}
+          label={t('actions.changeDate')}
+          hasArrow
+          isDisabled={deleteMutation.isPending}
           onPress={() =>
             onClose({
               type: 'replace',
               href: { pathname: '/todo/[todoId]/date', params: sheetParams },
             })
           }
-          isDisabled={deleteMutation.isPending}
-        >
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-                <CalendarIcon width={16} height={16} colorClassName="text-main" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={t('actions.changeDate')}
-                topProps={{ size: 'b2' }}
-              />
-            }
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-          />
-        </PressableFeedback>
+        />
 
-        <PressableFeedback
+        <TodoActionRow
+          icon={<ClockIcon width={16} height={16} colorClassName="text-main" />}
+          label={t('actions.changeTime')}
+          hasArrow
+          isDisabled={deleteMutation.isPending}
           onPress={() =>
             onClose({
               type: 'replace',
               href: { pathname: '/todo/[todoId]/time', params: sheetParams },
             })
           }
-          isDisabled={deleteMutation.isPending}
-        >
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-                <ClockIcon width={16} height={16} colorClassName="text-main" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={t('actions.changeTime')}
-                topProps={{ size: 'b2' }}
-              />
-            }
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-          />
-        </PressableFeedback>
+        />
 
-        <PressableFeedback
+        <TodoActionRow
+          icon={<ListIcon width={16} height={16} colorClassName="text-main" />}
+          label={t('actions.changeCategory')}
+          hasArrow
+          isDisabled={deleteMutation.isPending}
           onPress={() =>
             onClose({
               type: 'replace',
               href: { pathname: '/todo/[todoId]/category', params: sheetParams },
             })
           }
-          isDisabled={deleteMutation.isPending}
-        >
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-                <ListIcon width={16} height={16} colorClassName="text-main" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={t('actions.changeCategory')}
-                topProps={{ size: 'b2' }}
-              />
-            }
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-          />
-        </PressableFeedback>
+        />
 
-        <PressableFeedback onPress={handleScheduleToggle} isDisabled={deleteMutation.isPending}>
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-                {isTodoToday ? (
-                  <MoveRightIcon width={16} height={16} colorClassName="text-main" />
-                ) : (
-                  <SunIcon width={16} height={16} colorClassName="text-main" />
-                )}
-              </Box>
-            }
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
-                topProps={{ size: 'b2' }}
-              />
-            }
-          />
-        </PressableFeedback>
+        <TodoActionRow
+          icon={
+            isTodoToday ? (
+              <MoveRightIcon width={16} height={16} colorClassName="text-main" />
+            ) : (
+              <SunIcon width={16} height={16} colorClassName="text-main" />
+            )
+          }
+          label={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
+          isDisabled={deleteMutation.isPending}
+          onPress={handleScheduleToggle}
+        />
 
         {TodoRepeatPolicy.hasRepeatRule(todo) && (
-          <PressableFeedback
-            onPress={handleStopRepeat}
+          <TodoActionRow
+            icon={<RepeatIcon width={16} height={16} colorClassName="text-main" />}
+            label={t('actions.stopRepeat')}
             isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}
-          >
-            <ListRow
-              horizontalPadding="medium"
-              verticalPadding="medium"
-              left={
-                <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-                  <RepeatIcon width={16} height={16} colorClassName="text-main" />
-                </Box>
-              }
-              contents={
-                <ListRow.Texts
-                  type="1RowTypeA"
-                  top={t('actions.stopRepeat')}
-                  topProps={{ size: 'b2' }}
-                />
-              }
-            />
-          </PressableFeedback>
+            onPress={handleStopRepeat}
+          />
         )}
 
-        <PressableFeedback onPress={handleDelete} isDisabled={deleteMutation.isPending}>
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
-                <TrashIcon width={16} height={16} colorClassName="text-error" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
-                topProps={{ size: 'b2', tone: 'danger' }}
-              />
-            }
-          />
-        </PressableFeedback>
+        <TodoActionRow
+          icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+          label={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
+          isDanger
+          isDisabled={deleteMutation.isPending}
+          onPress={handleDelete}
+        />
       </VStack>
     </TodoScopeStep>
   );
@@ -370,6 +279,7 @@ TodoActionsBottomSheet.Error = function ErrorFallback({
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
+
   return (
     <Result
       title={t('errorBoundary.title')}

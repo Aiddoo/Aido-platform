@@ -5,7 +5,7 @@ import {
   isSameDay,
 } from '@src/features/planning/todo/utils/calendar-date';
 import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
-import { without, xor } from 'es-toolkit';
+import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
@@ -77,15 +77,15 @@ function withTodoRepeatFormStartDate(
   };
 }
 
-export function hasSameWeekdays(a: readonly DayOfWeek[], b: readonly DayOfWeek[]): boolean {
-  return xor(a, b).length === 0;
-}
-
 export function isTodoRepeatFormPreset(
   values: Pick<TodoRepeatFormValues, 'isMonthly' | 'interval' | 'weekdays'>,
   days: readonly DayOfWeek[],
 ): boolean {
-  return !values.isMonthly && values.interval === 1 && hasSameWeekdays(values.weekdays, days);
+  return (
+    !values.isMonthly &&
+    values.interval === 1 &&
+    TodoRepeatPolicy.hasSameWeekdays(values.weekdays, days)
+  );
 }
 
 export function withTodoRepeatFormPreset(
