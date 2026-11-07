@@ -1,11 +1,11 @@
 import '@src/shared/i18n/init';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
+import { createCoachmarkRepository } from '../apis/coachmark.repository';
+import { CoachmarkService } from '../apis/coachmark.service';
 import { ReorderCoachmark } from './reorder-coachmark';
 
 const INPUT = { accountId: 'account-1', kind: 'todo-reorder' } as const;

@@ -1,7 +1,5 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
-import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
@@ -17,6 +15,8 @@ import { PressableFeedback } from 'heroui-native';
 import { useEffect } from 'react';
 import { Keyboard, type KeyboardEvent, View } from 'react-native';
 
+import { createCoachmarkRepository } from '../apis/coachmark.repository';
+import { CoachmarkService } from '../apis/coachmark.service';
 import { CoachmarkPopover } from './coachmark-popover';
 
 async function renderCoachmark({ isSeen }: { isSeen: boolean }) {

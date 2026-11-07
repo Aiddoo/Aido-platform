@@ -1,10 +1,10 @@
-import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
 import { createAppIconGatewayStub, createErrorReporterStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
+import { AppIconService } from '../apis/app-icon.service';
 import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
 import type { AppIconKey } from '../schemas/app-icon.schema';
 import { useChangeAppIconMutationOptions } from './app-icon.mutations';
