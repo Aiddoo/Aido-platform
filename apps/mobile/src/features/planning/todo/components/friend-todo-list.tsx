@@ -2,19 +2,12 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { useFriendScreenParams } from '@src/features/social/friend/hooks/use-friend-screen-params';
-import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-friend';
-import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
-import { RemindNudgeBottomSheet } from '@src/features/social/nudge/components/nudge-bottom-sheet';
-import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
-import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
-import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
@@ -25,27 +18,30 @@ import {
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
-  PawIcon,
   QueryErrorActions,
   Result,
   Text,
-  useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { useMemo, useState } from 'react';
+import { type ComponentType, useMemo, useState } from 'react';
 
-import { useFeedDateParam } from '../hooks/use-feed-params';
+import { useFeedDateKey, useFeedDateParam } from '../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { groupFriendTodosByCategory } from '../utils/group-friend-todos-by-category';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
-const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
+interface FriendTodoListProps {
+  /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
+  rowAction: ComponentType<{ todo: Todo }>;
+  /** 친구에게 할 일이 없는 오늘 빈 화면에 붙는 행동(독촉 콕 등) */
+  emptyAction: ComponentType;
+}
 
-export function FriendTodoList() {
+export function FriendTodoList({ rowAction, emptyAction }: FriendTodoListProps) {
   const { timeZone } = useDateFormatContext();
   const { friendId } = useFriendScreenParams();
   const [date] = useFeedDateParam();
@@ -61,7 +57,7 @@ export function FriendTodoList() {
   const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos), [todos]);
 
   if (categoryGroups.length === 0) {
-    return <FriendTodoList.Empty />;
+    return <FriendTodoList.Empty action={emptyAction} />;
   }
 
   return (
@@ -71,7 +67,7 @@ export function FriendTodoList() {
           <CategoryHeaderPill label={group.category.name} color={group.category.color} />
           <Box>
             {group.todos.map((todo) => (
-              <FriendTodoList.Item key={todo.id} todo={todo} />
+              <FriendTodoList.Item key={todo.id} todo={todo} action={rowAction} />
             ))}
           </Box>
         </VStack>
@@ -80,53 +76,14 @@ export function FriendTodoList() {
   );
 }
 
-function RemindNudgeButton({ friend }: { friend: FriendUser }) {
+FriendTodoList.Item = function Item({
+  todo,
+  action: RowAction,
+}: {
+  todo: Todo;
+  action: ComponentType<{ todo: Todo }>;
+}) {
   const { t } = useTranslation('todo');
-  const { t: tFriend } = useTranslation('friend');
-  const overlay = useOverlay();
-  const { data: cooldownInfo } = useQuery(
-    useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
-  );
-  const canNudge = cooldownInfo?.canNudge ?? true;
-
-  const openRemindNudgeSheet = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <RemindNudgeBottomSheet
-        receiver={{ ...friend, displayName: friend.name ?? tFriend('fallbackName') }}
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            unmount();
-          }
-        }}
-      />
-    ));
-  };
-
-  return (
-    <Result.Button
-      color="primary"
-      variant="weak"
-      onPress={openRemindNudgeSheet}
-      isDisabled={!canNudge}
-    >
-      <HStack gap={6} align="center">
-        <Text size="b4" weight="semibold" shade={canNudge ? undefined : 5}>
-          {canNudge ? t('friendTodo.nudge') : t('friendTodo.alreadyNudged')}
-        </Text>
-        <PawIcon width={16} height={16} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
-      </HStack>
-    </Result.Button>
-  );
-}
-
-FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
-  const { t } = useTranslation('todo');
-  const { t: tFriend } = useTranslation('friend');
-  const { data: friend } = useScreenFriend();
-  const [date] = useFeedDateParam();
-  const today = useToday();
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const selectTodo = useSingleTap(setSelectedTodoId);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
@@ -134,10 +91,6 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const showDateTime = formattedTime != null;
-  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
-    { targetDate: date, isCompleted: todo.completed },
-    today,
-  );
 
   const openComments = () => selectTodo(todo.id);
 
@@ -173,14 +126,7 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
-          {canNudgeTodo && friend != null && (
-            <TodoNudgeButton
-              receiver={{ ...friend, displayName: friend.name ?? tFriend('fallbackName') }}
-              todo={todo}
-              className="min-h-0 py-1.5"
-              hitSlop={COMPACT_ACTION_HIT_SLOP}
-            />
-          )}
+          <RowAction todo={todo} />
         </HStack>
       }
       onPress={TodoPolicy.hasSubTodos(todo) ? () => setIsExpanded((prev) => !prev) : undefined}
@@ -222,19 +168,16 @@ FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-FriendTodoList.Empty = function Empty() {
+FriendTodoList.Empty = function Empty({ action: EmptyAction }: { action: ComponentType }) {
   const { t } = useTranslation('todo');
-  const { data: friend } = useScreenFriend();
-  const [date] = useFeedDateParam();
-  const today = useToday();
-  const isToday = isSameDay(date, today);
+  const isToday = useFeedDateKey() === useTodayKey();
   return (
     <Flex flex={1} justify="center" align="center">
       <Result
         icon={<DocsIcon width={72} height={72} />}
         title={t('friendTodo.emptyTitle')}
         description={isToday ? t('friendTodo.emptyDescription') : undefined}
-        button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
+        button={isToday ? <EmptyAction /> : undefined}
       />
     </Flex>
   );

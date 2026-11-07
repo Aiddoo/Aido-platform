@@ -2,8 +2,6 @@ import { toTodoEditFormValues } from '@src/features/planning/composer/utils/to-t
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { isDateToday } from '@src/features/planning/todo/utils/calendar-date';
-import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
-import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { formatDateKeyCompactRange } from '@src/shared/date/date-format';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -36,10 +34,10 @@ import {
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { type ComponentProps, type ComponentType, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
-import { TodoPolicy } from '../../domains/todo.model';
+import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
 import { useDeleteTodoMutationOptions } from '../../queries/todo.mutations';
@@ -51,9 +49,17 @@ import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedu
 type TodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
   'children' | 'isOpen' | 'onOpenChange'
->;
+> & {
+  /** 목록 맨 위에 붙는 요약 줄(받은 감사 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
+  summary: ComponentType<TodoActionsSummaryProps>;
+};
 
-export function TodoActionsBottomSheet(props: TodoActionsBottomSheetProps) {
+interface TodoActionsSummaryProps {
+  todo: Todo;
+  onClose: (next?: SheetRouteExit) => void;
+}
+
+export function TodoActionsBottomSheet({ summary, ...props }: TodoActionsBottomSheetProps) {
   const sheet = useSheetRoute('/feed');
 
   return (
@@ -67,7 +73,7 @@ export function TodoActionsBottomSheet(props: TodoActionsBottomSheetProps) {
         )}
       >
         <Suspense fallback={<TodoActionsBottomSheet.Loading />}>
-          <TodoActionsBottomSheet.Content onClose={sheet.close} />
+          <TodoActionsBottomSheet.Content summary={summary} onClose={sheet.close} />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
@@ -75,10 +81,14 @@ export function TodoActionsBottomSheet(props: TodoActionsBottomSheetProps) {
 }
 
 interface TodoActionsContentProps {
+  summary: ComponentType<TodoActionsSummaryProps>;
   onClose: (next?: SheetRouteExit) => void;
 }
 
-TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsContentProps) {
+TodoActionsBottomSheet.Content = function Content({
+  summary: Summary,
+  onClose,
+}: TodoActionsContentProps) {
   const { t } = useTranslation(['todo', 'common']);
   const today = useToday();
   const { todoId } = useTodoScreenParams();
@@ -165,26 +175,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   return (
     <TodoScopeStep step={scopeSelector}>
       <VStack gap={8}>
-        {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
-          <QueryErrorBoundary
-            resetKeys={[todo.id]}
-            fallback={(props) => (
-              <ThanksSummaryRow.Error {...props} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
-            )}
-          >
-            <Suspense fallback={null}>
-              <ThanksSummaryRow
-                todoId={todo.id}
-                onThanksPress={() =>
-                  onClose({
-                    type: 'replace',
-                    href: { pathname: '/todo/[todoId]/thanks', params: { todoId: todo.id } },
-                  })
-                }
-              />
-            </Suspense>
-          </QueryErrorBoundary>
-        )}
+        <Summary todo={todo} onClose={onClose} />
         <PressableFeedback
           onPress={() =>
             onClose({

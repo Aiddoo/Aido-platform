@@ -1,5 +1,6 @@
 import { TodoActionsBottomSheet } from '@src/features/planning/todo/components/todo-list/todo-actions-bottom-sheet';
 import { todoScreenParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { TodoThanksSummary } from '@src/features/social/nudge/components/nudge-interactions/todo-thanks-summary';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
@@ -12,7 +13,7 @@ export default function TodoActionsSheetRoute() {
 
   return (
     <SheetRouteScreen>
-      <TodoActionsBottomSheet />
+      <TodoActionsBottomSheet summary={TodoThanksSummary} />
     </SheetRouteScreen>
   );
 }

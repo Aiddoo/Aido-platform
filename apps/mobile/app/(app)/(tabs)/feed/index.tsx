@@ -20,6 +20,7 @@ import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-c
 import { FriendStrip } from '@src/features/planning/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import {
   useFeedActionParam,
   useFeedDateKey,
@@ -39,10 +40,14 @@ import { useScreenFriend } from '@src/features/social/friend/hooks/use-screen-fr
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { PokeBanner } from '@src/features/social/nudge/components/poke-banner';
+import { RemindNudgeButton } from '@src/features/social/nudge/components/remind-nudge-button';
+import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
+import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
 import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
@@ -297,7 +302,11 @@ function FriendFeedTodos() {
               fallback={FriendTodoList.Error}
             >
               <Suspense fallback={<FriendTodoList.Loading />}>
-                <FriendTodoList key={selectedDateKey} />
+                <FriendTodoList
+                  key={selectedDateKey}
+                  rowAction={FriendTodoNudgeAction}
+                  emptyAction={FriendRemindNudgeAction}
+                />
               </Suspense>
             </QueryErrorBoundary>
           </Box>
@@ -305,6 +314,47 @@ function FriendFeedTodos() {
       </ScrollView>
     ))
     .exhaustive();
+}
+
+const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
+
+/** 친구 할 일 줄의 콕 버튼. 오늘의 끝나지 않은 할 일에만 보인다 */
+function FriendTodoNudgeAction({ todo }: { todo: Todo }) {
+  const { t } = useTranslation('friend');
+  const { data: friend } = useScreenFriend();
+  const selectedDateKey = useFeedDateKey();
+  const todayKey = useTodayKey();
+  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
+    { targetDateKey: selectedDateKey, isCompleted: todo.completed },
+    todayKey,
+  );
+
+  if (!canNudgeTodo || friend == null) {
+    return null;
+  }
+
+  return (
+    <TodoNudgeButton
+      receiver={{ ...friend, displayName: friend.name ?? t('fallbackName') }}
+      todo={todo}
+      className="min-h-0 py-1.5"
+      hitSlop={COMPACT_ACTION_HIT_SLOP}
+    />
+  );
+}
+
+/** 오늘 할 일이 없는 친구에게 보내는 독촉 콕 버튼 */
+function FriendRemindNudgeAction() {
+  const { t } = useTranslation('friend');
+  const { data: friend } = useScreenFriend();
+
+  if (friend == null) {
+    return null;
+  }
+
+  return (
+    <RemindNudgeButton receiver={{ ...friend, displayName: friend.name ?? t('fallbackName') }} />
+  );
 }
 
 FriendFeedTodos.Loading = function Loading() {

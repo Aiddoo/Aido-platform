@@ -1,6 +1,5 @@
 import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
 
 import type { NudgeLimitInfo } from '../schemas/todo-nudge.schema';
 
@@ -27,12 +26,12 @@ function isLimitReached(limitInfo: Pick<NudgeLimitInfo, 'remainingToday'>): bool
   return limitInfo.remainingToday != null && limitInfo.remainingToday <= 0;
 }
 
-function canNudgeOnDate(targetDate: Date, now: Date): boolean {
-  return isSameDay(targetDate, now);
-}
-
-function canNudgeTodoOnDate(input: { targetDate: Date; isCompleted: boolean }, now: Date): boolean {
-  return !input.isCompleted && canNudgeOnDate(input.targetDate, now);
+/** 친구 피드에서 보고 있는 날이 오늘이고 아직 끝나지 않은 할 일만 콕 찌를 수 있다 */
+function canNudgeTodoOnDate(
+  input: { targetDateKey: string; isCompleted: boolean },
+  todayKey: string,
+): boolean {
+  return !input.isCompleted && input.targetDateKey === todayKey;
 }
 
 /**
@@ -56,7 +55,6 @@ export const TodoNudgePolicy = {
   normalizeMessage,
   isMessageTooLong,
   isLimitReached,
-  canNudgeOnDate,
   canNudgeTodoOnDate,
   canNudgeTodoInRange,
 } as const;

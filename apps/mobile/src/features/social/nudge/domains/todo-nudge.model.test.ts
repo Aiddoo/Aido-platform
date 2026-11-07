@@ -1,11 +1,8 @@
 import type { NudgeLimitInfo } from '../schemas/todo-nudge.schema';
 import { TodoNudgePolicy } from './todo-nudge.model';
 
-const NOW = new Date(2026, 1, 25, 9, 0, 0);
-const SAME_DAY_LATE = new Date(2026, 1, 25, 23, 59, 59);
-const SAME_DAY_MORNING = new Date(2026, 1, 25, 10, 0, 0);
-const PREVIOUS_DAY = new Date(2026, 1, 24, 23, 59, 59);
-const NEXT_DAY = new Date(2026, 1, 26, 10, 0, 0);
+const TODAY_KEY = '2026-02-25';
+const NEXT_DAY_KEY = '2026-02-26';
 
 const createLimitInfo = (overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo => ({
   dailyLimit: 3,
@@ -16,48 +13,13 @@ const createLimitInfo = (overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo =>
 });
 
 describe('TodoNudgePolicy', () => {
-  describe('canNudgeOnDate', () => {
-    test('같은 날짜면 true를 반환한다', () => {
-      // Given
-      const targetDate = SAME_DAY_LATE;
-
-      // When
-      const result = TodoNudgePolicy.canNudgeOnDate(targetDate, NOW);
-
-      // Then
-      expect(result).toBe(true);
-    });
-
-    test('이전 날짜면 false를 반환한다', () => {
-      // Given
-      const targetDate = PREVIOUS_DAY;
-
-      // When
-      const result = TodoNudgePolicy.canNudgeOnDate(targetDate, NOW);
-
-      // Then
-      expect(result).toBe(false);
-    });
-
-    test('다음 날짜면 false를 반환한다', () => {
-      // Given
-      const targetDate = NEXT_DAY;
-
-      // When
-      const result = TodoNudgePolicy.canNudgeOnDate(targetDate, NOW);
-
-      // Then
-      expect(result).toBe(false);
-    });
-  });
-
   describe('canNudgeTodoOnDate', () => {
     test('미완료 + 오늘이면 true를 반환한다', () => {
       // Given
-      const input = { targetDate: SAME_DAY_MORNING, isCompleted: false };
+      const input = { targetDateKey: TODAY_KEY, isCompleted: false };
 
       // When
-      const result = TodoNudgePolicy.canNudgeTodoOnDate(input, NOW);
+      const result = TodoNudgePolicy.canNudgeTodoOnDate(input, TODAY_KEY);
 
       // Then
       expect(result).toBe(true);
@@ -65,10 +27,10 @@ describe('TodoNudgePolicy', () => {
 
     test('완료된 할 일은 오늘이어도 false를 반환한다', () => {
       // Given
-      const input = { targetDate: SAME_DAY_MORNING, isCompleted: true };
+      const input = { targetDateKey: TODAY_KEY, isCompleted: true };
 
       // When
-      const result = TodoNudgePolicy.canNudgeTodoOnDate(input, NOW);
+      const result = TodoNudgePolicy.canNudgeTodoOnDate(input, TODAY_KEY);
 
       // Then
       expect(result).toBe(false);
@@ -76,10 +38,10 @@ describe('TodoNudgePolicy', () => {
 
     test('미완료여도 오늘이 아니면 false를 반환한다', () => {
       // Given
-      const input = { targetDate: NEXT_DAY, isCompleted: false };
+      const input = { targetDateKey: NEXT_DAY_KEY, isCompleted: false };
 
       // When
-      const result = TodoNudgePolicy.canNudgeTodoOnDate(input, NOW);
+      const result = TodoNudgePolicy.canNudgeTodoOnDate(input, TODAY_KEY);
 
       // Then
       expect(result).toBe(false);
