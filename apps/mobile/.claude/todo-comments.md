@@ -47,8 +47,8 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
   `@aido/api` 루트는 `apis/`와 `schemas/`만 import한다(`check:conventions`가 검사).
 - 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
   - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`
-  - 권한: `canLikeComment`, `canReplyToComment`, `isEditableComment`, `canDeleteComment`, `isDeletingOthersComment`,
-    `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`, `leavesTombstoneOnDelete`
+  - 권한: `canLikeComment`, `canReplyToComment`, `canEditComment`, `canDeleteComment`, `canDeleteOnlyAsTodoOwner`,
+    `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`, `isTombstonedOnDelete`
   - 묶음: `getHiddenReplyCount`, `hasRepliesToShow`, `flattenThreads`, `flattenReplies`, `findCommentInThread`
   - 캐시 변환: `withLiked`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`, `withRepliesRemoved`
 - 화면 상태인 답글 아래 줄(`getReplyFooter`)과 펼침(`expandThread`)은 `utils/todo-comment-replies.view-model.ts`에 둔다.
@@ -89,7 +89,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 - `todoId`는 props로 넘기지 않는다. 각 컴포넌트가 `const [todoId] = useTodoId()`로 읽는다(`check:conventions`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·정렬·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
-- 할 일을 볼 수 없으면(`useIsTodoUnavailable`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
+- 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
 - `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
 - 체크는 내 할 일(`TodoPolicy.isOwnTodo`, `permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.
@@ -128,7 +128,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 
 ### 더블탭 하트
 
-- RNGH v3 `useTapGesture({ numberOfTaps: 2 })`와 `useLongPressGesture`를 `useExclusiveGestures`로 묶는다(`useCommentDoubleTap`).
+- RNGH v3 `useTapGesture({ numberOfTaps: 2 })`와 `useLongPressGesture`를 `useExclusiveGestures`로 묶는다(`useCommentBodyGesture`).
   한 번 탭은 아무 동작도 하지 않는다.
 - 애니메이션(`todo-comment-heart-burst.tsx` 상단 상수): 큰 하트 스프링 1.32 → 0.9 → 1 + 회전 −14°→6°→0°, 링 0.3→1.7,
   45° 간격 작은 하트 8개, 버튼 하트 0.6→1.35→1, 740ms부터 위로 26px 사라짐. 모두 shared value로 UI 스레드에서 돌고

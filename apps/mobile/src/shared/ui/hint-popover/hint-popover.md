@@ -32,7 +32,7 @@ import { Popover, PressableFeedback } from 'heroui-native';
 
 닫기는 세 가지다: X, 바깥 탭(`Popover.Overlay`, `isPassThrough`면 없음), 대상 다시 누르기(`Popover.Trigger`).
 
-자동으로 뜨는 안내가 눌러야 할 대상을 가리키면 `isPassThrough`를 써서 첫 탭이 안내만 닫지 않게 한다. iOS에서 말풍선은 키보드 창 아래에 그려지므로 키보드가 떠 있으면 잘린다. 시트의 첫 안내는 키보드 없이 연다(`add-todo-bottom-sheet.tsx`).
+자동으로 뜨는 안내가 눌러야 할 대상을 가리키면 `isPassThrough`를 써서 첫 탭이 안내만 닫지 않게 한다. iOS에서 말풍선은 키보드 창 아래에 그려지므로 키보드가 떠 있으면 잘린다. 시트의 첫 안내는 키보드 없이 연다(`todo-create-bottom-sheet.tsx`는 안내가 떠 있을 때 제목 입력의 자동 포커스를 끈다).
 `placement="bottom"`인데 아래쪽에 자리가 없으면 위로 뒤집는다. 화면 맨 위의 대상은 `placement="bottom"`으로 연다.
 
 `children`은 앱 루트의 PortalHost에 그려져 DI·Query provider 바깥이다. 그 안에서 조회 훅을 쓰면 앱이 죽으므로 값은 `Popover`를 두는 컴포넌트에서 읽어 넘긴다.

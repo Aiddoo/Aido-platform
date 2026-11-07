@@ -8,6 +8,7 @@
 list-row/
 ├── list-row.tsx         # 메인 컴포넌트
 ├── list-row-texts.tsx   # 텍스트 서브 컴포넌트
+├── list-row-image.tsx   # 왼쪽 이미지 서브 컴포넌트
 ├── list-row.md          # 이 문서
 └── index.ts
 ```
@@ -37,18 +38,19 @@ import { ListRow } from '@src/shared/ui';
 
 #### Props
 
-| Prop                | Type                                         | Default    | Description        |
-| ------------------- | -------------------------------------------- | ---------- | ------------------ |
-| `left`              | `ReactNode`                                  | -          | 왼쪽 영역 컨텐츠   |
-| `contents`          | `ReactNode`                                  | -          | 중앙 영역 컨텐츠   |
-| `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠 |
-| `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩          |
-| `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩          |
-| `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리        |
-| `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬     |
-| `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬   |
-| `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태      |
-| `className`         | `string`                                     | -          | 추가 클래스명      |
+| Prop                | Type                                         | Default    | Description             |
+| ------------------- | -------------------------------------------- | ---------- | ----------------------- |
+| `left`              | `ReactNode`                                  | -          | 왼쪽 영역 컨텐츠        |
+| `contents`          | `ReactNode`                                  | -          | 중앙 영역 컨텐츠 (필수) |
+| `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠      |
+| `onPress`           | `() => void`                                 | -          | 넘기면 행 전체가 버튼   |
+| `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩               |
+| `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩               |
+| `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리             |
+| `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬          |
+| `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬        |
+| `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태           |
+| `className`         | `string`                                     | -          | 추가 클래스명           |
 
 #### Vertical Padding 크기
 
@@ -341,12 +343,14 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 
 - 모든 텍스트는 기본적으로 읽기 가능
 - 이미지에는 적절한 `accessibilityLabel` 제공 권장
-- 클릭 가능한 항목은 `onPress` 핸들러 추가
+- 누르는 행은 `onPress`를 넘긴다. 행 전체가 `button` 역할의 버튼이 된다
 
 ```tsx
-<Pressable onPress={handlePress}>
-  <ListRow contents={<ListRow.Texts type="1RowTypeA" top="설정" />} right={<ArrowRightIcon />} />
-</Pressable>
+<ListRow
+  contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
+  right={<ArrowRightIcon />}
+  onPress={handlePress}
+/>
 ```
 
 ## 성능 최적화

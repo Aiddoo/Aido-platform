@@ -1,6 +1,6 @@
 # OAuth 클라이언트 가이드
 
-**Version**: 2.0.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+**Version**: 2.0.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
 
 소셜 로그인과 계정 연결의 앱 쪽 흐름이다. 세션 수명과 토큰 규칙은 [인증 가이드](../docs/authentication_guide.md)를 본다.
 
@@ -49,7 +49,7 @@ AuthService.openAppleLogin()
 | Google·Kakao·Naver | `openAuthSessionAsync(.../start?mode=link)` → `POST v1/auth/link-with-code` |
 | Apple              | `signInAsync` → `POST v1/auth/link { provider: 'APPLE', idToken, nonce }`   |
 
-해제는 `DELETE v1/auth/linked-accounts/{provider}`다. 취소는 `isCancelledError`로 걸러 토스트를 띄우지 않는다.
+해제는 `DELETE v1/auth/linked-accounts/{provider}`다. 취소는 `isLoginCancelledError`로 걸러 토스트를 띄우지 않는다.
 
 ## 분석
 

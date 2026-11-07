@@ -1,6 +1,6 @@
 # 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 3.3.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+**Version**: 3.3.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
 
 iOS는 `expo-widgets`, Android는 `react-native-android-widget`의 공식 Expo config plugin과
 HeadlessJS API를 사용한다. 앱에서 Kotlin·Swift source나 dependency patch를 생성하지 않는다.
@@ -32,7 +32,7 @@ useWidgetSnapshotSync(authState)
 - 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다.
 - 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot과 iOS timeline payload에 추가하지 않는다.
 - 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다(통계·스트릭). 서버 날짜가 요청과 다르거나
-  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`get-todo-summary-query-options.ts`).
+  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`todo.queries.ts`의 `useGetTodoSummaryQueryOptions`).
 - 렌더러는 전달받은 props만 사용한다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 `aido_widget_headless_failure_v1`에

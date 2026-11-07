@@ -1,6 +1,6 @@
 # UI 컴포넌트 사용 가이드
 
-**Version**: 1.3.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
+**Version**: 1.3.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
 
 > 컴포넌트 선택 순서: HeroUI Native → Shared UI (`@src/shared/ui`) → React Native 기본.
 
@@ -92,7 +92,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `useStackScreenOptions`, `useStackBackToolbar`                                                  | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기                                                                     | `src/shared/ui/stack-header/stack-header.md`                      |
 | `FormStepLayout`                                                                                | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)                                                                           | `src/shared/ui/form-step-layout/form-step-layout.md`              |
 | `ActionButton`                                                                                  | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-button/action-button.md`                    |
-| `ListRow`                                                                                       | 썸네일·텍스트가 있는 목록 행                                                                                                               | `src/shared/ui/list-row/list-row.md`                              |
+| `ListRow`                                                                                       | 목록 행 (`left`·`contents`·`right`, `.Texts`·`.Image`, `onPress`면 행 전체가 버튼)                                                         | `src/shared/ui/list-row/list-row.md`                              |
 | `OverlayProvider`, `useOverlay`                                                                 | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                                                                                 | `src/shared/ui/overlay/overlay.md`                                |
 | `PremiumDialog`                                                                                 | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움                                                                | `src/shared/ui/premium-dialog/premium-dialog.md`                  |
 | `OfflineBanner`                                                                                 | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                                                                                | `src/shared/ui/offline-banner/offline-banner.md`                  |
@@ -175,7 +175,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 이벤트 prop / 핸들러   | `onX` / `handleX`                                                              | `onLeave`, `handleBack`                                               |
 | 불리언                 | `is`, `has`, `can`, `should`                                                   | `isEditing`, `hasNextPage`                                            |
 | 상태·route 훅          | 항상 튜플. `[value, setValue]`, `[{ a, b }, setValues]`, 읽기 전용은 `[value]` | `[selectedMemoId, setSelectedMemoId]`, `const [todoId] = useTodoId()` |
-| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지       | `canCreateMemo`, `getMemoPreview`                                     |
+| 함수                   | 동사로 시작. `xxxOf`, `xxxFrom`, 대상 없는 `process`, `doX`, `runX` 금지       | `canCreateMemo`, `toMemoPreview`                                      |
 | 변환·생성·불변 갱신    | `toX`, `createX`, `withX`                                                      | `toMemo`, `createMemoDraftKey`                                        |
 | 상수                   | SCREAMING_SNAKE, 값의 뜻                                                       | `DEFAULT_PAGE_SIZE`, `EMPTY_MEMO_FORM_VALUES`                         |
 | 타입, Props            | PascalCase, Props는 `XProps`                                                   | `MemoEditorProps`                                                     |
