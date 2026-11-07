@@ -166,6 +166,11 @@ function TodoCreateForm({
   });
   const { isSubmitting } = useFormState({ control: form.control });
   const title = useWatch({ control: form.control, name: 'title' });
+  // 한도 아래로 지워도 칸을 바꾸지 않는다. 다시 마운트되면 커서와 키보드가 튄다
+  const [hasExceededTitleLimit, setHasExceededTitleLimit] = useState(false);
+  if (!hasExceededTitleLimit && title.length > TODO_LIMITS.TITLE_MAX_LENGTH) {
+    setHasExceededTitleLimit(true);
+  }
 
   const createTodo = useMutation(useCreateTodoMutationOptions());
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
@@ -345,7 +350,7 @@ function TodoCreateForm({
               control={form.control}
               name="title"
               render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
-                voice.state.status === 'failed' || value.length > TODO_LIMITS.TITLE_MAX_LENGTH ? (
+                voice.state.status === 'failed' || hasExceededTitleLimit ? (
                   // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
                   // 정리를 그만두거나 직접 입력으로 옮긴 글도 한도를 넘을 수 있어 한 줄 칸으로 돌아가지 않는다.
                   // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
