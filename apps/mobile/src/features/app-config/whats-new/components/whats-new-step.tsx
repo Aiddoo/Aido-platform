@@ -7,7 +7,7 @@ import { Box, CloseIcon, FeatureMedia, H3, HStack, Spacing, Text } from '@src/sh
 import { Chip, CloseButton, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
-import { ScrollView } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
@@ -126,16 +126,19 @@ WhatsNewStep.Media = function Media({
   };
 
   return (
-    <Box flex={1} className="items-center justify-center" onLayout={handleLayout}>
+    <Box flex={1} onLayout={handleLayout}>
+      {/* 흐름에 넣으면 잰 크기가 다음 측정의 최소 높이가 되어 자리가 줄어도 미디어가 줄지 않는다 */}
       {width != null && (
-        <FeatureMedia
-          ratio={MEDIA_RATIO}
-          source={sources[resolvedLanguage][theme === 'dark' ? 'dark' : 'light']}
-          alt={alt}
-          contentFit="contain"
-          className="rounded-3xl"
-          style={{ width }}
-        />
+        <Box className="items-center justify-center" style={StyleSheet.absoluteFill}>
+          <FeatureMedia
+            ratio={MEDIA_RATIO}
+            source={sources[resolvedLanguage][theme === 'dark' ? 'dark' : 'light']}
+            alt={alt}
+            contentFit="contain"
+            className="rounded-3xl"
+            style={{ width }}
+          />
+        </Box>
       )}
     </Box>
   );
