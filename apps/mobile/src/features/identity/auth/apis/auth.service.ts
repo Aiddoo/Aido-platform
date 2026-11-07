@@ -20,13 +20,16 @@ import {
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
+import type { Logger } from '@src/core/ports/logger';
 import type { AppleSignInResult, SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { TokenStore } from '@src/core/ports/token-store';
+import { getErrorMessage } from '@src/shared/errors';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { identity } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
 import { findOAuthCode } from '../domains/oauth.model';
 import {
@@ -60,6 +63,7 @@ interface AuthServicePorts {
   socialAuthGateway: SocialAuthGateway;
   /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
   deviceType: 'IOS' | 'ANDROID';
+  logger: Logger;
 }
 
 export class AuthService {
@@ -68,6 +72,7 @@ export class AuthService {
   readonly #tokenStore: TokenStore;
   readonly #socialAuthGateway: SocialAuthGateway;
   readonly #deviceType: AuthServicePorts['deviceType'];
+  readonly #logger: Logger;
 
   constructor({
     publicHttpClient,
@@ -75,12 +80,14 @@ export class AuthService {
     tokenStore,
     socialAuthGateway,
     deviceType,
+    logger,
   }: AuthServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#tokenStore = tokenStore;
     this.#socialAuthGateway = socialAuthGateway;
     this.#deviceType = deviceType;
+    this.#logger = logger;
   }
 
   /** 로그인 응답의 토큰을 저장한다. 다음 요청부터 이 토큰을 쓴다 */
@@ -296,7 +303,12 @@ export class AuthService {
       '[AuthService] Invalid deleteAccount response',
     );
     if (result.ok) {
-      await this.clearLocalSession();
+      // 서버에서는 이미 탈퇴했다. 기기 토큰을 못 지워도 실패로 돌리지 않고 남은 토큰은 다음 요청 거부로 정리된다
+      await this.clearLocalSession().catch((error: unknown) => {
+        this.#logger.warn(AUTH_LOG_EVENT.LOCAL_SESSION_CLEAR_FAILED, {
+          error: getErrorMessage(error),
+        });
+      });
     }
     return result;
   };

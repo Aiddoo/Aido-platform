@@ -108,6 +108,7 @@ export function createAuthSession({
     tokenStore: store,
     socialAuthGateway,
     deviceType: 'IOS',
+    logger: createLoggerStub(),
   });
   const pushDeviceService = new PushDeviceService({
     gateway: createPushNotificationGatewayStub(),

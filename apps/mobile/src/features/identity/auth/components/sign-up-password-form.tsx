@@ -14,8 +14,7 @@ import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { RevealedField } from './revealed-field';
 import { TermsBottomSheet } from './terms-bottom-sheet';
 
-const PASSWORD_STEPS = ['password', 'passwordConfirm'] as const;
-type PasswordStep = (typeof PASSWORD_STEPS)[number];
+type PasswordStep = 'password' | 'passwordConfirm';
 
 interface SignUpPasswordFormProps {
   form: UseFormReturn<SignUpFormInput>;

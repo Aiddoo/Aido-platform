@@ -2,6 +2,7 @@ import '@src/shared/i18n/init';
 import { isBusinessError } from '@src/core/errors/result';
 import {
   createHttpClientStub,
+  createLoggerStub,
   createMemoryTokenStore,
   createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
@@ -43,6 +44,7 @@ describe('소셜 로그인', () => {
       tokenStore,
       socialAuthGateway: gateway,
       deviceType: 'IOS',
+      logger: createLoggerStub(),
     });
   });
 

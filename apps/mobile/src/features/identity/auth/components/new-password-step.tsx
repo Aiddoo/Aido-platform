@@ -14,8 +14,7 @@ import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { RevealedField } from './revealed-field';
 
-const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
-type NewPasswordSubStep = (typeof NEW_PASSWORD_SUB_STEPS)[number];
+type NewPasswordSubStep = 'newPassword' | 'newPasswordConfirm';
 
 interface NewPasswordField {
   field: { value: string; onChange: (value: string) => void };
@@ -92,10 +91,7 @@ export function NewPasswordStep({
                   default: 'password.mismatch',
                 })}
                 onSubmitEditing={() => {
-                  if (
-                    newPasswordConfirm.field.value.length > 0 &&
-                    !newPasswordConfirm.fieldState.error
-                  ) {
+                  if (isNextEnabled) {
                     handleNext();
                   }
                 }}
@@ -118,7 +114,7 @@ export function NewPasswordStep({
               returnKeyType="next"
               renderErrorMessage={false}
               onSubmitEditing={() => {
-                if (newPassword.field.value.length > 0 && !newPassword.fieldState.error) {
+                if (isNextEnabled) {
                   handleNext();
                 }
               }}

@@ -23,7 +23,7 @@ describe('getResendCooldownAfterError', () => {
     const result = getResendCooldownAfterError(error);
 
     // Then
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 
   it('다른 서버 오류는 남은 초가 실려 있어도 쿨다운을 걸지 않는다', () => {
@@ -34,7 +34,7 @@ describe('getResendCooldownAfterError', () => {
     const result = getResendCooldownAfterError(error);
 
     // Then
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 
   it('서버 오류가 아니면 쿨다운을 걸지 않는다', () => {
@@ -45,6 +45,6 @@ describe('getResendCooldownAfterError', () => {
     const result = getResendCooldownAfterError(error);
 
     // Then
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 });

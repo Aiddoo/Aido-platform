@@ -42,11 +42,11 @@ export function isVerificationAttemptsExceededError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.VERIFY_0754);
 }
 
-/** 재발송 실패가 쿨다운 중(VERIFY_0753)이면 서버가 알려 준 남은 초를, 아니면 undefined를 돌려준다. */
-export function getResendCooldownAfterError(error: unknown): number | undefined {
+/** 재발송 실패가 쿨다운 중(VERIFY_0753)이면 서버가 알려 준 남은 초를, 아니면 null을 돌려준다. */
+export function getResendCooldownAfterError(error: unknown): number | null {
   if (!isApiError(error) || !error.hasCode(ErrorCode.VERIFY_0753)) {
-    return undefined;
+    return null;
   }
   const remaining = error.details?.remainingSeconds;
-  return typeof remaining === 'number' ? remaining : undefined;
+  return typeof remaining === 'number' ? remaining : null;
 }

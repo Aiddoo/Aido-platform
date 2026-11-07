@@ -221,6 +221,7 @@ export function DIProvider({
       tokenStore,
       socialAuthGateway: expoSocialAuthGateway,
       deviceType: process.env.EXPO_OS === 'ios' ? 'IOS' : 'ANDROID',
+      logger,
     });
     const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(

@@ -1,5 +1,6 @@
 import {
   createHttpClientStub,
+  createLoggerStub,
   createMemoryTokenStore,
   createSocialAuthGatewayStub,
 } from '@src/shared/__tests__';
@@ -36,6 +37,7 @@ describe('AuthService', () => {
       tokenStore,
       socialAuthGateway,
       deviceType: 'IOS',
+      logger: createLoggerStub(),
     });
   });
 
@@ -585,17 +587,17 @@ describe('AuthService', () => {
       await expect(result).rejects.toThrow('Invalid deleteAccount response');
     });
 
-    it('토큰 삭제 실패해도 결과 반환', async () => {
+    it('토큰 삭제가 실패해도 탈퇴 결과를 성공으로 돌려준다', async () => {
       // Given
       const dto = createDeleteAccountDto();
       authHttpClient.delete.mockResolvedValue({ ok: true, value: dto });
       tokenStore.clear.mockRejectedValueOnce(new Error('storage error'));
 
       // When
-      const result = service.deleteAccount(input);
+      const result = await service.deleteAccount(input);
 
       // Then
-      await expect(result).rejects.toThrow('storage error');
+      expect(result.ok).toBe(true);
     });
   });
 

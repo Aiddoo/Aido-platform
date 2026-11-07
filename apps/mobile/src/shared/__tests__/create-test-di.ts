@@ -211,6 +211,7 @@ export function createTestDi({
     tokenStore,
     socialAuthGateway: socialAuth,
     deviceType: 'IOS',
+    logger,
   });
   const sessionRevocationService = new SessionRevocationService({
     repository: createPendingRevocationRepository(storage),

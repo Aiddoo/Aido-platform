@@ -1,6 +1,8 @@
+import { VERIFICATION_CODE } from '@aido/api/vocabulary';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 
@@ -8,7 +10,6 @@ import { getResendCooldownAfterError } from '../domains/auth.error';
 import { useCooldown } from '../hooks/use-cooldown';
 import { verificationCodeSchema } from '../schemas/verify-email-params.schema';
 import { maskEmail } from '../utils/mask-email';
-import { getResendCooldownAfterSuccess } from '../utils/resend-cooldown';
 import { VerificationCodeInput } from './verification-code-input';
 
 interface EmailVerificationCodeStepProps extends Pick<
@@ -71,7 +72,7 @@ export function EmailVerificationCodeStep({
 
     try {
       const { retryAfterSeconds } = await onResend();
-      setCooldown(getResendCooldownAfterSuccess(retryAfterSeconds));
+      setCooldown(retryAfterSeconds ?? VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
       setIsInvalid(false);
       clearCode();
     } catch (error) {
@@ -95,11 +96,10 @@ export function EmailVerificationCodeStep({
             isInvalid={isInvalid}
           />
 
-          {isVerifying && (
-            <Text size="b4" className="text-main">
-              {t('verification.verifying')}
-            </Text>
-          )}
+          {/* 확인 중 줄이 생겼다 사라지며 아래 재발송 줄이 밀리지 않게 자리를 항상 둔다 */}
+          <Text size="b4" className={cn('text-main', !isVerifying && 'opacity-0')}>
+            {t('verification.verifying')}
+          </Text>
 
           <HStack gap={8} justify="center">
             <Text size="b4" shade={7}>

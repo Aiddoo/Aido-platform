@@ -9,6 +9,7 @@ import {
   ListRow,
   NaverIcon,
   SettingsListGroup,
+  TextSkeleton,
   Text,
   useConfirmDialog,
   VStack,
@@ -20,19 +21,19 @@ import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
+import { toOAuthProviderSlug } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
 } from '../queries/auth.mutations';
 import { useGetLinkedAccountsQueryOptions } from '../queries/auth.queries';
-import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
+import type { OAuthProvider } from '../schemas/oauth.schema';
 
 export function LinkedAccountList() {
   return (
     <SettingsListGroup>
       <ProviderRow
         provider="KAKAO"
-        slug="kakao"
         icon={<KakaoIcon width={18} height={18} />}
         iconClassName="bg-yellow-300"
       />
@@ -41,7 +42,6 @@ export function LinkedAccountList() {
 
       <ProviderRow
         provider="GOOGLE"
-        slug="google"
         icon={<GoogleIcon width={18} height={18} />}
         iconClassName="bg-white border border-gray-2"
       />
@@ -52,7 +52,6 @@ export function LinkedAccountList() {
 
           <ProviderRow
             provider="APPLE"
-            slug="apple"
             icon={<AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />}
             iconClassName="bg-apple-button dark:bg-apple-button-dark"
           />
@@ -63,7 +62,6 @@ export function LinkedAccountList() {
 
       <ProviderRow
         provider="NAVER"
-        slug="naver"
         icon={<NaverIcon width={18} height={18} colorClassName="text-white" />}
         iconClassName="bg-success"
       />
@@ -75,23 +73,23 @@ LinkedAccountList.Loading = function Loading() {
   return (
     <SettingsListGroup>
       <SkeletonGroup isLoading isSkeletonOnly>
-        <ProviderRow.Skeleton />
+        <ProviderRow.Loading />
 
         <SettingsListGroup.Separator />
 
-        <ProviderRow.Skeleton />
+        <ProviderRow.Loading />
 
         {process.env.EXPO_OS === 'ios' && (
           <>
             <SettingsListGroup.Separator />
 
-            <ProviderRow.Skeleton />
+            <ProviderRow.Loading />
           </>
         )}
 
         <SettingsListGroup.Separator />
 
-        <ProviderRow.Skeleton />
+        <ProviderRow.Loading />
       </SkeletonGroup>
     </SettingsListGroup>
   );
@@ -99,12 +97,11 @@ LinkedAccountList.Loading = function Loading() {
 
 interface ProviderRowProps {
   provider: OAuthProvider;
-  slug: OAuthProviderSlug;
   icon: ReactNode;
   iconClassName: string;
 }
 
-function ProviderRow({ provider, slug, icon, iconClassName }: ProviderRowProps) {
+function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
   const { t } = useTranslation(['auth', 'common']);
   const { data: linkedAccounts } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
   const { mutate: link, isPending: isLinking } = useMutation(useLinkAccountMutationOptions());
@@ -176,7 +173,7 @@ function ProviderRow({ provider, slug, icon, iconClassName }: ProviderRowProps) 
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button size="small" onPress={() => link(slug)}>
+          <Button size="small" onPress={() => link(toOAuthProviderSlug(provider))}>
             {t('linkedAccounts.connect')}
           </Button>
         ))
@@ -185,13 +182,13 @@ function ProviderRow({ provider, slug, icon, iconClassName }: ProviderRowProps) 
   );
 }
 
-ProviderRow.Skeleton = function ProviderRowSkeleton() {
+ProviderRow.Loading = function ProviderRowLoading() {
   return (
     <HStack align="center" gap={12} className="px-4 py-4">
       <Skeleton className="size-10 rounded-full dark:bg-gray-2" />
       <VStack flex={1} gap={2}>
-        <Skeleton className="h-5 w-16 rounded dark:bg-gray-2" />
-        <Skeleton className="h-4 w-12 rounded dark:bg-gray-2" />
+        <TextSkeleton size="b3" className="w-16" />
+        <TextSkeleton size="e2" className="w-12" />
       </VStack>
       <Skeleton className="h-8 w-16 rounded-lg dark:bg-gray-2" />
     </HStack>

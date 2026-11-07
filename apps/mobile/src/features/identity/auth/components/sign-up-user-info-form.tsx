@@ -18,8 +18,7 @@ import { type SignUpFormInput, signUpFormSchema } from '../schemas/sign-up-form.
 import { RevealedField } from './revealed-field';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
-const USER_INFO_STEPS = ['name', 'email'] as const;
-type UserInfoStep = (typeof USER_INFO_STEPS)[number];
+type UserInfoStep = 'name' | 'email';
 
 const STEP_DESCRIPTION_KEYS = {
   name: 'auth:signUp.nameTitle',
@@ -72,7 +71,7 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
                   <Input
                     ref={ref}
                     label={t('auth:signUp.emailLabel')}
-                    placeholder="example@email.com"
+                    placeholder={t('auth:signUp.emailPlaceholder')}
                     value={value}
                     onChange={onChange}
                     onBlur={onBlur}
