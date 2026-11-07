@@ -91,7 +91,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
   할 일 본문·정렬·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
 - 할 일을 볼 수 없으면(`useIsTodoUnavailable`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
 - `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
-- 체크는 내 할 일(`TodoPolicy.isOwnTodo`, `permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getDetailListDate`로 고칠 목록을 고른다.
+- 체크는 내 할 일(`TodoPolicy.isOwnTodo`, `permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.
 
 ## 묶음과 답글
