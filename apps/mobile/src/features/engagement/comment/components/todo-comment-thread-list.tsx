@@ -3,7 +3,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -19,6 +18,7 @@ import {
   VStack,
   InlineAlert,
 } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';

@@ -15,7 +15,6 @@ import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-
 import type { VoiceCaptureState } from '@src/features/voice/schemas/voice-capture.schema';
 import { voiceNoteRecordParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { getRecordingRingLayout } from '@src/features/voice/utils/recording-timer.geometry';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
@@ -31,6 +30,7 @@ import {
   StyledSafeAreaView,
   VStack,
 } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';

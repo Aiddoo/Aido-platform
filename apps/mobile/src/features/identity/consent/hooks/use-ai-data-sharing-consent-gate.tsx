@@ -2,9 +2,9 @@ import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-cont
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useOverlay } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { withTimeout } from 'es-toolkit';
 import { useRef } from 'react';

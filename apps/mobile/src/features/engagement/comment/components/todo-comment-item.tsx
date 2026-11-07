@@ -5,7 +5,6 @@ import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import { getErrorMessage } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -31,6 +30,7 @@ import {
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { router } from 'expo-router';

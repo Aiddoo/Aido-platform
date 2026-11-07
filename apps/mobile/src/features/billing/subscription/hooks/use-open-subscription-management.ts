@@ -5,9 +5,9 @@ import {
   useSubscriptionService,
 } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
 import { createManagementUrl } from '../utils/subscription-links';

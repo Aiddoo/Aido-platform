@@ -4,12 +4,12 @@ import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queri
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as translate, useTranslation } from '@src/shared/i18n';
 import { Button } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 

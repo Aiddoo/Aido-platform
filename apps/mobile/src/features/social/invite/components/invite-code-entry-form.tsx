@@ -1,7 +1,6 @@
 import { useClipboard } from '@src/bootstrap/providers/di-context';
 import { isBusinessError } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -15,6 +14,7 @@ import {
   StyledSafeAreaView,
   Text,
 } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';

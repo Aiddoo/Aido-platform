@@ -8,9 +8,9 @@ import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 

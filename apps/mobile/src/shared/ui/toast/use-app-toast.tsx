@@ -1,8 +1,9 @@
 import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { AppToast, type AppToastVariant } from '@src/shared/ui/toast';
 import { useToast } from 'heroui-native';
 import { type ReactNode, useCallback } from 'react';
+
+import { AppToast, type AppToastVariant } from './app-toast';
 
 interface ToastAction {
   label: string;

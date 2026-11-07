@@ -1,8 +1,8 @@
 import { useWeatherService } from '@src/bootstrap/providers/di-context';
 import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { unwrap } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { isLocationUpdateRejectedError } from '../domains/weather.error';

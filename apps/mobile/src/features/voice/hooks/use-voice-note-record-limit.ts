@@ -2,8 +2,8 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { getPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQuery } from '@tanstack/react-query';
 
 export function useVoiceNoteRecordLimit() {

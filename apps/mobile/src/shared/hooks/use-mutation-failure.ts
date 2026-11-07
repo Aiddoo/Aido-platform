@@ -1,6 +1,6 @@
 import { useHaptics } from '@src/shared/di/shared-di-context';
 import { getUserFacingMessage } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 
 /**
  * 저장 실패를 알리는 한 곳. 햅틱과 토스트 한 번으로 알리고 화면과 입력값은 그대로 둔다.

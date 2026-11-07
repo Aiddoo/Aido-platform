@@ -9,8 +9,8 @@ import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { toHHmm } from '@src/shared/date/instant';
 import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import { getErrorMessage } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useEffect, useEffectEvent } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';

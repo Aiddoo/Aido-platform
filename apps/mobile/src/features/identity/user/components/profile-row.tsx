@@ -1,5 +1,4 @@
 import { useClipboard } from '@src/bootstrap/providers/di-context';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSystemFontScaledSize } from '@src/shared/hooks/use-system-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -12,6 +11,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';

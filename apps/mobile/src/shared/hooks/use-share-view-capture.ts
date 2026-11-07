@@ -1,6 +1,6 @@
 import { useSystemShare } from '@src/shared/di/shared-di-context';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { type RefObject, useCallback, useState } from 'react';
 import type { ViewShotRef } from 'react-native-view-shot';
 

@@ -1,8 +1,8 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { getErrorMessage } from '@src/shared/errors/to-error';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 
 import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
 import { useEnsureMicrophonePermission } from '../../hooks/use-ensure-microphone-permission';

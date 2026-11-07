@@ -25,8 +25,8 @@ import type { CapturedPlan } from '@src/features/voice/schemas/voice-capture.sch
 import type { CreateQuickPlanInput } from '@src/features/voice/schemas/voice-plan.schema';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useEffect, useRef, useState } from 'react';

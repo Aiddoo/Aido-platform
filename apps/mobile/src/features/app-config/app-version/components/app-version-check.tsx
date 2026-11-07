@@ -1,8 +1,8 @@
 import { useApplicationMetadata, useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 

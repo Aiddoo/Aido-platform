@@ -1,8 +1,8 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { isApiError, isInfraError, toError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTranslation } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 

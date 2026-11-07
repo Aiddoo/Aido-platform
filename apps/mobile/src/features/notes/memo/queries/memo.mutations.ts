@@ -27,10 +27,10 @@ import {
 } from '@src/features/voice/utils/voice-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
 import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';

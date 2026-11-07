@@ -7,10 +7,10 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import type { Page } from '@src/shared/types/page.types';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 

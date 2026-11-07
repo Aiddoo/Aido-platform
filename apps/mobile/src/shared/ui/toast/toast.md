@@ -6,7 +6,7 @@ HeroUI `Toast` 위에 Aido 스타일(반투명 둥근 바, variant 아이콘, �
 ## 사용법
 
 ```tsx
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 
 const toast = useAppToast();
 

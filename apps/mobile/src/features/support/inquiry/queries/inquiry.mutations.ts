@@ -1,8 +1,8 @@
 import { useHaptics, useInquiryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions } from '@tanstack/react-query';
 
 import type { InquiryRequestValues } from '../schemas/inquiry-form.schema';
