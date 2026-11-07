@@ -29,7 +29,7 @@ export default function WeatherLayout() {
   const queryClient = useQueryClient();
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
   const location = useWeatherLocation();
-  const canRefresh = WeatherLocationPolicy.canFetchReport(location.status);
+  const canRefresh = WeatherLocationPolicy.shouldFetchReport(location.status);
   const tintColor = useOnSkyColor('text-on-sky');
   const { backgroundColor } = useResolveClassNames('bg-gray-10');
 

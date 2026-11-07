@@ -55,7 +55,7 @@ const ICON_SIZE = 28;
 /** 시안 온도 줄 19/24 -0.4. 맞는 토큰이 없어 앱 글자 크기 비율만 곱한다. */
 const VALUE_TYPE = { fontSize: 19, lineHeight: 24, letterSpacing: -0.4 };
 
-function useValueType() {
+function useHourlyValueTextStyle() {
   const ratio = useFontScaleRatio();
   const minimumFontScale = useMinimumFontScale(VALUE_TYPE.fontSize);
   return {
@@ -222,7 +222,7 @@ function HourCell({
   const temperature = toDisplayTemperature(hour.temperature, unit);
   const isChanceVisible = hour.precipitationChance >= VISIBLE_CHANCE;
   const labelMinScale = useMinimumFontScale('b3');
-  const value = useValueType();
+  const value = useHourlyValueTextStyle();
 
   return (
     <VStack
@@ -291,7 +291,7 @@ function SunCell({
   const event = kind === 'sunrise' ? t('hourly.sunrise') : t('hourly.sunset');
   const Icon = kind === 'sunrise' ? WeatherIcon.Sunrise : WeatherIcon.Sunset;
   const labelMinScale = useMinimumFontScale('b3');
-  const value = useValueType();
+  const value = useHourlyValueTextStyle();
 
   return (
     <VStack

@@ -56,7 +56,7 @@ export function WeatherRescheduleTodo({
           render={({ field: { value, onChange } }) => (
             <WeatherRescheduleTimeInput
               value={value}
-              onValueChange={onChange}
+              onChange={onChange}
               options={options}
               reason={reason}
               timeFormat={timeFormat}

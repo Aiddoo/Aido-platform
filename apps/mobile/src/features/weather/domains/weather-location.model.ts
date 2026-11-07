@@ -7,7 +7,7 @@ export const SAVED_LOCATION_REVISION = 0;
 /** 약 1km(위도 0.01°) 안에서의 이동은 같은 날씨 격자로 보고 서버에 다시 등록하지 않는다. */
 const RELOCATION_THRESHOLD_DEGREES = 0.01;
 
-function isRelocationNeeded(next: Coordinates, previous: Coordinates | null): boolean {
+function shouldRelocate(next: Coordinates, previous: Coordinates | null): boolean {
   if (previous == null) {
     return true;
   }
@@ -26,7 +26,7 @@ function getNextRevision(
   registered: Coordinates,
   reportLocation: Coordinates | null,
 ): number {
-  return isRelocationNeeded(registered, reportLocation) ? revision + 1 : revision;
+  return shouldRelocate(registered, reportLocation) ? revision + 1 : revision;
 }
 
 function getReadingRevision(reading: LocationReading | undefined): number {
@@ -69,14 +69,14 @@ function resolveLocationStatus(
 }
 
 /** 권한을 묻는 중이거나 거부한 동안에는 받을 리포트가 없다. 그 밖에는 서버에 저장된 위치로 받는다. */
-function canFetchReport(status: WeatherLocationStatus['status']): boolean {
+function shouldFetchReport(status: WeatherLocationStatus['status']): boolean {
   return status !== 'needsPermission' && status !== 'denied';
 }
 
 export const WeatherLocationPolicy = {
-  isRelocationNeeded,
+  shouldRelocate,
   getNextRevision,
   getReadingRevision,
   resolveLocationStatus,
-  canFetchReport,
+  shouldFetchReport,
 } as const;

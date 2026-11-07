@@ -20,7 +20,7 @@ interface ResolveLocationInput {
   previous: LocationReading | undefined;
   signal: AbortSignal;
   /** 등록을 마친 뒤 같은 리비전 리포트가 쓴 위치. 같은 격자면 리포트를 다시 받지 않는다. */
-  readReportLocation: (revision: number) => Promise<Coordinates | null>;
+  findReportLocation: (revision: number) => Promise<Coordinates | null>;
 }
 
 interface WeatherLocationServicePorts {
@@ -56,7 +56,7 @@ export class WeatherLocationService {
   resolveLocation = async ({
     previous,
     signal,
-    readReportLocation,
+    findReportLocation,
   }: ResolveLocationInput): Promise<Result<LocationReading, ApiError>> => {
     const previousLocated = previous?.status === 'located' ? previous : null;
     const permission = await this.#readPermission(previousLocated);
@@ -76,7 +76,7 @@ export class WeatherLocationService {
 
     if (
       previousLocated != null &&
-      !WeatherLocationPolicy.isRelocationNeeded(coordinates, previousLocated.registered)
+      !WeatherLocationPolicy.shouldRelocate(coordinates, previousLocated.registered)
     ) {
       return ok({
         ...previousLocated,
@@ -91,7 +91,7 @@ export class WeatherLocationService {
       return err(registration.error);
     }
     const registered = registration.value;
-    const reportLocation = await readReportLocation(revision);
+    const reportLocation = await findReportLocation(revision);
     return ok({
       status: 'located',
       registered,

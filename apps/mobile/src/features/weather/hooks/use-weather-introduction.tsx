@@ -28,7 +28,7 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
   const { t } = useTranslation(['weather']);
   const [hasSeen, setHasSeen] = useState(() => introductionRepository.hasSeenIntroduction());
   const [isRequesting, setIsRequesting] = useState(false);
-  const hasClaimed = useRef(false);
+  const hasClaimedRef = useRef(false);
   const shouldIntroduce = location.status === 'needsPermission' && !hasSeen;
   const request = location.status === 'needsPermission' ? location.request : null;
 
@@ -37,10 +37,10 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
       return;
     }
     const task = requestIdleCallback(() => {
-      if (hasClaimed.current || inviteService.findPendingRedemption(getNowInstant()) != null) {
+      if (hasClaimedRef.current || inviteService.findPendingRedemption(getNowInstant()) != null) {
         return;
       }
-      hasClaimed.current = true;
+      hasClaimedRef.current = true;
       overlay
         .openAsync<boolean | null>(
           ({ isOpen, close, unmount }) => (
@@ -85,7 +85,7 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
         .then((accepted) => {
           // 답 없이 사라진 다이얼로그는 본 것이 아니다. 피드로 돌아오면 다시 권한다
           if (accepted == null) {
-            hasClaimed.current = false;
+            hasClaimedRef.current = false;
             return undefined;
           }
           introductionRepository.markIntroductionSeen();

@@ -166,7 +166,7 @@ WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
 function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
   const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
   const { trackEvent } = useTrack();
-  const hasTrackedLocation = useRef(false);
+  const hasTrackedLocationRef = useRef(false);
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);
 
   useEffect(() => {
@@ -174,10 +174,10 @@ function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status'
   }, [trackEvent, entry]);
 
   useEffect(() => {
-    if (locationResult == null || hasTrackedLocation.current) {
+    if (locationResult == null || hasTrackedLocationRef.current) {
       return;
     }
-    hasTrackedLocation.current = true;
+    hasTrackedLocationRef.current = true;
     trackEvent('weather_location_registered', { result: locationResult });
   }, [trackEvent, locationResult]);
 }

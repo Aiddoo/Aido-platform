@@ -12,16 +12,16 @@ import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key
  * 헤더 버튼과 당겨서 새로고침을 연달아 쓰면 진행 중인 요청을 취소하고 다시 시작하지 않고 그 요청을 기다린다.
  */
 export async function refetchWeather(queryClient: QueryClient) {
-  const readRevision = () =>
+  const getRevision = () =>
     WeatherLocationPolicy.getReadingRevision(
       queryClient.getQueryData<LocationReading>(WEATHER_QUERY_KEYS.location()),
     );
-  const before = readRevision();
+  const before = getRevision();
   await queryClient.refetchQueries(
     { queryKey: WEATHER_QUERY_KEYS.location() },
     { cancelRefetch: false },
   );
-  if (readRevision() !== before) {
+  if (getRevision() !== before) {
     return;
   }
   await queryClient.refetchQueries(

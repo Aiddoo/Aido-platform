@@ -32,7 +32,7 @@ export function WeatherForecastBadge() {
   const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: selectBadge,
-    enabled: WeatherLocationPolicy.canFetchReport(location.status),
+    enabled: WeatherLocationPolicy.shouldFetchReport(location.status),
   });
 
   return match(location)

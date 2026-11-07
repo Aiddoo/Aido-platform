@@ -63,14 +63,14 @@ const SHOOTING_STAR = {
 const SHOOTING_STAR_ANGLE = Math.atan2(SHOOTING_STAR.travel.y, SHOOTING_STAR.travel.x);
 
 type NightSkyLayerProps = {
-  moon: boolean;
+  hasMoon: boolean;
   celestialCenter: { x: number; y: number };
   moonPhase: number;
   isSouthernHemisphere: boolean;
   isDark: boolean;
   occlusion: SharedValue<number>;
-  stars: boolean;
-  shootingStars: boolean;
+  hasStars: boolean;
+  hasShootingStars: boolean;
   clouds: number;
   width: number;
   height: number;
@@ -79,14 +79,14 @@ type NightSkyLayerProps = {
 
 /** 박자가 제각각인 별, 위상대로 차오른 달과 달무리, 가끔 지나가는 별똥별 */
 export function NightSkyLayer({
-  moon,
+  hasMoon,
   celestialCenter,
   moonPhase,
   isSouthernHemisphere,
   isDark,
   occlusion,
-  stars,
-  shootingStars,
+  hasStars,
+  hasShootingStars,
   clouds,
   width,
   height,
@@ -94,8 +94,10 @@ export function NightSkyLayer({
 }: NightSkyLayerProps) {
   return (
     <Group>
-      {stars && <NightSkyLayer.Stars clouds={clouds} width={width} height={height} time={time} />}
-      {moon && (
+      {hasStars && (
+        <NightSkyLayer.Stars clouds={clouds} width={width} height={height} time={time} />
+      )}
+      {hasMoon && (
         <NightSkyLayer.Moon
           center={celestialCenter}
           phase={moonPhase}
@@ -107,7 +109,7 @@ export function NightSkyLayer({
           time={time}
         />
       )}
-      {shootingStars && <NightSkyLayer.ShootingStar width={width} height={height} time={time} />}
+      {hasShootingStars && <NightSkyLayer.ShootingStar width={width} height={height} time={time} />}
     </Group>
   );
 }

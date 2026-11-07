@@ -228,7 +228,7 @@ function SceneLayers({
             {...area}
             sun={scene.sun}
             center={celestialCenter}
-            lensFlare={scene.lensFlare}
+            hasLensFlare={scene.lensFlare}
             clouds={scene.clouds}
             isDark={isDark}
             occlusion={occlusion}
@@ -236,14 +236,14 @@ function SceneLayers({
         )}
         <NightSkyLayer
           {...area}
-          moon={scene.moon}
+          hasMoon={scene.moon}
           celestialCenter={celestialCenter}
           moonPhase={scene.moonPhase}
           isDark={isDark}
           occlusion={occlusion}
           isSouthernHemisphere={scene.isSouthernHemisphere}
-          stars={scene.stars}
-          shootingStars={scene.shootingStars && isAnimating}
+          hasStars={scene.stars}
+          hasShootingStars={scene.shootingStars && isAnimating}
           clouds={scene.clouds}
         />
       </BelowHeader>

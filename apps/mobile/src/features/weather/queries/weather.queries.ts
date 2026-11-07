@@ -38,7 +38,7 @@ function refetchOnFocus(query: Query<LocationReading, Error>) {
  * fetchQuery는 진행 중인 요청이 있으면 새로 보내지 않고 그 요청을 기다린다. 리포트 실패는 리포트 경계가
  * 알리므로 여기서는 비교할 위치가 없는 것으로 보고 기록만 남긴다.
  */
-async function readReportLocation(client: QueryClient, logger: Logger, revision: number) {
+async function findReportLocation(client: QueryClient, logger: Logger, revision: number) {
   const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
   const state = client.getQueryState<WeatherReport>(queryKey);
   if (state?.data == null && state?.fetchStatus === 'fetching') {
@@ -69,7 +69,7 @@ export function useGetWeatherLocationQueryOptions() {
         await weatherLocationService.resolveLocation({
           previous: client.getQueryData<LocationReading>(queryKey),
           signal,
-          readReportLocation: (revision) => readReportLocation(client, logger, revision),
+          findReportLocation: (revision) => findReportLocation(client, logger, revision),
         }),
       ),
     ...PERSISTED_QUERY_OPTIONS,

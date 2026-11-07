@@ -70,7 +70,7 @@ function getSunStyle(sun: Exclude<WeatherSceneSun, 'hidden'>): SunStyle {
 type SunLayerProps = {
   sun: Exclude<WeatherSceneSun, 'hidden'>;
   center: { x: number; y: number };
-  lensFlare: boolean;
+  hasLensFlare: boolean;
   clouds: number;
   isDark: boolean;
   /** 구름이 해를 바로 가린 정도(0~1) */
@@ -87,7 +87,7 @@ type SunLayerProps = {
 export function SunLayer({
   sun,
   center,
-  lensFlare,
+  hasLensFlare,
   clouds,
   isDark,
   occlusion,
@@ -144,7 +144,7 @@ export function SunLayer({
         colors={['rgba(255,255,255,1)', 'rgba(255,253,246,1)', 'rgba(255,248,230,0)']}
         positions={[0, 0.7, 1]}
       />
-      {lensFlare && <SunLayer.Flare center={center} size={size} width={width} height={height} />}
+      {hasLensFlare && <SunLayer.Flare center={center} size={size} width={width} height={height} />}
     </Group>
   );
 }

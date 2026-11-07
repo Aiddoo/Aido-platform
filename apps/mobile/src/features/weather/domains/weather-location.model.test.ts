@@ -3,10 +3,10 @@ import { SAVED_LOCATION_REVISION, WeatherLocationPolicy } from './weather-locati
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
 
-describe('isRelocationNeeded', () => {
+describe('shouldRelocate', () => {
   it('등록한 위치가 없으면 다시 등록한다', () => {
     // When
-    const needed = WeatherLocationPolicy.isRelocationNeeded(SEOUL, null);
+    const needed = WeatherLocationPolicy.shouldRelocate(SEOUL, null);
 
     // Then
     expect(needed).toBe(true);
@@ -14,7 +14,7 @@ describe('isRelocationNeeded', () => {
 
   it('위도·경도가 0.01도 미만으로 바뀌면 다시 등록하지 않는다', () => {
     // When
-    const needed = WeatherLocationPolicy.isRelocationNeeded(
+    const needed = WeatherLocationPolicy.shouldRelocate(
       { latitude: SEOUL.latitude + 0.0099, longitude: SEOUL.longitude - 0.0099 },
       SEOUL,
     );
@@ -25,7 +25,7 @@ describe('isRelocationNeeded', () => {
 
   it('위도나 경도 중 하나라도 0.01도 이상 바뀌면 다시 등록한다', () => {
     // When
-    const needed = WeatherLocationPolicy.isRelocationNeeded(
+    const needed = WeatherLocationPolicy.shouldRelocate(
       { latitude: SEOUL.latitude, longitude: SEOUL.longitude + 0.01 },
       SEOUL,
     );
@@ -151,7 +151,7 @@ describe('resolveLocationStatus', () => {
   });
 });
 
-describe('canFetchReport', () => {
+describe('shouldFetchReport', () => {
   it.each([
     ['checking', true],
     ['unavailable', true],
@@ -160,7 +160,7 @@ describe('canFetchReport', () => {
     ['denied', false],
   ] as const)('%s 상태에서 리포트를 받을 수 있는지는 %p이다', (status, expected) => {
     // When
-    const canFetch = WeatherLocationPolicy.canFetchReport(status);
+    const canFetch = WeatherLocationPolicy.shouldFetchReport(status);
 
     // Then
     expect(canFetch).toBe(expected);
