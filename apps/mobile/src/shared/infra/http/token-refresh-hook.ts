@@ -1,4 +1,4 @@
-import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
+import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
@@ -71,7 +71,7 @@ export function createTokenRefreshHook(deps: TokenRefreshHookDeps): AfterRespons
     }
 
     if (request.headers.has(RETRY_MARKER_HEADER)) {
-      errorReporter.captureMessage(SENTRY_MESSAGES.AUTH_REFRESH_RETRY_REJECTED, {
+      errorReporter.captureMessage(ERROR_REPORT_MESSAGES.AUTH_REFRESH_RETRY_REJECTED, {
         severity: 'warning',
         feature: 'auth_cold_start',
         statusCode: 401,

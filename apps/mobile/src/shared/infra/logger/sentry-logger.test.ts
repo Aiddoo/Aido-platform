@@ -112,12 +112,12 @@ describe('logEventFeature', () => {
     },
   );
 
-  it('SENTRY_FEATURES에 없는 첫 마디는 태그로 보내지 않는다', () => {
+  it('ERROR_REPORT_FEATURES에 없는 첫 마디는 태그로 보내지 않는다', () => {
     // When / Then
     expect(logEventFeature('unknown-feature.submit.failed')).toBeUndefined();
   });
 
-  it('로그 이벤트 상수의 첫 마디는 모두 SENTRY_FEATURES에 있다', () => {
+  it('로그 이벤트 상수의 첫 마디는 모두 ERROR_REPORT_FEATURES에 있다', () => {
     // Given
     const srcRoot = join(__dirname, '../../..');
     const logEventKeys = readdirSync(srcRoot, { recursive: true, encoding: 'utf8' })

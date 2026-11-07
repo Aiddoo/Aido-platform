@@ -1,5 +1,5 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
-import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
+import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import { isAuthBootPending } from '@src/features/identity/auth/domains/auth-session.model';
 import { track } from '@src/shared/analytics';
@@ -97,7 +97,7 @@ export function useAuthBoot(): void {
 
       // 검색가능 1급 이벤트(원인 진단용) + 집계 이벤트(빈도 파악용, 타입 카탈로그 경유).
       // errorCode는 클라이언트의 결정 경로, serverErrorCode는 서버의 판정 — 별개 축이다.
-      errorReporter.captureMessage(SENTRY_MESSAGES.SESSION_EXPIRED, {
+      errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
         feature: 'auth',
         severity: sessionExpiredSeverity[reason],
         errorCode: reason,

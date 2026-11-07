@@ -4,7 +4,7 @@ import {
   useSubscriptionService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
+import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -68,7 +68,7 @@ export function usePurchaseMutationOptions() {
           if (reason != null) {
             trackEvent('purchase_failed', { reason });
           }
-          errorReporter.captureMessage(SENTRY_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {
+          errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {
             feature: 'subscription',
             severity: 'warning',
             errorCode: failure.diagnosticCode,
@@ -131,7 +131,7 @@ export function useRestoreMutationOptions() {
         // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
-          errorReporter.captureMessage(SENTRY_MESSAGES.SUBSCRIPTION_RESTORE_FAILED, {
+          errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_RESTORE_FAILED, {
             feature: 'subscription',
             severity: 'warning',
             errorCode: failure.diagnosticCode,

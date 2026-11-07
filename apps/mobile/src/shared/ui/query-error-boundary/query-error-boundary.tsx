@@ -1,4 +1,4 @@
-import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
+import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { useErrorReporter } from '@src/shared/di/shared-di-context';
 import {
   classifyBoundaryError,
@@ -60,7 +60,7 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
               // 로컬에 담기는 일시적 401은 에러 이슈 대신 warning 이벤트로 남긴다 —
               // 에러로 리포트하면 콜드스타트마다 알림이 울리고, 완전 무음이면 추적이 불가능하다.
               .with('auth-transition', () =>
-                errorReporter.captureMessage(SENTRY_MESSAGES.QUERY_BOUNDARY_AUTH_CONTAINED, {
+                errorReporter.captureMessage(ERROR_REPORT_MESSAGES.QUERY_BOUNDARY_AUTH_CONTAINED, {
                   severity: 'warning',
                   feature: 'error_boundary',
                   statusCode: 401,

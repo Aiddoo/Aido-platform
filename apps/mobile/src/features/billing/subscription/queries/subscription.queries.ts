@@ -3,7 +3,7 @@ import {
   useLogger,
   useSubscriptionService,
 } from '@src/bootstrap/providers/di-context';
-import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
+import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
 import { queryOptions } from '@tanstack/react-query';
@@ -40,7 +40,7 @@ function reportStoreUnavailable(
       logger.warn(SUBSCRIPTION_LOG_EVENT.STORE_UNAVAILABLE, { kind, errorCode: diagnosticCode }),
     )
     .with({ channel: 'event' }, ({ severity }) =>
-      errorReporter.captureMessage(SENTRY_MESSAGES.SUBSCRIPTION_STORE_UNAVAILABLE, {
+      errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_STORE_UNAVAILABLE, {
         feature: 'subscription',
         severity,
         errorCode: diagnosticCode,

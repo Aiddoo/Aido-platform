@@ -1,11 +1,12 @@
 import * as Sentry from '@sentry/react-native';
 import {
-  SENTRY_FEATURES,
-  SENTRY_TAGS,
-  type SentryFeature,
+  ERROR_REPORT_FEATURES,
+  type ErrorReportFeature,
 } from '@src/core/observability/telemetry-keys';
 import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
 import { captureError } from '@src/shared/infra/observability/capture-error';
+
+import { SENTRY_TAGS } from '../error-reporter/sentry-tags';
 
 const toSentryLevel: Record<LogLevel, Sentry.SeverityLevel> = {
   debug: 'debug',
@@ -16,13 +17,13 @@ const toSentryLevel: Record<LogLevel, Sentry.SeverityLevel> = {
 
 const LOG_EVENT_KEY_PATTERN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
-export function logEventFeature(message: string): SentryFeature | undefined {
+export function logEventFeature(message: string): ErrorReportFeature | undefined {
   if (!LOG_EVENT_KEY_PATTERN.test(message)) {
     return undefined;
   }
   const [feature = ''] = message.split('.', 1);
   const featureTag = feature.replace(/-/g, '_');
-  return SENTRY_FEATURES.find((known) => known === featureTag);
+  return ERROR_REPORT_FEATURES.find((known) => known === featureTag);
 }
 
 /**

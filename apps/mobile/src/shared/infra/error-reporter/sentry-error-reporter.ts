@@ -1,10 +1,11 @@
 import * as Sentry from '@sentry/react-native';
-import { SENTRY_TAGS } from '@src/core/observability/telemetry-keys';
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
 import type { Severity } from '@src/core/ports/severity';
 import { captureError } from '@src/shared/infra/observability/capture-error';
 import { mapValues, omitBy } from 'es-toolkit';
+
+import { SENTRY_TAGS } from './sentry-tags';
 
 /**
  * Severity → Sentry `SeverityLevel` 매핑.
