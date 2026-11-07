@@ -2,8 +2,8 @@ import { useSubscriptionViewParam } from '@src/features/billing/subscription/hoo
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type-param';
 import { useSelectedMemo } from '@src/features/notes/memo/hooks/use-memo-params';
-import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
-import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
+import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category-param';
+import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import {
   useFeedActionParam,
@@ -162,7 +162,7 @@ describe('공개 URL 계약', () => {
 
   it('알림 분류', async () => {
     // Given
-    const route = await renderRouteHook(() => useNotificationCategoryParam(), {
+    const route = await renderRouteHook(() => useNotificationCategory(), {
       url: '/notifications',
     });
 
@@ -175,15 +175,36 @@ describe('공개 URL 계약', () => {
 
   it('알림 방향', async () => {
     // Given
-    const route = await renderRouteHook(() => useNotificationDirectionParam(), {
-      url: '/notifications',
-    });
+    const route = await renderRouteHook(
+      () => useView('direction', notificationDirectionParamSchema),
+      {
+        url: '/notifications',
+      },
+    );
 
     // When
     await route.run(([_direction, setDirection]) => setDirection('sent'));
 
     // Then
     expect(route.url()).toBe('/notifications?direction=sent');
+  });
+
+  it.each([
+    ['/notifications?category=SOCIAL&direction=sent', 'SOCIAL', 'sent'],
+    ['/notifications', 'ALL', 'received'],
+    ['/notifications?category=UNKNOWN&direction=unknown', 'ALL', 'received'],
+  ])('알림 링크 %s는 분류 %s, 방향 %s로 연다', async (url, category, direction) => {
+    // When
+    const route = await renderRouteHook(
+      () => [
+        useNotificationCategory()[0],
+        useView('direction', notificationDirectionParamSchema)[0],
+      ],
+      { url },
+    );
+
+    // Then
+    expect(route.hook()).toEqual([category, direction]);
   });
 
   it('초대한 친구 보기', async () => {

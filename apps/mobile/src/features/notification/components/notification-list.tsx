@@ -26,7 +26,7 @@ import { match } from 'ts-pattern';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
-import { useNotificationCategoryParam } from '../hooks/use-notification-category-param';
+import { useNotificationCategory } from '../hooks/use-notification-category-param';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
@@ -38,7 +38,7 @@ import { NotificationListRow } from './notification-list-row';
 const NOTIFICATION_PAGE_SIZE = 10;
 
 export function NotificationList() {
-  const [category] = useNotificationCategoryParam();
+  const [category] = useNotificationCategory();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
     useSuspenseInfiniteQuery(
       useGetNotificationsInfiniteQueryOptions({ category, limit: NOTIFICATION_PAGE_SIZE }),

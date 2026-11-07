@@ -1,13 +1,12 @@
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { nudgeDirectionSchema } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
-import { z } from 'zod';
 
 import { notificationCategorySchema } from './notification.schema';
 
-/** 알림 화면의 분류(`?category=`)와 받은 알림·보낸 콕(`?direction=`) */
-export const notificationParamsSchema = z.object({
-  category: notificationCategorySchema.catch(NOTIFICATION_CATEGORY.ALL),
-  direction: nudgeDirectionSchema.catch('received'),
-});
+/** 알림 화면의 분류(`?category=`) */
+export const notificationCategoryParamSchema = notificationCategorySchema.catch(
+  NOTIFICATION_CATEGORY.ALL,
+);
 
-export type NotificationDirection = z.output<typeof notificationParamsSchema>['direction'];
+/** 받은 알림·보낸 콕(`?direction=`) */
+export const notificationDirectionParamSchema = nudgeDirectionSchema.catch('received');

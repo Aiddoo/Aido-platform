@@ -22,7 +22,6 @@ describe('useView', () => {
   it.each(['/friends', '/friends?view=unknown', '/friends?view=receiver&view=friends'])(
     '없거나 잘못된 값은 .catch의 기본값으로 읽는다: %s',
     async (url) => {
-      // Given
       // When
       const route = await renderRouteHook(() => useView('view', viewSchema), { url });
 

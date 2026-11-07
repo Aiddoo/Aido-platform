@@ -3,10 +3,14 @@ import { NotificationList } from '@src/features/notification/components/notifica
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
 import { NotificationPolicy } from '@src/features/notification/domains/notification.model';
-import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
-import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
+import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category-param';
+import {
+  notificationCategoryParamSchema,
+  notificationDirectionParamSchema,
+} from '@src/features/notification/schemas/notification-params.schema';
 import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import type { NudgeDirection } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
+import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -15,6 +19,7 @@ import {
   ReadableContent,
   SegmentTabTrigger,
   StyledSafeAreaView,
+  ViewTabs,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
@@ -23,8 +28,8 @@ import { match } from 'ts-pattern';
 
 export default function NotificationsScreen() {
   const { t } = useTranslation('notification');
-  const [category, setCategory] = useNotificationCategoryParam();
-  const [direction, setDirection] = useNotificationDirectionParam();
+  const [category, setCategory] = useNotificationCategory();
+  const [direction, setDirection] = useView('direction', notificationDirectionParamSchema);
   const { data: isNudgeInteractionAvailable = false } = useQuery(
     useGetNudgeInteractionAvailabilityQueryOptions(),
   );
@@ -37,7 +42,13 @@ export default function NotificationsScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <ReadableContent flex={1}>
-        <Tabs value={category} onValueChange={setCategory} variant="secondary" className="flex-1">
+        <ViewTabs
+          schema={notificationCategoryParamSchema}
+          value={category}
+          onValueChange={setCategory}
+          variant="secondary"
+          className="flex-1"
+        >
           <Tabs.List className="border-b border-gray-2 w-full">
             <Tabs.Indicator className="h-[2px]" />
 
@@ -85,7 +96,7 @@ export default function NotificationsScreen() {
               </Tabs.Content>
             ))
             .exhaustive()}
-        </Tabs>
+        </ViewTabs>
       </ReadableContent>
     </StyledSafeAreaView>
   );
@@ -96,19 +107,24 @@ function DirectionTabs({
   onValueChange,
 }: {
   value: NudgeDirection;
-  onValueChange: (direction: string) => void;
+  onValueChange: (direction: NudgeDirection) => void;
 }) {
   const { t } = useTranslation('notification');
 
   return (
     <Box px={16} pt={12} pb={4}>
-      <Tabs value={value} onValueChange={onValueChange} variant="primary">
+      <ViewTabs
+        schema={notificationDirectionParamSchema}
+        value={value}
+        onValueChange={onValueChange}
+        variant="primary"
+      >
         <Tabs.List className="self-start">
           <Tabs.Indicator />
           <SegmentTabTrigger value="received">{t('directions.received')}</SegmentTabTrigger>
           <SegmentTabTrigger value="sent">{t('directions.sent')}</SegmentTabTrigger>
         </Tabs.List>
-      </Tabs>
+      </ViewTabs>
     </Box>
   );
 }

@@ -1,21 +1,8 @@
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useCallback } from 'react';
+import { useView } from '@src/shared/hooks/use-view';
 
-import { notificationParamsSchema } from '../schemas/notification-params.schema';
-import { notificationCategorySchema } from '../schemas/notification.schema';
+import { notificationCategoryParamSchema } from '../schemas/notification-params.schema';
 
-/** 알림 URL의 `category` param을 검증해 읽고 바꾼다. */
-export function useNotificationCategoryParam() {
-  const [{ category }, setParams] = useRouteParams(notificationParamsSchema);
-  const setCategory = useCallback(
-    (value: string) => {
-      const parsed = notificationCategorySchema.safeParse(value);
-      if (parsed.success) {
-        setParams({ category: parsed.data });
-      }
-    },
-    [setParams],
-  );
-
-  return [category, setCategory] as const;
+/** 알림 화면의 분류 탭. 화면과 목록이 같은 키를 읽는다 */
+export function useNotificationCategory() {
+  return useView('category', notificationCategoryParamSchema);
 }
