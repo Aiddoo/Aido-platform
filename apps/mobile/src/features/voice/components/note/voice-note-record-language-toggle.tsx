@@ -25,8 +25,8 @@ export function VoiceNoteRecordLanguageToggle({
 
   const handleLocaleChange = async (next: SpeechLocale) => {
     if (await ensureMicrophonePermission('note', next)) {
-      setLocale(next);
       await onLocaleChange(next);
+      setLocale(next);
     }
   };
 

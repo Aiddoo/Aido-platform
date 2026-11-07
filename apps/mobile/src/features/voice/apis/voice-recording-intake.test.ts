@@ -114,6 +114,23 @@ describe('VoiceRecordingIntake', () => {
     expect(files.hasFile(DIRECTORY, 'a.wav')).toBe(false);
   });
 
+  it('넘긴 뒤 툴바에서 메모를 지웠으면 늦게 온 파일도 기기에 남기지 않는다', async () => {
+    // Given
+    const { files, storage, intake } = createIntake();
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    intake.segmentStarted(uri, 0);
+    storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID, recordings: [] }));
+    intake.handOff();
+    storage.service.discard(ACCOUNT_ID, DRAFT_ID);
+
+    // When
+    intake.receive(uri, 0);
+    await intake.waitUntilSettled();
+
+    // Then
+    expect(files.listFiles(DIRECTORY)).toEqual([]);
+  });
+
   it('늦은 파일은 자기 파일만 받고 다 받으면 구독을 푼다', async () => {
     // Given
     const { files, intake } = createIntake();

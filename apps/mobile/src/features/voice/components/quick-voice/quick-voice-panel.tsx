@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -23,7 +24,6 @@ import Animated, {
   FadeOut,
   type SharedValue,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -396,7 +396,7 @@ function ListeningClock({ state }: { state: VoiceCaptureState }) {
 }
 
 function SilenceFill({ isQuiet }: { isQuiet: boolean }) {
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const progress = useSharedValue(0);
 
   useEffect(() => {

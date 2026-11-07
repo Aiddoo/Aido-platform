@@ -26,6 +26,8 @@ export const WAVEFORM_BAR = {
   gap: 2.4,
   intervalMs: VOICE_NOTE_POSITION_INTERVAL_MS,
   minHeightRatio: 0.08,
+  /** 칸이 캔버스 높이에서 차지하는 최대 비율 */
+  verticalShare: 0.8,
   /** 녹음 중 들고 있는 칸 수. 가장 넓은 화면의 왼쪽 절반을 채우고 남는 고정 길이다 */
   maxLiveBars: 160,
 } as const;

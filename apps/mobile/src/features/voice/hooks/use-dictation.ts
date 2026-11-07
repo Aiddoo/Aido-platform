@@ -37,19 +37,25 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const isSessionOwnerRef = useRef(false);
   const hasFailedRef = useRef(false);
   const isStopRequestedRef = useRef(false);
+  // 시작을 요청한 뒤 인식기의 시작·오류·끝 이벤트가 오기 전까지다. 그 사이에 다시 누르면 인식기가 두 번 시작된다
+  const isStartingRef = useRef(false);
 
   useSpeechEvent((event) => {
     if (!isSessionOwnerRef.current) {
       return;
     }
     match(event)
-      .with({ type: 'start' }, () => setIsListening(true))
+      .with({ type: 'start' }, () => {
+        isStartingRef.current = false;
+        setIsListening(true);
+      })
       .with({ type: 'result' }, ({ transcript }) => {
         if (transcript.length > 0) {
           onResult(transcript);
         }
       })
       .with({ type: 'error' }, ({ code }) => {
+        isStartingRef.current = false;
         // Android 인식기는 stop 뒤에 마지막 결과 대신 client를 줄 수 있다. 내가 멈춘 것이라 실패가 아니다
         if (code === 'client' && isStopRequestedRef.current) {
           return;
@@ -61,6 +67,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
         setIsListening(false);
       })
       .with({ type: 'end' }, () => {
+        isStartingRef.current = false;
         isSessionOwnerRef.current = false;
         setIsListening(false);
         if (!hasFailedRef.current) {
@@ -90,12 +97,17 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   }, [speechRecognizer]);
 
   const start = async () => {
+    if (isStartingRef.current) {
+      return;
+    }
+    isStartingRef.current = true;
     hasFailedRef.current = false;
     isStopRequestedRef.current = false;
     try {
       const locale = APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
       const isGranted = await ensureMicrophonePermission('dictation', locale);
       if (!isGranted || !isMountedRef.current) {
+        isStartingRef.current = false;
         return;
       }
       isSessionOwnerRef.current = true;
@@ -109,6 +121,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
         }),
       );
     } catch {
+      isStartingRef.current = false;
       isSessionOwnerRef.current = false;
       toast.error(getSpeechErrorMessage('unknown'));
     }

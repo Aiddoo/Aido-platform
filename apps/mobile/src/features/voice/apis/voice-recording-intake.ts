@@ -138,9 +138,15 @@ export class VoiceRecordingIntake {
       ['asc'],
     );
     onRecordingSaved();
-    const handedOff = this.#hasHandedOff ? draftRepository.find(accountId, draftId) : null;
-    if (handedOff != null) {
-      draftRepository.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
+    if (!this.#hasHandedOff) {
+      return;
     }
+    const handedOff = draftRepository.find(accountId, draftId);
+    if (handedOff == null) {
+      // 넘긴 뒤 툴바에서 메모를 지웠다. 이 파일을 담을 초안이 없으니 기기에 남기지 않는다
+      recordingRepository.remove(accountId, fileName);
+      return;
+    }
+    draftRepository.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
   };
 }

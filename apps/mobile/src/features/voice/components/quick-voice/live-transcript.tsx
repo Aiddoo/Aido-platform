@@ -1,8 +1,9 @@
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { Box, SheetScrollShadow, splitWords, Text } from '@src/shared/ui';
 import { type ComponentRef, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
 import { type VoiceTranscript } from '../../schemas/voice-transcript.schema';
@@ -29,7 +30,7 @@ export function LiveTranscript({
   isWordFadeEnabled = true,
 }: LiveTranscriptProps) {
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const isFollowingRef = useRef(true);
   const finalText = VoiceTranscriptPolicy.getFinalText(transcript);
   const finalWords = splitWords(finalText);

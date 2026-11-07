@@ -6,7 +6,7 @@ import { cn } from '@src/shared/utils/cn';
 import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useEffect, useMemo, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
+import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   clamp,
@@ -25,8 +25,10 @@ import { getPlayedBarCount, resampleLevels } from '../../utils/waveform.geometry
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
 const RADIUS = WAVEFORM_BAR.width / 2;
-const BAR_VERTICAL_SHARE = 0.8;
-const FLAG = { poleWidth: 2, width: 6, height: 6 } as const;
+const FLAG = { poleWidth: 2, width: 6, height: 6, poleHeightShare: 0.45 } as const;
+const SCRUBBER_ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
+/** 접근성 조작(증가·감소) 한 번에 옮기는 길이 */
+const ACCESSIBILITY_SEEK_STEP_MS = 5 * SECOND_MS;
 
 interface VoiceNotePlayerBarProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
   player: VoiceNotePlayer;
@@ -106,13 +108,15 @@ export function VoiceNotePlayerBar({
         accessibilityLabel={isPlaying ? t('player.pause') : t('player.play')}
         isDisabled={!isLoaded}
         hitSlop={4}
-        onPress={player.togglePlay}
+        onPress={() => {
+          player.togglePlay().catch(noop);
+        }}
         className="size-9 items-center justify-center rounded-full bg-main"
       >
         {isPlaying ? (
-          <PauseIcon colorClassName="accent-white" width={14} height={14} />
+          <PauseIcon colorClassName="text-white dark:text-gray-9" width={14} height={14} />
         ) : (
-          <PlayIcon colorClassName="accent-white" width={14} height={14} />
+          <PlayIcon colorClassName="text-white dark:text-gray-9" width={14} height={14} />
         )}
       </PressableFeedback>
       <Scrubber
@@ -124,6 +128,7 @@ export function VoiceNotePlayerBar({
         accessibilityValue={{
           text: t('player.positionValue', { position: shownText, duration: durationText }),
         }}
+        accessibilityStepRatio={durationMs > 0 ? ACCESSIBILITY_SEEK_STEP_MS / durationMs : 0}
         onSeek={(ratio) => {
           player.seekTo(ratio * durationMs).catch(noop);
         }}
@@ -152,7 +157,7 @@ function addBars(
   for (let index = from; index < Math.min(to, bars.length); index += 1) {
     const height = Math.max(
       canvasHeight * WAVEFORM_BAR.minHeightRatio,
-      (bars[index] ?? 0) * canvasHeight * BAR_VERTICAL_SHARE,
+      (bars[index] ?? 0) * canvasHeight * WAVEFORM_BAR.verticalShare,
     );
     target.addRRect(
       Skia.RRectXY(
@@ -166,7 +171,7 @@ function addBars(
 
 interface ScrubberProps extends Omit<
   ComponentProps<typeof Box>,
-  'children' | 'onLayout' | 'accessibilityRole'
+  'children' | 'onLayout' | 'accessibilityRole' | 'accessibilityActions' | 'onAccessibilityAction'
 > {
   levels: readonly number[];
   flagIndexes: readonly number[];
@@ -174,6 +179,8 @@ interface ScrubberProps extends Omit<
   positionRatio: SharedValue<number>;
   /** 0..1 끌고 있는 위치. 끌지 않으면 null */
   dragRatio: SharedValue<number | null>;
+  /** 스크린 리더의 증가·감소 한 번이 옮기는 0..1 길이 */
+  accessibilityStepRatio: number;
   onSeek: (ratio: number) => void;
 }
 
@@ -182,6 +189,7 @@ function Scrubber({
   flagIndexes,
   positionRatio,
   dragRatio,
+  accessibilityStepRatio,
   onSeek,
   className,
   ...boxProps
@@ -213,6 +221,11 @@ function Scrubber({
     setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
   };
 
+  const handleAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
+    const direction = nativeEvent.actionName === 'increment' ? 1 : -1;
+    onSeek(clamp(positionRatio.get() + direction * accessibilityStepRatio, 0, 1));
+  };
+
   // 칸 수가 그대로면 값이 같아 아래 경로를 다시 만들지 않는다. 드래그 중에도 칸이 바뀔 때만 그린다
   const playedBarCount = useDerivedValue(() =>
     getPlayedBarCount(dragRatio.get() ?? positionRatio.get(), barCount),
@@ -234,7 +247,7 @@ function Scrubber({
     const target = Skia.PathBuilder.Make();
     flagIndexes.forEach((flagIndex) => {
       const x = Math.floor((flagIndex / Math.max(levels.length, 1)) * barCount) * STEP;
-      target.addRect(Skia.XYWHRect(x, 0, FLAG.poleWidth, height * 0.45));
+      target.addRect(Skia.XYWHRect(x, 0, FLAG.poleWidth, height * FLAG.poleHeightShare));
       target
         .moveTo(x + FLAG.poleWidth, 0)
         .lineTo(x + FLAG.poleWidth + FLAG.width, FLAG.height / 2)
@@ -248,6 +261,8 @@ function Scrubber({
     <GestureDetector gesture={gesture}>
       <Box
         accessibilityRole="adjustable"
+        accessibilityActions={SCRUBBER_ACCESSIBILITY_ACTIONS}
+        onAccessibilityAction={handleAccessibilityAction}
         className={cn('h-8', className)}
         onLayout={handleLayout}
         {...boxProps}

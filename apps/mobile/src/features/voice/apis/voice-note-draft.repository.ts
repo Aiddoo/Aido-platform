@@ -100,6 +100,7 @@ export function createVoiceNoteDraftRepository({
       });
     }
 
+    // 읽을 수 없는 초안은 어디서도 복구하지 못한다. 목록과 상세가 읽을 때마다 같은 경고를 되풀이하지 않도록 이 자리에서 지운다
     storage.remove(key);
     return null;
   };

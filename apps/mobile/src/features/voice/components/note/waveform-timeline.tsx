@@ -28,7 +28,6 @@ import {
 } from '../../utils/waveform.geometry';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
-const BAR_VERTICAL_SHARE = 0.8;
 const FLAG = { poleWidth: 2, top: 2, width: 8, height: 8, heightShare: 0.2 } as const;
 const IDLE_DASH_HEIGHT = 2;
 const RADIUS = WAVEFORM_BAR.width / 2;
@@ -103,7 +102,7 @@ function addLevelBars(
     if (level != null && level >= SPEECH_LEVEL_THRESHOLD === isSpeech) {
       const barHeight = Math.max(
         height * WAVEFORM_BAR.minHeightRatio,
-        level * height * BAR_VERTICAL_SHARE,
+        level * height * WAVEFORM_BAR.verticalShare,
       );
       addRoundedBar(
         target,

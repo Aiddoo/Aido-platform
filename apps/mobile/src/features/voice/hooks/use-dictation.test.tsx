@@ -58,6 +58,29 @@ describe('useDictation', () => {
     expect(screen.getByTestId('title')).toHaveTextContent('장보기');
   });
 
+  it('받아쓰기를 시작한 직후 시작 이벤트 전에 다시 눌러도 인식기를 한 번만 시작한다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    await renderUi(
+      <OverlayProvider>
+        <DictationProbe />
+      </OverlayProvider>,
+      {
+        di: {
+          speechRecognizer,
+          logger: createLoggerStub(),
+        },
+      },
+    );
+    await fireEvent.press(screen.getByTestId('mic'));
+
+    // When
+    await fireEvent.press(screen.getByTestId('mic'));
+
+    // Then
+    expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+  });
+
   it('직접 멈춘 뒤 인식기가 client로 답해도 오류를 띄우지 않고 정상으로 끝낸다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
