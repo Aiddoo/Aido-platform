@@ -10,9 +10,8 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { type ComponentRef, type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
-import type { TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { useEmailLoginMutationOptions } from '../queries/auth.mutations';
@@ -34,7 +33,6 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const reportUnexpectedError = useReportUnexpectedError('auth');
   const emailLogin = useMutation(useEmailLoginMutationOptions());
-  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const form = useForm({
     resolver: zodResolver(emailLoginFormSchema),
@@ -71,8 +69,9 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
           <Controller
             control={form.control}
             name="email"
-            render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
               <Input
+                ref={ref}
                 testID="email-login-email"
                 placeholder={t('emailLogin.emailPlaceholder')}
                 value={value}
@@ -90,7 +89,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
                   default: 'email.invalid',
                   byType: { too_big: 'email.tooLong' },
                 })}
-                onSubmitEditing={() => passwordRef.current?.focus()}
+                onSubmitEditing={() => form.setFocus('password')}
               />
             )}
           />
@@ -100,10 +99,10 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
           <Controller
             control={form.control}
             name="password"
-            render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
               <PasswordInput
                 testID="email-login-password"
-                ref={passwordRef}
+                ref={ref}
                 placeholder={t('emailLogin.passwordPlaceholder')}
                 value={value}
                 onChange={onChange}

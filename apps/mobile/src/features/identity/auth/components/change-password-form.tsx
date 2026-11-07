@@ -105,8 +105,9 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
           <Controller
             control={control}
             name="currentPassword"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
+            render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
               <PasswordInput
+                ref={ref}
                 label={t('changePassword.currentLabel')}
                 placeholder={t('changePassword.currentPlaceholder')}
                 value={value}

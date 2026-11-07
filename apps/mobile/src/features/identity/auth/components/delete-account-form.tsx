@@ -51,8 +51,9 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
           <Controller
             control={form.control}
             name="password"
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { ref, onChange, value } }) => (
               <PasswordInput
+                ref={ref}
                 label={t('deleteAccount.currentPasswordLabel')}
                 placeholder={t('deleteAccount.passwordPlaceholder')}
                 value={value}

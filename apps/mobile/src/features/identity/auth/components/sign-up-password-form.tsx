@@ -2,10 +2,8 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
-import type { ComponentRef } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
-import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -32,10 +30,9 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
   const [password, passwordConfirm] = useWatch({ control, name: ['password', 'passwordConfirm'] });
   const [step, setStep] = useState<PasswordStep>('password');
   const [isTermsOpen, setIsTermsOpen] = useState(false);
-  const passwordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const focusPasswordConfirmInput = useCallback(() => {
-    passwordConfirmInputRef.current?.focus();
-  }, []);
+    form.setFocus('passwordConfirm');
+  }, [form]);
 
   const isPasswordValid = signUpPasswordSchema.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
@@ -76,9 +73,9 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
                 <Controller
                   control={control}
                   name="passwordConfirm"
-                  render={({ field: { onChange, value }, fieldState: { error } }) => (
+                  render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
                     <PasswordInput
-                      ref={passwordConfirmInputRef}
+                      ref={ref}
                       label={t('signUp.passwordConfirmLabel')}
                       placeholder={t('signUp.passwordConfirmPlaceholder')}
                       value={value}
@@ -106,9 +103,10 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
             <Controller
               control={control}
               name="password"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
+              render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <PasswordInput
+                    ref={ref}
                     label={t('signUp.passwordLabel')}
                     placeholder={t('signUp.passwordPlaceholder')}
                     value={value}

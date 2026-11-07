@@ -9,10 +9,8 @@ import {
   FormStepLayout,
   Box,
 } from '@src/shared/ui';
-import type { ComponentRef } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
-import type { TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
@@ -38,10 +36,9 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
   const { control } = form;
   const [email, name] = useWatch({ control, name: ['email', 'name'] });
   const [step, setStep] = useState<UserInfoStep>('name');
-  const emailInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const focusEmailInput = useCallback(() => {
-    emailInputRef.current?.focus();
-  }, []);
+    form.setFocus('email');
+  }, [form]);
 
   const handleNext = () => {
     match(step)
@@ -77,10 +74,10 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
             <Controller
               control={control}
               name="email"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
+              render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <Input
-                    ref={emailInputRef}
+                    ref={ref}
                     label={t('auth:signUp.emailLabel')}
                     placeholder="example@email.com"
                     value={value}
@@ -115,8 +112,9 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
           <Controller
             control={control}
             name="name"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
+            render={({ field: { ref, onChange, value }, fieldState: { error } }) => (
               <Input
+                ref={ref}
                 label={t('auth:signUp.nicknameLabel')}
                 placeholder={t('auth:signUp.nicknamePlaceholder')}
                 value={value}

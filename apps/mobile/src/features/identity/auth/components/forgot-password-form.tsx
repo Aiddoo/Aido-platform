@@ -139,9 +139,10 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
             <Controller
               control={control}
               name="email"
-              render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+              render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
                 <VStack gap={8}>
                   <Input
+                    ref={ref}
                     placeholder={t('forgotPassword.emailPlaceholder')}
                     value={value}
                     onChange={onChange}

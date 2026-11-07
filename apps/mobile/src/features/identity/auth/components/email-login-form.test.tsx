@@ -3,6 +3,7 @@ import { err, ok } from '@src/core/errors/result';
 import { H3, Spacing } from '@src/shared/ui';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { TextInput } from 'react-native';
 
 import { createAuthSession } from '../__tests__/auth-session.test-utils';
 import { createAuthApiError, createAuthTokensDto } from '../__tests__/auth.fixtures';
@@ -39,6 +40,19 @@ describe('이메일 로그인 폼', () => {
     expect(await screen.findByText('올바른 이메일 형식이 아니에요')).toBeTruthy();
     expect(screen.getByText('비밀번호를 입력해주세요')).toBeTruthy();
     expect(session.publicHttp.post).not.toHaveBeenCalled();
+  });
+
+  it('빈 칸으로 누르면 검증에 실패한 첫 칸으로 포커스를 옮긴다', async () => {
+    // Given
+    await renderEmailLoginForm();
+    const focus = jest.spyOn(TextInput.prototype, 'focus');
+
+    // When
+    await fireEvent.press(screen.getByTestId('email-login-submit'));
+
+    // Then
+    await waitFor(() => expect(focus).toHaveBeenCalled());
+    focus.mockRestore();
   });
 
   it('틀린 비밀번호는 서버 안내를 토스트로 알리고 입력값을 지킨다', async () => {
