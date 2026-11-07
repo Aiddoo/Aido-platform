@@ -5,14 +5,11 @@ import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { FriendService } from '../apis/friend.service';
 import { useGetUserSearchInfiniteQueryOptions } from './friend.queries';
 
 const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
   const queryClient = createTestQueryClient();
-  const container = createTestDi({
-    friendService: new FriendService(httpClient),
-  });
+  const container = createTestDi({ httpClient });
 
   return ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>
@@ -22,7 +19,7 @@ const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
 };
 
 describe('useGetUserSearchInfiniteQueryOptions', () => {
-  test('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
+  it('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const wrapper = createWrapper(httpClient);

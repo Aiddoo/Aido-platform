@@ -314,7 +314,8 @@ describe('PushDeviceService.unregister', () => {
   });
 
   it('보고를 기다리는 사이 세션이 바뀌면 해제하지 않아 새 세션의 기기 등록을 지키지 않는다', async () => {
-    // Given 이전 세션의 보고가 진행 중이다
+    // Given
+    // 이전 세션의 보고가 진행 중이다
     const { service, httpClient, sessionEpoch } = setup();
     let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
     httpClient.put.mockImplementationOnce(
@@ -330,12 +331,16 @@ describe('PushDeviceService.unregister', () => {
     }
     const unregistering = service.unregister();
 
-    // When 기다리는 사이 세션이 끝나고 다시 로그인해 보고가 끝난다
+    // When
+
+    // 기다리는 사이 세션이 끝나고 다시 로그인해 보고가 끝난다
     sessionEpoch.advance();
     resolvePut({ ok: true, value: createPushDeviceResponseDto() });
     const [, result] = await Promise.all([reporting, unregistering]);
 
-    // Then 새 세션의 등록을 지우는 DELETE를 보내지 않고, 새 세션의 보고 기록도 지우지 않는다
+    // Then
+
+    // 새 세션의 등록을 지우는 DELETE를 보내지 않고, 새 세션의 보고 기록도 지우지 않는다
     expect(result).toEqual({ ok: true, value: undefined });
     expect(httpClient.delete).not.toHaveBeenCalled();
     await service.report();

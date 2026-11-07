@@ -25,7 +25,7 @@ describe('NotificationService', () => {
   // ── getNotifications ─────────────────────────
 
   describe('getNotifications', () => {
-    test('정상 응답 -> NotificationListResult 반환', async () => {
+    it('응답을 받으면 알림 목록을 반환한다', async () => {
       // Given
       const dto = createNotificationListResponseDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -44,19 +44,24 @@ describe('NotificationService', () => {
       }
     });
 
-    test('Zod 검증 실패 -> ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getNotifications()).rejects.toThrow('Invalid getNotifications response');
+      // When
+
+      const result = service.getNotifications();
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid getNotifications response');
     });
   });
 
   // ── getUnreadCount ───────────────────────────
 
   describe('getUnreadCount', () => {
-    test('정상 응답 -> unreadCount 숫자 반환', async () => {
+    it('응답을 받으면 읽지 않은 수를 반환한다', async () => {
       // Given
       const dto = createUnreadCountResponseDto({ unreadCount: 5 });
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -71,7 +76,7 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: true, value: 5 });
     });
 
-    test('HTTP 에러 -> Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNotificationApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -87,7 +92,7 @@ describe('NotificationService', () => {
   // ── markAsRead ───────────────────────────────
 
   describe('markAsRead', () => {
-    test('정상 응답 -> MarkReadResult 반환', async () => {
+    it('응답을 받으면 읽음 처리 결과를 반환한다', async () => {
       // Given
       const dto = createMarkReadResponseDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -100,7 +105,7 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: true, value: dto });
     });
 
-    test('HTTP 에러 -> Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNotificationApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -116,7 +121,7 @@ describe('NotificationService', () => {
   // ── markAllAsRead ────────────────────────────
 
   describe('markAllAsRead', () => {
-    test('정상 응답 -> MarkReadResult 반환', async () => {
+    it('응답을 받으면 읽음 처리 결과를 반환한다', async () => {
       // Given
       const dto = createMarkReadResponseDto({ readCount: 5 });
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -129,7 +134,7 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: true, value: dto });
     });
 
-    test('HTTP 에러 -> Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNotificationApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -156,7 +161,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
     jest.useRealTimers();
   });
 
-  test('읽음이 성공하면 내 알림이다', async () => {
+  it('읽음이 성공하면 내 알림이다', async () => {
     // Given
     const { httpClient, service } = setup();
     httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
@@ -168,7 +173,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
     expect(ownership).toBe('ok');
   });
 
-  test.each([403, 404])('읽음이 %s면 다른 계정 알림이다', async (status) => {
+  it.each([403, 404])('읽음이 %s면 다른 계정 알림이다', async (status) => {
     // Given
     const { httpClient, service } = setup();
     httpClient.patch.mockResolvedValue(err(createNotificationApiError({ status })));
@@ -180,7 +185,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
     expect(ownership).toBe('foreign');
   });
 
-  test('다른 4xx와 네트워크 실패는 모르는 것이다', async () => {
+  it('다른 4xx와 네트워크 실패는 모르는 것이다', async () => {
     // Given
     const { httpClient, service } = setup();
     httpClient.patch.mockResolvedValueOnce(err(createNotificationApiError({ status: 400 })));
@@ -195,7 +200,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
     expect(offline).toBe('unknown');
   });
 
-  test('응답이 예산을 넘기면 기다리지 않고 모르는 것으로 끝난다', async () => {
+  it('응답이 예산을 넘기면 기다리지 않고 모르는 것으로 끝난다', async () => {
     // Given
     jest.useFakeTimers();
     const { httpClient, service } = setup();
@@ -209,7 +214,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
     await expect(ownership).resolves.toBe('unknown');
   });
 
-  test('ID가 0이면 묻지 않는다', async () => {
+  it('ID가 0이면 묻지 않는다', async () => {
     // Given
     const { httpClient, service } = setup();
 

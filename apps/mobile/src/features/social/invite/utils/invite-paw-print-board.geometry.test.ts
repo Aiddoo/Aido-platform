@@ -20,7 +20,9 @@ describe('calculatePawPrintColumns', () => {
     // When
     const result = calculatePawPrintColumns(width);
 
-    // Then 6열 최소 폭 = 6 × 56 + 5 × 12 = 396
+    // Then
+
+    // 6열 최소 폭 = 6 × 56 + 5 × 12 = 396
     expect(result).toBe(expected);
   });
 });
@@ -41,7 +43,9 @@ describe('calculatePawPrintBoardWidth', () => {
         maxContentWidth: 480,
       });
 
-      // Then min(창 폭 - 좌우 inset, 480) - 화면·카드 여백 68
+      // Then
+
+      // min(창 폭 - 좌우 inset, 480) - 화면·카드 여백 68
       expect(result).toBe(expected);
     },
   );
@@ -60,12 +64,15 @@ describe('calculatePawPrintGrid', () => {
     // When
     const result = calculatePawPrintGrid(width);
 
-    // Then 칸·생선 뼈는 정수 pt, 줄 폭 = 열 × 칸 + (열 - 1) × 생선 뼈
+    // Then
+
+    // 칸·생선 뼈는 정수 pt, 줄 폭 = 열 × 칸 + (열 - 1) × 생선 뼈
     expect(result).toMatchObject(expected);
   });
 
   it('어떤 폭에서도 줄 폭이 판 폭을 넘지 않고 생선 뼈가 최소 길이 이상이다', () => {
-    // Given 접힌 Duo부터 iPad까지 1pt 간격
+    // Given
+    // 접힌 Duo부터 iPad까지 1pt 간격
     const widths = range(300).map((offset) => 200 + offset);
 
     // When
@@ -82,7 +89,9 @@ describe('calculatePawPrintGrid', () => {
     // When
     const result = calculatePawPrintGrid(410);
 
-    // Then (칸 56 - 생선 뼈 굵기 12) / 2
+    // Then
+
+    // (칸 56 - 생선 뼈 굵기 12) / 2
     expect(result.turnInset).toBe(22);
   });
 });
@@ -97,7 +106,9 @@ describe('calculateBoardIndex', () => {
     // When
     const result = calculateBoardIndex(pawPrintedCount, pawPrintedCount);
 
-    // Then floor(발자국 수 / 12)
+    // Then
+
+    // floor(발자국 수 / 12)
     expect(result).toBe(expected);
   });
 
@@ -105,7 +116,9 @@ describe('calculateBoardIndex', () => {
     // When
     const result = calculateBoardIndex(12, 11);
 
-    // Then 12 / 12 - 1 = 0
+    // Then
+
+    // 12 / 12 - 1 = 0
     expect(result).toBe(0);
   });
 
@@ -113,7 +126,9 @@ describe('calculateBoardIndex', () => {
     // When
     const result = calculateBoardIndex(12, 12);
 
-    // Then floor(12 / 12) = 1
+    // Then
+
+    // floor(12 / 12) = 1
     expect(result).toBe(1);
   });
 });
@@ -130,7 +145,9 @@ describe('calculateWaitingOverflow', () => {
       // When
       const result = calculateWaitingOverflow({ pawPrintedCount, waitingCount }, boardEndIndex);
 
-      // Then 대기 칸 [찍힘, 찍힘+대기) 중 판 끝 이후 칸 수
+      // Then
+
+      // 대기 칸 [찍힘, 찍힘+대기) 중 판 끝 이후 칸 수
       expect(result).toBe(expected);
     },
   );
@@ -156,8 +173,12 @@ describe('calculatePawPrintState', () => {
 
 describe('createPawPrintBoard', () => {
   it('기기 폭과 상관없이 12칸 판을 반환한다', () => {
-    // Then 4열 × 3줄 = 6열 × 2줄 = 12칸
-    expect(PAW_PRINT_BOARD_SIZE).toBe(12);
+    // When
+    const boardSize = PAW_PRINT_BOARD_SIZE;
+
+    // Then
+    // 4열 × 3줄 = 6열 × 2줄 = 12칸
+    expect(boardSize).toBe(12);
   });
 
   it('발자국이 없으면 첫 판의 첫 칸을 다음 칸으로 표시한 판을 반환한다', () => {
@@ -181,7 +202,9 @@ describe('createPawPrintBoard', () => {
     // When
     const board = createPawPrintBoard(myInvite, { columns, celebratedCount: 11 });
 
-    // Then 12칸 중 11칸 찍힘
+    // Then
+
+    // 12칸 중 11칸 찍힘
     expect(board).toMatchObject({ boardNumber: 1, totalPawPrints: 11, isComplete: false });
     expect(board.rows.flatMap((row) => row.cells).filter((cell) => cell.state === 'empty')).toEqual(
       [expect.objectContaining({ index: 11 })],
@@ -197,7 +220,9 @@ describe('createPawPrintBoard', () => {
       // When
       const board = createPawPrintBoard(myInvite, { columns, celebratedCount: 11 });
 
-      // Then 12 ≥ 0 + 12 → 다 채움
+      // Then
+
+      // 12 ≥ 0 + 12 → 다 채움
       expect(board).toMatchObject({ boardNumber: 1, totalPawPrints: 12, isComplete: true });
     },
   );
@@ -209,32 +234,40 @@ describe('createPawPrintBoard', () => {
     // When
     const board = createPawPrintBoard(myInvite, { columns, celebratedCount: 12 });
 
-    // Then 둘째 판 = 12~23번, 찍힘 없음
+    // Then
+
+    // 둘째 판 = 12~23번, 찍힘 없음
     expect(board).toMatchObject({ boardNumber: 2, totalPawPrints: 12, isComplete: false });
     expect(board.rows.flatMap((row) => row.cells.map((cell) => cell.index))).toHaveLength(12);
     expect(board.rows[0]?.cells[0]).toMatchObject({ index: 12, state: 'empty', isNext: true });
   });
 
   it('예전 8칸 판을 채워 축하까지 본 기록(8개)이 있으면 12칸 첫 판을 다시 축하하지 않는다', () => {
-    // Given 기기에는 판 번호가 아니라 축하를 본 발자국 수만 남아 있다
+    // Given
+    // 기기에는 판 번호가 아니라 축하를 본 발자국 수만 남아 있다
     const myInvite = createInvite({ qualifiedCount: 8, waitingCount: 0 });
 
     // When
     const board = createPawPrintBoard(myInvite, { columns: 4, celebratedCount: 8 });
 
-    // Then 같은 첫 판에 8개가 찍혀 있고 새로 찍히는 발자국은 없다
+    // Then
+
+    // 같은 첫 판에 8개가 찍혀 있고 새로 찍히는 발자국은 없다
     expect(board).toMatchObject({ boardNumber: 1, totalPawPrints: 8, isComplete: false });
     expect(board.rows.flatMap((row) => row.cells).some((cell) => cell.isNew)).toBe(false);
   });
 
   it('기다리는 친구가 남은 칸보다 많으면 판은 대기 칸으로 채우고 넘친 수를 따로 반환한다', () => {
-    // Given 찍힘 3 + 대기 12 = 15 > 12칸
+    // Given
+    // 찍힘 3 + 대기 12 = 15 > 12칸
     const myInvite = createInvite({ qualifiedCount: 3, waitingCount: 12 });
 
     // When
     const board = createPawPrintBoard(myInvite, { columns: 4, celebratedCount: 3 });
 
-    // Then 판은 찍힌 발자국으로만 다 채워지고, 다음 칸 표시는 판 밖을 가리키지 않는다
+    // Then
+
+    // 판은 찍힌 발자국으로만 다 채워지고, 다음 칸 표시는 판 밖을 가리키지 않는다
     const cells = board.rows.flatMap((row) => row.cells);
     expect(board).toMatchObject({ isComplete: false, waitingOverflowCount: 3 });
     expect(cells.filter((cell) => cell.state === 'waiting')).toHaveLength(9);
@@ -248,7 +281,9 @@ describe('createPawPrintBoard', () => {
     // When
     const board = createPawPrintBoard(myInvite, { columns: 4, celebratedCount: 5 });
 
-    // Then 가운데 줄만 오른쪽에서 왼쪽으로 읽고, 줄 끝에서 번갈아 꺾는다
+    // Then
+
+    // 가운데 줄만 오른쪽에서 왼쪽으로 읽고, 줄 끝에서 번갈아 꺾는다
     expect(board.rows.map((row) => row.cells.map((cell) => cell.index))).toEqual([
       [0, 1, 2, 3],
       [7, 6, 5, 4],

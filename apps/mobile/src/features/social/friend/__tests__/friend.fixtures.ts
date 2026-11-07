@@ -8,6 +8,9 @@ import type {
   SentRequestsResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
+import { toInstant } from '@src/shared/date/instant';
+
+import type { FriendUser } from '../schemas/friend.schema';
 
 const generateSendFriendRequestDto = (): SendFriendRequestResponse => ({
   message: '친구 요청을 보냈어요.',
@@ -208,3 +211,13 @@ export const createFriendApiError = (
   );
 
 export const INVALID_DTO = { invalid: 'data' };
+
+export const createFriendUser = (id: string, overrides?: Partial<FriendUser>): FriendUser => ({
+  id,
+  followId: `follow-${id}`,
+  userTag: 'ABCD1234',
+  name: '친구',
+  profileImage: null,
+  friendsSince: toInstant('2026-10-03T00:00:00.000Z'),
+  ...overrides,
+});

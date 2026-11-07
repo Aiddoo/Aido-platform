@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe('toNudgeLimitInfo', () => {
-  test('필드 매핑', () => {
+  it('필드 매핑', () => {
     // Given
     const dto = createNudgeLimitInfoDto();
 
@@ -32,7 +32,7 @@ describe('toNudgeLimitInfo', () => {
 });
 
 describe('toNudgeCooldownInfo', () => {
-  test('cooldownEndsAt ISO → Instant 변환', () => {
+  it('cooldownEndsAt ISO 문자열을 Instant로 바꾼다', () => {
     // Given
     const dto = createNudgeCooldownInfoDto({
       canNudge: false,
@@ -49,7 +49,7 @@ describe('toNudgeCooldownInfo', () => {
     expect(result.remainingSeconds).toBe(300);
   });
 
-  test('cooldownEndsAt null → null', () => {
+  it('cooldownEndsAt이 null이면 null이다', () => {
     // Given
     const dto = createNudgeCooldownInfoDto();
 
@@ -63,7 +63,7 @@ describe('toNudgeCooldownInfo', () => {
 });
 
 describe('toSendNudgeResult', () => {
-  test('message 매핑', () => {
+  it('message 매핑', () => {
     // Given
     const dto = createSendNudgeResponseDto({ message: '콕!' });
 

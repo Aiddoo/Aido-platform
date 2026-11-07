@@ -1,7 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createHttpClientStub,
-  createLoggerStub,
   createPushNotificationGatewayStub,
   createTestDi,
 } from '@src/shared/__tests__';
@@ -10,24 +9,20 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { NotificationService } from '../apis/notification.service';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
+const UNREAD_COUNT = 5;
+
 async function setup(isAuthenticated: boolean) {
   const invalidateByType = jest.fn(async () => {});
-  const notificationService = new NotificationService(
-    createHttpClientStub(),
-    createPushNotificationGatewayStub(),
-    createHttpClientStub(),
-  );
-  const syncBadgeCount = jest.spyOn(notificationService, 'syncBadgeCount').mockResolvedValue();
+  const httpClient = createHttpClientStub();
+  httpClient.get.mockResolvedValue({ ok: true, value: { unreadCount: UNREAD_COUNT } });
+  const pushNotification = createPushNotificationGatewayStub();
+  const syncBadgeCount = pushNotification.setBadgeCount;
   const queryClient = createTestQueryClient();
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
-  const container = createTestDi({
-    notificationService,
-    logger: createLoggerStub(),
-  });
+  const container = createTestDi({ httpClient, pushNotification });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -60,6 +55,7 @@ describe('useForegroundNotificationSync', () => {
     // Then
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: NOTIFICATION_QUERY_KEYS.all });
     expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+    expect(syncBadgeCount).toHaveBeenCalledWith(UNREAD_COUNT);
   });
 
   it('받은 알림 타입으로 다른 기능의 화면을 다시 받는다', async () => {

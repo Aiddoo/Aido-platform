@@ -2,7 +2,7 @@ import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtur
 import { toNudgeInteraction, toNudgeThanksPreview } from './nudge-interaction.mapper';
 
 describe('콕 응답을 클라이언트 모델로 변환', () => {
-  test('친구 정보는 평탄하게 만들고 감사 시각을 Instant로 둔다', () => {
+  it('친구 정보는 평탄하게 만들고 감사 시각을 Instant로 둔다', () => {
     // Given
     const dto = createNudgeInteractionDto({ thankedAt: '2026-10-04T00:00:00.000Z' });
     // When
@@ -18,7 +18,7 @@ describe('콕 응답을 클라이언트 모델로 변환', () => {
     expect(nudge).not.toHaveProperty('sender');
   });
 
-  test('비공개로 가려진 할 일이나 없는 이름을 추측하지 않는다', () => {
+  it('비공개로 가려진 할 일이나 없는 이름을 추측하지 않는다', () => {
     // Given
     const dto = createNudgeInteractionDto({ todo: null, isAvailable: false });
     dto.sender.name = null;
@@ -33,7 +33,7 @@ describe('콕 응답을 클라이언트 모델로 변환', () => {
 });
 
 describe('감사 미리보기 페이지 변환', () => {
-  test('이전 서버의 전체 목록 응답은 마지막 페이지로 해석한다', () => {
+  it('이전 서버의 전체 목록 응답은 마지막 페이지로 해석한다', () => {
     // Given
     const dto = { todoId: 1, throughNudgeId: 10, recipients: [createNudgeInteractionDto().sender] };
     // When
@@ -48,7 +48,7 @@ describe('감사 미리보기 페이지 변환', () => {
     });
   });
 
-  test('감사한 친구 수와 마지막 감사 시각을 보존하고 시각은 Instant로 둔다', () => {
+  it('감사한 친구 수와 마지막 감사 시각을 보존하고 시각은 Instant로 둔다', () => {
     // Given
     const dto = {
       todoId: 1,
@@ -64,7 +64,7 @@ describe('감사 미리보기 페이지 변환', () => {
     expect(preview.lastThankedAt).toBe('2026-10-26T06:12:00.000Z');
   });
 
-  test('페이지 메타데이터가 있으면 전체 인원과 다음 커서를 보존한다', () => {
+  it('페이지 메타데이터가 있으면 전체 인원과 다음 커서를 보존한다', () => {
     // Given
     const dto = {
       todoId: 1,
@@ -85,7 +85,7 @@ describe('감사 미리보기 페이지 변환', () => {
     });
   });
 
-  test('대상이 없는 응답에서 null은 다음 커서와 감사 기준이 없음을 나타낸다', () => {
+  it('대상이 없는 응답에서 null은 다음 커서와 감사 기준이 없음을 나타낸다', () => {
     // Given
     const dto = {
       todoId: 1,

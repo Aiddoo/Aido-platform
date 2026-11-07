@@ -2,19 +2,16 @@ import {
   createTodoDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createAnalyticsStub,
   createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
+  createMemoryObservableSyncStorage,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, screen } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
 
 import { createDeviceTimezoneRepository } from '../apis/device-timezone.repository';
-import { DeviceTimezoneService } from '../apis/device-timezone.service';
 import { useTimezoneChangeNotice } from './use-timezone-change-notice';
 
 const USER_ID = 'user-1';
@@ -50,19 +47,15 @@ function Probe(props: ProbeProps) {
 
 function setup(todos: ReturnType<typeof createTodoDto>[]) {
   const analytics = createAnalyticsStub();
-  const repository = createDeviceTimezoneRepository(createMemorySyncStorage());
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue({
     ok: true,
     value: createTodoListResponseDto({ items: todos }),
   });
   const getTodos = httpClient.get;
-  const di = {
-    analytics,
-    logger: createLoggerStub(),
-    deviceTimezoneService: new DeviceTimezoneService(repository),
-    todoService: new TodoService(httpClient),
-  };
+  const syncStorage = createMemoryObservableSyncStorage();
+  const di = { analytics, httpClient, syncStorage };
+  const repository = createDeviceTimezoneRepository(syncStorage);
   return { analytics, repository, getTodos, di };
 }
 

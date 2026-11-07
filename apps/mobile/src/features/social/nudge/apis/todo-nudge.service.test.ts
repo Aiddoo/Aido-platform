@@ -20,7 +20,7 @@ describe('TodoNudgeService', () => {
   // ── sendNudge ────────────────────────────────
 
   describe('sendNudge', () => {
-    test('메시지 200자 초과 → TodoNudgeError.MESSAGE_TOO_LONG', async () => {
+    it('메시지가 200자를 넘으면 MESSAGE_TOO_LONG 오류를 반환한다', async () => {
       // Given
       const longMessage = 'a'.repeat(201);
 
@@ -39,7 +39,7 @@ describe('TodoNudgeService', () => {
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
-    test('정상 메시지 → SendTodoNudgeResult 반환', async () => {
+    it('메시지를 보내면 콕 결과를 반환한다', async () => {
       // Given
       const dto = createSendNudgeResponseDto();
       httpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -60,7 +60,7 @@ describe('TodoNudgeService', () => {
       expect(result).toEqual({ ok: true, value: { message: '콕 찔렀어요!' } });
     });
 
-    test('메시지 없음 → message undefined로 전달', async () => {
+    it('메시지가 없으면 message 없이 요청한다', async () => {
       // Given
       const dto = createSendNudgeResponseDto();
       httpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -76,7 +76,7 @@ describe('TodoNudgeService', () => {
       });
     });
 
-    test('일일 한도 → NUDGE_1101 에러', async () => {
+    it('하루 한도를 넘으면 NUDGE_1101 오류를 반환한다', async () => {
       // Given
       const apiError = createNudgeApiError({ code: 'NUDGE_1101' });
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -88,7 +88,7 @@ describe('TodoNudgeService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('쿨다운 → NUDGE_1103 에러', async () => {
+    it('쿨다운 중이면 NUDGE_1103 오류를 반환한다', async () => {
       // Given
       const apiError = createNudgeApiError({
         code: 'NUDGE_1103',
@@ -103,21 +103,24 @@ describe('TodoNudgeService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.sendNudge({ receiverId: 'user-1', todoId: 1 })).rejects.toThrow(
-        'Invalid sendNudge response',
-      );
+      // When
+
+      const result = service.sendNudge({ receiverId: 'user-1', todoId: 1 });
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid sendNudge response');
     });
   });
 
   // ── getLimitInfo ─────────────────────────────
 
   describe('getLimitInfo', () => {
-    test('정상 응답 → NudgeLimitInfo 반환', async () => {
+    it('응답을 받으면 콕 한도 정보를 반환한다', async () => {
       // Given
       const dto = createNudgeLimitInfoDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -134,7 +137,7 @@ describe('TodoNudgeService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNudgeApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });

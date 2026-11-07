@@ -4,7 +4,6 @@ import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { waitFor } from '@testing-library/react-native';
 
-import { createStubInviteService } from '../__tests__/create-stub-invite-service';
 import { useFriendLimitInvite } from './use-friend-limit-invite';
 
 async function renderFriendLimitInvite(isEnabled: boolean) {
@@ -21,7 +20,7 @@ async function renderFriendLimitInvite(isEnabled: boolean) {
   await renderUi(<Capture />, {
     di: {
       analytics,
-      inviteService: createStubInviteService({ publicHttpClient }),
+      httpClient: publicHttpClient,
     },
   });
 
@@ -50,6 +49,8 @@ describe('친구 한도 안내의 초대 길', () => {
   it('초대가 꺼져 있으면 안내를 만들지 않아 구독 안내만 남긴다', async () => {
     // Given
     const { getFriendLimitInvite, getRenderCount } = await renderFriendLimitInvite(false);
+
+    // When
     await waitFor(() => expect(getRenderCount()).toBeGreaterThan(1));
 
     // Then

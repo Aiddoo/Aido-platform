@@ -1,5 +1,4 @@
 import type { LocationGateway, LocationPermission } from '@src/core/ports/location-gateway';
-import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import { createLocationGatewayStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { OverlayProvider } from '@src/shared/ui';
@@ -40,7 +39,6 @@ async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {
     di: {
       deviceLocation: gateway,
       weatherIntroductionRepository: introductionRepository,
-      inviteService: createStubInviteService(),
     },
   });
   return { gateway, introductionRepository, ...rendered };

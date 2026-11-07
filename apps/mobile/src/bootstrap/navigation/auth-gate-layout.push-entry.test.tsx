@@ -6,7 +6,6 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
-import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
   createExternalLinkGatewayStub,
   createHttpClientStub,
@@ -128,7 +127,6 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     externalLink,
     httpClient,
     pushNotification: gateway,
-    inviteService: createStubInviteService(),
     widgetNavigationRepository: {
       subscribe: () => () => {},
       getPendingCommand: () => null,

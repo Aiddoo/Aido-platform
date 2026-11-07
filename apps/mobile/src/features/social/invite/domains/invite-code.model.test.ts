@@ -113,7 +113,7 @@ describe('findInvalidCharacters', () => {
     expect(result).toEqual([{ character: 'A', index: 5, kind: 'unused' }]);
   });
 
-  it('공백과 하이픈만 섞인 올바른 코드면 빈 배열을 반환한다', () => {
+  it('공백과 하이픈만 섞인 코드면 빈 배열을 반환한다', () => {
     // When
     const result = InviteCodePolicy.findInvalidCharacters('K7M-2QX ');
 

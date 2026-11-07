@@ -1,7 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createHttpClientStub,
-  createLoggerStub,
   createPushNotificationGatewayStub,
   createTestDi,
 } from '@src/shared/__tests__';
@@ -10,28 +9,26 @@ import { QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { NotificationService } from '../apis/notification.service';
 import { useRecordPushOpenedMutationOptions } from './notification.mutations';
 
 async function setup() {
-  let unreadCount = 3;
-  let finishOpened: () => void = () => undefined;
+  const server = { unreadCount: 3, finishOpened: () => {} };
   const httpClient = createHttpClientStub();
-  httpClient.get.mockImplementation(async () => ({ ok: true, value: { unreadCount } }));
+  httpClient.get.mockImplementation(async () => ({
+    ok: true,
+    value: { unreadCount: server.unreadCount },
+  }));
   httpClient.post.mockImplementation(
     () =>
       new Promise((resolve) => {
-        finishOpened = () => {
-          unreadCount = 2;
+        server.finishOpened = () => {
+          server.unreadCount = 2;
           resolve({ ok: true, value: { opened: true } });
         };
       }),
   );
   const gateway = createPushNotificationGatewayStub();
-  const container = createTestDi({
-    notificationService: new NotificationService(httpClient, gateway, httpClient),
-    logger: createLoggerStub(),
-  });
+  const container = createTestDi({ httpClient, pushNotification: gateway });
   const queryClient = createTestQueryClient();
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>
@@ -41,7 +38,7 @@ async function setup() {
   const { result } = await renderHook(() => useMutation(useRecordPushOpenedMutationOptions()), {
     wrapper,
   });
-  return { result, gateway, finishOpened: () => finishOpened() };
+  return { result, gateway, finishOpened: () => server.finishOpened() };
 }
 
 describe('useRecordPushOpenedMutationOptions', () => {

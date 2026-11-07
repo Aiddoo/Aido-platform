@@ -12,7 +12,7 @@ import {
 import { toFriendRequestsPage, toFriendsPage, toSearchedUsersPage } from './friend.mapper';
 
 describe('toFriendsPage', () => {
-  test('친구 목록과 totalCount, hasMore를 옮기고 친구가 된 시각은 순간으로 읽는다', () => {
+  it('친구 목록과 totalCount, hasMore를 옮기고 친구가 된 시각은 순간으로 읽는다', () => {
     // Given
     const dto = friendsPageSchema.parse(createFriendsListDto());
 
@@ -26,7 +26,7 @@ describe('toFriendsPage', () => {
     expect(page.hasMore).toBe(dto.hasMore);
   });
 
-  test('이름과 프로필이 없는 친구도 null 그대로 둔다', () => {
+  it('이름과 프로필이 없는 친구도 null 그대로 둔다', () => {
     // Given
     const dto = friendsPageSchema.parse(createFriendsListDto());
 
@@ -40,7 +40,7 @@ describe('toFriendsPage', () => {
 });
 
 describe('toFriendRequestsPage', () => {
-  test('받은 요청과 보낸 요청을 같은 모양으로 옮긴다', () => {
+  it('받은 요청과 보낸 요청을 같은 모양으로 옮긴다', () => {
     // Given
     const received = friendRequestsPageSchema.parse(createReceivedRequestsDto());
     const sent = friendRequestsPageSchema.parse(createSentRequestsDto());
@@ -57,7 +57,7 @@ describe('toFriendRequestsPage', () => {
 });
 
 describe('toSearchedUsersPage', () => {
-  test('관계 flag를 보존하고 nextCursor를 전달한다', () => {
+  it('관계 flag를 보존하고 nextCursor를 전달한다', () => {
     // Given
     const dto = searchedUsersPageSchema.parse(createSearchUsersDto());
 

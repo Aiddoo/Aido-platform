@@ -6,7 +6,6 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
-import { createStubInviteService } from '../__tests__/create-stub-invite-service';
 import { createInvite } from '../__tests__/invite.fixtures';
 import { createPawPrintCelebrationRepository } from '../apis/paw-print-celebration.repository';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
@@ -39,7 +38,6 @@ async function renderBoard({
       queryClient,
       withLocalDate: true,
       di: {
-        inviteService: createStubInviteService(),
         pawPrintCelebrationRepository,
         haptics,
       },
@@ -52,7 +50,7 @@ async function renderBoard({
 
 describe('InvitePawPrintBoard 새 발자국 축하', () => {
   it('새 발자국이 있으면 진동을 한 번 주고 본 수를 저장한다', async () => {
-    // Given & When
+    // When
     const { pawPrintCelebrationRepository, haptics } = await renderBoard({
       qualifiedCount: 3,
       celebratedCount: 1,
@@ -65,7 +63,7 @@ describe('InvitePawPrintBoard 새 발자국 축하', () => {
   });
 
   it('이미 본 수와 같으면 진동 없이 그대로 둔다', async () => {
-    // Given & When
+    // When
     const { pawPrintCelebrationRepository, haptics } = await renderBoard({
       qualifiedCount: 2,
       celebratedCount: 2,
@@ -77,7 +75,7 @@ describe('InvitePawPrintBoard 새 발자국 축하', () => {
   });
 
   it('발자국이 줄었으면 진동 없이 본 수만 맞춘다', async () => {
-    // Given & When
+    // When
     const { pawPrintCelebrationRepository, haptics } = await renderBoard({
       qualifiedCount: 1,
       celebratedCount: 3,

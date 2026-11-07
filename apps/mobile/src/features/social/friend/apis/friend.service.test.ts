@@ -27,8 +27,8 @@ describe('FriendService', () => {
   // ── sendRequestByTag ─────────────────────────
 
   describe('sendRequestByTag', () => {
-    test('빈 문자열 → BusinessError EMPTY_TAG', async () => {
-      // Given & When
+    it('태그가 비어 있으면 EMPTY_TAG 오류를 반환한다', async () => {
+      // When
       const result = await service.sendRequestByTag('  ');
 
       // Then
@@ -39,8 +39,8 @@ describe('FriendService', () => {
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
-    test('잘못된 형식 → BusinessError INVALID_TAG', async () => {
-      // Given & When
+    it('태그 형식이 틀리면 INVALID_TAG 오류를 반환한다', async () => {
+      // When
       const result = await service.sendRequestByTag('abc');
 
       // Then
@@ -51,7 +51,7 @@ describe('FriendService', () => {
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
-    test('정상 태그 → SendRequestResult 반환', async () => {
+    it('태그가 맞으면 요청 결과를 반환한다', async () => {
       // Given
       const dto = createSendFriendRequestDto();
       httpClient.post.mockResolvedValue({ ok: true, value: dto });
@@ -67,7 +67,7 @@ describe('FriendService', () => {
       });
     });
 
-    test('자기 자신에게 요청 → FOLLOW_0901 에러', async () => {
+    it('자기 자신에게 요청하면 FOLLOW_0901 오류를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError({ code: 'FOLLOW_0901' });
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -79,7 +79,7 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('이미 친구 → FOLLOW_0902 에러', async () => {
+    it('이미 친구이면 FOLLOW_0902 오류를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError({
         code: 'FOLLOW_0902',
@@ -94,7 +94,7 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('프리미엄 한도 → FOLLOW_0909 에러', async () => {
+    it('친구 한도에 닿으면 FOLLOW_0909 오류를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError({
         code: 'FOLLOW_0909',
@@ -109,21 +109,24 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.sendRequestByTag('ABCD1234')).rejects.toThrow(
-        'Invalid sendRequest response',
-      );
+      // When
+
+      const result = service.sendRequestByTag('ABCD1234');
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid sendRequest response');
     });
   });
 
   // ── getFriends ───────────────────────────────
 
   describe('getFriends', () => {
-    test('정상 응답 → Page<FriendUser> 반환', async () => {
+    it('응답을 받으면 친구 목록 페이지를 반환한다', async () => {
       // Given
       const dto = createFriendsListDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -142,7 +145,7 @@ describe('FriendService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -154,19 +157,24 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getFriends()).rejects.toThrow('Invalid getFriends response');
+      // When
+
+      const result = service.getFriends();
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid getFriends response');
     });
   });
 
   // ── getReceivedRequests ──────────────────────
 
   describe('getReceivedRequests', () => {
-    test('정상 응답 → Page<FriendRequest> 반환', async () => {
+    it('응답을 받으면 친구 요청 목록 페이지를 반환한다', async () => {
       // Given
       const dto = createReceivedRequestsDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -185,7 +193,7 @@ describe('FriendService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -197,21 +205,24 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getReceivedRequests()).rejects.toThrow(
-        'Invalid getReceivedRequests response',
-      );
+      // When
+
+      const result = service.getReceivedRequests();
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid getReceivedRequests response');
     });
   });
 
   // ── getSentRequests ──────────────────────────
 
   describe('getSentRequests', () => {
-    test('정상 응답 → Page<FriendRequest> 반환', async () => {
+    it('응답을 받으면 친구 요청 목록 페이지를 반환한다', async () => {
       // Given
       const dto = createSentRequestsDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -230,7 +241,7 @@ describe('FriendService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -242,19 +253,24 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getSentRequests()).rejects.toThrow('Invalid getSentRequests response');
+      // When
+
+      const result = service.getSentRequests();
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid getSentRequests response');
     });
   });
 
   // ── acceptRequest ────────────────────────────
 
   describe('acceptRequest', () => {
-    test('정상 응답 → void 반환', async () => {
+    it('요청이 성공하면 성공 결과를 반환한다', async () => {
       // Given
       const dto = createAcceptFriendRequestDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -267,7 +283,7 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -283,7 +299,7 @@ describe('FriendService', () => {
   // ── removeFriend ─────────────────────────────
 
   describe('removeFriend', () => {
-    test('정상 응답 → void 반환', async () => {
+    it('요청이 성공하면 성공 결과를 반환한다', async () => {
       // Given
       httpClient.delete.mockResolvedValue({
         ok: true,
@@ -298,7 +314,7 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError();
       httpClient.delete.mockResolvedValue({ ok: false, error: apiError });
@@ -314,7 +330,7 @@ describe('FriendService', () => {
   // ── reorderFriend ──────────────────────────
 
   describe('reorderFriend', () => {
-    test('정상 응답 → FriendUser 반환', async () => {
+    it('응답을 받으면 순서를 바꾼 친구를 반환한다', async () => {
       // Given
       const dto = createReorderFriendDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -337,7 +353,7 @@ describe('FriendService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createFriendApiError({ code: 'FOLLOW_0910', status: 404 });
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -349,22 +365,25 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.reorderFriend('follow-1', { position: 'before' })).rejects.toThrow(
-        'Invalid reorderFriend response',
-      );
+      // When
+
+      const result = service.reorderFriend('follow-1', { position: 'before' });
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid reorderFriend response');
     });
   });
 
   // ── searchUsers ─────────────────────────
 
   describe('searchUsers', () => {
-    test('2자 미만 검색어 → BusinessError, HTTP 미호출', async () => {
-      // Given & When
+    it('검색어가 2자 미만이면 요청 없이 오류를 반환한다', async () => {
+      // When
       const result = await service.searchUsers({ query: ' a ' });
 
       // Then
@@ -375,7 +394,7 @@ describe('FriendService', () => {
       expect(httpClient.get).not.toHaveBeenCalled();
     });
 
-    test('정상 검색어 → trim된 q/cursor/limit로 GET 호출 후 Page 반환', async () => {
+    it('검색어의 앞뒤 공백을 지우고 조회해 페이지를 반환한다', async () => {
       // Given
       const dto = createSearchUsersDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -398,7 +417,7 @@ describe('FriendService', () => {
       }
     });
 
-    test('HTTP 에러 → Result.err pass-through', async () => {
+    it('HTTP 오류이면 실패 결과를 그대로 돌려준다', async () => {
       // Given
       const apiError = createFriendApiError({ code: 'FOLLOW_0911', status: 400 });
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -410,14 +429,17 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 → ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.searchUsers({ query: '홍길동' })).rejects.toThrow(
-        'Invalid searchUsers response',
-      );
+      // When
+
+      const result = service.searchUsers({ query: '홍길동' });
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid searchUsers response');
     });
   });
 });

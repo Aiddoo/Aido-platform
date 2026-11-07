@@ -4,7 +4,6 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
   createHttpClientStub,
   createTestDi,
@@ -69,7 +68,6 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
   httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
   const container = createTestDi({
     httpClient,
-    inviteService: createStubInviteService(),
     widgetNavigationRepository: createWidgetNavigationRepository(
       createMemoryObservableSyncStorage(),
     ),

@@ -35,13 +35,17 @@ const makeData = (...ids: number[]): InfiniteData<NotificationListResult> => ({
 
 describe('notification cache optimistic update', () => {
   let client: QueryClient;
+
   beforeEach(() => {
     client = createTestQueryClient();
   });
+
   afterEach(() => {
     jest.useRealTimers();
   });
-  test('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {
+
+  it('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {
+    // Given
     jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
     const allKey = NOTIFICATION_QUERY_KEYS.list({});
     const unreadKey = NOTIFICATION_QUERY_KEYS.list({ unreadOnly: true });
@@ -50,21 +54,24 @@ describe('notification cache optimistic update', () => {
     client.setQueryData(unreadKey, data);
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 2);
 
+    // When
     const snapshot = await optimisticallyMarkNotificationsRead(client);
-
     const updatedAll = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
     const updatedUnread = client.getQueryData<InfiniteData<NotificationListResult>>(unreadKey);
+    const updatedUnreadCount = client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
+    restoreNotificationCache(client, snapshot);
+
+    // Then
     expect(
       updatedAll?.pages.flatMap((page) => page.notifications).every((item) => item.isRead),
     ).toBe(true);
     expect(updatedUnread?.pages.flatMap((page) => page.notifications)).toEqual([]);
-    expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(0);
-
-    restoreNotificationCache(client, snapshot);
+    expect(updatedUnreadCount).toBe(0);
     expect(client.getQueryData<InfiniteData<NotificationListResult>>(allKey)).toEqual(data);
   });
 
-  test('단일 미읽음 알림은 모든 필터에서 한 번만 감소하고 unread 목록에서 제거한다', async () => {
+  it('단일 미읽음 알림은 모든 필터에서 한 번만 감소하고 unread 목록에서 제거한다', async () => {
+    // Given
     jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
     const allKey = NOTIFICATION_QUERY_KEYS.list({});
     const unreadKey = NOTIFICATION_QUERY_KEYS.list({ unreadOnly: true });
@@ -72,8 +79,10 @@ describe('notification cache optimistic update', () => {
     client.setQueryData(unreadKey, makeData(1, 2));
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 2);
 
+    // When
     await optimisticallyMarkNotificationsRead(client, 1);
 
+    // Then
     const all = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
     const unread = client.getQueryData<InfiniteData<NotificationListResult>>(unreadKey);
     expect(
@@ -83,7 +92,8 @@ describe('notification cache optimistic update', () => {
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
 
-  test('캐시에 이미 읽은 알림을 다시 처리해도 unread count를 중복 감소시키지 않는다', async () => {
+  it('캐시에 이미 읽은 알림을 다시 처리해도 unread count를 중복 감소시키지 않는다', async () => {
+    // Given
     const allKey = NOTIFICATION_QUERY_KEYS.list({});
     const page = makePage(1);
     const data: InfiniteData<NotificationListResult> = {
@@ -102,26 +112,28 @@ describe('notification cache optimistic update', () => {
     client.setQueryData(allKey, data);
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 1);
 
+    // When
     await optimisticallyMarkNotificationsRead(client, 1);
 
+    // Then
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
-  test('조회 취소를 기다리는 동안 계정이 바뀌면 새 계정 캐시를 수정하지 않는다', async () => {
+
+  it('조회 취소를 기다리는 동안 계정이 바뀌면 새 계정 캐시를 수정하지 않는다', async () => {
     // Given
     const listKey = NOTIFICATION_QUERY_KEYS.list({});
     const data = makeData(1);
     client.setQueryData(listKey, data);
-    let shouldApply = true;
-    const cancel = jest.spyOn(client, 'cancelQueries').mockImplementation(async () => {
-      shouldApply = false;
+    const shouldApply = jest.fn(() => true);
+    jest.spyOn(client, 'cancelQueries').mockImplementation(async () => {
+      shouldApply.mockReturnValue(false);
     });
+
     // When
-    const snapshot = await optimisticallyMarkNotificationsRead(client, 1, {
-      shouldApply: () => shouldApply,
-    });
+    const snapshot = await optimisticallyMarkNotificationsRead(client, 1, { shouldApply });
+
     // Then
     expect(snapshot).toEqual([]);
     expect(client.getQueryData(listKey)).toBe(data);
-    cancel.mockRestore();
   });
 });

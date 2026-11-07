@@ -141,8 +141,13 @@ describe('InviteService', () => {
       const { service, publicHttpClient } = createService();
       publicHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getPreview('K7M2QX')).rejects.toBeInstanceOf(ParseError);
+      // When
+
+      const result = service.getPreview('K7M2QX');
+
+      // Then
+
+      await expect(result).rejects.toBeInstanceOf(ParseError);
     });
   });
 
@@ -236,8 +241,13 @@ describe('InviteService', () => {
       const { service, authHttpClient } = createService();
       authHttpClient.post.mockResolvedValue({ ok: true, value: { outcome: 'UNKNOWN' } });
 
-      // When & Then
-      await expect(service.redeem('K7M2QX')).rejects.toBeInstanceOf(ParseError);
+      // When
+
+      const result = service.redeem('K7M2QX');
+
+      // Then
+
+      await expect(result).rejects.toBeInstanceOf(ParseError);
     });
   });
 
@@ -299,7 +309,8 @@ describe('InviteService', () => {
     });
 
     it('서버가 누적 상한을 보내면 그대로 반환한다', async () => {
-      // Given 출시 전에 이미 상한에 닿은 사용자도 첫 조회에서 상한 상태를 받는다
+      // Given
+      // 출시 전에 이미 상한에 닿은 사용자도 첫 조회에서 상한 상태를 받는다
       const { service, authHttpClient } = createService();
       authHttpClient.get.mockResolvedValue({
         ok: true,
@@ -331,8 +342,13 @@ describe('InviteService', () => {
       const { service, authHttpClient } = createService();
       authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getInvite()).rejects.toBeInstanceOf(ParseError);
+      // When
+
+      const result = service.getInvite();
+
+      // Then
+
+      await expect(result).rejects.toBeInstanceOf(ParseError);
     });
   });
 
@@ -370,7 +386,9 @@ describe('InviteService', () => {
       // When
       const result = service.findFreshPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
 
-      // Then 10-20 → 10-25 = 5일 ≤ 7일
+      // Then
+
+      // 10-20 → 10-25 = 5일 ≤ 7일
       expect(result).toEqual(pending);
       expect(pendingRedemptionRepository.find()).toEqual(pending);
     });
@@ -384,7 +402,9 @@ describe('InviteService', () => {
       // When
       const result = service.findFreshPendingRedemption(toInstant('2026-10-25T00:00:00Z'));
 
-      // Then 10-10 → 10-25 = 15일 > 7일
+      // Then
+
+      // 10-10 → 10-25 = 15일 > 7일
       expect(result).toBeNull();
       expect(pendingRedemptionRepository.find()).toEqual(pending);
     });

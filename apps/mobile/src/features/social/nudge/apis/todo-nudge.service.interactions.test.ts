@@ -10,7 +10,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     return { httpClient, service: new TodoNudgeService(httpClient) };
   };
 
-  test('보낸 콕 목록의 방향과 커서, 취소 신호를 그대로 전송한다', async () => {
+  it('보낸 콕 목록의 방향과 커서, 취소 신호를 그대로 전송한다', async () => {
     // Given
     const { httpClient, service } = setup();
     const signal = new AbortController().signal;
@@ -34,7 +34,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     expect(page.items[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
   });
 
-  test('답장 요청에는 완료 상태를 넣지 않고 최신 답장 모델을 반환한다', async () => {
+  it('답장 요청에는 완료 상태를 넣지 않고 최신 답장 모델을 반환한다', async () => {
     // Given
     const { httpClient, service } = setup();
     httpClient.put.mockResolvedValue({
@@ -49,7 +49,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     expect(nudge.isTodoCompleted).toBe(false);
   });
 
-  test('감사 미리보기의 마지막 콕 ID만 서버에 보내고 전송 수를 반환한다', async () => {
+  it('감사 미리보기의 마지막 콕 ID만 서버에 보내고 전송 수를 반환한다', async () => {
     // Given
     const { httpClient, service } = setup();
     httpClient.put.mockResolvedValue({ ok: true, value: { sentCount: 2 } });
@@ -60,7 +60,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     expect(sentCount).toBe(2);
   });
 
-  test('감사 페이지 요청은 최초 기준 ID와 커서, 취소 신호를 전송한다', async () => {
+  it('감사 페이지 요청은 최초 기준 ID와 커서, 취소 신호를 전송한다', async () => {
     // Given
     const { httpClient, service } = setup();
     const signal = new AbortController().signal;
@@ -87,7 +87,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     expect(preview.totalRecipients).toBe(40);
   });
 
-  test('현재 권한이 사라진 서버 오류는 번역하거나 다른 오류로 바꾸지 않는다', async () => {
+  it('현재 권한이 사라진 서버 오류는 번역하거나 다른 오류로 바꾸지 않는다', async () => {
     // Given
     const { httpClient, service } = setup();
     const error = new ApiError('NUDGE_1109', '사용할 수 없는 콕이에요', 409);
@@ -98,7 +98,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     expect(result).toEqual({ ok: false, error });
   });
 
-  test('필수 친구 정보가 없는 응답은 ParseError로 경계에 전달한다', async () => {
+  it('필수 친구 정보가 없는 응답은 ParseError로 경계에 전달한다', async () => {
     // Given
     const { httpClient, service } = setup();
     httpClient.get.mockResolvedValue({ ok: true, value: { id: 1 } });
@@ -108,7 +108,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     await expect(request).rejects.toBeInstanceOf(ParseError);
   });
 
-  test('기능이 준비되지 않았으면 진입점을 비활성화한다', async () => {
+  it('기능이 준비되지 않았으면 진입점을 비활성화한다', async () => {
     // Given
     const { httpClient, service } = setup();
     httpClient.get.mockResolvedValue({ ok: true, value: { enabled: false } });

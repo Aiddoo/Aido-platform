@@ -17,7 +17,7 @@ afterEach(() => {
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 
 describe('toNotification', () => {
-  test('createdAt ISO -> Instant 변환', () => {
+  it('createdAt ISO 문자열을 Instant로 바꾼다', () => {
     // Given
     const server = createNotificationListResponseDto().notifications[0];
     if (!server) {
@@ -33,7 +33,7 @@ describe('toNotification', () => {
     expect(result.type).toBe('FOLLOW_NEW');
   });
 
-  test('readAt ISO -> Instant 변환', () => {
+  it('readAt ISO 문자열을 Instant로 바꾼다', () => {
     // Given
     const server = createNotificationListResponseDto().notifications[1];
     if (!server) {
@@ -47,7 +47,7 @@ describe('toNotification', () => {
     expect(result.readAt).toBe('2026-03-07T10:00:00.000Z');
   });
 
-  test('readAt null -> null', () => {
+  it('readAt이 null이면 null이다', () => {
     // Given
     const server = createNotificationListResponseDto().notifications[0];
     if (!server) {
@@ -61,12 +61,14 @@ describe('toNotification', () => {
     expect(result.readAt).toBeNull();
   });
 
-  test('댓글 metadata는 검증된 routing만 모델에 노출한다', () => {
+  it('댓글 metadata는 검증된 routing만 모델에 노출한다', () => {
+    // Given
     const server = createNotificationListResponseDto().notifications[0];
     if (!server) {
       throw new Error('Expected notification DTO');
     }
 
+    // When
     const result = toNotification({
       ...server,
       type: 'TODO_SHARED',
@@ -80,6 +82,7 @@ describe('toNotification', () => {
       },
     });
 
+    // Then
     expect(result.routing).toEqual({
       commentId: COMMENT_ID,
       activityKind: 'REPLY',
@@ -88,23 +91,26 @@ describe('toNotification', () => {
     expect(result).not.toHaveProperty('metadata');
   });
 
-  test('유효하지 않은 댓글 metadata는 routing으로 승격하지 않는다', () => {
+  it('유효하지 않은 댓글 metadata는 routing으로 승격하지 않는다', () => {
+    // Given
     const server = createNotificationListResponseDto().notifications[0];
     if (!server) {
       throw new Error('Expected notification DTO');
     }
 
+    // When
     const result = toNotification({
       ...server,
       metadata: { commentId: 'not-a-comment-id' },
     });
 
+    // Then
     expect(result.routing).toBeUndefined();
   });
 });
 
 describe('toNotificationListResult', () => {
-  test('배열 변환 + unreadCount/hasMore/nextCursor', () => {
+  it('배열 변환 + unreadCount/hasMore/nextCursor', () => {
     // Given
     const dto = createNotificationListResponseDto();
 
@@ -119,7 +125,7 @@ describe('toNotificationListResult', () => {
     expect(result.nextCursor).toBeNull();
   });
 
-  test('빈 배열', () => {
+  it('빈 배열', () => {
     // Given
     const dto = createNotificationListResponseDto({
       notifications: [],
@@ -145,7 +151,7 @@ describe('toPushNotificationPayload', () => {
     unknownField: 'ignored',
   };
 
-  test('계약에 맞는 data는 앱 모델로 읽고 모르는 키는 버린다', () => {
+  it('계약에 맞는 data는 앱 모델로 읽고 모르는 키는 버린다', () => {
     // Given
     // When
     const result = toPushNotificationPayload(validData);
@@ -163,7 +169,7 @@ describe('toPushNotificationPayload', () => {
     });
   });
 
-  test.each([undefined, { ...validData, context: 'broken' }])(
+  it.each([undefined, { ...validData, context: 'broken' }])(
     '모양이 맞지 않으면 오류를 돌려준다: %j',
     (data) => {
       // Given
@@ -177,7 +183,7 @@ describe('toPushNotificationPayload', () => {
 });
 
 describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paused)', () => {
-  test('모르는 stage가 와도 푸시를 읽고 탭하면 그 회차를 연다', () => {
+  it('모르는 stage가 와도 푸시를 읽고 탭하면 그 회차를 연다', () => {
     // Given
     const data = {
       notificationId: 7,
@@ -202,7 +208,7 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
   });
 
-  test('알림 목록의 metadata에 stage만 있어도 목록이 깨지지 않고 그 회차를 연다', () => {
+  it('알림 목록의 metadata에 stage만 있어도 목록이 깨지지 않고 그 회차를 연다', () => {
     // Given
     const [server] = createNotificationListResponseDto().notifications;
     if (!server) {

@@ -1,4 +1,3 @@
-import { createSessionEpoch } from '@src/core/session/session-epoch';
 import '@src/shared/i18n/init';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
@@ -22,8 +21,6 @@ import {
   createPushDeviceResponseDto,
   createPushPermissionResponse,
 } from '../__tests__/notification.fixtures';
-import { PushDeviceService } from '../apis/push-device.service';
-import { createPushPromptRepository } from '../apis/push-prompt.repository';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../schemas/push-permission.schema';
 import { PushPermissionNotice } from './push-permission-notice';
@@ -54,15 +51,7 @@ async function renderCard(
     di: {
       httpClient,
       syncStorage,
-      pushPromptRepository: createPushPromptRepository(syncStorage),
-      pushDeviceService: new PushDeviceService({
-        gateway,
-        deviceIdService: { get: async () => 'ios_device-123' },
-        httpClient,
-        logger: createLoggerStub(),
-        getTimeZone: () => 'Asia/Seoul',
-        sessionEpoch: createSessionEpoch(),
-      }),
+      pushNotification: gateway,
       analytics: createAnalyticsStub(),
       logger: createLoggerStub(),
       externalLink,
@@ -74,7 +63,7 @@ async function renderCard(
 
 describe('PushPermissionNotice — 홈 알림 안내', () => {
   it('알림이 기기에서 허용되고 앱 설정도 켜져 있으면 보이지 않는다', async () => {
-    // Given / When
+    // When
     await renderCard({ status: 'GRANTED', canAskAgain: false });
 
     // Then
@@ -89,7 +78,9 @@ describe('PushPermissionNotice — 홈 알림 안내', () => {
     // When
     fireEvent.press(screen.getByText('계속'));
 
-    // Then 시스템 창은 안내에서 계속을 눌러야 뜬다
+    // Then
+
+    // 시스템 창은 안내에서 계속을 눌러야 뜬다
     expect(await screen.findByText('알림을 보내드려도 될까요?')).toBeTruthy();
     expect(gateway.requestPermission).not.toHaveBeenCalled();
   });
@@ -109,8 +100,10 @@ describe('PushPermissionNotice — 홈 알림 안내', () => {
   });
 
   it('기기는 허용인데 앱 푸시 설정이 꺼져 있으면 알림 설정으로 안내한다', async () => {
+    // When
     await renderCard({ status: 'PROVISIONAL', canAskAgain: true }, { pushEnabled: false });
 
+    // Then
     expect(screen.getByText('푸시 알림이 꺼져 있어요')).toBeTruthy();
   });
 
