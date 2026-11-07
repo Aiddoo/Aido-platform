@@ -5,6 +5,7 @@ import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
@@ -20,6 +21,7 @@ import {
 } from '../schemas/voice-plan-response.schema';
 import type { PlannedAction, VoicePlanSource } from '../schemas/voice-plan.schema';
 import {
+  toAppliedPlanResult,
   toApplyActionPlanRequest,
   toQuickPlanRequest,
   toQuickPlanResult,
@@ -111,22 +113,16 @@ export class VoiceService {
     },
     idempotencyKey: string,
   ): Promise<Result<AppliedPlanResult, ApiError>> => {
-    const result = await this.#httpClient.post(
-      'v1/action-plans/apply',
-      toApplyActionPlanRequest(source, actions, fallbackCategoryId, sourceMemoId),
-      { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey } },
+    return parseApiResponse(
+      await this.#httpClient.post(
+        'v1/action-plans/apply',
+        toApplyActionPlanRequest(source, actions, fallbackCategoryId, sourceMemoId),
+        { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey } },
+      ),
+      applyActionPlanResponseSchema,
+      toAppliedPlanResult,
+      '[VoiceService] Invalid applyActionPlan response',
     );
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = applyActionPlanResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[VoiceService] Invalid applyActionPlan response: ${parsed.error.message}`,
-      );
-    }
-    return ok({ todoCount: parsed.data.todos.length, hasMemo: parsed.data.memo != null });
   };
 
   /** 제목·내용은 로그에 남기지 않는다. 어느 칸이 계약과 다른지만 남긴다 */

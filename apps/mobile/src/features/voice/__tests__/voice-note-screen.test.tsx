@@ -44,7 +44,7 @@ const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
-const planDraftWithTodo = PlanReviewPolicy.createPlanReviewDraft(
+const planDraftWithTodo = PlanReviewPolicy.createDraft(
   voicePlanSchema.parse({
     planId: DRAFT_ID,
     source: 'voice-note',
@@ -68,7 +68,7 @@ const planDraftWithTodo = PlanReviewPolicy.createPlanReviewDraft(
   }),
 );
 
-const emptyPlanDraft = PlanReviewPolicy.createPlanReviewDraft(
+const emptyPlanDraft = PlanReviewPolicy.createDraft(
   voicePlanSchema.parse({
     planId: DRAFT_ID,
     source: 'voice-note',

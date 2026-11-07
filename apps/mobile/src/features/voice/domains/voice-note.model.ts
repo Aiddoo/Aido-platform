@@ -20,7 +20,7 @@ import {
   voiceNoteDraftIdSchema,
 } from '../schemas/voice-note.schema';
 import type { PlannedMemo } from '../schemas/voice-plan.schema';
-import { createPlanReviewDraft } from './plan-review.model';
+import { PlanReviewPolicy } from './plan-review.model';
 import type { VoiceCaptureSeed } from './voice-capture.model';
 import { isTodoAction, type VoiceNoteDigestResult } from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
@@ -93,7 +93,7 @@ export function withDigestResult(note: VoiceNote, result: VoiceNoteDigestResult)
     ...note,
     digest: { title: result.title, summary: result.summary, keyPoints },
     digestRequest: null,
-    planDraft: createPlanReviewDraft(result.plan),
+    planDraft: PlanReviewPolicy.createDraft(result.plan),
   };
 }
 

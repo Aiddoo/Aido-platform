@@ -21,7 +21,7 @@ import {
 } from './voice-note.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
-  PlanReviewPolicy.createPlanReviewDraft(
+  PlanReviewPolicy.createDraft(
     voicePlanSchema.parse({
       planId: 'draft-1',
       source: 'voice-note',
@@ -253,7 +253,7 @@ describe('voiceNoteSchema 저장과 복원', () => {
   test('고친 카드까지 저장했다가 달력 날짜를 그대로 되살린다', () => {
     // Given
     const note = createVoiceNoteFixture({
-      planDraft: PlanReviewPolicy.createPlanReviewDraft(plan),
+      planDraft: PlanReviewPolicy.createDraft(plan),
     });
 
     // When
@@ -440,10 +440,7 @@ describe('VoiceNotePolicy.findRecordingIndexAt', () => {
       omittedTodoCount: 1,
       actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
     });
-    const note = withPlanDraft(
-      createVoiceNoteFixture(),
-      PlanReviewPolicy.createPlanReviewDraft(plan),
-    );
+    const note = withPlanDraft(createVoiceNoteFixture(), PlanReviewPolicy.createDraft(plan));
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
     stored.planDraft.form.actions[0].title = '';
 

@@ -219,7 +219,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       if (accountId != null) {
         draftService.save(
           createMemoPlanDraftKey({ userId: accountId, memoId }),
-          PlanReviewPolicy.createPlanReviewDraft(plan),
+          PlanReviewPolicy.createDraft(plan),
           { sourceUpdatedAt },
         );
       }

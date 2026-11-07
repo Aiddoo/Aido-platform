@@ -65,7 +65,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
   const [isTypedTextKept, setIsTypedTextKept] = useState(false);
 
   const onCaptured = async (text: string): Promise<CapturedPlan> => {
-    const request = PlanRequestPolicy.preparePlanRequest<CreateQuickPlanInput>({
+    const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
       previous: planRequestRef.current,
       input: { text, source: 'voice' },
       createIdempotencyKey: idGenerator.create,
@@ -83,7 +83,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       planRequestRef.current = null;
       return { plan, isCharged: charged };
     } catch (error) {
-      planRequestRef.current = PlanRequestPolicy.getPlanRequestAfterFailure(request, error);
+      planRequestRef.current = PlanRequestPolicy.getAfterFailure(request, error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

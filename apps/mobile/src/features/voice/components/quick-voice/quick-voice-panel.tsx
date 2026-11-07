@@ -240,7 +240,7 @@ QuickVoicePanel.Review = function Review({
   const { t } = useTranslation('voice');
   const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: PlanReviewPolicy.createPlanReviewFormValues(plan),
+    defaultValues: PlanReviewPolicy.createFormValues(plan),
     mode: 'onChange',
   });
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();

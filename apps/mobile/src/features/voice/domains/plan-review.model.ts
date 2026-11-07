@@ -12,7 +12,7 @@ import {
 } from '../schemas/voice-plan.schema';
 import { getDefaultSelection, type PlanSelection } from './voice-plan.model';
 
-export function createPlanReviewFormValues(
+export function createFormValues(
   plan: VoicePlan,
   selection: PlanSelection = getDefaultSelection(plan),
 ): PlanReviewFormValues {
@@ -36,9 +36,9 @@ export function toPlanSelection({
   return Object.fromEntries(actions.map((action) => [action.actionId, action.isSelected]));
 }
 
-export function createPlanReviewDraft(
+export function createDraft(
   plan: VoicePlan,
-  form: PlanReviewFormValues = createPlanReviewFormValues(plan),
+  form: PlanReviewFormValues = createFormValues(plan),
 ): PlanReviewDraft {
   return { omittedTodoCount: plan.omittedTodoCount, form };
 }
@@ -56,7 +56,7 @@ export function toVoicePlanFromDraft(
   };
 }
 
-export function createPlanReviewDraftKey({
+export function createDraftStorageKey({
   userId,
   scope,
   target,
@@ -69,10 +69,10 @@ export function createPlanReviewDraftKey({
 }
 
 export const PlanReviewPolicy = {
-  createPlanReviewFormValues,
+  createFormValues,
   toPlannedActions,
   toPlanSelection,
-  createPlanReviewDraft,
+  createDraft,
   toVoicePlanFromDraft,
-  createPlanReviewDraftKey,
+  createDraftStorageKey,
 } as const;

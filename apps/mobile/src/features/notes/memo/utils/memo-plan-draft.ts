@@ -6,7 +6,7 @@ import type { DraftService } from '@src/shared/draft/draft.service';
 import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';
 
 export function createMemoPlanDraftKey({ userId, memoId }: { userId: string; memoId: number }) {
-  return PlanReviewPolicy.createPlanReviewDraftKey({
+  return PlanReviewPolicy.createDraftStorageKey({
     userId,
     scope: 'memo-plan',
     target: [memoId],
@@ -49,7 +49,7 @@ export function prepareMemoPlanIdempotencyKey(
 ): string {
   const draftKey = createMemoPlanRequestDraftKey({ userId, memoId });
   const restored = draftService.restore(draftKey, { sourceUpdatedAt });
-  const request = PlanRequestPolicy.preparePlanRequest({
+  const request = PlanRequestPolicy.prepare({
     previous: restored.status === 'restored' ? restored.value : null,
     input: { content, categoryId },
     createIdempotencyKey,

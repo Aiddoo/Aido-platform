@@ -1,6 +1,7 @@
 import {
   type ApplyAction as ApplyActionDto,
   type ApplyActionPlanRequest,
+  type ApplyActionPlanResponse,
   PLANNED_ACTION_TYPES,
   type PlannedAction as PlannedActionDto,
   plannedActionSchema,
@@ -13,6 +14,7 @@ import { match } from 'ts-pattern';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import {
+  type AppliedPlanResult,
   type CreateQuickPlanInput,
   type QuickPlanResult,
   type VoiceNoteDigestResult,
@@ -139,6 +141,10 @@ export function toApplyActionPlanRequest(
     ...(sourceMemoId != null && { sourceMemoId }),
     actions: actions.map((action) => toApplyAction(action, fallbackCategoryId)),
   };
+}
+
+export function toAppliedPlanResult({ todos, memo }: ApplyActionPlanResponse): AppliedPlanResult {
+  return { todoCount: todos.length, hasMemo: memo != null };
 }
 
 export const toVoiceNoteDigestRequest = ({

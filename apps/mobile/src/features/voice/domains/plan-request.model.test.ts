@@ -1,20 +1,20 @@
 import { ApiError } from '@src/core/errors/api-error';
 
-import { PlanRequestPolicy, preparePlanRequest } from './plan-request.model';
+import { PlanRequestPolicy } from './plan-request.model';
 
-describe('preparePlanRequest', () => {
+describe('prepare', () => {
   test('같은 내용을 다시 보내면 처음 키를 다시 쓴다', () => {
     // Given
     let count = 0;
     const createIdempotencyKey = () => `key-${++count}`;
-    const first = preparePlanRequest({
+    const first = PlanRequestPolicy.prepare({
       previous: null,
       input: { text: '장보기' },
       createIdempotencyKey,
     });
 
     // When
-    const retry = preparePlanRequest({
+    const retry = PlanRequestPolicy.prepare({
       previous: first,
       input: { text: '장보기' },
       createIdempotencyKey,
@@ -28,14 +28,14 @@ describe('preparePlanRequest', () => {
     // Given
     let count = 0;
     const createIdempotencyKey = () => `key-${++count}`;
-    const first = preparePlanRequest({
+    const first = PlanRequestPolicy.prepare({
       previous: null,
       input: { text: '장보기' },
       createIdempotencyKey,
     });
 
     // When
-    const edited = preparePlanRequest({
+    const edited = PlanRequestPolicy.prepare({
       previous: first,
       input: { text: '장보기 우유' },
       createIdempotencyKey,
@@ -46,7 +46,7 @@ describe('preparePlanRequest', () => {
   });
 });
 
-describe('getPlanRequestAfterFailure', () => {
+describe('getAfterFailure', () => {
   const previous = { fingerprint: 'a', idempotencyKey: 'key-1', input: 'a' };
 
   test('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
@@ -54,7 +54,7 @@ describe('getPlanRequestAfterFailure', () => {
     const error = new ApiError('AI_1318', '오류', 422);
 
     // When
-    const next = PlanRequestPolicy.getPlanRequestAfterFailure(previous, error);
+    const next = PlanRequestPolicy.getAfterFailure(previous, error);
 
     // Then
     expect(next).toBeNull();
@@ -65,7 +65,7 @@ describe('getPlanRequestAfterFailure', () => {
     const error = new ApiError('AI_1314', '처리 중', 409);
 
     // When
-    const next = PlanRequestPolicy.getPlanRequestAfterFailure(previous, error);
+    const next = PlanRequestPolicy.getAfterFailure(previous, error);
 
     // Then
     expect(next).toBe(previous);

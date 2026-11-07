@@ -74,7 +74,7 @@ function PlanReviewScreen({
 }) {
   const form = useForm<PlanReviewFormValues>({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: PlanReviewPolicy.createPlanReviewFormValues(plan),
+    defaultValues: PlanReviewPolicy.createFormValues(plan),
     mode: 'onChange',
   });
   useEffect(() => {
