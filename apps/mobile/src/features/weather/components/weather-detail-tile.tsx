@@ -44,7 +44,7 @@ export function useTileLayout(): TileLayout {
   };
 }
 
-interface TileFrameProps {
+interface WeatherTileProps {
   icon: WeatherCardGlyph;
   title: string;
   minHeight: number;
@@ -54,7 +54,14 @@ interface TileFrameProps {
 }
 
 /** 모든 타일이 같은 뼈대(제목 → 본문 → 바닥에 붙은 문구)를 갖도록 높이와 순서를 고정한다. */
-function TileFrame({ icon, title, minHeight, accessibilityLabel, note, children }: TileFrameProps) {
+function WeatherTile({
+  icon,
+  title,
+  minHeight,
+  accessibilityLabel,
+  note,
+  children,
+}: WeatherTileProps) {
   const noteMinScale = useMinimumFontScale('b4');
   return (
     <WeatherCard title={title} icon={<WeatherIcon.Card glyph={icon} />} density="tile">
@@ -103,7 +110,7 @@ export function WeatherTextTile({
   const subMinScale = useMinimumFontScale('b1');
 
   return (
-    <TileFrame
+    <WeatherTile
       icon={icon}
       title={title}
       minHeight={minHeight}
@@ -137,7 +144,7 @@ export function WeatherTextTile({
         </Text>
         {children}
       </VStack>
-    </TileFrame>
+    </WeatherTile>
   );
 }
 
@@ -167,7 +174,7 @@ export function WeatherDialTile({
   };
 
   return (
-    <TileFrame
+    <WeatherTile
       icon={icon}
       title={title}
       minHeight={minHeight}
@@ -177,7 +184,7 @@ export function WeatherDialTile({
       <Box className="mt-1.5 flex-1 items-center justify-center" onLayout={onLayout}>
         {size > 0 && <Box className="absolute">{children(size)}</Box>}
       </Box>
-    </TileFrame>
+    </WeatherTile>
   );
 }
 

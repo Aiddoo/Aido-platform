@@ -141,8 +141,7 @@
     "reason": "규칙을 넣기 전부터 있던 이름. 해당 컴포넌트를 고칠 때 역할 이름으로 바꾼다",
     "entries": {
       "apps/mobile/src/features/social/invite/components/invited-friend-summary.tsx": 1,
-      "apps/mobile/src/features/voice/components/quick-voice/quick-voice-panel.tsx": 1,
-      "apps/mobile/src/features/weather/components/weather-detail-tile.tsx": 1
+      "apps/mobile/src/features/voice/components/quick-voice/quick-voice-panel.tsx": 1
     }
   },
   "feature-bidirectional": {

@@ -14,3 +14,5 @@ export const weatherRescheduleParamsSchema = z.object({
   }),
   reason: z.enum(WEATHER_RESCHEDULE_REASONS).catch('rain'),
 });
+
+export type WeatherRescheduleParams = z.output<typeof weatherRescheduleParamsSchema>;

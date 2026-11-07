@@ -1,4 +1,3 @@
-import { WEATHER_RESCHEDULE_DEEP_LINK } from '@aido/api/vocabulary';
 import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
@@ -35,14 +34,12 @@ import { router } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { Fragment, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
-import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
 import { toWeatherBriefingKind } from '../utils/analytics/weather-analytics';
 import {
   type BriefingAction,
@@ -51,6 +48,7 @@ import {
   toBriefingState,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
+import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link';
 import { formatTemperature } from '../utils/weather-temperature';
 import { WeatherBriefingChip } from './weather-briefing-chip';
 import { WeatherCard } from './weather-card';
@@ -445,12 +443,6 @@ function useOpenReschedule(action: RescheduleAction) {
       todo_count: action.todoIds.length,
       reason: action.reason,
     });
-    push({
-      pathname: WEATHER_RESCHEDULE_DEEP_LINK,
-      params: z.encode(weatherRescheduleParamsSchema, {
-        todoIds: action.todoIds,
-        reason: action.reason,
-      }),
-    });
+    push(toWeatherRescheduleHref({ todoIds: action.todoIds, reason: action.reason }));
   };
 }

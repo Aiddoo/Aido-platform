@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AccessibilityInfo, AppState, type AppStateStatus } from 'react-native';
 
 import { useWeatherSceneClock } from './use-weather-scene-clock';
 
@@ -8,10 +8,6 @@ let mockIsReducedMotion = false;
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => mockIsFocused,
-}));
-
-jest.mock('@src/shared/hooks/use-reduce-motion', () => ({
-  useReduceMotion: () => mockIsReducedMotion,
 }));
 
 describe('날씨 장면 시계', () => {
@@ -28,6 +24,9 @@ describe('날씨 장면 시계', () => {
     mockIsReducedMotion = false;
     appStateListener = undefined;
     Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+    jest
+      .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
+      .mockImplementation(async () => mockIsReducedMotion);
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
       appStateListener = listener;
       return { remove: removeSubscription };

@@ -243,6 +243,8 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/app-config/feature-campaign/',
   'apps/mobile/src/features/app-config/whats-new/',
   'apps/mobile/src/features/device/coachmark/',
+  'apps/mobile/src/features/weather/',
+  'apps/mobile/src/features/notification/',
   'apps/mobile/src/features/device/store-review/',
   'apps/mobile/src/features/planning/category/',
   'apps/mobile/src/features/social/nudge/',
