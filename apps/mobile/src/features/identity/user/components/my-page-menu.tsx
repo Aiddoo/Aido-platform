@@ -23,7 +23,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import {
   type MyPageMenuPathname,
   useMyPageMenuNavigation,
-} from '../../hooks/use-my-page-menu-navigation';
+} from '../hooks/use-my-page-menu-navigation';
 
 const MENU_ICON_SIZE = 20;
 
