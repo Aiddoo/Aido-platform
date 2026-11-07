@@ -951,8 +951,6 @@ const PENDING_CARD_NAME_PATHS = new Set([
   'apps/mobile/src/features/insights/achievement/components/achievement-summary-card.tsx',
   // VStack과 클래스로 그린 초대 링크 면이다
   'apps/mobile/src/features/social/invite/components/invite-link-card.tsx',
-  // VStack과 클래스로 그린 발자국 판 면이다
-  'apps/mobile/src/features/social/invite/components/invite-paw-print-board-card.tsx',
 ]);
 
 function checkCardComponentUsesCard(sourceFile, repositoryRoot, errors) {
