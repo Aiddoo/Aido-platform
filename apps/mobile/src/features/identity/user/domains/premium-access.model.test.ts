@@ -1,7 +1,7 @@
-import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
+import { toUser } from '../apis/user.mapper';
 import { calculateDaysLeft, PremiumAccessPolicy } from './premium-access.model';
 
 const SEOUL = 'Asia/Seoul';

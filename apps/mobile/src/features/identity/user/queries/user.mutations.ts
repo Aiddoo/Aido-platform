@@ -1,12 +1,12 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import type { ProfileChange, User } from '@src/features/identity/user/schemas/user.schema';
 import { useTrack } from '@src/shared/analytics';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
+import type { ProfileChange, User } from '../schemas/user.schema';
 
 export function useUpdateProfileMutationOptions() {
   const userService = useUserService();

@@ -1,12 +1,12 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
+import type { User } from '../schemas/user.schema';
 
 function toMe(user: User, { defaultName }: { defaultName: string }) {
   return {

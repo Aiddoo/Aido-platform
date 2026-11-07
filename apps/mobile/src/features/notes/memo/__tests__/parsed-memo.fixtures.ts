@@ -1,4 +1,4 @@
-import type { ParseMemoPlanResponse } from '@src/features/notes/memo/schemas/memo.schema';
+import type { ParseMemoPlanResponse } from '../schemas/memo.schema';
 
 const generateParseMemoResponseDto = (): ParseMemoPlanResponse => ({
   success: true,

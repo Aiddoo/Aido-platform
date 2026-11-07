@@ -1,7 +1,8 @@
 import { useConsentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { queryOptions } from '@tanstack/react-query';
+
+import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 
 export function useGetConsentQueryOptions() {
   const consentService = useConsentService();

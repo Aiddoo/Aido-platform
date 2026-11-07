@@ -1,4 +1,3 @@
-import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/identity/consent/queries/consent.mutations';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
@@ -22,6 +21,8 @@ import {
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
+
+import { useUpdateAiDataSharingConsentMutationOptions } from '../queries/consent.mutations';
 
 const ITEM_ICON_SIZE = 16;
 const PRIVACY_LINK_MIN_HEIGHT = 44;

@@ -1,8 +1,4 @@
 import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
-import { CONSENT_LOG_EVENT } from '@src/features/identity/consent/constants/consent-log-events';
-import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
-import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
-import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
@@ -14,6 +10,10 @@ import { withTimeout } from 'es-toolkit';
 import { useRef } from 'react';
 
 import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
+import { CONSENT_LOG_EVENT } from '../constants/consent-log-events';
+import { ConsentPolicy } from '../domains/consent.model';
+import { useGetConsentQueryOptions } from '../queries/consent.queries';
+import type { Consent } from '../schemas/consent.schema';
 
 /** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
 export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;

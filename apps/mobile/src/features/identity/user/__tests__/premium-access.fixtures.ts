@@ -1,8 +1,8 @@
-import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 
 import type { PremiumAccess } from '../schemas/premium-access.schema';
 import { type CurrentUserResponse, currentUserResponseSchema } from '../schemas/user.schema';
+import { createCurrentUserDto } from './user.fixtures';
 
 export const createPremiumAccess = (overrides?: Partial<PremiumAccess>): PremiumAccess => ({
   source: 'GRANT',

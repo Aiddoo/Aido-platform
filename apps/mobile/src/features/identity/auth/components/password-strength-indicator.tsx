@@ -1,7 +1,8 @@
 import { PASSWORD_RULES } from '@aido/api/vocabulary';
-import { PasswordPolicy } from '@src/features/identity/auth/domains/auth.model';
 import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
+
+import { PasswordPolicy } from '../domains/auth.model';
 
 export interface PasswordStrengthIndicatorProps {
   password: string | undefined;

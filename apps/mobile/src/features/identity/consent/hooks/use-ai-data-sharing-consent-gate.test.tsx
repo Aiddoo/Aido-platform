@@ -3,10 +3,6 @@ import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
-import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
-import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
@@ -26,6 +22,10 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { useState } from 'react';
 
+import { createConsent } from '../__tests__/consent.fixtures';
+import { ConsentService } from '../apis/consent.service';
+import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
+import type { Consent } from '../schemas/consent.schema';
 import {
   AI_CONSENT_CHECK_TIMEOUT_MS,
   readWithoutBlocking,

@@ -1,5 +1,3 @@
-import { PasswordInput } from '@src/features/identity/auth/components/password-input';
-import { PasswordStrengthIndicator } from '@src/features/identity/auth/components/password-strength-indicator';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -12,6 +10,9 @@ import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
+
+import { PasswordInput } from './password-input';
+import { PasswordStrengthIndicator } from './password-strength-indicator';
 
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
 type NewPasswordSubStep = (typeof NEW_PASSWORD_SUB_STEPS)[number];

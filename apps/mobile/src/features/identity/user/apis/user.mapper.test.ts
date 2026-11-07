@@ -1,6 +1,6 @@
-import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 
+import { PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
 import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.fixtures';
 import { toUpdateProfileResult, toUser } from './user.mapper';
 

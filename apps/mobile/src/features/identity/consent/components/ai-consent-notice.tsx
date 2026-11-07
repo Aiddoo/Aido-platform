@@ -1,10 +1,10 @@
-import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
-import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { InlineAlert, TextButton } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 
+import { ConsentPolicy } from '../domains/consent.model';
 import { useAiDataSharingConsentGate } from '../hooks/use-ai-data-sharing-consent-gate';
+import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
 interface AiConsentNoticeProps {
   /** 동의하지 않아 무엇을 못 하는지. 문구는 쓰는 화면이 정한다 */

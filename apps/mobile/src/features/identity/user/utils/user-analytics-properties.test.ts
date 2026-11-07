@@ -1,5 +1,4 @@
-import { createPremiumAccess } from '@src/features/identity/user/__tests__/premium-access.fixtures';
-
+import { createPremiumAccess } from '../__tests__/premium-access.fixtures';
 import { toUserAnalyticsProperties } from './user-analytics-properties';
 
 describe('toUserAnalyticsProperties', () => {
