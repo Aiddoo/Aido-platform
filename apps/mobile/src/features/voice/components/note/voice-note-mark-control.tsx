@@ -16,11 +16,11 @@ import { Popover, PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
 import {
-  RECORD_CONTROL_GAP,
-  RECORD_CONTROL_ICON_SIZE,
-  RecordControl,
-  useRecordControlLabelClearance,
-} from './record-control';
+  RECORD_BUTTON_GAP,
+  RECORD_BUTTON_ICON_SIZE,
+  RecordButton,
+  useRecordButtonLabelClearance,
+} from './record-button';
 
 /** `Popover.Content`의 기본 간격과 같다 */
 const INFO_POPOVER_GAP = 9;
@@ -45,17 +45,17 @@ export function VoiceNoteMarkControl({
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const title = t('coach.mark.title');
   const description = t('coach.mark.description');
-  const labelClearance = useRecordControlLabelClearance();
-  const iconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
+  const labelClearance = useRecordButtonLabelClearance();
+  const iconSize = fontScaledSize(RECORD_BUTTON_ICON_SIZE);
   const isMarked = markCount > 0;
 
   return (
-    <RecordControl.Column
+    <RecordButton.Column
       label={
         <Popover isOpen={isInfoOpen} onOpenChange={setIsInfoOpen}>
           <Popover.Trigger asChild isDisabled={isHintPending}>
             <PressableFeedback
-              hitSlop={{ top: RECORD_CONTROL_GAP - 2, bottom: 22, left: 8, right: 8 }}
+              hitSlop={{ top: RECORD_BUTTON_GAP - 2, bottom: 22, left: 8, right: 8 }}
               accessibilityRole="button"
               accessibilityLabel={t('record.markInfo')}
               className="max-w-full"
@@ -104,7 +104,7 @@ export function VoiceNoteMarkControl({
         isPassThrough
         isTargetDisabled={!isListening}
       >
-        <RecordControl.Button
+        <RecordButton.Button
           label={isMarked ? t('record.markA11y', { amount: markCount }) : t('record.mark')}
           isActive={isMarked}
           onPress={onPress}
@@ -121,8 +121,8 @@ export function VoiceNoteMarkControl({
           ) : (
             <FlagIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
           )}
-        </RecordControl.Button>
+        </RecordButton.Button>
       </CoachmarkPopover>
-    </RecordControl.Column>
+    </RecordButton.Column>
   );
 }

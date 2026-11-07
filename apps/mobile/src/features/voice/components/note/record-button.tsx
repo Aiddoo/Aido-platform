@@ -6,12 +6,12 @@ import { type ComponentProps, type ReactNode } from 'react';
 import { Easing } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-export const RECORD_CONTROL_GAP = 8;
-const RECORD_CONTROL_SIDE_SIZE = 52;
-const RECORD_CONTROL_PRIMARY_SIZE = 64;
-export const RECORD_CONTROL_ICON_SIZE = 24;
+export const RECORD_BUTTON_GAP = 8;
+const RECORD_BUTTON_SIDE_SIZE = 52;
+const RECORD_BUTTON_PRIMARY_SIZE = 64;
+export const RECORD_BUTTON_ICON_SIZE = 24;
 /** ui-components.md의 누름 기준 */
-const RECORD_CONTROL_PRESS = {
+const RECORD_BUTTON_PRESS = {
   scale: {
     value: 0.97,
     timingConfig: { duration: 120, easing: Easing.bezier(0.23, 1, 0.32, 1) },
@@ -20,39 +20,39 @@ const RECORD_CONTROL_PRESS = {
   },
 };
 
-export function useRecordControlLabelClearance() {
+export function useRecordButtonLabelClearance() {
   const fontScaledSize = useFontScaledSize();
 
   return (
-    RECORD_CONTROL_GAP +
-    (fontScaledSize(RECORD_CONTROL_PRIMARY_SIZE) + fontScaledSize(RECORD_CONTROL_SIDE_SIZE)) / 2
+    RECORD_BUTTON_GAP +
+    (fontScaledSize(RECORD_BUTTON_PRIMARY_SIZE) + fontScaledSize(RECORD_BUTTON_SIDE_SIZE)) / 2
   );
 }
 
-interface RecordControlProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
+interface RecordButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   label: string;
   isPrimary?: boolean;
   isActive?: boolean;
   children: ReactNode;
 }
 
-export function RecordControl({ label, children, ...buttonProps }: RecordControlProps) {
+export function RecordButton({ label, children, ...buttonProps }: RecordButtonProps) {
   return (
-    <RecordControl.Column
+    <RecordButton.Column
       label={
         <Text size="e1" shade={7} maxLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
           {label}
         </Text>
       }
     >
-      <RecordControl.Button label={label} {...buttonProps}>
+      <RecordButton.Button label={label} {...buttonProps}>
         {children}
-      </RecordControl.Button>
-    </RecordControl.Column>
+      </RecordButton.Button>
+    </RecordButton.Column>
   );
 }
 
-RecordControl.Column = function Column({
+RecordButton.Column = function Column({
   label,
   children,
 }: {
@@ -62,10 +62,10 @@ RecordControl.Column = function Column({
   const fontScaledSize = useFontScaledSize();
 
   return (
-    <VStack flex={1} align="center" gap={RECORD_CONTROL_GAP}>
+    <VStack flex={1} align="center" gap={RECORD_BUTTON_GAP}>
       <Box
         className="items-center justify-center"
-        style={{ height: fontScaledSize(RECORD_CONTROL_PRIMARY_SIZE) }}
+        style={{ height: fontScaledSize(RECORD_BUTTON_PRIMARY_SIZE) }}
       >
         {children}
       </Box>
@@ -74,21 +74,21 @@ RecordControl.Column = function Column({
   );
 };
 
-RecordControl.Button = function Button({
+RecordButton.Button = function Button({
   label,
   isPrimary = false,
   isActive = false,
   children,
   ...pressableProps
-}: RecordControlProps) {
+}: RecordButtonProps) {
   const fontScaledSize = useFontScaledSize();
-  const size = fontScaledSize(isPrimary ? RECORD_CONTROL_PRIMARY_SIZE : RECORD_CONTROL_SIDE_SIZE);
+  const size = fontScaledSize(isPrimary ? RECORD_BUTTON_PRIMARY_SIZE : RECORD_BUTTON_SIDE_SIZE);
 
   return (
     <PressableFeedback
       accessibilityRole="button"
       accessibilityLabel={label}
-      animation={RECORD_CONTROL_PRESS}
+      animation={RECORD_BUTTON_PRESS}
       style={{ width: size, height: size }}
       className={cn(
         'items-center justify-center rounded-full',

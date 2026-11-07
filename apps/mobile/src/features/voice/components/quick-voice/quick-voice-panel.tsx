@@ -41,7 +41,7 @@ import { PlanReview } from '../plan/plan-review';
 import { VoiceVisual } from '../visualizers/voice-visual';
 import { LiveTranscript } from './live-transcript';
 import { QuickVoiceHeader } from './quick-voice-header';
-import { RecognitionLanguageToggle } from './recognition-language-toggle';
+import { RecognitionLanguageTabs } from './recognition-language-tabs';
 
 interface QuickVoicePanelProps {
   state: VoiceCaptureState;
@@ -75,7 +75,7 @@ export function QuickVoicePanel({
   return (
     <SheetPanel
       center={<ListeningClock state={state} />}
-      right={<RecognitionLanguageToggle value={locale} onValueChange={onLocaleChange} />}
+      right={<RecognitionLanguageTabs value={locale} onValueChange={onLocaleChange} />}
       onClose={onCancel}
       testID="quick-voice-listening"
     >

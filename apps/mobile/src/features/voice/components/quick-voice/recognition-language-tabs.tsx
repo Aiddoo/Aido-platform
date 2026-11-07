@@ -4,7 +4,7 @@ import { SegmentTabTrigger } from '@src/shared/ui';
 import { Tabs } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-interface RecognitionLanguageToggleProps extends Omit<
+interface RecognitionLanguageTabsProps extends Omit<
   ComponentProps<typeof Tabs>,
   'value' | 'onValueChange' | 'children'
 > {
@@ -12,11 +12,11 @@ interface RecognitionLanguageToggleProps extends Omit<
   onValueChange: (locale: SpeechLocale) => void;
 }
 
-export function RecognitionLanguageToggle({
+export function RecognitionLanguageTabs({
   value,
   onValueChange,
   ...tabsProps
-}: RecognitionLanguageToggleProps) {
+}: RecognitionLanguageTabsProps) {
   const { t } = useTranslation('voice');
 
   return (

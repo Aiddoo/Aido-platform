@@ -7,7 +7,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { VOICE_NOTE_LOG_EVENT } from '../../constants/voice-note-log-events';
 import { useMicrophonePermission } from '../../hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
-import { RecognitionLanguageToggle } from '../quick-voice/recognition-language-toggle';
+import { RecognitionLanguageTabs } from '../quick-voice/recognition-language-tabs';
 
 interface VoiceNoteRecordLanguageToggleProps {
   onLocaleChange: (next: SpeechLocale) => Promise<void>;
@@ -31,7 +31,7 @@ export function VoiceNoteRecordLanguageToggle({
   };
 
   return (
-    <RecognitionLanguageToggle
+    <RecognitionLanguageTabs
       value={locale}
       onValueChange={(next) => {
         handleLocaleChange(next).catch((error: unknown) => {

@@ -5,7 +5,7 @@ import { match, P } from 'ts-pattern';
 
 import { VoiceCapturePolicy } from '../../domains/voice-capture.model';
 import type { VoiceCaptureState } from '../../schemas/voice-capture.schema';
-import { RECORD_CONTROL_ICON_SIZE, RecordControl } from './record-control';
+import { RECORD_BUTTON_ICON_SIZE, RecordButton } from './record-button';
 import { VoiceNoteMarkControl } from './voice-note-mark-control';
 
 interface VoiceNoteRecordFooterProps {
@@ -76,19 +76,19 @@ function ListeningControls({
 }) {
   const { t } = useTranslation('voiceNote');
   const fontScaledSize = useFontScaledSize();
-  const iconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
+  const iconSize = fontScaledSize(RECORD_BUTTON_ICON_SIZE);
 
   return (
     <HStack align="start" className="w-full max-w-90 self-center">
-      <RecordControl
+      <RecordButton
         label={t('record.pause')}
         onPress={onPause}
         isDisabled={!isListening}
         testID="voice-note-pause"
       >
         <PauseIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
-      </RecordControl>
-      <RecordControl
+      </RecordButton>
+      <RecordButton
         label={t('record.finish')}
         onPress={onFinish}
         isDisabled={!isListening}
@@ -96,7 +96,7 @@ function ListeningControls({
         testID="voice-note-finish"
       >
         <StopIcon width={iconSize} height={iconSize} colorClassName="text-white dark:text-gray-9" />
-      </RecordControl>
+      </RecordButton>
       <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onMark} />
     </HStack>
   );
