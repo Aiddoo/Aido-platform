@@ -9,6 +9,7 @@ import type {
   ResendVerificationResponse,
   ResetPasswordResponse,
 } from '@aido/api';
+import { toInstant } from '@src/shared/date/instant';
 
 import type {
   AuthTokens,
@@ -48,7 +49,7 @@ export const toResendVerificationResult = (
 
 export const toDeleteAccountResult = (dto: DeleteAccountResponse): DeleteAccountResult => ({
   message: dto.message,
-  deletedAt: new Date(dto.deletedAt),
+  deletedAt: toInstant(dto.deletedAt),
   gracePeriodDays: dto.gracePeriodDays,
 });
 
@@ -68,7 +69,7 @@ export const toLinkedAccount = (dto: LinkedAccountDTO): LinkedAccount => ({
   provider: dto.provider,
   linked: dto.linked,
   providerAccountId: dto.providerAccountId,
-  linkedAt: dto.linkedAt ? new Date(dto.linkedAt) : null,
+  linkedAt: dto.linkedAt ? toInstant(dto.linkedAt) : null,
 });
 
 export const toLinkedAccounts = (dto: LinkedAccountsResponse): LinkedAccountsResult => ({

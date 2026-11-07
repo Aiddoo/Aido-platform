@@ -362,7 +362,7 @@ describe('AuthService', () => {
   // ── getLinkedAccounts ──────────────────────
 
   describe('getLinkedAccounts', () => {
-    test('정상 응답 → LinkedAccount 배열, linkedAt Date 변환', async () => {
+    test('정상 응답 → LinkedAccount 배열, linkedAt Instant 변환', async () => {
       // Given
       const dto = createLinkedAccountsDto();
       authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -381,7 +381,7 @@ describe('AuthService', () => {
             expect.objectContaining({
               provider: 'GOOGLE',
               linked: true,
-              linkedAt: expect.any(Date),
+              linkedAt: expect.any(String),
             }),
             expect.objectContaining({
               provider: 'KAKAO',
@@ -545,7 +545,7 @@ describe('AuthService', () => {
         ok: true,
         value: expect.objectContaining({
           message: dto.message,
-          deletedAt: expect.any(Date),
+          deletedAt: expect.any(String),
           gracePeriodDays: dto.gracePeriodDays,
         }),
       });

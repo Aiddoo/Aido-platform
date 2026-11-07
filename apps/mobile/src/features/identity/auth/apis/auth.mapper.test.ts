@@ -158,7 +158,7 @@ describe('toResendVerificationResult', () => {
 });
 
 describe('toDeleteAccountResult', () => {
-  test('deletedAt ISO → Date, gracePeriodDays 포함', () => {
+  test('deletedAt ISO → Instant, gracePeriodDays 포함', () => {
     // Given
     const dto = createDeleteAccountDto({
       deletedAt: '2026-02-13T10:00:00.000Z',
@@ -170,8 +170,7 @@ describe('toDeleteAccountResult', () => {
 
     // Then
     expect(result.message).toBe(dto.message);
-    expect(result.deletedAt).toBeInstanceOf(Date);
-    expect(result.deletedAt.toISOString()).toBe('2026-02-13T10:00:00.000Z');
+    expect(result.deletedAt).toBe('2026-02-13T10:00:00.000Z');
     expect(result.gracePeriodDays).toBe(30);
   });
 });
@@ -216,7 +215,7 @@ describe('toChangePasswordResult', () => {
 });
 
 describe('toLinkedAccount', () => {
-  test('linkedAt ISO → Date', () => {
+  test('linkedAt ISO → Instant', () => {
     // Given
     const dto = {
       provider: 'GOOGLE' as const,
@@ -229,8 +228,7 @@ describe('toLinkedAccount', () => {
     const result = toLinkedAccount(dto);
 
     // Then
-    expect(result.linkedAt).toBeInstanceOf(Date);
-    expect(result.linkedAt?.toISOString()).toBe('2026-01-15T00:00:00.000Z');
+    expect(result.linkedAt).toBe('2026-01-15T00:00:00.000Z');
     expect(result.provider).toBe('GOOGLE');
     expect(result.linked).toBe(true);
   });

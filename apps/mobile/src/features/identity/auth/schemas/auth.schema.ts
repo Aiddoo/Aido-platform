@@ -1,3 +1,4 @@
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 export type {
@@ -39,7 +40,7 @@ export type ResendVerificationResult = z.infer<typeof resendVerificationResultSc
 
 const deleteAccountResultSchema = z.object({
   message: z.string(),
-  deletedAt: z.coerce.date(),
+  deletedAt: instantSchema,
   gracePeriodDays: z.number(),
 });
 export type DeleteAccountResult = z.infer<typeof deleteAccountResultSchema>;

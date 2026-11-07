@@ -1,4 +1,5 @@
 import { ACCOUNT_PROVIDERS, OAUTH_PROVIDERS } from '@aido/api';
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
@@ -28,7 +29,7 @@ const linkedAccountSchema = z.object({
   provider: oauthProviderSchema,
   linked: z.boolean(),
   providerAccountId: z.string().nullable(),
-  linkedAt: z.date().nullable(),
+  linkedAt: instantSchema.nullable(),
 });
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
