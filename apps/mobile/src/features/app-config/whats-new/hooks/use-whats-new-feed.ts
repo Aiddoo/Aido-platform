@@ -2,7 +2,7 @@ import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant, toInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
@@ -80,7 +80,7 @@ export function useWhatsNewFeed({
     }
 
     const task = requestIdleCallback(() => {
-      if (repository.claimSeen(identity, toInstant(new Date().toISOString()))) {
+      if (repository.claimSeen(identity, getNowInstant())) {
         push({ pathname: '/whats-new', params: { releaseId: release.id, source: 'auto' } });
       }
     });

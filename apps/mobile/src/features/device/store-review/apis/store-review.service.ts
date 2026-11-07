@@ -1,5 +1,5 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
-import { type Instant, toInstant } from '@src/shared/date/instant';
+import { getNowInstant, type Instant } from '@src/shared/date/instant';
 
 import {
   recordActiveDay,
@@ -41,7 +41,7 @@ export class StoreReviewService {
   constructor(
     repository: StoreReviewRepository,
     gateway: AppStoreReviewGateway,
-    now: () => Instant = () => toInstant(new Date().toISOString()),
+    now: () => Instant = () => getNowInstant(),
   ) {
     this.#repository = repository;
     this.#gateway = gateway;

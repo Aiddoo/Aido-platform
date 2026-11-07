@@ -65,7 +65,7 @@ import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { DEVICE_MODEL_NAME } from '@src/shared/config/device';
 import { ENV } from '@src/shared/config/env';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
@@ -305,7 +305,7 @@ export function DIProvider({
         'whats-new': () =>
           whatsNewRepository.removeRetiredKeys({
             campaignIds: RELEASES.map((release) => release.campaignId),
-            now: toInstant(new Date().toISOString()),
+            now: getNowInstant(),
           }),
         coachmark: () => coachmarkRepository.removeRetiredKeys(),
       },

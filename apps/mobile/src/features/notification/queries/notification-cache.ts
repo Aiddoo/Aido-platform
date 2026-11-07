@@ -1,4 +1,4 @@
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { readQueryKeyParams } from '@src/shared/utils/query-key-params';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
@@ -32,7 +32,7 @@ function markPagesRead(
       notifications: page.notifications
         .map((notification) =>
           (notificationId == null || notification.id === notificationId) && !notification.isRead
-            ? { ...notification, isRead: true, readAt: toInstant(new Date().toISOString()) }
+            ? { ...notification, isRead: true, readAt: getNowInstant() }
             : notification,
         )
         .filter((notification) => !removeReadItems || !notification.isRead),

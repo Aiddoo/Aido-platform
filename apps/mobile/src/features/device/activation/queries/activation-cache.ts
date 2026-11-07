@@ -3,7 +3,7 @@ import type { FeatureCampaignConfig } from '@src/features/app-config/feature-cam
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import type { GrowthEventMap } from '@src/shared/analytics';
-import { type Instant, toInstant } from '@src/shared/date/instant';
+import { getNowInstant, type Instant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { ActivationService } from '../apis/activation.service';
@@ -23,7 +23,7 @@ interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
 
 /** 기본값 인자는 호출 때마다 새로 계산된다 */
 function getCurrentInstant() {
-  return toInstant(new Date().toISOString());
+  return getNowInstant();
 }
 
 function getContext(queryClient: QueryClient) {

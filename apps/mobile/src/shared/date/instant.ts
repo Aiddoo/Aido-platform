@@ -36,6 +36,11 @@ export function fromDate(date: Date): Instant {
   return toInstant(date.toISOString());
 }
 
+/** 지금 이 순간. 렌더 중에는 쓰지 않고 이벤트·저장 시점에 부른다 */
+export function getNowInstant(): Instant {
+  return fromEpochMs(Date.now());
+}
+
 /** 에포크 밀리초에서 순간을 만든다 */
 export function fromEpochMs(ms: number): Instant {
   return toInstant(new Date(ms).toISOString());

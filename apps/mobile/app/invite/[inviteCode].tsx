@@ -11,7 +11,7 @@ import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-
 import { useRedeemInviteMutationOptions } from '@src/features/social/invite/queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import type { InviteCode } from '@src/features/social/invite/schemas/invite.schema';
-import { fromDate } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,
@@ -212,7 +212,7 @@ function InviteCardActions() {
   }
 
   const handleContinueAsGuest = (pathname: '/sign-up' | '/login') => {
-    inviteService.savePendingRedemption({ inviteCode, source }, fromDate(new Date()));
+    inviteService.savePendingRedemption({ inviteCode, source }, getNowInstant());
     router.push(pathname);
   };
 
@@ -250,7 +250,7 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
     queries: [useGetInvitePreviewQueryOptions({ inviteCode }), useGetMeQueryOptions()],
   });
   const redeem = useMutation(useRedeemInviteMutationOptions());
-  const [now] = useState(() => fromDate(new Date()));
+  const [now] = useState(() => getNowInstant());
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
   const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, now);
 

@@ -2,7 +2,7 @@ import { useMarketingPushPromptRepository } from '@src/bootstrap/providers/di-co
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack } from '@src/shared/analytics';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant, toInstant } from '@src/shared/date/instant';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useOverlay } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
     MarketingPushPromptPolicy.shouldPrompt(consent, promptState, toInstant(today.toISOString()));
 
   const dismiss = () => {
-    marketingPushPromptRepository.record(toInstant(new Date().toISOString()));
+    marketingPushPromptRepository.record(getNowInstant());
     setDismissed(true);
     trackEvent('marketing_push_prompt_dismissed', { source: 'feed_banner' });
   };

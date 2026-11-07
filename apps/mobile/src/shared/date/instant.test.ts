@@ -1,6 +1,7 @@
 import {
   diffMs,
   fromDate,
+  getNowInstant,
   getZonedHour,
   hasSameWallClock,
   isBefore,
@@ -212,5 +213,38 @@ describe('fromDate', () => {
     // When / Then
     expect(toDateKey(beforeMidnight, 'Asia/Seoul')).toBe('2026-10-01');
     expect(toDateKey(atMidnight, 'Asia/Seoul')).toBe('2026-10-02');
+  });
+});
+
+describe('getNowInstant', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('고정한 시계의 지금을 밀리초까지 같은 순간으로 돌려준다', () => {
+    // Given
+    jest.useFakeTimers({ now: new Date('2026-10-01T14:59:59.999Z') });
+
+    // When
+    const now = getNowInstant();
+
+    // Then
+    expect(now).toBe('2026-10-01T14:59:59.999Z');
+    expect(toDateKey(now, 'Asia/Seoul')).toBe('2026-10-01');
+  });
+
+  it('서머타임이 끝나는 날 같은 벽시계 한 시간이 두 번 와도 서로 다른 순간이다', () => {
+    // Given
+    jest.useFakeTimers({ now: new Date('2026-11-01T08:30:00.000Z') });
+    const first = getNowInstant();
+
+    // When
+    jest.setSystemTime(new Date('2026-11-01T09:30:00.000Z'));
+    const second = getNowInstant();
+
+    // Then
+    expect(toHHmm(first, 'America/Los_Angeles')).toBe('01:30');
+    expect(toHHmm(second, 'America/Los_Angeles')).toBe('01:30');
+    expect(diffMs(second, first)).toBe(3_600_000);
   });
 });

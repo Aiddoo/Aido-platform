@@ -3,7 +3,7 @@ import type {
   LimitReachedTrigger,
 } from '@src/features/billing/subscription/constants/subscription.events';
 import { useTrack } from '@src/shared/analytics';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -98,13 +98,7 @@ export function useEntitlementGate(
         if (snapshot == null) {
           return true;
         }
-        return match(
-          EntitlementPolicy.getAccessDecision(
-            snapshot,
-            feature,
-            toInstant(new Date().toISOString()),
-          ),
-        )
+        return match(EntitlementPolicy.getAccessDecision(snapshot, feature, getNowInstant()))
           .with('allow', () => true)
           .with('limit-reached', 'locked', (decision) => {
             open(feature, decision, 'precheck', options);

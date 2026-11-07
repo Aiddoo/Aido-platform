@@ -7,7 +7,7 @@ import type {
   ConsentAgreement,
 } from '@src/features/identity/consent/schemas/consent.schema';
 import { useTrack } from '@src/shared/analytics';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
@@ -44,7 +44,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
               aiDataSharingDecision: agreed
                 ? AI_DATA_SHARING_DECISION.AGREED
                 : AI_DATA_SHARING_DECISION.DECLINED,
-              aiDataSharingAgreedAt: agreed ? toInstant(new Date().toISOString()) : null,
+              aiDataSharingAgreedAt: agreed ? getNowInstant() : null,
               aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
             },
       );
@@ -93,7 +93,7 @@ export const useUpdateMarketingConsentMutationOptions = () => {
         }
         return {
           ...old,
-          marketingAgreedAt: input.agreed ? toInstant(new Date().toISOString()) : null,
+          marketingAgreedAt: input.agreed ? getNowInstant() : null,
         };
       });
 
@@ -136,7 +136,7 @@ export const useUpdateMarketingPushConsentMutationOptions = () => {
         old
           ? {
               ...old,
-              marketingPushAgreedAt: input.agreed ? toInstant(new Date().toISOString()) : null,
+              marketingPushAgreedAt: input.agreed ? getNowInstant() : null,
             }
           : old,
       );

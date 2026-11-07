@@ -8,7 +8,7 @@ import {
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { VoiceCaptureEntry } from '@src/features/voice/constants/voice.events';
 import { useTrack } from '@src/shared/analytics';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
@@ -58,7 +58,7 @@ export function useVoiceNoteRecording({
       VoiceNotePolicy.createVoiceNote({
         draftId: idGenerator.create(),
         locale,
-        createdAt: toInstant(new Date().toISOString()),
+        createdAt: getNowInstant(),
       }),
   );
   const [intake] = useState(

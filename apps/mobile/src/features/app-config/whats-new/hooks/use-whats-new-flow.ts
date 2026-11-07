@@ -5,7 +5,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
-import { toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import type { FeatureHubSource, FeatureKey } from '@src/shared/observability/telemetry-keys';
@@ -46,7 +46,7 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
 
   useEffect(() => {
     if (accountId != null) {
-      repository.claimSeen({ userId: accountId, campaignId }, toInstant(new Date().toISOString()));
+      repository.claimSeen({ userId: accountId, campaignId }, getNowInstant());
     }
   }, [accountId, campaignId, repository]);
 

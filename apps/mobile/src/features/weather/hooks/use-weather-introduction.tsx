@@ -3,7 +3,7 @@ import {
   useLogger,
   useWeatherIntroductionRepository,
 } from '@src/bootstrap/providers/di-context';
-import { fromDate } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
@@ -37,7 +37,7 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
       return;
     }
     const task = requestIdleCallback(() => {
-      if (hasClaimed.current || inviteService.findPendingRedemption(fromDate(new Date())) != null) {
+      if (hasClaimed.current || inviteService.findPendingRedemption(getNowInstant()) != null) {
         return;
       }
       hasClaimed.current = true;
