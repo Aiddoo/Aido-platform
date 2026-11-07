@@ -37,7 +37,7 @@ const plannedMemoShape = {
 export const plannedTodoSchema = z
   .object(plannedTodoShape)
   .refine((todo) => todo.repeat == null || todo.endDate == null, { path: ['endDate'] })
-  .refine((todo) => todo.endDate == null || todo.endDate >= todo.startDate, { path: ['endDate'] });
+  .refine((todo) => todo.endDate == null || todo.startDate <= todo.endDate, { path: ['endDate'] });
 export const plannedMemoSchema = z.object(plannedMemoShape);
 
 export const plannedActionSchema = z.discriminatedUnion('type', [

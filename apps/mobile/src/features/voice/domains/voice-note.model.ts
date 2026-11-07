@@ -1,6 +1,6 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { DAY_MS } from '@src/shared/constants/time-units';
+import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { chunk, maxBy, orderBy, sumBy } from 'es-toolkit';
 
@@ -141,7 +141,7 @@ export function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
 
   return {
     text: sentences.map((sentence) => sentence.text.trim()).join(' '),
-    durationSeconds: Math.round(note.durationMs / 1_000),
+    durationSeconds: Math.round(note.durationMs / SECOND_MS),
     segments: chunk(sentences, groupSize).map((group) => ({
       startMs: group[0]?.startMs ?? 0,
       text: group.map((sentence) => sentence.text.trim()).join(' '),

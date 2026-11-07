@@ -1,4 +1,5 @@
 import type { SpeechErrorCode, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
@@ -313,11 +314,11 @@ function isChargedReview(state: VoiceCaptureState): boolean {
 
 /** 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다 */
 function getRemainingCaptureMs(state: VoiceCaptureState, maxSeconds: number, now: number): number {
-  return Math.max(0, maxSeconds * 1_000 - getElapsedMs(state, now));
+  return Math.max(0, maxSeconds * SECOND_MS - getElapsedMs(state, now));
 }
 
 function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
-  return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * 1_000;
+  return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * SECOND_MS;
 }
 
 /**

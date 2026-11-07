@@ -1,3 +1,5 @@
+import { SECOND_MS } from '@src/shared/constants/time-units';
+
 import type {
   VoiceCaptureOutcome,
   VoiceDurationBucket,
@@ -11,7 +13,7 @@ const SECONDS = { half: 30, threeMinutes: 180, tenMinutes: 600 } as const;
 
 /** 말한 길이는 정확한 값 대신 구간으로만 남긴다 */
 export function getDurationBucket(elapsedMs: number): VoiceDurationBucket {
-  const seconds = elapsedMs / 1_000;
+  const seconds = elapsedMs / SECOND_MS;
   if (seconds < SECONDS.half) {
     return 'lt_30s';
   }
