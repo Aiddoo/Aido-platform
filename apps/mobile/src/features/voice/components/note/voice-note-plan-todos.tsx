@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
@@ -34,7 +35,10 @@ export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNote
   const [{ data: categoriesResult }] = useSuspenseQueries({
     queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
   });
-  const fallbackCategoryId = categoriesResult.categories[0]?.id;
+  const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+    categoriesResult.categories,
+    null,
+  );
   const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
     defaultValues: note.planDraft?.form ?? { actions: [] },

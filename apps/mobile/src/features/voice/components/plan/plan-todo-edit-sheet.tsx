@@ -1,6 +1,7 @@
 import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
 import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
@@ -310,7 +311,7 @@ function CategoryChip({
     data: { categories },
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = todo.categoryId ?? fallbackCategoryId;
-  const category = categories.find(({ id }) => id === categoryId);
+  const category = TodoCategoryPolicy.findCategory(categories, categoryId);
 
   const handlePress = () => {
     overlay.open(({ isOpen, close, unmount }) => (

@@ -8,6 +8,7 @@ import { unwrap } from '@src/core/errors/result';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
@@ -76,8 +77,9 @@ export function useCreateTodoMutationOptions() {
       const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
         TODO_CATEGORY_QUERY_KEYS.list(),
       );
-      const category = categoriesData?.categories.find(
-        (candidate) => candidate.id === input.categoryId,
+      const category = TodoCategoryPolicy.findCategory(
+        categoriesData?.categories ?? [],
+        input.categoryId,
       );
 
       // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다

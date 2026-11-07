@@ -1,3 +1,4 @@
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Result, Text } from '@src/shared/ui';
@@ -19,7 +20,10 @@ export function AddTodoRequestEntry() {
     enabled: isRequested,
     throwOnError: false,
   });
-  const categoryId = categories.data?.categories[0]?.id;
+  const categoryId = TodoCategoryPolicy.getInitialCategoryId(
+    categories.data?.categories ?? [],
+    null,
+  );
 
   useEffect(() => {
     if (!isRequested || categoryId == null) {

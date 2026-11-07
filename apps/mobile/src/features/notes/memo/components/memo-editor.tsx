@@ -5,6 +5,7 @@ import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quo
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { toEpochMs } from '@src/shared/date/instant';
@@ -647,7 +648,10 @@ function useMemoAiParse() {
   const isParsing = useIsMutating({ mutationKey: MEMO_MUTATION_KEYS.parse({ memoId }) }) > 0;
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const aiConsent = useAiDataSharingConsentGate();
-  const defaultCategoryId = categoriesQuery.data?.categories[0]?.id;
+  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+    categoriesQuery.data?.categories ?? [],
+    null,
+  );
   const sourceUpdatedAt = toEpochMs(memo.updatedAt);
 
   const handlePress = async () => {
@@ -710,7 +714,10 @@ function useMemoConvertToTodo(onConverted: () => void) {
   const memoId = useMemoParam();
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
-  const defaultCategoryId = categoriesQuery.data?.categories[0]?.id;
+  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+    categoriesQuery.data?.categories ?? [],
+    null,
+  );
 
   const handlePress = () => {
     if (defaultCategoryId == null) {

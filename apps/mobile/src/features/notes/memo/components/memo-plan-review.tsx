@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import { planReviewFormSchema } from '@src/features/voice/schemas/plan-review-form.schema';
@@ -50,7 +51,10 @@ export function MemoPlanReview({ className }: MemoPlanReviewProps) {
     createMemoPlanDraftKey({ userId: user.id, memoId, timeZone }),
     { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
-  const fallbackCategoryId = categoriesResult.categories[0]?.id;
+  const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+    categoriesResult.categories,
+    null,
+  );
 
   const form = useForm({
     resolver: zodResolver(planReviewFormSchema),

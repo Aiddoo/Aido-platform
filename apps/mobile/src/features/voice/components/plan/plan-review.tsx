@@ -1,6 +1,7 @@
 import { useIdGenerator } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { SubTodoIndent } from '@src/features/planning/todo/components/sub-todo-indent';
 import {
@@ -322,7 +323,7 @@ PlanReview.Loading = function Loading({
 
 PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId: number }) {
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const category = categoriesResult.categories.find((candidate) => candidate.id === categoryId);
+  const category = TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId);
 
   if (category == null) {
     return null;

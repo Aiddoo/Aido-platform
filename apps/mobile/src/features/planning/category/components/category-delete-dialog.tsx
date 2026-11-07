@@ -36,7 +36,7 @@ export function CategoryDeleteDialog({
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const portalTarget = usePortalTarget();
 
-  const category = categoriesResult.categories.find((candidate) => candidate.id === categoryId);
+  const category = TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId);
   const otherCategories = categoriesResult.categories.filter(
     (candidate) => candidate.id !== categoryId,
   );

@@ -1,4 +1,5 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
 import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
@@ -348,7 +349,7 @@ function CategoryChip({ form }: { form: ComposerForm }) {
       control={form.control}
       name="categoryId"
       render={({ field: { value: categoryId, onChange } }) => {
-        const category = categories.find(({ id }) => id === categoryId);
+        const category = TodoCategoryPolicy.findCategory(categories, categoryId);
 
         return (
           <ActionButton
