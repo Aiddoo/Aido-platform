@@ -7,10 +7,7 @@ import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import {
-  type TodoRepeat,
-  type TodoUpdateScope,
-} from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import { type TodoUpdateScope } from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import { type Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -79,13 +76,14 @@ TodoEditBottomSheet.Form = function Form() {
     return null;
   }
 
-  const sheetProps = {
-    isOpen: sheet.isOpen,
-    onOpenChange: sheet.onOpenChange,
-    onClose: () => sheet.close(),
-  };
-
-  return <TodoEditForm todo={todo} repeat={todo.repeat} {...sheetProps} />;
+  return (
+    <TodoEditForm
+      todo={todo}
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      onClose={() => sheet.close()}
+    />
+  );
 };
 
 TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
@@ -106,20 +104,19 @@ TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallback
 
 interface TodoEditFormProps {
   todo: Todo;
-  repeat: TodoRepeat | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
 }
 
-function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditFormProps) {
+function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const overlay = useOverlay();
 
   // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
-  const [initialValues] = useState(() => toTodoEditFormValues(todo, timeZone, repeat));
+  const [initialValues] = useState(() => toTodoEditFormValues(todo, timeZone));
   const canChangeRepeat = TodoRepeatPolicy.canChangeRepeat({
     ...todo,
     repeat: initialValues.repeat,
@@ -211,6 +208,19 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
 
   const isSubmitDisabled = title.trim().length === 0 || isSubmitting;
 
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  const handleTitleSubmit = () => {
+    if (isSubmitting) {
+      return;
+    }
+    if (title.trim().length === 0) {
+      onClose();
+
+      return;
+    }
+    submitTodo();
+  };
+
   return (
     <KeyboardBottomSheet
       isOpen={isOpen}
@@ -244,7 +254,7 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
               size="medium"
               renderErrorMessage={false}
               returnKeyType="done"
-              onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+              onSubmitEditing={handleTitleSubmit}
             />
           )}
         />

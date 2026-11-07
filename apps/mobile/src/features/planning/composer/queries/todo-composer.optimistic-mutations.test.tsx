@@ -685,7 +685,6 @@ describe('할 일 낙관적 갱신', () => {
             visibility: 'PUBLIC',
             categoryId: CATEGORY.id,
           },
-          source: 'manual',
         })
         .catch(() => undefined);
     });
@@ -735,7 +734,6 @@ describe('할 일 낙관적 갱신', () => {
           visibility: 'PUBLIC',
           categoryId: CATEGORY.id,
         },
-        source: 'manual',
       });
     });
 
@@ -778,7 +776,6 @@ describe('할 일 낙관적 갱신', () => {
             visibility: 'PUBLIC',
             categoryId: CATEGORY.id,
           },
-          source: 'manual',
         })
         .catch(() => undefined);
     });

@@ -84,6 +84,8 @@ interface SubTodoTitleInputProps extends SubTodoFormPartProps {
   onSubmitEditing: () => void;
 }
 
+const SUB_TODO_TITLE_MAX_LENGTH = subTodoFormSchema.shape.title.maxLength ?? Infinity;
+
 export function SubTodoTitleInput({ form, onSubmitEditing }: SubTodoTitleInputProps) {
   const { t } = useTranslation('todo');
 
@@ -115,7 +117,11 @@ export function SubTodoDictation({ form }: SubTodoFormPartProps) {
   return (
     <>
       <SpeechTooltip />
-      <DictationButton value={title} onChange={(text) => form.setValue('title', text)} />
+      {/* 입력칸은 최대 길이를 막지만 받아쓴 글은 넘을 수 있어, 넘으면 조용히 전송이 멈추지 않게 자른다 */}
+      <DictationButton
+        value={title}
+        onChange={(text) => form.setValue('title', text.slice(0, SUB_TODO_TITLE_MAX_LENGTH))}
+      />
     </>
   );
 }

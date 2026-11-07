@@ -10,6 +10,7 @@ import { useRecognitionLanguage } from './use-recognition-language';
 
 interface StartVoiceNoteOptions {
   onSubscribe?: () => void;
+  /** 녹음 화면으로 가기 직전에 부른다. 이어 갈 글자를 저장하는 등 준비를 마치고 갈 곳을 돌려준다 */
   prepareRecordHref?: () => Href;
   /** 녹음 화면으로 넘어가는 방법. 기본은 지금 화면 위에 쌓는다 */
   navigate?: (href: Href) => void;

@@ -48,9 +48,8 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-export interface CreateTodoParams {
+interface CreateTodoParams {
   input: CreateTodoInput;
-  source: 'manual';
 }
 
 export function useCreateTodoMutationOptions() {
@@ -111,7 +110,7 @@ export function useCreateTodoMutationOptions() {
 
       return { startDate, optimisticId: optimisticTodo.id };
     },
-    onSuccess: (saved, { input, source }, { startDate, optimisticId }) => {
+    onSuccess: (saved, { input }, { startDate, optimisticId }) => {
       if (optimisticId != null) {
         confirmTodoInList(queryClient, { date: startDate, optimisticId }, saved);
       }
@@ -119,7 +118,7 @@ export function useCreateTodoMutationOptions() {
       invalidateTodoCategories(queryClient);
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
-        source,
+        source: 'manual',
         creation_entry: 'manual',
         is_recurring: false,
         has_scheduled_time: !!input.scheduledTime,
@@ -218,9 +217,8 @@ export function useAddSubTodoMutationOptions() {
   });
 }
 
-export interface CreateRecurringTodoParams {
+interface CreateRecurringTodoParams {
   input: RepeatingTodoDraft;
-  source: 'manual';
 }
 
 export function useCreateRecurringTodoMutationOptions() {
@@ -239,12 +237,12 @@ export function useCreateRecurringTodoMutationOptions() {
       const result = await todoService.createRepeatingTodo(input);
       return unwrap(result);
     },
-    onSuccess: (_, { input, source }) => {
+    onSuccess: (_, { input }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
-        source,
+        source: 'manual',
         creation_entry: 'recurring',
         is_recurring: true,
         has_scheduled_time: !!input.scheduledTime,

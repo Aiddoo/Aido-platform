@@ -864,7 +864,6 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
           isAllDay: true,
           visibility: 'PUBLIC',
         },
-        source: 'manual',
       })
       .catch(() => undefined);
     await waitFor(() => expect(todoHttp.post).toHaveBeenCalled());

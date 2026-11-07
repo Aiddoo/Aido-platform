@@ -123,7 +123,6 @@ async function createFailing(failure: Error) {
           isAllDay: true,
           visibility: 'PUBLIC',
         },
-        source: 'manual',
       })
       .catch(jest.fn());
   });

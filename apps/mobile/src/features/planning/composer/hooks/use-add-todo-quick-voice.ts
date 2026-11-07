@@ -146,6 +146,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
 
   /** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
   const continueAsVoiceNote = () => {
+    // 이어 갈 계정을 모르면 글자를 저장할 곳이 없어 말로 메모하기로 넘기지 않고 지금까지 들은 글자로 정리한다
     if (me == null) {
       session.finish();
       return Promise.resolve();
@@ -197,7 +198,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     isConsentRequired: planRequest.isConsentRequired,
     isTypedTextKept,
     locale,
-    setLocale: changeLocale,
+    changeLocale,
     start,
     restart,
     isRestarting,

@@ -190,7 +190,7 @@ function TodoCreateForm({
     try {
       if (values.repeat != null) {
         await createRecurringTodo.mutateAsync(
-          { input: { ...common, repeat: values.repeat }, source: 'manual' },
+          { input: { ...common, repeat: values.repeat } },
           { onSuccess: onClose },
         );
       } else {
@@ -200,7 +200,6 @@ function TodoCreateForm({
               ...common,
               endDate: values.endDate == null ? undefined : toDateKey(values.endDate, timeZone),
             },
-            source: 'manual',
           },
           { onSuccess: onClose },
         );
@@ -216,6 +215,19 @@ function TodoCreateForm({
 
   const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
   const isSubmitDisabled = title.trim().length === 0 || isSubmitting;
+
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  const handleTitleSubmit = () => {
+    if (isSubmitting) {
+      return;
+    }
+    if (title.trim().length === 0) {
+      onClose();
+
+      return;
+    }
+    submitTodo();
+  };
 
   const confirmDiscardPlan = async () => {
     const isCharged = VoiceCapturePolicy.isChargedReview(voice.state);
@@ -298,7 +310,7 @@ function TodoCreateForm({
             level={voice.level}
             isQuiet={voice.isQuiet}
             locale={voice.locale}
-            onLocaleChange={voice.setLocale}
+            onLocaleChange={voice.changeLocale}
             onFinish={voice.finish}
             onCancel={voice.cancel}
             onResume={voice.resume}
@@ -333,8 +345,9 @@ function TodoCreateForm({
               control={form.control}
               name="title"
               render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
-                voice.state.status === 'failed' ? (
+                voice.state.status === 'failed' || value.length > TODO_LIMITS.TITLE_MAX_LENGTH ? (
                   // 들은 글이 길면 한 줄로는 앞이 잘려 고칠 수 없다. 넘치면 칸 안에서 스크롤한다.
+                  // 정리를 그만두거나 직접 입력으로 옮긴 글도 한도를 넘을 수 있어 한 줄 칸으로 돌아가지 않는다.
                   // maxLength를 주면 Android가 200자 뒤를 지워 들은 글을 잃으므로, 넘으면 저장할 때 알린다
                   <BottomSheetTextArea
                     ref={ref}
@@ -356,7 +369,7 @@ function TodoCreateForm({
                     submitBehavior="submit"
                     onFocus={() => setIsTitleFocused(true)}
                     onBlur={() => setIsTitleFocused(false)}
-                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+                    onSubmitEditing={handleTitleSubmit}
                   />
                 ) : (
                   <BottomSheetInput
@@ -372,7 +385,7 @@ function TodoCreateForm({
                     size="medium"
                     renderErrorMessage={false}
                     returnKeyType="done"
-                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitTodo())}
+                    onSubmitEditing={handleTitleSubmit}
                   />
                 )
               }

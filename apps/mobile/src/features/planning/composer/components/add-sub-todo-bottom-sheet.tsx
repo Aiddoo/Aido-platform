@@ -57,6 +57,19 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const isSubmitDisabled = !title.trim() || addSubTodo.isPending;
 
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  const handleTitleSubmit = () => {
+    if (addSubTodo.isPending) {
+      return;
+    }
+    if (title.trim().length === 0) {
+      onClose();
+
+      return;
+    }
+    submit();
+  };
+
   const submit = form.handleSubmit(async (values) => {
     const trimmedTitle = values.title.trim();
     if (!trimmedTitle || addSubTodo.isPending) {
@@ -77,10 +90,7 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
 
   return (
     <VStack gap={12}>
-      <SubTodoTitleInput
-        form={form}
-        onSubmitEditing={() => (isSubmitDisabled ? onClose() : submit())}
-      />
+      <SubTodoTitleInput form={form} onSubmitEditing={handleTitleSubmit} />
 
       <Separator thickness={1} className="bg-gray-2" />
 

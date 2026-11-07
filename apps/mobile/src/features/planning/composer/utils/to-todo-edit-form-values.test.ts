@@ -8,7 +8,7 @@ describe('수정 폼 기본값의 시각', () => {
     // Given
     const todo = createParentTodo({ localTime: '10:00', isAllDay: false });
     // When
-    const values = toTodoEditFormValues(todo, 'Asia/Seoul', null);
+    const values = toTodoEditFormValues(todo, 'Asia/Seoul');
     // Then
     expect(values.scheduledTime).toBe('10:00');
   });
@@ -17,7 +17,7 @@ describe('수정 폼 기본값의 시각', () => {
     // Given
     const todo = createParentTodo({ localTime: null, isAllDay: true });
     // When
-    const values = toTodoEditFormValues(todo, 'Asia/Seoul', null);
+    const values = toTodoEditFormValues(todo, 'Asia/Seoul');
     // Then
     expect(values.scheduledTime).toBeNull();
   });
@@ -32,9 +32,9 @@ describe('수정 폼 기본값의 시각', () => {
     const floating = createParentTodo({ localTime: '10:00', isAllDay: false });
 
     // When
-    const legacyInSeoul = toTodoEditFormValues(legacy, 'Asia/Seoul', null);
-    const legacyInNewYork = toTodoEditFormValues(legacy, 'America/New_York', null);
-    const floatingInNewYork = toTodoEditFormValues(floating, 'America/New_York', null);
+    const legacyInSeoul = toTodoEditFormValues(legacy, 'Asia/Seoul');
+    const legacyInNewYork = toTodoEditFormValues(legacy, 'America/New_York');
+    const floatingInNewYork = toTodoEditFormValues(floating, 'America/New_York');
 
     // Then
     expect(legacyInSeoul.scheduledTime).toBe('10:00');

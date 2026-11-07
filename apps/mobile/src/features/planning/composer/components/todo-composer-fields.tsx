@@ -1,3 +1,4 @@
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -8,7 +9,11 @@ import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repea
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { parseInstant } from '@src/features/planning/todo/utils/parse-instant';
-import { formatDateKeyCompactRange, formatDateKeyLabel } from '@src/shared/date/date-format';
+import {
+  formatDateKeyCompactRange,
+  formatDateKeyLabel,
+  formatHHmmTime,
+} from '@src/shared/date/date-format';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -30,7 +35,7 @@ import {
   useOverlay,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
@@ -48,7 +53,7 @@ interface TodoComposerChipsProps {
   canChangeRepeat?: boolean;
 }
 
-/** 할 일을 만드는 시트가 함께 쓰는 칩 줄. 시트가 가진 폼을 받아 읽고 바꾼다 */
+/** 할 일을 만들고 고치는 시트가 함께 쓰는 칩 줄. 시트가 가진 폼을 받아 읽고 바꾼다 */
 export function TodoComposerChips({
   form,
   isSeriesOccurrence = false,
@@ -236,6 +241,9 @@ function DateChip({
 function TimeChip({ form }: { form: ComposerForm }) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
+  const dateFormatContext = useDateFormatContext();
+  // 설정을 아직 모르면 칩이 경계로 터지지 않게 24시간 표기로 먼저 보인다
+  const { data: preference } = useQuery(useGetPreferenceQueryOptions());
   const { setFocus, setValue } = form;
   const [startDate, scheduledTime, isAllDay] = useWatch({
     control: form.control,
@@ -278,7 +286,15 @@ function TimeChip({ form }: { form: ComposerForm }) {
           colorClassName={displayedTime == null ? 'text-gray-5' : 'text-main'}
         />
       }
-      label={displayedTime ?? t('chip.allDay')}
+      label={
+        displayedTime == null
+          ? t('chip.allDay')
+          : formatHHmmTime(
+              displayedTime,
+              preference?.timeFormat ?? 'TWENTY_FOUR_HOUR',
+              dateFormatContext,
+            )
+      }
       isActive={displayedTime != null}
       onPress={handlePress}
     />
