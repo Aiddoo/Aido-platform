@@ -28,6 +28,7 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
 import { useNotificationCategory } from '../hooks/use-notification-category';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
+import { invalidateNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
 import type { Notification } from '../schemas/notification.schema';
@@ -39,13 +40,14 @@ const NOTIFICATION_PAGE_SIZE = 10;
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(
       useGetNotificationsInfiniteQueryOptions({ category, limit: NOTIFICATION_PAGE_SIZE }),
     );
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
   const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const queryClient = useQueryClient();
+  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateNotifications(queryClient));
 
   return (
     <InfiniteList
@@ -78,7 +80,7 @@ export function NotificationList() {
   );
 }
 
-NotificationList.Loading = NotificationListRow.Loading;
+NotificationList.Loading = NotificationListRow.ListLoading;
 
 NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);

@@ -18,8 +18,13 @@ export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTime
       const saved = parseStoredJson(storage.get(DEVICE_TIMEZONE_KEY), savedDeviceTimezoneSchema);
       return saved?.userId === userId ? saved.deviceTimezone : null;
     },
-    save: (userId, deviceTimezone) =>
-      storage.set(DEVICE_TIMEZONE_KEY, JSON.stringify({ userId, deviceTimezone })),
+    save: (userId, deviceTimezone) => {
+      try {
+        storage.set(DEVICE_TIMEZONE_KEY, JSON.stringify({ userId, deviceTimezone }));
+      } catch {
+        // 저장하지 못하면 시간대 안내가 한 번 더 보일 뿐이다.
+      }
+    },
     clear: () => storage.remove(DEVICE_TIMEZONE_KEY),
   };
 }

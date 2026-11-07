@@ -10,7 +10,7 @@ import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 type UnreadNotificationCardProps = Omit<ComponentProps<typeof Card>, 'children'>;
 
 export function UnreadNotificationCard(props: UnreadNotificationCardProps) {
-  const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());
+  const { data: unreadCount } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
   const { t } = useTranslation('notification');
 

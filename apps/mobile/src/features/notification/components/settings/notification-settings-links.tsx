@@ -21,7 +21,7 @@ export function NotificationSettingsLinks() {
   const push = useSingleTap(router.push);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
-  const isPushDisabled = !preference.pushEnabled;
+  const isPushEnabled = preference.pushEnabled;
   const isWeatherEnabled = PreferencePolicy.isWeatherEnabled(preference);
 
   return (
@@ -29,8 +29,8 @@ export function NotificationSettingsLinks() {
       <SettingsListGroup.Item
         label={t('settings.pushLabel')}
         value={
-          <SummaryText isEnabled={preference.pushEnabled}>
-            {preference.pushEnabled ? t('settings.on') : t('settings.off')}
+          <SummaryText isEnabled={isPushEnabled}>
+            {isPushEnabled ? t('settings.on') : t('settings.off')}
           </SummaryText>
         }
         onPress={() => push('/settings/notifications/push')}
@@ -44,13 +44,13 @@ export function NotificationSettingsLinks() {
           </SummaryText>
         }
         onPress={() => push('/settings/notifications/weather')}
-        isDisabled={isPushDisabled}
+        isDisabled={!isPushEnabled}
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Item
         label={t('settings.reminderLabel')}
         value={
-          <SummaryText isEnabled={!isPushDisabled}>
+          <SummaryText isEnabled={isPushEnabled}>
             {[
               { hour: preference.morningReminderHour, minute: preference.morningReminderMinute },
               { hour: preference.eveningReminderHour, minute: preference.eveningReminderMinute },
@@ -60,7 +60,7 @@ export function NotificationSettingsLinks() {
           </SummaryText>
         }
         onPress={() => push('/settings/notifications/reminder')}
-        isDisabled={isPushDisabled}
+        isDisabled={!isPushEnabled}
       />
     </SettingsListGroup>
   );

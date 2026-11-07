@@ -11,6 +11,8 @@ import { ScrollView } from 'react-native';
 
 import type { DateSectionKey } from '../utils/date-section';
 
+const LOADING_ROW_COUNT = 5;
+
 interface NotificationListRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
   'children'
@@ -75,13 +77,13 @@ export function NotificationListRow({
   );
 }
 
-NotificationListRow.Loading = function Loading() {
+NotificationListRow.ListLoading = function ListLoading() {
   return (
     <ScrollView className="flex-1">
       <Box px={16} py={8}>
         <TextSkeleton size="b3" className="w-32" />
       </Box>
-      {range(5).map((index) => (
+      {range(LOADING_ROW_COUNT).map((index) => (
         <Fragment key={index}>
           {index > 0 && <Separator className="mx-4" />}
           <ListRow

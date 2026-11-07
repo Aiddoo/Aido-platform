@@ -19,6 +19,21 @@ describe('createDeviceTimezoneRepository', () => {
     expect(other).toBeNull();
   });
 
+  it('저장소가 쓰기를 거부해도 던지지 않는다', () => {
+    // Given
+    const storage = createMemorySyncStorage();
+    storage.set.mockImplementation(() => {
+      throw new Error('storage full');
+    });
+    const repository = createDeviceTimezoneRepository(storage);
+
+    // When
+    const save = () => repository.save('user-a', SEOUL);
+
+    // Then
+    expect(save).not.toThrow();
+  });
+
   it('저장값이 깨졌으면 없는 것으로 읽는다', () => {
     // Given
     const storage = createMemorySyncStorage();

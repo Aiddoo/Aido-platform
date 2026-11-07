@@ -9,17 +9,17 @@ import type { NotificationDestination } from '../utils/notification-destination'
 
 export function useNotificationNavigation() {
   const externalLink = useExternalLink();
-  const openUrl = useOpenInAppBrowser();
+  const openInAppBrowser = useOpenInAppBrowser();
 
   return useCallback(
     async (destination: NotificationDestination): Promise<void> => {
       await match(destination)
         .with({ kind: 'route' }, ({ href }) => router.navigate(href))
-        .with({ kind: 'webview' }, ({ url }) => openUrl(url))
+        .with({ kind: 'webview' }, ({ url }) => openInAppBrowser(url))
         .with({ kind: 'browser' }, ({ url }) => externalLink.open(url))
         .with({ kind: 'none' }, noop)
         .exhaustive();
     },
-    [externalLink, openUrl],
+    [externalLink, openInAppBrowser],
   );
 }

@@ -61,17 +61,17 @@ export function SentNudgeList() {
   );
 }
 
-SentNudgeList.Loading = NotificationListRow.Loading;
+SentNudgeList.Loading = NotificationListRow.ListLoading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  const isDisabled = isSentNudgeListDisabledError(error);
+  const isListDisabled = isSentNudgeListDisabledError(error);
 
   return (
     <VStack flex={1} p={24}>
       <Result
         title={t(
-          isDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
+          isListDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
         )}
         button={<QueryErrorActions onRetry={reset} />}
       />
