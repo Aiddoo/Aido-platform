@@ -173,31 +173,6 @@ describe('PushDeviceService.report', () => {
     });
   });
 
-  it('Android 알림 채널을 먼저 만든 뒤 권한을 읽고 토큰을 받는다', async () => {
-    // Given
-    const order: string[] = [];
-    const gateway = createPushNotificationGatewayStub({
-      ensureChannel: jest.fn(async () => {
-        order.push('channel');
-      }),
-      getPermission: jest.fn(async () => {
-        order.push('permission');
-        return createPushPermissionResponse();
-      }),
-      getToken: jest.fn(async () => {
-        order.push('token');
-        return 'ExponentPushToken[device-123]';
-      }),
-    });
-    const { service } = setup(gateway);
-
-    // When
-    await service.report();
-
-    // Then
-    expect(order).toEqual(['channel', 'permission', 'token']);
-  });
-
   it('이번 세션에 같은 값을 이미 보냈으면 다시 요청하지 않고, 토큰이 바뀌면 다시 보낸다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
@@ -258,17 +233,10 @@ describe('PushDeviceService.report', () => {
 });
 
 describe('PushDeviceService.requestPermission', () => {
-  it('채널을 먼저 만든 뒤 시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
+  it('시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
     // Given
-    const order: string[] = [];
     const gateway = createPushNotificationGatewayStub({
-      ensureChannel: jest.fn(async () => {
-        order.push('channel');
-      }),
-      requestPermission: jest.fn(async () => {
-        order.push('request');
-        return createPushPermissionResponse();
-      }),
+      requestPermission: jest.fn(async () => createPushPermissionResponse()),
     });
     const { service, httpClient } = setup(gateway);
 
@@ -276,7 +244,7 @@ describe('PushDeviceService.requestPermission', () => {
     const permission = await service.requestPermission();
 
     // Then
-    expect(order.slice(0, 2)).toEqual(['channel', 'request']);
+    expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
     expect(permission).toEqual({ status: 'GRANTED', canAskAgain: false });
     expect(httpClient.put).toHaveBeenCalledTimes(1);
   });

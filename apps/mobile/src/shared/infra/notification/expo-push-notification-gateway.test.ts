@@ -1,8 +1,9 @@
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { PermissionStatus } from 'expo';
 import * as Notifications from 'expo-notifications';
 
 import {
-  expoPushNotificationGateway,
+  createExpoPushNotificationGateway,
   PUSH_TOKEN_ISSUE_TIMEOUT_MS,
 } from './expo-push-notification-gateway';
 
@@ -14,7 +15,10 @@ jest.mock('expo-notifications', () => ({
     PROVISIONAL: 3,
     EPHEMERAL: 4,
   },
+  AndroidImportance: { MAX: 5 },
   getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+  setNotificationChannelAsync: jest.fn(),
   getExpoPushTokenAsync: jest.fn(),
   addPushTokenListener: jest.fn(),
   addNotificationReceivedListener: jest.fn(),
@@ -28,8 +32,12 @@ jest.mock('expo-notifications', () => ({
 const getPermissionsAsync = jest.mocked(Notifications.getPermissionsAsync);
 const addPushTokenListener = jest.mocked(Notifications.addPushTokenListener);
 const getExpoPushTokenAsync = jest.mocked(Notifications.getExpoPushTokenAsync);
+const requestPermissionsAsync = jest.mocked(Notifications.requestPermissionsAsync);
+const setNotificationChannelAsync = jest.mocked(Notifications.setNotificationChannelAsync);
 
-describe('expoPushNotificationGateway', () => {
+describe('createExpoPushNotificationGateway', () => {
+  const gateway = createExpoPushNotificationGateway(createLoggerStub());
+
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -58,7 +66,7 @@ describe('expoPushNotificationGateway', () => {
     });
 
     // When
-    const permission = await expoPushNotificationGateway.getPermission();
+    const permission = await gateway.getPermission();
 
     // Then
     expect(permission).toEqual({
@@ -77,7 +85,7 @@ describe('expoPushNotificationGateway', () => {
       return { remove };
     });
     const listener = jest.fn();
-    const unsubscribe = expoPushNotificationGateway.addTokenListener(listener);
+    const unsubscribe = gateway.subscribeToken(listener);
 
     // When
     emit({ type: 'ios', data: 'device-token-a' });
@@ -95,7 +103,7 @@ describe('expoPushNotificationGateway', () => {
     // 응답하지 않는 발급
     jest.useFakeTimers();
     getExpoPushTokenAsync.mockReturnValue(new Promise(() => {}));
-    const issuing = expoPushNotificationGateway.getToken();
+    const issuing = gateway.getToken();
     const failure = expect(issuing).rejects.toThrow();
 
     // When
@@ -121,7 +129,7 @@ describe('expoPushNotificationGateway', () => {
     const listener = jest.fn();
 
     // When
-    const unsubscribe = expoPushNotificationGateway.addResponseListener(listener);
+    const unsubscribe = gateway.subscribeResponse(listener);
     sdkListener(createSdkResponse({ id: 'req-1', actionIdentifier: 'MARKETING_OPT_OUT' }));
     unsubscribe();
 
@@ -145,7 +153,7 @@ describe('expoPushNotificationGateway', () => {
     const listener = jest.fn();
 
     // When
-    const unsubscribe = expoPushNotificationGateway.addReceivedListener(listener);
+    const unsubscribe = gateway.subscribeReceived(listener);
     sdkListener(createSdkResponse({ id: 'req-2' }).notification);
     unsubscribe();
 
@@ -161,8 +169,8 @@ describe('expoPushNotificationGateway', () => {
     getLast.mockReturnValueOnce(createSdkResponse({ id: 'req-3' }));
 
     // When
-    const none = expoPushNotificationGateway.getLastResponse();
-    const last = expoPushNotificationGateway.getLastResponse();
+    const none = gateway.getLastResponse();
+    const last = gateway.getLastResponse();
 
     // Then
     expect(none).toBeNull();
@@ -175,7 +183,7 @@ describe('expoPushNotificationGateway', () => {
 
   it('마지막 응답 지우기는 SDK에 그대로 넘긴다', () => {
     // When
-    expoPushNotificationGateway.clearLastResponse();
+    gateway.clearLastResponse();
 
     // Then
     expect(Notifications.clearLastNotificationResponse).toHaveBeenCalledTimes(1);
@@ -190,7 +198,7 @@ describe('expoPushNotificationGateway', () => {
     });
 
     // When
-    await expoPushNotificationGateway.setCategory({
+    await gateway.setCategory({
       identifier: 'MARKETING',
       actions: [{ identifier: 'OPT_OUT', title: '수신 거부', opensAppToForeground: true }],
     });
@@ -199,6 +207,46 @@ describe('expoPushNotificationGateway', () => {
     expect(Notifications.setNotificationCategoryAsync).toHaveBeenCalledWith('MARKETING', [
       { identifier: 'OPT_OUT', buttonTitle: '수신 거부', options: { opensAppToForeground: true } },
     ]);
+  });
+  it('권한 창을 띄우기 전에 알림 채널을 먼저 만든다', async () => {
+    // Given
+    const order: string[] = [];
+    setNotificationChannelAsync.mockImplementation(async () => {
+      order.push('channel');
+      return null;
+    });
+    requestPermissionsAsync.mockImplementation(async () => {
+      order.push('request');
+      return {
+        status: PermissionStatus.GRANTED,
+        granted: true,
+        canAskAgain: false,
+        expires: 'never',
+      };
+    });
+
+    // When
+    await gateway.requestPermission();
+
+    // Then
+    expect(order).toEqual(['channel', 'request']);
+  });
+
+  it('채널을 만들지 못해도 토큰은 받고 실패를 기록한다', async () => {
+    // Given
+    const logger = createLoggerStub();
+    const gatewayWithLogger = createExpoPushNotificationGateway(logger);
+    setNotificationChannelAsync.mockRejectedValue(new Error('channel unavailable'));
+    getExpoPushTokenAsync.mockResolvedValue({ type: 'expo', data: 'ExponentPushToken[abc]' });
+
+    // When
+    const token = await gatewayWithLogger.getToken();
+
+    // Then
+    expect(token).toBe('ExponentPushToken[abc]');
+    expect(logger.warn).toHaveBeenCalledWith('notification.push-channel.setup-failed', {
+      error: 'channel unavailable',
+    });
   });
 });
 

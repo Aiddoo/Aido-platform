@@ -1,4 +1,5 @@
 import {
+  useExternalLink,
   useHaptics,
   useLogger,
   useNotificationService,
@@ -119,11 +120,11 @@ export function useMarkAsReadMutationOptions() {
 
 /** 알림을 거절해 시스템 창을 다시 띄울 수 없을 때 이 앱의 설정 화면을 연다. 돌아오면 권한 쿼리가 다시 읽는다 */
 export function useOpenPushSettingsMutationOptions() {
-  const pushDeviceService = usePushDeviceService();
+  const externalLink = useExternalLink();
   const logger = useLogger();
 
   return mutationOptions({
-    mutationFn: () => pushDeviceService.openSettings(),
+    mutationFn: () => externalLink.openSettings(),
     networkMode: 'always',
     onError: (error) => {
       logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_SETTINGS_OPEN_FAILED, {

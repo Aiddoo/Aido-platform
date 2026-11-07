@@ -8,6 +8,7 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAnalyticsStub,
+  createExternalLinkGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryObservableSyncStorage,
@@ -37,6 +38,7 @@ async function renderCard(
   const gateway = createPushNotificationGatewayStub({
     requestPermission: jest.fn(async () => createPushPermissionResponse({ status: 'granted' })),
   });
+  const externalLink = createExternalLinkGatewayStub();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -63,10 +65,11 @@ async function renderCard(
       }),
       analytics: createAnalyticsStub(),
       logger: createLoggerStub(),
+      externalLink,
     },
     queryClient,
   });
-  return { gateway };
+  return { gateway, externalLink };
 }
 
 describe('PushPermissionNotice — 홈 알림 안내', () => {
@@ -93,7 +96,7 @@ describe('PushPermissionNotice — 홈 알림 안내', () => {
 
   it('거절 후 다시 물을 수 없으면 기기 설정을 열게 한다', async () => {
     // Given
-    const { gateway } = await renderCard({ status: 'DENIED', canAskAgain: false });
+    const { externalLink } = await renderCard({ status: 'DENIED', canAskAgain: false });
 
     // When
     fireEvent.press(screen.getByText('설정 열기'));
@@ -101,7 +104,7 @@ describe('PushPermissionNotice — 홈 알림 안내', () => {
     // Then
     expect(screen.getByText('설정에서 켜면 리마인드 알림을 받을 수 있어요')).toBeTruthy();
     await waitFor(() => {
-      expect(gateway.openSettings).toHaveBeenCalledTimes(1);
+      expect(externalLink.openSettings).toHaveBeenCalledTimes(1);
     });
   });
 

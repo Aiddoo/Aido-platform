@@ -1,4 +1,4 @@
-import { usePushDeviceService } from '@src/bootstrap/providers/di-context';
+import { usePushNotification } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { i18n } from '@src/shared/i18n';
 import { useMutation } from '@tanstack/react-query';
@@ -27,7 +27,7 @@ export function usePushDeviceSync({
   /** 보고가 성공하면 부른다. 값이 같아 요청을 건너뛴 때도 부른다 */
   onReported?: () => void;
 }) {
-  const pushDeviceService = usePushDeviceService();
+  const pushNotification = usePushNotification();
   const { mutateAsync: reportPushDevice } = useMutation(useReportPushDeviceMutationOptions());
   const isAuthenticated = authStatus === 'authenticated';
 
@@ -69,9 +69,9 @@ export function usePushDeviceSync({
         syncOnActive();
       }
     });
-    const removeTokenListener = pushDeviceService.addTokenListener(() => sync(false));
+    const removeTokenListener = pushNotification.subscribeToken(() => sync(false));
     // 앞에 떠 있는 동안 누른 푸시는 복귀 이벤트 없이 온다. 꺼진 상태에서 누른 푸시는 위의 첫 보고가 맡는다
-    const removeResponseListener = pushDeviceService.addResponseListener(syncOnActive);
+    const removeResponseListener = pushNotification.subscribeResponse(syncOnActive);
     i18n.on('languageChanged', handleLanguageChanged);
 
     return () => {
@@ -82,5 +82,5 @@ export function usePushDeviceSync({
       removeResponseListener();
       i18n.off('languageChanged', handleLanguageChanged);
     };
-  }, [deviceTimeZone, isAuthenticated, onReported, pushDeviceService, reportPushDevice]);
+  }, [deviceTimeZone, isAuthenticated, onReported, pushNotification, reportPushDevice]);
 }

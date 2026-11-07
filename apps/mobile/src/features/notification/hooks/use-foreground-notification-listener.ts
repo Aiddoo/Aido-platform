@@ -12,7 +12,7 @@ export function useForegroundNotificationListener(
 
   useEffect(
     () =>
-      gateway.addReceivedListener((notification) => {
+      gateway.subscribeReceived((notification) => {
         logger.info(NOTIFICATION_LOG_EVENT.FOREGROUND_RECEIVED);
         handleForegroundNotification(notification);
       }),

@@ -62,7 +62,6 @@ export class PushDeviceService {
 
   /** 시스템 권한 창을 띄우고, 바뀐 권한을 바로 서버에 알린다 */
   requestPermission = async (): Promise<PushPermission> => {
-    await this.#ensureChannel();
     const permission = toPushPermission(await this.#gateway.requestPermission());
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUESTED, { ...permission });
 
@@ -90,7 +89,6 @@ export class PushDeviceService {
   report = async ({ force = false }: { force?: boolean } = {}): Promise<
     Result<PushDevice | null, ApiError>
   > => {
-    await this.#ensureChannel();
     const permission = await this.readPermission();
     const token = PushPermissionPolicy.isDeliveryAllowed(permission)
       ? await this.#issueToken()
@@ -161,25 +159,6 @@ export class PushDeviceService {
     }
 
     return ok(undefined);
-  };
-
-  addTokenListener = (listener: () => void): (() => void) =>
-    this.#gateway.addTokenListener(listener);
-
-  addResponseListener = (listener: () => void): (() => void) =>
-    this.#gateway.addResponseListener(listener);
-
-  openSettings = (): Promise<void> => this.#gateway.openSettings();
-
-  /** Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한 상태는 읽고 보고한다 */
-  #ensureChannel = async (): Promise<void> => {
-    try {
-      await this.#gateway.ensureChannel();
-    } catch (error) {
-      this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_CHANNEL_SETUP_FAILED, {
-        error: getErrorMessage(error),
-      });
-    }
   };
 
   /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다. 권한 상태는 토큰 없이도 보고한다 */

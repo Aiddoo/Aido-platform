@@ -84,7 +84,7 @@ export function useNotificationResponseObserver(): void {
     if (last != null) {
       receive(last);
     }
-    return gateway.addResponseListener(receive);
+    return gateway.subscribeResponse(receive);
   }, [gateway, logger, store]);
 
   const wasAuthenticatedRef = useRef(status === 'authenticated');

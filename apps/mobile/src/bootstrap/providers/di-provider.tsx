@@ -100,7 +100,7 @@ import {
   setGlobalLogger,
 } from '@src/shared/infra/logger';
 import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status-gateway';
-import { expoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification-gateway';
+import { createExpoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { createEnvironmentAnalytics } from '@src/shared/infra/observability/observability-env';
 import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases-gateway';
 import { expoSystemShareGateway } from '@src/shared/infra/share/expo-system-share-gateway';
@@ -264,13 +264,14 @@ export function DIProvider({
       expoVendorIdGateway,
       expoIdGenerator,
     );
+    const pushNotification = createExpoPushNotificationGateway(logger);
     const notificationService = new NotificationService(
       authHttpClient,
-      expoPushNotificationGateway,
+      pushNotification,
       publicHttpClient,
     );
     const pushDeviceService = new PushDeviceService({
-      gateway: expoPushNotificationGateway,
+      gateway: pushNotification,
       deviceIdService,
       httpClient: authHttpClient,
       logger,
@@ -361,7 +362,7 @@ export function DIProvider({
       haptics: expoHapticsGateway,
       idGenerator: expoIdGenerator,
       speechRecognizer: expoSpeechRecognizer,
-      pushNotification: expoPushNotificationGateway,
+      pushNotification,
       tokenStore,
       authSessionStore: createAuthSessionStore(),
       sessionEpoch,

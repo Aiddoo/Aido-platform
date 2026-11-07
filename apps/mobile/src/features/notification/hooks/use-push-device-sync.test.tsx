@@ -41,13 +41,13 @@ describe('usePushDeviceSync', () => {
     const removeTokenListener = jest.fn();
     let tokenListener: (() => void) | undefined;
     const gateway = createPushNotificationGatewayStub({
-      addTokenListener: jest.fn((listener: () => void) => {
+      subscribeToken: jest.fn((listener: () => void) => {
         tokenListener = listener;
         return removeTokenListener;
       }),
     });
     let responseListener: (() => void) | undefined;
-    gateway.addResponseListener.mockImplementation((listener) => {
+    gateway.subscribeResponse.mockImplementation((listener) => {
       responseListener = () =>
         listener({ id: 'response-1', actionIdentifier: 'default', data: {} });
       return jest.fn();
@@ -64,7 +64,11 @@ describe('usePushDeviceSync', () => {
       getTimeZone: () => timeZone.current,
       sessionEpoch: createSessionEpoch(),
     });
-    const container = createTestDi({ pushDeviceService, logger: createLoggerStub() });
+    const container = createTestDi({
+      pushDeviceService,
+      pushNotification: gateway,
+      logger: createLoggerStub(),
+    });
     const queryClient = createTestQueryClient();
     const wrapper = ({ children }: PropsWithChildren) => (
       <StaticDIProvider container={container}>

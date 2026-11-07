@@ -38,13 +38,12 @@ export function createPushNotificationGatewayStub(
   return {
     getPermission: jest.fn(async () => grantedPermission()),
     requestPermission: jest.fn(async () => grantedPermission()),
-    ensureChannel: jest.fn(async () => {}),
     getToken: jest.fn(async () => 'ExponentPushToken[device-123]'),
-    addTokenListener: jest.fn((_listener: () => void) => () => {}),
-    addReceivedListener: jest.fn((listener: (notification: ReceivedPushNotification) => void) =>
+    subscribeToken: jest.fn((_listener: () => void) => () => {}),
+    subscribeReceived: jest.fn((listener: (notification: ReceivedPushNotification) => void) =>
       subscribe(receivedListeners, listener),
     ),
-    addResponseListener: jest.fn((listener: (response: PushNotificationResponse) => void) =>
+    subscribeResponse: jest.fn((listener: (response: PushNotificationResponse) => void) =>
       subscribe(responseListeners, listener),
     ),
     getLastResponse: jest.fn(() => lastResponse),
@@ -53,7 +52,6 @@ export function createPushNotificationGatewayStub(
     }),
     setCategory: jest.fn(async (_category: PushNotificationCategory) => {}),
     setBadgeCount: jest.fn(async (_count: number) => {}),
-    openSettings: jest.fn(async () => {}),
     emitReceived: (notification) => {
       for (const listener of receivedListeners) {
         listener(notification);
