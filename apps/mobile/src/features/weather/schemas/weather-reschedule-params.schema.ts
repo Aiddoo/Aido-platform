@@ -1,5 +1,5 @@
 import { WEATHER_RESCHEDULE_MAX_TODO_IDS, WEATHER_RESCHEDULE_REASONS } from '@aido/api';
-import { routeIdSchema } from '@src/shared/utils/route-params';
+import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
 /**

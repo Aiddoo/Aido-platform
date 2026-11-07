@@ -1,5 +1,5 @@
 import { nudgeIdParamSchema, userIdParamSchema } from '@aido/api';
-import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
+import { routeIntegerStringSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
 export const nudgeParamsSchema = z.object({

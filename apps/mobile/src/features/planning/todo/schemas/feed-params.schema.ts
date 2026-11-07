@@ -1,5 +1,5 @@
 import { dateSchema, TODO_COMMENT_SORT, todoCommentIdSchema, userIdParamSchema } from '@aido/api';
-import { routeIdSchema } from '@src/shared/utils/route-params';
+import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
 /**

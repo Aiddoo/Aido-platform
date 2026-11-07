@@ -5,7 +5,8 @@ import { t, useTranslation } from '@src/shared/i18n';
 import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { logger } from '@src/shared/infra/logger/global-logger';
-import { buildSupportMailUrl, createDiagnosticCode } from '@src/shared/utils/support-mail';
+import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
+import { buildSupportMailUrl } from '@src/shared/utils/support-mail';
 import { router } from 'expo-router';
 
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';

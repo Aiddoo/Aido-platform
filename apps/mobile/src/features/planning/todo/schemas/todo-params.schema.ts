@@ -5,7 +5,7 @@ import {
   todoDetailsParamSchema,
   todoItemIdParamSchema,
 } from '@aido/api';
-import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
+import { routeIntegerStringSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
 import { feedParamsSchema } from './feed-params.schema';

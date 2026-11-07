@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';
 
-import { routeIdSchema } from '../utils/route-params';
+import { routeIdSchema } from '../schemas/route-params.schema';
 import { useRouteParams } from './use-route-params';
 
 const schema = z.object({

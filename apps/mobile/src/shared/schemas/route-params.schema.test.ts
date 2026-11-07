@@ -5,7 +5,7 @@ import {
 } from '@src/features/insights/report/constants/sample-reports';
 import { z } from 'zod';
 
-import { routeIdSchema, routeIntegerStringSchema } from './route-params';
+import { routeIdSchema, routeIntegerStringSchema } from './route-params.schema';
 
 const reportIdSchema = routeIntegerStringSchema.pipe(aiReportIdParamSchema.shape.id);
 const weekSchema = routeIntegerStringSchema.pipe(weeklyAchievementParamSchema.shape.week);
