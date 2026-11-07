@@ -75,52 +75,17 @@ const NEW_PAW_PRINT_STAGGER_MS = 160;
  * 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
  */
 export function InvitePawPrintBoard({ className, ...props }: ComponentProps<typeof VStack>) {
-  const haptics = useHaptics();
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
-  const inviteService = useInviteService();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
   });
-  const userId = me.id;
-  const { width: frameWidth } = useSafeAreaFrame();
-  const { left: insetLeft, right: insetRight } = useSafeAreaInsets();
-  // 처음 그릴 때 본 수를 고정해 두어야 저장한 뒤에도 이번 화면에서는 애니메이션이 이어진다
-  const [celebratedCount] = useState(() => inviteService.getCelebratedPawPrintCount(userId));
+  const celebratedCount = useCelebrateNewPawPrints(me.id, myInvite.qualifiedCount);
+  const estimatedWidth = useEstimatedBoardWidth();
   // 창 폭으로 어림한 폭은 첫 그림에만 쓰고, 그 뒤로는 판이 실제로 받은 폭으로 격자를 다시 만든다
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-  const grid = calculatePawPrintGrid(
-    measuredWidth ??
-      calculatePawPrintBoardWidth({
-        frameWidth,
-        insetLeft,
-        insetRight,
-        maxContentWidth: READABLE_CONTENT_MAX_WIDTH,
-      }),
-  );
+  const grid = calculatePawPrintGrid(measuredWidth ?? estimatedWidth);
   const board = createPawPrintBoard(myInvite, { columns: grid.columns, celebratedCount });
-  const hasNewPawPrint = myInvite.qualifiedCount > celebratedCount;
-  const { requestReviewAt } = useStoreReviewMoment();
-
-  useEffect(() => {
-    if (myInvite.qualifiedCount === celebratedCount) {
-      return;
-    }
-
-    inviteService.markPawPrintsCelebrated(userId, myInvite.qualifiedCount);
-    if (hasNewPawPrint) {
-      haptics.notify('success');
-      // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
-      requestReviewAt('paw_print_celebration');
-    }
-  }, [
-    celebratedCount,
-    hasNewPawPrint,
-    inviteService,
-    myInvite.qualifiedCount,
-    requestReviewAt,
-    userId,
-  ]);
 
   const handleBoardLayout = (event: LayoutChangeEvent) => {
     setMeasuredWidth(event.nativeEvent.layout.width);
@@ -345,17 +310,8 @@ InvitePawPrintBoard.Connector = function Connector({
 };
 
 InvitePawPrintBoard.Loading = function Loading() {
-  const { width: frameWidth } = useSafeAreaFrame();
-  const { left: insetLeft, right: insetRight } = useSafeAreaInsets();
   // 불러온 판과 같은 격자로 자리를 잡아 내용이 들어와도 높이가 튀지 않는다
-  const grid = calculatePawPrintGrid(
-    calculatePawPrintBoardWidth({
-      frameWidth,
-      insetLeft,
-      insetRight,
-      maxContentWidth: READABLE_CONTENT_MAX_WIDTH,
-    }),
-  );
+  const grid = calculatePawPrintGrid(useEstimatedBoardWidth());
 
   return (
     <VStack gap={16} accessibilityState={{ busy: true }}>
@@ -389,6 +345,45 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
     </Box>
   );
 };
+
+/**
+ * 지난번에 본 수보다 늘었으면 진동과 리뷰 요청으로 축하하고 본 수를 저장한다.
+ * 돌려주는 값은 처음 그릴 때 본 수다. 저장한 뒤에도 이번 화면에서는 찍히는 애니메이션이 이어져야 한다
+ */
+function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
+  const haptics = useHaptics();
+  const inviteService = useInviteService();
+  const { requestReviewAt } = useStoreReviewMoment();
+  const [celebratedCount] = useState(() => inviteService.getCelebratedPawPrintCount(userId));
+  const hasNewPawPrint = qualifiedCount > celebratedCount;
+
+  useEffect(() => {
+    if (qualifiedCount === celebratedCount) {
+      return;
+    }
+
+    inviteService.markPawPrintsCelebrated(userId, qualifiedCount);
+    if (hasNewPawPrint) {
+      haptics.notify('success');
+      // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
+      requestReviewAt('paw_print_celebration');
+    }
+  }, [celebratedCount, hasNewPawPrint, inviteService, qualifiedCount, requestReviewAt, userId]);
+
+  return celebratedCount;
+}
+
+function useEstimatedBoardWidth() {
+  const { width: frameWidth } = useSafeAreaFrame();
+  const { left: insetLeft, right: insetRight } = useSafeAreaInsets();
+
+  return calculatePawPrintBoardWidth({
+    frameWidth,
+    insetLeft,
+    insetRight,
+    maxContentWidth: READABLE_CONTENT_MAX_WIDTH,
+  });
+}
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
