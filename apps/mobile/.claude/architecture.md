@@ -155,18 +155,17 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 ## 아직 옮기지 않은 것
 
-이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 인증·할 일·콕·shared 묶음을 합친 `d2e349f62` 기준 grep). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 이름, 함수 형태, 층처럼 검사가 세는 항목의 파일 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
+이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 billing·기기·음성·폼 묶음을 합친 `aa9967649` 기준 grep). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 이름, 함수 형태, 층처럼 검사가 세는 항목의 파일 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
 | 규칙                              | 지금 코드                                                                                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | utils 폴더                        | `notification/utils/analytics/`, `weather/utils/analytics/`가 남았다. 평탄한 `*.view-model.ts`는 9개다                                                                                                                         |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 18개. `safeParse(result.value)` 22곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo`, `voice` 각 1)                                                                           |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 6개(`shared` 5, `hooks` 1)                                                                                                                              |
-| [스키마 폴더](#서버-응답과-모델)  | 29개 기능에 `schemas/`가 있다. `domains/`의 Zod는 `voice`까지 모두 옮겼다                                                                                                                                                      |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1)                                                                                    |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 8개(`shared` 5, `billing` 훅 1, `app` 2)                                                                                                                |
 | [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                                                                                                    |
 | [모델](#모델과-policy)            | Facade 별칭 1개(`social/nudge`)                                                                                                                                                                                                |
 | [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                    |
-| [함수 형태](#함수-형태)           | 모듈 수준 화살표 107파일 244개(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                                                               |
+| [함수 형태](#함수-형태)           | 모듈 수준 화살표 106파일 243개(`di-context.tsx`, `OverlayProvider`, `KeyboardAdaptiveButton` 등)                                                                                                                               |
 | [테스트](./testing-guide.md)      | `jest.mock('@src/…')` 5파일 12건                                                                                                                                                                                               |
 | [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
 | [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                                                                                                   |
