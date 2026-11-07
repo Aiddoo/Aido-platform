@@ -7,6 +7,7 @@ import { TodoDetailSummary } from '@src/features/engagement/comment/components/t
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
@@ -15,6 +16,7 @@ import { Suspense } from 'react';
 export default function TodoDetailScreen() {
   const params = todoParamsSchema.safeParse(useLocalSearchParams());
   const [{ sort, comment }] = useCommentParams();
+  const goBack = useSingleTap(router.back);
 
   if (!params.success) {
     return <Redirect href="/feed" />;
@@ -27,7 +29,7 @@ export default function TodoDetailScreen() {
       <TodoCommentSession>
         <TodoCommentTitleBar.StackHeader />
 
-        <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={router.back} />}>
+        <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={goBack} />}>
           <TodoCommentKeyboardArea>
             <QueryErrorBoundary
               resetKeys={[todoId, sort, comment]}

@@ -7,6 +7,7 @@ import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -66,6 +67,10 @@ function VoiceStorageScreen() {
     }
   };
 
+  // 확인 창이 뜨기 전에 한 번 더 눌러도 창이 두 번 열리지 않게 한다
+  const removeOne = useSingleTap(handleRemoveOne);
+  const removeAll = useSingleTap(handleRemoveAll);
+
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <FlashList
@@ -105,7 +110,7 @@ function VoiceStorageScreen() {
               <VoiceStorageScreen.Row
                 note={note}
                 bytes={bytes}
-                onRemove={() => handleRemoveOne(note.draftId)}
+                onRemove={() => removeOne(note.draftId)}
               />
             </Box>
           </VoiceStorageScreen.Gutter>
@@ -116,7 +121,7 @@ function VoiceStorageScreen() {
               <Button
                 variant="weak"
                 color="danger"
-                onPress={handleRemoveAll}
+                onPress={removeAll}
                 testID="voice-storage-remove-all"
               >
                 {t('voiceStorage.removeAll')}
