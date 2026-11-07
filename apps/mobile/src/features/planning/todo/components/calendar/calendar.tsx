@@ -21,7 +21,7 @@ import {
   addLocalMonths,
   addLocalWeeks,
   startOfLocalMonth,
-  withLocalMonthOf,
+  moveToLocalMonth,
 } from '@src/shared/date/local-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
@@ -221,7 +221,7 @@ function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
 
   const handleChange = (page: number) => {
     const month = monthAtPage(page);
-    setSelectedDate(withLocalMonthOf(selectedDate, month, timeZone));
+    setSelectedDate(moveToLocalMonth(selectedDate, month, timeZone));
   };
 
   return (

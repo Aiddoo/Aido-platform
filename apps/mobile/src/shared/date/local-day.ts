@@ -45,7 +45,7 @@ export function addLocalMonths(date: Date, months: number, timeZone: string): Da
 }
 
 /** 달만 옮기고 일은 기준 날짜의 일을 쓴다. 그 달에 없는 일은 마지막 날이다 */
-export function withLocalMonthOf(date: Date, monthSource: Date, timeZone: string): Date {
+export function moveToLocalMonth(date: Date, monthSource: Date, timeZone: string): Date {
   const monthKey = toDateKey(monthSource, timeZone);
   const day = Math.min(getDayOfMonth(toDateKey(date, timeZone)), getDaysInDateKeyMonth(monthKey));
 

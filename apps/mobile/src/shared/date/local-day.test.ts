@@ -4,7 +4,7 @@ import {
   diffLocalMonths,
   startOfLocalDay,
   startOfLocalMonth,
-  withLocalMonthOf,
+  moveToLocalMonth,
 } from './local-day';
 
 const SEOUL = 'Asia/Seoul';
@@ -108,7 +108,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     const february = new Date(2026, 1, 1);
 
     // When
-    const result = withLocalMonthOf(selected, february, SEOUL);
+    const result = moveToLocalMonth(selected, february, SEOUL);
 
     // Then
     expect(result).toEqual(new Date(2026, 1, 28));
