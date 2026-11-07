@@ -1421,6 +1421,14 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       });
     }
 
+    if (isChipLabelElement(node)) {
+      findings.push({
+        rule: 'chip-label',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} Chip.Label은 앱 글꼴을 따르지 않습니다. 글자는 자식 <Text>로 넣으세요.`,
+      });
+    }
+
     if (isFormShapeViolation(node)) {
       findings.push({
         rule: 'form-shape',
@@ -1499,6 +1507,16 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
 
 const FORM_CONTEXT_IMPORTS = new Set(['FormProvider', 'useFormContext']);
 const FORM_VARIABLE_NAMES = new Set(['methods', 'formMethods']);
+
+function isChipLabelElement(node) {
+  return (
+    (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+    ts.isPropertyAccessExpression(node.tagName) &&
+    ts.isIdentifier(node.tagName.expression) &&
+    node.tagName.expression.text === 'Chip' &&
+    node.tagName.name.text === 'Label'
+  );
+}
 
 function isFormShapeViolation(node) {
   if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {

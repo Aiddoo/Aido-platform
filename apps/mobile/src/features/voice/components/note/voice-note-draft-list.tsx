@@ -115,7 +115,9 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
         </VStack>
         {note.digest == null && (
           <Chip size="sm" variant="soft" color="accent">
-            <Chip.Label>{t('drafts.notDigested')}</Chip.Label>
+            <Text size="e1" weight="medium" className="text-accent-soft-foreground">
+              {t('drafts.notDigested')}
+            </Text>
           </Chip>
         )}
       </HStack>

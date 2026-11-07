@@ -963,6 +963,30 @@ test('xxxOf 함수 이름을 거부한다', () => {
   );
 });
 
+test('Chip.Label을 거부하고 자식 Text는 허용한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/planning/category/components/bad-chip.tsx': `
+        import { Chip } from 'heroui-native';
+        export function BadChip() {
+          return <Chip><Chip.Label>글자</Chip.Label></Chip>;
+        }
+      `,
+      'apps/mobile/src/features/planning/category/components/good-chip.tsx': `
+        import { Chip } from 'heroui-native';
+        import { Text } from '@src/shared/ui';
+        export function GoodChip() {
+          return <Chip><Text size="e1">글자</Text></Chip>;
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /bad-chip\.tsx/u);
+    },
+  );
+});
+
 test('폼 모양을 어긴 import와 변수와 useForm 제네릭을 거부한다', () => {
   withFixture(
     {

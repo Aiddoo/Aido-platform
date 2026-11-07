@@ -145,6 +145,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름                                                                                                                                  |
 | 테스트 mock          | 테스트의 `jest.mock('@src/…')`                                                                                                                                                                |
 | RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
+| `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                      |
 | 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                     |
 | 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                 |
 
