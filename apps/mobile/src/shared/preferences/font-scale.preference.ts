@@ -1,25 +1,13 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
-
 const FONT_SCALES = ['xsmall', 'small', 'medium', 'large', 'xlarge'] as const;
 
 export type FontScale = (typeof FONT_SCALES)[number];
 
-const KEY = 'aido_font_scale';
+export const FONT_SCALE_STORAGE_KEY = 'aido_font_scale';
 
 export function isFontScale(value: unknown): value is FontScale {
   return FONT_SCALES.some((candidate) => candidate === value);
 }
 
-export function readFontScale(storage: SyncStorage): FontScale {
-  const saved = storage.get(KEY);
-
-  if (isFontScale(saved)) {
-    return saved;
-  }
-
-  return 'medium';
-}
-
-export function writeFontScale(storage: SyncStorage, scale: FontScale): void {
-  storage.set(KEY, scale);
+export function parseFontScale(saved: string | undefined): FontScale {
+  return isFontScale(saved) ? saved : 'medium';
 }

@@ -1,24 +1,17 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { i18n } from '@src/shared/i18n';
 import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
+  LANGUAGE_MODE_STORAGE_KEY,
   type LanguageMode,
+  parseLanguageMode,
   type ResolvedLanguage,
-  readLanguageMode,
   resolveLanguage,
-  writeLanguageMode,
 } from '@src/shared/preferences/language.preference';
 import { noop } from 'es-toolkit';
-import {
-  createContext,
-  type PropsWithChildren,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, use, useEffect, useMemo } from 'react';
 
 interface LanguageContextValue {
   languageMode: LanguageMode;
@@ -33,7 +26,7 @@ function useSystemLanguage(): string | null {
 }
 
 interface LanguageProviderProps extends PropsWithChildren {
-  syncStorage?: SyncStorage;
+  syncStorage?: ObservableSyncStorage;
   /** 기기 언어 코드. 기기 언어 설정이 실행 중에 바뀌면 다시 렌더링해 새 값을 돌려준다. */
   useDeviceLanguage?: () => string | null;
 }
@@ -43,9 +36,8 @@ export function LanguageProvider({
   syncStorage = deviceSyncStorage,
   useDeviceLanguage = useSystemLanguage,
 }: LanguageProviderProps) {
-  const [languageMode, setLanguageModeState] = useState<LanguageMode>(() =>
-    readLanguageMode(syncStorage),
-  );
+  const [savedMode, setLanguageMode] = useSyncStorageString(syncStorage, LANGUAGE_MODE_STORAGE_KEY);
+  const languageMode = parseLanguageMode(savedMode);
   const deviceLanguage = useDeviceLanguage();
 
   const resolvedLanguage = useMemo(
@@ -61,17 +53,9 @@ export function LanguageProvider({
     }
   }, [resolvedLanguage]);
 
-  const persistMode = useCallback(
-    (newMode: LanguageMode) => {
-      setLanguageModeState(newMode);
-      writeLanguageMode(syncStorage, newMode);
-    },
-    [syncStorage],
-  );
-
   const value = useMemo(
-    () => ({ languageMode, resolvedLanguage, setLanguageMode: persistMode }),
-    [languageMode, resolvedLanguage, persistMode],
+    () => ({ languageMode, resolvedLanguage, setLanguageMode }),
+    [languageMode, resolvedLanguage, setLanguageMode],
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

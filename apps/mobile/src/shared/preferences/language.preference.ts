@@ -1,29 +1,17 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
-
 const LANGUAGE_MODES = ['system', 'ko', 'en'] as const;
 
 export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 
 export type ResolvedLanguage = 'ko' | 'en';
 
-const KEY = 'aido_language';
+export const LANGUAGE_MODE_STORAGE_KEY = 'aido_language';
 
 export function isLanguageMode(value: unknown): value is LanguageMode {
   return LANGUAGE_MODES.some((candidate) => candidate === value);
 }
 
-export function readLanguageMode(storage: SyncStorage): LanguageMode {
-  const saved = storage.get(KEY);
-
-  if (isLanguageMode(saved)) {
-    return saved;
-  }
-
-  return 'system';
-}
-
-export function writeLanguageMode(storage: SyncStorage, mode: LanguageMode): void {
-  storage.set(KEY, mode);
+export function parseLanguageMode(saved: string | undefined): LanguageMode {
+  return isLanguageMode(saved) ? saved : 'system';
 }
 
 /**

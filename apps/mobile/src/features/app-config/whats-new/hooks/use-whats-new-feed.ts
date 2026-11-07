@@ -3,9 +3,10 @@ import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-confi
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
+import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';
@@ -64,8 +65,12 @@ export function useWhatsNewFeed({
     [accountId, release],
   );
   const storedIdentity = identity ?? { userId: '', campaignId: '' };
-  const [seenAt] = useStoredString(createWhatsNewSeenKey(storedIdentity));
-  const [reentryOpenedAt] = useStoredString(createWhatsNewReentryKey(storedIdentity));
+  const syncStorage = useSyncStorage();
+  const [seenAt] = useSyncStorageString(syncStorage, createWhatsNewSeenKey(storedIdentity));
+  const [reentryOpenedAt] = useSyncStorageString(
+    syncStorage,
+    createWhatsNewReentryKey(storedIdentity),
+  );
   const canAutoOpen =
     isAuthenticated &&
     !isWeatherIntroductionPending &&

@@ -7,7 +7,6 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
   createHttpClientStub,
-  createMemorySyncStorage,
   createTestDi,
   createMemoryObservableSyncStorage,
 } from '@src/shared/__tests__';
@@ -80,7 +79,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
     return (
       <QueryClientProvider client={queryClient}>
         <StaticDIProvider container={container}>
-          <ThemeProvider syncStorage={createMemorySyncStorage()}>
+          <ThemeProvider syncStorage={createMemoryObservableSyncStorage()}>
             <LocalDateProvider>{children}</LocalDateProvider>
           </ThemeProvider>
         </StaticDIProvider>

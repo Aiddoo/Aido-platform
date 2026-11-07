@@ -1,6 +1,4 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
-
-import { isFontScale, readFontScale, writeFontScale } from './font-scale.preference';
+import { FONT_SCALE_STORAGE_KEY, isFontScale, parseFontScale } from './font-scale.preference';
 
 describe('isFontScale', () => {
   it.each(['xsmall', 'small', 'medium', 'large', 'xlarge'] as const)(
@@ -18,56 +16,38 @@ describe('isFontScale', () => {
   );
 });
 
-describe('readFontScale', () => {
+describe('parseFontScale', () => {
   it('저장된 값이 없으면 medium을 반환한다', () => {
-    // Given
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue(undefined);
-
     // When
-    const result = readFontScale(storage);
+    const result = parseFontScale(undefined);
 
     // Then
     expect(result).toBe('medium');
   });
 
   it.each(['xsmall', 'small', 'medium', 'large', 'xlarge'] as const)(
-    '%s가 저장되어 있으면 %s를 반환한다',
-    (value) => {
-      // Given
-      const storage = createMemorySyncStorage();
-      storage.get.mockReturnValue(value);
-
+    '%s가 저장되어 있으면 그대로 반환한다',
+    (saved) => {
       // When
-      const result = readFontScale(storage);
+      const result = parseFontScale(saved);
 
       // Then
-      expect(result).toBe(value);
+      expect(result).toBe(saved);
     },
   );
 
   it('유효하지 않은 값이 저장되어 있으면 medium을 반환한다', () => {
-    // Given
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('invalid');
-
     // When
-    const result = readFontScale(storage);
+    const result = parseFontScale('invalid');
 
     // Then
     expect(result).toBe('medium');
   });
 });
 
-describe('writeFontScale', () => {
-  it('올바른 key와 value로 storage.set을 호출한다', () => {
-    // Given
-    const storage = createMemorySyncStorage();
-
-    // When
-    writeFontScale(storage, 'xlarge');
-
+describe('저장 키', () => {
+  it('이미 설치된 앱의 저장 값을 읽도록 키를 바꾸지 않는다', () => {
     // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_font_scale', 'xlarge');
+    expect(FONT_SCALE_STORAGE_KEY).toBe('aido_font_scale');
   });
 });

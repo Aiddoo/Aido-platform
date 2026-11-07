@@ -3,6 +3,7 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway, IncomingLinkGateway } from '@src/core/ports/external-link';
 import type { HapticsGateway } from '@src/core/ports/haptics';
 import type { Logger } from '@src/core/ports/logger';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import type { DraftService } from '@src/shared/draft/draft.service';
@@ -19,6 +20,7 @@ export interface SharedDependencies {
   externalLink: ExternalLinkGateway;
   incomingLink: IncomingLinkGateway;
   systemShare: SystemShareGateway;
+  syncStorage: ObservableSyncStorage;
 }
 
 export const SharedDIContext = createContext<SharedDependencies | null>(null);
@@ -67,4 +69,8 @@ export function useSystemShare() {
 
 export function useIncomingLink() {
   return useSharedDI().incomingLink;
+}
+
+export function useSyncStorage() {
+  return useSharedDI().syncStorage;
 }

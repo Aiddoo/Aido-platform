@@ -10,7 +10,7 @@ import { createStubInviteService } from '@src/features/social/invite/__tests__/c
 import {
   createExternalLinkGatewayStub,
   createHttpClientStub,
-  createMemorySyncStorage,
+  createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   createTestDi,
   stubWindowDimensions,
@@ -142,7 +142,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     return (
       <QueryClientProvider client={queryClient}>
         <StaticDIProvider container={container}>
-          <ThemeProvider syncStorage={createMemorySyncStorage()}>
+          <ThemeProvider syncStorage={createMemoryObservableSyncStorage()}>
             <LocalDateProvider>{children}</LocalDateProvider>
           </ThemeProvider>
         </StaticDIProvider>

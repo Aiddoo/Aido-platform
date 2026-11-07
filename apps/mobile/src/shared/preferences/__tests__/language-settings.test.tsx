@@ -1,4 +1,4 @@
-import { createAnalyticsStub, createMemorySyncStorage } from '@src/shared/__tests__';
+import { createAnalyticsStub, createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -11,7 +11,7 @@ afterEach(async () => {
 });
 
 const renderScreen = async ({
-  storage = createMemorySyncStorage(),
+  storage = createMemoryObservableSyncStorage(),
   analytics = createAnalyticsStub(),
 } = {}) => {
   await renderUi(
@@ -26,15 +26,14 @@ const renderScreen = async ({
 describe('LanguageSettingsScreen', () => {
   it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', async () => {
     // Given
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue(undefined);
+    const storage = createMemoryObservableSyncStorage();
     const { analytics } = await renderScreen({ storage });
 
     // When
     await fireEvent.press(screen.getByTestId('language-option-en'));
 
     // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_language', 'en');
+    expect(storage.get('aido_language')).toBe('en');
     expect(i18n.language).toBe('en');
     expect(analytics.trackEvent).toHaveBeenCalledWith('settings_changed', {
       setting: 'language',
@@ -44,23 +43,23 @@ describe('LanguageSettingsScreen', () => {
 
   it('시스템 설정 선택 시 기기 언어 기준으로 i18n 언어가 해석된다', async () => {
     // Given
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('en');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_language', 'en');
     await renderScreen({ storage });
 
     // When
     await fireEvent.press(screen.getByTestId('language-option-system'));
 
     // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_language', 'system');
+    expect(storage.get('aido_language')).toBe('system');
     expect(i18n.language).toBe('ko');
   });
 
   it('en으로 저장된 상태에서 화면 라벨이 영어로 렌더링된다', async () => {
     // Given
     await i18n.changeLanguage('en');
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('en');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_language', 'en');
 
     // When
     await renderScreen({ storage });

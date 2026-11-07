@@ -3,9 +3,10 @@ import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { useSyncStorage } from '@src/shared/di/shared-di-context';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
 import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
@@ -38,7 +39,11 @@ export function InviteEntryBanner({
     enabled: userId != null,
   });
   // 닫은 날은 저장소가 원본이다. 저장 값을 구독해 다른 화면에서 닫아도 따라간다
-  const [dismissedOn] = useStoredString(createAllDoneBannerStorageKey(userId ?? ''));
+  const syncStorage = useSyncStorage();
+  const [dismissedOn] = useSyncStorageString(
+    syncStorage,
+    createAllDoneBannerStorageKey(userId ?? ''),
+  );
 
   if (
     !isInviteAvailable ||

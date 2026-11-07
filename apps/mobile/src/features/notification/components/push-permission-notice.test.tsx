@@ -10,12 +10,12 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createLoggerStub,
+  createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import {
@@ -32,6 +32,7 @@ async function renderCard(
   permission: PushPermission,
   { pushEnabled = true }: { pushEnabled?: boolean } = {},
 ) {
+  const syncStorage = createMemoryObservableSyncStorage();
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const gateway = createPushNotificationGatewayStub({
@@ -51,7 +52,8 @@ async function renderCard(
   await renderUi(<PushPermissionNotice />, {
     di: createTestDi({
       httpClient,
-      pushPromptRepository: createPushPromptRepository(deviceSyncStorage),
+      syncStorage,
+      pushPromptRepository: createPushPromptRepository(syncStorage),
       pushDeviceService: new PushDeviceService({
         gateway,
         deviceIdService: { get: async () => 'ios_device-123' },
@@ -69,10 +71,6 @@ async function renderCard(
 }
 
 describe('PushPermissionNotice — 홈 알림 안내', () => {
-  afterEach(() => {
-    deviceSyncStorage.keys().forEach((key) => deviceSyncStorage.remove(key));
-  });
-
   it('알림이 기기에서 허용되고 앱 설정도 켜져 있으면 보이지 않는다', async () => {
     // Given / When
     await renderCard({ status: 'GRANTED', canAskAgain: false });

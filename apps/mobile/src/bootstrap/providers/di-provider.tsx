@@ -431,6 +431,7 @@ export function DIProvider({
       externalLink: expoExternalLinkGateway,
       systemShare: systemShareGateway,
       incomingLink: expoIncomingLinkGateway,
+      syncStorage: deviceSyncStorage,
       networkStatus: expoNetworkStatusGateway,
       widgetSyncService,
       widgetNavigationRepository,

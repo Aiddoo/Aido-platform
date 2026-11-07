@@ -1,5 +1,6 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
+import { useSyncStorage } from '@src/shared/di/shared-di-context';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useQuery } from '@tanstack/react-query';
 
 import { createWhatsNewSeenKey } from '../apis/whats-new.repository';
@@ -10,7 +11,11 @@ import { WhatsNewPolicy } from '../domains/whats-new.model';
 export function useHasUnseenRelease(): boolean {
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
   const { campaignId } = WhatsNewPolicy.getLatestRelease(RELEASES);
-  const [seenAt] = useStoredString(createWhatsNewSeenKey({ userId: user?.id ?? '', campaignId }));
+  const syncStorage = useSyncStorage();
+  const [seenAt] = useSyncStorageString(
+    syncStorage,
+    createWhatsNewSeenKey({ userId: user?.id ?? '', campaignId }),
+  );
 
   return (
     user != null && WhatsNewPolicy.hasUnseenRelease(RELEASES, seenAt == null ? [] : [campaignId])

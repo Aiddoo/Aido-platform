@@ -46,6 +46,7 @@ import { createHapticsStub } from './create-haptics-stub';
 import { createHttpClientStub } from './create-http-client-stub';
 import { createIdGeneratorStub } from './create-id-generator-stub';
 import { createLoggerStub } from './create-logger-stub';
+import { createMemoryObservableSyncStorage } from './create-memory-observable-sync-storage';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
 import { createMemoryTokenStore } from './create-memory-token-store';
 import { createPushNotificationGatewayStub } from './create-push-notification-gateway-stub';
@@ -131,6 +132,8 @@ export function createTestDi({
     // 링크를 여는 훅은 화면마다 렌더 때 읽으니 여는 동작을 보는 테스트만 override한다
     externalLink: createExternalLinkGatewayStub(),
     incomingLink: createIncomingLinkGatewayStub(),
+    // 기기에 남기는 값을 읽는 훅이 렌더 때 읽으니 값을 정해 두는 테스트만 override한다
+    syncStorage: createMemoryObservableSyncStorage(),
     // 공유 훅을 렌더 때 읽는 화면이 있어 공유를 보는 테스트만 override한다
     systemShare: {
       share: jest.fn().mockResolvedValue(true),
@@ -180,6 +183,9 @@ export function createTestDi({
     },
     get systemShare() {
       return dependency('systemShare');
+    },
+    get syncStorage() {
+      return dependency('syncStorage');
     },
     get incomingLink() {
       return dependency('incomingLink');

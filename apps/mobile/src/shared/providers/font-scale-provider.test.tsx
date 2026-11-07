@@ -1,19 +1,18 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { FontScaleProvider, useFontScale } from './font-scale-provider';
 
 const createWrapper =
-  (syncStorage = createMemorySyncStorage()) =>
+  (syncStorage = createMemoryObservableSyncStorage()) =>
   ({ children }: PropsWithChildren) => (
     <FontScaleProvider syncStorage={syncStorage}>{children}</FontScaleProvider>
   );
 
 describe('useFontScale', () => {
   it('저장된 값이 없으면 medium으로 초기화된다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue(undefined);
+    const storage = createMemoryObservableSyncStorage();
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -21,8 +20,8 @@ describe('useFontScale', () => {
   });
 
   it('저장된 값으로 초기화된다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('large');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'large');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -30,8 +29,7 @@ describe('useFontScale', () => {
   });
 
   it('setFontScale 호출 시 상태와 스토리지를 업데이트한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue(undefined);
+    const storage = createMemoryObservableSyncStorage();
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -40,14 +38,14 @@ describe('useFontScale', () => {
     });
 
     expect(result.current.fontScale).toBe('xlarge');
-    expect(storage.set).toHaveBeenCalledWith('aido_font_scale', 'xlarge');
+    expect(storage.get('aido_font_scale')).toBe('xlarge');
   });
 });
 
 describe('resolveSize', () => {
   it('medium이면 원래 사이즈를 그대로 반환한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('medium');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'medium');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -57,8 +55,8 @@ describe('resolveSize', () => {
   });
 
   it('large이면 한 단계 위로 리매핑한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('large');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'large');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -68,8 +66,8 @@ describe('resolveSize', () => {
   });
 
   it('small이면 한 단계 아래로 리매핑한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('small');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'small');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -79,8 +77,8 @@ describe('resolveSize', () => {
   });
 
   it('t2↔t1 간 6px 점프를 방지한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('large');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'large');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -89,8 +87,8 @@ describe('resolveSize', () => {
   });
 
   it('xlarge이면 두 단계 위로 리매핑한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('xlarge');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'xlarge');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 
@@ -100,8 +98,8 @@ describe('resolveSize', () => {
   });
 
   it('xsmall이면 두 단계 아래로 리매핑한다', async () => {
-    const storage = createMemorySyncStorage();
-    storage.get.mockReturnValue('xsmall');
+    const storage = createMemoryObservableSyncStorage();
+    storage.set('aido_font_scale', 'xsmall');
 
     const { result } = await renderHook(() => useFontScale(), { wrapper: createWrapper(storage) });
 

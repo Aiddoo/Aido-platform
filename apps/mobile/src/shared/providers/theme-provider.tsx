@@ -1,20 +1,13 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
-  readThemeMode,
+  parseThemeMode,
+  THEME_MODE_STORAGE_KEY,
   type ThemeMode,
-  writeThemeMode,
 } from '@src/shared/preferences/theme-mode.preference';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from 'expo-router';
-import {
-  createContext,
-  type PropsWithChildren,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, use, useEffect, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import { match } from 'ts-pattern';
 import { Uniwind, useResolveClassNames } from 'uniwind';
@@ -23,7 +16,7 @@ export type { ThemeMode };
 type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeProviderProps extends PropsWithChildren {
-  syncStorage?: SyncStorage;
+  syncStorage?: ObservableSyncStorage;
 }
 
 interface ThemeContextValue {
@@ -36,7 +29,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>(() => readThemeMode(syncStorage));
+  const [savedMode, setMode] = useSyncStorageString(syncStorage, THEME_MODE_STORAGE_KEY);
+  const mode = parseThemeMode(savedMode);
 
   const resolvedTheme = match<ThemeMode, ResolvedTheme>(mode)
     .with('system', () => (systemColorScheme === 'dark' ? 'dark' : 'light'))
@@ -46,14 +40,6 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
   useEffect(() => {
     Uniwind.setTheme(mode);
   }, [mode]);
-
-  const persistMode = useCallback(
-    (newMode: ThemeMode) => {
-      setMode(newMode);
-      writeThemeMode(syncStorage, newMode);
-    },
-    [syncStorage],
-  );
 
   const { backgroundColor } = useResolveClassNames('bg-white');
   const navigationTheme = useMemo(() => {
@@ -68,10 +54,7 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
     };
   }, [resolvedTheme, backgroundColor]);
 
-  const value = useMemo(
-    () => ({ mode, resolvedTheme, setMode: persistMode }),
-    [mode, resolvedTheme, persistMode],
-  );
+  const value = useMemo(() => ({ mode, resolvedTheme, setMode }), [mode, resolvedTheme, setMode]);
 
   return (
     <ThemeContext.Provider value={value}>

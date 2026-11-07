@@ -1,8 +1,9 @@
 import { usePushPromptRepository } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
+import { useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useStoredString } from '@src/shared/infra/storage/device-sync-storage';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 import {
@@ -16,7 +17,8 @@ export function usePushPermissionPrompt() {
   const pushPromptRepository = usePushPromptRepository();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const now = useMinuteNow();
-  const [saved] = useStoredString(createPushPromptStorageKey(me.id));
+  const syncStorage = useSyncStorage();
+  const [saved] = useSyncStorageString(syncStorage, createPushPromptStorageKey(me.id));
 
   const snooze = () => {
     pushPromptRepository.dismiss(me.id, getNowInstant());
