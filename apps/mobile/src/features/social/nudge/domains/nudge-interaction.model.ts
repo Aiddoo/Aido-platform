@@ -115,7 +115,6 @@ export const NudgeInteractionPolicy = {
   getResponseStage,
   isReceivedBy,
   isThankableTodo,
-  isReplyable,
   isThankable,
   getThanksSummary,
 } as const;

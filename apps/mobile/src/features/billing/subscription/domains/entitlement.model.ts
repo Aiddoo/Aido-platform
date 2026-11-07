@@ -168,7 +168,6 @@ function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
 
 export const EntitlementPolicy = {
   hasFullAccess,
-  findFeatureQuota,
   isFeatureLocked,
   getAccessDecision,
   getLimit,
@@ -176,7 +175,6 @@ export const EntitlementPolicy = {
   getMaxSeconds,
   getQuotaStatus,
   getResetNotice,
-  getFreeLimit,
   withFeatureQuota,
   getBlockedDecision,
   shouldOfferPremium,

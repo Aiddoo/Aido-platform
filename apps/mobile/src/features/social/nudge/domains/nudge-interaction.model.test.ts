@@ -61,22 +61,6 @@ describe('콕 상호작용 상태', () => {
 
 describe('NudgeInteractionPolicy', () => {
   test.each([
-    ['receiver', true, true],
-    ['sender', true, false],
-    ['receiver', false, false],
-  ] as const)(
-    '사용자 %s와 사용 가능 여부 %s로 답장 권한을 판단한다',
-    (currentUserId, isAvailable, expected) => {
-      // Given
-      const nudge = { receiverId: 'receiver', isAvailable };
-      // When
-      const isReplyable = NudgeInteractionPolicy.isReplyable(nudge, currentUserId);
-      // Then
-      expect(isReplyable).toBe(expected);
-    },
-  );
-
-  test.each([
     [1, [{ id: 'friend', name: '친구', profileImage: null }], true],
     [null, [{ id: 'friend', name: '친구', profileImage: null }], false],
     [1, [], false],

@@ -16,10 +16,6 @@ function hasPremiumAccess(user: Pick<User, 'role' | 'isPremium'>) {
   return isAdmin(user) || user.isPremium;
 }
 
-function isFreeUser(user: Pick<User, 'role' | 'isPremium'>) {
-  return !hasPremiumAccess(user);
-}
-
 /** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
 function hasEntitlementChanged(
   previous: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,
@@ -36,6 +32,5 @@ export const UserPolicy = {
   hasCredential,
   isAdmin,
   hasPremiumAccess,
-  isFreeUser,
   hasEntitlementChanged,
 } as const;

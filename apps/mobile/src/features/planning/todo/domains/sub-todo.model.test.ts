@@ -130,41 +130,6 @@ describe('SubTodoPolicy', () => {
     });
   });
 
-  describe('getSubTodoCompletionProgress', () => {
-    test('서브투두가 없으면 0을 반환한다', () => {
-      // Given
-      const parentTodo = createParentTodo({ subTodoStats: { total: 0, completed: 0 } });
-
-      // When
-      const result = SubTodoPolicy.getSubTodoCompletionProgress(parentTodo);
-
-      // Then
-      expect(result).toBe(0);
-    });
-
-    test('2/5 완료이면 0.4를 반환한다', () => {
-      // Given
-      const parentTodo = createParentTodo({ subTodoStats: { total: 5, completed: 2 } });
-
-      // When
-      const result = SubTodoPolicy.getSubTodoCompletionProgress(parentTodo);
-
-      // Then
-      expect(result).toBe(0.4);
-    });
-
-    test('전부 완료이면 1을 반환한다', () => {
-      // Given
-      const parentTodo = createParentTodo({ subTodoStats: { total: 3, completed: 3 } });
-
-      // When
-      const result = SubTodoPolicy.getSubTodoCompletionProgress(parentTodo);
-
-      // Then
-      expect(result).toBe(1);
-    });
-  });
-
   describe('낙관적 갱신 되돌리기와 확정', () => {
     const parent = (subTodos: ReturnType<typeof createSubTodo>[]) =>
       createParentTodo({

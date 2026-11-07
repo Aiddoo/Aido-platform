@@ -308,5 +308,4 @@ export const VoiceNotePolicy = {
   getDigestTitle,
   getRecordingSizeBytes,
   isExpired,
-  isRecordingFileExpired,
 } as const;

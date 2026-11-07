@@ -53,7 +53,7 @@ describe('UserPolicy', () => {
     });
   });
 
-  describe('hasPremiumAccess / isFreeUser', () => {
+  describe('hasPremiumAccess', () => {
     test.each([
       // [역할, 서버 isPremium, 결제 사용자인가]
       ['USER', false, false],
@@ -66,7 +66,6 @@ describe('UserPolicy', () => {
 
       // When / Then
       expect(UserPolicy.hasPremiumAccess(user)).toBe(expected);
-      expect(UserPolicy.isFreeUser(user)).toBe(!expected);
     });
   });
 

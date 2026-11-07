@@ -13,70 +13,29 @@ const promptState = (overrides?: Partial<MarketingPushPromptState>): MarketingPu
 
 const NOW = toInstant('2026-07-20T09:00:00.000Z');
 
-describe('isNotAgreedToMarketingPush', () => {
-  it('광고성 푸시 미동의(null)면 true를 반환한다', () => {
-    // Given
-    const consent = createConsent({ marketingPushAgreedAt: null });
+describe('MarketingPushPromptPolicy.shouldPrompt', () => {
+  const notAgreed = createConsent({ marketingPushAgreedAt: null });
 
-    // When / Then
-    expect(MarketingPushPromptPolicy.isNotAgreedToMarketingPush(consent)).toBe(true);
+  it('닫기 횟수가 상한(3)보다 적으면 노출한다', () => {
+    expect(MarketingPushPromptPolicy.shouldPrompt(notAgreed, promptState({ count: 2 }), NOW)).toBe(
+      true,
+    );
   });
 
-  it('이미 동의한 상태면 false를 반환한다', () => {
-    // Given
-    const consent = createConsent({
-      marketingPushAgreedAt: toInstant(dayjs(NOW).subtract(1, 'day').toISOString()),
-    });
-
-    // When / Then
-    expect(MarketingPushPromptPolicy.isNotAgreedToMarketingPush(consent)).toBe(false);
-  });
-});
-
-describe('isUnderPromptLimit', () => {
-  it('닫기 횟수가 상한 미만이면 true를 반환한다', () => {
-    expect(MarketingPushPromptPolicy.isUnderPromptLimit(promptState({ count: 2 }))).toBe(true);
-  });
-
-  it('닫기 횟수가 상한(3)과 같으면 false를 반환한다', () => {
-    expect(MarketingPushPromptPolicy.isUnderPromptLimit(promptState({ count: 3 }))).toBe(false);
-  });
-
-  it('닫기 횟수가 상한을 초과하면 false를 반환한다', () => {
-    expect(MarketingPushPromptPolicy.isUnderPromptLimit(promptState({ count: 4 }))).toBe(false);
-  });
-});
-
-describe('hasCooldownElapsed', () => {
-  it('한 번도 닫은 적 없으면(null) true를 반환한다', () => {
-    expect(
-      MarketingPushPromptPolicy.hasCooldownElapsed(promptState({ lastPromptedAt: null }), NOW),
-    ).toBe(true);
-  });
-
-  it('마지막 닫기로부터 정확히 쿨다운(14일)이 지나면 true를 반환한다', () => {
+  it('마지막 닫기로부터 정확히 쿨다운(14일)이 지나면 노출한다', () => {
     const state = promptState({
       lastPromptedAt: toInstant(dayjs(NOW).subtract(14, 'day').toISOString()),
     });
-    expect(MarketingPushPromptPolicy.hasCooldownElapsed(state, NOW)).toBe(true);
+    expect(MarketingPushPromptPolicy.shouldPrompt(notAgreed, state, NOW)).toBe(true);
   });
 
-  it('쿨다운이 1ms 모자라면 false를 반환한다', () => {
+  it('쿨다운이 1ms 모자라면 노출하지 않는다', () => {
     const state = promptState({
       lastPromptedAt: toInstant(dayjs(NOW).subtract(14, 'day').add(1, 'millisecond').toISOString()),
     });
-    expect(MarketingPushPromptPolicy.hasCooldownElapsed(state, NOW)).toBe(false);
+    expect(MarketingPushPromptPolicy.shouldPrompt(notAgreed, state, NOW)).toBe(false);
   });
 
-  it('쿨다운을 훨씬 넘겼으면 true를 반환한다', () => {
-    const state = promptState({
-      lastPromptedAt: toInstant(dayjs(NOW).subtract(20, 'day').toISOString()),
-    });
-    expect(MarketingPushPromptPolicy.hasCooldownElapsed(state, NOW)).toBe(true);
-  });
-});
-
-describe('MarketingPushPromptPolicy.shouldPrompt', () => {
   it('동의 정보 로딩 전(undefined)이면 노출하지 않는다', () => {
     expect(MarketingPushPromptPolicy.shouldPrompt(undefined, promptState(), NOW)).toBe(false);
   });

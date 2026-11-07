@@ -25,13 +25,20 @@ const createProgress = (overrides?: Partial<ActivationProgress>): ActivationProg
 });
 
 describe('ActivationPolicy', () => {
-  describe('isNewUserCohort', () => {
+  describe('신규 코호트', () => {
+    const now = toInstant('2026-08-02T00:00:00.000Z');
+
     it('캠페인 시작 시각에 가입한 사용자를 신규 코호트로 분류한다', () => {
       // Given
       const user = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
 
       // When
-      const result = ActivationPolicy.isNewUserCohort(createConfig(), user);
+      const result = ActivationPolicy.isChecklistEligible({
+        config: createConfig(),
+        user,
+        progress: createProgress(),
+        now,
+      });
 
       // Then
       expect(result).toBe(true);
@@ -42,7 +49,12 @@ describe('ActivationPolicy', () => {
       const user = { id: 'existing-user', createdAt: toInstant('2026-07-31T23:59:59.999Z') };
 
       // When
-      const result = ActivationPolicy.isNewUserCohort(createConfig(), user);
+      const result = ActivationPolicy.isChecklistEligible({
+        config: createConfig(),
+        user,
+        progress: createProgress(),
+        now,
+      });
 
       // Then
       expect(result).toBe(false);
@@ -53,11 +65,18 @@ describe('ActivationPolicy', () => {
       const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
       // When
-      const disabled = ActivationPolicy.isNewUserCohort({ enabled: false }, user);
-      const unknown = ActivationPolicy.isNewUserCohort(
-        createConfig({ campaignId: 'unknown-campaign' }),
+      const disabled = ActivationPolicy.isChecklistEligible({
+        config: { enabled: false },
         user,
-      );
+        progress: createProgress(),
+        now,
+      });
+      const unknown = ActivationPolicy.isChecklistEligible({
+        config: createConfig({ campaignId: 'unknown-campaign' }),
+        user,
+        progress: createProgress(),
+        now,
+      });
 
       // Then
       expect(disabled).toBe(false);

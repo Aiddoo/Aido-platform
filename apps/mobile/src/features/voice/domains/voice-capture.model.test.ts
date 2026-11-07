@@ -233,14 +233,14 @@ describe('reduceVoiceCapture', () => {
 
     // When
     const results = [
-      VoiceCapturePolicy.isStopAcknowledgement(listening, 'client', true),
-      VoiceCapturePolicy.isStopAcknowledgement(paused, 'client', false),
-      VoiceCapturePolicy.isStopAcknowledgement(listening, 'client', false),
-      VoiceCapturePolicy.isStopAcknowledgement(listening, 'audio-capture', true),
+      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', true),
+      VoiceCapturePolicy.isRecognizerFailure(paused, 'client', false),
+      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', false),
+      VoiceCapturePolicy.isRecognizerFailure(listening, 'audio-capture', true),
     ];
 
     // Then
-    expect(results).toEqual([true, true, false, false]);
+    expect(results).toEqual([false, false, true, true]);
   });
 
   it('계획에 실패해도 글자는 그대로 두고 다시 시도할 수 있다', () => {
@@ -413,22 +413,6 @@ describe('VoiceCapturePolicy', () => {
 
     // Then
     expect(result).toBe(expected);
-  });
-
-  it('일시정지 구간을 제외한 시간으로 90초 제한과 남은 시간을 계산한다', () => {
-    // Given
-    const listening = createCaptureState({
-      status: 'listening',
-      listeningSince: NOW,
-      elapsedMs: 60_000,
-    });
-
-    // When
-    const at29s = VoiceCapturePolicy.isOverQuickLimit(listening, NOW + 29_999);
-    const at30s = VoiceCapturePolicy.isOverQuickLimit(listening, NOW + 30_000);
-
-    // Then
-    expect([at29s, at30s]).toEqual([false, true]);
   });
 
   describe('멈춘 인식기 판단', () => {

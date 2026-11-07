@@ -144,6 +144,5 @@ export const ActivationPolicy = {
   getDaysSinceSignup,
   isChecklistEligible,
   isChecklistVisible,
-  isNewUserCohort,
   shouldRegisterPushAutomatically,
 } as const;

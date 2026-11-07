@@ -15,6 +15,7 @@ import {
   createDigestInput,
   createDigestMemo,
   hasNoPlannedTodos,
+  isRecordingFileExpired,
   VoiceNotePolicy,
   withDigestResult,
   withPlanDraft,
@@ -199,13 +200,13 @@ describe('VoiceNotePolicy.isExpired', () => {
   });
 });
 
-describe('VoiceNotePolicy.isRecordingFileExpired', () => {
+describe('isRecordingFileExpired', () => {
   test('수정 시각을 모르는 파일은 기한이 지난 것으로 본다', () => {
     // Given
     const now = toInstant('2026-11-05T00:00:00.000Z');
 
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired(null, now);
+    const result = isRecordingFileExpired(null, now);
 
     // Then
     expect(result).toBe(true);

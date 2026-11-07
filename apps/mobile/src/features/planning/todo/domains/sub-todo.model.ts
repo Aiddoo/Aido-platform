@@ -43,19 +43,8 @@ function withSubTodos<T extends SubTodoParent>(parent: T, subTodos: SubTodo[]): 
   return { ...parent, subTodos, subTodoStats: calculateSubTodoStats(subTodos) };
 }
 
-function getCompletionRatio(stats: SubTodoStats): number {
-  if (stats.total === 0) {
-    return 0;
-  }
-  return stats.completed / stats.total;
-}
-
 function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boolean {
   return !isMaxSubTodosReached(parentTodo.subTodoStats);
-}
-
-function getSubTodoCompletionProgress(parentTodo: { subTodoStats: SubTodoStats }): number {
-  return getCompletionRatio(parentTodo.subTodoStats);
 }
 
 function withSubTodoToggled<T extends SubTodoParent>(
@@ -139,7 +128,6 @@ function hasTitleChanged(subTodo: Pick<SubTodo, 'title'>, title: string): boolea
 export const SubTodoPolicy = {
   canAddSubTodo,
   isOptimisticSubTodo,
-  getSubTodoCompletionProgress,
   hasTitleChanged,
   withSubTodoToggled,
   withSubTodoAdded,

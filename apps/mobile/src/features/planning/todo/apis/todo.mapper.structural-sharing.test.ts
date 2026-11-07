@@ -1,7 +1,6 @@
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 
 import { createTodoDto } from '../__tests__/todo.fixtures';
-import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { TodoPolicy } from '../domains/todo.model';
 import { todoSchema } from '../schemas/todo.schema';
 import { toTodo } from './todo.mapper';
@@ -34,7 +33,7 @@ describe('Todo 클라이언트 모델과 캐시', () => {
 
     expect(TodoPolicy.isRecurringTodo(todo)).toBe(true);
     expect(TodoPolicy.hasSubTodos(todo)).toBe(true);
-    expect(SubTodoPolicy.getSubTodoCompletionProgress(todo)).toBe(0.25);
+    expect(todo.subTodoStats).toEqual({ total: 4, completed: 1 });
     expect(todo).not.toHaveProperty('itemStats');
     expect(todo).not.toHaveProperty('items');
   });

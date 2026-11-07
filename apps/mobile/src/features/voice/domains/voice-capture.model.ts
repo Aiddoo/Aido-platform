@@ -373,6 +373,11 @@ function isActive(state: VoiceCaptureState): boolean {
   );
 }
 
+/** 음성이 돌지 않고 계획도 없어 손으로 입력하는 때 */
+function isManualInput(state: Pick<VoiceCaptureState, 'status'>): boolean {
+  return state.status === 'idle' || state.status === 'failed';
+}
+
 function isWrappingUp(state: VoiceCaptureState): boolean {
   return state.status === 'finalizing' || state.status === 'planning';
 }
@@ -458,20 +463,11 @@ function getRemainingCaptureMs(state: VoiceCaptureState, maxSeconds: number, now
   return Math.max(0, maxSeconds * 1_000 - getElapsedMs(state, now));
 }
 
-function isOverQuickLimit(
-  state: VoiceCaptureState,
-  now: number,
-  maxSeconds: number = QUICK_CAPTURE_MAX_SECONDS,
-): boolean {
-  return getElapsedMs(state, now) >= maxSeconds * 1_000;
-}
-
 function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
   return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * 1_000;
 }
 
 export const VoiceCapturePolicy = {
-  isStopAcknowledgement,
   isRecognizerFailure,
   isRestartLooping,
   getCaptureOutcome,
@@ -479,6 +475,7 @@ export const VoiceCapturePolicy = {
   shouldRestartSegment,
   shouldRestartStalledRecognizer,
   isActive,
+  isManualInput,
   isWrappingUp,
   canFinish,
   canResume,
@@ -486,7 +483,6 @@ export const VoiceCapturePolicy = {
   canRetryPlanning,
   shouldAutoFinish,
   isSpeaking,
-  isOverQuickLimit,
   shouldOfferVoiceNote,
   getDismissAction,
   isChargedReview,

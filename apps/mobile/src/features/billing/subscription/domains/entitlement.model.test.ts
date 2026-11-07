@@ -86,9 +86,10 @@ describe('EntitlementPolicy', () => {
       const usedUp = createEntitlementSnapshot({
         used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free },
       });
-      const quota = EntitlementPolicy.findFeatureQuota(usedUp, 'AI_PARSE');
-      const snapshot =
-        quota == null ? usedUp : EntitlementPolicy.withFeatureQuota(usedUp, { ...quota, resetsAt });
+      const snapshot = EntitlementPolicy.withFeatureQuota(usedUp, {
+        ...toFeatureQuota(createFeatureQuotaDto('AI_PARSE', { used: PLAN_CATALOG.AI_PARSE.free })),
+        resetsAt,
+      });
 
       // When
       const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
@@ -256,7 +257,7 @@ describe('EntitlementPolicy', () => {
     });
   });
 
-  describe('getFreeLimit', () => {
+  describe('getPlanBenefitAmounts', () => {
     it('무료 사용자는 초대로 늘어난 자리를 반영한 서버 한도를 안내한다', () => {
       // Given
       const snapshot = EntitlementPolicy.withFeatureQuota(
@@ -265,10 +266,10 @@ describe('EntitlementPolicy', () => {
       );
 
       // When
-      const limit = EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND');
+      const { free } = EntitlementPolicy.getPlanBenefitAmounts(snapshot);
 
       // Then
-      expect(limit).toBe(7);
+      expect(free.friend).toBe(7);
     });
 
     it.each(['PREMIUM', 'ADMIN'] as const)('%s는 카탈로그의 무료 한도를 안내한다', (tier) => {
@@ -276,10 +277,10 @@ describe('EntitlementPolicy', () => {
       const snapshot = createEntitlementSnapshot({ tier });
 
       // When
-      const limit = EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND');
+      const { free } = EntitlementPolicy.getPlanBenefitAmounts(snapshot);
 
       // Then
-      expect(limit).toBe(PLAN_CATALOG.FRIEND.free);
+      expect(free.friend).toBe(PLAN_CATALOG.FRIEND.free);
     });
   });
 

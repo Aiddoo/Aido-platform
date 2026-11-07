@@ -43,8 +43,5 @@ function shouldPrompt(
 }
 
 export const MarketingPushPromptPolicy = {
-  isNotAgreedToMarketingPush,
-  isUnderPromptLimit,
-  hasCooldownElapsed,
   shouldPrompt,
 } as const;
