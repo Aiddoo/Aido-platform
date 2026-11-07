@@ -11,8 +11,6 @@ export function useGetCurrentAppIconQueryOptions() {
     queryFn: ({ signal }) => appIconService.getCurrentIcon(signal),
     // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',
-    enabled: appIconService.isSupported(),
     retry: false,
-    throwOnError: true,
   });
 }

@@ -1,4 +1,4 @@
-import { isReadLongEnough } from './coachmark.model';
+import { CoachmarkPolicy } from './coachmark.model';
 
 describe('isReadLongEnough', () => {
   it.each([
@@ -12,7 +12,7 @@ describe('isReadLongEnough', () => {
     { title: '한참 보면 읽은 것으로 본다', visibleMs: 30_000, expected: true },
   ])('$title', ({ visibleMs, expected }) => {
     // When
-    const result = isReadLongEnough(visibleMs);
+    const result = CoachmarkPolicy.isReadLongEnough(visibleMs);
 
     // Then
     expect(result).toBe(expected);

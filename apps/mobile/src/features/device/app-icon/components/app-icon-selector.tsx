@@ -13,14 +13,13 @@ import { AppIconPicker } from './app-icon-picker';
 
 export function AppIconSelector() {
   const { t } = useTranslation(['appIcon', 'common']);
-  const { data: currentIconKey } = useSuspenseQuery(useGetCurrentAppIconQueryOptions());
+  const { data: currentIcon } = useSuspenseQuery(useGetCurrentAppIconQueryOptions());
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const { mutate: changeIcon, isPending: isChanging } = useMutation(
     useChangeAppIconMutationOptions(),
   );
   const confirmDialog = useConfirmDialog();
   const gate = useEntitlementGate('APP_ICON', { surface: 'app_icon_settings' });
-  const currentIcon = currentIconKey ?? 'default';
   const isIconLocked = !EntitlementPolicy.canUseFeature(entitlements, 'APP_ICON');
 
   const handleIconPress = async (key: AppIconKey) => {

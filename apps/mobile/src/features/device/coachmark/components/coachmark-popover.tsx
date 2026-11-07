@@ -83,8 +83,11 @@ export function CoachmarkPopover({
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && (isPending || isForced)) {
+      // 말풍선을 연 적 없이 닫히면 shown 없는 dismissed로 지표가 부풀지 않게 센다
+      if (hasTrackedShownRef.current) {
+        trackEvent('coachmark_dismissed', { kind });
+      }
       hasTrackedShownRef.current = false;
-      trackEvent('coachmark_dismissed', { kind });
       complete();
       onDismiss?.();
     }

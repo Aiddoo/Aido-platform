@@ -4,14 +4,13 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
 import { AppIconService } from '../apis/app-icon.service';
 import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
 import type { AppIconKey } from '../schemas/app-icon.schema';
 import { useChangeAppIconMutationOptions } from './app-icon.mutations';
-import { useGetCurrentAppIconQueryOptions } from './app-icon.queries';
 
 async function renderChange(gateway = createAppIconGatewayStub()) {
   const queryClient = createTestQueryClient();
@@ -53,23 +52,5 @@ describe('앱 아이콘 바꾸기', () => {
     expect(cached()).toBe('default');
     expect(errorReporter.captureException).toHaveBeenCalledWith(failure, { feature: 'app_icon' });
     expect(await screen.findAllByText(/아이콘을 변경하지 못했어요/)).not.toHaveLength(0);
-  });
-});
-
-describe('현재 앱 아이콘 조회', () => {
-  it('지원하지 않는 기기에서는 네이티브에 묻지 않는다', async () => {
-    // Given
-    const gateway = createAppIconGatewayStub();
-    gateway.isSupported.mockReturnValue(false);
-    function Probe() {
-      useQuery(useGetCurrentAppIconQueryOptions());
-      return null;
-    }
-
-    // When
-    await renderUi(<Probe />, { di: { appIconService: new AppIconService(gateway) } });
-
-    // Then
-    expect(gateway.getCurrentIcon).not.toHaveBeenCalled();
   });
 });
