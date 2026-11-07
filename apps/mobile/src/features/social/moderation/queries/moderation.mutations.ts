@@ -6,7 +6,7 @@ import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { UserReportPolicy } from '../domains/user-report.model';
+import { toUserReportRequest } from '../apis/user-report.mapper';
 import type { BlockTarget } from '../schemas/user-block.schema';
 import type { UserReportFormInput, UserReportTarget } from '../schemas/user-report.schema';
 import { invalidateAfterBlockChange } from './moderation-cache';
@@ -70,11 +70,7 @@ export function useReportContentMutationOptions() {
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async ({ target, form }: ReportContentVariables) =>
-      unwrap(
-        await moderationService.reportContent(
-          UserReportPolicy.createUserReportRequest(target, form),
-        ),
-      ),
+      unwrap(await moderationService.reportContent(toUserReportRequest(target, form))),
     onSuccess: (_result, { target, form }) => {
       trackEvent('content_reported', { target_type: target.targetType, reason: form.reason });
     },

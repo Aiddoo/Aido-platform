@@ -1,8 +1,4 @@
-import type {
-  UserReportFormInput,
-  UserReportRequest,
-  UserReportTarget,
-} from '../schemas/user-report.schema';
+import type { UserReportTarget } from '../schemas/user-report.schema';
 
 function createTodoReportTarget({
   todoId,
@@ -14,7 +10,7 @@ function createTodoReportTarget({
   return { targetUserId: ownerId, targetType: 'TODO', targetId: String(todoId) };
 }
 
-export function createCommentReportTarget({
+function createCommentReportTarget({
   commentId,
   authorId,
 }: {
@@ -48,25 +44,10 @@ function createCheerMessageReportTarget({
   return { targetUserId: senderId, targetType: 'CHEER_MESSAGE', targetId: String(cheerId) };
 }
 
-/** 공백만 적은 상세 내용은 보내지 않아 서버가 상세 없이 접수한다 */
-export function createUserReportRequest(
-  target: UserReportTarget,
-  form: UserReportFormInput,
-): UserReportRequest {
-  const detail = form.detail?.trim();
-
-  return {
-    ...target,
-    reason: form.reason,
-    detail: detail == null || detail.length === 0 ? undefined : detail,
-  };
-}
-
 export const UserReportPolicy = {
   createTodoReportTarget,
   createCommentReportTarget,
   createProfileReportTarget,
   createNudgeMessageReportTarget,
   createCheerMessageReportTarget,
-  createUserReportRequest,
 } as const;
