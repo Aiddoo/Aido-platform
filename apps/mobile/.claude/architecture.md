@@ -162,17 +162,17 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                              | 지금 코드                                                                                                                                   |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| utils 파일                        | 평탄한 `*.view-model.ts` 9개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                          |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1) |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 7개(`shared` 5, `app` 2)                                             |
-| [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                 |
-| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                 |
-| [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                              |
-| [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                |
-| [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                              |
-| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                            |
+| 규칙                              | 지금 코드                                                                                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| utils 파일                        | 평탄한 `*.view-model.ts` 9개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                                  |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1)         |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트를 import하는 파일 3개(`shared/infra/http` 2, `shared/date/time-of-day`). `common`의 서브패스가 없어 남겼다 |
+| [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                         |
+| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                         |
+| [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                      |
+| [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                        |
+| [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                                      |
+| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                    |
 
 ---
 

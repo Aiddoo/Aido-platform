@@ -1,4 +1,4 @@
-import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
+import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
 
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';

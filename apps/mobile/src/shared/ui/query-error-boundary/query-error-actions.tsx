@@ -1,4 +1,4 @@
-import { INQUIRY_CATEGORY } from '@aido/api';
+import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { t, useTranslation } from '@src/shared/i18n';
