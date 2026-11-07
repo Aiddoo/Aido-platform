@@ -9,6 +9,7 @@ import { unwrap } from '@src/core/errors/result';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
@@ -111,7 +112,7 @@ export function useCreateTodoMutationOptions() {
         confirmTodoInList(queryClient, { date: startDate, optimisticId }, saved);
       }
       recordTodoCreatedForActivation({ queryClient, service: activationService });
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      invalidateTodoCategories(queryClient);
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source,
