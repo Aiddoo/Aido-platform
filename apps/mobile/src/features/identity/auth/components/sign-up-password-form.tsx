@@ -4,7 +4,7 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { useFormContext, useWatch, Controller } from 'react-hook-form';
+import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -21,13 +21,14 @@ const PASSWORD_STEPS = ['password', 'passwordConfirm'] as const;
 type PasswordStep = (typeof PASSWORD_STEPS)[number];
 
 interface SignUpPasswordFormProps {
-  /** 약관 동의 후 호출하는 회원가입 제출 함수. 폼과 mutation은 화면이 소유한다. */
+  form: UseFormReturn<SignUpFormInput>;
+  /** 약관 동의 후 호출하는 회원가입 제출 함수 */
   onSubmit: () => Promise<unknown>;
 }
 
-export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
+export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) {
   const { t } = useTranslation('auth');
-  const { control } = useFormContext<SignUpFormInput>();
+  const { control } = form;
   const [password, passwordConfirm] = useWatch({ control, name: ['password', 'passwordConfirm'] });
   const [step, setStep] = useState<PasswordStep>('password');
   const [isTermsOpen, setIsTermsOpen] = useState(false);
@@ -147,7 +148,12 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
         </KeyboardAdaptiveButton>
       </Box>
 
-      <TermsBottomSheet isOpen={isTermsOpen} onOpenChange={setIsTermsOpen} onSubmit={onSubmit} />
+      <TermsBottomSheet
+        form={form}
+        isOpen={isTermsOpen}
+        onOpenChange={setIsTermsOpen}
+        onSubmit={onSubmit}
+      />
     </>
   );
 }

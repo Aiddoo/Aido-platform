@@ -13,36 +13,36 @@ import {
 } from '@src/shared/ui';
 import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { useFormContext, useFormState, useWatch, Controller } from 'react-hook-form';
+import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import type { SignUpFormInput } from '../schemas/sign-up-form.schema';
 
 interface TermsBottomSheetProps {
+  form: UseFormReturn<SignUpFormInput>;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   /** 동의 확인 시 호출하는 회원가입 제출 함수. 폼과 mutation은 화면이 소유한다. */
   onSubmit: () => Promise<unknown>;
 }
 
-export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottomSheetProps) {
+export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: TermsBottomSheetProps) {
   const { t } = useTranslation(['auth', 'common']);
-  const { control, setValue } = useFormContext<SignUpFormInput>();
-  const { isSubmitting } = useFormState({ control });
+  const { isSubmitting } = useFormState({ control: form.control });
   const openUrl = useOpenUrl();
   const { resolvedLanguage } = useLanguage();
 
   const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({
-    control,
+    control: form.control,
     name: ['termsAgreed', 'privacyAgreed', 'marketingAgreed', 'marketingPushAgreed'],
   });
   const isAllAgreed = termsAgreed && privacyAgreed && marketingAgreed && marketingPushAgreed;
   const isRequiredAgreed = termsAgreed && privacyAgreed;
 
   const toggleAll = (isSelected: boolean) => {
-    setValue('termsAgreed', isSelected, { shouldDirty: true });
-    setValue('privacyAgreed', isSelected, { shouldDirty: true });
-    setValue('marketingAgreed', isSelected, { shouldDirty: true });
-    setValue('marketingPushAgreed', isSelected, { shouldDirty: true });
+    form.setValue('termsAgreed', isSelected, { shouldDirty: true });
+    form.setValue('privacyAgreed', isSelected, { shouldDirty: true });
+    form.setValue('marketingAgreed', isSelected, { shouldDirty: true });
+    form.setValue('marketingPushAgreed', isSelected, { shouldDirty: true });
   };
 
   const handleConfirm = async () => {
@@ -69,7 +69,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
 
           <VStack gap={20}>
             <Controller
-              control={control}
+              control={form.control}
               name="termsAgreed"
               render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
@@ -82,7 +82,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
               )}
             />
             <Controller
-              control={control}
+              control={form.control}
               name="marketingPushAgreed"
               render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
@@ -93,7 +93,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
               )}
             />
             <Controller
-              control={control}
+              control={form.control}
               name="privacyAgreed"
               render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
@@ -106,7 +106,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
               )}
             />
             <Controller
-              control={control}
+              control={form.control}
               name="marketingAgreed"
               render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem

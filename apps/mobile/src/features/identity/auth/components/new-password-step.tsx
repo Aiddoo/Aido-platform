@@ -6,29 +6,41 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { useFormContext, useFormState, useWatch, Controller } from 'react-hook-form';
+import { type FieldError } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
-import type { ForgotPasswordFormInput } from '../schemas/forgot-password-form.schema';
-
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
 type NewPasswordSubStep = (typeof NEW_PASSWORD_SUB_STEPS)[number];
 
-type NewPasswordFields = Pick<ForgotPasswordFormInput, 'newPassword' | 'newPasswordConfirm'>;
+interface NewPasswordField {
+  field: { value: string; onChange: (value: string) => void };
+  fieldState: { error?: FieldError };
+}
 
 interface NewPasswordStepProps {
-  /** 부모 폼의 handleSubmit으로 만든 제출 함수. 폼과 mutation은 화면 부모가 소유한다. */
+  /** 부모 폼의 필드. 값과 오류는 부모 폼이 지켜 앞 단계로 돌아가도 입력이 남는다 */
+  newPassword: NewPasswordField;
+  newPasswordConfirm: NewPasswordField;
+  isSubmitting: boolean;
+  /** 부모 폼의 handleSubmit으로 만든 제출 함수 */
   onSubmit: () => Promise<unknown>;
   nextLabel: string;
   submitLabel: string;
 }
 
 /** 새 비밀번호 입력 → 확인 입력 두 단계를 보여 주는 비밀번호 변경·재설정 공용 단계 */
-export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswordStepProps) {
+export function NewPasswordStep({
+  newPassword,
+  newPasswordConfirm,
+  isSubmitting,
+  onSubmit,
+  nextLabel,
+  submitLabel,
+}: NewPasswordStepProps) {
   const { t } = useTranslation('auth');
   const [step, setStep] = useState<NewPasswordSubStep>('newPassword');
   const newPasswordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -36,22 +48,14 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
     newPasswordConfirmInputRef.current?.focus();
   }, []);
 
-  const { control } = useFormContext<NewPasswordFields>();
-  const { isSubmitting, errors } = useFormState({
-    control,
-    name: ['newPassword', 'newPasswordConfirm'],
-  });
-
-  const [newPassword, newPasswordConfirm] = useWatch({
-    control,
-    name: ['newPassword', 'newPasswordConfirm'],
-  });
-
   const isNextEnabled = match(step)
-    .with('newPassword', () => newPassword.length > 0 && !errors.newPassword)
+    .with('newPassword', () => newPassword.field.value.length > 0 && !newPassword.fieldState.error)
     .with(
       'newPasswordConfirm',
-      () => newPasswordConfirm.length > 0 && !errors.newPassword && !errors.newPasswordConfirm,
+      () =>
+        newPasswordConfirm.field.value.length > 0 &&
+        !newPassword.fieldState.error &&
+        !newPasswordConfirm.fieldState.error,
     )
     .exhaustive();
 
@@ -80,62 +84,53 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
               })}
           >
             <VStack mb={8}>
-              <Controller
-                control={control}
-                name="newPasswordConfirm"
-                render={({ field: { onChange, value }, fieldState: { error } }) => (
-                  <PasswordInput
-                    ref={newPasswordConfirmInputRef}
-                    label={t('forgotPassword.newPasswordConfirmLabel')}
-                    placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    textContentType="newPassword"
-                    autoComplete="new-password"
-                    returnKeyType="done"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'password.mismatch',
-                    })}
-                    onSubmitEditing={() => {
-                      if (newPasswordConfirm.length > 0 && !error) {
-                        handleNext();
-                      }
-                    }}
-                  />
-                )}
+              <PasswordInput
+                ref={newPasswordConfirmInputRef}
+                label={t('forgotPassword.newPasswordConfirmLabel')}
+                placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
+                value={newPasswordConfirm.field.value}
+                onChange={newPasswordConfirm.field.onChange}
+                textContentType="newPassword"
+                autoComplete="new-password"
+                returnKeyType="done"
+                isInvalid={!!newPasswordConfirm.fieldState.error}
+                errorMessage={resolveValidationMessage(newPasswordConfirm.fieldState.error, {
+                  default: 'password.mismatch',
+                })}
+                onSubmitEditing={() => {
+                  if (
+                    newPasswordConfirm.field.value.length > 0 &&
+                    !newPasswordConfirm.fieldState.error
+                  ) {
+                    handleNext();
+                  }
+                }}
               />
             </VStack>
           </Animated.View>
         )}
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <Controller
-            control={control}
-            name="newPassword"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <VStack gap={4}>
-                <PasswordInput
-                  label={t('forgotPassword.newPasswordLabel')}
-                  placeholder={t('forgotPassword.newPasswordPlaceholder')}
-                  value={value}
-                  onChange={onChange}
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  autoFocus={step === 'newPassword'}
-                  submitBehavior="submit"
-                  returnKeyType="next"
-                  renderErrorMessage={false}
-                  onSubmitEditing={() => {
-                    if (newPassword.length > 0 && !error) {
-                      handleNext();
-                    }
-                  }}
-                />
-                <PasswordStrengthIndicator password={newPassword} />
-              </VStack>
-            )}
-          />
+          <VStack gap={4}>
+            <PasswordInput
+              label={t('forgotPassword.newPasswordLabel')}
+              placeholder={t('forgotPassword.newPasswordPlaceholder')}
+              value={newPassword.field.value}
+              onChange={newPassword.field.onChange}
+              textContentType="newPassword"
+              autoComplete="new-password"
+              autoFocus={step === 'newPassword'}
+              submitBehavior="submit"
+              returnKeyType="next"
+              renderErrorMessage={false}
+              onSubmitEditing={() => {
+                if (newPassword.field.value.length > 0 && !newPassword.fieldState.error) {
+                  handleNext();
+                }
+              }}
+            />
+            <PasswordStrengthIndicator password={newPassword.field.value} />
+          </VStack>
         </Animated.View>
       </FormStepLayout>
 

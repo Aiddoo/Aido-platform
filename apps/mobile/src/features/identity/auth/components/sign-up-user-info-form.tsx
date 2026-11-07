@@ -11,7 +11,7 @@ import {
 } from '@src/shared/ui';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { useFormContext, useWatch, Controller } from 'react-hook-form';
+import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -29,12 +29,13 @@ const STEP_DESCRIPTION_KEYS = {
 } as const satisfies Record<UserInfoStep, string>;
 
 interface SignUpUserInfoFormProps {
+  form: UseFormReturn<SignUpFormInput>;
   onNextStep: () => void;
 }
 
-export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
+export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps) {
   const { t } = useTranslation(['auth']);
-  const { control } = useFormContext<SignUpFormInput>();
+  const { control } = form;
   const [email, name] = useWatch({ control, name: ['email', 'name'] });
   const [step, setStep] = useState<UserInfoStep>('name');
   const emailInputRef = useRef<ComponentRef<typeof TextInput>>(null);
