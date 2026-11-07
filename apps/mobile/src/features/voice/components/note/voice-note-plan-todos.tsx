@@ -20,11 +20,14 @@ import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { voicePlanIdSchema } from '../../schemas/voice-plan.schema';
 import { PlanReview } from '../plan/plan-review';
 
-interface VoiceNotePlanTodosProps extends Pick<ComponentProps<typeof PlanReview>, 'className'> {
+interface VoiceNotePlanTodosProps extends Pick<
+  ComponentProps<typeof PlanReview>,
+  'className' | 'onMemoChanged'
+> {
   note: VoiceNote;
 }
 
-export function VoiceNotePlanTodos({ note, className }: VoiceNotePlanTodosProps) {
+export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
   const { drafts } = useVoiceNoteStorageService();
@@ -86,6 +89,7 @@ export function VoiceNotePlanTodos({ note, className }: VoiceNotePlanTodosProps)
             planDraft,
           )}
           fallbackCategoryId={fallbackCategoryId}
+          onMemoChanged={onMemoChanged}
           requestStore={{
             find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
             save: (request) => {

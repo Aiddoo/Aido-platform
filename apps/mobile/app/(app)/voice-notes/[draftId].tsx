@@ -1,3 +1,4 @@
+import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { VoiceNoteDigest } from '@src/features/voice/components/note/voice-note-digest';
 import { VoiceNoteResult } from '@src/features/voice/components/note/voice-note-result';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
@@ -11,6 +12,7 @@ import { Suspense } from 'react';
 function VoiceNoteScreen() {
   const { t } = useTranslation('voiceNote');
   const { note } = useCurrentVoiceNote();
+  const refreshMemos = useRefreshMemos();
 
   if (note == null) {
     return (
@@ -21,7 +23,11 @@ function VoiceNoteScreen() {
     );
   }
 
-  return note.digest == null ? <VoiceNoteDigest note={note} /> : <VoiceNoteResult note={note} />;
+  return note.digest == null ? (
+    <VoiceNoteDigest note={note} onMemoChanged={refreshMemos} />
+  ) : (
+    <VoiceNoteResult note={note} onMemoChanged={refreshMemos} />
+  );
 }
 
 export default function VoiceNoteRoute() {

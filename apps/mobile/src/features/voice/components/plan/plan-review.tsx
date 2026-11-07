@@ -91,6 +91,8 @@ interface PlanReviewProps extends Pick<ComponentProps<typeof VStack>, 'className
   requestStore?: PlanApplyRequestStore;
   /** 저장이 끝났다. 화면이 내려간 뒤에 응답이 와도 불리므로 저장 표시를 여기서 남긴다 */
   onSaved?: (saved: { todoCount: number }) => void;
+  /** 메모가 생기거나 원본 메모가 사라졌다. 메모 목록은 메모를 아는 쪽이 다시 읽는다 */
+  onMemoChanged: () => void;
   /** 화면이 떠 있을 때 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
   onApplied?: () => void;
   onSourceMissing?: () => void;
@@ -105,6 +107,7 @@ export function PlanReview({
   secondaryAction,
   requestStore,
   onSaved,
+  onMemoChanged,
   onApplied,
   onSourceMissing,
   className,
@@ -128,7 +131,7 @@ export function PlanReview({
       })),
   });
   const { isValid } = useFormState({ control });
-  const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved }));
+  const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved, onMemoChanged }));
   const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
 
   const selection = PlanReviewPolicy.toPlanSelection({ actions });

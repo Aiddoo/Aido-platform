@@ -16,10 +16,6 @@ import { recordTodoCreatedForActivation } from '@src/features/device/activation/
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import {
-  invalidateMemoList,
-  invalidateMemoResourceLimit,
-} from '@src/features/notes/memo/queries/memo-cache';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -49,16 +45,19 @@ export interface ApplyActionPlanParams {
 interface UseApplyActionPlanMutationOptionsParams {
   /** 저장이 끝났다. `mutate` 콜백과 달리 화면이 내려간 뒤에 응답이 와도 불린다 */
   onSaved?: (saved: { todoCount: number }) => void;
+  /** 메모가 생기거나 원본 메모가 사라졌다. 메모 목록을 다시 읽는 일은 메모를 아는 쪽이 맡는다 */
+  onMemoChanged: () => void;
 }
 
 /**
  * 확인한 행동을 저장한다. 횟수는 차감하지 않고, 같은 키로 다시 보내면 서버가 저장한 결과를 돌려준다.
- * 메모에서 만든 계획은 저장에 성공하면 서버가 원본 메모를 지운다. 메모 목록과 개수 한도를 다시 읽고,
- * 화면이 떠나는 중이라 상세 캐시는 건드리지 않는다(예전 메모 변환과 같다).
+ * 메모에서 만든 계획은 저장에 성공하면 서버가 원본 메모를 지운다. 메모 목록을 다시 읽는 일은
+ * `onMemoChanged`로 넘기고, 화면이 떠나는 중이라 상세 캐시는 건드리지 않는다(예전 메모 변환과 같다).
  */
 export function useApplyActionPlanMutationOptions({
   onSaved,
-}: UseApplyActionPlanMutationOptionsParams = {}) {
+  onMemoChanged,
+}: UseApplyActionPlanMutationOptionsParams) {
   const haptics = useHaptics();
   const voiceService = useVoiceService();
   const activationService = useActivationService();
@@ -88,8 +87,7 @@ export function useApplyActionPlanMutationOptions({
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
-        invalidateMemoList(queryClient);
-        invalidateMemoResourceLimit(queryClient);
+        onMemoChanged();
       }
       toast.success(
         todoCount > 0 && hasMemo
@@ -130,7 +128,7 @@ export function useApplyActionPlanMutationOptions({
         invalidateTodoCategories(queryClient);
       }
       if (cause === 'source-memo-missing') {
-        invalidateMemoList(queryClient);
+        onMemoChanged();
       }
       toast.error(t(`voicePlan:failure.${cause}.title`), {
         description: t(`voicePlan:failure.${cause}.description`),

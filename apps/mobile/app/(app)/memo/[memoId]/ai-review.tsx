@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useMemoScreenParams } from '@src/features/notes/memo/hooks/use-memo-params';
+import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { useGetMemoQueryOptions } from '@src/features/notes/memo/queries/memo.queries';
 import { memoScreenParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
 import { createMemoPlanDraftKey } from '@src/features/notes/memo/utils/memo-plan-draft';
@@ -30,6 +31,7 @@ function AiReviewScreen() {
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
   const toast = useAppToast();
+  const refreshMemos = useRefreshMemos();
   const { memoId } = useMemoScreenParams();
   const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
@@ -84,6 +86,7 @@ function AiReviewScreen() {
       form={form}
       plan={PlanReviewPolicy.toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
       fallbackCategoryId={fallbackCategoryId}
+      onMemoChanged={refreshMemos}
       onApplied={() => {
         discardDraft();
         dismiss();

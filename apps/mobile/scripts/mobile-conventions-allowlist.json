@@ -152,10 +152,6 @@
         "count": 1,
         "reason": "같은 영역. auth가 내 정보를 캐시에 넣고 user가 로그아웃 훅을 쓴다"
       },
-      "notes/memo <-> voice": {
-        "count": 1,
-        "reason": "voice→memo는 계획 적용 뒤 메모 캐시 갱신 한 줄. 이벤트나 위층 조립으로 끊을 예정"
-      },
       "planning/category <-> planning/todo": {
         "count": 1,
         "reason": "카테고리 href, 파라미터 훅 이동이 남았다(7단계)"

@@ -24,12 +24,19 @@ function closeScreen() {
   }
 }
 
-export function VoiceNoteToolbar({ note }: { note: VoiceNote }) {
+interface VoiceNoteToolbarProps {
+  note: VoiceNote;
+  onMemoChanged: () => void;
+}
+
+export function VoiceNoteToolbar({ note, onMemoChanged }: VoiceNoteToolbarProps) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
-  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo(note);
+  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo(note, {
+    onMemoChanged,
+  });
   const saveMemoLabel = isMemoSaved ? t('result.memoSaved') : t('result.saveMemo');
 
   const handleDelete = async () => {

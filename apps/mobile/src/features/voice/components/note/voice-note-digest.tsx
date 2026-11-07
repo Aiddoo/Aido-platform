@@ -19,7 +19,11 @@ interface VoiceNoteDigestProps {
   note: VoiceNote;
 }
 
-export function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
+interface VoiceNoteDigestScreenProps extends VoiceNoteDigestProps {
+  onMemoChanged: () => void;
+}
+
+export function VoiceNoteDigest({ note, onMemoChanged }: VoiceNoteDigestScreenProps) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
   const { digest, isPending, failure } = useVoiceNoteDigest({ accountId, draftId });
@@ -31,7 +35,7 @@ export function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
       <Stack.Screen options={{ title: t('digest.readyTitle') }} />
-      <VoiceNoteToolbar note={note} />
+      <VoiceNoteToolbar note={note} onMemoChanged={onMemoChanged} />
       <SentenceCaptionList sentences={note.sentences} className="min-h-24 flex-1" />
       {failure != null && <VoiceNoteDigest.Failure failure={failure} />}
       {(failure == null || canRetryPlanFailure(failure.cause)) && (

@@ -64,17 +64,21 @@ import {
 } from './todo-composer-fields';
 
 /** 기본 카테고리가 폼 기본값을 정하므로, 카테고리를 읽는 동안에는 시트를 띄우지 않아 폼이 열린 뒤 바뀌지 않게 한다. */
-export function TodoCreateBottomSheet() {
+interface TodoCreateBottomSheetProps {
+  onMemoChanged: () => void;
+}
+
+export function TodoCreateBottomSheet({ onMemoChanged }: TodoCreateBottomSheetProps) {
   return (
     <QueryErrorBoundary fallback={TodoCreateBottomSheet.Error}>
       <Suspense fallback={null}>
-        <TodoCreateBottomSheet.Form />
+        <TodoCreateBottomSheet.Form onMemoChanged={onMemoChanged} />
       </Suspense>
     </QueryErrorBoundary>
   );
 }
 
-TodoCreateBottomSheet.Form = function Form() {
+TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSheetProps) {
   const sheet = useSheetRoute('/feed');
   const date = useTodoSheetDateParam();
   const requestedCategoryId = useTodoCreateCategoryParam();
@@ -113,6 +117,7 @@ TodoCreateBottomSheet.Form = function Form() {
       onOpenChange={sheet.onOpenChange}
       onClose={() => sheet.close()}
       onExit={() => sheet.exit()}
+      onMemoChanged={onMemoChanged}
     />
   );
 };
@@ -141,6 +146,7 @@ interface TodoCreateFormProps {
   onClose: () => void;
   /** 닫기 애니메이션 없이 바로 다른 화면으로 떠날 때(구독 화면 이동) */
   onExit: () => void;
+  onMemoChanged: () => void;
 }
 
 function TodoCreateForm({
@@ -150,6 +156,7 @@ function TodoCreateForm({
   onOpenChange,
   onClose,
   onExit,
+  onMemoChanged,
 }: TodoCreateFormProps) {
   const { t } = useTranslation('todo');
   const { t: tVoice } = useTranslation('voice');
@@ -314,6 +321,7 @@ function TodoCreateForm({
             <TodoCreateVoiceReview
               plan={plan}
               isCharged={isCharged}
+              onMemoChanged={onMemoChanged}
               onApplied={onClose}
               onRestart={voice.restart}
               onTypeInstead={voice.typeInstead}

@@ -2,7 +2,6 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
-import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import {
   createMemorySyncStorage,
   createAnalyticsStub,
@@ -34,8 +33,14 @@ const TODO_ACTION: PlannedAction = {
   duplicateOfTodoId: null,
 };
 
-function ApplyProbe({ sourceMemoId }: { sourceMemoId: number | null }) {
-  const mutation = useMutation(useApplyActionPlanMutationOptions());
+function ApplyProbe({
+  sourceMemoId,
+  onMemoChanged,
+}: {
+  sourceMemoId: number | null;
+  onMemoChanged: () => void;
+}) {
+  const mutation = useMutation(useApplyActionPlanMutationOptions({ onMemoChanged }));
 
   return (
     <Button
@@ -60,9 +65,9 @@ async function renderApply(sourceMemoId: number | null) {
   const httpClient = createHttpClientStub();
   httpClient.post.mockResolvedValue(ok({ todos: [], memo: null }));
   const queryClient = createTestQueryClient();
-  const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+  const onMemoChanged = jest.fn();
 
-  await renderUi(<ApplyProbe sourceMemoId={sourceMemoId} />, {
+  await renderUi(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
     di: {
       analytics,
       voiceService: new VoiceService(httpClient, silentLogger),
@@ -74,13 +79,13 @@ async function renderApply(sourceMemoId: number | null) {
   });
   await fireEvent.press(screen.getByText('저장'));
 
-  return { analytics, httpClient, invalidate };
+  return { analytics, httpClient, onMemoChanged };
 }
 
 describe('useApplyActionPlanMutationOptions', () => {
-  test('메모 계획은 원본 메모를 함께 보내고 메모 목록·한도를 다시 읽으며 예전 전환 이벤트도 보낸다', async () => {
+  test('메모 계획은 원본 메모를 함께 보내고 메모가 바뀌었다고 알리며 예전 전환 이벤트도 보낸다', async () => {
     // Given & When
-    const { analytics, httpClient, invalidate } = await renderApply(42);
+    const { analytics, httpClient, onMemoChanged } = await renderApply(42);
 
     // Then
     await waitFor(() =>
@@ -98,13 +103,12 @@ describe('useApplyActionPlanMutationOptions', () => {
       'voice_plan_applied',
       expect.objectContaining({ source: 'memo' }),
     );
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: MEMO_QUERY_KEYS.list() });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });
+    expect(onMemoChanged).toHaveBeenCalledTimes(1);
   });
 
   test('메모가 아닌 계획은 원본 메모를 보내지 않고 전환 이벤트도 보내지 않는다', async () => {
     // Given & When
-    const { analytics, httpClient } = await renderApply(null);
+    const { analytics, httpClient, onMemoChanged } = await renderApply(null);
 
     // Then
     await waitFor(() =>
@@ -114,6 +118,7 @@ describe('useApplyActionPlanMutationOptions', () => {
       ),
     );
     expect(httpClient.post.mock.calls[0]?.[1]).not.toHaveProperty('sourceMemoId');
+    expect(onMemoChanged).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(
       'memo_converted_to_todos',
       expect.anything(),

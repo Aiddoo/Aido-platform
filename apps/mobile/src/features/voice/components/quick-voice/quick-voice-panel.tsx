@@ -221,6 +221,7 @@ QuickVoicePanel.CardsLoading = function CardsLoading() {
 
 interface ReviewProps extends CapturedPlan {
   fallbackCategoryId: number;
+  onMemoChanged: () => void;
   onApplied: () => void;
   onRestart: () => void;
   onTypeInstead: () => void;
@@ -231,6 +232,7 @@ QuickVoicePanel.Review = function Review({
   plan,
   isCharged,
   fallbackCategoryId,
+  onMemoChanged,
   onApplied,
   onRestart,
   onTypeInstead,
@@ -273,6 +275,7 @@ QuickVoicePanel.Review = function Review({
             restartButton
           )
         }
+        onMemoChanged={onMemoChanged}
         onApplied={onApplied}
       />
     </Animated.View>

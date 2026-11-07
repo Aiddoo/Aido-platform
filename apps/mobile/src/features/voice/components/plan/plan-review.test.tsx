@@ -93,6 +93,7 @@ function PlanReviewScreen({
       plan={plan}
       isCharged={isCharged}
       fallbackCategoryId={1}
+      onMemoChanged={jest.fn()}
       onApplied={jest.fn()}
     />
   );

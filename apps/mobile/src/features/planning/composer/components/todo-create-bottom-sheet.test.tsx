@@ -35,7 +35,7 @@ async function renderCreateSheet() {
   await renderUi(
     <LocalDateProvider>
       <OverlayProvider>
-        <TodoCreateBottomSheet />
+        <TodoCreateBottomSheet onMemoChanged={jest.fn()} />
       </OverlayProvider>
     </LocalDateProvider>,
     {

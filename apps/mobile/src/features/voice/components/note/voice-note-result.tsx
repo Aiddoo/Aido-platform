@@ -45,7 +45,12 @@ import { VoiceNoteToolbar } from './voice-note-toolbar';
 
 const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
 
-export function VoiceNoteResult({ note }: { note: VoiceNote }) {
+interface VoiceNoteResultProps {
+  note: VoiceNote;
+  onMemoChanged: () => void;
+}
+
+export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
   const [tab, setTab] = useVoiceNoteTab();
   const isCompact = useWindowSizeClass() === 'compact';
   const { player, canPlay } = useVoiceNoteResultPlayer(note);
@@ -56,7 +61,7 @@ export function VoiceNoteResult({ note }: { note: VoiceNote }) {
   return (
     <VStack flex={1} gap={12} className="px-4 pt-2">
       <Stack.Screen options={{ title: '' }} />
-      <VoiceNoteToolbar note={note} />
+      <VoiceNoteToolbar note={note} onMemoChanged={onMemoChanged} />
       <VoiceNoteResult.Title note={note} />
       <VoiceNotePlayerBar
         player={player}
@@ -72,7 +77,9 @@ export function VoiceNoteResult({ note }: { note: VoiceNote }) {
               .with('summary', () => (
                 <VoiceNoteResult.Summary note={note} player={player} canPlay={canPlay} />
               ))
-              .with('todos', () => <VoiceNoteResult.Todos note={note} />)
+              .with('todos', () => (
+                <VoiceNoteResult.Todos note={note} onMemoChanged={onMemoChanged} />
+              ))
               .with('transcript', () => (
                 <VoiceNoteResult.Transcript note={note} player={player} canPlay={canPlay} />
               ))
@@ -81,7 +88,7 @@ export function VoiceNoteResult({ note }: { note: VoiceNote }) {
         </VStack>
         {!isCompact && (
           <Box flex={1} style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}>
-            <VoiceNoteResult.Todos note={note} />
+            <VoiceNoteResult.Todos note={note} onMemoChanged={onMemoChanged} />
           </Box>
         )}
       </HStack>
@@ -179,11 +186,15 @@ VoiceNoteResult.TabList = function TabList({
   );
 };
 
-VoiceNoteResult.Todos = function Todos({ note }: { note: VoiceNote }) {
+VoiceNoteResult.Todos = function Todos({ note, onMemoChanged }: VoiceNoteResultProps) {
   return (
     <QueryErrorBoundary>
       <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
-        <VoiceNotePlanTodos note={note} className={PLAN_TODOS_CLASS_NAME} />
+        <VoiceNotePlanTodos
+          note={note}
+          className={PLAN_TODOS_CLASS_NAME}
+          onMemoChanged={onMemoChanged}
+        />
       </Suspense>
     </QueryErrorBoundary>
   );
