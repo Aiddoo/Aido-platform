@@ -919,17 +919,37 @@ test('shrinkAllowlist는 줄어든 수만 반영하고 새 위반은 넣지 않�
   });
 });
 
-test('테스트의 앱 모듈 jest.mock을 거부하고 라이브러리 mock은 통과한다', () => {
+test('어댑터 밖 테스트의 모듈 jest.mock을 앱 모듈과 SDK 모두 거부한다', () => {
   withFixture(
     {
       'apps/mobile/src/features/notes/memo/hooks/use-memo.test.tsx': `
         jest.mock('@src/shared/analytics', () => ({}));
+        jest.mock('../config/device', () => ({}));
         jest.mock('expo-router', () => ({}));
       `,
     },
     (errors) => {
+      assert.equal(errors.length, 3);
+      for (const error of errors) {
+        assert.match(error, /jest\.mock/u);
+      }
+    },
+  );
+});
+
+test('어댑터 테스트는 SDK를 mock할 수 있고 앱 모듈은 mock할 수 없다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/infra/haptics/expo-haptics.gateway.test.ts': `
+        jest.mock('expo-haptics', () => ({}));
+      `,
+      'apps/mobile/src/shared/infra/logger/sentry-logger.test.ts': `
+        jest.mock('@src/shared/config/env', () => ({}));
+      `,
+    },
+    (errors) => {
       assert.equal(errors.length, 1);
-      assert.match(errors[0], /jest\.mock/u);
+      assert.match(errors[0], /sentry-logger\.test\.ts.*@src\/shared\/config\/env/u);
     },
   );
 });

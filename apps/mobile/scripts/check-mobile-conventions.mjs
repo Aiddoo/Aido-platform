@@ -398,6 +398,40 @@ function checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors) {
   }
 }
 
+const JEST_MODULE_MOCK_METHODS = new Set(['mock', 'doMock', 'setMock']);
+
+// 모듈 mock은 어댑터 테스트의 SDK와 jest.setup·moduleNameMapper의 네이티브 모듈만 쓴다. 허용 목록은 두지 않는다.
+function checkJestModuleMocks(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (!isTestSource(relativePath)) {
+    return;
+  }
+  const isAdapterTest = relativePath.startsWith(SDK_INFRA_ROOT);
+
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === 'jest' &&
+      JEST_MODULE_MOCK_METHODS.has(node.expression.name.text) &&
+      node.arguments[0] !== undefined &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      const moduleName = node.arguments[0].text;
+      const isAppModule =
+        moduleName.startsWith('@src/') || moduleName.startsWith('.') || moduleName.startsWith('@/');
+      if (!isAdapterTest || isAppModule) {
+        errors.push(
+          `${getLocation(sourceFile, node, repositoryRoot)} ${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderUi를 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+}
+
 function checkSdkImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (relativePath.startsWith(SDK_INFRA_ROOT) || isTestSource(relativePath)) {
@@ -1364,22 +1398,6 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
 
   function visit(node) {
     if (isTest) {
-      if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        ts.isIdentifier(node.expression.expression) &&
-        node.expression.expression.text === 'jest' &&
-        node.expression.name.text === 'mock' &&
-        node.arguments[0] !== undefined &&
-        ts.isStringLiteral(node.arguments[0]) &&
-        node.arguments[0].text.startsWith('@src/')
-      ) {
-        findings.push({
-          rule: 'jest-mock-src',
-          key: relativePath,
-          message: `${getLocation(sourceFile, node, repositoryRoot)} 앱 모듈을 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderUi를 쓰세요.`,
-        });
-      }
       ts.forEachChild(node, visit);
       return;
     }
@@ -1779,6 +1797,7 @@ export function checkMobileConventions(
     checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
     checkSdkImports(sourceFile, repositoryRoot, errors);
     checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors);
+    checkJestModuleMocks(sourceFile, repositoryRoot, errors);
     checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors);
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);
   }

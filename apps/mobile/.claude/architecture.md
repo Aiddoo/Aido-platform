@@ -146,7 +146,8 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                     |
 | Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`                                                                                                                                          |
 | 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                  |
-| 테스트 mock          | 테스트의 `jest.mock('@src/…')`. 허용 목록 없음                                                                                                                                                |
+| 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                            |
+| 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                   |
 | worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                   |
 | RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
 | `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                      |
@@ -981,7 +982,7 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | 로컬 저장값              | `SyncStorage` → 저장소 → 서비스    | `useCoachmarkService()`              |
 | 값 하나 읽고 쓰는 저장소 | `SyncStorage` → 저장소             | `useRecognitionLanguageRepository()` |
 | 이벤트 스트림            | 포트의 `subscribe`, 해제 함수 반환 | `useSpeechRecognizer()`              |
-| 관측                     | 포트                               | `useLogger()`, `useAnalytics()`      |
+| 관측                     | 포트. feature는 분석에 `useTrack`  | `useLogger()`, `useTrack()`          |
 
 ### 예: 클립보드
 
