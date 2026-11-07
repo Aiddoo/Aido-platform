@@ -27,6 +27,8 @@ export const locationReadingSchema = z.discriminatedUnion('status', [
     place: placeNameSchema.nullable(),
     countryCode: z.string().nullable(),
     revision: revisionSchema,
+    /** 권한을 확인하지 못해 위치를 새로 읽지 못하고 직전에 읽은 위치를 그대로 쓰는 중이다. 옛 저장 값에는 없다. */
+    isLastKnown: z.boolean().optional(),
   }),
 ]);
 export type LocationReading = z.infer<typeof locationReadingSchema>;

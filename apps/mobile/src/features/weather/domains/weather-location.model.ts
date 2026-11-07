@@ -40,7 +40,12 @@ export type WeatherLocationStatus =
   | { status: 'needsPermission' }
   | { status: 'denied' }
   | { status: 'unavailable' }
-  | { status: 'ready'; place: PlaceName | null; countryCode: string | null };
+  | {
+      status: 'ready';
+      place: PlaceName | null;
+      countryCode: string | null;
+      isLastKnown: boolean;
+    };
 
 /** 권한은 있지만 위치를 읽지 못했거나 등록 요청이 실패하면 unavailable이다. */
 function resolveLocationStatus(
@@ -54,10 +59,11 @@ function resolveLocationStatus(
     .with({ status: 'needsPermission' }, () => ({ status: 'needsPermission' as const }))
     .with({ status: 'denied' }, () => ({ status: 'denied' as const }))
     .with({ status: 'unavailable' }, () => ({ status: 'unavailable' as const }))
-    .with({ status: 'located' }, ({ place, countryCode }) => ({
+    .with({ status: 'located' }, ({ place, countryCode, isLastKnown }) => ({
       status: 'ready' as const,
       place,
       countryCode,
+      isLastKnown: isLastKnown === true,
     }))
     .exhaustive();
 }

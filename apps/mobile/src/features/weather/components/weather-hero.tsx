@@ -120,7 +120,8 @@ export function WeatherHero() {
   const today = WeatherReportPolicy.findTodayForecast(data, now);
   const place = location.status === 'ready' ? location.place : null;
   const countryCode = location.status === 'ready' ? location.countryCode : null;
-  const title = place?.city ?? t('hero.currentLocation');
+  const isLastKnown = location.status === 'ready' && location.isLastKnown;
+  const title = place?.city ?? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation');
   const reading = toTemperatureReading(toDisplayTemperature(data.current.temperature, unit));
   const condition = t(WEATHER_CONDITION_LABEL_KEYS[data.current.condition]);
   const temperature = reading.isBelowZero
@@ -142,7 +143,11 @@ export function WeatherHero() {
           })}
         >
           {place != null && (
-            <WeatherHero.LocationLabel countryCode={countryCode} district={place.district} />
+            <WeatherHero.LocationLabel
+              countryCode={countryCode}
+              district={place.district}
+              isLastKnown={isLastKnown}
+            />
           )}
           <Text
             weight="medium"
@@ -185,14 +190,16 @@ export function WeatherHero() {
 
 /**
  * 도시 위의 작은 위치 표시. 기기 위치로 받은 지명일 때만 보이고, 기기 지역과 다른 나라면 나라 이름을,
- * 동네를 알면 동네 이름을 붙인다.
+ * 동네를 알면 동네 이름을 붙인다. 권한을 확인하지 못해 직전 위치를 쓰는 중이면 현재 위치가 아니라 마지막 위치로 적는다.
  */
 WeatherHero.LocationLabel = function LocationLabel({
   countryCode,
   district,
+  isLastKnown,
 }: {
   countryCode: string | null;
   district: PlaceName['district'];
+  isLastKnown: boolean;
 }) {
   const { t, i18n } = useTranslation('weather');
   const deviceLocale = useSystemLocale();
@@ -213,8 +220,10 @@ WeatherHero.LocationLabel = function LocationLabel({
         style={HERO_TEXT_SHADOW}
       >
         {area.length === 0
-          ? t('hero.currentLocation')
-          : t('hero.currentLocationIn', { area: area.join(' · ') })}
+          ? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation')
+          : t(isLastKnown ? 'hero.lastLocationIn' : 'hero.currentLocationIn', {
+              area: area.join(' · '),
+            })}
       </Text>
     </HStack>
   );

@@ -3,7 +3,10 @@ import * as Location from 'expo-location';
 import { expoLocationGateway } from './expo-location-gateway';
 
 jest.mock('expo-location', () => ({
+  PermissionStatus: { GRANTED: 'granted' },
   Accuracy: { Balanced: 3 },
+  getForegroundPermissionsAsync: jest.fn(),
+  requestForegroundPermissionsAsync: jest.fn(),
   getLastKnownPositionAsync: jest.fn(),
   watchPositionAsync: jest.fn(),
   reverseGeocodeAsync: jest.fn(),
@@ -80,5 +83,24 @@ describe('위치 구독의 종료와 복구', () => {
     // Then
     expect(result).toEqual({ countryCode: null, name: null });
     expect(jest.getTimerCount()).toBe(0);
+  });
+});
+
+describe('recheckPermission', () => {
+  it('Mac이 아니면 권한을 읽기만 하고 요청하지 않는다', async () => {
+    // Given
+    jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
+      status: Location.PermissionStatus.GRANTED,
+      expires: 'never',
+      granted: true,
+      canAskAgain: true,
+    });
+
+    // When
+    const permission = await expoLocationGateway.recheckPermission();
+
+    // Then
+    expect(permission).toEqual({ isGranted: true, canAskAgain: true });
+    expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   });
 });

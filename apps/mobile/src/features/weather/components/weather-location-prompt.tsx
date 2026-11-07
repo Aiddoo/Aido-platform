@@ -80,22 +80,34 @@ export function WeatherLocationPrompt({ onRecovered }: WeatherLocationPromptProp
     .exhaustive();
 }
 
-/** 저장된 위치로 날씨를 보여 주는 동안 화면을 막지 않고 한 줄로 알린다. */
+/**
+ * 위치를 읽지 못해 저장된 위치로, 또는 권한을 확인하지 못해 마지막 위치로 날씨를 보여 주는 동안
+ * 화면을 막지 않고 한 줄로 알린다.
+ */
 WeatherLocationPrompt.SavedLocationNotice = function SavedLocationNotice() {
   const { t } = useTranslation(['weather', 'common']);
   const location = useWeatherLocation();
 
-  if (location.status !== 'unavailable') {
-    return null;
-  }
-  return (
-    <HStack gap={8} align="center" justify="center" px={16} className="flex-wrap">
-      <Text size="b4" align="center" className="shrink text-on-sky/85">
-        {t('weather:locationPrompt.savedLocationNotice')}
-      </Text>
-      <TextButton size="small" onPress={location.retry}>
-        {t('common:actions.retry')}
-      </TextButton>
-    </HStack>
-  );
+  return match(location)
+    .with({ status: 'unavailable' }, ({ retry }) => (
+      <HStack gap={8} align="center" justify="center" px={16} className="flex-wrap">
+        <Text size="b4" align="center" className="shrink text-on-sky/85">
+          {t('weather:locationPrompt.savedLocationNotice')}
+        </Text>
+        <TextButton size="small" onPress={retry}>
+          {t('common:actions.retry')}
+        </TextButton>
+      </HStack>
+    ))
+    .with({ status: 'ready', isLastKnown: true }, ({ request }) => (
+      <HStack gap={8} align="center" justify="center" px={16} className="flex-wrap">
+        <Text size="b4" align="center" className="shrink text-on-sky/85">
+          {t('weather:locationPrompt.lastLocationNotice')}
+        </Text>
+        <TextButton size="small" onPress={request}>
+          {t('weather:locationPrompt.allow')}
+        </TextButton>
+      </HStack>
+    ))
+    .otherwise(() => null);
 };

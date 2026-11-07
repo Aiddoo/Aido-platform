@@ -16,7 +16,14 @@ export type WeatherLocation =
   | { status: 'needsPermission'; request: () => Promise<void> }
   | { status: 'denied'; openSettings: () => Promise<void> }
   | { status: 'unavailable'; retry: () => Promise<void> }
-  | { status: 'ready'; place: PlaceName | null; countryCode: string | null };
+  | { status: 'ready'; place: PlaceName | null; countryCode: string | null; isLastKnown: false }
+  | {
+      status: 'ready';
+      place: PlaceName | null;
+      countryCode: string | null;
+      isLastKnown: true;
+      request: () => Promise<void>;
+    };
 
 /**
  * 위치 권한·위치 읽기·서버 등록을 화면이 그릴 상태 하나로 모은다.
@@ -31,22 +38,21 @@ export function useWeatherLocation(): WeatherLocation {
   const { data, isError } = useQuery(useGetWeatherLocationQueryOptions());
   const location = WeatherLocationPolicy.resolveLocationStatus(data, { hasFailed: isError });
 
+  const request = async () => {
+    const permission = await gateway.requestPermission().catch((error) => {
+      logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
+        error: getErrorMessage(error),
+      });
+      return null;
+    });
+    trackEvent('weather_location_permission_result', {
+      result: toPermissionResult(permission),
+    });
+    await refetchWeatherLocation(queryClient);
+  };
+
   return match(location)
-    .with({ status: 'needsPermission' }, () => ({
-      status: 'needsPermission' as const,
-      request: async () => {
-        const permission = await gateway.requestPermission().catch((error) => {
-          logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
-            error: getErrorMessage(error),
-          });
-          return null;
-        });
-        trackEvent('weather_location_permission_result', {
-          result: toPermissionResult(permission),
-        });
-        await refetchWeatherLocation(queryClient);
-      },
-    }))
+    .with({ status: 'needsPermission' }, () => ({ status: 'needsPermission' as const, request }))
     .with({ status: 'denied' }, () => ({
       status: 'denied' as const,
       openSettings: () =>
@@ -60,6 +66,15 @@ export function useWeatherLocation(): WeatherLocation {
       status: 'unavailable' as const,
       retry: () => refetchWeatherLocation(queryClient),
     }))
-    .with({ status: 'checking' }, { status: 'ready' }, (state) => state)
+    .with({ status: 'ready', isLastKnown: true }, (state) => ({
+      ...state,
+      isLastKnown: true as const,
+      request,
+    }))
+    .with({ status: 'ready', isLastKnown: false }, (state) => ({
+      ...state,
+      isLastKnown: false as const,
+    }))
+    .with({ status: 'checking' }, (state) => state)
     .exhaustive();
 }

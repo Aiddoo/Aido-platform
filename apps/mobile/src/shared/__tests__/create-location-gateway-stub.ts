@@ -15,6 +15,7 @@ export function createLocationGatewayStub(): jest.Mocked<LocationGateway> {
   return {
     getPermission: jest.fn(async () => ({ isGranted: false, canAskAgain: true })),
     requestPermission: jest.fn(async () => ({ isGranted: false, canAskAgain: true })),
+    recheckPermission: jest.fn(async () => ({ isGranted: false, canAskAgain: true })),
     getCoordinates: mockMethod<LocationGateway['getCoordinates']>(failUnset('getCoordinates')),
     getPlace: mockMethod<LocationGateway['getPlace']>(failUnset('getPlace')),
   };

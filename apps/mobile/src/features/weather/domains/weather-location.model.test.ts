@@ -117,7 +117,26 @@ describe('resolveLocationStatus', () => {
       status: 'ready',
       place: { city: '서울', district: '중구' },
       countryCode: 'KR',
+      isLastKnown: false,
     });
+  });
+
+  it('권한을 확인하지 못해 직전 위치를 쓰는 중이면 마지막 위치임을 알린다', () => {
+    // When
+    const status = WeatherLocationPolicy.resolveLocationStatus(
+      {
+        status: 'located',
+        registered: { ...SEOUL, timezone: 'Asia/Seoul' },
+        place: { city: '서울', district: '중구' },
+        countryCode: 'KR',
+        revision: 1,
+        isLastKnown: true,
+      },
+      { hasFailed: false },
+    );
+
+    // Then
+    expect(status).toMatchObject({ status: 'ready', isLastKnown: true });
   });
 
   it.each(['needsPermission', 'denied'] as const)('권한 상태 %s를 그대로 전달한다', (state) => {

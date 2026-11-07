@@ -7,6 +7,7 @@ import {
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import * as Location from 'expo-location';
 
+import { IS_IOS_APP_ON_MAC } from '../device/device-info';
 import { toPlaceName } from './place-name';
 
 const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * MINUTE_MS;
@@ -118,6 +119,14 @@ export const expoLocationGateway: LocationGateway = {
   getPermission: async () => toLocationPermission(await Location.getForegroundPermissionsAsync()),
   requestPermission: async () =>
     toLocationPermission(await Location.requestForegroundPermissionsAsync()),
+  // Mac(Designed for iPad)은 앱을 다시 켠 직후 OS에 허용이 남아 있어도 상태 읽기가 응답하지 않는 경우가 있다.
+  // 요청 API는 이미 허용한 앱에는 창 없이 허용을 돌려주므로 Mac에서만 요청으로 다시 확인한다.
+  recheckPermission: async () =>
+    toLocationPermission(
+      IS_IOS_APP_ON_MAC
+        ? await Location.requestForegroundPermissionsAsync()
+        : await Location.getForegroundPermissionsAsync(),
+    ),
   getCoordinates: async (signal) => {
     // 날씨는 약 5km 칸 단위라 최근 위치면 충분하다. 움직이지 않는 기기는 새 위치 업데이트가 오지 않아
     // watch만 기다리면 시간 초과가 나므로, 최근 위치가 없을 때만 새로 받는다.

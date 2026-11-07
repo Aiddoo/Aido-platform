@@ -34,6 +34,8 @@
   "hero": {
     "currentLocation": "Current location",
     "currentLocationIn": "Current location · {{area}}",
+    "lastLocation": "Last known location",
+    "lastLocationIn": "Last known location · {{area}}",
     "highLow": "H:{{high}} L:{{low}}",
     "summary": "{{place}}, {{temperature}} now, {{condition}}",
     "temperature_one": "{{count}} degree",
@@ -270,7 +272,7 @@
     "entry": "Weather"
   },
   "locationPrompt": {
-    "title": "Register your location to see the weather",
+    "title": "Allow location access to see the weather",
     "subtitle": "See your local weather and when to dodge the rain",
     "register": "Register location",
     "permissionDenied": "Turn on location access in Settings",
@@ -279,6 +281,8 @@
     "openSettings": "Open Settings",
     "unavailableTitle": "Couldn't find your location",
     "unavailableDescription": "Check that Location Services is on",
+    "lastLocationNotice": "Couldn't confirm location access. Showing weather for your last known location",
+    "allow": "Allow",
     "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location",
     "footnote": "Your to-dos and reminders work without location"
   },
@@ -294,7 +298,7 @@
     "locationUpdateFailed": "Couldn't register your location"
   },
   "introduction": {
-    "title": "Register your location\nfor weather updates",
+    "title": "Allow location access\nfor weather updates",
     "description": "Get today's and tomorrow's weather as notifications, plus a heads-up when rain or snow may affect a to-do. You can also register later on the weather screen.",
     "later": "Not now"
   },
