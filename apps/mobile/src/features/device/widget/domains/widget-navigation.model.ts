@@ -8,29 +8,19 @@ import {
 
 export const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
 
-const isTimestampWithinTtl = (createdAt: number, now: number, ttl: number): boolean =>
-  Number.isFinite(now) && createdAt <= now && now - createdAt < ttl;
-
-const isSameAccount = (ownerId: string, userId: string): boolean => ownerId === userId;
-
-function isFreshWidgetNavigationCommand(
-  command: Pick<WidgetNavigationCommand, 'createdAt'>,
-  now: number,
-): boolean {
-  return isTimestampWithinTtl(command.createdAt, now, WIDGET_NAVIGATION_COMMAND_TTL_MS);
+function isFresh(command: Pick<WidgetNavigationCommand, 'createdAt'>, now: number): boolean {
+  return (
+    Number.isFinite(now) &&
+    command.createdAt <= now &&
+    now - command.createdAt < WIDGET_NAVIGATION_COMMAND_TTL_MS
+  );
 }
 
-function isWidgetNavigationCommandOwnedBy(
-  command: Pick<WidgetNavigationCommand, 'userId'>,
-  userId: string,
-): boolean {
-  return isSameAccount(command.userId, userId);
+function isOwnedBy(command: Pick<WidgetNavigationCommand, 'userId'>, userId: string): boolean {
+  return command.userId === userId;
 }
 
-function isSameWidgetNavigationCommand(
-  first: WidgetNavigationCommand,
-  second: WidgetNavigationCommand,
-): boolean {
+function isSameCommand(first: WidgetNavigationCommand, second: WidgetNavigationCommand): boolean {
   return (
     first.id === second.id &&
     first.uri === second.uri &&
@@ -39,7 +29,7 @@ function isSameWidgetNavigationCommand(
   );
 }
 
-function getWidgetRoute(uri: string | null): Href | null {
+function getRoute(uri: string | null): Href | null {
   const destination = parseWidgetNavigationUri(uri);
   if (!destination) {
     return null;
@@ -57,7 +47,7 @@ function getWidgetRoute(uri: string | null): Href | null {
 }
 
 /** Linking이 이미 표시한 목적지는 bootstrap에서 다시 이동하지 않는다. */
-function isWidgetRouteCurrent(
+function isCurrentRoute(
   uri: string,
   pathname: string,
   { date, action, friendId }: { date?: string; action?: string; friendId?: string },
@@ -80,9 +70,9 @@ function isWidgetRouteCurrent(
 }
 
 export const WidgetNavigationPolicy = {
-  getRoute: getWidgetRoute,
-  isCurrentRoute: isWidgetRouteCurrent,
-  isFresh: isFreshWidgetNavigationCommand,
-  isOwnedBy: isWidgetNavigationCommandOwnedBy,
-  isSameCommand: isSameWidgetNavigationCommand,
+  getRoute,
+  isCurrentRoute,
+  isFresh,
+  isOwnedBy,
+  isSameCommand,
 } as const;

@@ -18,7 +18,9 @@ import type { WidgetSyncService } from '../apis/widget-sync.service';
 
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
 
-const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
+function translate(...[key, params]: Parameters<WidgetTranslateFn>): ReturnType<WidgetTranslateFn> {
+  return i18n.t(key, params);
+}
 
 function buildContext(
   timeZone: string,

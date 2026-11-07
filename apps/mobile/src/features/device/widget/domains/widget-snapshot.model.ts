@@ -4,7 +4,7 @@ import type {
   WidgetSnapshot,
 } from '../schemas/widget-snapshot.schema';
 
-function isWidgetSnapshotLoggedOut(snapshot: WidgetSnapshot): boolean {
+function isLoggedOut(snapshot: WidgetSnapshot): boolean {
   return snapshot.days[0].state === 'loggedOut';
 }
 
@@ -14,9 +14,9 @@ interface WidgetDaySelection {
 }
 
 /** 렌더 시점의 오늘 key와 같은 day를 고른다. 없으면 날짜가 지난 것으로 보고 stale을 표시한다. */
-function selectWidgetDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
+function selectDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
   const [firstDay] = snapshot.days;
-  if (isWidgetSnapshotLoggedOut(snapshot)) {
+  if (isLoggedOut(snapshot)) {
     return { day: firstDay, renderState: 'loggedOut' };
   }
 
@@ -28,19 +28,19 @@ function selectWidgetDay(snapshot: WidgetSnapshot, todayLocalDate: string): Widg
 }
 
 /** 소유자를 모르는 개인 목록은 추측해 보여주지 않고 stale로 표시한다. */
-function selectWidgetDayForOwner(
+function selectDayForOwner(
   snapshot: WidgetSnapshot,
   todayLocalDate: string,
   ownerId: string | null,
 ): WidgetDaySelection {
-  if (ownerId == null && !isWidgetSnapshotLoggedOut(snapshot)) {
+  if (ownerId == null && !isLoggedOut(snapshot)) {
     return { day: snapshot.days[0], renderState: 'stale' };
   }
-  return selectWidgetDay(snapshot, todayLocalDate);
+  return selectDay(snapshot, todayLocalDate);
 }
 
 export const WidgetSnapshotPolicy = {
-  isLoggedOut: isWidgetSnapshotLoggedOut,
-  selectDay: selectWidgetDay,
-  selectDayForOwner: selectWidgetDayForOwner,
+  isLoggedOut,
+  selectDay,
+  selectDayForOwner,
 } as const;
