@@ -39,6 +39,21 @@ import type {
 import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
 import { logOutDevice } from '../utils/log-out-device';
 
+// 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+function useSocialLoginFailure(fallback = t('auth:toasts.loginFailed')) {
+  const haptics = useHaptics();
+  const showFailure = useMutationFailure(fallback);
+
+  return (error: unknown) => {
+    if (isLoginCancelledError(error)) {
+      haptics.notify('error');
+      return;
+    }
+
+    showFailure(error);
+  };
+}
+
 // 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
@@ -73,13 +88,14 @@ export function useEmailLoginMutationOptions() {
 }
 
 export function useExchangeCodeMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
+  const showFailure = useSocialLoginFailure();
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (request: ExchangeCodeInput & { provider: OAuthProviderSlug }) =>
       unwrap(await authService.exchangeCode(request)),
     onSuccess: (data, variables) => {
@@ -90,20 +106,19 @@ export function useExchangeCodeMutationOptions() {
 
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: variables.provider });
     },
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: showFailure,
   });
 }
 
 export function useOpenAppleLoginMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
   const { signIn } = useAuthSession();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
+  const showFailure = useSocialLoginFailure();
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openAppleLogin()),
     onSuccess: (data) => {
       signIn();
@@ -113,45 +128,40 @@ export function useOpenAppleLoginMutationOptions() {
 
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: 'apple' });
     },
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: showFailure,
   });
 }
 
 export function useOpenGoogleLoginMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
+  const showFailure = useSocialLoginFailure();
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openGoogleLogin()),
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: showFailure,
   });
 }
 
 export function useOpenKakaoLoginMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
+  const showFailure = useSocialLoginFailure();
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openKakaoLogin()),
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: showFailure,
   });
 }
 
 export function useOpenNaverLoginMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
+  const showFailure = useSocialLoginFailure();
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openNaverLogin()),
-    onError: () => {
-      haptics.notify('error');
-    },
+    onError: showFailure,
   });
 }
 
@@ -370,14 +380,14 @@ export function useChangePasswordMutationOptions() {
 }
 
 export function useLinkAccountMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure(t('auth:toasts.linkFailed'));
+  const showFailure = useSocialLoginFailure(t('auth:toasts.linkFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (provider: OAuthProviderSlug) =>
       unwrap(await authService.linkAccount(provider)),
     onSuccess: (_data, provider) => {
@@ -389,14 +399,7 @@ export function useLinkAccountMutationOptions() {
       );
       trackEvent('auth_social_linked', { provider });
     },
-    onError: (error) => {
-      if (isLoginCancelledError(error)) {
-        haptics.notify('error');
-        return;
-      }
-
-      showFailure(error);
-    },
+    onError: showFailure,
   });
 }
 
@@ -408,6 +411,7 @@ export function useUnlinkAccountMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.unlinkFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (provider: OAuthProvider) =>
       unwrap(await authService.unlinkAccount(provider)),
     onSuccess: (_data, provider) => {

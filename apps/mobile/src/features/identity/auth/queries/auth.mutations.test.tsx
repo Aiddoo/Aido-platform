@@ -19,6 +19,7 @@ import {
   useExchangeCodeMutationOptions,
   useLinkAccountMutationOptions,
   useOpenAppleLoginMutationOptions,
+  useOpenKakaoLoginMutationOptions,
   useRegisterMutationOptions,
 } from './auth.mutations';
 
@@ -295,5 +296,91 @@ describe('계정 연결 실패 안내', () => {
     // Then
     expect(session.authHttp.post).not.toHaveBeenCalled();
     expect(await screen.findAllByText(LINK_FAILED_MESSAGE)).not.toHaveLength(0);
+  });
+});
+
+describe('소셜 로그인 실패 안내', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  async function loginWithApple(session: ReturnType<typeof createAuthSession>) {
+    const { result } = await session.renderSession(
+      () => useMutation(useOpenAppleLoginMutationOptions()),
+      'unauthenticated',
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync().catch(() => undefined);
+    });
+    return result;
+  }
+
+  it('Apple 로그인이 실패하면 이유를 토스트로 알린다', async () => {
+    // Given
+    const session = createAuthSession();
+    session.socialAuthGateway.signInWithApple.mockResolvedValue({ type: 'failed' });
+
+    // When
+    await loginWithApple(session);
+
+    // Then
+    expect(await screen.findAllByText(i18n.t('errors:AUTH_UNKNOWN'))).not.toHaveLength(0);
+  });
+
+  it('Apple 로그인 창을 닫으면 토스트 없이 햅틱만 울린다', async () => {
+    // Given
+    const haptics = createHapticsStub();
+    const session = createAuthSession({ di: { haptics } });
+    session.socialAuthGateway.signInWithApple.mockResolvedValue({ type: 'cancelled' });
+
+    // When
+    await loginWithApple(session);
+
+    // Then
+    expect(screen.queryByText(i18n.t('errors:AUTH_LOGIN_CANCELLED'))).toBeNull();
+    expect(haptics.notify).toHaveBeenCalledWith('error');
+  });
+
+  it('카카오 인증 창에서 오류가 돌아오면 이유를 토스트로 알린다', async () => {
+    // Given
+    const session = createAuthSession();
+    session.socialAuthGateway.openOAuthSession.mockResolvedValue({
+      type: 'success',
+      url: 'aido://auth/kakao?error=AUTH_PROVIDER_ERROR',
+      queryParams: { error: 'AUTH_PROVIDER_ERROR' },
+    });
+    const { result } = await session.renderSession(
+      () => useMutation(useOpenKakaoLoginMutationOptions()),
+      'unauthenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync().catch(() => undefined);
+    });
+
+    // Then
+    expect(await screen.findAllByText(i18n.t('errors:AUTH_PROVIDER_ERROR'))).not.toHaveLength(0);
+  });
+
+  it('오프라인에서도 Apple 로그인이 멈추지 않고 실패를 알린다', async () => {
+    // Given
+    const session = createAuthSession();
+    session.socialAuthGateway.signInWithApple.mockResolvedValue({ type: 'unavailable' });
+    const { result } = await session.renderSession(
+      () => useMutation(useOpenAppleLoginMutationOptions()),
+      'unauthenticated',
+    );
+    onlineManager.setOnline(false);
+
+    // When
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    // Then
+    expect(result.current.isPaused).toBe(false);
+    expect(await screen.findAllByText(i18n.t('errors:AUTH_APPLE_UNAVAILABLE'))).not.toHaveLength(0);
   });
 });
