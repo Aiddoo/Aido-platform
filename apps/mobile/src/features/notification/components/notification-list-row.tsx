@@ -58,7 +58,7 @@ export function NotificationListRow({
               </HStack>
 
               <ListRow.Texts
-                type="2RowTypeA"
+                type="twoLine"
                 top={title}
                 topProps={{ weight: isUnread ? 'semibold' : 'medium' }}
                 bottom={body}
@@ -94,7 +94,7 @@ NotificationListRow.Loading = function Loading() {
                   <TextSkeleton size="b4" className="w-12" />
                 </HStack>
                 <ListRow.Texts.Loading
-                  type="2RowTypeA"
+                  type="twoLine"
                   topProps={{ className: 'w-3/4' }}
                   bottomProps={{ size: 'b3', className: 'w-full' }}
                 />

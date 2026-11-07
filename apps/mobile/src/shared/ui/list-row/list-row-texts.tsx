@@ -7,8 +7,8 @@ interface ListRowTexts1RowType {
   topProps?: Omit<TextProps, 'children'>;
 }
 
-interface ListRowTexts1RowTypeA extends ListRowTexts1RowType {
-  type: '1RowTypeA';
+interface ListRowTextsOneLine extends ListRowTexts1RowType {
+  type: 'oneLine';
 }
 
 interface ListRowTexts2RowType extends ListRowTexts1RowType {
@@ -16,11 +16,11 @@ interface ListRowTexts2RowType extends ListRowTexts1RowType {
   bottomProps?: Omit<TextProps, 'children'>;
 }
 
-interface ListRowTexts2RowTypeA extends ListRowTexts2RowType {
-  type: '2RowTypeA';
+interface ListRowTextsTwoLine extends ListRowTexts2RowType {
+  type: 'twoLine';
 }
 
-export type ListRowTextsProps = ListRowTexts1RowTypeA | ListRowTexts2RowTypeA;
+export type ListRowTextsProps = ListRowTextsOneLine | ListRowTextsTwoLine;
 
 export function ListRowTexts(props: ListRowTextsProps) {
   const { top, topProps } = props;
@@ -30,7 +30,7 @@ export function ListRowTexts(props: ListRowTextsProps) {
       <Text size="b2" {...topProps}>
         {top}
       </Text>
-      {props.type === '2RowTypeA' && (
+      {props.type === 'twoLine' && (
         <Text size="e1" shade={5} {...props.bottomProps}>
           {props.bottom}
         </Text>
@@ -49,7 +49,7 @@ ListRowTexts.Loading = function Loading({ type, topProps, bottomProps }: ListRow
   return (
     <VStack gap={2} align="start">
       <TextSkeleton size="b2" className="w-24" {...topProps} />
-      {type === '2RowTypeA' && <TextSkeleton size="e1" className="w-16" {...bottomProps} />}
+      {type === 'twoLine' && <TextSkeleton size="e1" className="w-16" {...bottomProps} />}
     </VStack>
   );
 };

@@ -19,13 +19,13 @@ import { ListRow } from '@src/shared/ui';
 
 // 기본 사용
 <ListRow
-  contents={<ListRow.Texts type="1RowTypeA" top="제목" />}
+  contents={<ListRow.Texts type="oneLine" top="제목" />}
 />
 
 // 완전한 구성
 <ListRow
   left={<UserAvatar alt="김용민" profileImage="avatar.jpg" />}
-  contents={<ListRow.Texts type="2RowTypeA" top="김용민" bottom="시니어 개발자" />}
+  contents={<ListRow.Texts type="twoLine" top="김용민" bottom="시니어 개발자" />}
   right={<ArrowRightIcon />}
   horizontalPadding="medium"
 />
@@ -64,17 +64,17 @@ import { ListRow } from '@src/shared/ui';
 
 텍스트 컨텐츠를 표시하는 서브 컴포넌트입니다. Discriminated Union 타입으로 각 타입별 필수 props가 강제됩니다.
 
-#### Type: `1RowTypeA`
+#### Type: `oneLine`
 
 **1줄 레이아웃** - 제목만 표시
 
 ```tsx
-<ListRow.Texts type="1RowTypeA" top="제목" topProps={{ size: 'b1', weight: 'bold' }} />
+<ListRow.Texts type="oneLine" top="제목" topProps={{ size: 'b1', weight: 'bold' }} />
 ```
 
 **Props:**
 
-- `type`: `'1RowTypeA'` (필수)
+- `type`: `'oneLine'` (필수)
 - `top`: `ReactNode` (필수) - 제목 텍스트
 - `topProps`: `Omit<TextProps, 'children'>` (선택) - 제목 스타일
 
@@ -86,13 +86,13 @@ import { ListRow } from '@src/shared/ui';
 
 ---
 
-#### Type: `2RowTypeA`
+#### Type: `twoLine`
 
 **2줄 레이아웃** - 제목 + 하단 텍스트
 
 ```tsx
 <ListRow.Texts
-  type="2RowTypeA"
+  type="twoLine"
   top="김용민"
   topProps={{ size: 'b2', weight: 'bold' }}
   bottom="시니어 개발자"
@@ -102,7 +102,7 @@ import { ListRow } from '@src/shared/ui';
 
 **Props:**
 
-- `type`: `'2RowTypeA'` (필수)
+- `type`: `'twoLine'` (필수)
 - `top`: `ReactNode` (필수) - 제목 텍스트
 - `topProps`: `Omit<TextProps, 'children'>` (선택) - 제목 스타일
 - `bottom`: `ReactNode` (필수) - 하단 텍스트
@@ -125,7 +125,7 @@ import { ListRow } from '@src/shared/ui';
 <ListRow
   left={<Skeleton className="size-10 rounded-full" />}
   contents={
-    <ListRow.Texts.Loading type="2RowTypeA" bottomProps={{ size: 'b3', className: 'w-full' }} />
+    <ListRow.Texts.Loading type="twoLine" bottomProps={{ size: 'b3', className: 'w-full' }} />
   }
 />
 ```
@@ -139,7 +139,7 @@ import { ListRow } from '@src/shared/ui';
 
 ```tsx
 <ListRow
-  contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
+  contents={<ListRow.Texts type="oneLine" top="설정" />}
   right={<ArrowRightIcon />}
   horizontalPadding="medium"
 />
@@ -152,7 +152,7 @@ import { ListRow } from '@src/shared/ui';
   left={<UserAvatar alt="김용민" profileImage="https://example.com/avatar.jpg" />}
   contents={
     <ListRow.Texts
-      type="2RowTypeA"
+      type="twoLine"
       top="김용민"
       topProps={{ weight: 'bold' }}
       bottom="시니어 개발자"
@@ -172,7 +172,7 @@ import { ListRow } from '@src/shared/ui';
   left={<FileIcon type="pdf" />}
   contents={
     <ListRow.Texts
-      type="2RowTypeA"
+      type="twoLine"
       top="프로젝트_제안서.pdf"
       bottom="2.4 MB · 2024.01.20"
       bottomProps={{ shade: 6 }}
@@ -187,7 +187,7 @@ import { ListRow } from '@src/shared/ui';
 
 ```tsx
 <ListRow
-  contents={<ListRow.Texts type="1RowTypeA" top="준비 중인 기능" />}
+  contents={<ListRow.Texts type="oneLine" top="준비 중인 기능" />}
   isDisabled
   horizontalPadding="medium"
 />
@@ -224,14 +224,14 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 ```typescript
 // ✅ 올바른 사용
 <ListRow.Texts
-  type="2RowTypeA"
+  type="twoLine"
   top="제목"
-  bottom="부제목"  // type이 '2RowTypeA'이므로 bottom 필수!
+  bottom="부제목"  // type이 'twoLine'이므로 bottom 필수!
 />
 
 // ❌ 컴파일 에러
 <ListRow.Texts
-  type="2RowTypeA"
+  type="twoLine"
   top="제목"
   // Error: Property 'bottom' is missing
 />
@@ -245,7 +245,7 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 
 ```tsx
 <Pressable onPress={handlePress}>
-  <ListRow contents={<ListRow.Texts type="1RowTypeA" top="설정" />} right={<ArrowRightIcon />} />
+  <ListRow contents={<ListRow.Texts type="oneLine" top="설정" />} right={<ArrowRightIcon />} />
 </Pressable>
 ```
 
@@ -258,7 +258,7 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 const MemoizedListRow = React.memo(({ item }) => (
   <ListRow
     left={<UserAvatar alt={item.name} profileImage={item.avatar} />}
-    contents={<ListRow.Texts type="2RowTypeA" top={item.name} bottom={item.role} />}
+    contents={<ListRow.Texts type="twoLine" top={item.name} bottom={item.role} />}
   />
 ));
 ```

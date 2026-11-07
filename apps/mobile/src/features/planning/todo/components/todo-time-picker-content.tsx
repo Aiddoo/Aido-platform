@@ -75,7 +75,7 @@ export function TodoTimePickerContent({
           <ListRow
             contents={
               <ListRow.Texts
-                type="1RowTypeA"
+                type="oneLine"
                 top={t('picker.allDay')}
                 topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
               />
@@ -87,7 +87,7 @@ export function TodoTimePickerContent({
           <ListRow
             contents={
               <ListRow.Texts
-                type="1RowTypeA"
+                type="oneLine"
                 top={t('picker.time')}
                 topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
               />

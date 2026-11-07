@@ -52,7 +52,7 @@ function ScopeRow({
         }
         contents={
           <ListRow.Texts
-            type="2RowTypeA"
+            type="twoLine"
             top={label}
             topProps={{ size: 'b2', ...(isDanger && { tone: 'danger' as const }) }}
             bottom={description}

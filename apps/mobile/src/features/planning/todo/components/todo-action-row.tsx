@@ -37,7 +37,7 @@ export function TodoActionRow({
         }
         contents={
           <ListRow.Texts
-            type="1RowTypeA"
+            type="oneLine"
             top={label}
             topProps={isDanger ? { size: 'b2', tone: 'danger' } : { size: 'b2' }}
           />

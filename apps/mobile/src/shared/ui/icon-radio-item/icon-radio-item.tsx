@@ -24,14 +24,14 @@ export function IconRadioItem({ value, label, Icon, description, ...props }: Ico
           contents={
             description ? (
               <ListRow.Texts
-                type="2RowTypeA"
+                type="twoLine"
                 top={label}
                 topProps={{ size: 'b3', weight: 'semibold' }}
                 bottom={description}
               />
             ) : (
               <ListRow.Texts
-                type="1RowTypeA"
+                type="oneLine"
                 top={label}
                 topProps={{ size: 'b3', weight: 'semibold' }}
               />

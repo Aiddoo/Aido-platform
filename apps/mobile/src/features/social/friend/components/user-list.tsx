@@ -27,10 +27,10 @@ function Item({ displayName, subtitle, profileImage, ...props }: UserListItemPro
       left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}
       contents={
         subtitle == null ? (
-          <ListRow.Texts type="1RowTypeA" top={displayName} topProps={{ numberOfLines: 1 }} />
+          <ListRow.Texts type="oneLine" top={displayName} topProps={{ numberOfLines: 1 }} />
         ) : (
           <ListRow.Texts
-            type="2RowTypeA"
+            type="twoLine"
             top={displayName}
             topProps={{ numberOfLines: 1 }}
             bottom={subtitle}
@@ -63,7 +63,7 @@ function Loading({
         <ListRow
           key={index}
           left={<Skeleton className="size-10 rounded-full" />}
-          contents={<ListRow.Texts.Loading type={hasSubtitle ? '2RowTypeA' : '1RowTypeA'} />}
+          contents={<ListRow.Texts.Loading type={hasSubtitle ? 'twoLine' : 'oneLine'} />}
           right={right}
         />
       ))}
