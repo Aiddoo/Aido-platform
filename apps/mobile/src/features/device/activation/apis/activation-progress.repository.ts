@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { type Instant, toInstant } from '@src/shared/date/instant';
+import { type Instant, toNullableInstant } from '@src/shared/date/instant';
 
 import { persistedActivationProgressSchema } from '../schemas/activation-persisted.schema';
 import type { ActivationIdentity, ActivationProgress } from '../schemas/activation.schema';
@@ -22,10 +22,6 @@ export interface ActivationProgressRepository {
   markTodoCreated(identity: ActivationIdentity, at: Instant): ActivationProgress;
   claimActivated(identity: ActivationIdentity, at: Instant): ClaimActivationResult;
   unlockPushRegistration(identity: ActivationIdentity, at: Instant): ActivationProgress;
-}
-
-function toNullableInstant(value: string | null) {
-  return value == null ? null : toInstant(value);
 }
 
 function activationProgressKey({ accountId, campaignId }: ActivationIdentity): string {

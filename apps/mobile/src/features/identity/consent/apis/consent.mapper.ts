@@ -5,7 +5,7 @@ import type {
   UpdateMarketingPushConsentResponse,
 } from '@aido/api';
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { toInstant } from '@src/shared/date/instant';
+import { toNullableInstant } from '@src/shared/date/instant';
 
 import type {
   Consent,
@@ -13,10 +13,6 @@ import type {
   UpdateMarketingConsentResult,
   UpdateMarketingPushConsentResult,
 } from '../schemas/consent.schema';
-
-function toNullableInstant(value: string | null) {
-  return value == null ? null : toInstant(value);
-}
 
 export function toConsent(dto: ConsentResponse): Consent {
   return {

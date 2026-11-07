@@ -3,7 +3,7 @@ import type {
   NudgeInteractionsResponse,
   NudgeThanksPreviewResponse,
 } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import type {
   NudgeInteraction,
@@ -25,7 +25,7 @@ export function toNudgeInteraction(dto: NudgeInteractionResponse): NudgeInteract
     isTodoCompleted: dto.todo?.completed ?? false,
     message: dto.message,
     replyKind: dto.replyKind,
-    thankedAt: dto.thankedAt == null ? null : toInstant(dto.thankedAt),
+    thankedAt: toNullableInstant(dto.thankedAt),
     createdAt: toInstant(dto.createdAt),
     isAvailable: dto.isAvailable,
   };
@@ -52,6 +52,6 @@ export function toNudgeThanksPreview(dto: NudgeThanksPreviewResponse): NudgeThan
       profileImage: recipient.profileImage,
     })),
     thankedRecipientCount: dto.thankedRecipientCount ?? 0,
-    lastThankedAt: dto.lastThankedAt == null ? null : toInstant(dto.lastThankedAt),
+    lastThankedAt: toNullableInstant(dto.lastThankedAt ?? null),
   };
 }

@@ -31,6 +31,11 @@ export function toInstant(value: string): Instant {
   return instantSchema.parse(value);
 }
 
+/** 서버·저장소의 선택 시각 칸을 순간으로 바꾼다. 없으면 null이다 */
+export function toNullableInstant(value: string | null): Instant | null {
+  return value == null ? null : toInstant(value);
+}
+
 /** 선택기처럼 Date를 쓰는 경계에서 받은 값을 순간으로 바꾼다 */
 export function fromDate(date: Date): Instant {
   return toInstant(date.toISOString());

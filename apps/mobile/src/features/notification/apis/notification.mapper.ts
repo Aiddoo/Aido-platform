@@ -3,7 +3,7 @@ import {
   type NotificationInboxItem as ServerNotification,
   notificationRoutingSchema,
 } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import {
   type Notification,
@@ -27,7 +27,7 @@ export function toNotification(server: ServerNotification): Notification {
     context: server.context,
     action: server.action,
     createdAt: toInstant(server.createdAt),
-    readAt: server.readAt == null ? null : toInstant(server.readAt),
+    readAt: toNullableInstant(server.readAt),
   };
 }
 

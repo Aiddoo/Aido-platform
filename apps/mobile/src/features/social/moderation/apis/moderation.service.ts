@@ -5,14 +5,11 @@ import {
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
+import { noop } from 'es-toolkit';
 
 import { blockedUsersPageSchema } from '../schemas/user-block.schema';
 import type { UserReportRequest } from '../schemas/user-report.schema';
 import { toBlockedUsersPage } from './user-block.mapper';
-
-function toNothing() {
-  return undefined;
-}
 
 /** 사용자 차단·해제·목록과 콘텐츠 신고. 차단 효과(친구 끊기, 서로 가리기)는 서버가 맡는다 */
 export class ModerationService {
@@ -26,7 +23,7 @@ export class ModerationService {
     parseApiResponse(
       await this.#httpClient.post(`v1/blocks/${encodeURIComponent(userId)}`),
       blockUserResponseSchema,
-      toNothing,
+      noop,
       '[ModerationService] Invalid blockUser response',
     );
 
@@ -34,7 +31,7 @@ export class ModerationService {
     parseApiResponse(
       await this.#httpClient.delete(`v1/blocks/${encodeURIComponent(userId)}`),
       unblockUserResponseSchema,
-      toNothing,
+      noop,
       '[ModerationService] Invalid unblockUser response',
     );
 
@@ -53,7 +50,7 @@ export class ModerationService {
     parseApiResponse(
       await this.#httpClient.post('v1/reports', request),
       createUserReportResponseSchema,
-      toNothing,
+      noop,
       '[ModerationService] Invalid reportContent response',
     );
 }

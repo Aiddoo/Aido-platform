@@ -10,6 +10,7 @@ import type { HttpClient } from '@src/core/ports/http';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import type { Page } from '@src/shared/types/page.types';
+import { noop } from 'es-toolkit';
 
 import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
@@ -28,10 +29,6 @@ import {
 import { toFriendRequestsPage, toFriendsPage, toSearchedUsersPage } from './friend.mapper';
 
 type FriendServiceError = ApiError | BusinessError<FriendErrorCode>;
-
-function toNothing() {
-  return undefined;
-}
 
 export class FriendService {
   readonly #httpClient: HttpClient;
@@ -85,7 +82,7 @@ export class FriendService {
     parseApiResponse(
       await this.#httpClient.patch(`v1/follows/${encodeURIComponent(userId)}/accept`),
       acceptFriendRequestResponseSchema,
-      toNothing,
+      noop,
       '[FriendService] Invalid acceptRequest response',
     );
 
@@ -93,7 +90,7 @@ export class FriendService {
     parseApiResponse(
       await this.#httpClient.patch(`v1/follows/${encodeURIComponent(userId)}/reject`),
       rejectFriendRequestResponseSchema,
-      toNothing,
+      noop,
       '[FriendService] Invalid rejectRequest response',
     );
 
@@ -101,7 +98,7 @@ export class FriendService {
     parseApiResponse(
       await this.#httpClient.delete(`v1/follows/${encodeURIComponent(userId)}`),
       cancelFriendRequestResponseSchema,
-      toNothing,
+      noop,
       '[FriendService] Invalid cancelRequest response',
     );
 
@@ -152,7 +149,7 @@ export class FriendService {
     parseApiResponse(
       await this.#httpClient.delete(`v1/follows/${encodeURIComponent(userId)}`),
       removeFriendResponseSchema,
-      toNothing,
+      noop,
       '[FriendService] Invalid removeFriend response',
     );
 }

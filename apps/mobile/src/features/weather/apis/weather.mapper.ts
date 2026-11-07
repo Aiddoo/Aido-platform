@@ -1,5 +1,5 @@
 import type { WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
-import { type Instant, toInstant } from '@src/shared/date/instant';
+import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import type { RegisteredLocation } from '../schemas/weather-location.schema';
 import type { WeatherReport } from '../schemas/weather-report.schema';
@@ -10,10 +10,6 @@ export function toRegisteredLocation(dto: WeatherLocationResponse): RegisteredLo
     longitude: dto.longitude,
     timezone: dto.timezone,
   };
-}
-
-function toNullableInstant(value: string | null): Instant | null {
-  return value == null ? null : toInstant(value);
 }
 
 export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {

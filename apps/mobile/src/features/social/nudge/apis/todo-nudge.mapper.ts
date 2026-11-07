@@ -1,5 +1,5 @@
 import type { CreateNudgeResponse, CreateRemindNudgeResponse } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
+import { toNullableInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
 import type {
@@ -17,7 +17,7 @@ export function toNudgeCooldownInfo(
 ): NudgeCooldownInfo {
   return {
     ...pick(dto, ['canNudge', 'remainingSeconds']),
-    cooldownEndsAt: dto.cooldownEndsAt == null ? null : toInstant(dto.cooldownEndsAt),
+    cooldownEndsAt: toNullableInstant(dto.cooldownEndsAt),
   };
 }
 
