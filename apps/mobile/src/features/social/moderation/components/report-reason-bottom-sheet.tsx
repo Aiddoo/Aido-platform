@@ -14,7 +14,7 @@ import {
   VStack,
   useSheetRoute,
 } from '@src/shared/ui';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RadioGroup } from 'heroui-native';

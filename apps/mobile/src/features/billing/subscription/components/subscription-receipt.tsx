@@ -16,7 +16,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';

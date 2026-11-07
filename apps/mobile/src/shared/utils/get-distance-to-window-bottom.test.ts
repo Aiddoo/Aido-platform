@@ -1,4 +1,4 @@
-import { getDistanceToWindowBottom } from './distance-to-window-bottom';
+import { getDistanceToWindowBottom } from './get-distance-to-window-bottom';
 
 describe('getDistanceToWindowBottom', () => {
   it('뷰가 창 아래까지 닿으면 0이다', () => {

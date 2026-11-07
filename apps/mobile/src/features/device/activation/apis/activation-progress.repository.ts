@@ -24,7 +24,7 @@ export interface ActivationProgressRepository {
   unlockPushRegistration(identity: ActivationIdentity, at: Instant): ActivationProgress;
 }
 
-function activationProgressKey({ accountId, campaignId }: ActivationIdentity): string {
+function createActivationProgressKey({ accountId, campaignId }: ActivationIdentity): string {
   return `${KEY_PREFIX}:${accountId}:${campaignId}`;
 }
 
@@ -34,7 +34,7 @@ export function createActivationProgressRepository(
   const get = (identity: ActivationIdentity): ActivationProgress => {
     let decoded: unknown;
     try {
-      const raw = storage.get(activationProgressKey(identity));
+      const raw = storage.get(createActivationProgressKey(identity));
       if (!raw) {
         return { ...EMPTY_PROGRESS };
       }
@@ -56,7 +56,7 @@ export function createActivationProgressRepository(
 
   const save = (identity: ActivationIdentity, progress: ActivationProgress): boolean => {
     try {
-      storage.set(activationProgressKey(identity), JSON.stringify(progress));
+      storage.set(createActivationProgressKey(identity), JSON.stringify(progress));
       return true;
     } catch {
       return false;

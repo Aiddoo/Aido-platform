@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatPrice } from '@src/shared/utils/format';
+import { formatPrice } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';

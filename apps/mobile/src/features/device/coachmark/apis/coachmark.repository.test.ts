@@ -1,6 +1,6 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 
-import { coachmarkStorageKey, createCoachmarkRepository } from './coachmark.repository';
+import { createCoachmarkKey, createCoachmarkRepository } from './coachmark.repository';
 
 describe('createCoachmarkRepository', () => {
   it('친구 찾기 안내를 이미 닫은 사람은 옛 키 그대로 본 것으로 읽는다', () => {
@@ -16,13 +16,13 @@ describe('createCoachmarkRepository', () => {
 
   it('저장 키는 출시된 앱과 같다', () => {
     // Then
-    expect(coachmarkStorageKey({ accountId: 'u', kind: 'todo-reorder' })).toBe(
+    expect(createCoachmarkKey({ accountId: 'u', kind: 'todo-reorder' })).toBe(
       'aido_reorder_coachmark_v1:u:todo',
     );
-    expect(coachmarkStorageKey({ accountId: 'u', kind: 'friend-strip' })).toBe(
+    expect(createCoachmarkKey({ accountId: 'u', kind: 'friend-strip' })).toBe(
       'aido_friend_strip_hint_dismissed_v1:u',
     );
-    expect(coachmarkStorageKey({ accountId: 'u', kind: 'voice-note-start' })).toBe(
+    expect(createCoachmarkKey({ accountId: 'u', kind: 'voice-note-start' })).toBe(
       'aido_coachmark_v1:u:voice-note-start',
     );
   });

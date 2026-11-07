@@ -4,7 +4,7 @@ import {
   parseWeatherRescheduleUrl,
   toWeatherRescheduleHref,
 } from '@src/features/weather/utils/weather-reschedule-link';
-import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
+import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 

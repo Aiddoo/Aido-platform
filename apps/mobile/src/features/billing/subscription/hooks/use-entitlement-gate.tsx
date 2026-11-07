@@ -4,7 +4,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { PremiumDialog, type PremiumDialogProps, useOverlay } from '@src/shared/ui';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback, useMemo } from 'react';

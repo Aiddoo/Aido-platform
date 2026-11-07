@@ -1,5 +1,5 @@
 import { createAttributionDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
-import { toAttributionMark } from './attribution-mark';
+import { toAttributionMark } from './to-attribution-mark';
 
 describe('toAttributionMark', () => {
   it.each([

@@ -3,7 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { type FontScale, isFontScale } from '@src/shared/preferences/font-scale.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Box, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
-import { SCALED_FONT_STYLES } from '@src/shared/utils/font-scale';
+import { SCALED_FONT_STYLES } from '@src/shared/utils/scaled-font-style';
 import { Radio, RadioGroup } from 'heroui-native';
 import { Text as RNText } from 'react-native';
 

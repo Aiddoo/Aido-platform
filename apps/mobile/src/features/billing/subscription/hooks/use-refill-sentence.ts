@@ -2,7 +2,7 @@ import { formatDateLabel } from '@src/shared/date/date-format';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 

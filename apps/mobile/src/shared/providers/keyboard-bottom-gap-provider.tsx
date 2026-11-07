@@ -10,7 +10,7 @@ import {
 import { type LayoutChangeEvent, useWindowDimensions, type View } from 'react-native';
 
 import { Box } from '../ui/box';
-import { getDistanceToWindowBottom } from '../utils/distance-to-window-bottom';
+import { getDistanceToWindowBottom } from '../utils/get-distance-to-window-bottom';
 
 const KeyboardBottomGapContext = createContext(0);
 

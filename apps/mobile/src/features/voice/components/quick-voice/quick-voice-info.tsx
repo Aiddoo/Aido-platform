@@ -7,7 +7,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { AiIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { useState } from 'react';

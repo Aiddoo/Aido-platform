@@ -3,7 +3,10 @@ import Refresh from '@expo/material-symbols/refresh.xml';
 import { WeatherLocationPolicy } from '@src/features/weather/domains/weather-location.model';
 import { useOnSkyColor } from '@src/features/weather/hooks/use-on-sky-color';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { refetchWeather, weatherReportsFilters } from '@src/features/weather/queries/weather-cache';
+import {
+  refetchWeather,
+  getWeatherReportsFilters,
+} from '@src/features/weather/queries/weather-cache';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { SHEET_ROUTE_SCREEN_OPTIONS, useStackBackToolbar } from '@src/shared/ui';
@@ -24,7 +27,7 @@ export default function WeatherLayout() {
   });
   const push = useSingleTap(router.push);
   const queryClient = useQueryClient();
-  const isRefreshing = useIsFetching(weatherReportsFilters()) > 0;
+  const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
   const location = useWeatherLocation();
   const canRefresh = WeatherLocationPolicy.canFetchReport(location.status);
   const tintColor = useOnSkyColor('text-on-sky');

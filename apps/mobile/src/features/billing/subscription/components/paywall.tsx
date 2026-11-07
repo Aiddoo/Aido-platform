@@ -24,7 +24,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 

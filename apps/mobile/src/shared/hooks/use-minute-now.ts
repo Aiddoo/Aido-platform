@@ -2,7 +2,7 @@ import { fromEpochMs, type Instant } from '@src/shared/date/instant';
 import { useMemo, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
-import { createMinuteClockStore } from './minute-clock-store';
+import { createMinuteClockStore } from '../stores/minute-clock-store';
 
 const minuteClock = createMinuteClockStore({
   now: () => Date.now(),

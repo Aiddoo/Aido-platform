@@ -6,12 +6,19 @@ export interface ReorderInstruction<TId> {
   position: ReorderPosition;
 }
 
-export function getReorderInstruction<TItem, TId>(
-  reorderedItems: TItem[],
-  from: number,
-  to: number,
-  getItemId: (item: TItem) => TId,
-): ReorderInstruction<TId> | null {
+interface ReorderInstructionInput<TItem, TId> {
+  reorderedItems: TItem[];
+  from: number;
+  to: number;
+  getItemId: (item: TItem) => TId;
+}
+
+export function getReorderInstruction<TItem, TId>({
+  reorderedItems,
+  from,
+  to,
+  getItemId,
+}: ReorderInstructionInput<TItem, TId>): ReorderInstruction<TId> | null {
   if (from === to) {
     return null;
   }

@@ -11,7 +11,7 @@ import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
-import { createOptimisticId } from '@src/shared/utils/optimistic-id';
+import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';

@@ -1,4 +1,4 @@
-import { getReorderInstruction } from './reorder-instruction';
+import { getReorderInstruction } from './get-reorder-instruction';
 
 const createItems = (ids: string[]) => ids.map((id) => ({ id }));
 const getItemId = (item: { id: string }) => item.id;
@@ -9,7 +9,12 @@ describe('getReorderInstruction', () => {
     const items = createItems(['a', 'b', 'c']);
 
     // When
-    const result = getReorderInstruction(items, 1, 1, getItemId);
+    const result = getReorderInstruction({
+      reorderedItems: items,
+      from: 1,
+      to: 1,
+      getItemId: getItemId,
+    });
 
     // Then
     expect(result).toBeNull();
@@ -20,7 +25,12 @@ describe('getReorderInstruction', () => {
     const items = createItems(['c', 'a', 'b']);
 
     // When
-    const result = getReorderInstruction(items, 2, 0, getItemId);
+    const result = getReorderInstruction({
+      reorderedItems: items,
+      from: 2,
+      to: 0,
+      getItemId: getItemId,
+    });
 
     // Then
     expect(result).toEqual({ movedId: 'c', targetId: 'a', position: 'before' });
@@ -31,7 +41,12 @@ describe('getReorderInstruction', () => {
     const items = createItems(['b', 'c', 'a']);
 
     // When
-    const result = getReorderInstruction(items, 0, 2, getItemId);
+    const result = getReorderInstruction({
+      reorderedItems: items,
+      from: 0,
+      to: 2,
+      getItemId: getItemId,
+    });
 
     // Then
     expect(result).toEqual({ movedId: 'a', targetId: 'c', position: 'after' });
@@ -42,7 +57,12 @@ describe('getReorderInstruction', () => {
     const items = [{ id: 3 }, { id: 1 }, { id: 2 }];
 
     // When
-    const result = getReorderInstruction(items, 2, 0, (item) => item.id);
+    const result = getReorderInstruction({
+      reorderedItems: items,
+      from: 2,
+      to: 0,
+      getItemId: (item) => item.id,
+    });
 
     // Then
     expect(result).toEqual({ movedId: 3, targetId: 1, position: 'before' });
@@ -53,7 +73,12 @@ describe('getReorderInstruction', () => {
     const items = createItems(['a', 'b']);
 
     // When
-    const result = getReorderInstruction(items, 0, 5, getItemId);
+    const result = getReorderInstruction({
+      reorderedItems: items,
+      from: 0,
+      to: 5,
+      getItemId: getItemId,
+    });
 
     // Then
     expect(result).toBeNull();
@@ -64,7 +89,12 @@ describe('getReorderInstruction', () => {
     const items = createItems(['a']);
 
     // When
-    const result = getReorderInstruction(items, 0, 0, getItemId);
+    const result = getReorderInstruction({
+      reorderedItems: items,
+      from: 0,
+      to: 0,
+      getItemId: getItemId,
+    });
 
     // Then
     expect(result).toBeNull();

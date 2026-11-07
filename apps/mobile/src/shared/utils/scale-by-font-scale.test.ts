@@ -1,4 +1,4 @@
-import { scaleByFontScale } from './scale';
+import { scaleByFontScale } from './scale-by-font-scale';
 
 describe('scaleByFontScale', () => {
   describe('기본 ratio (0.5)', () => {

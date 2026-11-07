@@ -1,5 +1,5 @@
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
-import { toScreenName } from '@src/shared/utils/screen-name';
+import { toScreenName } from '@src/shared/utils/to-screen-name';
 import { usePathname, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 

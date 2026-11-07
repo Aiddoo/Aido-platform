@@ -4,7 +4,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, TextSkeleton, VStack, DashedDivider, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatPercent } from '@src/shared/utils/format';
+import { formatPercent } from '@src/shared/utils/number-format';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, Skeleton } from 'heroui-native';

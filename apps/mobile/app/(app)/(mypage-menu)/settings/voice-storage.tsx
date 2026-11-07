@@ -27,7 +27,7 @@ import {
   IconButton,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatFileSize } from '@src/shared/utils/format';
+import { formatFileSize } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { type PropsWithChildren, Suspense, useState } from 'react';
 

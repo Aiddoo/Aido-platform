@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { readQueryKeyParams } from './query-key-params';
+import { readQueryKeyParams } from './read-query-key-params';
 
 const paramsSchema = z.object({ locationRevision: z.number() });
 

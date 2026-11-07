@@ -20,7 +20,7 @@ export interface StoreReviewRepository {
   update(accountId: string, transition: StateTransition): StoreReviewState;
 }
 
-function storageKey(accountId: string): string {
+function createStoreReviewKey(accountId: string): string {
   return `${KEY_PREFIX}:${accountId}`;
 }
 
@@ -36,11 +36,11 @@ function fromLegacy(legacy: LegacyStoreReviewState): StoreReviewState {
 
 export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRepository {
   const write = (accountId: string, state: StoreReviewState): void => {
-    storage.set(storageKey(accountId), JSON.stringify({ version: 2, ...state }));
+    storage.set(createStoreReviewKey(accountId), JSON.stringify({ version: 2, ...state }));
   };
 
   const read = (accountId: string): StoreReviewState => {
-    const saved = storage.get(storageKey(accountId));
+    const saved = storage.get(createStoreReviewKey(accountId));
     if (saved == null) {
       return StoreReviewPolicy.createEmptyState();
     }

@@ -20,7 +20,7 @@ const KEY_PREFIX = 'aido_coachmark_v1';
 const RETIRED_COACHMARK_KINDS: readonly string[] = ['ai-consent-notice'];
 
 /** 재정렬·친구 찾기 안내는 1.14.x까지 쓰던 키를 그대로 읽어 이미 본 사람에게 다시 보이지 않는다 */
-export function coachmarkStorageKey({ accountId, kind }: CoachmarkInput): string {
+export function createCoachmarkKey({ accountId, kind }: CoachmarkInput): string {
   return match(kind)
     .with('todo-reorder', () => `${REORDER_KEY_PREFIX}:${accountId}:todo`)
     .with('category-reorder', () => `${REORDER_KEY_PREFIX}:${accountId}:category`)
@@ -45,14 +45,14 @@ export function createCoachmarkRepository(
   return {
     isSeen: (input) => {
       try {
-        return storage.get(coachmarkStorageKey(input)) != null;
+        return storage.get(createCoachmarkKey(input)) != null;
       } catch {
         return true;
       }
     },
     markSeen: (input) => {
       try {
-        storage.set(coachmarkStorageKey(input), now());
+        storage.set(createCoachmarkKey(input), now());
       } catch {
         // 저장하지 못하면 다음에 한 번 더 보일 뿐이다.
       }

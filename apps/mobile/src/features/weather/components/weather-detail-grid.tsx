@@ -4,7 +4,7 @@ import { type Instant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Grid, GridItem } from '@src/shared/ui';
-import { formatDecimal } from '@src/shared/utils/format';
+import { formatDecimal } from '@src/shared/utils/number-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 
@@ -26,7 +26,7 @@ import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { toVisibilityKilometers } from '../utils/visibility-kilometers';
+import { toVisibilityKilometers } from '../utils/to-visibility-kilometers';
 import { toUvMeterPosition } from '../utils/weather-bar.geometry';
 import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
 import {

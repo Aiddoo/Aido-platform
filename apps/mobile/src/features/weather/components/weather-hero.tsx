@@ -34,7 +34,7 @@ import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { PlaceName } from '../schemas/weather-location.schema';
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
-import { getForeignCountryName } from '../utils/country-name';
+import { getForeignCountryName } from '../utils/get-foreign-country-name';
 import { toWeatherReportFailedCause } from '../utils/weather-analytics';
 import {
   type TemperatureReading,

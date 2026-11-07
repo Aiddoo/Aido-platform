@@ -1,6 +1,6 @@
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 
-import { getScaledFontSize, SCALED_FONT_STYLES } from './font-scale';
+import { getScaledFontSize, SCALED_FONT_STYLES } from './scaled-font-style';
 
 describe('SCALED_FONT_STYLES', () => {
   it('5개의 FontScale에 대한 스타일을 모두 포함한다', () => {

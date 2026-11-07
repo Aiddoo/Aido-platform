@@ -1,6 +1,6 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import type { TextSize } from '@src/shared/ui';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
+import { getScaledFontSize } from '@src/shared/utils/scaled-font-style';
 import { useResolveClassNames } from 'uniwind';
 
 /** 시안 V2Spec §6: 한 줄에 맞추려고 줄이더라도 11pt 아래로는 줄이지 않는다. */

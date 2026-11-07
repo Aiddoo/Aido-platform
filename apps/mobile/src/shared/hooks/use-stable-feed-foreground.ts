@@ -1,6 +1,6 @@
 import { useIncomingLink } from '@src/shared/di/shared-di-context';
 import { useOverlayState } from '@src/shared/ui';
-import { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground';
+import { isStableFeedForeground } from '@src/shared/utils/is-stable-feed-foreground';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';

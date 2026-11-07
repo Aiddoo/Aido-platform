@@ -463,6 +463,15 @@ MemoList.Loading = function Loading() {
 | 인라인 콜백, 쿼리 키 객체 값                                      | 화살표                                         | `onPress={() => …}`, `detail: ({ memoId }) => […]`                |
 | Policy Facade                                                     | 이름 있는 함수 참조만                          | `{ canCreateMemo, getMemoPreview }`                               |
 
+### 유틸 이름과 인터페이스
+
+`utils/`는 입력만으로 결과를 내는 순수 함수다.
+
+- 파일: export가 하나면 파일 이름이 함수 이름 kebab-case다(`to-screen-name.ts`). 같은 대상의 묶음은 `{대상}.ts`나 정해진 접미사(`{feature}-draft`, `{feature}-analytics`, `{name}.geometry`, `{name}.view-model`)다. `helpers`, `utils`, `common`, `misc`는 쓰지 않는다. 저장소는 `*-store.ts`(`shared/stores/`)이고 `hooks/`에는 `use-*`만 둔다.
+- 함수: 동사로 시작한다(`get`, `calculate`, `is/has/can/should`, `find`, `create`, `with`, `to`, `format`, `parse`). `xxxOf`와 축약(`res`, `tmp`, `cb`, `opts`)은 쓰지 않는다. 넓은 범위의 `result`·`data`는 내용 이름으로 바꾼다.
+- 순수성: 네트워크, 저장소, 로그, 현재 시각, 전역 `t`, 시간대 읽기를 하지 않고 인자로 받는다. 부수효과가 있으면 Service나 훅이다.
+- 인자: 위치 인자는 3개까지다. 4개 이상이면 이름 있는 객체다. 단 worklet과 프레임마다 도는 함수(`followLevel`)는 성능 때문에 위치 인자를 유지하고 이유를 주석으로 남긴다. 위치 불리언은 쓰지 않는다. 넓은 모델 대신 쓰는 칸만 `Pick`으로 받는다.
+
 ### 메모리 누수를 만들지 않는다
 
 | 지점          | 규칙                                                                                                                   |

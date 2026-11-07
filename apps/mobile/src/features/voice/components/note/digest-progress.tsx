@@ -3,7 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 

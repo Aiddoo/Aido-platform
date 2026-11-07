@@ -20,7 +20,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatCount } from '@src/shared/utils/format';
+import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';

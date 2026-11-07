@@ -3,7 +3,7 @@ import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Text, VStack } from '@src/shared/ui';
-import { formatCompactCount } from '@src/shared/utils/format';
+import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';

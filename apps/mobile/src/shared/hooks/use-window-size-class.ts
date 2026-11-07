@@ -1,7 +1,7 @@
 import { useWindowDimensions } from 'react-native';
 
 import { IS_IOS_APP_ON_MAC } from '../infra/device/device-info';
-import { getWindowSizeClass, type WindowSizeClass } from '../utils/window-size-class';
+import { getWindowSizeClass, type WindowSizeClass } from '../utils/get-window-size-class';
 
 /**
  * 접힘·펼침·분할 화면에서 바뀌는 현재 창 폭을 size class로 반환한다. 힌지 상태는 레이아웃에 쓰지 않는다.

@@ -20,7 +20,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
+import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { clamp, range } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';

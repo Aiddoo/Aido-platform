@@ -73,7 +73,7 @@ interface TimelineContext {
   now: Instant;
 }
 
-function timelineKey(item: HourlyTimelineItem): string {
+function getTimelineKey(item: HourlyTimelineItem): string {
   return item.kind === 'hour'
     ? String(toEpochMs(item.hour.startsAt))
     : `${item.kind}-${toEpochMs(item.at)}`;
@@ -110,7 +110,7 @@ export function HourlyForecast() {
         <FlatList
           horizontal
           data={timeline}
-          keyExtractor={timelineKey}
+          keyExtractor={getTimelineKey}
           showsHorizontalScrollIndicator={false}
           initialNumToRender={8}
           className="mt-3"

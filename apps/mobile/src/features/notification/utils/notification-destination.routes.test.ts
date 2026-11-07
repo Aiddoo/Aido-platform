@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
-import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
+import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';

@@ -1,4 +1,4 @@
-import { toVisibilityKilometers } from './visibility-kilometers';
+import { toVisibilityKilometers } from './to-visibility-kilometers';
 
 describe('toVisibilityKilometers', () => {
   it.each([

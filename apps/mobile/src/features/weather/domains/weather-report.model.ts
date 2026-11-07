@@ -36,7 +36,7 @@ export function isWetHour(hour: HourlyForecastEntry): boolean {
   return hour.precipitationChance >= WET_HOUR_CHANCE;
 }
 
-function hourEndsAt(hour: HourlyForecastEntry): number {
+function getHourEndsAt(hour: HourlyForecastEntry): number {
   return toEpochMs(hour.startsAt) + HOUR_MS;
 }
 
@@ -44,7 +44,7 @@ export function getUpcomingHours(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): HourlyForecastEntry[] {
-  return hourly.filter((hour) => hourEndsAt(hour) > toEpochMs(now));
+  return hourly.filter((hour) => getHourEndsAt(hour) > toEpochMs(now));
 }
 
 type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
@@ -140,13 +140,13 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Instant): Prec
   }
 
   const searchFrom = nextHour == null ? nowMs : getNextHourHorizon(nextHour, now);
-  const wetHour = hourly.find((hour) => hourEndsAt(hour) > searchFrom && isWetHour(hour));
+  const wetHour = hourly.find((hour) => getHourEndsAt(hour) > searchFrom && isWetHour(hour));
   if (wetHour == null) {
     return { kind: 'dry' };
   }
   return toWindow(report, now, {
     startsAt: fromEpochMs(Math.max(toEpochMs(wetHour.startsAt), searchFrom)),
-    endsAt: findFirstDryHourStart(hourly, hourEndsAt(wetHour)),
+    endsAt: findFirstDryHourStart(hourly, getHourEndsAt(wetHour)),
     precision: 'hour',
     endPrecision: 'hour',
     precipitationType: wetHour.precipitationType,
@@ -205,7 +205,7 @@ const AIR_QUALITY_GRADES = [
 export const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
 export const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
 
-function gradeIndex(value: number, upperBounds: readonly number[]): number {
+function getGradeIndex(value: number, upperBounds: readonly number[]): number {
   const index = upperBounds.findIndex((bound) => value <= bound);
   return index === -1 ? upperBounds.length : index;
 }
@@ -213,8 +213,8 @@ function gradeIndex(value: number, upperBounds: readonly number[]): number {
 /** 미세먼지·초미세먼지 중 더 나쁜 등급. 두 값이 모두 없으면 null이다. */
 function getAirQualityGrade(airQuality: Pick<AirQuality, 'pm10' | 'pm25'>): AirQualityGrade | null {
   const indexes = [
-    airQuality.pm10 == null ? null : gradeIndex(airQuality.pm10, PM10_UPPER_BOUNDS),
-    airQuality.pm25 == null ? null : gradeIndex(airQuality.pm25, PM25_UPPER_BOUNDS),
+    airQuality.pm10 == null ? null : getGradeIndex(airQuality.pm10, PM10_UPPER_BOUNDS),
+    airQuality.pm25 == null ? null : getGradeIndex(airQuality.pm25, PM25_UPPER_BOUNDS),
   ].filter((index) => index != null);
   if (indexes.length === 0) {
     return null;
@@ -235,7 +235,7 @@ const UV_LEVELS = [
 const UV_UPPER_BOUNDS = [2, 5, 7, 10] as const;
 
 function getUvLevel(uvIndex: number): UvLevel {
-  return UV_LEVELS[gradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
+  return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
 }
 
 export type TemperatureUnit = 'celsius' | 'fahrenheit';

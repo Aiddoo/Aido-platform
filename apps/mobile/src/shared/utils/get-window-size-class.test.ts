@@ -1,4 +1,4 @@
-import { getWindowSizeClass } from './window-size-class';
+import { getWindowSizeClass } from './get-window-size-class';
 
 describe('getWindowSizeClass', () => {
   it.each([

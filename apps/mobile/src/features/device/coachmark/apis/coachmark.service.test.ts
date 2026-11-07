@@ -1,6 +1,6 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 
-import { coachmarkStorageKey, createCoachmarkRepository } from './coachmark.repository';
+import { createCoachmarkKey, createCoachmarkRepository } from './coachmark.repository';
 import { CoachmarkService } from './coachmark.service';
 
 function createMemoryStorage(initial: Record<string, string> = {}) {
@@ -51,7 +51,7 @@ describe('CoachmarkService', () => {
     // Then
     expect(beforeUse).toEqual([true, true]);
     expect(service.isPending(input)).toBe(false);
-    expect(coachmarkStorageKey(input)).toBe('aido_coachmark_v1:account-1:comment-double-tap');
+    expect(createCoachmarkKey(input)).toBe('aido_coachmark_v1:account-1:comment-double-tap');
   });
 
   it('음성 안내는 기존 키 규칙으로 종류마다 따로 저장한다', () => {
@@ -65,7 +65,7 @@ describe('CoachmarkService', () => {
     ] as const;
 
     // When
-    const keys = kinds.map((kind) => coachmarkStorageKey({ accountId: 'account-1', kind }));
+    const keys = kinds.map((kind) => createCoachmarkKey({ accountId: 'account-1', kind }));
 
     // Then
     expect(keys).toEqual([

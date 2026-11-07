@@ -7,7 +7,7 @@ import {
 } from 'react-native-reorderable-list';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { getReorderInstruction, type ReorderInstruction } from '../utils/reorder-instruction';
+import { getReorderInstruction, type ReorderInstruction } from '../utils/get-reorder-instruction';
 
 interface ReorderedList<TItem, TId> {
   instruction: ReorderInstruction<TId>;
@@ -61,7 +61,7 @@ export function useReorderableList<TItem, TId>({
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
     const reorderedItems = reorderItems(data, from, to);
-    const instruction = getReorderInstruction(reorderedItems, from, to, getItemId);
+    const instruction = getReorderInstruction({ reorderedItems, from, to, getItemId });
     if (instruction == null) {
       setHold(null);
       return;

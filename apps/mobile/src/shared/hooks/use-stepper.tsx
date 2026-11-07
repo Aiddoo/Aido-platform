@@ -19,9 +19,9 @@ import {
   type StepperAction,
   type StepperContexts,
   stepperReducer,
-} from './stepper-reducer';
+} from '../utils/stepper-reducer';
 
-export type { StepperContexts } from './stepper-reducer';
+export type { StepperContexts } from '../utils/stepper-reducer';
 
 interface StepperHistory<Contexts extends StepperContexts> {
   push: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;

@@ -1,6 +1,6 @@
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { cn } from '@src/shared/utils/cn';
-import { formatCappedCount, formatCompactCount } from '@src/shared/utils/format';
+import { formatCappedCount, formatCompactCount } from '@src/shared/utils/number-format';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';

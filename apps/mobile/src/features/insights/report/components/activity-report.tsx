@@ -15,7 +15,7 @@ import {
   Box,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatPercent } from '@src/shared/utils/format';
+import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
 import { Separator, Skeleton } from 'heroui-native';

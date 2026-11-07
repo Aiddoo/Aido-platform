@@ -1,5 +1,5 @@
 import { getNowInstant } from '@src/shared/date/instant';
-import { readQueryKeyParams } from '@src/shared/utils/query-key-params';
+import { readQueryKeyParams } from '@src/shared/utils/read-query-key-params';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 

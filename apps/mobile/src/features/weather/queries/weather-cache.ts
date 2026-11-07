@@ -1,4 +1,4 @@
-import { readQueryKeyParams } from '@src/shared/utils/query-key-params';
+import { readQueryKeyParams } from '@src/shared/utils/read-query-key-params';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
@@ -56,7 +56,7 @@ export function refetchWeatherLocation(queryClient: QueryClient) {
 }
 
 /** 리포트를 받는 중인지 볼 때 쓰는 필터 */
-export function weatherReportsFilters() {
+export function getWeatherReportsFilters() {
   return { queryKey: WEATHER_QUERY_KEYS.reports() };
 }
 

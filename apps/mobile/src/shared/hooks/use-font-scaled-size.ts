@@ -1,4 +1,4 @@
-import { scaleByFontScale } from '@src/shared/utils/scale';
+import { scaleByFontScale } from '@src/shared/utils/scale-by-font-scale';
 import { useWindowDimensions } from 'react-native';
 
 /**

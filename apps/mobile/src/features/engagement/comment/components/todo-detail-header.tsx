@@ -7,7 +7,7 @@ import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Box, HStack, QueryErrorBoundary, Text, TextSkeleton } from '@src/shared/ui';
-import { formatCompactCount } from '@src/shared/utils/format';
+import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense, useState } from 'react';

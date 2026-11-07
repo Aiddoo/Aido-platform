@@ -2,7 +2,7 @@ import { useExternalLink, useLogger } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { useCallback, useRef } from 'react';
 
-import { OPEN_URL_LOG_EVENT } from './open-url-log-events';
+import { OPEN_URL_LOG_EVENT } from '../observability/open-url-log-events';
 import { useSingleTap } from './use-single-tap';
 
 export function useOpenAppSettings() {

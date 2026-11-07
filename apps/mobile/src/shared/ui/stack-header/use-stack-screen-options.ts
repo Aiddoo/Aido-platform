@@ -1,5 +1,5 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
+import { getScaledFontSize } from '@src/shared/utils/scaled-font-style';
 import type { NativeStackNavigationOptions } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 

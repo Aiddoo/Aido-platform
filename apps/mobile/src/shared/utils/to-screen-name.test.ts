@@ -1,4 +1,4 @@
-import { toScreenName } from './screen-name';
+import { toScreenName } from './to-screen-name';
 
 describe('toScreenName', () => {
   it.each([

@@ -6,7 +6,7 @@ import {
   formatPercent,
   formatPrice,
   formatFileSize,
-} from './format';
+} from './number-format';
 
 describe('formatPercent', () => {
   test('정수면 소수점 없이 반환한다', () => {

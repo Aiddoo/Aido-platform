@@ -1,5 +1,5 @@
 import { NOTIFICATION_NAVIGATION_KIND, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
-import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
+import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 
 import { NAVIGATION_CASES, toLegacySource } from '../__tests__/notification-navigation-cases';
 import { resolveNotificationDestination } from './notification-destination';
