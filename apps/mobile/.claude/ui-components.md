@@ -484,6 +484,8 @@ withTiming(value, { duration: 200 });
 | `ANIMATION.duration.slow`     | 300ms | 느린 전환                                 |
 | `ANIMATION.duration.emphasis` | 600ms | 한 번 눈길을 끄는 강조(새 알림 종 흔들기) |
 | `ANIMATION.delay.short`       | 50ms  | 짧은 지연                                 |
+| `ANIMATION.delay.medium`      | 100ms | 중간 지연                                 |
+| `ANIMATION.delay.long`        | 200ms | 긴 지연                                   |
 
 ---
 

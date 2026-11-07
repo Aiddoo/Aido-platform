@@ -120,7 +120,12 @@ function resolveApiUrl(): string {
 export const ENV = {
   APP_VERSION: Constants.expoConfig?.version,
   APP_ENV: extra.env,
+  IS_DEV: extra.isDevelopment,
   IS_PRODUCTION: extra.isProduction,
+
+  PLATFORM: process.env.EXPO_OS,
+  IS_ANDROID: process.env.EXPO_OS === 'android',
+  IS_IOS: process.env.EXPO_OS === 'ios',
 
   API_URL: resolveApiUrl(),
   SCHEME: getAppScheme(),

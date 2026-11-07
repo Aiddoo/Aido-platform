@@ -11,7 +11,7 @@ import { isApiError } from '@src/core/errors/api-error';
  *   장애가 아니므로 예외 리포트 대신 breadcrumb만 남긴다.
  * - `error`: 진짜 장애(5xx·네트워크·파싱 등). 에러 화면 + 리포트.
  */
-type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
+export type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
 
 /** 서버 플래그로 기능이 꺼졌다는 코드. fallback이 "지금은 쓸 수 없음"을 그린다 */
 const FEATURE_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([ErrorCode.INVITE_2105]);
