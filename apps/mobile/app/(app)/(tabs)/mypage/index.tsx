@@ -7,7 +7,8 @@ import { MyPageMenu } from '@src/features/identity/user/components/mypage-menu/m
 import { MyPagePaneLayout } from '@src/features/identity/user/components/mypage-pane/mypage-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
-import { MyPageInviteCard } from '@src/features/social/invite/components/invite-reward-button';
+import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
+import { useInviteAvailability } from '@src/features/social/invite/hooks/use-invite-availability';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -49,6 +50,7 @@ export default function MyPageScreen() {
 /** 넓은 화면의 메뉴 화면(`(mypage-menu)/_layout`)도 이 칸을 그려 들어가고 나올 때 왼쪽이 그대로다 */
 export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
   const { t } = useTranslation('user');
+  const isInviteAvailable = useInviteAvailability();
 
   return (
     <MyPagePaneLayout isSplit={isSplit} headerAction={<NotificationBell.Header />}>
@@ -63,7 +65,14 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           </Suspense>
         </QueryErrorBoundary>
 
-        <MyPageInviteCard />
+        {/* 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */}
+        {isInviteAvailable && (
+          <QueryErrorBoundary fallback={InviteRewardButton.Error}>
+            <Suspense fallback={<InviteRewardButton.Loading />}>
+              <InviteRewardButton />
+            </Suspense>
+          </QueryErrorBoundary>
+        )}
 
         <MyPageMenu.Activity whatsNewItem={<WhatsNewMenuItem />} />
 

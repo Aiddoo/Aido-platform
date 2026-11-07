@@ -5,7 +5,6 @@ import {
   Box,
   HStack,
   QueryErrorActions,
-  QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Text,
   TextButton,
@@ -15,11 +14,10 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ComponentProps, Fragment, Suspense } from 'react';
+import { type ComponentProps, Fragment } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { InvitePolicy } from '../domains/invite.model';
-import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { createPawPrintBoard } from '../utils/invite-paw-print-board.geometry';
@@ -33,8 +31,8 @@ type InviteRewardButtonProps = Omit<
 // 마이페이지 카드에는 지금 판의 첫 줄 네 칸만 줄여 보여 준다
 const PREVIEW_COLUMNS = 4;
 
-/** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 MyPageInviteCard가 정한다 */
-function InviteRewardButton({ className, ...props }: InviteRewardButtonProps) {
+/** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 마이페이지가 정한다 */
+export function InviteRewardButton({ className, ...props }: InviteRewardButtonProps) {
   const { t } = useTranslation('invite');
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
@@ -145,20 +143,3 @@ InviteRewardButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
     </VStack>
   );
 };
-
-/** 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */
-export function MyPageInviteCard() {
-  const isInviteAvailable = useInviteAvailability();
-
-  if (!isInviteAvailable) {
-    return null;
-  }
-
-  return (
-    <QueryErrorBoundary fallback={InviteRewardButton.Error}>
-      <Suspense fallback={<InviteRewardButton.Loading />}>
-        <InviteRewardButton />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
