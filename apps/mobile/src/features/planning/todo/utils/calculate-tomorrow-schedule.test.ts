@@ -67,4 +67,17 @@ describe('calculateTomorrowSchedule', () => {
       expect(result.endDate).toEqual(fromDate(TOMORROW));
     });
   });
+
+  describe('설정 시간대 기준', () => {
+    it('기기 시간대와 날짜가 다른 시간대에서도 설정 시간대의 tomorrow을 쓴다', () => {
+      // Given: 로스앤젤레스는 3/8 낮이고 서울은 3/9 새벽인 순간
+      const instant = new Date('2026-03-08T20:00:00.000Z');
+
+      // When
+      const result = calculateTomorrowSchedule(null, instant, 'America/Los_Angeles');
+
+      // Then
+      expect(result.startDate).toEqual(new Date(2026, 2, 9));
+    });
+  });
 });

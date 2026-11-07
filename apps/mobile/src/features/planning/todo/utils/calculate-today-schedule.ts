@@ -1,6 +1,6 @@
 import { isBeforeDay } from '@src/features/planning/todo/utils/calendar-date';
 import type { Instant } from '@src/shared/date/instant';
-import dayjs from 'dayjs';
+import { startOfLocalDay } from '@src/shared/date/local-day';
 
 interface TodaySchedule {
   startDate: Date;
@@ -12,7 +12,7 @@ export function calculateTodaySchedule(
   today: Date,
   timeZone: string,
 ): TodaySchedule {
-  const todayStart = dayjs(today).startOf('day').toDate();
+  const todayStart = startOfLocalDay(today, timeZone);
   const isEndDateExpired = endDate != null && isBeforeDay(endDate, todayStart, timeZone);
 
   return {

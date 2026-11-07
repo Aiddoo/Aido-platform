@@ -1,5 +1,7 @@
 import { type DatePickerState, datePickerReducer } from './use-date-picker';
 
+const SYSTEM_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 const createState = (overrides?: Partial<DatePickerState>): DatePickerState => ({
   startDate: new Date(2025, 2, 15),
   displayMonth: new Date(2025, 2, 1),
@@ -29,7 +31,7 @@ describe('datePickerReducer', () => {
       const state = createState({ displayMonth: new Date(2025, 2, 1) });
 
       // When
-      const next = datePickerReducer(state, { type: 'prevMonth' });
+      const next = datePickerReducer(state, { type: 'prevMonth', timeZone: SYSTEM_TIME_ZONE });
 
       // Then
       expect(next.displayMonth.getFullYear()).toBe(2025);
@@ -43,7 +45,7 @@ describe('datePickerReducer', () => {
       const state = createState({ displayMonth: new Date(2025, 2, 1) });
 
       // When
-      const next = datePickerReducer(state, { type: 'nextMonth' });
+      const next = datePickerReducer(state, { type: 'nextMonth', timeZone: SYSTEM_TIME_ZONE });
 
       // Then
       expect(next.displayMonth.getFullYear()).toBe(2025);

@@ -1,11 +1,13 @@
 import { isSameDay, isSameMonth } from '@src/features/planning/todo/utils/calendar-date';
+import { getDayOfWeek } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/date-labels';
+import { toDateKey } from '@src/shared/date/instant';
+import { addLocalDays, startOfLocalDay } from '@src/shared/date/local-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
@@ -53,8 +55,8 @@ function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
   const { t } = useTranslation('todo');
   const today = useToday();
   const { timeZone } = useDateFormatContext();
-  const todayStart = dayjs(today).startOf('day').toDate();
-  const tomorrowStart = dayjs(todayStart).add(1, 'day').toDate();
+  const todayStart = startOfLocalDay(today, timeZone);
+  const tomorrowStart = addLocalDays(todayStart, 1, timeZone);
 
   return (
     <VStack gap={4}>
@@ -83,6 +85,7 @@ interface QuickDateRowProps {
 
 function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) {
   const { i18n } = useTranslation();
+  const { timeZone } = useDateFormatContext();
   const weekdayLabels = getWeekdayLabels(i18n.language);
   const tone = isSelected ? 'brand' : 'neutral';
 
@@ -106,7 +109,7 @@ function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) 
         }
         right={
           <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
-            {weekdayLabels[dayjs(date).day()]}
+            {weekdayLabels[getDayOfWeek(toDateKey(date, timeZone))]}
           </Text>
         }
         horizontalPadding="medium"

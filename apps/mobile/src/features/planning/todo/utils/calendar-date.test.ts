@@ -4,7 +4,7 @@ import {
   diffMonths,
   diffWeeks,
   getCalendarRange,
-  getCalendarWeekBounds,
+  getWeekStart,
   getMonthWeeks,
   getWeekRange,
   isAfterDay,
@@ -25,22 +25,19 @@ afterEach(async () => {
 
 describe('일요일을 기준으로 한 달력 주', () => {
   test.each([
-    [new Date(2026, 9, 3), new Date(2026, 8, 27), 4],
-    [new Date(2026, 9, 4), new Date(2026, 9, 4), 1],
-    [new Date(2027, 0, 1), new Date(2026, 11, 27), 4],
-    [new Date(2028, 1, 29), new Date(2028, 1, 27), 4],
-  ])('날짜 %s의 주는 %s부터 시작하는 %s주차다', (date, expectedStart, expectedWeek) => {
+    [new Date(2026, 9, 3), new Date(2026, 8, 27)],
+    [new Date(2026, 9, 4), new Date(2026, 9, 4)],
+    [new Date(2027, 0, 1), new Date(2026, 11, 27)],
+    [new Date(2028, 1, 29), new Date(2028, 1, 27)],
+  ])('날짜 %s의 주는 %s부터 시작한다', (date, expectedStart) => {
     // Given
     const originalTimestamp = date.getTime();
 
     // When
-    const week = getCalendarWeekBounds(date, SYSTEM_TIME_ZONE);
+    const weekStart = getWeekStart(date, SYSTEM_TIME_ZONE);
 
     // Then
-    expect(week.start).toEqual(expectedStart);
-    expect(week.weekOfMonth).toBe(expectedWeek);
-    expect(week.end.getDay()).toBe(6);
-    expect(week.end.getHours()).toBe(23);
+    expect(weekStart).toEqual(expectedStart);
     expect(date.getTime()).toBe(originalTimestamp);
   });
 });
@@ -144,7 +141,7 @@ describe('diffMonths', () => {
     const day15 = new Date(2026, 3, 15);
 
     // When
-    const result = diffMonths(day15, day1);
+    const result = diffMonths(day15, day1, SYSTEM_TIME_ZONE);
 
     // Then
     expect(result).toBe(0);
@@ -157,8 +154,8 @@ describe('diffMonths', () => {
     const march = new Date(2026, 2, 15);
 
     // When / Then
-    expect(diffMonths(may, april)).toBe(1);
-    expect(diffMonths(march, april)).toBe(-1);
+    expect(diffMonths(may, april, SYSTEM_TIME_ZONE)).toBe(1);
+    expect(diffMonths(march, april, SYSTEM_TIME_ZONE)).toBe(-1);
   });
 
   it('월말 경계를 넘어도 startOf month 기준으로 정규화되어야 한다', () => {
@@ -167,7 +164,7 @@ describe('diffMonths', () => {
     const feb1 = new Date(2026, 1, 1);
 
     // When
-    const result = diffMonths(feb1, jan31);
+    const result = diffMonths(feb1, jan31, SYSTEM_TIME_ZONE);
 
     // Then
     expect(result).toBe(1);

@@ -13,8 +13,16 @@ import {
   shiftCalendarDate,
 } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { getDayOfWeek } from '@src/shared/date/date-key';
 import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
 import { toDateKey } from '@src/shared/date/instant';
+import {
+  addLocalDays,
+  addLocalMonths,
+  addLocalWeeks,
+  startOfLocalMonth,
+  withLocalMonthOf,
+} from '@src/shared/date/local-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -24,7 +32,6 @@ import {
 } from '@src/shared/preferences/calendar-view-mode.preference';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import dayjs from 'dayjs';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { type ReactNode, useCallback, useRef } from 'react';
 import { match } from 'ts-pattern';
@@ -164,11 +171,8 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   const baseWeekRef = useRef(getWeekStart(selectedDate, timeZone));
 
   const weekAtPage = useCallback(
-    (page: number) =>
-      dayjs(baseWeekRef.current)
-        .add(page - CALENDAR_CENTER_PAGE, 'week')
-        .toDate(),
-    [],
+    (page: number) => addLocalWeeks(baseWeekRef.current, page - CALENDAR_CENTER_PAGE, timeZone),
+    [timeZone],
   );
 
   const pageOfWeek = useCallback(
@@ -182,7 +186,7 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
 
   const handleChange = (page: number) => {
     const week = weekAtPage(page);
-    setSelectedDate(dayjs(week).day(dayjs(selectedDate).day()).toDate());
+    setSelectedDate(addLocalDays(week, getDayOfWeek(toDateKey(selectedDate, timeZone)), timeZone));
   };
 
   return (
@@ -198,28 +202,26 @@ interface CalendarMonthPagerProps {
 
 function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDateParam();
-  const baseMonthRef = useRef(dayjs(selectedDate).startOf('month').toDate());
+  const { timeZone } = useDateFormatContext();
+  const baseMonthRef = useRef(startOfLocalMonth(selectedDate, timeZone));
 
   const monthAtPage = useCallback(
-    (page: number) =>
-      dayjs(baseMonthRef.current)
-        .add(page - CALENDAR_CENTER_PAGE, 'month')
-        .toDate(),
-    [],
+    (page: number) => addLocalMonths(baseMonthRef.current, page - CALENDAR_CENTER_PAGE, timeZone),
+    [timeZone],
   );
 
   const pageOfMonth = useCallback(
     (month: Date) =>
       clampCalendarPage(
-        diffMonths(month, baseMonthRef.current) + CALENDAR_CENTER_PAGE,
+        diffMonths(month, baseMonthRef.current, timeZone) + CALENDAR_CENTER_PAGE,
         CALENDAR_TOTAL_PAGES,
       ),
-    [],
+    [timeZone],
   );
 
   const handleChange = (page: number) => {
     const month = monthAtPage(page);
-    setSelectedDate(dayjs(month).date(dayjs(selectedDate).date()).toDate());
+    setSelectedDate(withLocalMonthOf(selectedDate, month, timeZone));
   };
 
   return (
@@ -236,7 +238,7 @@ interface WeekRowProps {
 
 function WeekRow({ week, completions }: WeekRowProps) {
   const { timeZone } = useDateFormatContext();
-  const dates = getWeekDates(getWeekStart(week, timeZone));
+  const dates = getWeekDates(getWeekStart(week, timeZone), timeZone);
 
   return (
     <HStack px={8}>
@@ -256,7 +258,7 @@ interface MonthGridProps {
 
 function MonthGrid({ month, completions }: MonthGridProps) {
   const { timeZone } = useDateFormatContext();
-  const weeks = fillMonthGrid(getMonthWeeks(month, timeZone));
+  const weeks = fillMonthGrid(getMonthWeeks(month, timeZone), timeZone);
 
   return (
     <VStack>
@@ -278,7 +280,7 @@ function MonthGrid({ month, completions }: MonthGridProps) {
   );
 }
 
-function fillMonthGrid(weeks: Date[][]): Date[][] {
+function fillMonthGrid(weeks: Date[][], timeZone: string): Date[][] {
   const filled = [...weeks];
   while (filled.length < MONTH_WEEKS) {
     const lastWeek = filled.at(-1);
@@ -286,7 +288,7 @@ function fillMonthGrid(weeks: Date[][]): Date[][] {
     if (!lastDate) {
       break;
     }
-    filled.push(getWeekDates(dayjs(lastDate).add(1, 'day').toDate()));
+    filled.push(getWeekDates(addLocalDays(lastDate, 1, timeZone), timeZone));
   }
 
   return filled;

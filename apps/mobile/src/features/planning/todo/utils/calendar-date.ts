@@ -1,13 +1,23 @@
 import { DAYS_PER_WEEK } from '@src/shared/constants/time.constants';
 import {
+  addDaysToDateKey,
+  diffDateKeysInDays,
   getCalendarWeek,
   type CalendarWeek,
   getDayOfWeek,
+  getMonthEndDateKey,
   isSameMonthDateKey,
 } from '@src/shared/date/date-key';
-import { fromDate, type Instant, toDateKey } from '@src/shared/date/instant';
+import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
+import {
+  addLocalDays,
+  addLocalMonths,
+  addLocalWeeks,
+  diffLocalMonths,
+  startOfLocalMonth,
+  toLocalDay,
+} from '@src/shared/date/local-day';
 import type { CalendarViewMode } from '@src/shared/preferences/calendar-view-mode.preference';
-import dayjs from 'dayjs';
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -21,14 +31,9 @@ function getWeekOfDate(date: Date, timeZone: string): CalendarWeek {
   return getCalendarWeek(toDateKey(date, timeZone));
 }
 
-/** 로컬 달력 Date의 앱 달력 주. start는 그 주 일요일 0시, end는 토요일 23:59:59.999. */
-export function getCalendarWeekBounds(date: Date, timeZone: string) {
-  const week = getWeekOfDate(date, timeZone);
-  return {
-    start: dayjs(week.startDateKey).toDate(),
-    end: dayjs(week.endDateKey).endOf('day').toDate(),
-    weekOfMonth: week.weekOfMonth,
-  };
+/** 앱 달력 주의 시작. 그 주 일요일 0시다 */
+export function getWeekStart(date: Date, timeZone: string): Date {
+  return toLocalDay(getWeekOfDate(date, timeZone).startDateKey);
 }
 
 /** 달력 입력 값을 느슨하게 읽는다. 없거나 읽을 수 없으면 던지지 않고 null이다 */
@@ -37,8 +42,8 @@ export function parseInstantOrNull(date?: Date | string | number | null): Instan
     return null;
   }
 
-  const parsed = dayjs(date);
-  return parsed.isValid() ? fromDate(parsed.toDate()) : null;
+  const parsed = toDate(date);
+  return Number.isNaN(parsed.getTime()) ? null : fromDate(parsed);
 }
 
 export function isSameDay(date1: Day, date2: Day, timeZone: string): boolean {
@@ -69,41 +74,36 @@ export function isSaturday(date: Day, timeZone: string): boolean {
   return getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY;
 }
 
-export function getWeekStart(date: Date, timeZone: string): Date {
-  return getCalendarWeekBounds(date, timeZone).start;
-}
-
 /** 두 날짜의 주 단위 차이 (date1 - date2, 앱 달력 주의 시작으로 정규화) */
 export function diffWeeks(date1: Date, date2: Date, timeZone: string): number {
-  return dayjs(getCalendarWeekBounds(date1, timeZone).start).diff(
-    getCalendarWeekBounds(date2, timeZone).start,
-    'week',
+  const days = diffDateKeysInDays(
+    getWeekOfDate(date2, timeZone).startDateKey,
+    getWeekOfDate(date1, timeZone).startDateKey,
   );
+
+  return days / DAYS_PER_WEEK;
 }
 
-/** 두 날짜의 월 단위 차이 (date1 - date2, startOf('month') 기준으로 정규화) */
-export function diffMonths(date1: Date, date2: Date): number {
-  return dayjs(date1).startOf('month').diff(dayjs(date2).startOf('month'), 'month');
+/** 두 날짜의 월 단위 차이 (date1 - date2) */
+export function diffMonths(date1: Date, date2: Date, timeZone: string): number {
+  return diffLocalMonths(date1, date2, timeZone);
 }
 
-export function getWeekDates(weekStartDate: Date): Date[] {
-  return range(DAYS_PER_WEEK).map((index) => dayjs(weekStartDate).add(index, 'day').toDate());
+export function getWeekDates(weekStartDate: Date, timeZone: string): Date[] {
+  return range(DAYS_PER_WEEK).map((index) => addLocalDays(weekStartDate, index, timeZone));
 }
 
 export function getMonthWeeks(displayDate: Date, timeZone: string): Date[][] {
-  const display = dayjs(displayDate);
-  const lastWeekStart = dayjs(
-    getCalendarWeekBounds(display.endOf('month').toDate(), timeZone).start,
-  );
+  const monthStart = startOfLocalMonth(displayDate, timeZone);
+  const monthStartKey = toDateKey(monthStart, timeZone);
+  const lastWeekStartKey = getCalendarWeek(getMonthEndDateKey(monthStartKey)).startDateKey;
 
   const weeks: Date[][] = [];
-  let currentWeekStart = dayjs(
-    getCalendarWeekBounds(display.startOf('month').toDate(), timeZone).start,
-  );
+  let currentWeekStartKey = getCalendarWeek(monthStartKey).startDateKey;
 
-  while (!currentWeekStart.isAfter(lastWeekStart, 'day')) {
-    weeks.push(getWeekDates(currentWeekStart.toDate()));
-    currentWeekStart = currentWeekStart.add(1, 'week');
+  while (currentWeekStartKey <= lastWeekStartKey) {
+    weeks.push(getWeekDates(toLocalDay(currentWeekStartKey), timeZone));
+    currentWeekStartKey = addDaysToDateKey(currentWeekStartKey, DAYS_PER_WEEK);
   }
 
   return weeks;
@@ -114,10 +114,11 @@ export function getCalendarRange(
   displayDate: Date,
   timeZone: string,
 ): { rangeStart: string; rangeEnd: string } {
-  const display = dayjs(displayDate);
+  const monthStartKey = toDateKey(startOfLocalMonth(displayDate, timeZone), timeZone);
+
   return {
-    rangeStart: getWeekOfDate(display.startOf('month').toDate(), timeZone).startDateKey,
-    rangeEnd: getWeekOfDate(display.endOf('month').toDate(), timeZone).endDateKey,
+    rangeStart: getCalendarWeek(monthStartKey).startDateKey,
+    rangeEnd: getCalendarWeek(getMonthEndDateKey(monthStartKey)).endDateKey,
   };
 }
 
@@ -136,7 +137,7 @@ export function shiftCalendarDate(
   timeZone: string,
 ): Date {
   return match(viewMode)
-    .with('week', () => dayjs(getWeekStart(date, timeZone)).add(step, 'week').toDate())
-    .with('month', () => dayjs(date).startOf('month').add(step, 'month').toDate())
+    .with('week', () => addLocalWeeks(getWeekStart(date, timeZone), step, timeZone))
+    .with('month', () => addLocalMonths(startOfLocalMonth(date, timeZone), step, timeZone))
     .exhaustive();
 }
