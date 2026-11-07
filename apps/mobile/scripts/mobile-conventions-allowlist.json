@@ -142,7 +142,7 @@
     "reason": "위층에서 타입, 모델, *-cache 밖의 코드를 가져오는 간선. 줄 수를 넘으면 막는다",
     "entries": {
       "planning/todo -> social/friend": {
-        "count": 3,
+        "count": 1,
         "reason": "친구 칸과 친구 달력이 친구 쿼리를 읽는다. 슬롯으로 app/에서 조립할 예정"
       }
     }

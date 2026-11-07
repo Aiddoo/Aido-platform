@@ -3,7 +3,6 @@ import { CategoryHeaderPill } from '@src/features/planning/category/components/c
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
-import { useFriendScreenParams } from '@src/features/social/friend/hooks/use-friend-screen-params';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -35,15 +34,15 @@ import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 interface FriendTodoListProps {
+  friendId: string;
   /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
   rowAction: ComponentType<{ todo: Todo }>;
   /** 친구에게 할 일이 없는 오늘 빈 화면에 붙는 행동(독촉 콕 등) */
   emptyAction: ComponentType;
 }
 
-export function FriendTodoList({ rowAction, emptyAction }: FriendTodoListProps) {
+export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoListProps) {
   const { timeZone } = useDateFormatContext();
-  const { friendId } = useFriendScreenParams();
   const [date] = useFeedDateParam();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [

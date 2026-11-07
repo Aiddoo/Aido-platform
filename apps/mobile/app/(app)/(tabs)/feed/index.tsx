@@ -297,7 +297,7 @@ function FriendFeedTodos() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
-          <FriendCalendar />
+          <FriendCalendar friendId={friend.id} />
 
           <Spacing size={8} />
 
@@ -319,6 +319,7 @@ function FriendFeedTodos() {
               <Suspense fallback={<FriendTodoList.Loading />}>
                 <FriendTodoList
                   key={selectedDateKey}
+                  friendId={friend.id}
                   rowAction={FriendTodoNudgeAction}
                   emptyAction={FriendRemindNudgeAction}
                 />
