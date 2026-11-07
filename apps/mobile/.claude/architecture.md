@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 3.1.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
+**Version**: 3.1.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/notes/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
 
@@ -171,6 +171,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                   |
 | 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                     |
 | 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                 |
+| 폼 모양              | `FormProvider`·`useFormContext`·`FormField`, 변수 이름 `form` 아님, `useForm` 제네릭. 폼은 `form`을 props로 넘기고 `Controller`로 쓴다                                                        |
 | 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                    |
 | 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                   |
 
@@ -180,17 +181,17 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 ## 아직 옮기지 않은 것
 
-이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
+이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-08 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                              | 지금 코드                                                                                                                                                                                                                                                                          |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| utils 파일                        | 평탄한 `*.view-model.ts` 6개가 `utils/`에 남았다. `weather-briefing`·`subscription-receipt`·`plan-todo-subtitle`·`todo-comment-replies`(답글 아래 줄과 펼침은 화면 상태라 Policy에 넣지 않는다)는 유지하고, `subscription-failure`(i18n 키 조합)·`hourly-timeline`은 판단이 남았다 |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 24개. Service의 `safeParse` 1곳이 남았다: `session-revocation.service`(`HttpClient`가 아닌 raw `Response`, 실패하면 던지지 않고 `null`)                                                                                                             |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트를 import하는 파일 3개(`shared/infra/http` 2, `shared/date/time-of-day`). `common`의 서브패스가 없어 남겼다                                                                                                                                |
-| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                                                                        |
-| [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                     |
-| [층과 의존](#층과-의존)           | 양방향 6쌍, 허용 외 위층 import 없음                                                                                                                                                                                                                                               |
-| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                   |
+| 규칙                              | 지금 코드                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| utils 파일                        | 평탄한 `*.view-model.ts` 10개가 `utils/`에 있다. `weather-briefing`·`subscription-receipt`·`plan-todo-subtitle`·`todo-comment-replies`(답글 아래 줄과 펼침은 화면 상태라 Policy에 넣지 않는다)는 유지하고, `subscription-failure`(i18n 키 조합)·`hourly-timeline`은 판단이 남았다. `memo`·`invite-code`·`plan-benefit`·`voice-caption`·`weather-scene`은 아직 가르지 않았다 |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 25개. Service의 `safeParse` 1곳이 남았다: `session-revocation.service`(`HttpClient`가 아닌 raw `Response`, 실패하면 던지지 않고 `null`)                                                                                                                                                                                                      |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트를 import하는 파일 5개(`shared/infra/http` 2, `shared/date/time-of-day`, `shared/utils/semantic-version`, `billing/subscription/domains/entitlement.error`). `common`의 서브패스가 없어 남겼다                                                                                                                                      |
+| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                                                                                                                                                                 |
+| [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                              |
+| [층과 의존](#층과-의존)           | 양방향 6쌍, 허용 외 위층 import 없음                                                                                                                                                                                                                                                                                                                                        |
+| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                            |
 
 ---
 
@@ -371,7 +372,7 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 
 **자리는 같고 구현이 갈리면 컴포넌트를 prop으로 넘긴다.** `MemoEditor`는 넓은 화면 pane과 Stack 화면에서 툴바만 다르다. `mode`로 분기하지 않고 인터페이스 하나를 받는다(`toolbar={MemoEditor.StackToolbar}`, `toolbar={MemoEditor.PaneToolbar}`).
 
-**변환은 es-toolkit으로 의도를 드러낸다.** `groupBy`, `keyBy`, `partition`, `sumBy`, `maxBy`, `orderBy`, `uniqBy`, `clamp`, `range`를 쓴다. 변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(`notification-list.view-model.ts`). 상호 배타적인 상태는 ts-pattern `match(…).exhaustive()`다. 단순 표시 여부나 두 가지 문구는 `&&`·삼항식이면 된다.
+**변환은 es-toolkit으로 의도를 드러낸다.** `groupBy`, `keyBy`, `partition`, `sumBy`, `maxBy`, `orderBy`, `uniqBy`, `clamp`, `range`를 쓴다. 변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(`notification/utils/date-section.ts`). 상호 배타적인 상태는 ts-pattern `match(…).exhaustive()`다. 단순 표시 여부나 두 가지 문구는 `&&`·삼항식이면 된다.
 
 ### 이름
 
@@ -578,7 +579,7 @@ MemoList.Loading = function Loading() {
 
 예외:
 
-- 초대 수락 결과: mutation 응답을 다음 화면(환영 시트)에 넘길 때 `queryFn: skipToken` 쿼리(`getRedemptionResultQueryOptions`)에 둔다. 보상·친구 결과를 URL로 넘기면 딥링크로 위조할 수 있다.
+- 초대 수락 결과: mutation 응답을 다음 화면(환영 시트)에 넘길 때 `queryFn: skipToken` 쿼리(`useGetRedemptionResultQueryOptions`)에 둔다. 보상·친구 결과를 URL로 넘기면 딥링크로 위조할 수 있다.
 - 차단·신고 대상 이름: 사용자 한 명을 id로 조회하는 API가 없어 확인 문구의 이름을 route query(`name`)로 받는다. 표시용이고 판정은 폴더 param의 id로만 한다.
 - 위젯 진입: `use-widget-app-entry.ts`는 앱 최상위에서 현재 화면과 무관하게 읽어야 해 `useGlobalSearchParams`를 쓴다.
 - 입력 흐름: 회원가입·비밀번호의 `step`은 URL로 복원되면 안 돼 `useState`다. 친구 검색어는 입력 중인 값이고 복원 요구가 없어 지역 상태다.
@@ -957,7 +958,7 @@ export function useCreateMemoMutationOptions() {
 - **구조 공유:** `Date`는 plain 객체가 아니어서 같은 값이어도 새 참조가 되고 그 객체와 조상까지 참조가 바뀐다. 그래서 `Date`가 있는 모델은 재조회 때 다시 그려질 수 있다. 순간은 `Instant` 문자열로 둔다(메모 18개 재조회에서 유지되는 참조 0개 → 18개, `memo.mapper.structural-sharing.test.ts`).
 - **추적 속성:** 결과를 rest로 구조 분해하지 않는다.
 - **`mutationFn`:** 반드시 `unwrap()`한다. `Result.err()`를 돌려주면 React Query가 성공으로 보고 `onSuccess`를 부른다. 오류 분기는 [에러 처리](../docs/error-handling.md)를 본다.
-- **`onSettled`:** Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 바로 떠나는 create·delete·convert는 돌려주지 않는다. update는 뒤로 가기 저장이 떠나므로 돌려주지 않고, 대신 `onSuccess`에서 목록의 그 항목을 바꾼다(`replaceMemoInList`). 화면에 머무는 pin만 돌려준다(`useToggleMemoPinMutationOptions`). 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
+- **`onSettled`·`onSuccess`의 기다림:** 콜백이 Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 떠나는 변경(create·delete·convert·update·pin)은 기다리지 않는다. update는 뒤로 가기 저장이 떠나므로 `onSuccess`에서 목록의 그 항목만 바꾸고(`replaceMemoInList`), pin은 `onSettled`에서 `invalidateMemos`를 부르되 돌려주지 않는다(`useSetMemoPinnedMutationOptions`). 화면에 머무는 목록의 행 버튼(친구 수락·거절)은 `onSuccess`에서 무효화를 기다려 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 하기 위해서다. 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
 - **무효화:** 다른 feature의 캐시는 그 feature의 `{feature}-cache.ts` 함수로만 무효화한다(`invalidateMemos`). 자기 feature 안에서 범위를 좁힐 때만 자기 키를 직접 쓴다. 키 위치에 기대는 구조 분해(`const [, , params] = query.queryKey`)를 쓰지 않는다.
 
 ### 할 일 목록의 낙관적 갱신
