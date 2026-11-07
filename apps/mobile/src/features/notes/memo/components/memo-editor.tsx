@@ -132,14 +132,19 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     }
   }, [memo.content, form.reset, restoredDraft]);
 
-  const handleSave = form.handleSubmit(async ({ content }) => {
+  // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
+  const updateChangedContent = async (content: string) => {
     const trimmedContent = content.trim();
+    if (trimmedContent !== memo.content) {
+      await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
+    }
+    return trimmedContent;
+  };
+
+  const saveAndFinishEditing = form.handleSubmit(async ({ content }) => {
     try {
-      // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
-      if (trimmedContent !== memo.content) {
-        await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
-      }
-      form.reset({ content: trimmedContent });
+      const savedContent = await updateChangedContent(content);
+      form.reset({ content: savedContent });
       discardDraft();
       setIsEditing(false);
       Keyboard.dismiss();
@@ -149,11 +154,8 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   });
 
   const saveAndLeave = form.handleSubmit(async ({ content }) => {
-    const trimmedContent = content.trim();
     try {
-      if (trimmedContent !== memo.content) {
-        await updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
-      }
+      await updateChangedContent(content);
       discardDraft();
     } catch (error) {
       reportUnexpectedError(error);
@@ -180,7 +182,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
         <Toolbar
           control={form.control}
           isEditing={isEditing}
-          onSave={() => handleSave()}
+          onSave={() => saveAndFinishEditing()}
           onBack={handleBack}
           onConverted={() => {
             onLeave();
