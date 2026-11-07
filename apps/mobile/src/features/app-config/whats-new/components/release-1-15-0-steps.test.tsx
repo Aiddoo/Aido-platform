@@ -13,6 +13,7 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
@@ -27,7 +28,11 @@ import { RELEASE_1_15_0 } from '../constants/releases';
 import { Release1150Steps } from './release-1-15-0-steps';
 
 const ACCOUNT_ID = 'user-1';
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 async function renderSteps() {
   jest.mocked(useLocalSearchParams).mockReturnValue({ source: 'auto' });

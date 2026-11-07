@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { RequestConfig } from '@src/core/ports/http';
-import type { Logger } from '@src/core/ports/logger';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
+import { createLoggerStub } from '@src/shared/__tests__';
 import {
   ApiError,
   err,
@@ -13,8 +13,6 @@ import {
 } from '@src/shared/errors';
 
 import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from './log-out-device';
-
-const silentLogger: Logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 type TimeoutConfig = Pick<RequestConfig, 'timeout'> | undefined;
 
@@ -60,7 +58,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({ isOnline: false, ...stub, logger: silentLogger });
+    await logOutDevice({ isOnline: false, ...stub, logger: createLoggerStub() });
 
     // Then
     expect(stub.calls.unregister).toEqual([]);
@@ -73,7 +71,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({ isOnline: true, ...stub, logger: silentLogger });
+    await logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
 
     // Then
     expect(stub.calls.unregister).toEqual([{ timeout: LOGOUT_REQUEST_TIMEOUT_MS }]);
@@ -89,7 +87,7 @@ describe('logOutDevice', () => {
     });
 
     // When
-    const result = logOutDevice({ isOnline: true, ...stub, logger: silentLogger });
+    const result = logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
 
     // Then
     await expect(result).resolves.toBe('ended');
@@ -100,7 +98,7 @@ describe('logOutDevice', () => {
     const stub = createStubServices();
 
     // When
-    await logOutDevice({ isOnline: false, ...stub, logger: silentLogger });
+    await logOutDevice({ isOnline: false, ...stub, logger: createLoggerStub() });
 
     // Then
     expect(stub.calls.recorded).toEqual(['refresh-a']);
@@ -120,7 +118,7 @@ describe('logOutDevice', () => {
     });
 
     // When
-    await logOutDevice({ isOnline: true, ...stub, logger: silentLogger });
+    await logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
 
     // Then
     expect(stub.calls.recorded).toEqual(['refresh-a']);
@@ -133,7 +131,7 @@ describe('logOutDevice', () => {
     });
 
     // When
-    await logOutDevice({ isOnline: true, ...stub, logger: silentLogger });
+    await logOutDevice({ isOnline: true, ...stub, logger: createLoggerStub() });
 
     // Then
     expect(stub.calls.recorded).toEqual([]);
@@ -152,7 +150,7 @@ describe('logOutDevice', () => {
           throw new Error('keychain write failed');
         },
       },
-      logger: silentLogger,
+      logger: createLoggerStub(),
     });
 
     // Then
@@ -172,7 +170,7 @@ describe('logOutDevice', () => {
           throw new Error('keychain read failed');
         },
       },
-      logger: silentLogger,
+      logger: createLoggerStub(),
     });
 
     // Then
@@ -194,7 +192,7 @@ describe('logOutDevice', () => {
           throw new Error('keychain write failed');
         },
       },
-      logger: { ...silentLogger, warn: (...args: unknown[]) => warnings.push(args) },
+      logger: { ...createLoggerStub(), warn: (...args: unknown[]) => warnings.push(args) },
     });
 
     // Then
@@ -223,7 +221,7 @@ describe('logOutDevice', () => {
       ...stub,
       authService,
       tokenStore: { readRefreshToken },
-      logger: silentLogger,
+      logger: createLoggerStub(),
     });
 
     // Then
@@ -253,7 +251,7 @@ describe('logOutDevice', () => {
       ...stub,
       authService,
       tokenStore: { readRefreshToken },
-      logger: silentLogger,
+      logger: createLoggerStub(),
     });
 
     // Then
@@ -276,7 +274,7 @@ describe('logOutDevice', () => {
       isOnline: false,
       ...stub,
       authService,
-      logger: silentLogger,
+      logger: createLoggerStub(),
     });
 
     // Then

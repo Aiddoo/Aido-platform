@@ -1,4 +1,4 @@
-import { createHttpClientStub } from '@src/shared/__tests__';
+import { createHttpClientStub, createLoggerStub } from '@src/shared/__tests__';
 
 import { VoiceService } from './voice.service';
 
@@ -10,12 +10,12 @@ const quickPlanDto = {
 
 describe('VoiceService', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
-  let logger: { debug: jest.Mock; info: jest.Mock; warn: jest.Mock; error: jest.Mock };
+  let logger: ReturnType<typeof createLoggerStub>;
   let service: VoiceService;
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
-    logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    logger = createLoggerStub();
     service = new VoiceService(httpClient, logger);
   });
 

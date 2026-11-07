@@ -9,12 +9,13 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
-  createMemorySyncStorage,
-  createAnalyticsStub,
   createHttpClientStub,
+  createLoggerStub,
   createMemoryStorage,
+  createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -29,7 +30,11 @@ import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
 import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
 
 const ACCOUNT_ID = 'user-1';
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   const httpClient = createHttpClientStub();

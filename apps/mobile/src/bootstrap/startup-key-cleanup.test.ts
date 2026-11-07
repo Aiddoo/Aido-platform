@@ -1,9 +1,11 @@
+import { createLoggerStub } from '@src/shared/__tests__';
+
 import { cleanStartupKeys } from './startup-key-cleanup';
 
 describe('cleanStartupKeys', () => {
   it('한 정리가 실패해도 나머지를 계속하고 실패를 남긴다', () => {
     // Given
-    const logger = { warn: jest.fn() };
+    const logger = createLoggerStub();
     const next = jest.fn();
 
     // When

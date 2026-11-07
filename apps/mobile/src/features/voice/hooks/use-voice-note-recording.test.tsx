@@ -1,10 +1,11 @@
 import '@src/shared/i18n/init';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
   createLocalFileSystemFake,
+  createLoggerStub,
   createMemorySyncStorage,
-  createAnalyticsStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -22,7 +23,11 @@ import { useVoiceNoteRecording } from './use-voice-note-recording';
 
 const ACCOUNT_ID = 'user-1';
 const RECORDING_DIRECTORY = ['voice-notes', ACCOUNT_ID];
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 interface ProbeProps {
   seedDraftId?: string;

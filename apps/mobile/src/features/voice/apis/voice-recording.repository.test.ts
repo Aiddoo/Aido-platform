@@ -1,4 +1,4 @@
-import { createLocalFileSystemFake } from '@src/shared/__tests__';
+import { createLocalFileSystemFake, createLoggerStub } from '@src/shared/__tests__';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -9,7 +9,7 @@ const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createRepository() {
   const files = createLocalFileSystemFake();
-  const logger = { warn: jest.fn() };
+  const logger = createLoggerStub();
 
   return { files, logger, repository: createVoiceRecordingRepository(files, logger) };
 }

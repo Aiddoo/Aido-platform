@@ -1,20 +1,16 @@
-import type { Logger } from '@src/core/ports/logger';
-import { createAnalyticsStub, createPurchasesGatewayStub } from '@src/shared/__tests__';
+import {
+  createAnalyticsStub,
+  createLoggerStub,
+  createPurchasesGatewayStub,
+} from '@src/shared/__tests__';
 
 import { SubscriptionErrorCode } from '../domains/subscription.error';
 import { PurchasesSdkManager } from './purchases-sdk-manager';
 import { SubscriptionService } from './subscription.service';
 
-const createLogger = (): jest.Mocked<Logger> => ({
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-});
-
 function createConfiguredService() {
   const purchases = createPurchasesGatewayStub();
-  const logger = createLogger();
+  const logger = createLoggerStub();
   const sdkManager = new PurchasesSdkManager({
     purchases,
     logger,

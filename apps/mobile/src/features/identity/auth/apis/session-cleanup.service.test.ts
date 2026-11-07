@@ -1,3 +1,5 @@
+import { createLoggerStub } from '@src/shared/__tests__';
+
 import { SessionCleanupService } from './session-cleanup.service';
 
 function createPorts() {
@@ -19,7 +21,7 @@ function createPorts() {
       deviceTimezone: { clear: record('deviceTimezone') },
       pendingRedemption: { clear: record('pendingRedemption') },
       accountGuides: [{ removeAccount: (accountId: string) => calls.push(`guides:${accountId}`) }],
-      logger: { warn: jest.fn() },
+      logger: createLoggerStub(),
     },
   };
 }

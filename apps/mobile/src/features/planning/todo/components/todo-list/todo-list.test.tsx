@@ -9,9 +9,10 @@ import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constan
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
-  createErrorReporterStub,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
   createMemorySyncStorage,
   createPendingResponse,
 } from '@src/shared/__tests__';
@@ -64,7 +65,7 @@ async function renderTodoList(todo: Todo) {
       di: {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        logger: createLoggerStub(),
         preferenceService: new PreferenceService(httpClient),
         activationService: new ActivationService(
           createActivationProgressRepository(createMemorySyncStorage()),

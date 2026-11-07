@@ -17,12 +17,13 @@ import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-k
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
-  createMemorySyncStorage,
-  createAnalyticsStub,
   createHttpClientStub,
+  createLoggerStub,
   createMemoryStorage,
+  createMemorySyncStorage,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -42,7 +43,11 @@ import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixt
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 const planDraftWithTodo = createPlanReviewDraft(
   voicePlanSchema.parse({

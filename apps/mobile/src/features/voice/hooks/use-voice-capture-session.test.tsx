@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import {
-  createErrorReporterStub,
   createAnalyticsStub,
+  createErrorReporterStub,
+  createLoggerStub,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -15,7 +16,11 @@ import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import type { CapturedPlan } from '../schemas/voice-capture.schema';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 function SessionProbe({
   onCaptured,

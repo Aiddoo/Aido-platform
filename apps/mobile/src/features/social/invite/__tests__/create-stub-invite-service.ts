@@ -1,5 +1,9 @@
 import type { HttpClient } from '@src/core/ports/http';
-import { createMemorySyncStorage, createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
+} from '@src/shared/__tests__';
 
 import { createAllDoneBannerRepository } from '../apis/all-done-banner.repository';
 import { createInstallReferrerRepository } from '../apis/install-referrer.repository';
@@ -29,6 +33,6 @@ export function createStubInviteService({
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
     installationIdGateway: { get: async () => null },
     allDoneBannerRepository: createAllDoneBannerRepository(storage),
-    logger: { warn: jest.fn() },
+    logger: createLoggerStub(),
   });
 }

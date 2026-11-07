@@ -28,10 +28,11 @@ import type {
   TodoListResult,
 } from '@src/features/planning/todo/schemas/todo.schema';
 import {
-  createErrorReporterStub,
-  createMemorySyncStorage,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
   createPendingResponse,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -93,7 +94,7 @@ async function renderMutations() {
       di: {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        logger: createLoggerStub(),
         subTodoService: new SubTodoService(httpClient),
         todoService: new TodoService(httpClient),
         activationService: new ActivationService(

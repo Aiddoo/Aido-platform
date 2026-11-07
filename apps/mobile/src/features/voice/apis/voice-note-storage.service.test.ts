@@ -1,4 +1,8 @@
-import { createLocalFileSystemFake, createMemorySyncStorage } from '@src/shared/__tests__';
+import {
+  createLocalFileSystemFake,
+  createLoggerStub,
+  createMemorySyncStorage,
+} from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createVoiceNoteDigest, createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
@@ -11,7 +15,7 @@ const NOW = toInstant('2026-12-05T00:00:00.000Z');
 const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createService() {
-  const logger = { warn: jest.fn() };
+  const logger = createLoggerStub();
   const files = createLocalFileSystemFake();
   const service = new VoiceNoteStorageService(
     createVoiceNoteDraftRepository({

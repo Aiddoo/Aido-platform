@@ -9,9 +9,10 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import type { CurrentUserResponse } from '@src/features/identity/user/schemas/user.schema';
 import {
-  createErrorReporterStub,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
   createPurchasesGatewayStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -28,7 +29,6 @@ import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 const HOUR_MS = 60 * 60 * 1000;
 
 interface ScreenState {
@@ -77,7 +77,7 @@ async function renderSubscriptionScreen(
   const analytics = createAnalyticsStub();
   const sdkManager = new PurchasesSdkManager({
     purchases,
-    logger: silentLogger,
+    logger: createLoggerStub(),
     analytics,
     subscriberAttributes: { appVersion: null, deviceModel: null },
     isDebugLogEnabled: false,
@@ -106,10 +106,10 @@ async function renderSubscriptionScreen(
       di: {
         analytics,
         errorReporter: createErrorReporterStub(),
-        logger: silentLogger,
+        logger: createLoggerStub(),
         purchasesSdkManager: sdkManager,
-        subscriptionService: new SubscriptionService(sdkManager, purchases, silentLogger),
-        entitlementService: new EntitlementService(httpClient, silentLogger),
+        subscriptionService: new SubscriptionService(sdkManager, purchases, createLoggerStub()),
+        entitlementService: new EntitlementService(httpClient, createLoggerStub()),
         userService: new UserService(httpClient),
         applicationMetadata: { getInstallation: () => undefined },
       },

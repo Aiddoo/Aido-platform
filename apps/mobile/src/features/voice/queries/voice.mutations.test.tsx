@@ -4,9 +4,10 @@ import { err, ok, type Result } from '@src/core/errors/result';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -17,8 +18,6 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { VoiceService } from '../apis/voice.service';
 import type { PlannedAction } from '../schemas/voice-plan.schema';
 import { useApplyActionPlanMutationOptions } from './voice.mutations';
-
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 const TODO_ACTION: PlannedAction = {
   type: 'create-todo',
@@ -74,7 +73,7 @@ async function renderApply(
   await renderUi(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
     di: {
       analytics,
-      voiceService: new VoiceService(httpClient, silentLogger),
+      voiceService: new VoiceService(httpClient, createLoggerStub()),
       activationService: new ActivationService(
         createActivationProgressRepository(createMemorySyncStorage()),
       ),

@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import type { MissingSpeechPermission } from '@src/core/ports/speech-recognizer';
-import { createSpeechRecognizerStub } from '@src/shared/__tests__';
+import { createLoggerStub, createSpeechRecognizerStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Button, OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -36,7 +36,7 @@ async function renderBlocked(missing: MissingSpeechPermission) {
     {
       di: {
         speechRecognizer,
-        logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        logger: createLoggerStub(),
       },
     },
   );

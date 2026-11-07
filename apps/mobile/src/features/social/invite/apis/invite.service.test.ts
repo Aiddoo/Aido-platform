@@ -1,4 +1,8 @@
-import { createMemorySyncStorage, createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
+} from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 
@@ -29,7 +33,7 @@ function createService({
   const storage = createMemorySyncStorage();
   const readReferrer = jest.fn().mockResolvedValue(referrer);
   const pendingRedemptionRepository = createPendingRedemptionRepository(storage);
-  const logger = { warn: jest.fn() };
+  const logger = createLoggerStub();
   const service = new InviteService({
     publicHttpClient,
     authHttpClient,

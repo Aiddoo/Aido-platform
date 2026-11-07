@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub } from '@src/shared/__tests__';
+import { createHttpClientStub, createLoggerStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
@@ -15,8 +15,6 @@ import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import type { EntitlementFeature, EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { QuotaChip } from './quota-chip';
 
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
-
 async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto()));
@@ -26,7 +24,7 @@ async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFea
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
 
   return renderUi(<QuotaChip feature={feature} />, {
-    di: { entitlementService: new EntitlementService(httpClient, silentLogger) },
+    di: { entitlementService: new EntitlementService(httpClient, createLoggerStub()) },
     queryClient,
   });
 }

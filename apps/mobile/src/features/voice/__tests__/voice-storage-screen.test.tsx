@@ -2,12 +2,13 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
-  createLocalFileSystemFake,
-  createMemorySyncStorage,
-  createAnalyticsStub,
   createHttpClientStub,
+  createLocalFileSystemFake,
+  createLoggerStub,
+  createMemorySyncStorage,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -30,7 +31,7 @@ async function renderScreen({
   hasOrphanFile = false,
 }: { hasRecording?: boolean; hasOrphanFile?: boolean } = {}) {
   const files = createLocalFileSystemFake();
-  const logger = { warn: jest.fn() };
+  const logger = createLoggerStub();
   const storage = new VoiceNoteStorageService(
     createVoiceNoteDraftRepository({
       storage: createMemorySyncStorage(),

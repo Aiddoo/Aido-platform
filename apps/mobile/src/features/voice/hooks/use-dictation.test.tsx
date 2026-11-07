@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createSpeechRecognizerStub } from '@src/shared/__tests__';
+import { createLoggerStub, createSpeechRecognizerStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -33,7 +33,7 @@ describe('useDictation', () => {
       {
         di: {
           speechRecognizer,
-          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+          logger: createLoggerStub(),
         },
       },
     );
@@ -70,7 +70,7 @@ describe('useDictation', () => {
       {
         di: {
           speechRecognizer,
-          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+          logger: createLoggerStub(),
         },
       },
     );
@@ -97,7 +97,7 @@ describe('useDictation', () => {
       {
         di: {
           speechRecognizer,
-          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+          logger: createLoggerStub(),
         },
       },
     );
@@ -122,7 +122,7 @@ describe('useDictation', () => {
       {
         di: {
           speechRecognizer,
-          logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+          logger: createLoggerStub(),
         },
       },
     );

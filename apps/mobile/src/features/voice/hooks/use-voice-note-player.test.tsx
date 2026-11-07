@@ -1,3 +1,4 @@
+import { createLoggerStub } from '@src/shared/__tests__';
 import { getLastAudioPlaylist } from '@src/shared/__tests__/mocks/expo-audio';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
@@ -7,7 +8,11 @@ import { Pressable } from 'react-native';
 
 import { useVoiceNotePlayback, useVoiceNotePlayer } from './use-voice-note-player';
 
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 const PARTS = [
   { uri: 'file:///part-0.wav', startMs: 0 },
   { uri: 'file:///part-1.wav', startMs: 60_000 },

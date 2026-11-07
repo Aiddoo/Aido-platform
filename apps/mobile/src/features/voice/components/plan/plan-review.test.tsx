@@ -7,10 +7,11 @@ import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constan
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
-  createErrorReporterStub,
-  createMemorySyncStorage,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -32,8 +33,6 @@ import {
 } from '../../schemas/voice-plan.schema';
 import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
 import { PlanReview } from './plan-review';
-
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 const createTodoAction = (overrides: Partial<PlannedTodo>): PlannedTodo => ({
   type: 'create-todo',
@@ -128,7 +127,7 @@ async function renderPlan(
       di: {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        voiceService: new VoiceService(httpClient, silentLogger),
+        voiceService: new VoiceService(httpClient, createLoggerStub()),
         todoCategoryService: new TodoCategoryService(createHttpClientStub()),
         preferenceService: new PreferenceService(createHttpClientStub()),
         activationService: new ActivationService(

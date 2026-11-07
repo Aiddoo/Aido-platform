@@ -6,10 +6,11 @@ import { ok } from '@src/core/errors/result';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import {
-  createErrorReporterStub,
   createAnalyticsStub,
-  createTestDi,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
+  createTestDi,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
@@ -20,7 +21,11 @@ import { View } from 'react-native';
 
 import { QuickVoiceInfo } from './quick-voice-info';
 
-const silentLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let silentLogger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  silentLogger = createLoggerStub();
+});
 
 describe('QuickVoiceInfo', () => {
   it('앱처럼 HeroUIProvider가 DI·Query 바깥에 있어도 ⓘ를 누르면 죽지 않고 남은 횟수를 보여 준다', async () => {

@@ -12,10 +12,11 @@ import type { Consent } from '@src/features/identity/consent/schemas/consent.sch
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
-  createErrorReporterStub,
-  createMemorySyncStorage,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
   createSpeechRecognizerStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -34,7 +35,11 @@ const PREVIOUS_AGREEMENT: Partial<Consent> = {
   aiDataSharingDecision: 'AGREED',
   aiDataSharingConsentVersion: '2026-10-26',
 };
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 function StartProbe() {
   const start = useVoiceNoteStart();

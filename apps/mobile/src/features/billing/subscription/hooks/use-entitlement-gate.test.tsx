@@ -4,9 +4,10 @@ import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import {
-  createErrorReporterStub,
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
+  createLoggerStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -28,8 +29,6 @@ import { type EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { useEntitlementGate } from './use-entitlement-gate';
 
 const LIMIT_TITLE = '이번 달 AI 할 일 만들기를 다 썼어요';
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
-
 function AiParseGate({ error }: { error?: unknown }) {
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
@@ -60,7 +59,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
       di: {
         analytics,
         errorReporter: createErrorReporterStub(),
-        entitlementService: new EntitlementService(httpClient, silentLogger),
+        entitlementService: new EntitlementService(httpClient, createLoggerStub()),
       },
       queryClient,
     },

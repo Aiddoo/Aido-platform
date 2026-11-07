@@ -16,11 +16,12 @@ import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createAnalyticsStub,
-  createTestDi,
   createHttpClientStub,
-  createMemoryTokenStore,
+  createLoggerStub,
   createMemoryStorage,
   createMemorySyncStorage,
+  createMemoryTokenStore,
+  createTestDi,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -132,7 +133,7 @@ describe('AuthBootProvider', () => {
             voiceNotes: createVoiceNoteStorageServiceFake(),
             deviceTimezone: deviceTimezoneService,
             pendingRedemption: createPendingRedemptionRepository(createMemorySyncStorage()),
-            logger: { warn: jest.fn() },
+            logger: createLoggerStub(),
           }),
           sessionRevocationService: new SessionRevocationService({
             repository: createPendingRevocationRepository(createMemoryStorage()),

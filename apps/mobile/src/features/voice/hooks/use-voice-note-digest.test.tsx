@@ -9,10 +9,11 @@ import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
   createHapticsStub,
-  createAnalyticsStub,
   createHttpClientStub,
+  createLoggerStub,
   createMemoryStorage,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -32,7 +33,11 @@ import { useVoiceNoteDigest } from './use-voice-note-digest';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
-const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+let logger: ReturnType<typeof createLoggerStub>;
+
+beforeEach(() => {
+  logger = createLoggerStub();
+});
 
 const createDigestDto = (overrides: { actions?: unknown[] } = {}) => ({
   title: '온보딩 회의',
