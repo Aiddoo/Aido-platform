@@ -168,7 +168,7 @@ describe('AuthService', () => {
   // ── logout ─────────────────────────────────
 
   describe('logout', () => {
-    test('성공 시 토큰 삭제', async () => {
+    test('성공하면 서버 세션만 끝내고 토큰은 지우지 않는다', async () => {
       // Given
       authHttpClient.post.mockResolvedValue({ ok: true, value: undefined });
 
@@ -177,11 +177,11 @@ describe('AuthService', () => {
 
       // Then
       expect(authHttpClient.post).toHaveBeenCalledWith('v1/auth/logout', undefined, undefined);
-      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
+      expect(tokenStore.clear).not.toHaveBeenCalled();
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
-    test('API 실패해도 토큰 삭제 (finally 보장)', async () => {
+    test('API 실패를 그대로 돌려준다', async () => {
       // Given
       const apiError = createAuthApiError();
       authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
@@ -190,17 +190,7 @@ describe('AuthService', () => {
       const result = await service.logout();
 
       // Then
-      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    test('HttpClient throw 시에도 토큰 삭제 (finally 보장)', async () => {
-      // Given
-      authHttpClient.post.mockRejectedValue(new Error('network error'));
-
-      // When & Then
-      await expect(service.logout()).rejects.toThrow('network error');
-      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
     });
   });
 

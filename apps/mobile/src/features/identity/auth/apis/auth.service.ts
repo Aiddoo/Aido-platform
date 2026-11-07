@@ -168,16 +168,12 @@ export class AuthService {
   exchangeCode = async (request: ExchangeCodeInput) =>
     this.#saveTokens(await this.#publicHttpClient.post('v1/auth/exchange', request));
 
+  /** 서버 세션만 끝낸다. 토큰 삭제는 응답을 기다린 사이 세션이 바뀌었는지 보는 `logOutDevice`가 정한다 */
   logout = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
-    try {
-      const result = await this.#authHttpClient.post('v1/auth/logout', undefined, config);
-      return result.ok ? ok(undefined) : result;
-    } finally {
-      await this.#clearTokens();
-    }
+    const result = await this.#authHttpClient.post('v1/auth/logout', undefined, config);
+    return result.ok ? ok(undefined) : result;
   };
 
-  /** 서버에 알리지 못할 때(오프라인) 이 기기의 세션만 끝낸다 */
   clearLocalSession = (): Promise<void> => this.#clearTokens();
 
   verifyEmail = async (input: VerifyEmailInput) =>

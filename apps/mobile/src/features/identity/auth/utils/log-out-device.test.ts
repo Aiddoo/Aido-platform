@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { RequestConfig } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import {
   ApiError,
   err,
@@ -49,6 +50,7 @@ const createStubServices = ({
         calls.recorded.push(refreshToken);
       },
     },
+    sessionEpoch: createSessionEpoch(),
   };
 };
 
@@ -90,7 +92,7 @@ describe('logOutDevice', () => {
     const result = logOutDevice({ isOnline: true, ...stub, logger: silentLogger });
 
     // Then
-    await expect(result).resolves.toBeUndefined();
+    await expect(result).resolves.toBe('ended');
   });
 
   it('오프라인이면 복귀 후 해제하도록 지우기 전에 기록한다', async () => {
@@ -197,5 +199,87 @@ describe('logOutDevice', () => {
 
     // Then
     expect(JSON.stringify(warnings)).not.toContain('refresh-a');
+  });
+
+  it('서버 응답을 기다리는 사이 세션이 끝났으면 토큰을 지우지 않고 다시 로그인했는지로 판정한다', async () => {
+    // Given
+    const stub = createStubServices();
+    const { sessionEpoch } = stub;
+    const authService = {
+      ...stub.authService,
+      logout: async () => {
+        sessionEpoch.advance();
+        return ok(undefined);
+      },
+    };
+    const readRefreshToken = jest
+      .fn<Promise<string | null>, []>()
+      .mockResolvedValueOnce('refresh-a')
+      .mockResolvedValueOnce('refresh-b');
+
+    // When
+    const outcome = await logOutDevice({
+      isOnline: true,
+      ...stub,
+      authService,
+      tokenStore: { readRefreshToken },
+      logger: silentLogger,
+    });
+
+    // Then
+    expect(outcome).toBe('superseded');
+    expect(stub.calls.clearLocalSession).toBe(0);
+  });
+
+  it('세션이 끝났고 새 토큰도 없으면 사용자가 나간 것으로 끝낸다', async () => {
+    // Given
+    const stub = createStubServices();
+    const { sessionEpoch } = stub;
+    const authService = {
+      ...stub.authService,
+      logout: async () => {
+        sessionEpoch.advance();
+        return ok(undefined);
+      },
+    };
+    const readRefreshToken = jest
+      .fn<Promise<string | null>, []>()
+      .mockResolvedValueOnce('refresh-a')
+      .mockResolvedValueOnce(null);
+
+    // When
+    const outcome = await logOutDevice({
+      isOnline: true,
+      ...stub,
+      authService,
+      tokenStore: { readRefreshToken },
+      logger: silentLogger,
+    });
+
+    // Then
+    expect(outcome).toBe('ended');
+    expect(stub.calls.clearLocalSession).toBe(0);
+  });
+
+  it('토큰을 지우지 못해도 세션은 끝낸 것으로 판정한다', async () => {
+    // Given
+    const stub = createStubServices();
+    const authService = {
+      ...stub.authService,
+      clearLocalSession: async () => {
+        throw new Error('keychain delete failed');
+      },
+    };
+
+    // When
+    const outcome = await logOutDevice({
+      isOnline: false,
+      ...stub,
+      authService,
+      logger: silentLogger,
+    });
+
+    // Then
+    expect(outcome).toBe('ended');
   });
 });

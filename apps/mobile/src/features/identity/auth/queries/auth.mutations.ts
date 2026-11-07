@@ -6,6 +6,7 @@ import {
   useLogger,
   usePushDeviceService,
   useSessionCleanupService,
+  useSessionEpoch,
   useSessionRevocationService,
   useTokenStore,
 } from '@src/bootstrap/providers/di-context';
@@ -156,13 +157,13 @@ export function useOpenNaverLoginMutationOptions() {
 }
 
 export function useLogoutMutationOptions() {
-  const haptics = useHaptics();
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
   const pushDeviceService = usePushDeviceService();
   const tokenStore = useTokenStore();
   const sessionRevocationService = useSessionRevocationService();
+  const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
   const { signOut } = useAuthSession();
 
@@ -172,23 +173,21 @@ export function useLogoutMutationOptions() {
     // 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다. 사용자가 나간 것으로 끝나도록 콜백에 두지 않는다.
     // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
     mutationFn: async () => {
-      try {
-        await logOutDevice({
-          isOnline: onlineManager.isOnline(),
-          authService,
-          pushDeviceService,
-          tokenStore,
-          sessionRevocationService,
-          logger,
-        });
-      } finally {
-        trackEvent('auth_logout');
-        analytics.setUserId(null);
-        signOut();
+      const outcome = await logOutDevice({
+        isOnline: onlineManager.isOnline(),
+        authService,
+        pushDeviceService,
+        tokenStore,
+        sessionRevocationService,
+        sessionEpoch,
+        logger,
+      });
+      if (outcome === 'superseded') {
+        return;
       }
-    },
-    onError: () => {
-      haptics.notify('error');
+      trackEvent('auth_logout');
+      analytics.setUserId(null);
+      signOut();
     },
   });
 }
