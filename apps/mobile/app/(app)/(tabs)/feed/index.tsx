@@ -26,6 +26,7 @@ import {
   useFeedSelectedTodoId,
   useFeedTodoDetailHandoff,
 } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
+import { useStableFeedForeground } from '@src/features/planning/todo/hooks/use-stable-feed-foreground';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
@@ -42,7 +43,6 @@ import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
   AdaptivePane,

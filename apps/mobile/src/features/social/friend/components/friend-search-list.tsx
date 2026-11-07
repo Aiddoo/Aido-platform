@@ -1,5 +1,4 @@
 import { formatUserHashtag } from '@src/features/identity/user/utils/user-hashtag';
-import { useDebouncedValue } from '@src/shared/hooks/use-debounced-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -18,6 +17,7 @@ import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { FriendPolicy } from '../domains/friend.model';
+import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import {
   useCancelRequestMutationOptions,
