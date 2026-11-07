@@ -1,6 +1,7 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
@@ -12,6 +13,7 @@ const INITIAL_PAGE: NudgeInteractionsPageParam = {};
 type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
 const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
 const THANKS_PREVIEW_PAGE_SIZE = 20;
+const NUDGE_STALE_TIME_MS = 30 * SECOND_MS;
 
 function selectNudgeInteractions(
   infinitePages: InfiniteData<NudgeInteractionPage, NudgeInteractionsPageParam>,
@@ -26,7 +28,7 @@ export function useGetNudgeInteractionAvailabilityQueryOptions() {
     queryKey: NUDGE_QUERY_KEYS.interactionAvailability(),
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getInteractionAvailability(signal)),
-    staleTime: 30_000,
+    staleTime: NUDGE_STALE_TIME_MS,
   });
 }
 
@@ -36,7 +38,7 @@ export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: numbe
   return queryOptions({
     queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId }),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getInteraction(nudgeId, signal)),
-    staleTime: 30_000,
+    staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true },
   });
 }
@@ -61,7 +63,7 @@ export function useGetNudgeInteractionsInfiniteQueryOptions({
     getNextPageParam: (page) =>
       page.hasNext && page.nextCursor != null ? { cursor: page.nextCursor } : undefined,
     select: selectNudgeInteractions,
-    staleTime: 30_000,
+    staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true },
   });
 }
@@ -84,7 +86,7 @@ export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoI
       lastPage.hasNext && lastPage.nextCursor != null && lastPage.throughNudgeId != null
         ? { cursor: lastPage.nextCursor, throughNudgeId: lastPage.throughNudgeId }
         : undefined,
-    staleTime: 30_000,
+    staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true },
   });
 }
@@ -96,7 +98,7 @@ export function useGetRemindNudgeCooldownQueryOptions({ userId }: { userId: stri
     queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId }),
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getRemindCooldownInfo(userId, signal)),
-    staleTime: 1_000 * 60,
+    staleTime: MINUTE_MS,
   });
 }
 
@@ -106,7 +108,7 @@ export function useGetTodoNudgeLimitQueryOptions() {
   return queryOptions({
     queryKey: NUDGE_QUERY_KEYS.limit(),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getLimitInfo(signal)),
-    staleTime: 1_000 * 60,
+    staleTime: MINUTE_MS,
     meta: { refreshOnPremiumChange: true },
   });
 }

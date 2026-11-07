@@ -1,11 +1,20 @@
 import type {
-  AcceptFriendRequestResponse,
   FriendsListResponse,
   ReceivedRequestsResponse,
   ReorderFriendResponse,
   SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
+} from '@aido/api';
+import {
+  acceptFriendRequestResponseSchema,
+  friendsListResponseSchema,
+  receivedRequestsResponseSchema,
+  reorderFriendResponseSchema,
+  searchUsersResponseSchema,
+  sendFriendRequestResponseSchema,
+  sentRequestsResponseSchema,
+  type AcceptFriendRequestResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
@@ -27,10 +36,8 @@ const generateSendFriendRequestDto = (): SendFriendRequestResponse => ({
 
 export const createSendFriendRequestDto = (
   overrides?: Partial<SendFriendRequestResponse>,
-): SendFriendRequestResponse => ({
-  ...generateSendFriendRequestDto(),
-  ...overrides,
-});
+): SendFriendRequestResponse =>
+  sendFriendRequestResponseSchema.parse({ ...generateSendFriendRequestDto(), ...overrides });
 
 const generateAcceptFriendRequestDto = (): AcceptFriendRequestResponse => ({
   message: '친구 요청을 수락했어요.',
@@ -46,10 +53,8 @@ const generateAcceptFriendRequestDto = (): AcceptFriendRequestResponse => ({
 
 export const createAcceptFriendRequestDto = (
   overrides?: Partial<AcceptFriendRequestResponse>,
-): AcceptFriendRequestResponse => ({
-  ...generateAcceptFriendRequestDto(),
-  ...overrides,
-});
+): AcceptFriendRequestResponse =>
+  acceptFriendRequestResponseSchema.parse({ ...generateAcceptFriendRequestDto(), ...overrides });
 
 const generateFriendsListDto = (): FriendsListResponse => ({
   friends: [
@@ -76,10 +81,8 @@ const generateFriendsListDto = (): FriendsListResponse => ({
 
 export const createFriendsListDto = (
   overrides?: Partial<FriendsListResponse>,
-): FriendsListResponse => ({
-  ...generateFriendsListDto(),
-  ...overrides,
-});
+): FriendsListResponse =>
+  friendsListResponseSchema.parse({ ...generateFriendsListDto(), ...overrides });
 
 const generateReceivedRequestsDto = (): ReceivedRequestsResponse => ({
   requests: [
@@ -97,10 +100,8 @@ const generateReceivedRequestsDto = (): ReceivedRequestsResponse => ({
 
 export const createReceivedRequestsDto = (
   overrides?: Partial<ReceivedRequestsResponse>,
-): ReceivedRequestsResponse => ({
-  ...generateReceivedRequestsDto(),
-  ...overrides,
-});
+): ReceivedRequestsResponse =>
+  receivedRequestsResponseSchema.parse({ ...generateReceivedRequestsDto(), ...overrides });
 
 const generateSentRequestsDto = (): SentRequestsResponse => ({
   requests: [
@@ -118,10 +119,8 @@ const generateSentRequestsDto = (): SentRequestsResponse => ({
 
 export const createSentRequestsDto = (
   overrides?: Partial<SentRequestsResponse>,
-): SentRequestsResponse => ({
-  ...generateSentRequestsDto(),
-  ...overrides,
-});
+): SentRequestsResponse =>
+  sentRequestsResponseSchema.parse({ ...generateSentRequestsDto(), ...overrides });
 
 const generateReorderFriendDto = (): ReorderFriendResponse => ({
   message: '친구 순서가 변경되었습니다.',
@@ -137,10 +136,8 @@ const generateReorderFriendDto = (): ReorderFriendResponse => ({
 
 export const createReorderFriendDto = (
   overrides?: Partial<ReorderFriendResponse>,
-): ReorderFriendResponse => ({
-  ...generateReorderFriendDto(),
-  ...overrides,
-});
+): ReorderFriendResponse =>
+  reorderFriendResponseSchema.parse({ ...generateReorderFriendDto(), ...overrides });
 
 const generateSearchUsersDto = (): SearchUsersResponse => ({
   items: [
@@ -196,10 +193,8 @@ const generateSearchUsersDto = (): SearchUsersResponse => ({
 
 export const createSearchUsersDto = (
   overrides?: Partial<SearchUsersResponse>,
-): SearchUsersResponse => ({
-  ...generateSearchUsersDto(),
-  ...overrides,
-});
+): SearchUsersResponse =>
+  searchUsersResponseSchema.parse({ ...generateSearchUsersDto(), ...overrides });
 
 export const createFriendApiError = (
   overrides?: Partial<{ code: string; message: string; status: number }>,

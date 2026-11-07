@@ -1,4 +1,11 @@
-import type { CreateNudgeResponse, NudgeCooldownInfo, NudgeLimitInfo } from '@aido/api';
+import {
+  createNudgeResponseSchema,
+  nudgeCooldownInfoSchema,
+  nudgeLimitInfoSchema,
+  type CreateNudgeResponse,
+  type NudgeCooldownInfo,
+  type NudgeLimitInfo,
+} from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
 const generateNudgeLimitInfoDto = (): NudgeLimitInfo => ({
@@ -8,10 +15,8 @@ const generateNudgeLimitInfoDto = (): NudgeLimitInfo => ({
   isUnlimited: false,
 });
 
-export const createNudgeLimitInfoDto = (overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo => ({
-  ...generateNudgeLimitInfoDto(),
-  ...overrides,
-});
+export const createNudgeLimitInfoDto = (overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo =>
+  nudgeLimitInfoSchema.parse({ ...generateNudgeLimitInfoDto(), ...overrides });
 
 const generateNudgeCooldownInfoDto = (): NudgeCooldownInfo => ({
   canNudge: true,
@@ -21,10 +26,8 @@ const generateNudgeCooldownInfoDto = (): NudgeCooldownInfo => ({
 
 export const createNudgeCooldownInfoDto = (
   overrides?: Partial<NudgeCooldownInfo>,
-): NudgeCooldownInfo => ({
-  ...generateNudgeCooldownInfoDto(),
-  ...overrides,
-});
+): NudgeCooldownInfo =>
+  nudgeCooldownInfoSchema.parse({ ...generateNudgeCooldownInfoDto(), ...overrides });
 
 const generateSendNudgeResponseDto = (): CreateNudgeResponse => ({
   message: '콕 찔렀어요!',
@@ -41,10 +44,8 @@ const generateSendNudgeResponseDto = (): CreateNudgeResponse => ({
 
 export const createSendNudgeResponseDto = (
   overrides?: Partial<CreateNudgeResponse>,
-): CreateNudgeResponse => ({
-  ...generateSendNudgeResponseDto(),
-  ...overrides,
-});
+): CreateNudgeResponse =>
+  createNudgeResponseSchema.parse({ ...generateSendNudgeResponseDto(), ...overrides });
 
 export const createNudgeApiError = (
   overrides?: Partial<{ code: string; message: string; status: number }>,

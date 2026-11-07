@@ -1,8 +1,10 @@
-import type {
-  MarkReadResponse,
-  NotificationListResponse,
-  PushDeviceResponse,
-  UnreadCountResponse,
+import type { NotificationListResponse, PushDeviceResponse, UnreadCountResponse } from '@aido/api';
+import {
+  markReadResponseSchema,
+  notificationListResponseSchema,
+  pushDeviceResponseSchema,
+  unreadCountResponseSchema,
+  type MarkReadResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
@@ -43,10 +45,8 @@ const generateNotificationListResponseDto = (): NotificationListResponse => ({
 
 export const createNotificationListResponseDto = (
   overrides?: Partial<NotificationListResponse>,
-): NotificationListResponse => ({
-  ...generateNotificationListResponseDto(),
-  ...overrides,
-});
+): NotificationListResponse =>
+  notificationListResponseSchema.parse({ ...generateNotificationListResponseDto(), ...overrides });
 
 export const createPushPermission = (overrides?: Partial<PushPermission>): PushPermission => ({
   status: 'GRANTED',
@@ -73,10 +73,8 @@ const generatePushDeviceResponseDto = (): PushDeviceResponse => ({
 
 export const createPushDeviceResponseDto = (
   overrides?: Partial<PushDeviceResponse>,
-): PushDeviceResponse => ({
-  ...generatePushDeviceResponseDto(),
-  ...overrides,
-});
+): PushDeviceResponse =>
+  pushDeviceResponseSchema.parse({ ...generatePushDeviceResponseDto(), ...overrides });
 
 const generateUnreadCountResponseDto = (): UnreadCountResponse => ({
   unreadCount: 3,
@@ -84,10 +82,8 @@ const generateUnreadCountResponseDto = (): UnreadCountResponse => ({
 
 export const createUnreadCountResponseDto = (
   overrides?: Partial<UnreadCountResponse>,
-): UnreadCountResponse => ({
-  ...generateUnreadCountResponseDto(),
-  ...overrides,
-});
+): UnreadCountResponse =>
+  unreadCountResponseSchema.parse({ ...generateUnreadCountResponseDto(), ...overrides });
 
 const generateMarkReadResponseDto = (): MarkReadResponse => ({
   message: '읽음 처리되었습니다.',
@@ -96,10 +92,8 @@ const generateMarkReadResponseDto = (): MarkReadResponse => ({
 
 export const createMarkReadResponseDto = (
   overrides?: Partial<MarkReadResponse>,
-): MarkReadResponse => ({
-  ...generateMarkReadResponseDto(),
-  ...overrides,
-});
+): MarkReadResponse =>
+  markReadResponseSchema.parse({ ...generateMarkReadResponseDto(), ...overrides });
 
 export const createNotificationApiError = (
   overrides?: Partial<{ code: string; message: string; status: number }>,
