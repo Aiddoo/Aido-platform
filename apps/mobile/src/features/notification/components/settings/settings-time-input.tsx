@@ -6,6 +6,8 @@ import { PickerHeader } from '@src/features/planning/todo/components/picker-head
 import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/date-format';
 import { getPickerLocale, getTodayAt } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   ArrowRightIcon,
@@ -18,9 +20,14 @@ import {
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
+
+import { isClockTimeInRange } from '../../utils/clock-time';
+
+const TIME_PICKER_HEIGHT = 216;
 
 type TimePickerProps = Omit<IOSNativeProps, 'mode' | 'display' | 'minuteInterval'>;
 
@@ -31,7 +38,7 @@ function TimePicker({ style, ...props }: TimePickerProps) {
       mode="time"
       display="spinner"
       minuteInterval={1}
-      style={[{ height: 216 }, style]}
+      style={[{ height: TIME_PICKER_HEIGHT }, style]}
     />
   );
 }
@@ -55,7 +62,7 @@ function TimePickerSheetContent({
   return (
     <VStack gap={24}>
       <PickerHeader title={title} onCancel={onCancel} onConfirm={() => onConfirm(draft)} />
-      <Box style={{ height: 216, alignItems: 'center' }}>
+      <Box style={{ height: TIME_PICKER_HEIGHT, alignItems: 'center' }}>
         <TimePicker
           {...pickerProps}
           value={draft}
@@ -175,20 +182,41 @@ export function SettingsTimeInput({
   isDisabled,
   ...rowProps
 }: SettingsTimeInputProps) {
+  const { t } = useTranslation('notification');
   const { resolvedLanguage } = useLanguage();
+  const dateFormatContext = useDateFormatContext();
+  const toast = useAppToast();
   const overlay = useOverlay();
-  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+  const [isAndroidPickerOpen, setIsAndroidPickerOpen] = useState(false);
   const minimumDate = getTodayAt(minimumTime.hour, minimumTime.minute);
   const maximumDate = getTodayAt(maximumTime.hour, maximumTime.minute);
   const commit = (date: Date) => onChange({ hour: date.getHours(), minute: date.getMinutes() });
 
-  const handlePress = () => {
-    if (isDisabled || (onBeforeOpen != null && !onBeforeOpen())) {
+  // Android 시각 선택기는 최소·최대 시각을 지원하지 않아 확인할 때 범위를 본다
+  const commitInRange = (date: Date) => {
+    const time = { hour: date.getHours(), minute: date.getMinutes() };
+    if (!isClockTimeInRange(time, { minimumTime, maximumTime })) {
+      toast.warning(
+        t('settings.timeOutOfRange', {
+          start: formatTimeOfDay(minimumTime, timeFormat, dateFormatContext),
+          end: formatTimeOfDay(maximumTime, timeFormat, dateFormatContext),
+        }),
+      );
+      return;
+    }
+    commit(date);
+  };
+
+  const handlePress = useSingleTap(() => {
+    if (isDisabled) {
+      return;
+    }
+    if (onBeforeOpen != null && !onBeforeOpen()) {
       return;
     }
 
     if (process.env.EXPO_OS === 'android') {
-      setAndroidPickerOpen(true);
+      setIsAndroidPickerOpen(true);
       return;
     }
 
@@ -222,7 +250,7 @@ export function SettingsTimeInput({
         </BottomSheet>
       );
     });
-  };
+  });
 
   return (
     <VStack>
@@ -234,14 +262,14 @@ export function SettingsTimeInput({
         isDisabled={isDisabled}
         onPress={handlePress}
       />
-      {androidPickerOpen && (
+      {isAndroidPickerOpen && (
         <AndroidTimePicker
           value={getTodayAt(value.hour, value.minute)}
           minimumDate={minimumDate}
           maximumDate={maximumDate}
           is24Hour={timeFormat === 'TWENTY_FOUR_HOUR'}
-          onConfirm={commit}
-          onDismiss={() => setAndroidPickerOpen(false)}
+          onConfirm={commitInRange}
+          onDismiss={() => setIsAndroidPickerOpen(false)}
         />
       )}
     </VStack>

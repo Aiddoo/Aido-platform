@@ -40,7 +40,8 @@
     "unreadCount": "{{count}}",
     "markAllRead": "Mark all read",
     "premiumDescription": "Subscribe to unlock AI reports and suggestions",
-    "loadError": "Could not load notifications"
+    "loadError": "Could not load notifications",
+    "markAllReadFailed": "Couldn't mark everything as read. Please try again later"
   },
   "directions": {
     "received": "Received",
@@ -73,7 +74,8 @@
     "reminderMorningLabel": "Morning reminder",
     "reminderMorningDescription": "Get today's to-dos in the morning (00:00–11:59)",
     "reminderEveningLabel": "Evening reminder",
-    "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)"
+    "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
+    "timeOutOfRange": "Choose a time between {{start}} and {{end}}"
   },
   "permission": {
     "card": {
@@ -104,6 +106,7 @@
     }
   },
   "bell": {
-    "unreadLabel": "Notifications, unread"
+    "unreadLabel": "Notifications, unread",
+    "retryLabel": "Couldn't load notifications. Retry"
   }
 }

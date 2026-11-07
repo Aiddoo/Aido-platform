@@ -40,7 +40,8 @@
     "unreadCount": "{{count}}건",
     "markAllRead": "모두 읽음",
     "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요",
-    "loadError": "알림을 불러오지 못했어요"
+    "loadError": "알림을 불러오지 못했어요",
+    "markAllReadFailed": "모두 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해 주세요"
   },
   "directions": {
     "received": "받은 알림",
@@ -73,7 +74,8 @@
     "reminderMorningLabel": "오전 리마인드",
     "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할 일을 알려줘요",
     "reminderEveningLabel": "오후 리마인드",
-    "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요"
+    "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요",
+    "timeOutOfRange": "{{start}}부터 {{end}} 사이의 시각만 고를 수 있어요"
   },
   "permission": {
     "card": {
@@ -104,6 +106,7 @@
     }
   },
   "bell": {
-    "unreadLabel": "알림, 읽지 않은 알림 있음"
+    "unreadLabel": "알림, 읽지 않은 알림 있음",
+    "retryLabel": "알림을 불러오지 못했어요. 다시 시도"
   }
 }
