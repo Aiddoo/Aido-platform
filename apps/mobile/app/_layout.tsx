@@ -1,4 +1,3 @@
-import { useAppFonts } from '@src/bootstrap/hooks/use-app-fonts';
 import { useEncryptedStorageBootstrap } from '@src/bootstrap/hooks/use-encrypted-storage-bootstrap';
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
@@ -27,11 +26,9 @@ SplashScreen.preventAutoHideAsync();
 const rootErrorReporter = createEnvironmentErrorReporter();
 
 function AppBootstrapLayout() {
-  const fontsLoaded = useAppFonts();
   const encryptedStorageBootstrap = useEncryptedStorageBootstrap();
-  const isReady = fontsLoaded && encryptedStorageBootstrap != null;
 
-  if (!isReady) {
+  if (encryptedStorageBootstrap == null) {
     return null;
   }
 
