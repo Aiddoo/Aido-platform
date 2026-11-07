@@ -1,13 +1,12 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { Popover } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef } from 'react';
 
 import { CoachmarkPolicy } from '../domains/coachmark.model';
 import { useCoachmarkSettle } from '../hooks/use-coachmark-settle';
+import { useMyAccountId } from '../hooks/use-my-account-id';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 import type { CoachmarkKind } from '../schemas/coachmark.schema';
 
@@ -61,8 +60,7 @@ export function CoachmarkPopover({
   children,
   ...popoverProps
 }: CoachmarkPopoverProps) {
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
-  const accountId = me?.id ?? null;
+  const [accountId] = useMyAccountId();
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isFocused = useIsFocused();
