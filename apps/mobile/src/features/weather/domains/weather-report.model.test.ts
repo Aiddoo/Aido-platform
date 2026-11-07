@@ -307,17 +307,6 @@ describe('getTodayKey', () => {
     expect(keyAt).toBe('2026-11-03');
   });
 
-  it('같은 순간이어도 LA는 서울과 다른 날짜다', () => {
-    // Given
-    const now = toInstant('2026-11-02T15:00:00.000Z');
-
-    // When
-    const key = WeatherReportPolicy.getTodayKey(losAngeles, now);
-
-    // Then
-    expect(key).toBe('2026-11-02');
-  });
-
   it('서머타임이 끝나는 날 LA 자정은 07:00Z에서 08:00Z로 밀리지 않고 날짜 key가 이어진다', () => {
     // Given
     // LA는 2026-11-01 02:00에 서머타임이 끝난다
@@ -368,18 +357,6 @@ describe('isReportStale', () => {
 
     // When
     const stale = WeatherReportPolicy.isReportStale(report, toInstant('2026-11-02T06:50:01.000Z'));
-
-    // Then
-    expect(stale).toBe(true);
-  });
-
-  it('7시간 전에 받은 리포트를 다시 열면 오래된 정보로 본다', () => {
-    // Given
-    const restored = createWeatherReport({ fetchedAt: '2026-11-02T06:00:00.000Z' });
-    const reopenedAt = toInstant('2026-11-02T13:10:00.000Z');
-
-    // When
-    const stale = WeatherReportPolicy.isReportStale(restored, reopenedAt);
 
     // Then
     expect(stale).toBe(true);

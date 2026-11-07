@@ -1031,27 +1031,27 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 
 전체 목록은 `core/ports/`에 있다.
 
-| 포트                      | 메서드 이름                                                             | 어댑터 (`shared/infra/`)                         |
-| ------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ |
-| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                     | `http/ky-client.ts`                              |
-| `Storage`                 | `get`·`set`·`remove`                                                    | `storage/secure-storage.ts`                      |
-| `SyncStorage`             | `get`·`set`·`remove`                                                    | `storage/encrypted-draft-storage.ts`             |
-| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                             | `storage/device-sync-storage.ts`                 |
-| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                          | `storage/encrypted-draft-storage.ts`             |
-| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                             | `clipboard/expo-clipboard-gateway.ts`            |
-| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                | `linking/expo-external-link-gateway.ts`          |
-| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                             | `linking/expo-incoming-link-gateway.ts`          |
-| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                            | `share/expo-system-share-gateway.ts`             |
-| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace` | `location/expo-location-gateway.ts`              |
-| `PurchasesGateway`        | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`  | `purchases/revenuecat-purchases-gateway.ts`      |
-| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                   | `speech/expo-speech-recognizer.ts`               |
-| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등          | `notification/expo-push-notification-gateway.ts` |
-| `HapticsGateway`          | `selection`·`impact`·`notify`                                           | `haptics/expo-haptics-gateway.ts`                |
-| `NetworkStatusGateway`    | `subscribe`                                                             | `network/expo-network-status-gateway.ts`         |
-| `IdGenerator`             | `create`                                                                | `id-generator/expo-id-generator.ts`              |
-| `Logger`                  | `debug`·`info`·`warn`·`error`                                           | `logger/`                                        |
-| `Analytics`               | `trackEvent`·`trackScreenView` 등                                       | `analytics/`                                     |
-| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                     | `error-reporter/`                                |
+| 포트                      | 메서드 이름                                                                                                     | 어댑터 (`shared/infra/`)                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                                                             | `http/ky-client.ts`                              |
+| `Storage`                 | `get`·`set`·`remove`                                                                                            | `storage/secure-storage.ts`                      |
+| `SyncStorage`             | `get`·`set`·`remove`                                                                                            | `storage/encrypted-draft-storage.ts`             |
+| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                                                     | `storage/device-sync-storage.ts`                 |
+| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                                                                  | `storage/encrypted-draft-storage.ts`             |
+| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                                                     | `clipboard/expo-clipboard-gateway.ts`            |
+| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                                                        | `linking/expo-external-link-gateway.ts`          |
+| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                                                     | `linking/expo-incoming-link-gateway.ts`          |
+| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                                                    | `share/expo-system-share-gateway.ts`             |
+| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`requestPermission`·`recheckPermission`·`getCoordinates`·`getPlace` | `location/expo-location-gateway.ts`              |
+| `PurchasesGateway`        | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`                                          | `purchases/revenuecat-purchases-gateway.ts`      |
+| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                                                           | `speech/expo-speech-recognizer.ts`               |
+| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등                                                  | `notification/expo-push-notification-gateway.ts` |
+| `HapticsGateway`          | `selection`·`impact`·`notify`                                                                                   | `haptics/expo-haptics-gateway.ts`                |
+| `NetworkStatusGateway`    | `subscribe`                                                                                                     | `network/expo-network-status-gateway.ts`         |
+| `IdGenerator`             | `create`                                                                                                        | `id-generator/expo-id-generator.ts`              |
+| `Logger`                  | `debug`·`info`·`warn`·`error`                                                                                   | `logger/`                                        |
+| `Analytics`               | `trackEvent`·`trackScreenView` 등                                                                               | `analytics/`                                     |
+| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                                                             | `error-reporter/`                                |
 
 `core/`는 `shared`와 feature를 import하지 않는다. 포트가 쓰는 관측 키와 오류 타입은 `core/observability/telemetry-keys`, `core/errors`에 있다.
 
