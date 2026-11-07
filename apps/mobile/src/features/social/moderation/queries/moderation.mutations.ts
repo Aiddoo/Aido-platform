@@ -27,7 +27,7 @@ export function useBlockUserMutationOptions() {
       haptics.notify('success');
       trackEvent('user_blocked');
       success(t('moderation:block.toast', { name: displayName }));
-      return invalidateAfterBlockChange(queryClient);
+      invalidateAfterBlockChange(queryClient);
     },
     onError: (error) => {
       haptics.notify('error');
@@ -51,7 +51,7 @@ export function useUnblockUserMutationOptions() {
       haptics.notify('success');
       trackEvent('user_unblocked');
       success(t('moderation:unblock.toast'));
-      return invalidateAfterBlockChange(queryClient);
+      invalidateAfterBlockChange(queryClient);
     },
     onError: (error) => {
       haptics.notify('error');

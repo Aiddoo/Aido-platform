@@ -83,7 +83,7 @@ export function AddFriendForm({ children, onFriendLimitReached }: AddFriendFormP
                   byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
                 })}
                 onSubmitEditing={() => {
-                  if (isValid) {
+                  if (isValid && !isSubmitting) {
                     submit();
                   }
                 }}

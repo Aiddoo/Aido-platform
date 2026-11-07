@@ -158,7 +158,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
                     // 틀렸을 때 바로 고쳐 쓰도록 제출해도 키보드를 내리지 않는다
                     submitBehavior: 'submit',
                     onSubmitEditing: () => {
-                      if (InviteCodePolicy.isFilledInviteCode(draft)) {
+                      if (InviteCodePolicy.isFilledInviteCode(draft) && !isSubmitting) {
                         submitInviteCode();
                       }
                     },

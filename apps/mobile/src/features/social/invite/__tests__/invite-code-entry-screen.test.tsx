@@ -10,6 +10,7 @@ import {
 } from '@src/shared/__tests__';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 
 import InviteCodeEntryRoute from '../../../../../app/invite';
@@ -84,5 +85,29 @@ describe('초대 코드 입력 화면', () => {
       }),
     );
     expect(queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: CODE }))).toBeDefined();
+  });
+
+  it('확인하는 중에 완료 키를 다시 눌러도 조회를 한 번만 한다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockReturnValue(new Promise(noop));
+    await renderUi(<InviteCodeEntryRoute />, {
+      di: {
+        httpClient,
+        analytics: createAnalyticsStub(),
+        errorReporter: createErrorReporterStub(),
+        clipboard: createPasteableClipboard(),
+      },
+      queryClient: createTestQueryClient(),
+    });
+    await fireEvent.press(await screen.findByText('복사한 코드 붙여넣기'));
+    await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+    await fireEvent(screen.getByLabelText('초대 코드'), 'submitEditing');
+
+    // When
+    await fireEvent(screen.getByLabelText('초대 코드'), 'submitEditing');
+
+    // Then
+    expect(httpClient.get).toHaveBeenCalledTimes(1);
   });
 });

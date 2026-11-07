@@ -84,7 +84,10 @@ export function InviteCodeInput({
       ),
     );
 
-    return () => cancelAnimation(translateX);
+    return () => {
+      cancelAnimation(translateX);
+      translateX.set(0);
+    };
   }, [shouldShake, submitCount, translateX]);
 
   return (
